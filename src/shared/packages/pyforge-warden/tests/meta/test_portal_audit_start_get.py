@@ -6,7 +6,11 @@ import ast
 import re
 from pathlib import Path
 
+import pytest
 from pyforge.testing_kit import changed_paths_since, pyforge_import_offenders
+
+# Story 27.1: reads django-warden, django-pyforge and the git diff of the repository -- the live-tree half.
+pytestmark = pytest.mark.live_tree
 
 STATION = "warden"
 _HTTP_TOPLEVEL = frozenset({"httpx", "requests", "http.client"})

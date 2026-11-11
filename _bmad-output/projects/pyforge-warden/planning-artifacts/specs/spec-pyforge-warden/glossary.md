@@ -17,9 +17,11 @@ defined. Fleet terms (station, `CAP-n`, `FR-n`, `AD-n`, A and B, the tiers, Path
 - **Omit-not-error** — an enabled optional scanner whose binary is absent contributes nothing and raises nothing (`scanner_plugins.py`; `_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-9-3-default-warden-stays-green-without-checkmarx.md`).
 - **`WARDEN_OPTIONAL_SCANNERS`** — the environment list of optional scanner ids a run enables (`scanner_plugins.OPTIONAL_SCANNER_IDS`).
 - **SAST slot, `ghas` stub** — the `opengrep` optional scanner id beside `ghas`, an id with no engine behind it (`scanner_plugins.py`).
-- **PR-gate hook book** — the PR-gate hook specs warden publishes (canopy:FR-44; `_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-9-1-warden-publishes-the-pr-gate-hook-book.md`).
+- **PR-gate hook book** — the three PR-gate hook specs warden publishes on `pyforge.core.hooks` (`pyforge.warden.pr_gate.scan`, `.aggregate`, `.verdict`), its default plugin bundle and its stub scanners (CAP-27, canopy:FR-44; `hooks.py`, `scanner_plugins.py`; `_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-9-1-warden-publishes-the-pr-gate-hook-book.md`).
+- **`contract.md`** — the public-contract companion beside `SPEC.md` (CAP-28): the CLI flags, config keys, exit codes, feature flags, environment variables, hook specs, the open report slots' key sets, engines, imported symbols and where each capability's code lives.
+- **`proof-map.md`** — the companion beside `SPEC.md` that names, per capability, the test modules that prove it, their lane and the command that runs them (CAP-28).
 - **Estate rules** — the opengrep rules the package ships in `data/sast-rules/`, each with a tripping fixture under `src/shared/packages/pyforge-warden/tests/fixtures/sast-trips/`.
-- **Estate** (CAP-24, CAP-26) — the estate's own repos, the estate allowlist below; in CAP-7 and the Scope Constraint "estate" is the downstream data estate that reads reports.
+- **Estate** (CAP-24, CAP-29) — the estate's own repos, the estate allowlist below; in CAP-7 and the Scope Constraint "estate" is the downstream data estate that reads reports.
 - **Estate allowlist** — the `fix-pr-estate-repos` key, `EffectiveConfig.fix_pr_estate_repos` in `config.py`; `run_actuator`'s `authorized_fleet_repo` is the per-call fleet exception.
 - **Forge, forge API** — the code host's REST API the actuator opens PRs through (`GitHubForgeClient`, `actuator.py`); not the Dream's `forge` tool.
 - **Solver** — `fix_solver.default_pixi_lock_solver`, a `pixi lock` over a throwaway copy; its range is `engines.PIXI_VERSION_RANGE`.

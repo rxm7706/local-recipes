@@ -31,8 +31,8 @@ axis is a hard error, never a silent drop.
 | **Engine** | `osv-scanner` (conda run-dep, tested version range) + joined feeds |
 | **Assesses** | known vulnerabilities — advisory ID, affected/fixed version, CVSS severity |
 | **Enrichment** | **CISA KEV** (`kev`, `kev_date`) and **FIRST EPSS** (`epss {score, percentile}`), each a cached feed carrying its own provenance `{source, snapshot_at, max_age_ok}`. Enrichment happens at exactly one position — inside the vuln producer, **before** policy dedup. |
-| **Default posture** | **gates.** Blocks on CVSS-critical **and** any KEV-listed advisory on a pinned version. `--min-epss <0..1>` adds an EPSS threshold. |
-| **Feed-absence semantics** | with no KEV/EPSS policy in effect, null slots gate on CVSS as before. Under an active policy, an absent or stale snapshot → `indeterminate` — the gate never silently no-ops. `kev: null` (feed absent) stays distinguishable from "assessed, not KEV-listed". |
+| **Default posture** | **gates.** Blocks on CVSS-critical **and** any KEV-listed advisory on a pinned version. KEV gating is the `fail-on-kev` key of `[tool.pyforge-warden]` (no CLI flag), default `true`: a default scan with no provisioned KEV feed composes `indeterminate` on this axis and exits 1. `--min-epss <0..1>` adds an EPSS threshold. |
+| **Feed-absence semantics** | with no KEV/EPSS policy in effect (`fail-on-kev = false` and no `--min-epss`), null slots gate on CVSS as before. Under an active policy, an absent or stale snapshot → `indeterminate` — the gate never silently no-ops. `kev: null` (feed absent) stays distinguishable from "assessed, not KEV-listed". |
 | **Matchability** | osv has no conda ecosystem, so `vuln_matchable = pypi_identity is not None AND version resolved to ==X.Y.Z` (see `extraction-contract.md`). For a mapped-but-unversioned dep, the **name-level tier** asks instead: does this package carry any known critical CVE across *any* version? → `indeterminate: carries known critical CVEs — pin/lock to prove immunity`. A ranked worry-list and a lock-nudge, not a dead coverage number. |
 
 ### Axis 3 — License
@@ -56,7 +56,7 @@ axis is a hard error, never a silent drop.
 | **Emits** | `latest`, `lag`, `eol_date` + verdict `supported \| eol \| unknown` |
 | **Default posture** | **flag-activated**, and **freshness-preconditioned**: `--max-lag <n>` / `--require-lts` / `--fail-on-eol` activate the gate, but a stale bundled registry → `indeterminate`, never a pass. Unconfigured → `warn` (never a silent clean). |
 | **Mode split** | edge mode (no estate at runtime) = bundled registry + local caches, with N/N-1 degrading to a **visible** `unknown` when channel data is absent. The availability-at-N/N-1 finding is fleet-mode only; edge omits it with a coverage note. |
-| **Provenance** | verdicts derived from bundled data carry a build-time `snapshot_at` + `max_age_ok` — a stale registry can never silently report `supported`. |
+| **Provenance** | the bundled LTS registry's own `updated:` date is its `snapshot_at`, checked against a fixed 180-day maximum age; the report's `currency_data` slot carries that `snapshot_at` + `max_age_ok`, and a stale registry's curated lines are not consulted — a stale registry can never silently report `supported`. The bundled conda→pypi map carries no snapshot and no age check (`SPEC.md`, *Bundled data carries its own age*). |
 
 ## Vision axes (named, unbuilt)
 

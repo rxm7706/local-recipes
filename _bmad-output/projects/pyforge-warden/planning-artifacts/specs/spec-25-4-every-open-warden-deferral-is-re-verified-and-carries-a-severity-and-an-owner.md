@@ -99,3 +99,7 @@ Type / Effort / Deps: chore / M / —.
 - Ledger key: `25-4-every-open-warden-deferral-is-re-verified-and-carries-a-severity-and-an-owner`.
 - Deps: —.
 - Flag: none (a `chore` story, `spec-feature-flag-governance` Q1).
+
+## Gate findings (build, BUILD-1)
+
+- 2026-11-11, `python3 scripts/ad_citation_check.py` (exit 1, 2 new issues): the `verified:` line this story wrote on DW-warden-cutover-2026-11-10-7 (`deferred-work-ledger.md:1234`) cited two suite-spine ADs unqualified. Fixed in the ledger: the line now reads suite:AD-9 and suite:AD-10, as the rest of the ledger does; the row's id, summary and location are untouched. Re-run exits 0 (7 baselined, 0 new).

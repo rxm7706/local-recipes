@@ -19,8 +19,10 @@ from pyforge.warden import engines, fix_solver
 from pyforge.warden.fix_solver import default_pixi_lock_solver, resolve_fix_target
 from pyforge.warden.manifest_fixup import tree_content_digest
 
+# Story 27.1: live_tree too -- the host-workspace guard stats the repository root's pixi.lock.
 pytestmark = [
     pytest.mark.slow,
+    pytest.mark.live_tree,
     pytest.mark.skipif(shutil.which("pixi") is None, reason="needs the workspace pixi on PATH"),
 ]
 

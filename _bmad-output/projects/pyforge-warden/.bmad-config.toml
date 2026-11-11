@@ -8,7 +8,7 @@ output_folder = "_bmad-output/projects/pyforge-warden"
 # Project metadata (informational; not consumed by skills today, but useful for tooling).
 [project]
 slug = "pyforge-warden"
-description = "Unified dependency-hygiene + vulnerability scanner orchestrating deptry + osv-scanner over Python/Conda/Pixi manifests; schema-validated ComplianceReport + strict CI exit-code gate. In-repo pixi build workspace member at src/shared/packages/pyforge-warden (builds conda + wheel + sdist). Intake spec: docs/specs/pyforge-warden.md."
+description = "Unified dependency-hygiene + vulnerability scanner orchestrating deptry + osv-scanner over Python/Conda/Pixi manifests; schema-validated ComplianceReport + strict CI exit-code gate. In-repo pixi build workspace member at src/shared/packages/pyforge-warden (builds conda + wheel + sdist). Spec: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/ (public contract: contract.md)."
 status = "active"
 
 [tea]

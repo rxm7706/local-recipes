@@ -7,7 +7,11 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
 from pyforge.testing_kit import changed_paths_since, pyforge_import_offenders
+
+# Story 27.1: reads .claude/skills, _bmad/skf and the git diff of the repository -- the live-tree half.
+pytestmark = pytest.mark.live_tree
 
 STATION = "warden"
 SKILL_NAME = f"pyforge-{STATION}"

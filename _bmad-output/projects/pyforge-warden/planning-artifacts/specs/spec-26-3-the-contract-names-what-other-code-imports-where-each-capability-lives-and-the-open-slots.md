@@ -90,3 +90,7 @@ Type / Effort / Deps: chore / M / S-26.1.
 - Deps: S-26.1.
 - Flag: none (`flag-exempt: detector-or-gate`).
 - Cross-station: `steward:S-124.2` carries this module's reads and its `ROOT_HANDOFF_INPUTS` row; AC7 passes once it is on the branch.
+
+## Gate findings (build, BUILD-2)
+
+- `ad_citation_check` (2026-11-11): the `tea-test-review` row of `contract.md` section 8 cited the module roster as a bare AD id copied from the `tea_advisory.py` docstring, and pyforge-warden's spine defines no ADs. Fixed in `contract.md`: the row now cites `suite:AD-9` (steward's spine, *One module roster, one config-pin path*). Re-run: `pixi run --frozen -e pyforge-guild ad-citation-check` and the 26.3 acceptance checks.

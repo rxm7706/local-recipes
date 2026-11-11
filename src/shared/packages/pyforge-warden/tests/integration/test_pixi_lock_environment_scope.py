@@ -13,6 +13,9 @@ from pyforge.warden.extract.lockfiles import PixiLockExtractor
 from pyforge.warden.models import ScannedManifest
 from pyforge.warden.routing import DefaultRouter
 
+# Story 27.1: reads the repository root's pixi.lock -- the live-tree half, where a missing lock is a failure.
+pytestmark = pytest.mark.live_tree
+
 _REPO_ROOT = Path(__file__).resolve().parents[6]
 _ROOT_PIXI_LOCK = _REPO_ROOT / "pixi.lock"
 _ENVIRONMENT = "python-agent-platform"
@@ -48,11 +51,8 @@ def _expected_identities_from_lock(document: object) -> set[tuple[str, str | Non
     return identities
 
 
-@pytest.mark.skipif(
-    not _ROOT_PIXI_LOCK.is_file(),
-    reason="repo root pixi.lock not present in this checkout",
-)
 def test_root_pixi_lock_python_agent_platform_linux64_matches_env_list():
+    assert _ROOT_PIXI_LOCK.is_file(), f"the repository's root pixi.lock is missing at {_ROOT_PIXI_LOCK}"
     document = yaml.safe_load(_ROOT_PIXI_LOCK.read_text(encoding="utf-8"))
     expected = _expected_identities_from_lock(document)
     extractor = PixiLockExtractor(DefaultRouter(), environment=_ENVIRONMENT, platform=_PLATFORM)

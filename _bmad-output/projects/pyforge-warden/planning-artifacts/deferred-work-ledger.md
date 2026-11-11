@@ -23,6 +23,17 @@ id renaming, below.
 
 Durability first; curation is owned follow-up work.
 
+## Curation — 2026-11-10
+
+Story 25.4 (warden Epic 25, the cutover readiness plan of 2026-11-10) curated this ledger. The rows were re-read on 2026-11-11 against branch `cutover-readiness-2026-11-10` at `72f3e3158f`. The paragraphs above describe the 2026-07-29 promotion and stay as its record.
+
+- Every row open at the start of the pass, 55 of 70, was re-read against the tree and gained one `verified: 2026-11-11 — <still-open|done> — <evidence>` line that cites a path:line, or a command with its exit code. Where a row's span runs on past a `## Deferred from:` heading, the new line sits at the end of the span, after the 2026-09-02 mechanical line, so that it is the row's latest; such a line names its row's id.
+- Four rows closed with `status: done 2026-11-11` and their evidence: DW-BMAD-LOOP-1, DW-5-1-2, DW-OM-2026-08-24 and DW-FRR-9-3. The other 51 stay open.
+- Every open row carries a `severity:` and an `owner:`. Forty legacy rows had no severity, and most rows had no owner. The owner is `warden` unless the fix belongs to another station: `marshal` for the bmad-loop harness rows (DW-BMAD-LOOP-1, DW-CROSS-CUTTING-1) and `steward` for the CI lane (DW-5-2-5). DW-warden-16-3's `medium (unverified)` reads `medium` after its re-read.
+- No row's id, `summary:` or `location:` changed: the intake fingerprint is `harvest_fingerprint(summary, location)` (src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py:3875), and `deferred_work_intake.py --fix` was not run.
+- Eleven rows were added at the end, DW-warden-cutover-2026-11-10-1 to DW-warden-cutover-2026-11-10-11, from the cutover readiness audit (`planning-artifacts/research/cutover-readiness-audit-2026-11-10.md`). Six of them close on the operator's rulings of 2026-11-10; five stay open.
+- Path shorthand in the 2026-11-11 lines: a bare module name (`currency.py:510`) and `data/...` are under `src/shared/packages/pyforge-warden/src/pyforge/warden/`; `pyforge-warden/...` and `django-warden/...` are under `src/shared/packages/`; `bmad_loop/...` is in the `pyforge-guild` environment's site-packages; every other path is from the repo root.
+
 ## Ids renamed on promotion
 
 - `DW-1` → **`DW-FU-6-3`** (story `6-3-currency-axis-producer-gate-flags`) — bmad-loop emits a bare
@@ -52,7 +63,9 @@ Durability first; curation is owned follow-up work.
   summary: "`scm.isolation = \"worktree\"` + `cleanup.trim_artifacts = true` silently lose any dev/review-session update to a gitignored `implementation-artifacts/` file (`sprint-status.yaml`, `deferred-work.md`, a newly-authored `spec-{story-key}.md`) once the run's worktree is torn down after a successful merge. `scm.worktree_seed` copies these files INTO a fresh worktree at start, but nothing copies the worktree's updated copies back OUT before cleanup deletes it — only git-tracked source changes survive the squash-merge, because `implementation-artifacts/` is gitignored by design (CLAUDE.md Tier 3). Net effect: the code ships correctly, but the BMAD paper trail (the sprint-status flip to `done`, the story's own `spec-*.md`, any `deferred-work.md` append the session made) silently vanishes unless a human happens to have a copy in hand and manually reconstructs it. Not story-scoped — will recur for every future bmad-loop-driven story until fixed at the orchestrator level. Fix candidates: (a) sync the worktree's `implementation-artifacts/` back to the main checkout before merge/cleanup (the `worktree_seed` copy, in reverse); (b) don't trim/delete a run's worktree until its gitignored-artifact delta is reconciled; (c) have the merge step in `bmad-loop resume` explicitly copy `implementation-artifacts/` back regardless of git-tracked status."
   evidence: Run `20260716-043830-a9bb` (story `1-5-osv-scanner-as-the-second-engine`, 2026-07-16) — after `bmad-loop resume` completed the merge (`ce2ed97bc4`) and the worktree was torn down, the main checkout's `sprint-status.yaml` still read `1-5-osv-scanner-as-the-second-engine: backlog`, and the worktree's updated `deferred-work.md` (8682 bytes, one new section appended by the review session) plus the newly-authored `spec-1-5-osv-scanner-as-the-second-engine.md` (25308 bytes) were both gone — `.bmad-loop/archive/` had no copy for this run, and `trim_artifacts=true` had already removed `worktrees/`. All three were manually reconstructed from conversation context (the spec had been read in full during the pre-merge spec-approval review) rather than recovered from disk.
 
-  status: open
+  status: done 2026-11-11
+  severity: medium
+  owner: marshal
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN at the orchestrator level. bmad-loop has moved 0.8.1 → 0.9.0 and still ships NONE of the three fixes this entry proposed: zero hits for `sync_back`/`copy_back`/`artifacts_back`/`reconcile_artifacts` across every module in `bmad_loop/`. `scm.worktree_seed` remains one-directional (`engine.py:595` `seeds.extend(scm.worktree_seed)` — copy IN only). What HAS changed is a local mitigation, not an orchestrator fix: each loop home now carries `_bmad-output/implementation-artifacts` as a symlink to `projects/pyforge-<slug>/implementation-artifacts` (verified on doctor, warden, herald and marshal). Note the symlink is NOT git-tracked (`git ls-files` returns nothing for it), so it cannot reach a fresh worktree by checkout — it depends on the seed. Scope limit on this check: no run worktrees currently exist (all pruned 2026-07-26), so this is verified by reading bmad-loop 0.9.0's code, not by reproducing the loss.
 ## Deferred from: code review of spec-1-1-frozen-contract-verdict-lattice-projection-safety (2026-07-13)
@@ -74,6 +87,8 @@ Durability first; curation is owned follow-up work.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 1/2 present (absent: _bmad-output/implementation-artifacts); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
+  verified: 2026-11-11 — done — DW-BMAD-LOOP-1: bmad-loop now carries a run's ledger writes back to the main checkout after the merge (site-packages of `pyforge-guild`, bmad-loop 0.12.0): `_carry_harvested_deferrals` re-files an isolated unit's harvested deferrals into the main ledger (bmad_loop/engine.py:8058), `_carry_board_advance` advances the sprint board (bmad_loop/engine.py:8492), and the run commits both paths itself (bmad_loop/worktree_flow.py:2257-2266, :2315). The third loss, a story spec written only in Tier 3, no longer applies: a story spec is tracked under planning-artifacts/specs/ (AGENTS.md, The tiers, 'Story specs are durable').
+
 ## DW-1-4-1 — The 1.4 fixture proves offline OSV matching only for the literal pin `pdos-vuln-fixture==1.0.0`;…
 
 - source_spec: `_bmad-output/projects/python-deptry-osv-scanner/implementation-artifacts/spec-1-4-osv-db-offline-provisioning-spike.md`
@@ -83,6 +98,8 @@ Durability first; curation is owned follow-up work.
   evidence: `conftest.py`'s socket-deny harness is in-process only (its own docstring notes engine subprocesses are outside it); nothing asserted zero connections occurred. Closed via the lighter "egress counter" alternative this item itself named: `tests/conformance/test_corpus_egress_counter.py` wraps the WHOLE `warden scan` process tree (CLI + every forked engine subprocess) in `strace -f -e trace=network` over the full 5.2 corpus, asserting 0 `connect`/`sendto` syscalls (Linux-only, skip-if-`strace`-unavailable — never a hard requirement elsewhere); live-verified green. Originally: source_spec `_bmad-output/projects/python-deptry-osv-scanner/implementation-artifacts/spec-1-4-osv-db-offline-provisioning-spike.md`, raised by the Blind Hunter (finding 7).
 
   status: open
+  severity: medium
+  owner: warden
 
   verified: 2026-07-30 — STATUS CORRECTED `done` → `open`: this id carries TWO distinct
   deferrals and the `done` came from the wrong one. The SECOND bullet (the osv-scanner
@@ -106,6 +123,8 @@ Durability first; curation is owned follow-up work.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/python-deptry-osv-scanner/implementation-artifacts/spec-1-4-osv-db-offline-provisioning-spike.md, tests/conformance/test_corpus_egress_counter.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
+  verified: 2026-11-11 — still-open — DW-1-4-1: the first bullet is narrowed, not closed. PEP 503 spelling is now proven for the name-level tier: pyforge-warden/tests/unit/test_vuln.py:1517-1522 reads `Pdos_Vuln_Fixture` from the offline zip. The osv-scanner match is still proven for the literal spelling only (70 of the 72 fixture-name hits under pyforge-warden/tests spell `pdos-vuln-fixture`, the other 2 are that test), and no test scans a PEP 440 twin (`1.0` against `1.0.0`). The second bullet stays resolved (pyforge-warden/tests/integration/test_corpus_egress_counter.py).
+
 ## DW-6-3-1 — The report schema has no `runtime_python` field on `ComplianceReport`/the currency section — epi…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md`
@@ -113,10 +132,14 @@ Durability first; curation is owned follow-up work.
   evidence: `grep -rn "runtime_python" src/pyforge/warden/*.py report-schema.json` returns nothing outside `currency.py`'s own docstring; `CurrencyInfo` (models.py) carries only `verdict/latest/lag/eol_date/tier`, no report-section-level runtime slot exists on `ComplianceReport` beyond the singular `currency_data: FeedProvenance | None`. Raised independently by the Blind Hunter review pass; the root cause predates this story (Story 6.1's execution never implemented what the decision record assumed), so it is not this story's defect to fix.
 
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — `runtime_python` appears 0 times in both `data/report-schema.json` and `models.py` — the field was never added.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — `runtime_python` appears only in a docstring (currency.py:84); models.py and data/report-schema.json carry no such field, so the runtime's currency is still the `!python-runtime` finding alone.
 
 ## DW-6-3-2 — `scripts/refresh_endoflife_feed.py` fetches one HTTP request per registry product slug with no r…
 
@@ -125,10 +148,14 @@ Durability first; curation is owned follow-up work.
   evidence: Raised by the Blind Hunter review pass; confirmed by reading `scripts/refresh_endoflife_feed.py`'s per-product fetch loop, which has no `time.sleep`/backoff/retry logic between requests. Out of this story's scope (a real design decision — retry policy, backoff curve, partial-write semantics — not a trivial patch); the script is human-run, low-frequency, and off the `scan` runtime path, so this is a hardening item for whenever the registry's product count grows enough to matter.
 
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — `scripts/refresh_endoflife_feed.py:191` and `:205` both iterate `for slug in deduped_slugs`, issuing one `fetch_product_cycles` per slug — the fan-out is unchanged.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md, scripts/refresh_endoflife_feed.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — pyforge-warden/scripts/refresh_endoflife_feed.py:191 and :205 still fetch one product per slug, and `grep -c -E 'sleep|retry|backoff' src/shared/packages/pyforge-warden/scripts/refresh_endoflife_feed.py` prints 0, exit 1: no backoff or retry.
 
 ## DW-6-3-3 — `_resolve_from_lines`/`_resolve_from_cycles` (currency.py) compute `lag` by counting entries rel…
 
@@ -137,10 +164,14 @@ Durability first; curation is owned follow-up work.
   evidence: Raised by the Blind Hunter review pass; confirmed by reading both resolver functions' `sum(1 for ... if released > matched_released)` comparisons. Judged a genuinely ambiguous edge case (whether same-day releases should count as "behind" each other is not obviously wrong either way) rather than a clear defect, and real-world same-day-release collisions across a product's own release history are rare — deferred rather than patched this pass.
 
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — `currency.py:68` still states it outright: '`lag` is an integer count of entries (LTS lines / endoflife.date …)', and `:60` defines `lag > 0` as behind by ANY positive count. Still counting entries, not versions.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — both resolvers still count strictly later entries: currency.py:510 (`released > matched_released`) and currency.py:575 (`release_date > matched_release`).
 
 ## DW-6-3-4 — `currency.py`'s `DEFAULT_CURRENCY_POLICY` and `config.py`'s `EffectiveConfig.currency_policy` pr…
 
@@ -149,10 +180,14 @@ Durability first; curation is owned follow-up work.
   evidence: Raised by the Blind Hunter review pass; confirmed both definitions exist independently in `currency.py` and `config.py`. A real fix (deriving one from the other, or a shared module-level table both axes import) would touch the pre-existing 6.2 pattern too — a cross-cutting consolidation out of this story's scope.
 
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — Both tables still exist and can drift: `currency.py:209` `DEFAULT_CURRENCY_POLICY` and `config.py:524` `EffectiveConfig.currency_policy`.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — the all-WARN table is still written twice with no import between them: currency.py:209-214 (`DEFAULT_CURRENCY_POLICY`) and config.py:512-515 (the non-gating branch of `currency_policy`, which config.py:493 calls byte-identical).
 
 ## DW-6-3-5 — The endoflife.date cache reuses `feeds.DEFAULT_FEED_MAX_AGE_DAYS` (7 days, tuned for KEV's frequ…
 
@@ -161,11 +196,15 @@ Durability first; curation is owned follow-up work.
   evidence: Raised by the Blind Hunter review pass. This story's spec explicitly required reusing `feeds.py`'s shared cache/staleness layer "verbatim" (per epics.md's 6.4 AC: "axes never compute staleness," defaults live only in `feeds.py`) — the fail-closed-to-unknown behavior is honest and NFR-37-compliant, not a bug, but the specific 7-day default may be worth reconsidering as a per-feed-type default (or a config override) in a future cross-axis staleness-defaults pass; changing it unilaterally here would mean either touching the shared KEV-serving constant or building a private override, both against this story's explicit boundaries.
 
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — `feeds.py:98` still defines the shared `DEFAULT_FEED_MAX_AGE_DAYS = 7`, and `vuln.py:146` imports that same constant — no endoflife-specific age exists.
 ## Deferred from: follow-up code review of spec-6-3-currency-axis-producer-gate-flags (2026-07-23, independent follow-up review pass)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — DW-6-3-5: feeds.py:99 `DEFAULT_FEED_MAX_AGE_DAYS = 7` is still the only age, read for the endoflife cache at currency.py:761; no endoflife-specific age or config key exists.
 
 ## DW-6-3-6 — Both currency resolvers parse and DROP the `lts` boolean (registry `lts_lines` entries and endof…
 
@@ -174,10 +213,14 @@ Durability first; curation is owned follow-up work.
   evidence: `currency._resolve_from_lines`/`_resolve_from_cycles` never read the `lts` key; `CurrencyInfo` (models.py) carries only verdict/latest/lag/eol_date/tier. The 6.3 spec's Never section explicitly assigns the `is_lts`-style schema question to Story 6.5 ("both are Story 6.5's sole design/ownership") — logged so 6.5 plans for the missing input rather than discovering it mid-implementation. Raised by the follow-up Blind Hunter pass.
 
   status: open
+  severity: medium
+  owner: warden
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN. The `lts` boolean is read nowhere in the package — zero hits for `.get("lts")`, `["lts"]` or `is_lts` across `src/pyforge/warden/*.py`; the only `lts`-shaped names are the gate flag `require_lts` (`cli.py:1069`/`:1088`, `config.py:430`/`:964`) and the registry filename. `CurrencyInfo` (`models.py:317-321`) still carries exactly `verdict`/`latest`/`lag`/`eol_date`/`tier` — no LTS signal — so `--require-lts` still cannot be evaluated from what this producer emits. Note Story 6.5 shipped the FLAG without the data behind it, which is the sharper form of the risk this entry raised.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md, src/pyforge/warden/*.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — no module of the package reads the `lts` key (no `"lts"`, `.get("lts")` or `is_lts` in its src), `CurrencyInfo` still carries only verdict, latest, lag, eol_date and tier (models.py:328-332), and `require_lts` only switches the generic currency gate on (config.py:485).
 
 ## DW-6-3-7 — `currency:`/`license:` finding ids (`<axis>:<reason>:<name>@<version>`) carry no ecosystem discr…
 
@@ -186,10 +229,14 @@ Durability first; curation is owned follow-up work.
   evidence: `license.py` and `currency._currency_finding` both build `<axis>:<reason>:<name-segment>@<version-segment>` with no ecosystem segment; `merge_components` groups by `(ecosystem, name, version)` and keeps ecosystems distinct by design ("honest count inflation, stated"). Raised by the follow-up Edge Case Hunter pass.
 
   status: open
+  severity: medium
+  owner: warden
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN on both axes. `currency.py:717` builds `id=f"currency:{reason}:{subject_segment}@{version_segment}"` and `license.py:764` builds `id=f"license:{reason_segment}:{name_segment}@{version_segment}"` — neither carries an ecosystem discriminator. Meanwhile `license.py:673-679` still dispatches on `component.ecosystem` (CONDA / PYPI / else), keeping the ecosystems distinct upstream of an id grammar that cannot express the distinction. The id-injectivity break is unchanged.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — neither id builder has an ecosystem segment (currency.py:697, license.py:746), while license.py:661-663 still dispatches per ecosystem.
 
 ## DW-6-3-8 — The frozen 6.1 model invariant ("currency eol/over-lag finding requires non-null latest/lag/eol_…
 
@@ -198,11 +245,15 @@ Durability first; curation is owned follow-up work.
   evidence: Confirmed live this pass — implementing verdict=EOL/eol_date=None for `eol: true` turned the suite red at models.py:437 ("currency eol/over-lag finding requires non-null latest/lag/eol_date"); the 6.3 spec's Block-If forbids widening the frozen 6.1 schema, so `_resolve_from_cycles` now documents and degrades those shapes instead. Raised by the follow-up Edge Case Hunter pass (partially patched; remainder schema-blocked).
 
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — the frozen invariant is verbatim intact at `models.py:438`: 'currency eol/over-lag finding requires non-null latest/lag/eol_date'. No nullable `eol_date` variant and no dateless-EOL marker was added, so endoflife.date's boolean `eol: true` (already-EOL, no date published) still has no expressible shape and still degrades to `currency:unknown`. As the entry predicted, this remains unfixable under the no-schema-widening rule — it needs a deliberate schema amendment, not a story patch.
 ## Deferred from: second follow-up code review of spec-6-3-currency-axis-producer-gate-flags (2026-07-23, bmad-dev-auto review pass)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — DW-6-3-8: the frozen invariant is unchanged at models.py:433 ('currency eol/over-lag finding requires non-null latest/lag/eol_date'); a dateless `eol: true` still degrades to `currency:unknown`.
 
 ## DW-6-3-9 — `ComplianceReport.__post_init__`'s duplicate-finding-id invariant turns ANY producer-side id col…
 
@@ -211,14 +262,19 @@ Durability first; curation is owned follow-up work.
   evidence: Live-reproduced pre-patch this pass — a project with pyproject.toml + pixi.toml both declaring `mystery-pkg==1.0.0` (an ordinary dual-manifest shape) crashed `scan` end-to-end: `merge_components` keeps `(ecosystem, name, version)` identities distinct, currency resolution is ecosystem-agnostic, both components minted `currency:unknown:mystery-pkg@1.0.0`, and models.py's uniqueness check raised straight through to the internal-error exit with no report. Post-patch the same project emits a full report with one deduped finding (verified live). license.py:638's per-ecosystem dispatch leaves the narrower license-side collision reachable (e.g. conda recipe metadata + pypi metadata both unresolved at the same name+version). Raised by the second-pass Blind Hunter.
 
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN, exactly as split. The hard-crash posture is unchanged: `models.py:650-655` still raises `ValueError` — 'finding ids must be unique (waiver matching and by-id consumers depend on it)' — and `assemble_report` (`report.py:208`) still runs outside the engine seam, so it still falls through to the internal-error exit with no report. The currency half stays patched: `currency.py:854-869` dedupes in-producer (`deduped: dict[str, Finding]`, `deduped.setdefault(finding.id, finding)`). The license half is still unguarded — `license.py` has NO finding-id dedup (its only 'deduplicated' at `:592` is SPDX-classifier ids, a different thing) while `:673-679` still dispatches per-ecosystem, so colliding `license:unknown:<pkg>@<ver>` ids across conda+pypi remain reachable.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
+  verified: 2026-11-11 — still-open — the hard-crash posture stands: models.py:637 still raises on a duplicate finding id. The currency half stays deduped in the producer (currency.py:841-847); license.py has no finding-id dedupe (its only dedupe, license.py:580, is SPDX ids). Read today, not reproduced: `DefaultPolicy.evaluate` drops a repeated id within or across engine results before `assemble_report` (interfaces.py:348-351, called at cli.py:1425), so the license collision probably cannot reach the model check on the `warden scan` path.
+
 ### DW-FU-6-3: Follow-up review still recommended for 6-3-currency-axis-producer-gate-flags after the damping cap was spent
 origin: review-budget-followup
 source_spec: `spec-6-3-currency-axis-producer-gate-flags.md`
+owner: warden
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260723-184834-a653; this entry preserves the lingering recommendation for a deliberate later review.
 status: open
@@ -229,6 +285,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
+verified: 2026-11-11 — still-open — DW-FU-6-3: no review of 6-3-currency-axis-producer-gate-flags exists: `grep -rln 6-3-currency-axis-producer-gate-flags _bmad-output/projects/pyforge-warden/planning-artifacts` exits 0 naming only sprint-status-ledger.yaml and this ledger, and no tracked story spec carries the slug.
+
 ## DW-6-5-1 — The bundled `data/lts-registry.yaml` carries a fixed `updated:` date (currently `2026-07-06`) an…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-5-two-mode-policy-integration.md`
@@ -236,11 +294,15 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   evidence: `currency.py:_REGISTRY_MAX_AGE_DAYS = 180` + `_registry_feed_provenance` derive staleness from the registry's own `updated:` field against wall-clock `now`; `engines.CurrencyEngine.run` appends `currency_stale_finding` whenever `self._gating and (currency_data is None or not currency_data.max_age_ok)`. The registry is a pre-existing 6.3 bundled resource (no writer/refresh script exists, only the manual CFE-source re-copy); 6.5 only makes its staleness gate-relevant. Two conformance tests that compared gated-vs-unconfigured findings against the live registry were made time-robust this pass (they now exclude the gate-only `indeterminate:currency-registry-*` provenance id from the producer-invariance comparison), but the underlying operational aging is not a test artifact. Raised by the Blind Hunter review pass (fail-closed, medium).
 
   status: open
+  severity: medium
+  owner: warden
 
   verified: 2026-07-30 — `data/lts-registry.yaml:35` still carries the fixed `updated: 2026-07-06` — 24 days stale as of this check.
 ## Deferred from: follow-up code review of spec-6-5-two-mode-policy-integration (2026-07-24, bmad-dev-auto follow-up review pass)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-5-two-mode-policy-integration.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — DW-6-5-1: data/lts-registry.yaml:35 still reads `updated: 2026-07-06` and currency.py:195 keeps `_REGISTRY_MAX_AGE_DAYS = 180` (applied at currency.py:429), so the bundled registry reads stale from 2027-01-02; DW-warden-cutover-2026-11-10-5 carries the refresh.
 
 ## DW-6-5-2 — The `warn-as-error` exit projection leaves no trace anywhere in the output — the report persists…
 
@@ -249,10 +311,14 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   evidence: `report.assemble_report` threads `warn_as_error` ONLY into `exit_code_for(warn_is_error=…)`; `render_text` has the `--warn-only` nudge (report.py) but no warn-as-error counterpart. Raised independently by BOTH the Blind Hunter and the Edge Case Hunter this pass. Pre-existing angle: `verdict.exit_code_for`'s `warn_is_error` knob shipped (tested) in 1.1/1.2 with no surfaced provenance; 6.5 only made it CLI/TOML-reachable.
 
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — `report.py:229/:464` thread `warn_as_error` only into `exit_code_for(warn_is_error=…)`. It appears 0 times in `models.py` and 0 times in `data/report-schema.json`, so the projection still leaves no trace in the report body.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-5-two-mode-policy-integration.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — `warn_as_error` reaches only `exit_code_for(warn_is_error=...)` (report.py:481); models.py and data/report-schema.json carry no such field, and `render_text` (report.py:689) prints no note for it.
 
 ## DW-6-5-3 — Under an active gate with an absent/stale feed, `CurrencyEngine.run` (deliberately mirroring `Os…
 
@@ -261,11 +327,15 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   evidence: `engines.CurrencyEngine.run` sets `deps_assessed=inventory.count` unconditionally before the gated `currency_stale_finding` append; `_kev_enrichment` is the shipped precedent 6.5 was contractually required to mirror ("exactly as `_kev_enrichment` gates on `fail_on_kev`"). Raised by the Blind Hunter review pass; internally coherent with 6.4, but 6.5 is the story that made the dissonance reachable on a second axis.
 
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN, and the ordering the entry describes is visible in one screen. `engines.py:1850-1857` appends `currency_stale_finding(unavailable=currency_data is None)` under the gate, and the coverage block immediately after at `:1863` still sets `deps_assessed=inventory.count` unconditionally — so the same `EngineResult` reports 100% assessed alongside the whole-axis `indeterminate` provenance finding. The 6.4 mirror is intact too (`LicenseEngine` at `:1804` has the identical shape), so this is still the cross-axis coverage-semantics decision the entry called for, not a currency-local fix.
 ## Deferred from: code review of spec-6-7-epss-feed-the-min-epss-gate (2026-07-24, Blind Hunter + Edge Case Hunter)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-5-two-mode-policy-integration.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — DW-6-5-3: `CurrencyEngine.run` appends the whole-axis stale finding (engines.py:1976-1985) and still reports `deps_assessed=inventory.count` (engines.py:1992); `LicenseEngine` keeps the same shape (engines.py:1937).
 
 ## DW-6-7-1 — `OsvParse.kev_candidates` (the finding.id -> CVE-alias-tuple mapping populated at OSV-parse time…
 
@@ -274,10 +344,14 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   evidence: `vuln.py`'s `OsvParse.kev_candidates` field (Story 6.4) is read verbatim by both `engines._stamp_kev` and the new `engines._stamp_epss` (Story 6.7's Boundaries explicitly mandate this reuse — "no new candidate-collection mechanism"). Raised by the Blind Hunter review pass (naming/maintainability, not a behavior defect).
 
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — `OsvParse.kev_candidates` is unchanged and now has a second consumer — `vuln.py:85` records that Story 6.7 'reuses `OsvParse.kev_candidates` verbatim'; see also `:122` and `:915`.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-7-epss-feed-the-min-epss-gate.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — the field is still `kev_candidates` (vuln.py:964) and still feeds EPSS too (vuln.py:85, vuln.py:1127).
 
 ## DW-6-7-2 — The EPSS cache reuses `feeds.DEFAULT_FEED_MAX_AGE_DAYS` (7 days) unchanged — the same shared con…
 
@@ -286,11 +360,15 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   evidence: `feeds.py`'s `_epss_enrichment`/`epss_cache_path` reuse `feeds.DEFAULT_FEED_MAX_AGE_DAYS` (7) with no EPSS-specific override; no code path in this diff computes or considers EPSS's real-world update frequency. Raised by the Blind Hunter review pass (product/tuning, not a code defect).
 
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — No EPSS-specific max-age constant exists; the EPSS path still resolves through `feeds.DEFAULT_FEED_MAX_AGE_DAYS` (`feeds.py:98`).
 ## Deferred from: follow-up code review of spec-6-7-epss-feed-the-min-epss-gate (2026-07-24, bmad-dev-auto follow-up review pass)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-7-epss-feed-the-min-epss-gate.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — DW-6-7-2: EPSS still uses the shared seven-day age (feeds.py:99, read for EPSS at engines.py:1368); no EPSS-specific age exists.
 
 ## DW-6-7-3 — The real FIRST.org EPSS feed (~290k rows, republished daily) was poured into cache conventions s…
 
@@ -299,10 +377,14 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   evidence: KEV's shipped catalog is ~1.3k entries vs EPSS's ~290k published rows; `feeds.write_epss_cache` mirrors `write_kev_cache`'s `indent=2, sort_keys=True` verbatim (spec boundary: "siblings of the KEV trio, same shape"); `engines._epss_enrichment` calls `feeds.load_epss_scores(path)` unconditionally per run with no memoization. Raised by the follow-up Blind Hunter pass (real-feed performance regression invisible to the suite).
 
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN on all three counts. (1) Pretty-printing unchanged: `feeds.py:249`, `:318` and `:406` all still call `json.dump(document, fh, indent=2, sort_keys=True)` — the EPSS copy at `:406` still mirrors KEV's shape verbatim. (2) No memoization: `load_epss_scores` (`feeds.py:334`) still does a whole-file `path.read_text()` then `json.loads(raw)`, and `engines.py:1212` still calls it per-run with no `lru_cache`/`@cache` anywhere in `engines.py` or `feeds.py`. (3) The refresh script still holds all four buffers live: `scripts/refresh_epss_feed.py:80` `raw_gzip = response.read()`, `:82` `gzip.decompress(raw_gzip).decode("utf-8")`, `:92` `raw_csv.splitlines()`. One change since authoring, and it cuts the wrong way: a review added a per-entry finite/`[0,1]` domain filter inside `load_epss_scores`, so every one of the ~290k entries now costs slightly MORE per load, not less.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-7-epss-feed-the-min-epss-gate.md, scripts/refresh_epss_feed.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — all three counts hold. The cache writers still pretty-print (feeds.py:239, :287, :357, now through `atomic_write_text`); `load_epss_scores` still reads and parses the whole file (feeds.py:315, :319) on every run (engines.py:1361) with no memoization; pyforge-warden/scripts/refresh_epss_feed.py:80, :82 and :92 still hold the gzip, the decoded text and the split lines at once.
 
 ## DW-6-7-4 — The `feeds.py` atomic-write shape now carries FOUR copies of a latent double-close: if `json.dum…
 
@@ -323,11 +405,15 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   evidence: `grep -l "def run_scan" tests/conformance/` matches test_scan_harness.py, test_kev_enrichment.py, and test_epss_enrichment.py; `def load_schema` additionally in test_report_schema.py; Story 6.7's file re-copies were spec-directed ("mirrors test_kev_enrichment.py's 10-test structure"). Raised by the follow-up Blind Hunter pass (maintainability, not behavior).
 
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN and MEASURABLY WORSE — the duplication roughly doubled while the prescribed fix was never started. There is still no `tests/conformance/conftest.py` (file does not exist). Counted by hand today vs the entry's own figures: `def run_scan` 3 → **5** files (adds `test_engine_parallelism.py`, `test_fix_pr_actuator.py`); `def parse_report` 3 → **6** (adds those two plus `test_dogfood.py`); `def load_schema` 4 → **8** (adds `test_engine_parallelism.py`, `test_fix_pr_actuator.py`, `test_baseline_grandfathering.py`, `test_dogfood.py`). `_osv_scanner_bin` sits in 4 files and `_load_osv_builder` in 2. A schema-path or CLI-invocation change now needs EIGHT synchronized edits, not four.
 ## Deferred from: code review of spec-6-8-baseline-grandfathering (2026-07-24, bmad-dev-auto review pass)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-7-epss-feed-the-min-epss-gate.md, tests/conformance/conftest.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — DW-6-7-5: wider again. Under pyforge-warden/tests, `def run_scan` is in 5 files, `def parse_report` in 6 and `def load_schema` in 10 (8 integration modules and 2 unit modules); the conformance suite now lives in pyforge-warden/tests/integration/ (e.g. pyforge-warden/tests/integration/test_scan_harness.py:69) and still has no shared helper module.
 
 ## DW-6-8-1 — `architecture.md`'s "Project Structure" tree (§ around the `waiver.py`/`report.py`/`verdict.py`…
 
@@ -336,11 +422,15 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   evidence: `_bmad-output/planning-artifacts/architecture.md`'s "Project Structure" tree (the block containing `waiver.py               # FR24-26 — .yaml read (safe_load) + --bypass stanza (safe_dump)`) has no sibling entries for any Epic 6 module; the separate "Module structure" list a few hundred lines earlier in the same file DOES track them (and was corrected by this review pass for the baseline/waiver consolidation). Raised by the Blind Hunter review pass (documentation drift, not a code defect).
 
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN, decisively — the tree is unchanged. `planning-artifacts/architecture/architecture-pyforge-warden-2026-07-14/ARCHITECTURE-SPINE.md:265-300` still lists `waiver.py` with the exact stale comment this entry quoted ('# FR24-26 — .yaml read (safe_load) + --bypass stanza (safe_dump)', no FR39 baseline mention) and carries NO entry for `license.py`, `currency.py`, `feeds.py` or `actuator.py`. The entry's distinction also still holds: those modules DO appear elsewhere in the same file (the 'Module structure' list — license.py ×1, currency.py ×1, feeds.py ×6, actuator.py ×2), just never in the Project Structure tree. Note `:238` declares that tree 'authoritative' where the two disagree, so the stale copy is the one that wins.
 ## Deferred from: follow-up code review of spec-6-8-baseline-grandfathering (2026-07-24, bmad-dev-auto follow-up review pass)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/planning-artifacts/architecture.md, _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-8-baseline-grandfathering.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — DW-6-8-1: the Project Structure tree still lists `waiver.py` with the stale comment (_bmad-output/projects/pyforge-warden/planning-artifacts/architecture/architecture-pyforge-warden-2026-07-14/ARCHITECTURE-SPINE.md:298) and no `license.py`, `currency.py`, `feeds.py` or `actuator.py`; they appear only in the module list (ARCHITECTURE-SPINE.md:231-238).
 
 ## DW-6-8-2 — `--baseline-emit` stamps every proposed entry with `expires_at = now + waiver_default_expiry_day…
 
@@ -349,10 +439,14 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   evidence: `cli.py`'s `--baseline-emit` block calls `emit_baseline_stanza(rungs, now=now, expiry_days=config.waiver_default_expiry_days)`; `config.py` defines `waiver_default_expiry_days: int = 14` with no baseline-specific sibling; the 6.8 review pass added the disclosure to the flag's help text but deliberately did not invent a new config surface. Raised by the follow-up Blind Hunter pass (lifecycle/product tuning, not a code defect).
 
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — `cli.py:686` still documents the stamp as `expires_at = now + waiver_default_expiry_days`; behaviour unchanged.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-8-baseline-grandfathering.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — `--baseline-emit` still stamps with `config.waiver_default_expiry_days` (cli.py:1568), default 14 (config.py:253); no baseline-specific key exists.
 
 ## DW-6-8-3 — An EXPIRED suppression (waiver or baseline) is invisible in the machine-readable contract: `supp…
 
@@ -361,10 +455,14 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   evidence: `report.py` threads `expired_waivers`/`expired_baseline` into `render_text` only; `assemble_report`/`ComplianceReport` accept no expired-notice input; `report-schema.json` has no expired-suppression slot anywhere; conformance test `test_expired_baseline_entry_reblocks_the_finding` shows the JSON document with `suppressions=[]` and no other machine-readable trace. Raised by the follow-up Blind Hunter pass (observability gap in the primary CI surface).
 
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — Neither `models.py` nor `data/report-schema.json` contains any `expired` handling — an expired suppression is still invisible in the machine-readable contract.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-8-baseline-grandfathering.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — expired notices still reach only `render_text` (report.py:693); models.py and data/report-schema.json have no expired-suppression field (no `expired` in either file).
 
 ## DW-6-8-4 — `report-schema.json`'s top-level `suppressions` description (the `"description"` string on the `…
 
@@ -373,10 +471,14 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   evidence: `src/pyforge/warden/data/report-schema.json` line ~150: "Story 6.1 populates only the waiver half; absent/[] on a scan with no applied waivers." vs line ~551's suppressedFinding description: "(Story 6.1 wires the waiver half; Story 6.8 the baseline half)". The file is absent from the 6.8 diff (spec Always-constraint: "models.py/report-schema.json are UNTOUCHED"). Raised by the follow-up Blind Hunter pass (stale contract prose, no behavioral impact — descriptions are non-normative).
 
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN, and both halves of the self-contradiction are still in the file verbatim. `data/report-schema.json:150` still reads 'Story 6.1 populates only the waiver half; absent/[] on a scan with no applied waivers.' while `:551` already says '(Story 6.1 wires the waiver half; Story 6.8 the baseline half)'. Still a one-string fix awaiting a story permitted to touch the schema file.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-8-baseline-grandfathering.md, src/pyforge/warden/data/report-schema.json); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — the stale description is still at data/report-schema.json:150 ('Story 6.1 populates only the waiver half'), against data/report-schema.json:555.
 
 ## DW-6-8-5 — `load_waivers` still parses with plain `yaml.safe_load`, which silently keeps the LAST of two du…
 
@@ -385,11 +487,15 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   evidence: `waiver.py`'s `load_waivers` uses `yaml.safe_load(handle)` directly; `_UniqueKeySafeLoader` (added by the 6.8 follow-up review) is wired into `load_baseline` only, with its docstring explicitly recording "load_waivers deliberately keeps stock yaml.safe_load (this story may not alter the waiver-only path)". Confirmed empirically by the Edge Case Hunter pass (PyYAML last-wins on duplicate keys, both loaders affected pre-fix).
 
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — `waiver.py:508-520` still parses with plain `yaml.safe_load` and its own docstring reaffirms safe_load-only; no duplicate-key guard was added.
 ## Deferred from: code review of spec-5-1-actionable-diagnostics-safe-by-default-posture (2026-07-24, Blind Hunter + Edge Case Hunter)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-8-baseline-grandfathering.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — DW-6-8-5: `load_waivers` still parses with plain `yaml.safe_load` (waiver.py:469); `_UniqueKeySafeLoader` (waiver.py:475) still serves the baseline loader only.
 
 ## DW-5-1-1 — A hygiene-axis remediation line's manifest+location clause is frequently unavailable because `hy…
 
@@ -397,20 +503,28 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   summary: A hygiene-axis remediation line's manifest+location clause is frequently unavailable because `hygiene.py`'s `_record_to_finding` sets `Finding.subject` to deptry's raw import-module name (e.g. `yaml`, `bs4`, `PIL`, `sklearn`), not the declaring distribution/component name — and this codebase has no existing correlation table from an import name back to a component. `render_text`'s manifest-location lookup (keyed by component name, now also by `pypi_identity.name`) simply omits the clause for these cases, which is spec-compliant (AC1 says "(when known)") but leaves the location half of AC1's promise silently absent for a large share of real-world hygiene findings. A real fix needs an import-name→distribution mapping, which is a substantially larger effort (adjacent to `mapping.py`'s domain) than this story's scope.
   evidence: `hygiene.py:543` sets `subject=module` (the raw deptry-reported import name); the module's own docstring (lines ~17-22) already documents that a module name is "not a distribution name" and cites real examples (PyYAML→yaml, beautifulsoup4→bs4, Pillow→PIL, scikit-learn→sklearn). Raised by the Blind Hunter review pass.
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — `hygiene.py:543` still sets `subject=module` (deptry's raw import name). No import-name→distribution correlation table was added, so the manifest-location clause is still silently omitted for hygiene findings.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-1-actionable-diagnostics-safe-by-default-posture.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — hygiene.py:525 still sets `subject=module` (deptry's import name); the package has no import-name to distribution table.
 
 ## DW-5-1-2 — `--doctor` silently no-ops every other `scan` flag it's combined with (`--sbom-output`, `--basel…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-1-actionable-diagnostics-safe-by-default-posture.md`
   summary: `--doctor` silently no-ops every other `scan` flag it's combined with (`--sbom-output`, `--baseline`, `--fail-on`, `--allow-licenses`/`--deny-licenses`, `--warn-only`, `--open-fix-prs`/`--fix-prs-dry-run`, etc.) since `_run_doctor` dispatches before any of them are read, with no warning that they were ignored. Low-priority UX polish (no incorrect security/policy behavior results — the flags are simply never consulted), not a functional defect; a future story could add a stderr note when `--doctor` coexists with a policy-affecting flag.
   evidence: `main()`'s `if args.doctor: return _run_doctor(args)` branch (cli.py) precedes `return _run_scan(args)` unconditionally; `_run_doctor` never reads any flag other than `args.path`/`args.format`. Raised by the Blind Hunter review pass.
-  status: open
+  status: done 2026-11-11
+  severity: low
+  owner: warden
   verified: 2026-07-30 — `cli.py:258` still returns `_run_doctor(args)` strictly before the scan path, so every other `scan` flag is still silently no-op'd when `--doctor` is passed.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-1-actionable-diagnostics-safe-by-default-posture.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — done — the fix landed in Story 5.1's own review (2026-07-24, merge d42acfa42a): `_run_doctor` diffs the parsed args against the scan defaults and names every ignored flag on stderr (cli.py:853-877), and pyforge-warden/tests/unit/test_cli_doctor.py:339 pins it. The 2026-07-30 and 2026-09-02 lines read only the dispatch at cli.py:772-774.
 
 ## DW-5-1-3 — `report._remediation_line`'s vuln branch recovers the advisory id for display by re-splitting th…
 
@@ -418,10 +532,14 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   summary: `report._remediation_line`'s vuln branch recovers the advisory id for display by re-splitting the finding id (`finding_id.split(":", 2)[1]`), which is already percent-escaped (`_sanitize_id_segment` ran when the id was constructed in `vuln.py`) rather than the raw advisory id available at `Finding`-construction time. A grammar-legal advisory id containing a colon or newline would render its escaped form (e.g. `%3A`) in the human-facing remediation text. Practically unreachable — every real-world advisory id format (GHSA-/CVE-/PYSEC-) never contains a colon or newline — so deferred rather than patched now; a real fix needs either threading the raw advisory id through a second render_text-only side channel or a correct reverse-`_sanitize_id_segment` unescaper.
   evidence: `report.py`'s `_remediation_line` vuln branch splits `finding["id"]` to recover the advisory-id display segment; `vuln.py`'s `_sanitize_id_segment` (via `interfaces._sanitize_id_segment`) already ran on that segment when the id was built. Raised by the Blind Hunter review pass.
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN, and the pattern has spread. `report.py:619` still recovers the advisory id with `_, advisory_id, _ = finding_id.split(":", 2)` on the already-percent-escaped segment. Three sibling branches now do the same re-split — `:638` (code), `:657` and `:680` (reason) — so a reverse-unescape fix would have four call sites, not one. Still practically unreachable for real GHSA-/CVE-/PYSEC- ids.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-1-actionable-diagnostics-safe-by-default-posture.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — report.py:636 still re-splits the escaped id, as do report.py:655, :668 and :682.
 
 ## DW-5-1-4 — `tests/conftest.py`'s comment describing the ambient offline OSV DB fixture still claims "its ON…
 
@@ -429,10 +547,14 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   summary: `tests/conftest.py`'s comment describing the ambient offline OSV DB fixture still claims "its ONE seeded advisory (`PDOS-FIXTURE-0001`, package `pdos-vuln-fixture`)" — already stale before this story (a `PDOS-FIXTURE-0002` record already existed), and this story's own new `PDOS-FIXTURE-0003` fixture (added for fixed-version extraction coverage) compounds the inaccuracy further. Pre-existing documentation drift, not caused by this story; a one-line comment fix whenever `conftest.py` is next touched.
   evidence: `tests/conftest.py` (~line 277-279) vs `tests/fixtures/osv-db/pypi/` containing `PDOS-FIXTURE-0001.json`, `PDOS-FIXTURE-0002.json`, and (as of this story) `PDOS-FIXTURE-0003.json`. Raised by the Blind Hunter review pass.
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN and now understated by one more fixture than when written. `tests/conftest.py:278` still claims the single '(`PDOS-FIXTURE-0001`, package `pdos-vuln-fixture`)', while `tests/fixtures/osv-db/pypi/` holds FOUR records: `PDOS-FIXTURE-0001.json`, `-0002.json`, `-0003.json` and `PDOS-KEV-FIXTURE-0001.json` — the KEV fixture landed after this entry was authored.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/3 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-1-actionable-diagnostics-safe-by-default-posture.md, tests/conftest.py, tests/fixtures/osv-db/pypi/); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — pyforge-warden/tests/conftest.py:271-272 still names one seeded advisory, while pyforge-warden/tests/fixtures/osv-db/pypi/ holds four records (PDOS-FIXTURE-0001 to -0003 and PDOS-KEV-FIXTURE-0001).
 
 ## DW-5-1-5 — The literal argv `["deptry", "--version"]` / `["osv-scanner", "--version"]` now exists independe…
 
@@ -441,11 +563,15 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   evidence: `engines.py` — `DeptryEngine.run`'s pre-flight, `OsvEngine.run`'s pre-flight, and the new `run_doctor_checks` each declare the same two argv literals locally. Raised by the Blind Hunter review pass.
 
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — The literal argv still exists at FOUR sites: `engines.py:725`, `:732`, `:947`, `:1485`.
 ## Deferred from: follow-up code review of spec-5-1-actionable-diagnostics-safe-by-default-posture (2026-07-24, bmad-dev-auto follow-up review pass)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-1-actionable-diagnostics-safe-by-default-posture.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — DW-5-1-5: the argv literals sit at four sites: engines.py:898 and :905 (doctor), engines.py:1113 (deptry) and engines.py:1628 (osv-scanner).
 
 ## DW-5-1-6 — `vuln._extract_fixed_version` takes the FIRST well-formed `fixed` event in document order (an in…
 
@@ -453,9 +579,13 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   summary: `vuln._extract_fixed_version` takes the FIRST well-formed `fixed` event in document order (an intent-contract-recorded design decision), which for real multi-branch backport advisories (Django/DRF/cryptography-style — one `affected[]` entry or range per release series, oldest branch listed first) typically yields the OLDEST branch's fix, so the remediation line can advise "upgrade django to >= 3.2.20 to resolve GHSA-…" to a user whose installed 4.2.1 already satisfies that bound — self-contradictory, unactionable advice. Taking the MAX well-formed fixed event instead would be universally sufficient (upgrading to the highest fixed version always resolves the advisory) at identical cost and still without any semver-range resolution — but "take the FIRST well-formed fixed event" is written inside the spec's intent contract (Block If), so changing the selection rule needs a spec-level decision, not a review patch.
   evidence: `vuln.py`'s `_extract_fixed_version` returns on the first `isinstance(fixed, str) and fixed` hit across `affected[].ranges[].events[]` in document order; the 5.1 spec's Block If section records "take the FIRST well-formed fixed event found for that advisory … do not build a full semver-range resolver". Both the initial Blind Hunter pass's wording concern ("to resolve" overclaims sufficiency) and this follow-up pass's oldest-branch scenario describe the same selection-rule root cause. Raised by the follow-up Blind Hunter pass.
   status: open
+  severity: low
+  owner: warden
   verified: 2026-07-30 — `vuln.py:744-750` — `_extract_fixed_version`'s own docstring still specifies the FIRST well-formed `fixed` event in document order.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-1-actionable-diagnostics-safe-by-default-posture.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — `_extract_fixed_version` still takes the first well-formed `fixed` event in document order (vuln.py:782-784).
 
 ## DW-5-1-7 — The remediation line's manifest-location clause unions provenance across ALL same-named componen…
 
@@ -464,11 +594,15 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   evidence: `cli.py`'s `manifest_locations` build unions `component.provenance` per canonicalized name with no version key; `inventory.py` documents that distinct versions of one name stay distinct components, each with its own provenance. Raised by the follow-up Blind Hunter pass.
 
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — `cli.py:1268-1282` still builds `manifest_locations` with no version component: `keys = [_canonical_subject_key(component.name)]` (`:1277`), optionally plus the pypi identity (`:1279`), then unions provenance on collision (`:1281-1282`). A version-bearing finding still renders every same-named component's manifests, including those declaring only the non-vulnerable version.
 ## Deferred from: second follow-up code review of spec-5-1-actionable-diagnostics-safe-by-default-posture (2026-07-24, bmad-dev-auto third review pass)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-1-actionable-diagnostics-safe-by-default-posture.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — DW-5-1-7: the map moved to manifest_locations.py (Story 16.6) and still keys by name only: manifest_locations.py:38-42 unions provenance per canonical name, with no version.
 
 ## DW-5-1-8 — The `manifest_locations` lookup applies PEP-503 canonicalization (`_canonical_subject_key`) to E…
 
@@ -477,14 +611,19 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   evidence: `cli.py`'s `manifest_locations` build canonicalizes `component.name` unconditionally (`keys = [_canonical_subject_key(component.name)]`) and unions provenance on key collision; `report._canonical_subject_key`'s own docstring justification ("two spellings that collapse together ARE the same PyPI package") holds only for PyPI-namespace names, while the dict is also keyed by conda-native `component.name` for conda/pixi-sourced components. Raised independently by both the Blind Hunter and Edge Case Hunter of the third review pass.
 
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — same code block, the other defect. `cli.py:1277` still applies `_canonical_subject_key(component.name)` unconditionally, with no exact-match-first tier, so conda separator-twins (`importlib-metadata` vs `importlib_metadata` — genuinely distinct conda-forge packages) still collapse to one key and can cross-name each other's manifests.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-1-actionable-diagnostics-safe-by-default-posture.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
+  verified: 2026-11-11 — still-open — manifest_locations.py:38 still canonicalizes every component name with `_canonical_subject_key`, conda names included; there is no exact-match tier.
+
 ### DW-FU-5-1: Follow-up review still recommended for 5-1-actionable-diagnostics-safe-by-default-posture after the damping cap was spent
 origin: review-budget-followup
 source_spec: `spec-5-1-actionable-diagnostics-safe-by-default-posture.md`
+owner: warden
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260724-162245-3440; this entry preserves the lingering recommendation for a deliberate later review.
 status: open
@@ -495,16 +634,22 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
+verified: 2026-11-11 — still-open — DW-FU-5-1: no review of 5-1-actionable-diagnostics-safe-by-default-posture exists: `grep -rln 5-1-actionable-diagnostics-safe-by-default-posture _bmad-output/projects/pyforge-warden/planning-artifacts` exits 0 naming only sprint-status-ledger.yaml and this ledger.
+
 ## DW-5-2-1 — The new `ThreadPoolExecutor`-based 4-axis engine fan-out in `cli.py`'s `_run_scan` changes SIGIN…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-2-fleet-scale-validation-corpus-oracle-maturation.md`
   summary: The new `ThreadPoolExecutor`-based 4-axis engine fan-out in `cli.py`'s `_run_scan` changes SIGINT latency versus the pre-5.2 sequential loop — `with ThreadPoolExecutor(...) as pool:`'s `__exit__` unconditionally calls `shutdown(wait=True)`, so a `KeyboardInterrupt` raised while `future.result()` is blocked must wait for every already-started engine (including any in-flight deptry/osv-scanner subprocess) to finish before it can propagate, whereas the old loop had at most one engine in flight at a time.
   evidence: `concurrent.futures.Executor.__exit__` hardcodes `self.shutdown(wait=True)`, not parameterizable via the context-manager form; fixing this correctly needs manual `pool.shutdown(wait=False, cancel_futures=True)` handling in an except-path around `future.result()`, which touches interrupt-sensitive code (this project already has an explicit top-level `except KeyboardInterrupt`/exit-130 contract in `main()`) — a deliberate, focused change rather than a same-pass patch. Raised independently by both the Blind Hunter and Edge Case Hunter of the Story 5.2 review pass.
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — `cli.py:1345` still uses the context-manager form `with ThreadPoolExecutor(max_workers=len(engines_to_run)) as pool:`, whose `__exit__` hardcodes `shutdown(wait=True)`. Zero occurrences of `cancel_futures` or an explicit `pool.shutdown(` anywhere in `cli.py`, so the SIGINT-latency behaviour is exactly as described.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-2-fleet-scale-validation-corpus-oracle-maturation.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — cli.py:1374 still uses `with ThreadPoolExecutor(...) as pool:`, and cli.py has no `cancel_futures` and no explicit `pool.shutdown(`.
 
 ## DW-5-2-2 — `test_extraction_oracle.py`'s corpus-scale comparison excludes any manifest whose raw text match…
 
@@ -512,10 +657,14 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   summary: `test_extraction_oracle.py`'s corpus-scale comparison excludes any manifest whose raw text matches `_EXCLUDED_CONSTRUCT_RE` (`compiler(`/`stdlib(`/`pin_subpackage(`) via a plain substring search over the WHOLE file, not parsed structure — a file that merely mentions one of those strings in a comment or a string literal (e.g. an `about.summary` describing "wraps stdlib(json)") is needlessly excluded from the strict per-file comparison, silently and unmeasurably reducing oracle coverage.
   evidence: `_EXCLUDED_CONSTRUCT_RE.search(text)` runs against the full file text read from disk, not against parsed YAML values; conservative in direction (under-compares rather than mis-compares) so it is safety-neutral, not a correctness bug, but a structural (AST-aware) exclusion would be more precise. Raised by the Blind Hunter of the Story 5.2 review pass.
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN, at two call sites rather than the one implied. `tests/conformance/test_extraction_oracle.py:87` still defines `_EXCLUDED_CONSTRUCT_RE = re.compile(r"compiler\(|stdlib\(|pin_subpackage\(")` and it is still applied as a raw-text `.search(text)` over the whole file at BOTH `:424` and `:480`. No AST-aware exclusion was introduced.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-2-fleet-scale-validation-corpus-oracle-maturation.md, tests/conformance/test_extraction_oracle.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — pyforge-warden/tests/integration/test_extraction_oracle.py:87 still defines the raw-text `_EXCLUDED_CONSTRUCT_RE`, applied to the whole file at :408 and :462.
 
 ## DW-5-2-3 — `scripts/harvest_corpus.py`'s `write_sources_md` hardcodes the 3-bullet "Hand-authored" descript…
 
@@ -523,9 +672,13 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   summary: `scripts/harvest_corpus.py`'s `write_sources_md` hardcodes the 3-bullet "Hand-authored" description list in prose rather than deriving it from `_HANDAUTHORED_FIXTURES`, so adding/renaming/removing an entry in that dict silently leaves `SOURCES.md`'s prose out of sync with what is actually on disk (the `handauthored` parameter passed into the function is unused, deliberately `del`'d).
   evidence: `write_sources_md`'s hand-authored section is a fixed `lines` literal, unlike its own upstream half (`upstream_lines`, derived live from `_UPSTREAM_OUT.iterdir()`); making the two symmetric needs each `_HANDAUTHORED_FIXTURES` entry to carry a human-readable description alongside its content, a moderate refactor of a dev-only maintenance script. Raised by the Blind Hunter of the Story 5.2 review pass.
   status: open
+  severity: low
+  owner: warden
   verified: 2026-07-30 — `scripts/harvest_corpus.py:332` still emits the literal `"## Hand-authored"` heading.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-2-fleet-scale-validation-corpus-oracle-maturation.md, scripts/harvest_corpus.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — pyforge-warden/scripts/harvest_corpus.py:332 still writes the fixed 'Hand-authored' list, and :350 still discards the `handauthored` argument.
 
 ## DW-5-2-4 — `test_perf_overhead.py`'s `REPRESENTATIVE_TARGET` hardcodes a single corpus feedstock path (`rec…
 
@@ -534,11 +687,15 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   evidence: `test_perf_overhead.py` references the literal path once, with no fallback/discovery logic if it is absent; low likelihood (an established, actively-maintained feedstock) and low consequence (a loud, clearly-worded test failure rather than a silent gap) but a real edge case. Raised by the Edge Case Hunter of the Story 5.2 review pass.
 
   status: open
+  severity: low
+  owner: warden
 
   verified: 2026-07-30 — `tests/conformance/test_perf_overhead.py:53` still hardcodes `REPRESENTATIVE_TARGET`, asserted present at `:96`.
 ## Deferred from: follow-up code review of spec-5-2-fleet-scale-validation-corpus-oracle-maturation (2026-07-24, bmad-dev-auto follow-up review pass)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/3 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-2-fleet-scale-validation-corpus-oracle-maturation.md, tests/conformance/test_perf_overhead.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — DW-5-2-4: pyforge-warden/tests/integration/test_perf_overhead.py:53 still hardcodes `types-lxml` (asserted at :90); the fixture is present today (pyforge-warden/tests/fixtures/corpus/recipes/types-lxml).
 
 ## DW-5-2-5 — No CI workflow or scheduled runner ever executes the new `pyforge-warden-test-corpus-oracle` pix…
 
@@ -546,9 +703,13 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   summary: No CI workflow or scheduled runner ever executes the new `pyforge-warden-test-corpus-oracle` pixi task (`-m slow`), and Story 5.2's whole-module slow-marking moved the 4 pre-existing precision differential-oracle tests (Stories 2.2/2.3) out of the default `pyforge-warden-test` loop with it — so an extractor change that breaks render-parity on the precision fixtures now merges green through the default gate and only surfaces whenever someone manually remembers to run the slow task, far from the offending commit.
   evidence: A sweep of `.github/workflows/` shows no workflow references any pyforge-warden pixi task (pre-existing — the default task was never CI-wired either, but it IS the loop's canonical verify command, which the slow task is not); `pixi.toml`'s `pyforge-warden-test` now carries `-m "not slow"` and `test_extraction_oracle.py` is module-marked slow per the spec's own recorded deviation. Fixing needs repo-level CI/scheduler wiring (out of the story's package scope). Raised by the follow-up Blind Hunter pass.
   status: open
+  severity: medium
+  owner: steward
   verified: 2026-07-30 — No file under `.github/workflows/` references the corpus-oracle or corpus-test task — nothing schedules or gates it.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/2 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-2-fleet-scale-validation-corpus-oracle-maturation.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — `git grep -n 'pyforge-warden-test-corpus-oracle' -- .github docs/governance/ci-surfaces.yaml` exits 1: no workflow and no CI surface names the slow lane, defined at pixi.toml:2799. Owner steward: `.github/workflows/` and the CI surface registry are steward's, and the row stays open until steward's lane lands.
 
 ## DW-5-2-6 — `.warden-baseline.yaml`'s first entry hardcodes the running interpreter's patch version in its f…
 
@@ -556,9 +717,13 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   summary: `.warden-baseline.yaml`'s first entry hardcodes the running interpreter's patch version in its finding id (`currency:unknown:!python-runtime@3.14.6`), so any pixi-environment Python bump silently un-matches it — the finding resurfaces un-grandfathered as report noise (an unbypassed WARN; exit 0 is unaffected since WARN never gates) while the stale entry sits dead in the committed file until the next regeneration.
   evidence: `currency.py` builds the id from `sys.version_info[:3]`; the test suite is insulated only because `tests/conftest.py` writes its ambient endoflife feed with the dynamically-computed interpreter version, whereas the committed baseline froze the opposite, brittle strategy. A version-agnostic baseline id would need a Story 6.8 match-semantics change (out of 5.2's validation-only scope). Raised independently by both reviewers of the follow-up pass.
   status: open
+  severity: low
+  owner: warden
   verified: 2026-07-30 — `.warden-baseline.yaml:38` still pins the running interpreter's patch version: `currency:unknown:!python-runtime@3.14.6`.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-2-fleet-scale-validation-corpus-oracle-maturation.md, tests/conftest.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — the entry is already dead: pyforge-warden/.warden-baseline.yaml:38 pins `currency:unknown:!python-runtime@3.14.6`, while `pixi run --frozen -e pyforge-warden python -V` exits 0 printing Python 3.14.7, so that finding is no longer grandfathered.
 
 ## DW-5-2-7 — All 19 entries in the committed `.warden-baseline.yaml` expire simultaneously at 2027-07-24T00:0…
 
@@ -567,11 +732,15 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   evidence: `waiver.py` treats an expired exact-id match as unmatched (rung left blocking, expired-notice collected) and `verdict.py` maps INDETERMINATE to exit 1; the six `indeterminate:no-version:*` findings fire in the test environment too, so the failure is deterministic once the wall clock passes the shared expires_at. Expiry-forces-re-review is Story 6.8's intended design — the defect is only the single shared cliff date. Raised independently by both reviewers of the follow-up pass.
 
   status: open
+  severity: medium
+  owner: warden
 
   verified: 2026-07-30 — Confirmed exactly: all 19 entries carry `expires_at: "2027-07-24T00:00:00+00:00"`, and the file's own note at line 31 records the simultaneity.
 ## Deferred: upstream bug report — pixi-build-python path panic (2026-07-25)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-2-fleet-scale-validation-corpus-oracle-maturation.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — DW-5-2-7: all 24 entries of pyforge-warden/.warden-baseline.yaml now share `expires_at: 2027-07-24T00:00:00+00:00` (the file's own note, pyforge-warden/.warden-baseline.yaml:31); the count grew from 19 and the cliff date did not move.
 
 ## DW-CROSS-CUTTING-1 — `pixi-build-python` 0.8.3 panics with an unsigned byte-index underflow (`tools.rs:461`, `end byt…
 
@@ -580,10 +749,14 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   mitigations shipped: (1) `--frozen` on every build line's `[verify]`; (2) loop homes relocated to a short root `~/.bmad-loops/<slug>` via `scripts/bmad-loop-worktree` (`BMAD_LOOP_HOME_ROOT` overrides) — worst-case workDirectory 238 → 192 chars; (3) new-environment lock bootstrap from the short main checkout before a loop line runs frozen.
   related hazard: a *successful* unfrozen re-solve inside a worktree rewrites `pixi.lock` with worktree-absolute `file://` channel paths — toxic to commit via the loop's `git add -A`. Also in the report.
   status: open
+  severity: low
+  owner: marshal
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — the panicking version is still the one pinned. `pixi.lock` resolves `pixi-build-python-0.8.3` on all three platforms (`:3483` linux-64, `:5205` osx-arm64, `:6302` win-64); no bump past the `tools.rs:461` underflow has landed. As with doctor's DW-1-1-2 the trigger is mitigated by the fleet's move to `~/.bmad-loops/` (157–159 char worktree roots vs the ~173 threshold), but the underlying panic is untouched.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 2/2 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — still-open — mitigated, not fixed: pixi.lock now resolves pixi-build-python 0.8.7, not 0.8.3 (pixi.lock:5151, :6930, :8055); whether 0.8.7 fixes the `tools.rs` underflow is not verified here, and the mitigations (short loop-home roots, `--frozen` verify) stand.
 
 ### DW-FU-7-1: SourceEvidence carries no de-duplication across multiple observations of the same PackageIdentity (e.g. a package seen both direct and transitive within one CycloneDX document, or across adapters).
 
@@ -663,13 +836,16 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
 - source_spec: cross-cutting (pyforge-unifying-strategy Grounding Q1–Q8; steward SCP operating-model, §6 revisited)
   summary: Estate OM + CAP-18: shared hook-spec in pyforge-core; Warden Epic 9 is the PR-gate retrofit; this station extracts one process hook spec (today's backend = default plugin).
   owner: station planning (this file) + steward (Canopy FRs) + warden (PR-gate hook specs)
-  status: open
+  status: done 2026-11-11
+  severity: low
   recorded: 2026-08-24
   close_when: steward S-32.1 done; Warden Stories 9.1–9.3 done (PR-gate hook specs; scanners optional plugins; default run green without Checkmarx); no competing CI verdict
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-11-11 — done — every close_when condition holds. Steward 32-1 is done (_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml:220); warden 9.1 to 9.3 are done (_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml:98-100) and on main (`git merge-base --is-ancestor 4104636b34 origin/main` exit 0); the PR-gate hook specs are hooks.py:30-32, and cli.py:1730 keeps Warden the only publisher of the PR-gate verdict.
 
 ### DW-FU-11-2: Whether the suite:AD-9 roster lacking a `tea` entry entirely (never provisioned via `steward provision --module tea`) should make the advisory scanner loudly refuse, distinct from today's silent fail-open when only the binary is absent from PATH.
 
@@ -776,9 +952,11 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   evidence: Story 7.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
   location: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-7-1-sourcecontract-adapters-the-identity-api.md
   origin: dispatch-followup-review
+  owner: warden
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
   status: open
+  verified: 2026-11-11 — still-open — the story spec still records `followup_review_recommended: true` (_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-7-1-sourcecontract-adapters-the-identity-api.md:7), and its Review Triage Log has no follow-up pass.
 
 ### DW-FRR-9-1: Follow-up review still recommended for story 9.1
 
@@ -787,9 +965,11 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   evidence: Story 9.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
   location: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-9-1-warden-publishes-the-pr-gate-hook-book.md
   origin: dispatch-followup-review
+  owner: warden
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
   status: open
+  verified: 2026-11-11 — still-open — the story spec still records `followup_review_recommended: true` (_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-9-1-warden-publishes-the-pr-gate-hook-book.md:8), and its Review Triage Log has no follow-up pass.
 
 ### DW-FRR-9-2: Follow-up review still recommended for story 9.2
 
@@ -798,9 +978,11 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   evidence: Story 9.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
   location: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-9-2-current-scanners-become-optional-plugins.md
   origin: dispatch-followup-review
+  owner: warden
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
   status: open
+  verified: 2026-11-11 — still-open — the story spec still records `followup_review_recommended: true` (_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-9-2-current-scanners-become-optional-plugins.md:8), and its Review Triage Log has no follow-up pass.
 
 ### DW-FRR-9-3: Follow-up review still recommended for story 9.3
 
@@ -809,9 +991,11 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   evidence: Story 9.3 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
   location: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-9-3-default-warden-stays-green-without-checkmarx.md
   origin: dispatch-followup-review
+  owner: warden
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  status: open
+  status: done 2026-11-11
+  verified: 2026-11-11 — done — the follow-up review ran on 2026-10-08 (the 9.3 follow-up dispatch: 0 patches, pyforge-warden-test 2266 passed; archive/.claude/memory/project/story-9-3-follow-up-bmad-build-auto-dispatch-worktree-implem.md:8), the spec reads `followup_review_recommended: false` (_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-9-3-default-warden-stays-green-without-checkmarx.md:8), and its merge is on main (`git merge-base --is-ancestor f36516e340 origin/main` exit 0).
 
 ### DW-warden-14-1: Default pixi-lock solver seam is not exercised end-to-end in CI; unit tests inject the seam only.
 
@@ -833,9 +1017,11 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   evidence: test_flag_off_scan_ignores_npm_lock checks inventory_count==0, not golden JSON equality to pre-story baseline.
   location: src/shared/packages/pyforge-warden/tests/unit/test_non_python_lockfiles.py:125
   origin: spec-deferred 943f3ca4ea90 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  owner: warden
   severity: medium
   promoted: 2026-10-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-11-11 — still-open — the flag-off scan test, now `test_flag_off_scan_ignores_package_lock` (pyforge-warden/tests/unit/test_non_python_lockfiles.py:255-277), still asserts exit 0 and `inventory_count == 0`, not a byte-identical report.
 
 ### DW-warden-16-4-2: I/O matrix rows for mixed Python+npm repo and clean Go module lack automated coverage.
 
@@ -844,9 +1030,11 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   evidence: No fixture combining pyproject.toml with package-lock.json; no go.sum/go.mod hermetic scan test.
   location: src/shared/packages/pyforge-warden/tests/unit/test_non_python_lockfiles.py
   origin: spec-deferred 95114e710134 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  owner: warden
   severity: medium
   promoted: 2026-10-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-11-11 — still-open — pyforge-warden/tests/unit/test_non_python_lockfiles.py has no fixture with both pyproject.toml and package-lock.json, and its only Go test (test_non_python_lockfiles.py:102-109) checks the scan-path helper, not a hermetic clean-module scan.
 
 ### DW-warden-16-4-3: CycloneDX evidence ingestion still calls discover() without native lockfile kinds when CLI flag is on.
 
@@ -855,9 +1043,11 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   evidence: sources.py ManifestSourceAdapter uses default discover(); fleet evidence path may miss native lockfiles.
   location: src/shared/packages/pyforge-warden/src/pyforge/warden/sources.py
   origin: spec-deferred c3e8260a722f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  owner: warden
   severity: low
   promoted: 2026-10-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-11-11 — still-open — `ManifestSourceAdapter` still calls `discovery.discover(self._target)` with no native lockfile kinds (sources.py:345).
 
 ### DW-warden-16-3: Add portal HTTP tests for fleet proposal queue approve/dismiss and flag-off disabled UI.
 
@@ -866,9 +1056,11 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   evidence: Service-layer tests cover approve_proposal; no Client tests hit /stations/warden/fleet/proposals/ views.
   location: src/platform/tests/test_warden_fleet_proposals.py
   origin: spec-deferred 9217b8094f0d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
-  severity: medium (unverified)
+  owner: warden
+  severity: medium
   promoted: 2026-10-08 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-11-11 — still-open — no test drives the portal views with an HTTP client: `fleet_proposal_queue`, `fleet_proposal_approve` and `fleet_proposal_dismiss` (django-warden/src/django_warden_fabric/views.py:254, :271, :297) are named in no test, and src/platform/tests/test_warden_fleet_proposals.py:447-756 calls the service layer. Severity re-read: medium.
 
 ### DW-warden-16-1: Fleet inventory never retires FleetRepo rows for repos deleted or renamed upstream; Story 16.2 still clones them.
 
@@ -877,9 +1069,11 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   evidence: persist_fleet_repos only upserts each listed repo (update_or_create on organisation + full_name); a row whose repo left the listing keeps its last values, and Story 16.2's fleet run iterates every FleetRepo row of the organisation. Retiring or flagging stale rows changes 16.2's fleet-run behaviour, so it needs its own story.
   location: src/shared/packages/django-warden/src/django_warden_fabric/fleet_inventory.py:266
   origin: review send-back — independent review iteration 2, finding N6b (`[minor]` `[defer]`), hand-recorded by the iteration-2 fix pass
+  owner: warden
   severity: medium
   promoted: 2026-10-11 — recorded by hand from the story spec's Review Triage Log
   status: open
+  verified: 2026-11-11 — still-open — `persist_fleet_repos` still only upserts (django-warden/src/django_warden_fabric/fleet_inventory.py:332-344), and the fleet run still iterates every row of the organisation (django-warden/src/django_warden_fabric/tasks.py:281).
 
 ### DW-warden-18-1: Leak guard Rule T compares fixed strings, so a listed term wrapped across lines or written with zero-width or full-width characters passes.
 
@@ -888,9 +1082,11 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   evidence: _leak_guard_violations lowercases each scanned file and tests `term in lower` for each listed term. A multi-word term split by a line break, a term with a zero-width character inside it, or a term in full-width forms matches no listed string. Story 18.1 does not require these cases; a paragraph split is already a recorded residual risk of the spec.
   location: src/platform/tests/test_warden_fleet_inventory.py:859
   origin: review send-back — independent review iteration 1, finding F8 (`[low]` `[defer]`), hand-recorded by the iteration-1 fix pass
+  owner: warden
   severity: low
   promoted: 2026-10-12 — recorded by hand from the story spec's Review Triage Log
   status: open
+  verified: 2026-11-11 — still-open — Rule T is still a fixed-string test, `term in lower` (src/platform/tests/test_warden_fleet_inventory.py:1044), with no Unicode normalization and no line join.
 
 ### DW-warden-103-3-1: `test_warden_keeps_1_for_policy_and_2_for_error` runs in no CI step, so warden's exit-code domain is never checked against doctor's
 
@@ -903,6 +1099,7 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   severity: low
   promoted: 2026-10-17 — recorded with steward Story 103.3's re-review fixes
   status: open
+  verified: 2026-11-11 — still-open — the test still guards with `pytest.importorskip` (tests/scripts/test_exit_code_domains_are_declared.py:61), PINNED_EXCEPTIONS still pins it to this row (tests/scripts/test_pyforge_ci_is_stdlib_only.py:171), and pixi.toml:1093 still records that it skips in every scripts-suite step.
 
 ### DW-warden-egm-2026-11-1: Operator-owned (EGM audit WAR-CL-1, operator ruling 2026-11-01): a live fleet scan and a live approved fix PR need an operator credential; Story 16.6 lands the approve path tested against a fake forge client only.
 
@@ -917,6 +1114,7 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   promoted: 2026-11-01 — EGM audit landing (operator-owned credential decision and live proof)
   reason: credential-bound and outward (a write to a repository outside rxm7706/local-recipes); only the operator does it.
   status: open
+  verified: 2026-11-11 — still-open — operator-owned, so it stays open: CAP-29's intent still says which credential a live fleet scan and an approved draft PR use is not yet ruled (_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/.memlog.md:233), and the approve path still runs against a fake forge only (src/platform/tests/test_warden_fleet_proposals.py:447).
 
 ### DW-warden-egm-2026-11-05-1: A hard-limit kill leaves the clone directory and a RUNNING row (WAR-M-F18)
 
@@ -931,3 +1129,163 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   promoted: 2026-11-05 — EGM audit landing (marshal Story 113.18)
   reason: deferred by triage, so it is not among the 53 the operator accepted, and the re-derive of 2026-11-05 left CAP-26's clause: the operator-started worker can be cleared by hand until a story lands.
   status: open
+  verified: 2026-11-11 — still-open — django-warden/src/django_warden_fabric/tasks.py has no orphan-clone reaper and no run reconciler; cleanup is still a `finally` that a hard-limit kill skips (the per-repo scan, tasks.py:315-316 and :365; the approve, tasks.py:509-510 and :563).
+
+### DW-warden-cutover-2026-11-10-1: The bundled conda-to-pypi map carries no build-time snapshot and nothing checks its age.
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-warden/SPEC.md`; cutover readiness audit 2026-11-10 (`planning-artifacts/research/cutover-readiness-audit-2026-11-10.md`)
+  summary: The bundled conda-to-pypi map carries no build-time snapshot and nothing checks its age.
+  evidence: data/conda_pypi_map.json holds 11,858 name keys and no meta key; mapping.py has no age check; the Spec Constraint 'Bundled data carries its own age' was narrowed to the LTS registry on 2026-11-10.
+  location: src/shared/packages/pyforge-warden/src/pyforge/warden/mapping.py; src/shared/packages/pyforge-warden/scripts/generate_conda_pypi_map.py
+  origin: cutover readiness audit 2026-11-10 (warden Epic 25)
+  owner: warden
+  severity: medium
+  promoted: 2026-11-10 — cutover readiness plan
+  resolution: the narrowed Constraint stands (operator ruling 2026-11-10, operator question Warden 2): no snapshot stamp and no map age gate are built.
+  status: done 2026-11-10
+  verified: 2026-11-11 — done — the ruling is docs/dreams/pyforge-warden.md:276-277 and the narrowed Constraint _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/.memlog.md:261; the map still has 11,858 name keys and no meta key (data/conda_pypi_map.json), and mapping.py has no age check, as the narrowed Constraint says.
+
+### DW-warden-cutover-2026-11-10-2: `--deterministic` is parsed and never read; the SBOM's `serialNumber` and `metadata.timestamp` differ run to run.
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-warden/SPEC.md`; cutover readiness audit 2026-11-10 (`planning-artifacts/research/cutover-readiness-audit-2026-11-10.md`)
+  summary: `--deterministic` is parsed and never read; the SBOM's `serialNumber` and `metadata.timestamp` differ run to run.
+  evidence: cli.py:56-58 and :480-487 call the flag a documented no-op; no module reads args.deterministic; sbom.py:36-40 says both SBOM fields stay volatile in v1. CAP-10 and the Determinism Constraint were re-worded on 2026-11-10 to say so.
+  location: src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py; src/shared/packages/pyforge-warden/src/pyforge/warden/sbom.py
+  origin: cutover readiness audit 2026-11-10 (warden Epic 25)
+  owner: warden
+  severity: medium
+  promoted: 2026-11-10 — cutover readiness plan
+  resolution: the re-worded Spec stands (operator ruling 2026-11-10, operator question Warden 6): `--deterministic` stays reserved, the report is byte-identical by default, and the SBOM's volatile fields are not pinned.
+  status: done 2026-11-10
+  verified: 2026-11-11 — done — the ruling is docs/dreams/pyforge-warden.md:277-278; CAP-10's correction and the Determinism Constraint are _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/.memlog.md:239 and :262; cli.py:56-58 and cli.py:480-487 still document the no-op, and sbom.py:36-40 the volatile fields.
+
+### DW-warden-cutover-2026-11-10-3: The report schema leaves `advisory` and `actuation` untyped, so the output shapes of CAP-23..CAP-26 are held by `contract.md` and a test, not by the schema.
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-warden/SPEC.md`; cutover readiness audit 2026-11-10 (`planning-artifacts/research/cutover-readiness-audit-2026-11-10.md`)
+  summary: The report schema leaves `advisory` and `actuation` untyped, so the output shapes of CAP-23..CAP-26 are held by `contract.md` and a test, not by the schema.
+  evidence: report-schema.json: advisory is ['array','null'] with no items, actuation ['object','null'] with no properties, and no additionalProperties keyword anywhere.
+  location: src/shared/packages/pyforge-warden/src/pyforge/warden/data/report-schema.json; src/shared/packages/pyforge-warden/src/pyforge/warden/models.py
+  origin: cutover readiness audit 2026-11-10 (warden Epic 25)
+  owner: warden
+  severity: low
+  promoted: 2026-11-10 — cutover readiness plan
+  resolution: the schema stays 1.1.0 (operator ruling 2026-11-10, operator question Warden 3): the schema Constraint names the two open slots, and `contract.md` (CAP-28) lists the key sets the code writes there.
+  status: done 2026-11-10
+  verified: 2026-11-11 — done — both slots are still open, `actuation` with no properties and `advisory` with no items (data/report-schema.json:168-175); the ruling is docs/dreams/pyforge-warden.md:276 and the schema Constraint _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/.memlog.md:263.
+
+### DW-warden-cutover-2026-11-10-4: Warden's tested engine ranges trail the estate (osv-scanner, deptry, pixi, opengrep; tea-test-review has no range).
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-warden/SPEC.md`; cutover readiness audit 2026-11-10 (`planning-artifacts/research/cutover-readiness-audit-2026-11-10.md`)
+  summary: Warden's tested engine ranges trail the estate (osv-scanner, deptry, pixi, opengrep; tea-test-review has no range).
+  evidence: osv-scanner <2.5 (factory env at >=2.7.0), deptry <0.26, pixi <0.82 (host 0.81.0), opengrep <1.31 from channel SelfExplainML on linux-64 only; tea-test-review has no range and needs an agent CLI. engines.py:172-180 and :190-192; the package pixi.toml run-dependencies and its linux-64 target; the root pixi.toml factory pin. An out-of-range engine is exit 2 by design, so the gap is loud, not silent.
+  location: src/shared/packages/pyforge-warden/src/pyforge/warden/engines.py; src/shared/packages/pyforge-warden/pixi.toml
+  origin: cutover readiness audit 2026-11-10 (warden Epic 25)
+  fix: per engine: run the suite and the slow lane against the newer minor in -e pyforge-warden, record the output-shape evidence, widen the range and the pin together (tests/meta/test_engine_version_range_sync.py holds them equal), through steward's estate refresh.
+  owner: warden
+  severity: medium
+  promoted: 2026-11-10 — cutover readiness plan
+  reason: needs a run in warden's env and an estate refresh; outside a Spec-truth change
+  status: open
+  verified: 2026-11-11 — still-open — the ranges are engines.py:172-180 (deptry >=0.25.1,<0.26; osv-scanner >=2.4.0,<2.5; pixi >=0.80.0,<0.82; opengrep >=1.30.2,<1.31) and engines.py:190-192 (tea-test-review: no range, agent `claude`); the matching run pins are src/shared/packages/pyforge-warden/pixi.toml:43-44 and :56-58; the factory pins osv-scanner >=2.7.0 at pixi.toml:2255; `pixi --version` exits 0 printing 0.81.0.
+
+### DW-warden-cutover-2026-11-10-5: The bundled LTS registry (`updated: 2026-07-06`, 180-day max age) reads stale from 2027-01-02.
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-warden/SPEC.md`; cutover readiness audit 2026-11-10 (`planning-artifacts/research/cutover-readiness-audit-2026-11-10.md`)
+  summary: The bundled LTS registry (`updated: 2026-07-06`, 180-day max age) reads stale from 2027-01-02.
+  evidence: a gated currency axis then routes to indeterminate. data/lts-registry.yaml:35; currency.py:195 and :409-430; the canonical copy is the conda-forge-expert skill's data file; Story 27.1 makes the parity test fail instead of skipping.
+  location: src/shared/packages/pyforge-warden/src/pyforge/warden/data/lts-registry.yaml; .claude/skills/conda-forge-expert/data/lts-registry.yaml
+  origin: cutover readiness audit 2026-11-10 (warden Epic 25)
+  fix: before 2027-01-02: refresh the canonical registry under the conda-forge-expert skill (with its retro), re-copy the data verbatim into the bundled file, and move test_currency.py's frozen _NOW and affected fixtures.
+  owner: warden
+  severity: medium
+  promoted: 2026-11-10 — cutover readiness plan
+  reason: conda-forge-expert data change; needs the skill and a retro
+  status: open
+  verified: 2026-11-11 — still-open — data/lts-registry.yaml:35 and the canonical .claude/skills/conda-forge-expert/data/lts-registry.yaml:22 both read `updated: 2026-07-06`; currency.py:195 keeps `_REGISTRY_MAX_AGE_DAYS = 180`, applied at currency.py:429; 2026-07-06 plus 180 days is 2027-01-02.
+
+### DW-warden-cutover-2026-11-10-6: The 2026-11-05 EGM audit left 86 medium and 16 low warden findings untriaged.
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-warden/SPEC.md`; cutover readiness audit 2026-11-10 (`planning-artifacts/research/cutover-readiness-audit-2026-11-10.md`)
+  summary: The 2026-11-05 EGM audit left 86 medium and 16 low warden findings untriaged.
+  evidence: docs/dreams/pyforge-warden.md Realization log, 2026-11-05 entry; planning-artifacts/research/egm-audit-2026-11-05.md.
+  location: _bmad-output/projects/pyforge-warden/planning-artifacts/research/egm-audit-2026-11-05.md
+  origin: cutover readiness audit 2026-11-10 (warden Epic 25)
+  fix: run the triage through marshal's EGM process with the operator's accept or reject per finding; mint fix stories for the accepted ones.
+  owner: warden
+  severity: low
+  promoted: 2026-11-10 — cutover readiness plan
+  reason: operator triage through marshal's EGM process
+  status: open
+  verified: 2026-11-11 — still-open — _bmad-output/projects/pyforge-warden/planning-artifacts/research/egm-audit-2026-11-05.md:21 says the 86 medium and 16 low findings are not triaged, and its § Not triaged table (egm-audit-2026-11-05.md:36-41) still counts them; the warden memlog records no later triage.
+
+### DW-warden-cutover-2026-11-10-7: Warden's architecture spine has no numbered AD-n.
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-warden/SPEC.md`; cutover readiness audit 2026-11-10 (`planning-artifacts/research/cutover-readiness-audit-2026-11-10.md`)
+  summary: Warden's architecture spine has no numbered AD-n.
+  evidence: stories cite spine sections and other spines' ADs (suite:AD-4, canopy:AD-21). ARCHITECTURE-SPINE.md: its Core Architectural Decisions section is prose; grep for a warden AD-n definition finds none. Story 25.2 corrects the module tree and the floor only.
+  location: _bmad-output/projects/pyforge-warden/planning-artifacts/architecture/architecture-pyforge-warden-2026-07-14/ARCHITECTURE-SPINE.md
+  origin: cutover readiness audit 2026-11-10 (warden Epic 25)
+  fix: re-derive the spine with bmad-architecture: number the standing decisions (sole-owner verdict, single subprocess site, non-rendering extraction, advisory slots never gate, the actuator carve-out), fold the reconciliation sections into the body, and re-point story FR/AD lines.
+  owner: warden
+  severity: low
+  promoted: 2026-11-10 — cutover readiness plan
+  reason: Dream-sized: an architecture re-derive
+  status: open
+  verified: 2026-11-11 — still-open — the spine's decisions are prose under _bmad-output/projects/pyforge-warden/planning-artifacts/architecture/architecture-pyforge-warden-2026-07-14/ARCHITECTURE-SPINE.md:121 ('Core Architectural Decisions'); no line of it defines a numbered AD, and the two unqualified citations at ARCHITECTURE-SPINE.md:467 and :472 are the suite spine's suite:AD-9 and suite:AD-10. The mint's solutioning step recorded the same (_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/.memlog.md:259).
+
+### DW-warden-cutover-2026-11-10-8: CAP-26 spanned kernel and portal code, so its kernel half had no rebuild route.
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-warden/SPEC.md`; cutover readiness audit 2026-11-10 (`planning-artifacts/research/cutover-readiness-audit-2026-11-10.md`)
+  summary: CAP-26 spanned kernel and portal code, so its kernel half had no rebuild route.
+  evidence: CAP-26 named both halves, the kernel half (fleet_github_rest.py, fleet_github_graphql.py, native_lockfiles.py, the non-Python scan path) and the portal half in django-warden, while docs/foundry/capability-ledger.yaml carries one row per capability; ruling 3 of 2026-11-10 sets modes by where the code lives.
+  location: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md (CAP-26); docs/foundry/capability-ledger.yaml
+  origin: cutover readiness audit 2026-11-10 (warden Epic 25)
+  owner: warden
+  severity: medium
+  promoted: 2026-11-10 — cutover readiness plan
+  resolution: CAP-26 split, the portal half minted as CAP-29 (operator ruling 2026-11-10, operator question Warden 1; the mint's render): CAP-26 keeps the kernel half, mode rebuild; CAP-29 is the portal half, mode A-only, expiry steward Story 121.5.
+  status: done 2026-11-10
+  verified: 2026-11-11 — done — _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md:215 (CAP-26, 'amended 2026-11-10: the portal half split to CAP-29') and SPEC.md:286 (CAP-29, minted 2026-11-10); the modes are _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/.memlog.md:233-234; the ruling is docs/dreams/pyforge-warden.md:274-276.
+
+### DW-warden-cutover-2026-11-10-9: CAP-13..CAP-15 (`sources.py`, `eligibility.py`, `eligibility_sbom.py`) have no CLI verb and no portal caller, and their cutover mode was unruled.
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-warden/SPEC.md`; cutover readiness audit 2026-11-10 (`planning-artifacts/research/cutover-readiness-audit-2026-11-10.md`)
+  summary: CAP-13..CAP-15 (`sources.py`, `eligibility.py`, `eligibility_sbom.py`) have no CLI verb and no portal caller, and their cutover mode was unruled.
+  evidence: sources.py, eligibility.py and eligibility_sbom.py (723 lines, four unit modules); git grep finds no import of the three modules outside the package's own tests and each other; SPEC.md CAP-13..15 as amended 2026-11-10 say 'library surface, no caller'.
+  location: src/shared/packages/pyforge-warden/src/pyforge/warden/sources.py; src/shared/packages/pyforge-warden/src/pyforge/warden/eligibility.py; src/shared/packages/pyforge-warden/src/pyforge/warden/eligibility_sbom.py; docs/foundry/capability-ledger.yaml
+  origin: cutover readiness audit 2026-11-10 (warden Epic 25)
+  owner: warden
+  severity: low
+  promoted: 2026-11-10 — cutover readiness plan
+  resolution: `A-only`, expiry steward Story 44.8 (operator ruling 2026-11-10, operator question Warden 4).
+  status: done 2026-11-10
+  verified: 2026-11-11 — done — the ruling is docs/dreams/pyforge-warden.md:278-279 and docs/dreams/pyforge-unifying-strategy.md:1208-1209; CAP-13 to CAP-15 carry 'mode A-only, expiry steward Story 44.8' at _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/.memlog.md:242-244; the only imports of the three modules outside the tests are each other's (eligibility.py:45, eligibility_sbom.py:24).
+
+### DW-warden-cutover-2026-11-10-10: `spec-pyforge-warden`'s `surface:` block is the kernel package only, while `django-warden` realizes CAP-16, CAP-17, CAP-29 and the MCP face.
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-warden/SPEC.md`; cutover readiness audit 2026-11-10 (`planning-artifacts/research/cutover-readiness-audit-2026-11-10.md`)
+  summary: `spec-pyforge-warden`'s `surface:` block is the kernel package only, while `django-warden` realizes CAP-16, CAP-17, CAP-29 and the MCP face.
+  evidence: SPEC.md:13-14 surface is src/shared/packages/pyforge-warden/**; spec-pyforge-unifying-strategy/SPEC.md:26 claims src/shared/packages/django-*/**. A django-warden edit does not ask for a warden memlog line.
+  location: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md (frontmatter surface:); src/shared/packages/django-warden/
+  origin: cutover readiness audit 2026-11-10 (warden Epic 25)
+  owner: warden
+  severity: medium
+  promoted: 2026-11-10 — cutover readiness plan
+  resolution: no co-governance; `contract.md`'s where-it-lives table stands (operator ruling 2026-11-10, operator question Warden 5). The table is Story 26.3's.
+  status: done 2026-11-10
+  verified: 2026-11-11 — done — the ruling is docs/dreams/pyforge-warden.md:279-280; _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md:13-14 still lists the kernel package only, and _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md:26 still governs src/shared/packages/django-*/**, as the ruling keeps them.
+
+### DW-warden-cutover-2026-11-10-11: CAP-1..CAP-22's success clauses name no proving test or command inline; `proof-map.md` carries the proof per capability.
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-warden/SPEC.md`; cutover readiness audit 2026-11-10 (`planning-artifacts/research/cutover-readiness-audit-2026-11-10.md`)
+  summary: CAP-1..CAP-22's success clauses name no proving test or command inline; `proof-map.md` carries the proof per capability.
+  evidence: SPEC.md: no command in the 22 blocks, and 18 of them name no test (CAP-5, CAP-6, CAP-9 and CAP-10 gained test names in the 2026-11-10 amendments; python parse, 2026-11-11); CHAIN-STANDARD section 2 (operator ruling 2026-11-01) says a success clause names the command or test that proves it; no detector checks the rule yet. Story 26.2 writes proof-map.md and tests/meta/test_capability_proof_map.py.
+  location: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md (CAP-1..CAP-22); _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/proof-map.md
+  origin: cutover readiness audit 2026-11-10 (warden Epic 25)
+  fix: both rulings it waited on are made (Warden 2 and Warden 6, 2026-11-10): after Story 26.2, one re-derive that appends to each of the 22 success clauses the command proof-map.md names for it (memlog capability entries, script render, both self-validate passes), then proof-map.md keeps only lanes and gaps.
+  owner: warden
+  severity: low
+  promoted: 2026-11-10 — cutover readiness plan
+  reason: sequenced after Story 26.2
+  status: open
+  verified: 2026-11-11 — still-open — in _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md:66-129 (CAP-1 to CAP-22) no block names a `pixi run` command and 18 of the 22 name no test; proof-map.md does not exist yet (Story 26.2 runs after this story).
