@@ -2,17 +2,18 @@
 title: "Product Brief: pyforge-scribe"
 status: "complete"
 created: "2026-07-25"
-updated: "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): research→brief edge (research/egm-audit-2026-11-01.md); § Currency reconciliation — 2026-11-01 appended; problem, users and scope unchanged. Prior "2026-09-19"   # RE-STAMPED 2026-09-19: research→brief edge (multi-harness-instruction-surface-2026-09-19.md); § Currency reconciliation — 2026-09-19 appended, scope folded in.
+updated: "2026-11-11"   # RE-STAMPED 2026-11-11 (cutover readiness, Story 31.3): research->brief edge (research/cutover-readiness-audit-2026-11-10.md); § Currency reconciliation — 2026-11-11 (cutover readiness) appended; problem, users and scope unchanged; the inputs list re-points six paths that moved (five to archive/, one Dream renamed) and gains the audit; no CAP, FR or AD is minted. Prior "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): research→brief edge (research/egm-audit-2026-11-01.md); § Currency reconciliation — 2026-11-01 appended; problem, users and scope unchanged. Prior "2026-09-19"   # RE-STAMPED 2026-09-19: research→brief edge (multi-harness-instruction-surface-2026-09-19.md); § Currency reconciliation — 2026-09-19 appended, scope folded in.
 inputs:
   - "docs/dreams/pyforge-scribe.md"
-  - "docs/dreams/team-memory.md"
-  - "docs/dreams/sentinel.md"
-  - "docs/dreams/ecosystem-crew.md § 7 The Scribe"
-  - "docs/specs/claude-team-memory.md (legacy Tier-1 spec — ADOPTED, scope migrates into this brief/PRD)"
+  - "archive/docs/dreams/team-memory.md"
+  - "archive/docs/dreams/sentinel.md"
+  - "docs/dreams/pyforge-charter.md § 7 The Scribe (renamed from ecosystem-crew.md, 2026-07-25)"
+  - "archive/docs/specs/claude-team-memory.md (legacy Tier-1 spec — ADOPTED, scope migrates into this brief/PRD)"
   - "{project-root}/_bmad-output/projects/pyforge-scribe/planning-artifacts/research/market-agent-team-memory-research-2026-07-25.md"
   - "{project-root}/_bmad-output/projects/pyforge-scribe/planning-artifacts/research/domain-team-knowledge-graph-domain-research-2026-07-25.md"
-  - "docs/intake/sentinel/ (Build-Spec v2.1 evidence, unshipped)"
-  - "docs/intake/gists/llm-powered-knowledge-bases-by-andrej-karpathy/ (the compile-loop's origin essay)"
+  - "archive/docs/intake/sentinel/ (Build-Spec v2.1 evidence, unshipped)"
+  - "archive/docs/intake/gists/llm-powered-knowledge-bases-by-andrej-karpathy/ (the compile-loop's origin essay)"
+  - "{project-root}/_bmad-output/projects/pyforge-scribe/planning-artifacts/research/cutover-readiness-audit-2026-11-10.md"
 project_slug: "pyforge-scribe"
 ---
 
@@ -197,3 +198,34 @@ done.
 *Chain-currency cascade (research -> brief), EGM audit, marshal Story 113.18.*
 
 The station's audit record joins this brief's inputs: `research/egm-audit-2026-11-05.md` (marshal Story 113.18, `spec-pyforge-marshal:CAP-302`): 11 high findings, 3 accepted, 5 rejected, 3 deferred; the medium and low findings are not triaged. The product scope does not change.
+
+## Currency reconciliation — 2026-11-11 (cutover readiness)
+
+*Chain-currency cascade (research -> brief), Story 31.3: `research/cutover-readiness-audit-2026-11-10.md`
+(new that day) fired the `research→brief` edge against this brief's 2026-11-05 stamp.*
+
+**What the research is.** One of nine read-only audits run at main `82a2b18828` for the A→B cutover, which
+rebuilds each station on a second root from its seed with A's code and tests as the oracle. Its verdict for
+scribe was "not ready as a rebuild seed": the Spec stated the memory schema flat where the code and every
+record nest `metadata.type`, named three command groups where the CLI has five, left two capabilities as
+pointers to an archived memlog, and carried stale status markers; the suite read the live tree with no split
+and skipped the branches it named in its own environment; the package metadata disagreed with the estate's
+pins. The operator ruled on 2026-11-10 (`docs/dreams/pyforge-unifying-strategy.md` § Realization log, the
+2026-11-10 entry and its two addenda): A writes every Dream, Frame, Spec and capability-ledger row until
+`pyforge.cutover_root` flips, B reads A at a pinned SHA, and the seed is Dream plus memlog, archived memlogs
+included.
+
+**What it changes about the problem: nothing.** Every finding is about whether the written contract says
+what the shipped code does, and whether the suite can serve as the oracle a second root runs. None changes
+who Scribe serves or why. The fixes are Epics 31 to 33 on `spec-pyforge-scribe`: a written public contract
+held by a meta-test (`contract.md`, Story 31.1), the Spec re-derived from its memlog (Story 31.2), the
+instruction surface, the team-memory index and the seed's currency held by tests (Stories 32.1 to 32.3), and
+a suite split on `live_tree` and `postgres` with package metadata that matches the estate (Stories 33.1 and
+33.2). Three capabilities were minted to record what had shipped or is now held (CAP-33 `scribe index
+refresh`; CAP-34 `scribe index move-list`, minted retired; CAP-35 no Spec is behind its memlog). No product
+behaviour was added.
+
+**Scope, users and success criteria are unchanged.** `scribe capture --supersedes` stays out of scope by the
+operator's ruling; the ask is held as a deferred-work row (DW-scribe-cutover-2026-11-10-1) for a later Dream
+entry. The inputs list re-points the paths that moved since 2026-07-25: five now live under `archive/`, and
+`ecosystem-crew.md` is `docs/dreams/pyforge-charter.md` since the 2026-07-25 rename.

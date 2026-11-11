@@ -2,7 +2,7 @@
 fr-derivation-from: "2026-09-17"
 title: pyforge-scribe
 created: 2026-07-25
-updated: "2026-11-10"   # AMENDED 2026-11-10 (cutover-readiness mint, Epics 31 to 33): FR-51 <- CAP-33, FR-52 <- CAP-34 (retired with it), FR-53 <- CAP-35 and FR-54 <- CAP-4 registered; no other FR, NFR or arrow moves; Story 31.3 re-stamps the chain. See § Currency reconciliation — 2026-11-10 (cutover-readiness mint). Prior "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief -> PRD and spec -> PRD); no CAP, FR or AD is minted. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): chain-currency cascade (spec -> PRD) for the Spec's 2026-11-01 re-derive (CAP-27, CAP-29, CAP-30, CAP-31 and CAP-32 amended; no CAP minted) and the brief's re-stamp for research/egm-audit-2026-11-01.md; FR-16 carries the 2026-09-26 end state; no other FR, NFR or arrow moves. See § Currency reconciliation — 2026-11-01 (EGM fleet audit). Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (CAP-7 retrofit, Epic 29): the station memlog gained the retrofit decision; no requirement changes. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 27.1): chain-currency cascade (spec -> PRD) for the Spec memlog's 2026-10-26 entries (the instruction surface carries the requirement-arrow rule under CAP-27 and CAP-29); no FR, NFR or arrow changes. See § Currency reconciliation — 2026-10-26 (Story 27.1). Prior "2026-10-15"   # RE-STAMPED 2026-10-15: chain-currency (spec -> PRD) for the spec memlog's 2026-10-15 surface decision (a stale surface glob re-pointed; no CAP, FR or AD moved). See § Currency reconciliation — 2026-10-15. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 26, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28: chain-currency (spec->prd) — spec-pyforge-scribe memlog moved 2026-09-26 (Stories 21.1 / 21.2 / 22.1 / 23.1 landing reconciles; surface gains the instruction pointer files) and 2026-09-28 (AGENTS.md Policy line, mason CAP-29 surface reconcile); no FR change. See § Currency reconciliation — 2026-09-28. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-scribe memlog moved 2026-09-24T20:28 (marshal 46.3 surface reconciles); no FR change. Prior 2026-09-20
+updated: "2026-11-11"   # RE-STAMPED 2026-11-11 (cutover readiness, Story 31.3): chain-currency cascade (brief -> PRD and spec -> PRD) after the brief's re-stamp for research/cutover-readiness-audit-2026-11-10.md and the Spec's Story 31.2 re-derive; FR-1 follows CAP-1 (the nested metadata.type schema), FR-14 follows CAP-4 (five command groups, the contract in contract.md) and so does § 6.1's CLI-skeleton line, FR-16 follows CAP-27 (the 2026-11-10 cutover end state), FR-51 and FR-52 follow CAP-33 and CAP-34 as re-derived (FR-52 stays retired with CAP-34), FR-53 and FR-54 are unchanged; no FR is added, renumbered or removed, and no NFR, success metric or arrow moves; § 0 and § 13 re-point the paths that moved to archive/. See § Currency reconciliation — 2026-11-11 (cutover readiness). Prior "2026-11-10"   # AMENDED 2026-11-10 (cutover-readiness mint, Epics 31 to 33): FR-51 <- CAP-33, FR-52 <- CAP-34 (retired with it), FR-53 <- CAP-35 and FR-54 <- CAP-4 registered; no other FR, NFR or arrow moves; Story 31.3 re-stamps the chain. See § Currency reconciliation — 2026-11-10 (cutover-readiness mint). Prior "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief -> PRD and spec -> PRD); no CAP, FR or AD is minted. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): chain-currency cascade (spec -> PRD) for the Spec's 2026-11-01 re-derive (CAP-27, CAP-29, CAP-30, CAP-31 and CAP-32 amended; no CAP minted) and the brief's re-stamp for research/egm-audit-2026-11-01.md; FR-16 carries the 2026-09-26 end state; no other FR, NFR or arrow moves. See § Currency reconciliation — 2026-11-01 (EGM fleet audit). Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (CAP-7 retrofit, Epic 29): the station memlog gained the retrofit decision; no requirement changes. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 27.1): chain-currency cascade (spec -> PRD) for the Spec memlog's 2026-10-26 entries (the instruction surface carries the requirement-arrow rule under CAP-27 and CAP-29); no FR, NFR or arrow changes. See § Currency reconciliation — 2026-10-26 (Story 27.1). Prior "2026-10-15"   # RE-STAMPED 2026-10-15: chain-currency (spec -> PRD) for the spec memlog's 2026-10-15 surface decision (a stale surface glob re-pointed; no CAP, FR or AD moved). See § Currency reconciliation — 2026-10-15. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 26, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28: chain-currency (spec->prd) — spec-pyforge-scribe memlog moved 2026-09-26 (Stories 21.1 / 21.2 / 22.1 / 23.1 landing reconciles; surface gains the instruction pointer files) and 2026-09-28 (AGENTS.md Policy line, mason CAP-29 surface reconcile); no FR change. See § Currency reconciliation — 2026-09-28. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-scribe memlog moved 2026-09-24T20:28 (marshal 46.3 surface reconciles); no FR change. Prior 2026-09-20
 status: final
 currency_review: "Reviewed 2026-09-17 — one-chain scribe fold; FR-1..15 cite CAP-1..4; reminted station CAPs 1..26 live on spec-pyforge-scribe. FR delta: citations only."
 ---
@@ -12,7 +12,7 @@ currency_review: "Reviewed 2026-09-17 — one-chain scribe fold; FR-1..15 cite C
 
 ## 0. Document Purpose
 
-This PRD defines what Scribe builds, for the engineers and agents who implement it and the downstream BMAD workflows (`bmad-architecture`, `bmad-create-epics-and-stories`) that consume it. It builds directly on `planning-artifacts/briefs/brief-pyforge-scribe-2026-07-25/brief.md` (the product brief) and the two research reports in `planning-artifacts/research/` — it does not re-derive their findings, it cites and operationalizes them. Structure: a Glossary anchors vocabulary used verbatim throughout; Features group Functional Requirements (globally numbered FR-1 through FR-N) under coherent capability clusters; `[ASSUMPTION]` tags are inline and indexed in §12. This PRD also formally **absorbs** the legacy `docs/specs/claude-team-memory.md` spec (10 waved stories, unstarted) as Wave 1 scope — §9 records the supersession decision explicitly.
+This PRD defines what Scribe builds, for the engineers and agents who implement it and the downstream BMAD workflows (`bmad-architecture`, `bmad-create-epics-and-stories`) that consume it. It builds directly on `planning-artifacts/briefs/brief-pyforge-scribe-2026-07-25/brief.md` (the product brief) and the two research reports in `planning-artifacts/research/` — it does not re-derive their findings, it cites and operationalizes them. Structure: a Glossary anchors vocabulary used verbatim throughout; Features group Functional Requirements (globally numbered FR-1 through FR-N) under coherent capability clusters; `[ASSUMPTION]` tags are inline and indexed in §12. This PRD also formally **absorbs** the legacy `archive/docs/specs/claude-team-memory.md` spec (10 waved stories, unstarted) as Wave 1 scope — §9 records the supersession decision explicitly.
 
 ## 1. Vision
 
@@ -65,10 +65,10 @@ Scribe ships in two waves that are each independently valuable: Wave 1 completes
 **Description:** The checked-in `.claude/memory/` directory, the promotion workflow that moves entries from user-local memory into it, and the wiring that makes team memory auto-load every session. This feature is the legacy `claude-team-memory` spec's full scope (its 10 stories, Waves A/B/C), migrated into Scribe as the foundation the graph compiles from. Realizes UJ-1, UJ-4. FR IDs below map 1:1 to the legacy spec's FR-1 through FR-9 (renumbered for this PRD's global sequence; intent unchanged unless noted).
 
 #### FR-1: Frontmatter schema parity ← CAP-1
-Entries in `.claude/memory/` use the same frontmatter fields as user-local auto-memory (`name`, `description`, `type` ∈ `{feedback, project, reference}`), so migration in either direction is mechanical. *(= legacy FR-1)*
+Entries in `.claude/memory/` use the same frontmatter fields as user-local auto-memory (`name`, `description` and a nested `metadata.type` ∈ `{feedback, project, reference}`; a `supersedes` line only when set), so migration in either direction is mechanical. *(= legacy FR-1; amended 2026-11-11, Story 31.3, to follow CAP-1 as re-derived by Story 31.2: the 2026-07-25 text placed `type` at the top level, which no record or writer uses.)*
 
 **Consequences (testable):**
-- A `.claude/memory/<type>/*.md` file with a missing or malformed `type` field fails a schema check.
+- A `.claude/memory/<type>/*.md` file with a missing or malformed `metadata.type` field fails a schema check (`tests/meta/test_team_memory_index.py`, Story 32.2).
 - Promotion tooling reads and writes this exact schema without a translation step.
 
 #### FR-2: MEMORY.md index size discipline ← CAP-1
@@ -150,7 +150,7 @@ The compile step runs without interactive input and produces the same graph stat
 **Description:** Scribe ships as `pyforge-scribe` (dist name), `pyforge.scribe` (module), `scribe` (CLI entry point) — a pixi-workspace member package, installable and importable like any other package in this monorepo's dual-ecosystem model.
 
 #### FR-14: CLI is the public contract ← CAP-4
-`scribe capture`, `scribe graph compile --nightly`, and `scribe recall` are the three top-level commands; each is independently invocable and independently testable. Sub-flags (`--type`, `--text`, `--promote`, `--nightly`) extend without breaking the top-level contract.
+`scribe capture`, `scribe recall`, `scribe graph`, `scribe index` and `scribe catalog` are the five command groups (the CLI also answers as `pyforge scribe`); each is independently invocable and independently testable. Sub-flags (`--type`, `--text`, `--promote`, `--nightly`, …) and new verbs extend without breaking the contract. The public contract, every verb path and flag, the MCP tools, the flag key, every environment variable and every exit code, is the Spec's `contract.md` companion (FR-54); other stations integrate only through the CLI, the MCP face or a documented, versioned API, never by importing `pyforge.scribe` internals. *(Amended 2026-11-11, Story 31.3, to follow CAP-4 as amended 2026-11-10: the 2026-07-25 text named only `capture`, `graph compile` and `recall`; `index` and `catalog` shipped since, with Epics 6 and 24.)*
 
 #### FR-15: Pixi workspace membership ← CAP-4
 Scribe is registered as a pixi workspace member (per this repo's dual-ecosystem, multi-package pattern), with its own `pyproject.toml`/`recipe.yaml` posture consistent with sibling pyforge-* packages (Warden, Herald) once they exist as precedent.
@@ -164,7 +164,13 @@ filled with `scribe capture`. A scribe meta-test reds a missing pointer, a dupli
 oversized per-tool file, a dangling memory path, or the 2026-09-26 end state regressing: an SKF managed
 block in `CLAUDE.md`, an SKF `ides` list other than `[other]`, or an `AGENTS.md` that no longer says
 `detectors-ci` and `pr-preflight` run `governance-currency` (amended 2026-11-01 with CAP-27, EGM fleet
-audit, Story 23.2).
+audit, Story 23.2). Since the operator rulings of 2026-11-10 the contract also holds the cutover end state: the
+`bmad:context` block of `AGENTS.md` says A writes every Dream, Frame, Spec and capability-ledger row until
+`pyforge.cutover_root` flips, B reads A at a pinned SHA, the seed is Dream plus memlog with archived memlogs
+(`archive/**/.memlog.md`) included and no backfill, a Frame is a pointer, and the mode table is
+`docs/foundry/capability-ledger.yaml`; a scribe meta-test (`test_cutover_wording.py`) reds a required clause going
+missing or a superseded one returning (amended 2026-11-11, Story 31.3, to follow CAP-27 as amended 2026-11-10;
+Story 32.1).
 
 #### FR-17: `scribe capture` and `scribe recall` run from the session default environment ← CAP-28
 The scribe core package is a member of the `pyforge-guild` feature (the default every harness's
@@ -177,12 +183,15 @@ cites bare (FR-45, FR-50).*
 
 #### FR-51: An operator refreshes the derived index artifacts without recomputing an unchanged one ← CAP-33
 An operator can refresh scribe's derived index artifacts without recomputing one whose sources did not
-change, and a caller can track its own artifact the same way (`scribe index refresh`, `--declare`).
+change, and a caller can track its own artifact the same way (`scribe index refresh`, `--declare`). The skip
+holds with the cocoindex extra switched on (`SCRIBE_COCOINDEX_EXTRA`); off, the default, a refresh rebuilds
+both artifacts, and `--declare` never consults the switch (checked 2026-11-11 against CAP-33 as re-derived).
 
 #### FR-52: An operator lists every line a package fold would touch ← CAP-34
 An operator can list every line a package fold would touch, by signal, without the graphify extra
 (`scribe index move-list`). *Retired 2026-11-10 with CAP-34: the package fold it served was retired by
-operator ruling 2 of 2026-11-10; the verb stays until a Story removes it.*
+operator ruling 2 of 2026-11-10; the verb and its half of `scribe index refresh` stay until a Story removes
+them (deferred-work row DW-scribe-cutover-2026-11-10-5).*
 
 #### FR-53: The suite fails when a Spec is behind its memlog ← CAP-35
 A session can trust the seed's currency: the suite fails, naming the Spec folder and the entry, when a
@@ -216,7 +225,7 @@ fails the suite and is named.
 
 **Wave 2 — Graph Compile & Recall, FR-9 through FR-13:** the previously-unbuilt core. Requires an architecture-phase decision on the graph storage engine (§8) before story-level breakdown can be precise about "how," though the capability contract (FR-9–13) is fixed now.
 
-**Cross-cutting — Package & CLI Surface, FR-14/15:** spans both waves; the CLI skeleton (three top-level commands) should exist from Wave 1's start even if Wave 2's commands are stubs initially, so the public contract doesn't change shape between waves.
+**Cross-cutting — Package & CLI Surface, FR-14/15:** spans both waves; the CLI skeleton (the command groups of FR-14; `capture`, `graph compile` and `recall` at Wave 1's start) should exist from Wave 1's start even if Wave 2's commands are stubs initially, so the public contract doesn't change shape between waves.
 
 ### 6.2 Out of Scope for MVP
 
@@ -290,10 +299,10 @@ Timing is load-bearing on three independent fronts, per the research reports:
 - `_bmad-output/projects/pyforge-scribe/planning-artifacts/briefs/brief-pyforge-scribe-2026-07-25/brief.md` — product brief this PRD builds on.
 - `_bmad-output/projects/pyforge-scribe/planning-artifacts/research/market-agent-team-memory-research-2026-07-25.md` — competitor analysis (Mem0, Zep/Graphiti, Khoj, Glean).
 - `_bmad-output/projects/pyforge-scribe/planning-artifacts/research/domain-team-knowledge-graph-domain-research-2026-07-25.md` — ADR practice, local-first architecture, embedded graph storage, air-gap regulatory findings.
-- `docs/specs/claude-team-memory.md` — legacy Tier-1 spec, ADOPTED; scope migrated into §4.1/§6.1 Wave 1. Will be marked superseded at merge time (not edited by this PRD).
-- `docs/dreams/pyforge-scribe.md`, `docs/dreams/team-memory.md`, `docs/dreams/sentinel.md`, `docs/dreams/ecosystem-crew.md` § 7 — founding Dream documents.
-- `docs/intake/sentinel/` — repatriated Build-Spec v2.1 evidence (the ancestor Sentinel effort, unshipped).
-- `docs/intake/gists/llm-powered-knowledge-bases-by-andrej-karpathy/` — origin essay for the graph-compile loop's shape.
+- `archive/docs/specs/claude-team-memory.md` — legacy Tier-1 spec, ADOPTED; scope migrated into §4.1/§6.1 Wave 1. Will be marked superseded at merge time (not edited by this PRD).
+- `docs/dreams/pyforge-scribe.md`, `archive/docs/dreams/team-memory.md`, `archive/docs/dreams/sentinel.md`, `docs/dreams/pyforge-charter.md` § 7 (renamed from `ecosystem-crew.md` on 2026-07-25) — founding Dream documents.
+- `archive/docs/intake/sentinel/` — repatriated Build-Spec v2.1 evidence (the ancestor Sentinel effort, unshipped).
+- `archive/docs/intake/gists/llm-powered-knowledge-bases-by-andrej-karpathy/` — origin essay for the graph-compile loop's shape.
 
 ## Currency reconciliation — 2026-08-26
 
@@ -543,3 +552,38 @@ Stories 32.2, 32.1, 33.2 and 33.1 build.
 **FR delta.** FR-51 (← CAP-33), FR-52 (← CAP-34, retired with it), FR-53 (← CAP-35) and FR-54 (← CAP-4) are
 registered in § 4.4. FR-14's three-command wording follows CAP-4 in Story 31.3's re-stamp, with the rest of the
 chain; no other FR, NFR, success metric or arrow moves here.
+
+## Currency reconciliation — 2026-11-11 (cutover readiness)
+
+*`brief→prd` and `spec→prd` edges, Story 31.3: the brief re-stamped 2026-11-11 for
+`research/cutover-readiness-audit-2026-11-10.md`, and `spec-pyforge-scribe` was re-derived from its memlog on
+2026-11-11 by Story 31.2 while this PRD sat at 2026-11-10.*
+
+**What moved upstream.** The brief folds in the cutover-readiness audit and the operator rulings of 2026-11-10;
+problem, users and scope are unchanged. Story 31.2's re-derive amended CAP-1 (the nested `metadata.type` schema
+and `--source`), CAP-2 (the compile surfaces, the estate's nightly trigger, and supersession's one writer,
+`capture(supersedes=)`, with no CLI flag), CAP-3 (recency ties and the store's identity rule), CAP-6, CAP-9,
+CAP-21 to CAP-23, CAP-31 and CAP-32; re-authored CAP-17 and CAP-18 from the archived memlog; verified CAP-33 and
+CAP-34 against the code; and gave every capability one dated marker. CAP-4 (five command groups and `contract.md`)
+and CAP-27 (the cutover end state) carry their 2026-11-10 amendments.
+
+**FR delta.**
+- FR-14 (← CAP-4) names the five command groups, `capture`, `recall`, `graph`, `index` and `catalog`, and the
+  `contract.md` companion, in place of the 2026-07-25 list of three verbs; § 6.1's CLI-skeleton line follows it.
+- FR-16 (← CAP-27) carries the cutover end state that Story 32.1's refresh wrote and `test_cutover_wording.py`
+  holds.
+- FR-51 (← CAP-33) says the skip holds with the cocoindex extra on and a refresh rebuilds both artifacts with it
+  off; FR-52 (← CAP-34) stays marked retired and names the deferred-work row that holds the verb's removal
+  (DW-scribe-cutover-2026-11-10-5).
+- FR-53 (← CAP-35) and FR-54 (← CAP-4) were checked against the re-derived capabilities and still read true.
+- FR-1 (← CAP-1) names the nested `metadata.type` and the optional `supersedes` line, in place of a top-level
+  `type` no record or writer uses, and its testable consequence names the index test of Story 32.2.
+- FR-2 to FR-13, FR-15 and FR-17 are unchanged. FR-10 still reads true as a requirement: a capture that names
+  its superseded record is reachable through `capture(supersedes=)`; the missing CLI door is
+  DW-scribe-cutover-2026-11-10-1.
+
+No FR is added, renumbered or removed; no NFR, success metric or arrow moves. The PRD still traces requirements to
+9 of the Spec's 35 capabilities (CAP-1 to CAP-4, CAP-27, CAP-28 and CAP-33 to CAP-35); a full re-derive through
+`bmad-prd` is its own planning effort, held as DW-scribe-cutover-2026-11-10-3. § 0 and § 13 re-point the legacy
+spec, the two archived Dreams and the two intake paths to `archive/`, and the renamed charter Dream to
+`docs/dreams/pyforge-charter.md`.
