@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: d1b26f47f39b5a35
-story_count: 528
+source_fingerprint: 72d06ffa0b41890f
+story_count: 550
 test_file_count: 274
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 528
-- **Epics parsed:** 111
+- **Stories parsed:** 550
+- **Epics parsed:** 116
 - **Test files inventoried:** 274 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `d1b26f47f39b5a35`
+- **Source fingerprint:** `72d06ffa0b41890f`
 
 ## Risk Assessment
 
@@ -133,6 +133,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 111: The archived marshal Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 - Epic 112: The absorbed marshal Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
 - Epic 113: The chain has a challenger — EGM goldfish reviewers behind six kill switches (CAP-298..CAP-303)
+- Epic 114: The marshal Spec says what is built: dated markers, live names and the public contract (spec-pyforge-marshal:CAP-304; Spec-truth chores under spec-one-chain-per-station:CAP-6)
+- Epic 116: Marshal's suite is an oracle off the monorepo, and the change closes on a reconciled Spec (spec-pyforge-marshal:CAP-305; relay of spec-pyforge-steward:CAP-175)
+- Epic 117: The shared floor says what it is: the leaf's surface, its root seam and its guards (spec-pyforge-core:CAP-12..spec-pyforge-core:CAP-14)
+- Epic 118: The testing kit is a floor a second root can rebuild (spec-pyforge-testing-charter:CAP-6..spec-pyforge-testing-charter:CAP-7)
 
 ### Low-risk epics
 
@@ -147,6 +151,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 46: The session path — one substrate, silent saves, every harness (spec-marshal-token-economy CAP-19..24)
 - Epic 69: The switch script runs where it is documented to run (spec-pyforge-marshal CAP-278)
 - Epic 86: Phase 3 of the deferral burn-down: marshal's ruled fixes
+- Epic 115: Marshal's roots, forge and station reach come from their seams, and its guards can fire (fixes under CAP-13, CAP-23, CAP-208, CAP-227, CAP-229 and CAP-261)
 
 ## Test Inventory
 
@@ -959,6 +964,28 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 113.17 | drift refuses a model a spin session can run on | none observed |
 | 113.18 | The first automated audit lands its residue | none observed |
 | 113.19 | An audit run reads the Dream entry its slice cites | none observed |
+| 114.1 | Every marshal capability carries a marker that matches the ledger, and the Sp... | none observed |
+| 114.2 | No marshal capability or Constraint names a file, flag, verb or skill that is... | none observed |
+| 114.3 | Marshal's public contract is one companion, and a meta-test keeps it complete | none observed |
+| 115.1 | Marshal finds the checkout and the loop home through its guarded roots, and t... | none observed |
+| 115.2 | A landing reaches the spec-surface verdict through Doctor's command, never an... | none observed |
+| 115.3 | marshal-mcp registers every tool it lists, and a seed failure exits with the ... | none observed |
+| 115.4 | Marshal's forge repository is the root of record's | none observed |
+| 116.1 | A marshal test fails, never skips, when the tree it reads is absent | none observed |
+| 116.2 | Marshal's suite runs as a package-local half and a live-tree half | none observed |
+| 116.3 | The four largest landing and challenge test modules keep their package-local ... | none observed |
+| 116.4 | A package-half test that opens a repository file outside the package fails, w... | none observed |
+| 116.5 | The change closes on a reconciled marshal Spec: shipped markers, one surface ... | none observed |
+| 117.1 | Every core test module that reads the repository carries the live_tree marker | none observed |
+| 117.2 | One function answers the root of record and the forge slug | none observed |
+| 117.3 | A missing purge list keeps a preserve tag local instead of crashing the push | none observed |
+| 117.4 | The leaf's public surface is written down, and the suite reds what it lacks | none observed |
+| 117.5 | The core Spec says what the leaf is, and carries Epic 117's capabilities | none observed |
+| 117.6 | A station left out of a kernel guard is left out path by path, and the list o... | none observed |
+| 117.7 | The flag reader's tests run from the package alone | none observed |
+| 117.8 | The kernel Specs are reconciled and stamped once, after the last edit on the ... | none observed |
+| 118.1 | The testing kit's suite runs without the host, and its public surface is writ... | none observed |
+| 118.2 | The testing charter says what was built, and carries Epic 118's capabilities | none observed |
 
 ## Quality Gates
 
