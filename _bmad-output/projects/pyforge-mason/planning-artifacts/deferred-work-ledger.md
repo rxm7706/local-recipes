@@ -2156,3 +2156,51 @@ status: open
   severity: low
   promoted: 2026-11-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-mason-38-3: Mason's fidelity test runs one of ten wrapped scripts for real (validate); the other nine wrapped scripts have a static option check only. Generate, update, scan and submit need the network or credentials and submit is outward; the argv contract proper belongs to conda-forge-expert's own Spec (Story 39.2, blocked on the flip).
+
+- source_spec: `planning-artifacts/specs/spec-38-3-mason-s-adapters-pass-only-what-the-wrapped-scripts-declare.md`
+  summary: Mason's fidelity test runs one of ten wrapped scripts for real (validate); the other nine wrapped scripts have a static option check only. Generate, update, scan and submit need the network or credentials and submit is outward; the argv contract proper belongs to conda-forge-expert's own Spec (Story 39.2, blocked on the flip).
+  evidence: Mason's fidelity test runs one of ten wrapped scripts for real (validate); the other nine wrapped scripts have a static option check only. Generate, update, scan and submit need the network or credentials and submit is outward; the argv contract proper belongs to conda-forge-expert's own Spec (Story 39.2, blocked on the flip).
+  location: src/shared/packages/pyforge-mason/tests/integration/test_delegation_fidelity.py
+  origin: spec-deferred 38330e71f6e7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  owner: mason
+  severity: low
+  promoted: 2026-11-11 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-39-1: The Docker build of a factory-island recipe builds nothing from the island and reports an island artifact directory the script never wrote: cfe.py runs [interpreter, build-locally.py, config], build-locally.py reads neither factory variable, and cfe.py reports <factory root>/build_artifacts/<config>. Wiring it is a conda-forge-expert change, A-only by operator ruling 2026-11-10, and --docker on a factory path stays as recorded.
+
+- source_spec: `planning-artifacts/specs/spec-39-1-the-factory-island-build-is-a-mason-capability-and-its-error-names-only-what-exists.md`
+  summary: The Docker build of a factory-island recipe builds nothing from the island and reports an island artifact directory the script never wrote: cfe.py runs [interpreter, build-locally.py, config], build-locally.py reads neither factory variable, and cfe.py reports <factory root>/build_artifacts/<config>. Wiring it is a conda-forge-expert change, A-only by operator ruling 2026-11-10, and --docker on a factory path stays as recorded.
+  evidence: The Docker build of a factory-island recipe builds nothing from the island and reports an island artifact directory the script never wrote: cfe.py runs [interpreter, build-locally.py, config], build-locally.py reads neither factory variable, and cfe.py reports <factory root>/build_artifacts/<config>. Wiring it is a conda-forge-expert change, A-only by operator ruling 2026-11-10, and --docker on a factory path stays as recorded.
+  location: src/shared/packages/pyforge-mason/src/pyforge/mason/cfe.py:1296
+  origin: spec-deferred 717f1656ad88 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  owner: mason
+  severity: medium
+  promoted: 2026-11-11 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-39-1-2: Mason's ship and submit root does not follow the root of record, and no test asserts a ship never targets local-recipes: a conda-forge ship and a submit resolve <cfe-root>/recipes/<name> only (package.py:819). Blocked on steward Stories 44.8 and 44.9 (operator ruling 2026-11-10).
+
+- source_spec: `planning-artifacts/specs/spec-39-1-the-factory-island-build-is-a-mason-capability-and-its-error-names-only-what-exists.md`
+  summary: Mason's ship and submit root does not follow the root of record, and no test asserts a ship never targets local-recipes: a conda-forge ship and a submit resolve <cfe-root>/recipes/<name> only (package.py:819). Blocked on steward Stories 44.8 and 44.9 (operator ruling 2026-11-10).
+  evidence: Mason's ship and submit root does not follow the root of record, and no test asserts a ship never targets local-recipes: a conda-forge ship and a submit resolve <cfe-root>/recipes/<name> only (package.py:819). Blocked on steward Stories 44.8 and 44.9 (operator ruling 2026-11-10).
+  location: src/shared/packages/pyforge-mason/src/pyforge/mason/package.py:819
+  origin: spec-deferred ca6974f18dd4 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  owner: mason
+  severity: medium
+  promoted: 2026-11-11 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-39-1-3: Mason's runtime capabilities have no kill switch; the 2026-10-26 retrofit skipped mason because its inventory read 7 capabilities (docs/governance/flag-inventory/pyforge-mason.md: CAP rows 7, runtime 0; src/platform/config/flags.json holds no pyforge.mason key). No retrofit switch is added in this change (operator ruling 2026-11-10).
+
+- source_spec: `planning-artifacts/specs/spec-39-1-the-factory-island-build-is-a-mason-capability-and-its-error-names-only-what-exists.md`
+  summary: Mason's runtime capabilities have no kill switch; the 2026-10-26 retrofit skipped mason because its inventory read 7 capabilities (docs/governance/flag-inventory/pyforge-mason.md: CAP rows 7, runtime 0; src/platform/config/flags.json holds no pyforge.mason key). No retrofit switch is added in this change (operator ruling 2026-11-10).
+  evidence: Mason's runtime capabilities have no kill switch; the 2026-10-26 retrofit skipped mason because its inventory read 7 capabilities (docs/governance/flag-inventory/pyforge-mason.md: CAP rows 7, runtime 0; src/platform/config/flags.json holds no pyforge.mason key). No retrofit switch is added in this change (operator ruling 2026-11-10).
+  location: docs/governance/flag-inventory/pyforge-mason.md
+  origin: spec-deferred 2231842f7736 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  owner: mason
+  severity: medium
+  promoted: 2026-11-11 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
