@@ -10,6 +10,11 @@ deferred: []
 declared_low_risk: false
 ---
 
+> **Retired 2026-11-10 — never dispatch.** Operator ruling of 2026-11-10 (`docs/dreams/pyforge-unifying-strategy.md`
+> § Realization log, the second addendum, ruling 3): the move-list half retires with `steward cutover apply` and mode
+> `move`; the ledger half lands in Stories 121.1 to 121.7 (the generator, `plan`, the ledger data, the ledger check and the
+> regenerated ledger). The ledger key is `blocked`; an operator flip does not revive it. Text kept as history.
+
 <intent-contract>
 
 ## Intent

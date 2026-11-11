@@ -2,7 +2,7 @@
 fr-derivation-from: "2026-09-17"
 title: Steward (pyforge-steward)
 created: 2026-07-25
-updated: "2026-11-06"   # RE-STAMPED 2026-11-06 (CAP-20, Epic 119): chain-currency cascade (spec -> PRD); canopy:FR-51 registered, no other FR moves.
+updated: "2026-11-11"   # AMENDED 2026-11-11 (fix pass of the cutover-readiness mint): FR-54's Consequence follows CAP-180's corrected success (exit 1, never 70, the host command's own error; no message names --python); no FR registered, renumbered or removed. Prior "2026-11-10"   # AMENDED 2026-11-10 (cutover-readiness mint, steward-station unit): FR-53 <- CAP-179, FR-54 <- CAP-180, FR-55 <- CAP-181 and FR-56 <- CAP-182 registered, each traced from its capability; no FR renumbered or removed. See § Currency reconciliation — 2026-11-10 (CAP-179..CAP-182). Story 122.1 writes the rest of the cascade (pointers, the driver line). Prior "2026-11-06"   # RE-STAMPED 2026-11-06 (CAP-20, Epic 119): chain-currency cascade (spec -> PRD); canopy:FR-51 registered, no other FR moves.
 # 2026-11-05  # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief -> PRD and spec -> PRD); no CAP, FR or AD is minted. Prior "2026-11-04"   # RE-STAMPED 2026-11-04: chain-currency cascade (spec -> PRD) (the Surface reconcile of Stories 118.7 and 118.8 on spec-pyforge-steward and spec-pyforge-unifying-strategy); no CAP, FR, AD, epic or story moved. See § Currency reconciliation — 2026-11-04.
 # 2026-11-01  # RE-STAMPED 2026-11-01 (steward Stories 118.7 and 118.8): chain-currency cascade (spec -> PRD) for spec-pyforge-steward's amendments of CAP-176, CAP-177 and CAP-178; FR-50, FR-51 and FR-52 amended in place; no FR registered, renumbered or removed. See § Currency reconciliation — 2026-11-01 (Stories 118.7 and 118.8). Prior "2026-11-01"
 # 2026-11-01  # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): chain-currency cascade (brief -> PRD, spec -> PRD) for research/egm-audit-2026-11-01.md (25 of 30 findings accepted) and spec-pyforge-steward's re-derive of CAP-176 and CAP-177; FR-50 and FR-51 amended in place, FR-52 unchanged (CAP-178 rides Story 118.8); no FR registered, renumbered or removed. See § Currency reconciliation — 2026-11-01 (EGM fleet audit). Prior "2026-10-31"
@@ -3173,3 +3173,46 @@ amended on 2026-11-01 and stand as written.
 *Chain-currency cascade (spec -> PRD).*
 
 `spec-pyforge-unifying-strategy` CAP-20 (a start tool does the work it names) adds canopy:FR-51, traced from that capability's intent and success. No other FR moves. It takes up the wiring half of the operator's 2026-11-05 ruling on N1, on the rulings of 2026-11-06.
+
+## Currency reconciliation — 2026-11-10 (CAP-179..CAP-182)
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-steward` gained CAP-179, CAP-180, CAP-181 and CAP-182 on 2026-11-10
+from the station Dream's section of that date (cutover readiness: the steward Spec, suite and shared surfaces tell the truth) and
+the operator's rulings of the same day and their two addenda. Same-day reconcile; each FR is traced from its capability's intent
+and success. FR-53 is the next free id after FR-52.*
+
+### The FR space: FR-53..FR-56 registered
+
+#### FR-53: The steward public contract is one companion, and a meta-test fails when the code has more ← CAP-179
+
+A reader of the steward Spec can list every verb, flag, MCP tool, feature-flag key, environment variable, exit code and entry
+point steward exposes, the Python names other packages import from it, the verbs it has retired and what it needs from the tree,
+without reading source, from one companion beside the Spec (`contract.md`), each row naming the capability that carries it.
+Consequence: `test_public_contract.py` exits 0, and exits 1 when the code gains a verb path, flag, flag key, environment read,
+exit constant or MCP tool or target the contract lacks, or when the contract or the Spec names a verb that is neither live nor
+retired.
+
+#### FR-54: `steward restore --drill` and `steward revoke --sub` drive the host's own commands and own the exit code ← CAP-180
+
+An operator can run a restore drill against a backup and stop one runaway subject through steward, and each reports the host
+command's result with steward's exit code; neither imports Django nor writes run state. Consequence: `test_restore_duty.py` and
+`test_revoke_duty.py` exit 0 and fail without the duty modules, and `steward revoke` with an interpreter that cannot import the
+platform's Django exits 1, never 70, its summary carrying the host command's own error. (Corrected 2026-11-11 with CAP-180's
+success: no message names `--python`.)
+
+#### FR-55: Every steward capability names its source modules and the tests that prove it, and every test names a capability ← CAP-181
+
+Someone rebuilding a steward capability can read which modules realize it, which tests prove it and in which half they run
+(`oracle-map.md`), and every steward test module is named by a capability row or listed as unmapped with a reason.
+Consequence: `test_oracle_map.py` exits 0, and exits 1 when a capability or a test module falls off the map, a row names
+nothing tracked, or a row's proof value disagrees with its tests' `live_tree` markers.
+
+#### FR-56: One steward module names this root's layout and repository, and a test holds the rest of the source to it ← CAP-182
+
+Someone moving steward to another tree changes one module (`root_layout.py`) for the packages directory and this checkout's
+repository identity, which stays with this checkout and does not follow the root of record, and steward reads another station's
+verdict through that station's command, never its import. Consequence: `test_portability.py` exits 0, and exits 1 when a second
+module names this root's layout or repository in a string constant or imports another station.
+
+**Content changed:** this section added; FR-53..FR-56 registered, each derived from its CAP; no FR renumbered or removed.
+`updated:` bumped. The pointers on the FR-8..FR-11, UJ-2, D6 and SM-2 lines and the corrected driver line are Story 122.1's.

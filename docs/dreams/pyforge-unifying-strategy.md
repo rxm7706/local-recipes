@@ -1241,3 +1241,45 @@ Entries through 2026-08-31: [archive § Realization log (historical)](<https://g
 
   This entry mints no capability. The mint that follows writes each station's Dream entry, Spec
   amendments, Stories, ledger keys and story specs.
+- **2026-11-10 (mint: the cutover control plane)** — The mint after the second addendum makes the
+  cutover control plane tell the truth, as steward Epics 120 and 121 under
+  `spec-python-foundry-cutover`, `spec-foundry-regenerate-not-fold` and
+  `spec-foundry-capability-ledger`. The root-of-record flag is the writer lock (`fnd:CAP-8` amended):
+  its consumers are the three ruling 2 names, read through `pyforge.core.cutover_root.root_of_record()`
+  (`spec-pyforge-core:CAP-13`, marshal Story 117.2), and a chain write off the writer is refused in
+  session by the hook (steward Story 121.4) and on every branch by doctor's `writer-lock` source, which
+  reads the flag at the merge base (`spec-pyforge-doctor:CAP-100`, doctor Story 56.5). The operator
+  flips the flag by hand, with no loop running, once the Launch slice is proven; nothing flips it
+  automatically. `steward cutover plan` becomes the generator and validator of the capability ledger,
+  `apply` and the manifest retire, and the generator's two write modes sit behind the kill switch
+  `pyforge.steward.cutover_ledger_write` (`fnd:CAP-9` amended; a switch on a new verb mode, not the
+  retrofit ruling 5 forbids). Launch is one story B lands on itself, written down step by step in
+  `launch-slice.md` (`fnd:CAP-2` amended). Modes follow the written rules of `modes.md`: a never-built
+  capability is `B-only` when a live `blocked` or `backlog` Story carries it and `retire` when none
+  does, and A-only expiries are judged (`spec-foundry-capability-ledger:CAP-1` and
+  `spec-foundry-capability-ledger:CAP-2` amended). A writes Dreams, Frames, Specs and the ledger until
+  the flip; the seed is Dream plus memlog, `archive/**/.memlog.md` included, and a Frame is a pointer to
+  it (`spec-foundry-regenerate-not-fold:CAP-5`, `spec-pyforge-steward:CAP-53`). Story 121.5 is minted
+  `blocked` as the expiry anchor `"steward:121.5"` of the host, platform and portal rows;
+  conda-forge-expert's anchor is mason Story 39.2. Story 44.1 retires like 44.4 to 44.6: its move-list
+  half is gone, and its ledger half lands in Stories 121.1 to 121.7. This entry mints no capability: the
+  three Specs take memlog entries and one re-derive each, and no requirement (the Epic 44, 54 and 67
+  precedent).
+- **2026-11-10 (mint: steward's Spec, suite and shared surfaces)** — The same mint makes steward's own
+  chain tell the truth and lands, on the shared surfaces steward owns, what every station's
+  cutover-readiness work needs, as steward Epics 122 to 124. On this Spec: a station persona names the
+  MCP tools its station's face serves, as that station's `contract.md` lists them, and the eight station
+  persona directories (`.claude/skills/bmad-agent-<station>/**`) join the surface
+  (`spec-pyforge-unifying-strategy:CAP-16` amended); `django-warden` realizes
+  `spec-pyforge-warden:CAP-16`, `spec-pyforge-warden:CAP-17` and `spec-pyforge-warden:CAP-29`, the
+  portal half the operator's ruling split from `spec-pyforge-warden:CAP-26`
+  (`spec-pyforge-unifying-strategy:CAP-4` amended); and Scribe's graph store is the GraphStore port with
+  three drivers, the durable one asserting four governed changesets it never creates
+  (`spec-pyforge-unifying-strategy:CAP-14` amended). The three amendments are memlog entries at mint and
+  one re-derive in steward Story 124.5, which also renders the 2026-11-06
+  `spec-pyforge-unifying-strategy:CAP-20` correction. Epic 124 also gives every split suite its
+  live-tree half as a task (Story 124.1) and a CI job (Story 124.2), states Python 3.14 in the package
+  manifests with one re-lock (Story 124.3) and registers `pyforge.steward.cutover_ledger_write` in the
+  flag tree (Story 124.4); Epics 122 and 123 bind `spec-pyforge-steward:CAP-179` to
+  `spec-pyforge-steward:CAP-182`. This entry mints no capability on this Spec and adds no product
+  behaviour.

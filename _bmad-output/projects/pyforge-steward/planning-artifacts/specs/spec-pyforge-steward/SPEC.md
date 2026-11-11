@@ -2,7 +2,7 @@
 id: SPEC-steward
 spec: pyforge-steward
 status: ready
-updated: "2026-11-01"   # AMENDED 2026-11-01 (steward Stories 118.7 and 118.8, the parked EGM-audit fixes): CAP-178 amended (nic alone writes gitops/<project_name> under its own deploy key GITOPS_DEPLOY_KEY, replacing the GIT_TOKEN PAT; a gitops/** server ruleset with creation, update, deletion and non_fast_forward whose only bypass is that key, the hook claim narrowed to deletion; the branch refusal on every action, up included; the identity probe on origin/gitops/<project_name>; the no-secret rule, the keys-inventory row and an unechoed DutyResult; the flag fallback refuses every repository.existing action), CAP-176 amended (kubectl and helm from the pyforge-steward environment; a non-local up only under the operator's --yes, denied to agents by session_denials steward-deploy-nic-up-yes) and CAP-177 amended (the by-name kubectl/helm refusal; on a cloud config the pack Applications are applied to the cluster with kubectl and never committed or pushed, the operator's 2026-11-01 ruling after the nic 0.17.0 source read); the cost Non-goal's premise ends with the first Hetzner up; the 118.8 Open Question settled; no CAP minted, no AD moves. Prior "2026-11-01"   # AMENDED 2026-11-01 (EGM fleet audit, marshal Story 113.7): CAP-176 amended (the rootless host's preconditions: the inotify limit and a loopback port-forward, no port override; .env and the age identity only when the config names an env: secret; the refusals the verb enforces; nic from SelfExplainML at a floor with no version cap; down passes --auto-approve; a Hetzner success, attended and operator-gated) and CAP-177 amended (/shared under three keys, waived on rootless kind by the operator's 2026-11-01 ruling and proven on rootful Docker or an RWX cluster by Story 118.3 AC3; split-horizon OIDC on kind; the nebari-apps Application contract; the Warden clause narrowed to the chart digests steward journals, spec-pyforge-warden dropped from works-with; success through the pyforge-steward-nkp-probes task), each success naming its command and exit code; both Open Questions settled and one opened for Story 118.8; companion glossary.md added; CAP-178 unchanged (Story 118.8). Prior "2026-10-31"
+updated: "2026-11-11"   # AMENDED 2026-11-11 (fix pass of the cutover-readiness mint, independent review): CAP-180's success no longer claims a message naming --python (exit 1, never 70, the summary carrying the host command's own error); the amendments of existing capabilities are memlog change entries written in this pass and rendered by Story 122.1. Prior "2026-11-10"   # AMENDED 2026-11-10 (cutover-readiness mint, steward-station unit; operator rulings of 2026-11-10 and their two addenda): CAP-179 (the public contract is one companion, contract.md, held by a meta-test), CAP-180 (restore --drill and revoke --sub, shipped 2026-09-02, minted for Stories 41.1 and 42.2), CAP-181 (the oracle map) and CAP-182 (one root-layout module) minted; FR-53..FR-56 on the PRD; no AD moves; the amendments of existing capabilities are Story 122.1's re-derive. Prior "2026-11-01"   # AMENDED 2026-11-01 (steward Stories 118.7 and 118.8, the parked EGM-audit fixes): CAP-178 amended (nic alone writes gitops/<project_name> under its own deploy key GITOPS_DEPLOY_KEY, replacing the GIT_TOKEN PAT; a gitops/** server ruleset with creation, update, deletion and non_fast_forward whose only bypass is that key, the hook claim narrowed to deletion; the branch refusal on every action, up included; the identity probe on origin/gitops/<project_name>; the no-secret rule, the keys-inventory row and an unechoed DutyResult; the flag fallback refuses every repository.existing action), CAP-176 amended (kubectl and helm from the pyforge-steward environment; a non-local up only under the operator's --yes, denied to agents by session_denials steward-deploy-nic-up-yes) and CAP-177 amended (the by-name kubectl/helm refusal; on a cloud config the pack Applications are applied to the cluster with kubectl and never committed or pushed, the operator's 2026-11-01 ruling after the nic 0.17.0 source read); the cost Non-goal's premise ends with the first Hetzner up; the 118.8 Open Question settled; no CAP minted, no AD moves. Prior "2026-11-01"   # AMENDED 2026-11-01 (EGM fleet audit, marshal Story 113.7): CAP-176 amended (the rootless host's preconditions: the inotify limit and a loopback port-forward, no port override; .env and the age identity only when the config names an env: secret; the refusals the verb enforces; nic from SelfExplainML at a floor with no version cap; down passes --auto-approve; a Hetzner success, attended and operator-gated) and CAP-177 amended (/shared under three keys, waived on rootless kind by the operator's 2026-11-01 ruling and proven on rootful Docker or an RWX cluster by Story 118.3 AC3; split-horizon OIDC on kind; the nebari-apps Application contract; the Warden clause narrowed to the chart digests steward journals, spec-pyforge-warden dropped from works-with; success through the pyforge-steward-nkp-probes task), each success naming its command and exit code; both Open Questions settled and one opened for Story 118.8; companion glossary.md added; CAP-178 unchanged (Story 118.8). Prior "2026-10-31"
 owner-dream: docs/dreams/pyforge-steward.md
 covers-dreams:
   - docs/dreams/pyforge-steward.md
@@ -1019,6 +1019,57 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
     `Nebari Infrastructure Core <nic[bot]@users.noreply.github.com>` and `gitops/<project_name>/` holds the generated
     Applications; the post-`up` scan of that range finds no secret-shaped value; the pre-commit scan refuses a planted
     secret-shaped value under `src/platform/deploy/nic/`; both flag states are tested.
+- **CAP-179 — the public contract is one companion, and a meta-test fails when the code has more** ← spec-pyforge-steward CAP-179 (ready 2026-11-10; Story 122.2; works with spec-pyforge-unifying-strategy:CAP-20)
+  - **intent:** `contract.md` beside `SPEC.md` records every CLI verb path and flag, every MCP tool name and target of the
+    steward face, every feature-flag key steward reads or owns, every environment variable it reads, every exit code it
+    defines, its `python -m` and plugin entry points, the Python names other packages import from it, the verbs it has
+    retired, and what it needs from the tree (repo scripts, data directories outside the wheel, pixi tasks it shells, the
+    root sentinel, the estate-bound constants); each row names the capability that carries it, qualified when another Spec
+    owns it. (The 2026-11-10 audit found this Spec naming 9 of 30 `pyforge.steward.*` flag keys, no MCP tool, no environment
+    variable and about half the verbs; decision D1 of that day's design pass, accepted by the operator.)
+  - **success:** `pixi run --frozen -e pyforge-steward env PYTHONPATH=src/shared/packages/pyforge-steward/src:scripts pytest
+    src/shared/packages/pyforge-steward/tests/meta/test_public_contract.py -q` exits 0, and exits 1 when the parser gains a
+    verb path or a flag, the source gains a flag key, an environment read or an `EXIT_*` constant, or the steward MCP face
+    gains a tool or target that `contract.md` lacks, or when `contract.md` or `SPEC.md` names a `steward` verb path that is
+    neither in the parser nor in the contract's Retired verbs table.
+- **CAP-180 — `steward restore --drill` and `steward revoke --sub` drive the host's own commands and own the exit code** ← spec-pyforge-steward CAP-180 (shipped 2026-09-02; minted 2026-11-10 for Stories 41.1 and 42.2)
+  - **intent:** `restore --drill --backup-path <dir>` restores a custom-format dump into a scratch database and asserts the
+    manifest's row counts through the host's `src/platform/db/postgres_backup.py`; `revoke --sub <id> [--python BIN]` runs
+    the host's `manage.py revoke_subject --sub <id> --json` and reports what it said; neither imports Django nor writes
+    `run_state`, and each returns a `DutyResult`. (The two duties Stories 41.1 and 42.2 shipped on 2026-09-02 under
+    Constraints of `spec-pyforge-unifying-strategy`, with no capability; neither reads a kill switch, and the operator's
+    2026-11-10 ruling adds none in this change: the gap is a deferred-work row, written by Story 122.5.)
+  - **success:** `pixi run --frozen -e pyforge-steward env PYTHONPATH=src/shared/packages/pyforge-steward/src:scripts pytest
+    src/shared/packages/pyforge-steward/tests/unit/test_restore_duty.py
+    src/shared/packages/pyforge-steward/tests/unit/test_revoke_duty.py -q` exits 0 and exits non-zero when either duty
+    module is absent; `steward revoke` with an interpreter that cannot import the platform's Django exits 1, never 70, and
+    its summary carries the host command's own error (`revoke failed for <sub>: revoke_subject exited <rc>: <stderr>`).
+- **CAP-181 — every capability names its source modules and the tests that prove it, and every test names a capability** ← spec-pyforge-steward CAP-181 (ready 2026-11-10; Story 123.1; works with CAP-179)
+  - **intent:** `oracle-map.md` beside `SPEC.md` gives one row per capability or contiguous range: the steward source
+    modules that realize it, where its proof runs (`package`, `live-tree`, `platform`, `other-station`, `script`,
+    `attended`, or `none` with a reason) and the test files or globs that prove it; every steward test module is named by a
+    row or listed under *Unmapped* with a reason. (The 2026-11-10 audit found 144 of 178 capabilities cited by no test and
+    nothing mapping a capability to its code or its proof, so a second root could not tell which tests judge a rebuilt
+    capability.)
+  - **success:** `pixi run --frozen -e pyforge-steward env PYTHONPATH=src/shared/packages/pyforge-steward/src:scripts pytest
+    src/shared/packages/pyforge-steward/tests/meta/test_oracle_map.py -q` exits 0, and exits 1 when a capability id in
+    `SPEC.md` has no row, a row names a module, path or glob that matches no tracked file, a row's proof values disagree
+    with the named test modules' `live_tree` markers, or a test module under `tests/unit`, `tests/meta` or
+    `tests/integration` is named nowhere.
+- **CAP-182 — one module names this root's layout and repository, and a test holds the rest of steward's source to it** ← spec-pyforge-steward CAP-182 (ready 2026-11-10; Story 123.2; works with spec-pyforge-core:CAP-13)
+  - **intent:** `pyforge.steward.root_layout` is the one steward module that states where station packages live in this
+    checkout (`src/shared/packages`) and which repository this estate is (its slug, clone URL and owner name); every other
+    module derives from it; those identity values are this checkout's, one constant each (`steward ci`'s default repository,
+    `bootstrap --url`'s default, the marketplace URL), and do not follow the root of record (operator ruling 2026-11-10);
+    the flag tree's relative path comes from `pyforge.core.cutover_root.LOCAL_DEV_RELATIVE`; a verdict another station owns
+    is read from that station's grammar by exit code, never by import, and an exception, should one be needed, is named in
+    the test with its deferred-work id.
+  - **success:** `pixi run --frozen -e pyforge-steward env PYTHONPATH=src/shared/packages/pyforge-steward/src:scripts pytest
+    src/shared/packages/pyforge-steward/tests/meta/test_portability.py -q` exits 0, and exits 1 when a steward source module
+    other than `root_layout.py` gains a string constant (docstrings aside) containing `src/shared/packages` or `rxm7706`, or
+    a module outside the named exceptions imports `pyforge.<another station>`; the exception list is empty, because
+    `session.py`'s `pyforge.doctor` import leaves with Story 123.3 (finding (2) takes `bmad-drift-check`'s verdict
+    everywhere, operator ruling 2026-11-10), and the test fails when a listed entry no longer applies.
 
 ## Constraints
 

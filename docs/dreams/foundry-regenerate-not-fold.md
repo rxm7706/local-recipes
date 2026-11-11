@@ -116,3 +116,8 @@ core/steward/marshal tests as the gate.
 - **2026-09-13** — Strangler kit merged (A #1343 / B #3): Frames v0.3,
   case-list, Epic 55 Spec. Mode contract memorialized on B
   (`docs/foundry/modes.md` + `estate-smoke`).
+- **2026-11-10** — Pointer: the operator's rulings of 2026-11-10 (`docs/dreams/pyforge-unifying-strategy.md`,
+  Realization log, the three 2026-11-10 entries) amend this chain. A writes every Dream, Frame and Spec
+  until the flip; a Frame is a pointer, not a seed; the seed is Dream plus memlog. `fnr:CAP-1` to
+  `fnr:CAP-5` are amended through this Spec's memlog and re-rendered; steward Stories 120.2 and 120.4
+  carry the rest.

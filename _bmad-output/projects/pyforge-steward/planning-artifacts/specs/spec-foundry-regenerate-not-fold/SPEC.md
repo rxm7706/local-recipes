@@ -3,7 +3,7 @@ fold-exemption: different-lifecycle
 spec: foundry-regenerate-not-fold
 status: ready
 created: "2026-09-13"
-updated: "2026-09-17"
+updated: "2026-11-10"
 owner-dream: docs/dreams/foundry-regenerate-not-fold.md
 extends: spec-python-foundry-cutover
 surface: []
@@ -38,29 +38,37 @@ Historical PRD / arch / epics / comments stay on A.
 
 - **CAP-1 — Thin oracle.**
   - **intent:** The operator can freeze a small archived suite that is
-    also the A/B case list for the foundry kernel.
-  - **success:** A tracked list of about 20–40 existing core / steward /
-    marshal cases lives with this Spec (and on B after 54.5); those cases
-    run against foundry trees; Frame frontmatter preflight alone is not
+    also the A/B case list for the foundry kernel and the oracle of the
+    Launch slice.
+  - **success:** A tracked list of existing core / steward / marshal
+    cases lives with this Spec (`case-list.md`; on B after 54.5); every
+    `spec-python-foundry-cutover` `launch-slice.md` step that has an A
+    test has a row;
+    `src/shared/packages/pyforge-steward/tests/meta/test_cutover_case_list.py`
+    holds the count line equal to the rows and exits 0; those cases run
+    against foundry trees; Frame frontmatter preflight alone is not
     acceptance.
 
 - **CAP-2 — Rebuild `pyforge-core` in foundry.**
   - **intent:** Foundry gains `station_port`, hooks, and the cutover-root
-    reader as a new leaf under `src/packages/`, not a copy of
+    reader as a new leaf under `src/packages/`, rebuilt from Dream plus
+    memlog and the re-derived Spec (a Frame points at them), not a copy of
     `src/shared/packages/pyforge-core`.
   - **success:** The public core contract plus the CAP-1 core slice are
     green on B, with an A/B row that is not `diverge`.
 
 - **CAP-3 — Rebuild steward in foundry.**
-  - **intent:** `pyforge steward` (provision, workspace, frames, guards,
-    cutover, suite register path) exists as a regenerated engine with CLI
-    and MCP.
+  - **intent:** `pyforge steward` (provision, workspace, guards, cutover,
+    suite register path) exists as an engine regenerated from Dream plus
+    memlog and the re-derived Spec, with CLI and MCP; the Frame check is
+    the `frame-preflight` task, not a duty.
   - **success:** Steward's CAP-1 slice is green on B with an A/B row;
     implementation commits land only in a python-foundry worktree.
 
 - **CAP-4 — Rebuild marshal in foundry.**
-  - **intent:** `pyforge marshal` cursor-native dispatch exists as a
-    regenerated engine with CLI and MCP.
+  - **intent:** `pyforge marshal` cursor-native dispatch exists as an
+    engine regenerated from Dream plus memlog and the re-derived Spec,
+    with CLI and MCP.
   - **success:** One dispatch against the foundry remote plus the CAP-1
     marshal slice are green with an A/B row. Drain corners not in the
     thin list stay on A until `fnd:CAP-9` / 44.14 grows the list.
@@ -68,9 +76,12 @@ Historical PRD / arch / epics / comments stay on A.
 - **CAP-5 — Dual-root A/B.**
   - **intent:** The operator can keep one starting contract across two
     git roots and compare behavior without copying BMAD trees or code.
-  - **success:** `ab-sync.md` is in `companions:`; B (after 54.5) has a
-    pin file and a case-list stub; writer lock holds (one Dream author);
-    `diverge` blocks `verified-in-foundry`; no `_bmad-output` rsync.
+  - **success:** `ab-sync.md` is in `companions:`; A writes every Dream,
+    Frame, Spec and the capability ledger until the flip, and B reads A at
+    the SHA in its `docs/foundry/PIN.md` and writes none of them; the flip
+    hands the writer lock to B (`fnd:CAP-8`); B (after 54.5) has a pin
+    file and a case-list stub; `diverge` blocks `verified-in-foundry`; no
+    `_bmad-output` rsync.
     B's starting station five-fields are `spec-pyforge-marshal`,
     `spec-pyforge-steward`, `spec-pyforge-atlas`, `spec-pyforge-doctor`,
     `spec-pyforge-herald`, `spec-pyforge-mason`, `spec-pyforge-scribe`,
@@ -79,8 +90,10 @@ Historical PRD / arch / epics / comments stay on A.
 
 ## Constraints
 
-- After the 48h kit exists on B, B is writer for new Dreams / Frames /
-  Specs. A mirrors by SHA pin. Until then this Spec on A is the seed.
+- A writes every Dream, Frame, Spec and the capability ledger until the
+  `pyforge.cutover_root` flip; B reads A at the SHA in its
+  `docs/foundry/PIN.md` and writes none of them; the flip hands the
+  writer lock to B.
 - Factory / CFE / recipes stay invented on A until a foundry CFE exists.
   Kernel package commits only on B.
 - The eight folded station Specs on A are B's starting contracts

@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 684
+# stories: 719
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -112,6 +112,31 @@ development_status:
   12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster: done
   12-8-github-projects-v2-lands-in-github-metrics-via-dlt: done
   12-9-ocp-as-a-portability-profile: done
+  120-1-the-cutover-spec-and-its-decisions-name-one-writer-no-fold-and-a-self-hosted-launch: backlog
+  120-2-the-regenerate-and-ledger-specs-follow-the-rulings-and-the-ledger-schema-is-written-once: backlog
+  120-3-epic-44-the-epic-bindings-and-the-chain-standard-say-what-is-true: backlog
+  120-4-the-nine-frames-point-at-the-seed-and-agree-with-the-rulings: backlog
+  120-5-the-case-list-counts-itself-and-covers-the-launch-slice: backlog
+  121-1-a-generator-derives-the-capability-ledger-from-the-live-specs: blocked
+  121-2-steward-cutover-plans-the-ledger-and-no-longer-copies-trees: blocked
+  121-3-the-capability-ledger-takes-the-rulings-archived-rows-leave-modes-and-expiries-are-decided: backlog
+  121-4-a-chain-write-off-the-writer-is-refused-in-session: backlog
+  121-5-the-host-platform-and-portals-get-their-foundry-contract: blocked
+  121-6-the-ledger-check-refuses-a-row-that-contradicts-its-spec-or-the-rules: backlog
+  121-7-the-capability-ledger-is-regenerated-from-the-swept-specs-and-holds: blocked
+  122-1-the-steward-spec-s-markers-numbers-and-names-match-the-tree-and-restore-and-revoke-have-a-capability: backlog
+  122-2-steward-s-public-contract-is-one-companion-and-a-test-fails-when-the-code-has-more: blocked
+  122-3-steward-s-help-and-output-cite-today-s-capability-ids: blocked
+  122-4-comments-and-docstrings-in-steward-s-source-and-tests-cite-today-s-capability-ids: blocked
+  122-5-the-steward-and-host-specs-close-on-what-landed-shipped-markers-and-one-surface-reconcile-each: blocked
+  123-1-every-steward-capability-names-the-modules-that-realize-it-and-the-tests-that-prove-it: backlog
+  123-2-one-steward-module-names-this-root-s-layout-and-repository-and-prove-landed-reads-doctor-through-its-command: backlog
+  123-3-estate-plan-refuses-when-its-pixi-dry-run-fails-and-the-share-tree-tests-say-where-they-run: backlog
+  124-1-every-suite-that-marked-its-live-tree-readers-has-its-two-task-halves: backlog
+  124-2-each-split-suite-runs-its-live-tree-half-as-its-own-ci-job: backlog
+  124-3-core-s-the-kit-s-and-steward-s-manifests-state-python-3-14-a-check-holds-every-package-floor-and-the-lock-follows: backlog
+  124-4-the-cutover-ledger-write-kill-switch-joins-the-flag-tree-and-every-shipped-flag-table: backlog
+  124-5-each-persona-names-the-mcp-tools-its-station-s-face-serves-and-the-host-spec-governs-the-personas-and-says-what-scribe-s-graph-store-is: backlog
   13-1-workspace-verbs-over-git-worktree: done
   13-2-status-and-the-feed-mirror-decision: done
   13-3-a-repo-set-opens-as-one-workspace: done
@@ -182,7 +207,7 @@ development_status:
   29-2-personas-act-only-through-grammar-and-mcp: done
   29-3-five-tier-check: done
   29-4-the-station-skills-are-recompiled-to-cover-the-verbs-the-contract-names: done
-  29-5-the-station-skills-carry-the-fixes-the-2026-11-05-audit-accepted: backlog
+  29-5-the-station-skills-carry-the-fixes-the-2026-11-05-audit-accepted: blocked
   3-1-any-named-pixi-environment-materializes-with-one-command: done
   3-2-a-bmad-loop-runner-and-its-environment-materialize-together: done
   3-3-the-operator-can-see-every-environment-that-exists-before-picking-one: done
@@ -508,6 +533,16 @@ development_status:
   epic-119-retrospective: optional
   epic-12: done
   epic-12-retrospective: optional
+  epic-120: backlog
+  epic-120-retrospective: optional
+  epic-121: backlog
+  epic-121-retrospective: optional
+  epic-122: backlog
+  epic-122-retrospective: optional
+  epic-123: backlog
+  epic-123-retrospective: optional
+  epic-124: backlog
+  epic-124-retrospective: optional
   epic-13: done
   epic-13-retrospective: optional
   epic-14: done

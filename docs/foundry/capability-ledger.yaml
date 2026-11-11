@@ -828,6 +828,24 @@ capabilities:
     mode: rebuild
     note: generated catalog (scribe catalog bmad-estate) + bmad-estate-check detector; Stories 24.1-24.3, added 2026-09-29; B re-derives it from its own estate sources
     path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-33
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "scribe index refresh recomputes a derived artifact only when its sources changed"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-34
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "scribe index move-list lists the lines a package fold would touch"
+    mode: retire
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-35
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "No Spec is behind its memlog"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
   - id: bmad-method-core-upgrade:CAP-1
     spec: bmad-method-core-upgrade
     station: pyforge-steward
@@ -4574,6 +4592,31 @@ capabilities:
     heading: "the GitOps source is NIC's local directory on kind, or the monorepo on a branch that only nic writes"
     mode: rebuild
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-179
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the public contract is one companion, and a meta-test fails when the code has more"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-180
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "steward restore --drill and steward revoke --sub drive the host's own commands and own the exit code"
+    mode: A-only
+    expiry: "steward:121.5"
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-181
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "every capability names its source modules and the tests that prove it, and every test names a capability"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-182
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "one module names this root's layout and repository, and a test holds the rest of steward's source to it"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - id: pyforge-warden:CAP-1
     spec: pyforge-warden
     station: pyforge-warden
@@ -4739,6 +4782,25 @@ capabilities:
     station: pyforge-warden
     heading: "Warden scans the enterprise fleet, one verdict per repo"
     mode: rebuild
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-27
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "the PR-gate hook book: scanners are plugins, and only warden publishes the verdict"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-28
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "the public contract is one companion, and a test holds the code to it"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-29
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "the fleet runs from the portal: inventory, per-repo scans and operator-approved proposals"
+    mode: A-only
+    expiry: "steward:121.5"
     path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
   # atlas one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
   - id: pyforge-atlas:CAP-1
@@ -5178,6 +5240,12 @@ capabilities:
     heading: "every atlas component provisions from conda-forge through pixi on the 3.14 floor, air-gapped"
     mode: rebuild
     path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-73
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "the public contract is written beside the Spec and held to the code"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
   - id: pyforge-mason:CAP-1
     spec: pyforge-mason
     station: pyforge-mason
@@ -5388,6 +5456,18 @@ capabilities:
     spec: pyforge-mason
     station: pyforge-mason
     heading: "The feedstock refresh campaign is Mason's: every feedstock rxm7706 can modify has a local recipe at its published version"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-36
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "mason recipe build builds a factory-island recipe natively from either root"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-37
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "Mason ships three sockets: the build-engine hook, the air-gap distribution contract and the boot re-index"
     mode: rebuild
     path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
 
@@ -5953,6 +6033,48 @@ capabilities:
     heading: "Doctor holds the verdict for every conformance detector"
     mode: rebuild
     path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-94
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "a change under a rebuilding capability's frozen paths is named"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-95
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "every ledger row is true to its capability, its Spec and its expiry"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-96
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "doctor flags kill-switch is Doctor's one actuator"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-97
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "Doctor's public contract is written once, and the package-local half is the oracle"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-98
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "the platform's policy suite is judged by Doctor, not by the platform"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-99
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "a config key set at two paths of the central BMAD config is named before a render halts on it"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-100
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "a chain write off the writer is named"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
   - id: pyforge-herald:CAP-1
     spec: pyforge-herald
     station: pyforge-herald
@@ -6318,5 +6440,11 @@ capabilities:
     spec: pyforge-herald
     station: pyforge-herald
     heading: "one generator renders the whole Pages site"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-62
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "herald's public contract is one companion, and a test holds the code to it"
     mode: rebuild
     path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
