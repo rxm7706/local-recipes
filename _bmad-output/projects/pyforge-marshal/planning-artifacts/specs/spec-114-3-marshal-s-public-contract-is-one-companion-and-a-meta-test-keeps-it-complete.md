@@ -127,3 +127,7 @@ Parent: `spec-pyforge-marshal:CAP-304` (memlog 2026-11-10; rendered by Story 114
 ## Spec Change Log
 
 - 2026-11-10: minted at `blocked` (forward dependency: until S-115.3, S-115.4 and S-116.1 are done) by the cutover-readiness mint (operator 2026-11-10, "Accept all, run mint"; `docs/dreams/pyforge-unifying-strategy.md`, Realization log, the 2026-11-10 entry and its two addenda). The Dream entry (`docs/dreams/pyforge-marshal.md`, 2026-11-10) and the memlog entries of `spec-pyforge-marshal` came first; `SPEC.md` is rendered by Story 114.1.
+
+## Planned deferral (written at build)
+
+- Three registered finding codes have no lattice member: `pyforge.marshal.core.verdict.classify` raises `ValueError` for `MRS-CHAIN-005` (emitted by `cli/planning.py`), `MRS-PREFLIGHT-016` (`cli/init.py`) and `MRS-REFRESH-008` (`cli/refresh.py`), so a verdict computed over any of them raises instead of projecting an exit code (spec-pyforge-marshal:CAP-13, marshal's AD-31: `classify` is meant to be total). The fix is a `_CLASSIFY_TABLE` row for each in `core/verdict.py`, outside this story's surface; `contract.md` records the three as `unclassified`, so the row that fixes them also changes their *Verdict* cell and `test_public_contract.py` reds until it does. The station closer (Story 116.5) writes the ledger row.
