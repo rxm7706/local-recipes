@@ -941,7 +941,7 @@ def test_live_tree_reference_headings_never_duplicate_and_satellites_do() -> Non
     keys = one_chain.snapshot_fr_findings(_live_root())
     dups = {slug: [k for k in v if k.startswith("fr-duplicate-id:")] for slug, v in keys.items()}
     assert dups["pyforge-steward"] == [] and dups["pyforge-herald"] == [] and dups["pyforge-marshal"] == []
-    assert "fr-duplicate-id:FR-1" in dups["pyforge-atlas"]  # the Unity / Wasm satellite sections
+    assert dups["pyforge-atlas"] == []  # atlas 41.2: the Unity / Wasm satellites are Fold provenance record sections
 
 
 def test_live_tree_honest_lockstep_runs_stay_quiet() -> None:
