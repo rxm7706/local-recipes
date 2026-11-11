@@ -183,22 +183,44 @@ POSTER = """<!DOCTYPE html>
 
 #: Story 43.5: the stations the dossier's ``check:`` stats measure, each fixture package with a known line count.
 STATIONS = ("atlas", "doctor", "herald", "marshal", "mason", "scribe", "steward", "warden")
+#: Story 51.1: where the measurer counts a station's stories and epics done, under the tree it measures.
+LEDGER_REL = "_bmad-output/projects/pyforge-{}/planning-artifacts/sprint-status-ledger.yaml"
+
+
+def _package(pkg: Path, name: str, src_lines: int, files: int, test_lines: int) -> dict[str, int]:
+    for n in range(files):
+        lines = src_lines - (files - 1) if n == 0 else 1
+        write(pkg / "src" / "pyforge" / name / f"mod{n}.py", "x = 1\n" * lines)
+    write(pkg / "tests" / "test_mod.py", "y = 2\n" * test_lines)
+    write(pkg / "pyproject.toml", '[project]\nrequires-python = ">=3.14"\n')
+    return {"src_lines": src_lines, "src_files": files, "test_lines": test_lines}
 
 
 def station_packages(root: Path) -> dict[str, dict[str, int]]:
     """A package per station under ``root/src/shared/packages/`` with known counts, for ``verify_claims.py``'s
     measurer (Story 43.5): station ``i`` has ``1000 + 7 * i`` source lines in ``2 + i`` files and ``500 + i`` test
-    lines. Returns ``{station: {"src_lines", "src_files", "test_lines"}}``."""
+    lines. Story 51.1 adds what the dossier's other counted figures read: each station's sprint ledger with
+    ``3 + i`` stories and ``1 + i`` epics done beside a backlog and a blocked story, an open epic and two
+    retrospective keys (one ``done``), none of which counts; and ``pyforge-core`` (the scale table's ``core`` row),
+    with 600 source lines in 4 files and 300 test lines. Returns ``{station: {"src_lines", "src_files", "test_lines",
+    "stories", "epics"}, "core": {"src_lines", "src_files", "test_lines"}}``."""
+    packages = root / "src" / "shared" / "packages"
     counts = {}
     for i, station in enumerate(STATIONS):
-        pkg = root / "src" / "shared" / "packages" / f"pyforge-{station}"
-        src_lines, files = 1000 + 7 * i, 2 + i
-        for n in range(files):
-            lines = src_lines - (files - 1) if n == 0 else 1
-            write(pkg / "src" / "pyforge" / station / f"mod{n}.py", "x = 1\n" * lines)
-        write(pkg / "tests" / "test_mod.py", "y = 2\n" * (500 + i))
-        write(pkg / "pyproject.toml", '[project]\nrequires-python = ">=3.14"\n')
-        counts[station] = {"src_lines": src_lines, "src_files": files, "test_lines": 500 + i}
+        counts[station] = _package(packages / f"pyforge-{station}", station, 1000 + 7 * i, 2 + i, 500 + i)
+        stories, epics = 3 + i, 1 + i
+        status = {f"{epics}-{n}-done-story-{n}": "done" for n in range(1, stories + 1)}
+        status |= {f"epic-{n}": "done" for n in range(1, epics + 1)}
+        open_epic = epics + 1
+        status |= {f"{open_epic}-1-open-story": "backlog", f"{open_epic}-2-held-story": "blocked"}
+        status |= {
+            f"epic-{open_epic}": "in-progress",
+            "epic-1-retrospective": "done",
+            "epic-2-retrospective": "optional",
+        }
+        write(root / LEDGER_REL.format(station), yaml.safe_dump({"development_status": status}, sort_keys=False))
+        counts[station] |= {"stories": stories, "epics": epics}
+    counts["core"] = _package(packages / "pyforge-core", "core", 600, 4, 300)
     return counts
 
 

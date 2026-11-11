@@ -8,6 +8,12 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+import pytest
+
+# Story 52.1 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 _JS_TRACKED_SUFFIXES = (".mjs", ".js", ".mts", ".ts", ".jsx", ".tsx")
 _VITE_EXTENSIONS = (".mjs", ".js", ".mts", ".ts", ".jsx", ".tsx", ".json")
 _SKIP_DIR_NAMES = frozenset({"node_modules", "build", ".astro"})

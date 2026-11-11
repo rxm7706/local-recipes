@@ -16,15 +16,16 @@ summary: 'Where the A→B cutover stands, and the evidence for it: **A** (`local
 stats:
 - value: '8'
   label: Stations
-- value: ~261K
+  check: stations
+- value: ~281K
   label: Lines of source
   check: fleet_src_lines
-- value: '1'
-  label: Shared leaf package
-- value: 4×
-  label: Reuse the same verdict lattice
-- value: '17'
-  label: Claims this pass found stale
+- value: ~461K
+  label: Lines of tests
+  check: fleet_test_lines
+- value: 1,690 / 449
+  label: Stories / epics done
+  check: fleet_stories_epics
 toc:
 - id: estate
   label: A→B cutover
@@ -325,17 +326,18 @@ sections:
       way." — the package''s own README'
   - type: stats
     stats:
-    - value: 33,588
-      label: Lines · 130 files
+    - value: 41,217
+      label: Source lines · 143 files
       check: src_lines
-    - value: 8 / 11
-      label: Pipelines wired to MCP
-    - value: '13'
-      label: MCP tools
+    - value: 55,279
+      label: Test lines
+      check: test_lines
+    - value: 155 / 40
+      label: Stories / epics done
+      check: stories_epics
     - value: py3.14
-      label: Floor — now the whole fleet's
-    - value: +6,663
-      label: Lines added since last pass
+      label: Python floor
+      check: python_floor
   - type: prose
     body:
     - 'Atlas is the Kedro/Dagster/DuckDB rewrite of what used to be a single SQLite-backed script (`cf_atlas.db`,
@@ -436,17 +438,18 @@ sections:
       disable a check that judges the Marshal."'
   - type: stats
     stats:
-    - value: 28,550
-      label: Lines · 48 files
+    - value: 30,120
+      label: Source lines · 49 files
       check: src_lines
-    - value: '5'
-      label: Commands
-    - value: '34'
-      label: Named finding sources
-    - value: 0,2
-      label: Exit domain — subset of Warden's
-    - value: 4,964
-      label: Lines in `sources/chain.py` alone
+    - value: 45,988
+      label: Test lines
+      check: test_lines
+    - value: 172 / 54
+      label: Stories / epics done
+      check: stories_epics
+    - value: py3.14
+      label: Python floor
+      check: python_floor
   - type: prose
     body:
     - 'Doctor''s own description: *"Pre-flight + fleet-watch diagnostics CLI consolidating pyforge-warden
@@ -510,17 +513,18 @@ sections:
     md: '"Dream-to-deck bridge CLI — seeds, pulls, and syncs Claude Design decks via the herald deck subcommands."'
   - type: stats
     stats:
-    - value: 17,596
-      label: Lines · 38 files
+    - value: 17,646
+      label: Source lines · 39 files
       check: src_lines
-    - value: '5'
-      label: Top-level commands
-    - value: 47 / 12
-      label: Stories / epics shipped
-    - value: '0'
-      label: MCP server routes found in-source
-    - value: 6 / 6
-      label: Claims reverified, all holding
+    - value: 32,858
+      label: Test lines
+      check: test_lines
+    - value: 152 / 49
+      label: Stories / epics done
+      check: stories_epics
+    - value: py3.14
+      label: Python floor
+      check: python_floor
   - type: prose
     body:
     - 'Five top-level commands: `deck` (seed / pull / status / watch / push / qa / pptx-spec / pptx-fill),
@@ -578,17 +582,18 @@ sections:
       landing, fleet status, and adapter portability." — the package''s own `pyproject.toml`'
   - type: stats
     stats:
-    - value: 109,570
-      label: Lines · 204 files — largest station
+    - value: 114,933
+      label: Source lines · 213 files
       check: src_lines
-    - value: '2'
-      label: Dispatch engines
-    - value: 21 / 55
-      label: Command groups / parsers
-    - value: '33'
-      label: Policy keys — closed vocabulary
-    - value: AD-72
-      label: Highest design decision
+    - value: 181,687
+      label: Test lines
+      check: test_lines
+    - value: 525 / 108
+      label: Stories / epics done
+      check: stories_epics
+    - value: py3.14
+      label: Python floor
+      check: python_floor
   - type: prose
     body:
     - 'Marshal supervises two independent, alternative ways to get a story implemented — neither wraps
@@ -730,16 +735,18 @@ sections:
       canonical… It is never forked." — the package''s own README'
   - type: stats
     stats:
-    - value: 9,424
+    - value: 9,489
       label: Source lines · 23 files
       check: src_lines
-    - value: 28,072
-      label: Test lines — 3.0×
+    - value: 30,451
+      label: Test lines
       check: test_lines
-    - value: '13'
-      label: CLI verbs, 4 nouns
-    - value: 12 / 12
-      label: Claims reverified, all holding
+    - value: 126 / 34
+      label: Stories / epics done
+      check: stories_epics
+    - value: py3.14
+      label: Python floor
+      check: python_floor
   - type: prose
     body:
     - 'Mason has no dedicated content skill the way its seven siblings do — and that''s a deliberate rule,
@@ -791,15 +798,18 @@ sections:
       for team-relevant decisions, ADRs, and project state."'
   - type: stats
     stats:
-    - value: 5,893
-      label: Lines · 18 files
+    - value: 5,982
+      label: Source lines · 18 files
       check: src_lines
-    - value: 4 / 7
-      label: Command groups / subcommands
-    - value: '12'
-      label: Compile surfaces
-    - value: '3'
-      label: Swappable storage backends
+    - value: 11,819
+      label: Test lines
+      check: test_lines
+    - value: 56 / 29
+      label: Stories / epics done
+      check: stories_epics
+    - value: py3.14
+      label: Python floor
+      check: python_floor
   - type: prose
     body:
     - 'A strict three-layer pipeline: **capture** (the only path allowed to write under `.claude/memory/`
@@ -869,16 +879,18 @@ sections:
     md: '"A result is evidence, not a scratchpad." — `DutyResult`''s own docstring'
   - type: stats
     stats:
-    - value: 35,770
-      label: Source lines · 74 files
+    - value: 41,525
+      label: Source lines · 80 files
       check: src_lines
-    - value: 49,783
+    - value: 64,770
       label: Test lines
       check: test_lines
-    - value: '15'
-      label: Duties (README documents 6)
-    - value: '70'
-      label: Crash exit code
+    - value: 428 / 112
+      label: Stories / epics done
+      check: stories_epics
+    - value: py3.14
+      label: Python floor
+      check: python_floor
   - type: prose
     body:
     - 'Fifteen "duties," each a structural (Protocol-conforming, not inherited) unit of platform work
@@ -935,17 +947,18 @@ sections:
       and acting as a strict CI/CD exit-code gate."'
   - type: stats
     stats:
-    - value: 20,194
-      label: Lines · 41 files
+    - value: 20,562
+      label: Source lines · 42 files
       check: src_lines
-    - value: '7'
-      label: Status rungs — the fleet's largest lattice
-    - value: '24'
-      label: Flags on its one real subcommand
-    - value: 4 + 4
-      label: Real engines + commercial stubs
-    - value: 18 / 18
-      label: Claims reverified, all holding
+    - value: 38,000
+      label: Test lines
+      check: test_lines
+    - value: 76 / 23
+      label: Stories / epics done
+      check: stories_epics
+    - value: py3.14
+      label: Python floor
+      check: python_floor
   - type: prose
     body:
     - 'Unlike every other station, Warden''s CLI is essentially one subcommand — `scan`, governed by twenty-four
@@ -1248,75 +1261,83 @@ sections:
     num: '09.6'
     text: Scale, side by side
   - type: table
+    check: src_lines
     headers:
     - Station
     - Source lines
     - Files
     - Shape
     rows:
-    - cells:
+    - section: marshal
+      cells:
       - Marshal
-      - 109,570
-      - '204'
+      - 114,933
+      - '213'
       - Largest by far — 42% of all station source; two dispatch engines plus a whole token-economy layer
       mono:
       - true
       - true
       - true
       - false
-    - cells:
+    - section: steward
+      cells:
       - Steward
-      - 35,770
-      - '74'
+      - 41,525
+      - '80'
       - 15 duties; `upgrade.py` alone is 4,294 lines
       mono:
       - true
       - true
       - true
       - false
-    - cells:
+    - section: atlas
+      cells:
       - Atlas
-      - 33,588
-      - '130'
+      - 41,217
+      - '143'
       - A real Kedro project plus 11 pipeline packages, now with a2a, rag and factory subsystems
       mono:
       - true
       - true
       - true
       - false
-    - cells:
+    - section: doctor
+      cells:
       - Doctor
-      - 28,550
-      - '48'
+      - 30,120
+      - '49'
       - Dominated by one 4,964-line Marshal-oversight module
       mono:
       - true
       - true
       - true
       - false
-    - cells:
+    - section: warden
+      cells:
       - Warden
-      - 20,194
-      - '41'
+      - 20,562
+      - '42'
       - Densest per-file — one CLI verb, four real engines
       mono:
       - true
       - true
       - true
       - false
-    - cells:
+    - section: herald
+      cells:
       - Herald
-      - 17,596
-      - '38'
+      - 17,646
+      - '39'
       - Deck bridge core + Four Moments + own React dashboard
       mono:
       - true
       - true
       - true
       - false
-    - cells:
+    - section: mason
+      cells:
       - Mason
-      - 9,424
+      - 9,489
       - '23'
       - Heaviest test ratio of all (3.0:1)
       mono:
@@ -1324,9 +1345,10 @@ sections:
       - true
       - true
       - false
-    - cells:
+    - section: scribe
+      cells:
       - Scribe
-      - 5,893
+      - 5,982
       - '18'
       - Smallest — capture/compile/recall, plus an index group
       mono:
@@ -1334,9 +1356,10 @@ sections:
       - true
       - true
       - false
-    - cells:
+    - section: core
+      cells:
       - pyforge-core
-      - 4,049
+      - 4,368
       - '18'
       - The leaf every one of the above builds on — and now their HTTP client layer too
       mono:

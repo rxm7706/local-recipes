@@ -25,6 +25,10 @@ from pyforge.herald.status_pages import STATUS_PAGES_FLAG, status_pages_enabled
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "meta"))
 from pages_astro import DOCS_SITE, REPO_ROOT, needs_node, ts  # noqa: E402 -- the shared Pages helpers
 
+# Story 52.1 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 _FLAG = "pyforge.herald.status_pages"
 flag_provider = make_flag_provider_fixture()
 

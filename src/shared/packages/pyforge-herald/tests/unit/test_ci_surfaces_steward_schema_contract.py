@@ -7,8 +7,14 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "meta"))
 from pages_astro import DOCS_SITE, REPO_ROOT, needs_node, ts  # noqa: E402 -- the shared Pages helpers
+
+# Story 52.1 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
 
 SCHEMA_REL = "src/shared/packages/pyforge-steward/src/pyforge/steward/data/ci-status-schema.json"
 

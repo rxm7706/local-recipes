@@ -24,7 +24,17 @@ context:
   - docs/dreams/pyforge-unifying-strategy.md
   - docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md
 warnings: [oversized]
-deferred: []
+deferred:
+  - id: DW-herald-50-1-3
+    summary: "48 open rows of herald's deferred-work ledger carry no severity, so a sweep cannot rank them."
+    evidence: "The 2026-11-10 cutover readiness audit counted 68 open rows of 113 (1 high, 3 medium, 16 low, 48 unlabelled); Story 50.1's build re-counted the same figures on 2026-11-11. Fix: one `bmad-loop sweep` over herald's ledger, which labels each open row or closes it."
+    location: _bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md
+    severity: low
+  - id: DW-herald-50-1-4
+    summary: "CAP-51's success clause that `deck-sync-proof`'s opt-in live run still passes is unproven: Story 25.1 did not re-run the live proof after the Guild-env move, and the only live runs, on 2026-09-19, refused the standalone HTML read-back (DW-FU-23-6-1)."
+    evidence: "Story 25.1's spec records the residual risk: the opt-in live run was not re-run there. The two live runs of 2026-09-19 (`spec-pyforge-herald/sync-proof-2026-09-19.md`) both ended `failed` on the standalone HTML read-back. Fix: once DW-FU-23-6-1 is fixed, the operator runs `HERALD_LIVE_SYNC_PROOF=1 pixi run -e pyforge-herald deck-sync-proof -- --slug pyforge-warden` twice and records both reports; live Design credentials make it operator-owned."
+    location: src/shared/packages/pyforge-herald/src/pyforge/herald/sync_all.py
+    severity: low
 ---
 
 <intent-contract>
@@ -233,6 +243,51 @@ EOF
   no instruction to leave `ready`, so a render that followed them would fail AC2. A fifteenth `decision` entry on the
   Spec's memlog gives each a shipped marker; the groups above, the epics.md Story 50.1 block and its reconciliation
   section now say fifteen. AC2 is unchanged.
+- 2026-11-11 (build): the Spec's memlog gained one `change` entry with the shipped-date table, then one anchored
+  script render (`render_50_1.py`) and the two self-validate events. Each date is the landing of the last story
+  before Epic 50 whose FR/AD line cites the capability (a pre-fold id read through its provenance arrow; 'on',
+  'extending', 'fix under', 'binds' and 'bound' citations count; Story 47.1's text-only range dates nothing), from
+  the latest `Merge pyforge-herald/<key> into main` merge, else the story spec's flip to `done`:
+
+  | Capability | Shipped | Dated by | Source |
+  |---|---|---|---|
+  | CAP-20, CAP-21 | 2026-09-20 | 21.4 | flip `5e70a51cc1` |
+  | CAP-22 | 2026-09-20 | 23.3 (binds lockstep CAP-3) | flip `5e70a51cc1` |
+  | CAP-23 | 2026-09-18 | 21.10 | flip `f603915b4b` |
+  | CAP-24 | 2026-09-18 | 21.11 | flip `97354c1e50` |
+  | CAP-25 | 2026-09-16 | 21.12 | flip `91e94bb1f9` |
+  | CAP-26, CAP-27, CAP-28 | 2026-09-10 | 19.3 | flip `0be78eee8a` |
+  | CAP-29 | 2026-09-18 | 23.1 | merge `1dd017bc21` |
+  | CAP-30 | 2026-09-18 | 23.2 | merge `489a2d2d19` |
+  | CAP-31, CAP-36 | 2026-10-08 | 23.6 (second landing) | merge `a09b5667c5` |
+  | CAP-32 | 2026-09-17 | 21.3 (carries its absorbed AC; no FR/AD line cites it) | flip `1113e6eceb` |
+  | CAP-33 | 2026-09-20 | 23.3 | flip `5e70a51cc1` |
+  | CAP-34 | 2026-09-20 | 23.4 | flip `5e70a51cc1` |
+  | CAP-35 | 2026-10-15 | 43.2 | flip `97b83c3d6b` |
+  | CAP-37 | 2026-08-24 | 13.3 | flip `538c7b5652` |
+  | CAP-38 | 2026-10-11 | 36.1, 19.2 | merges `ededb88c09`, `ba613abab3` |
+  | CAP-39 | 2026-10-11 | 19.2 | merge `ba613abab3` |
+  | CAP-40, CAP-41 | 2026-09-10 | 19.4 | flip `eac72dfb53` |
+  | CAP-42 | 2026-08-22 | 15.2 | flip `edf4470ad2` |
+  | CAP-43, CAP-47 | 2026-10-14 | 39.1 | merge `9f79909980` |
+  | CAP-44 | 2026-10-15 | 43.1, 43.5 | merge `ffeecc36cf`, flip `97b83c3d6b` |
+  | CAP-48 | 2026-09-18 | 24.1 | merge `fb2e983f96` |
+  | CAP-50 | 2026-09-18 | 24.3 | merge `709c47bf2f` |
+  | CAP-51 | 2026-09-20 | 25.1 | flip `4d0776b4d2` |
+  | CAP-52 | 2026-10-14 | 41.1, 44.1 | merge `afdd7622c3`, flip `2a53695f5a` |
+  | CAP-53, CAP-55 | 2026-10-15 | 43.2 | flip `97b83c3d6b` |
+  | CAP-54 | 2026-10-11 | 38.1 | merge `e0b8ceae0c` |
+  | CAP-56 | 2026-10-15 | 42.3 | flip `97b83c3d6b` |
+  | CAP-57 | 2026-10-08 | 32.3 | merge `e93ba7bf34` |
+  | CAP-58 | 2026-10-15 | 42.1 | flip `97b83c3d6b` |
+  | CAP-59, CAP-60 | 2026-11-01 | 42.4 | flip `bd154aaa17` |
+  | CAP-61 | 2026-10-16 | 45.1 | merge `9637751e73` |
+
+  Retired: CAP-6 2026-11-10; CAP-45 and CAP-49 2026-10-15. CAP-46 and CAP-62 stay `ready`. One shipped-group
+  success clause was found unproven: CAP-51's "`deck-sync-proof`'s opt-in live run still passes" (Story 25.1 did not
+  re-run it; the only live runs, 2026-09-19, refused the standalone HTML read-back), so CAP-51 takes
+  `; not met: deck-sync-proof's opt-in live run has never passed, DW-herald-50-1-4`, and `DW-herald-50-1-4` joins
+  `DW-herald-50-1-3` in the ledger and in this spec's `deferred:` frontmatter.
 
 ## Planned deferral (written at build)
 

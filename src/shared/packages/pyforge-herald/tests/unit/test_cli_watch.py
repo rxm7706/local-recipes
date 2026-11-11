@@ -14,9 +14,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from pyforge.herald import cli
 from pyforge.herald import watch as watch_module
 from pyforge.herald.errors import AuthError, HeraldError
+
+# Story 52.1 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
 
 
 def test_deck_watch_help_exits_zero():

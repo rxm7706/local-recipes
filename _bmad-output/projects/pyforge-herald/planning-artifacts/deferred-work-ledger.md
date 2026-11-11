@@ -1004,6 +1004,7 @@ deployment.
   origin: found live during Story 21.7's push+read-back task, 2026-09-17
   severity: high — a real (if non-recipe) content-authoring defect now live in a shared external system, not just the repo
   promoted: 2026-09-17
+  note: 2026-11-10 — Repo copy re-read clean in the 2026-11-10 audit; Design-side read-back pending the operator.
   status: open
 
   Follow-up needed (not done here — the fix is content-authoring work, out of a push-only story's scope, and per repo convention needs its own Dream/Spec/Story, not a freelance fix): (1) regenerate the standalone's corrupted sections from `facts.yaml` without the duplication-and-space-injection bug; (2) re-push the corrected file to Design to overwrite the contaminated copy at project `45c841c6-e807-4fee-a92a-f8e89cb890b4`; (3) check `deckcraft` (21.8) and `unity-data-stack` (21.6) standalone posters for the same root-commit damage before their own push stories complete; (4) consider whether `deck-facts --check` needs a prose-sanity/repeated-block detector so this class of defect cannot recur silently.
@@ -1588,4 +1589,29 @@ deployment.
   severity: low
   promoted: 2026-11-01 — EGM fleet audit (marshal Story 113.7), operator ruling 2026-11-01
   reason: outward and credential-bound acts (a scheduled routine on the operator's claude.ai account; a snapshot that needs a token that reads repository variables); an agent never does either.
+  note: 2026-11-10 — Re-measured 2026-11-10: snapshot 63 rows (3 stuck, 2 paused-manually) against 75 registry rows (59 live, 9 retired, 7 opt-in-off); doctor Story 58.4 refreshes it once at the head of the cutover-readiness branch (operator ruling 2026-11-10).
+  status: open
+
+### DW-herald-50-1-3: 48 open rows of herald's deferred-work ledger carry no severity, so a sweep cannot rank them.
+
+- source_spec: `planning-artifacts/specs/spec-50-1-every-herald-capability-s-marker-and-text-say-what-is-true.md`
+  summary: 48 open rows of herald's deferred-work ledger carry no severity, so a sweep cannot rank them.
+  evidence: The 2026-11-10 cutover readiness audit (`planning-artifacts/research/cutover-readiness-audit-2026-11-10.md`) counted 68 open rows of 113 (1 high, 3 medium, 16 low, 48 unlabelled); Story 50.1's build re-counted the same figures on 2026-11-11 (each `###`/`##` `DW-` row's last `status:` and first `severity:` field).
+  location: _bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md
+  origin: spec-deferred 2ea5c4a063ba — written by hand at build by herald Story 50.1 (its planned deferral), with its story spec's `deferred:` entry
+  fix: one `bmad-loop sweep` over herald's ledger, which labels each open row or closes it.
+  severity: low
+  promoted: 2026-11-11 — herald Story 50.1 (cutover readiness)
+  status: open
+
+### DW-herald-50-1-4: CAP-51's success clause that `deck-sync-proof`'s opt-in live run still passes is unproven
+
+- source_spec: `planning-artifacts/specs/spec-50-1-every-herald-capability-s-marker-and-text-say-what-is-true.md`
+  summary: CAP-51's success clause that `deck-sync-proof`'s opt-in live run still passes is unproven: Story 25.1 did not re-run the live proof after the Guild-env move, and the only live runs, on 2026-09-19, refused the standalone HTML read-back (DW-FU-23-6-1).
+  evidence: Story 25.1's spec (`planning-artifacts/specs/spec-25-1-the-deck-pipeline-runs-from-the-guild-env.md`) records the residual risk that the opt-in live run was not re-run there. The two live runs of 2026-09-19 (`planning-artifacts/specs/spec-pyforge-herald/sync-proof-2026-09-19.md`) both ended `failed` on the standalone HTML read-back. Found by Story 50.1's build, which marks spec-pyforge-herald CAP-51 `(shipped 2026-09-20; not met: …, DW-herald-50-1-4)` under the memlog decision of 2026-11-10 for an unproven success clause.
+  location: src/shared/packages/pyforge-herald/src/pyforge/herald/sync_all.py
+  origin: spec-deferred cd08b963c8a3 — written by hand at build by herald Story 50.1 (an unproven success clause found while marking CAP-51 shipped), with its story spec's `deferred:` entry
+  fix: once DW-FU-23-6-1 is fixed, the operator runs `HERALD_LIVE_SYNC_PROOF=1 pixi run -e pyforge-herald deck-sync-proof -- --slug pyforge-warden` twice and records both reports; close this row citing them. Live Design credentials make it operator-owned.
+  severity: low
+  promoted: 2026-11-11 — herald Story 50.1 (cutover readiness)
   status: open
