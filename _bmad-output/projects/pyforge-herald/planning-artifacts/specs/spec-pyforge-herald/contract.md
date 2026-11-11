@@ -90,12 +90,16 @@ names no key.
 
 ## Repository keys
 
-A key herald reads from a repository file through a core seam, one row each. Herald reads none today. A herald module
-that imports `pyforge.core.cutover_root` reads `roots.this` of `docs/governance/guild-roster.json` through it, and
-gains its row here in the same change as the import.
+A key herald reads from a repository file through a core seam, one row each. A herald module that imports
+`pyforge.core.cutover_root` reads `roots.this` of `docs/governance/guild-roster.json` through it, and gains its row
+here in the same change as the import. `local_ship.py` does (Story 52.2): the on-pr-close body names this checkout's
+forge, read at call time from the nearest roster at or above the working directory (`main` reads its `--repo-root`);
+an explicit `repo=` wins and reads no roster, and a missing roster or `roots.this` is the named `ForgeSlugError`
+(`herald-ship-local` exits 1 before any POST). Herald reads no flag key for it and never calls `root_of_record()`.
 
 | Key | File | Read through |
 |---|---|---|
+| `roots.this` | `docs/governance/guild-roster.json` | `pyforge.core.cutover_root.forge_slug_for`, in `local_ship.py` `this_forge_slug()` |
 
 ## Environment variables
 
