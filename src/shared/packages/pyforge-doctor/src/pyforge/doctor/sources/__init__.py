@@ -577,6 +577,16 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     ),  # Story 42.1 -- sources/frontmatter_duplicate_keys.py. Tracked story
     # specs only; duplicate frontmatter key FAIL, unreadable block WARN.
     # Fleet subject (every station's planning-artifacts/specs/). CAN FAIL.
+    SourceRegistration(
+        source=Source.WRITER_LOCK,
+        scope="repo",
+        subject_station="fleet",
+        owning_station="doctor",
+    ),  # Story 56.5 (spec-pyforge-doctor CAP-100) -- sources/writer_lock.py.
+    # The branch half of the chain-write guard (spec-python-foundry-cutover:CAP-8):
+    # a chain path changed off the writer is a FAIL. Fleet subject: the chain
+    # paths are every station's Dreams, Frames, Specs and the capability
+    # ledger (same rationale as CHAIN_SPRAWL above). CAN FAIL.
 )
 
 
@@ -637,8 +647,8 @@ def degrade_on_exception(
     ``docs_map_hygiene``, ``docs_shelf``, ``factory``, ``frozen_path``,
     ``frontmatter_duplicate_keys``, ``general_docs_consistency``,
     ``live_proof_surfaces``, ``one_chain``, ``pixi_currency``, ``sibling_dreams``,
-    ``ci_pause_drift``, ``pages_liveness``
-    and ``status_body_consistency`` (all in ``sources/``). Any other source module
+    ``ci_pause_drift``, ``pages_liveness``, ``status_body_consistency``
+    and ``writer_lock`` (all in ``sources/``). Any other source module
     does not call it; an exception
     escaping such a ``gather()`` is a real bug in a module that promises never
     to raise, and keeps propagating to ``main()``'s top-level exception net

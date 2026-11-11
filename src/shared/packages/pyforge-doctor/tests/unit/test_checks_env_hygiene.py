@@ -1,9 +1,11 @@
 """Unit tests for ``pyforge.doctor.checks.env_hygiene`` (Story 1.4, FR-3) --
 covers the story spec's I/O & Edge-Case Matrix: the direct positive case,
-the real ``_http.py`` golden fixture, the host-scoped negative case, the
-no-match empty-tuple case, and ``gather_one``'s filter-equivalence. It also
-covers the discovery walk's pruning: by directory name (Story 6.1) and of
-git-ignored directories (Story 38.4)."""
+the host-scoped negative case, the no-match empty-tuple case, and
+``gather_one``'s filter-equivalence. It also covers the discovery walk's
+pruning: by directory name (Story 6.1) and of git-ignored directories
+(Story 38.4). The three tests that read the repository itself (the real
+``_http.py`` golden fixture, the whole-checkout walk, ``dependency-checker.py``)
+run in the live-tree half, ``test_live_checks_env_hygiene.py`` (Story 58.2)."""
 
 from __future__ import annotations
 
@@ -22,16 +24,6 @@ from pyforge.doctor.checks.env_hygiene import (
 from pyforge.doctor.checks.registry import gather_one
 from pyforge.doctor.cli_bridge import CliBridgeError
 from pyforge.doctor.models import DoctorStatus, Finding, Source
-
-# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
-# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
-pytestmark = pytest.mark.live_tree
-
-# Six levels up from tests/unit/<this file> lands at the monorepo root --
-# mirrors pyforge-warden's tests/unit/test_currency.py::
-# test_bundled_registry_matches_the_cfe_canonical_source_when_present.
-_REPO_ROOT = Path(__file__).resolve().parents[6]
-_HTTP_PY_DIR = _REPO_ROOT / ".claude" / "skills" / "conda-forge-expert" / "scripts"
 
 # The discovery walk now asks git which directories it ignores (Story 38.4,
 # via `cli_bridge.run_git`, which does `env = dict(os.environ)` at call time).
@@ -270,82 +262,6 @@ def test_gather_chained_assignment_with_a_header_target_is_detected(
     assert result[0].evidence["var_name"] == "TOKEN"
 
 
-def test_gather_golden_fixture_finds_no_injection_in_the_real_cfe_scripts():
-    # The real CFE scripts -- read-only, never copied into a synthetic string
-    # (spec's context-file instruction).
-    #
-    # This assertion is inverted from its original form, and deliberately so.
-    # The fixture was `_http.py`'s live, unconditional `JFROG_API_KEY`
-    # injection: the very bug FR-3 was written to catch. The conda-forge-expert
-    # Rule-2 retro (Story 5.5, CFE v8.82.x) host-gated that injection and its
-    # copy in `inventory_channel.py`, so the detector correctly reports nothing
-    # for THOSE TWO FILES -- verified by A/B: scanning the pre-retro revision
-    # still yields both findings (`_http.py:215`, `inventory_channel.py:116`),
-    # the post-retro tree yields none.
-    #
-    # Asserting the absence keeps the same property the original had (the
-    # detector runs against real, unmodified code rather than a synthetic
-    # string) and converts it into a live regression guard that the leak class
-    # stays closed for those two files specifically. That the detector FINDS
-    # such an injection is covered by the synthetic positive cases above,
-    # which do not depend on another package shipping a real bug -- except
-    # for two now-KNOWN, pre-existing findings elsewhere in this same
-    # directory that DW-FU-1-4's intermediate-variable fix newly surfaces
-    # (see `_KNOWN_PRE_EXISTING` below); everything else in the directory
-    # must stay clean.
-    if not _HTTP_PY_DIR.is_dir():
-        pytest.skip("CFE scripts golden fixture not present (non-monorepo context)")
-
-    # An absence assertion cannot tell "scanned real code, found nothing"
-    # apart from "scanned nothing at all": `gather()` over an empty directory
-    # also returns []. So pin the precondition first -- if `_HTTP_PY_DIR` ever
-    # resolves somewhere else, or the walker stops matching these files, this
-    # test must red rather than pass vacuously.
-    scanned = {p.name for p in _HTTP_PY_DIR.glob("*.py")}
-    assert {"_http.py", "inventory_channel.py"} <= scanned, (
-        f"golden-fixture directory {_HTTP_PY_DIR} no longer holds the files "
-        f"this guard is about -- got {sorted(scanned)[:10]}"
-    )
-
-    result = gather(_HTTP_PY_DIR)
-
-    # A scan that bailed out reports it rather than returning a clean []; that
-    # state must not read as "no leak found" either.
-    incomplete = [f for f in result if f.check == SCAN_INCOMPLETE_CHECK_NAME]
-    assert incomplete == [], f"scan did not complete: {incomplete}"
-
-    unconditional = [f for f in result if f.check == CHECK_NAME]
-    seen = {(Path(f.evidence["file"]).name, f.evidence["line"], f.evidence["var_name"]) for f in unconditional}
-
-    # DW-FU-1-4 follow-up (2026-09-07): closing the intermediate-variable v1
-    # gap (`name = os.environ.get(...); headers[...] = name`) makes this
-    # detector correctly see two PRE-EXISTING, previously-invisible
-    # host-scoping gaps live in this same scripts directory --
-    # `github_version_checker.py`'s `token = os.environ.get("GITHUB_TOKEN")
-    # or os.environ.get("GH_TOKEN")` feeding `headers["Authorization"]` with
-    # no host check, and `scan_project.py`'s `tok =
-    # os.environ.get("OCI_REGISTRY_TOKEN")` feeding `headers["Authorization"]`
-    # against a registry host derived from the caller's own image ref -- the
-    # SAME leak class `_http.py`'s own fix closed, now correctly surfaced by
-    # the more complete detector rather than a regression it introduces.
-    # Fixing those two scripts is conda-forge-expert's own surface, not
-    # pyforge-doctor's (out of this fix's scope) -- pinned here BY NAME so a
-    # THIRD, different finding anywhere else in the directory still reds
-    # this test rather than silently passing.
-    _KNOWN_PRE_EXISTING = {
-        ("github_version_checker.py", 68, "GITHUB_TOKEN"),
-        ("scan_project.py", 1898, "OCI_REGISTRY_TOKEN"),
-    }
-    assert seen <= _KNOWN_PRE_EXISTING, (
-        "the real CFE scripts must contain no NEW unconditional credential "
-        "injection beyond the known, pre-existing findings -- got "
-        f"{seen - _KNOWN_PRE_EXISTING}"
-    )
-    assert not any(Path(f.evidence["file"]).name in {"_http.py", "inventory_channel.py"} for f in unconditional), (
-        "the original golden-fixture files must stay clean"
-    )
-
-
 # --- gather_one filter-equivalence ---------------------------------------
 
 
@@ -402,27 +318,6 @@ def test_discover_python_files_prunes_build_output_and_tool_caches(tmp_path: Pat
 
     assert [f.name for f in files] == ["mine.py"]
     assert incomplete is False
-
-
-def test_discovery_walk_reaches_this_packages_own_source(tmp_path: Path):
-    """The regression this pruning exists to prevent.
-
-    Before Story 6.1 the walk spent its whole entry cap inside
-    ``build_artifacts/`` -- which sorts before ``docs``/``recipes``/
-    ``scripts``/``src`` -- and reached ZERO first-party files: all 609 under
-    ``src/`` and ``scripts/`` went unscanned, including this scanner's own
-    module. A pass here proves the scan actually covers the repo it claims
-    to, so a future prune-list addition cannot silently re-truncate it.
-    """
-    if not (_REPO_ROOT / ".claude").is_dir():
-        pytest.skip("not running inside the local-recipes monorepo checkout")
-
-    files, _incomplete = env_hygiene._discover_python_files(_REPO_ROOT)
-    discovered = set(files)
-
-    assert Path(env_hygiene.__file__).resolve() in discovered
-    # ...and nothing from the build-output tree that motivated the prune.
-    assert not [f for f in discovered if "build_artifacts" in f.parts]
 
 
 # --- discovery-walk incompleteness signal --------------------------------
@@ -1444,16 +1339,6 @@ def test_gather_returned_dict_with_no_header_key_is_not_flagged(tmp_path: Path):
         )
         == []
     )
-
-
-def test_gather_real_dependency_checker_auth_headers_stays_clean() -> None:
-    # The real file whose returned dicts kept this shape out of v1: its
-    # guard clause must suppress them now that returns are checked.
-    script = _HTTP_PY_DIR / "dependency-checker.py"
-    if not script.is_file():
-        pytest.skip("not running inside the local-recipes monorepo checkout")
-
-    assert env_hygiene._scan_file(script) == []
 
 
 # --- Story 46.1: single walk + skip test code --------------------------------

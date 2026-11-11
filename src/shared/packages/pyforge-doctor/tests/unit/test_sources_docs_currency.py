@@ -19,10 +19,6 @@ import yaml
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import docs_currency
 
-# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
-# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
-pytestmark = pytest.mark.live_tree
-
 _LEAKY_GIT_VARS = (
     "GIT_DIR",
     "GIT_WORK_TREE",
@@ -361,13 +357,13 @@ def _write_generator_script(repo: Path, rel: str, *, exit_code: int) -> None:
 def test_generated_page_current_reports_no_finding(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     checkout = tmp_path / "checkout"
     checkout.mkdir()
-    doctor_script = _write_checkout_stub_generator(checkout, "scripts/docs_pixi_tasks.py", exit_code=0)
+    doctor_script = _write_checkout_stub_generator(checkout, "scripts/docs_fixture_tasks.py", exit_code=0)
     monkeypatch.setattr(
         docs_currency,
         "locate_checkout_script",
         lambda name: (
             doctor_script
-            if name == "docs_pixi_tasks.py"
+            if name == "docs_fixture_tasks.py"
             else (_ for _ in ()).throw(FileNotFoundError(f"scripts/{name} not found"))
         ),
     )
@@ -376,19 +372,19 @@ def test_generated_page_current_reports_no_finding(tmp_path: Path, monkeypatch: 
     pages = [
         _POINTER_PAGE,
         {
-            "path": "how-to/pixi-tasks.md",
+            "path": "how-to/fixture-tasks.md",
             "quadrant": "how-to",
             "owner": "steward",
             "kind": "generated",
-            "generator": "scripts/docs_pixi_tasks.py",
+            "generator": "scripts/docs_fixture_tasks.py",
         },
     ]
     _write_map_yaml(tmp_path, pages)
     _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
-    _write_authored_page(tmp_path, "how-to/pixi-tasks.md", body="generated content\n")
+    _write_authored_page(tmp_path, "how-to/fixture-tasks.md", body="generated content\n")
     probe = tmp_path / "probe.txt"
-    _write_generator_script(tmp_path, "scripts/docs_pixi_tasks.py", exit_code=1)
-    (tmp_path / "scripts" / "docs_pixi_tasks.py").write_text(
+    _write_generator_script(tmp_path, "scripts/docs_fixture_tasks.py", exit_code=1)
+    (tmp_path / "scripts" / "docs_fixture_tasks.py").write_text(
         f"from pathlib import Path\nPath({str(probe)!r}).write_text('executed')\nimport sys\nsys.exit(1)\n",
         encoding="utf-8",
     )
@@ -402,13 +398,13 @@ def test_generated_page_current_reports_no_finding(tmp_path: Path, monkeypatch: 
 def test_generated_page_stale_emits_warn(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     checkout = tmp_path / "checkout"
     checkout.mkdir()
-    doctor_script = _write_checkout_stub_generator(checkout, "scripts/docs_pixi_tasks.py", exit_code=1)
+    doctor_script = _write_checkout_stub_generator(checkout, "scripts/docs_fixture_tasks.py", exit_code=1)
     monkeypatch.setattr(
         docs_currency,
         "locate_checkout_script",
         lambda name: (
             doctor_script
-            if name == "docs_pixi_tasks.py"
+            if name == "docs_fixture_tasks.py"
             else (_ for _ in ()).throw(FileNotFoundError(f"scripts/{name} not found"))
         ),
     )
@@ -417,17 +413,17 @@ def test_generated_page_stale_emits_warn(tmp_path: Path, monkeypatch: pytest.Mon
     pages = [
         _POINTER_PAGE,
         {
-            "path": "how-to/pixi-tasks.md",
+            "path": "how-to/fixture-tasks.md",
             "quadrant": "how-to",
             "owner": "steward",
             "kind": "generated",
-            "generator": "scripts/docs_pixi_tasks.py",
+            "generator": "scripts/docs_fixture_tasks.py",
         },
     ]
     _write_map_yaml(tmp_path, pages)
     _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
-    _write_authored_page(tmp_path, "how-to/pixi-tasks.md", body="stale content\n")
-    _write_generator_script(tmp_path, "scripts/docs_pixi_tasks.py", exit_code=0)
+    _write_authored_page(tmp_path, "how-to/fixture-tasks.md", body="stale content\n")
+    _write_generator_script(tmp_path, "scripts/docs_fixture_tasks.py", exit_code=0)
     _commit_all(tmp_path, "seed")
 
     findings = docs_currency.gather(tmp_path)
@@ -435,8 +431,8 @@ def test_generated_page_stale_emits_warn(tmp_path: Path, monkeypatch: pytest.Mon
     assert len(stale) == 1
     assert stale[0].status == DoctorStatus.WARN
     assert stale[0].source == Source.DOCS_CURRENCY
-    assert stale[0].evidence["page"] == "docs/how-to/pixi-tasks.md"
-    assert stale[0].evidence["generator"] == "scripts/docs_pixi_tasks.py"
+    assert stale[0].evidence["page"] == "docs/how-to/fixture-tasks.md"
+    assert stale[0].evidence["generator"] == "scripts/docs_fixture_tasks.py"
 
 
 def test_generated_page_with_no_generator_declared_emits_warn(tmp_path: Path):
@@ -444,7 +440,7 @@ def test_generated_page_with_no_generator_declared_emits_warn(tmp_path: Path):
     pages = [
         _POINTER_PAGE,
         {
-            "path": "how-to/pixi-tasks.md",
+            "path": "how-to/fixture-tasks.md",
             "quadrant": "how-to",
             "owner": "steward",
             "kind": "generated",
@@ -452,7 +448,7 @@ def test_generated_page_with_no_generator_declared_emits_warn(tmp_path: Path):
     ]
     _write_map_yaml(tmp_path, pages)
     _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
-    _write_authored_page(tmp_path, "how-to/pixi-tasks.md", body="content\n")
+    _write_authored_page(tmp_path, "how-to/fixture-tasks.md", body="content\n")
     _commit_all(tmp_path, "seed")
 
     findings = docs_currency.gather(tmp_path)
@@ -466,7 +462,7 @@ def test_generated_page_with_disallowed_generator_path_emits_warn(tmp_path: Path
     pages = [
         _POINTER_PAGE,
         {
-            "path": "how-to/pixi-tasks.md",
+            "path": "how-to/fixture-tasks.md",
             "quadrant": "how-to",
             "owner": "steward",
             "kind": "generated",
@@ -475,7 +471,7 @@ def test_generated_page_with_disallowed_generator_path_emits_warn(tmp_path: Path
     ]
     _write_map_yaml(tmp_path, pages)
     _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
-    _write_authored_page(tmp_path, "how-to/pixi-tasks.md", body="content\n")
+    _write_authored_page(tmp_path, "how-to/fixture-tasks.md", body="content\n")
     _commit_all(tmp_path, "seed")
 
     findings = docs_currency.gather(tmp_path)
@@ -490,7 +486,7 @@ def test_generated_page_with_parent_segment_in_generator_is_not_executed(tmp_pat
     pages = [
         _POINTER_PAGE,
         {
-            "path": "how-to/pixi-tasks.md",
+            "path": "how-to/fixture-tasks.md",
             "quadrant": "how-to",
             "owner": "steward",
             "kind": "generated",
@@ -499,7 +495,7 @@ def test_generated_page_with_parent_segment_in_generator_is_not_executed(tmp_pat
     ]
     _write_map_yaml(tmp_path, pages)
     _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
-    _write_authored_page(tmp_path, "how-to/pixi-tasks.md", body="content\n")
+    _write_authored_page(tmp_path, "how-to/fixture-tasks.md", body="content\n")
     (tmp_path / "probe.py").write_text(
         f"from pathlib import Path\nPath({str(probe)!r}).write_text('executed')\n",
         encoding="utf-8",
@@ -521,18 +517,18 @@ def test_generated_page_missing_in_doctor_checkout_emits_warn_without_target_fal
     pages = [
         _POINTER_PAGE,
         {
-            "path": "how-to/pixi-tasks.md",
+            "path": "how-to/fixture-tasks.md",
             "quadrant": "how-to",
             "owner": "steward",
             "kind": "generated",
-            "generator": "scripts/docs_pixi_tasks.py",
+            "generator": "scripts/docs_fixture_tasks.py",
         },
     ]
     _write_map_yaml(tmp_path, pages)
     _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
-    _write_authored_page(tmp_path, "how-to/pixi-tasks.md", body="content\n")
+    _write_authored_page(tmp_path, "how-to/fixture-tasks.md", body="content\n")
     (tmp_path / "scripts").mkdir()
-    (tmp_path / "scripts" / "docs_pixi_tasks.py").write_text(
+    (tmp_path / "scripts" / "docs_fixture_tasks.py").write_text(
         f"from pathlib import Path\nPath({str(probe)!r}).write_text('executed')\nimport sys\nsys.exit(0)\n",
         encoding="utf-8",
     )
@@ -557,16 +553,16 @@ def test_generated_page_never_yet_generated_is_skipped(tmp_path: Path):
     pages = [
         _POINTER_PAGE,
         {
-            "path": "how-to/pixi-tasks.md",
+            "path": "how-to/fixture-tasks.md",
             "quadrant": "how-to",
             "owner": "steward",
             "kind": "generated",
-            "generator": "scripts/docs_pixi_tasks.py",
+            "generator": "scripts/docs_fixture_tasks.py",
         },
     ]
     _write_map_yaml(tmp_path, pages)
     _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
-    _write_generator_script(tmp_path, "scripts/docs_pixi_tasks.py", exit_code=1)
+    _write_generator_script(tmp_path, "scripts/docs_fixture_tasks.py", exit_code=1)
     _commit_all(tmp_path, "seed")
 
     finding = _only(docs_currency.gather(tmp_path))
@@ -581,13 +577,13 @@ def test_the_judged_trees_declared_generator_is_data_never_executed(
 ) -> None:
     checkout = tmp_path / "checkout"
     checkout.mkdir()
-    doctor_script = _write_checkout_stub_generator(checkout, "scripts/docs_pixi_tasks.py", exit_code=0)
+    doctor_script = _write_checkout_stub_generator(checkout, "scripts/docs_fixture_tasks.py", exit_code=0)
     monkeypatch.setattr(
         docs_currency,
         "locate_checkout_script",
         lambda name: (
             doctor_script
-            if name == "docs_pixi_tasks.py"
+            if name == "docs_fixture_tasks.py"
             else (_ for _ in ()).throw(FileNotFoundError(f"scripts/{name} not found"))
         ),
     )
@@ -597,18 +593,18 @@ def test_the_judged_trees_declared_generator_is_data_never_executed(
     pages = [
         _POINTER_PAGE,
         {
-            "path": "how-to/pixi-tasks.md",
+            "path": "how-to/fixture-tasks.md",
             "quadrant": "how-to",
             "owner": "steward",
             "kind": "generated",
-            "generator": "scripts/docs_pixi_tasks.py",
+            "generator": "scripts/docs_fixture_tasks.py",
         },
     ]
     _write_map_yaml(tmp_path, pages)
     _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
-    _write_authored_page(tmp_path, "how-to/pixi-tasks.md", body="generated content\n")
+    _write_authored_page(tmp_path, "how-to/fixture-tasks.md", body="generated content\n")
     (tmp_path / "scripts").mkdir()
-    (tmp_path / "scripts" / "docs_pixi_tasks.py").write_text(
+    (tmp_path / "scripts" / "docs_fixture_tasks.py").write_text(
         f"from pathlib import Path\nPath({str(probe)!r}).write_text('executed')\nimport sys\nsys.exit(1)\n",
         encoding="utf-8",
     )
@@ -616,7 +612,7 @@ def test_the_judged_trees_declared_generator_is_data_never_executed(
 
     docs_currency.gather(tmp_path)
 
-    assert not probe.exists(), "the judged tree's scripts/docs_pixi_tasks.py was executed"
+    assert not probe.exists(), "the judged tree's scripts/docs_fixture_tasks.py was executed"
 
 
 def test_the_probe_runs_when_the_locator_resolves_from_target(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -627,18 +623,18 @@ def test_the_probe_runs_when_the_locator_resolves_from_target(tmp_path: Path, mo
     pages = [
         _POINTER_PAGE,
         {
-            "path": "how-to/pixi-tasks.md",
+            "path": "how-to/fixture-tasks.md",
             "quadrant": "how-to",
             "owner": "steward",
             "kind": "generated",
-            "generator": "scripts/docs_pixi_tasks.py",
+            "generator": "scripts/docs_fixture_tasks.py",
         },
     ]
     _write_map_yaml(tmp_path, pages)
     _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
-    _write_authored_page(tmp_path, "how-to/pixi-tasks.md", body="content\n")
+    _write_authored_page(tmp_path, "how-to/fixture-tasks.md", body="content\n")
     (tmp_path / "scripts").mkdir()
-    (tmp_path / "scripts" / "docs_pixi_tasks.py").write_text(
+    (tmp_path / "scripts" / "docs_fixture_tasks.py").write_text(
         f"from pathlib import Path\nPath({str(probe)!r}).write_text('executed')\nimport sys\nsys.exit(0)\n",
         encoding="utf-8",
     )
@@ -775,22 +771,22 @@ def test_render_map_registry_is_deterministic():
 def _generated_tree(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, exit_code: int) -> None:
     checkout = tmp_path / "checkout"
     checkout.mkdir()
-    doctor_script = _write_checkout_stub_generator(checkout, "scripts/docs_pixi_tasks.py", exit_code=exit_code)
+    doctor_script = _write_checkout_stub_generator(checkout, "scripts/docs_fixture_tasks.py", exit_code=exit_code)
     monkeypatch.setattr(docs_currency, "locate_checkout_script", lambda name: doctor_script)
     _init_repo(tmp_path)
     pages = [
         _POINTER_PAGE,
         {
-            "path": "how-to/pixi-tasks.md",
+            "path": "how-to/fixture-tasks.md",
             "quadrant": "how-to",
             "owner": "steward",
             "kind": "generated",
-            "generator": "scripts/docs_pixi_tasks.py",
+            "generator": "scripts/docs_fixture_tasks.py",
         },
     ]
     _write_map_yaml(tmp_path, pages)
     _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
-    _write_authored_page(tmp_path, "how-to/pixi-tasks.md", body="generated content\n")
+    _write_authored_page(tmp_path, "how-to/fixture-tasks.md", body="generated content\n")
     _commit_all(tmp_path, "seed")
 
 
@@ -802,7 +798,7 @@ def test_a_generator_that_cannot_run_reads_could_not_run_not_stale(
     findings = [f for f in docs_currency.gather(tmp_path) if f.check == "docs-currency-generated-stale"]
     assert len(findings) == 1
     assert findings[0].status == DoctorStatus.WARN
-    assert "could not run generator scripts/docs_pixi_tasks.py" in findings[0].message
+    assert "could not run generator scripts/docs_fixture_tasks.py" in findings[0].message
     assert f"exited {exit_code}" in findings[0].message
     assert "stale against its generator" not in findings[0].message
     assert findings[0].evidence["exit"] == exit_code
@@ -818,11 +814,11 @@ def test_a_generator_exit_1_still_reads_stale(tmp_path: Path, monkeypatch: pytes
 def test_a_generator_that_crashes_reads_could_not_run_not_stale(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """An uncaught exception exits 1 too, the stale code; its traceback marks a crash, not a hand edit."""
     _generated_tree(tmp_path, monkeypatch, exit_code=1)
-    stub = tmp_path / "checkout" / "scripts" / "docs_pixi_tasks.py"
+    stub = tmp_path / "checkout" / "scripts" / "docs_fixture_tasks.py"
     stub.write_text("raise RuntimeError('no head to stamp')\n", encoding="utf-8")
     findings = [f for f in docs_currency.gather(tmp_path) if f.check == "docs-currency-generated-stale"]
     assert len(findings) == 1
-    assert "could not run generator scripts/docs_pixi_tasks.py" in findings[0].message
+    assert "could not run generator scripts/docs_fixture_tasks.py" in findings[0].message
     assert "crashed" in findings[0].message
     assert "stale against its generator" not in findings[0].message
     assert findings[0].evidence["exit"] == 1

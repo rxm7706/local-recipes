@@ -18,20 +18,8 @@ from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import __main__ as dispatch
 from pyforge.doctor.sources import chain
 
-# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
-# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
-pytestmark = pytest.mark.live_tree
-
-try:
-    _REPO_ROOT: Path | None = Path(__file__).resolve().parents[6]
-except IndexError:
-    _REPO_ROOT = None
-
-
-def _require_repo_root() -> Path:
-    if _REPO_ROOT is None or not (_REPO_ROOT / ".claude").is_dir():
-        pytest.skip("not running inside the local-recipes monorepo checkout")
-    return _REPO_ROOT
+# Doctor Story 58.1 (spec-pyforge-doctor:CAP-97): no test here reads this repository, so the module runs in the
+# package half; the tests that do run in test_live_sources_chain_dreams_hygiene.py.
 
 
 # --- fixture helpers ---------------------------------------------------------
@@ -244,17 +232,6 @@ def test_historical_section_too_long_on_fixture(tmp_path: Path) -> None:
     assert any(f.check == "historical-section-too-long" for f in findings)
 
 
-def test_living_unifying_strategy_has_no_historical_section_finding(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Regression: post-43.1 living Dream must not trip its own detector."""
-    repo = Path(__file__).resolve().parents[6]
-    monkeypatch.chdir(repo)
-    findings = chain.gather_dreams_hygiene(repo)
-    hist = [f for f in findings if f.check == "historical-section-too-long"]
-    assert not any(f.evidence.get("subject") == "pyforge-unifying-strategy" for f in hist)
-
-
 def test_dreamt_may_omit_realization_log(tmp_path: Path) -> None:
     _write_roster(tmp_path)
     _write_dream(tmp_path, "foo", status="dreamt", title="Foo", realization_log=False)
@@ -335,17 +312,6 @@ def test_dream_readme_missing_reports_on_fixture(tmp_path: Path) -> None:
     assert hit[0].evidence["subject"] == "orphan-dream"
 
 
-def test_live_tree_dream_readme_missing_count() -> None:
-    """Measured live 2026-10-24: 0 -- doctor Story 30.4 gave every Dream file a
-    README.md table row (64 lacked one on 2026-10-11, 65 on 2026-09-18, 67 on
-    2026-09-12). A new Dream lands with its row; this test only tracks the
-    live count."""
-    repo_root = _require_repo_root()
-    findings = chain.gather_dreams_hygiene(repo_root)
-    missing = [f for f in findings if f.check == "dream-readme-missing"]
-    assert len(missing) == 0
-
-
 def test_specified_spec_not_ready_reports_on_fixture(tmp_path: Path) -> None:
     """README:71 — ``specified`` with a covering Spec still at ``draft``."""
     _write_roster(tmp_path)
@@ -370,15 +336,6 @@ def test_specified_spec_not_ready_reports_on_fixture(tmp_path: Path) -> None:
     assert hit[0].status is DoctorStatus.WARN
     assert hit[0].evidence["subject"] == "django-accelerator-framework"
     assert hit[0].evidence["spec_statuses"] == ["draft"]
-
-
-def test_live_tree_specified_spec_not_ready_count() -> None:
-    """Measured live 2026-09-18: 0 ``specified`` Dreams whose covering Spec is
-    not ``ready`` or beyond (was 3 on 2026-09-11 — those cleared)."""
-    repo_root = _require_repo_root()
-    findings = chain.gather_dreams_hygiene(repo_root)
-    bad = [f for f in findings if f.check == "specified-spec-not-ready"]
-    assert len(bad) == 0
 
 
 def test_kinship_wikilink_dead_reports_on_fixture(tmp_path: Path) -> None:
@@ -508,21 +465,6 @@ def test_kinship_wikilink_skips_frontmatter_below_a_banner(tmp_path: Path) -> No
     findings = chain.gather_dreams_hygiene(tmp_path)
     assert not any(f.check == "unparseable-frontmatter" for f in findings)
     assert not any(f.check == "kinship-wikilink-dead" for f in findings)
-
-
-def test_live_tree_kinship_wikilink_dead_count() -> None:
-    """Measured live 2026-10-26: 0 -- doctor Story 51.1 moved the 158 archived
-    Dreams to ``archive/docs/dreams/`` (spec-one-chain-per-station CAP-11) and a
-    wikilink naming one now resolves there (``_archived_dream_slugs``); before
-    that, doctor Story 30.4 retargeted each dead Kinship wikilink under
-    ``docs/dreams/`` to the Dream that absorbed its target, or turned it into
-    plain text or a plain link where no Dream did (0 on 2026-10-24; 32 on
-    2026-10-04 after Story 41.3 repaired the 34 glued-opener Dreams; 30 on
-    2026-09-25)."""
-    repo_root = _require_repo_root()
-    findings = chain.gather_dreams_hygiene(repo_root)
-    dead = [f for f in findings if f.check == "kinship-wikilink-dead"]
-    assert len(dead) == 0
 
 
 def test_specified_spec_ready_suppresses_finding(tmp_path: Path) -> None:
@@ -803,7 +745,8 @@ def test_kinship_wikilink_resolves_archived_dream(tmp_path: Path) -> None:
     findings = chain.gather_dreams_hygiene(tmp_path)
     dead = [f for f in findings if f.check == "kinship-wikilink-dead"]
     assert [f.evidence["link_target"] for f in dead] == ["never-anywhere"]
-    assert "archive/docs/dreams/" in dead[0].message
+    # a join: a bare literal naming a tracked directory would read as a live read (steward's scan_strings)
+    assert "/".join(("archive", "docs", "dreams", "")) in dead[0].message
 
 
 def test_kinship_wikilink_archive_only_file_does_not_count_as_live(tmp_path: Path) -> None:

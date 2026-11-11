@@ -11,9 +11,8 @@ import pytest
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import status_body_consistency as sbc
 
-# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
-# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
-pytestmark = pytest.mark.live_tree
+# Doctor Story 58.1 (spec-pyforge-doctor:CAP-97): no test here reads this repository, so the module runs in the
+# package half; the tests that do run in test_live_sources_status_body_consistency.py.
 
 _FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "status_body"
 
@@ -175,17 +174,6 @@ def test_gather_missing_roster_degrades_to_fallback_and_warns(tmp_path: Path):
     assert findings[0].check == "spec-status-roster-degraded"
     assert findings[0].status == DoctorStatus.WARN
     assert findings[0].source == Source.STATUS_BODY_CONSISTENCY
-
-
-def test_gather_live_dream_and_spec_progress_phrases():
-    """Re-measured 2026-09-18: the live fleet no longer carries a
-    progress-phrase contradiction (herald Dream cleaned; scribe already
-    clean). Fixture tests above still prove the detector fires; this live
-    pin only asserts the fleet stays silent."""
-    repo_root = Path(__file__).resolve().parents[6]
-    findings = sbc.gather_progress_phrase(repo_root)
-    progress = [f for f in findings if f.check == sbc._CHECK_PROGRESS]
-    assert progress == []
 
 
 def test_gather_degrades_on_exception(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):

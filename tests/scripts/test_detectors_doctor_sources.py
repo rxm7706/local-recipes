@@ -229,6 +229,18 @@ def test_doctor_source_tasks_include_docs_shelf_occupancy():
     assert tasks["docs-shelf-occupancy"] == "docs-shelf-occupancy-check"
 
 
+def test_doctor_source_tasks_include_writer_lock_as_a_repo_scope_row():
+    """Story 56.5 (spec-pyforge-doctor:CAP-100): `writer-lock`, the branch half of the chain-write guard
+    (spec-python-foundry-cutover:CAP-8), is a repo-scope row, so `detectors.py --scope repo` (detectors-ci) runs
+    it for every harness. Its `writer-lock-check` pixi task is steward Story 124.1's."""
+    _doctor_dispatch()
+    from pyforge.doctor.models import Source
+    from pyforge.doctor.sources import scope_for
+
+    assert ("writer-lock", "writer-lock-check") in detectors._DOCTOR_SOURCE_TASKS
+    assert scope_for(Source.WRITER_LOCK) == "repo"
+
+
 def test_doctor_source_tasks_include_dreams_hygiene_beside_dream_chain():
     """Story 41.1 / DW-FU-21-6-2: dreams-hygiene runs warn-only in detectors-ci
     beside the other Doctor sources (CAP-43), not only via dream-chain --dreams."""

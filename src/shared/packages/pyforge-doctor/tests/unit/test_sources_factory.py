@@ -31,10 +31,6 @@ import pytest
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import factory
 
-# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
-# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
-pytestmark = pytest.mark.live_tree
-
 #: ``chmod 000`` does not stop root, so the cannot-evaluate tests below would
 #: read a perfectly clean tree and assert a WARN that never comes. The
 #: ``test_sources_chain_*.py`` permission tests predate this guard and simply
@@ -1778,15 +1774,6 @@ def test_gather_reports_the_env_count_unreadable_for_a_manifest_that_does_not_pa
 
 def test_env_count_is_zero_for_a_missing_manifest(tmp_path: Path) -> None:
     assert factory._env_count(tmp_path) == 0
-
-
-def test_env_count_reads_the_live_manifest_like_tomllib() -> None:
-    import tomllib
-
-    repo = Path(__file__).resolve().parents[6]
-    with (repo / "pixi.toml").open("rb") as fh:
-        declared = len(tomllib.load(fh)["environments"])
-    assert factory._env_count(repo) == declared
 
 
 # --- Story 43.1: marshal dispatch Tier-3 run artifacts ---------------------------------

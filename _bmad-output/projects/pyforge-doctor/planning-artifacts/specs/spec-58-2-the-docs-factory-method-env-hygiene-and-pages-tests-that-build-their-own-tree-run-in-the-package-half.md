@@ -139,6 +139,31 @@ Type / Effort / Deps: chore / L / S-56.4.
 - The test_live_ files in the surface are created only where the module keeps a repository reader.
 - Rulings of 2026-11-10 applied (`docs/dreams/pyforge-unifying-strategy.md` § Realization log, the second addendum, 'Accept all, run mint'): a source that measured nothing reads `unmeasured`, a warning the merge bar does not fail on; `doctor flags kill-switch` stays Doctor's one actuator; doctor's closed one-time campaigns retire; the marker grammar is CHAIN-STANDARD section 4 as steward Story 120.3 amends it (`(retired <date>[: <reason>])` and semicolon qualifiers, no `(unbuilt)` token); the operator flips `pyforge.cutover_root` by hand once the Launch slice is proven, and nothing flips it automatically.
 
+## Final test_live_ modules (written at build)
+
+Nine of the 11 modules keep a repository reader and gain a live twin under `src/shared/packages/pyforge-doctor/tests/unit/`; the twins hold 14 test functions and the package half keeps 500 (514 in all). Each twin carries `pytestmark = pytest.mark.live_tree` and derives the repository root inside a function or fixture, never at import.
+
+| Live module | Tests moved | What it reads |
+|---|---|---|
+| `test_live_sources_docs_shelf.py` | `test_live_repo_gather_is_clean` | the repository root, handed to `docs_shelf.gather` |
+| `test_live_sources_factory.py` | `test_env_count_reads_the_live_manifest_like_tomllib` | `pixi.toml`; the root, handed to `factory._env_count` |
+| `test_live_sources_bmad_method.py` | `test_the_real_recipe_resolves_through_the_github_fallback` (6 cases) | `recipes/*/recipe.yaml`; the root, handed to the resolver |
+| `test_live_checks_env_hygiene.py` | the CFE-scripts golden fixture, the whole-checkout discovery walk, `dependency-checker.py`'s guarded returns (3) | `.claude/skills/conda-forge-expert/scripts/`; the root, handed to the walk |
+| `test_live_sources_pages_liveness.py` | the `pages.yml` filter pin and its named-exclusions mutation twin (2) | `.github/workflows/pages.yml` and the five excluded paths |
+| `test_live_sources_ci_pause_drift.py` | `test_fixture_matches_ci_status_schema`, `test_partial_read_on_stdout` (2) | steward's `ci-status-schema.json` |
+| `test_live_sources_live_proof_surfaces.py` | `test_zero_false_positives_against_the_live_tracked_tree` | `git ls-files` of the root and the tracked catalog |
+| `test_live_sources_general_docs_consistency.py` | `test_live_repo_gather_no_longer_fires_after_story_22_1_landed` | the repository root, handed to `general_docs_consistency.gather` |
+| `test_live_flag_kill_switch.py` | the CLI kill switch through `django_pyforge.flags`, the dated flag on the shipped tree (2) | `src/shared/packages/django-pyforge/src` on the import path; `src/platform/config` |
+
+No twin for `test_sources_docs_currency.py` and `test_sources_docs_map_hygiene.py`: neither held a reader, only tracked-path fixture literals, now a made-up name (`scripts/docs_fixture_tasks.py`, `how-to/fixture-tasks.md`) and a path join (`docs/MAP.md`). `test_sources_pages_liveness.py` and `test_sources_live_proof_surfaces.py` spell their remaining real tracked paths as path joins.
+
+Steward-station's one re-key (shared request): in `test_station_tests_trigger_map.py`'s `doctor_live` handoff declarations, the keys `test_checks_env_hygiene.py`, `test_sources_bmad_method.py`, `test_sources_docs_shelf.py`, `test_sources_factory.py`, `test_sources_general_docs_consistency.py` and `test_sources_live_proof_surfaces.py` become their `test_live_` twins, each with the same `_H` group.
+
+Build decisions:
+- The six repository-absence skips that moved became asserts. Their messages are reworded, not copied, because AC5 rejects the old phrases ("monorepo", "not present in this checkout", "not in this checkout").
+- `pytest.importorskip("jsonschema")` is gone. The schema readers moved to the live twin, which imports jsonschema directly; the package module no longer uses it.
+- No private helper module: the plan's files_owned names none. Each twin carries its own copy of what it needs: the per-module `_isolate_git_env` fixture (the existing convention, copied in many modules here), the one-flag `_sample_tree`, and the three false-positive paths. The pages exclusion set has a single definition, because its mutation twin moved with the pin.
+
 ## Verification
 
 **Commands:** the Acceptance Criteria above, each read from its exit code (never through a pipe).

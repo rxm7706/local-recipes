@@ -387,6 +387,13 @@ class Source(StrEnum):
     # Reads only ``planning-artifacts/specs/spec-*.md`` paths from
     # ``git ls-files``; duplicate key FAIL, unreadable block WARN.
     FRONTMATTER_DUPLICATE_KEYS = "frontmatter-duplicate-keys"
+    # Story 56.5 (spec-pyforge-doctor CAP-100): the branch half of the chain-write
+    # guard spec-python-foundry-cutover:CAP-8 names. The root of record is read at the
+    # merge base of origin/main and HEAD (never at HEAD); on a checkout whose roster
+    # `roots.this` is not that root, each changed path matching the roster's
+    # `chain-write-off-the-writer` globs is a FAIL. A missing input is one
+    # cannot-evaluate WARN. See sources/writer_lock.py.
+    WRITER_LOCK = "writer-lock"
 
 
 class Partition(StrEnum):

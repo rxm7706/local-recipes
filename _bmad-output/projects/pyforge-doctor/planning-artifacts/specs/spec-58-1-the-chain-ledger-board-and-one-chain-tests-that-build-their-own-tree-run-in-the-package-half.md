@@ -159,6 +159,43 @@ Type / Effort / Deps: chore / L / S-56.4.
 **Run before the push:**
 - `pixi run --frozen -e pyforge-guild chain-completeness-check`, `story-status-check`, `flag-gate-check` — expected: exit 0 each.
 
+## Live-half modules (written at build)
+
+The final list for steward-station's one re-key edit: 17 `test_live_` modules under `src/shared/packages/pyforge-doctor/tests/unit/`, each `pytestmark = pytest.mark.live_tree`, holding 56 of the 595 functions (the 18 package-half modules hold 539). `test_sources_ledger_direction.py` keeps no repository reader, so it has no live twin.
+
+| Live module | Tests | What it reads |
+|---|---|---|
+| `test_live_sources_chain_deferred_work.py` | 4 | the tracked `deferred-work-ledger.md` files (a root hand-off to `gather_deferred_work`), marshal's Tier-3 `deferred-work.md` |
+| `test_live_sources_chain_dreams_hygiene.py` | 4 | root hand-off to `gather_dreams_hygiene` |
+| `test_live_sources_chain_due_for_verification.py` | 2 | `scripts/apply_verification_verdicts.py`; the tracked ledgers and `git ls-files` |
+| `test_live_sources_chain_source_spec_resolution.py` | 1 | root hand-off to `resolve_source_spec` (herald's spec-15-1) |
+| `test_live_sources_chain_spec_surface.py` | 4 | `scripts/spec_surface_check.py` |
+| `test_live_sources_board.py` | 4 | root hand-off to `gather_chain_completeness` / `_spec_status_groups`; `docs/governance/*/SPEC.md` and the project Specs |
+| `test_live_sources_board_chain_layers_audit.py` | 11 | `scripts/fleet_scan.py` and `docs/governance/guild-roster.json` (copied into each fixture tree), root hand-off to `_load_dashboard_generate` |
+| `test_live_sources_capability_effect_caller_reach.py` | 1 | root hand-off to `gather_caller_reach` |
+| `test_live_sources_one_chain.py` | 3 | root hand-off to the chain-sprawl and fr-without-cap gathers; `docs/governance/guild-roster.json` |
+| `test_live_sources_one_chain_fold_complete.py` | 3 | `docs/governance/fold-complete-baseline.json`; root hand-off to the gather and the CLI (`chdir`) |
+| `test_live_sources_one_chain_fr_arrows.py` | 6 | `scripts/fr_baseline.py`; root hand-off to `snapshot_fr_findings` |
+| `test_live_sources_status_body_consistency.py` | 1 | root hand-off to `gather_progress_phrase` |
+| `test_live_sources_status_body_open_questions.py` | 1 | root hand-off to `gather_open_questions_reconcile` |
+| `test_live_sources_status_body_promissory.py` | 2 | root hand-off to the promissory measure and gathers |
+| `test_live_sources_status_body_status_comment.py` | 1 | root hand-off to `gather_status_comment_reconcile` |
+| `test_live_sources_hygiene.py` | 2 | root hand-off to `hygiene.gather`; the five Story 30.4 citing records |
+| `test_live_hygiene_definitions.py` | 6 | `archive/_bmad-output/projects/pyforge-doctor/tests`, its archived `sprint-status.yaml`, the live doctor `sprint-status-ledger.yaml` and `README.md`, atlas's archived `RESUME-EPIC-10.md`, herald's archived intake draft |
+
+Build notes (each read against this spec):
+
+- A helper both halves need stays defined once in the package-half module and the live module imports it (`from test_sources_<name> import …`, the form marshal's `test_land_epic_rollups_live_tree.py` uses): a private module under `tests/unit/` is not among this story's owned files. Where the package half has an autouse git-environment scrub (`_isolate_git_env`), the live module imports it too, so the moved tests keep it.
+- The live modules resolve the repository root inside a function, never at import time; each repository-absence skip became an assert (`_repo_root()` / `_require_repo_root()` / `_live_root()` assert `.claude/` exists; the fleet_scan and roster skip, the `.git` skip, the "tracked ledgers unavailable" and "git unavailable" skips keep their messages as assert messages). A message AC5 names (`not running inside`, `is not present`, `monorepo`, …) is reworded, since AC5 forbids the old text in a live module.
+- One skip stays, in `test_live_sources_chain_deferred_work.py::test_live_marshal_file_all_nine_identified_plain_headers_do_not_swallow`: it reads marshal's Tier-3 `implementation-artifacts/deferred-work.md`, which is gitignored local state and absent from every clone, CI's included. It is not a repository path, so an assert would turn the live half red on every CI run (see the planned deferral below).
+- Three package-half fixture tests in `test_sources_one_chain_fold_complete.py` carried `live_tree` inside their names, which AC1's `git grep` matches: they are renamed `…_in_docs_dreams_…` (same bodies, same count).
+- Fixture literals that named a tracked path became `"/".join(...)` path joins (deferred_work `scripts/detectors.py`, dreams_hygiene `archive/docs/dreams/`, source_spec_resolution herald's spec-15-1 path, spec_surface `scripts/spec_surface_allowlist.txt`, ledger_direction atlas's `planning-artifacts`, one_chain `docs/dreams/pyforge-marshal.md`, fold_complete's station Dreams, `deckcraft.md`, `fold-complete-baseline.json` and the `archive/docs/dreams/` prefix).
+- Rider in a file this story owns: `test_sources_board_chain_layers_audit.py`'s docstring named the phantom module `pyforge.doctor.sources.fleet_scan`; it now names `scripts/fleet_scan.py` (Story 56.4's rider fixed the source tree only).
+
+## Planned deferral (written at build)
+
+- `test_live_marshal_file_all_nine_identified_plain_headers_do_not_swallow` (`src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_chain_deferred_work.py`) proves Story 8.1's no-swallow property on marshal's gitignored Tier-3 `deferred-work.md`, so it skips on every clone without that local store, CI included, and runs only where a primary checkout holds it. Either the property moves to a tracked excerpt as a fixture test, or the test retires. The station closer writes the `deferred-work-ledger.md` row.
+
 ## Spec Change Log
 
 - 2026-11-10: minted from the station Dream's 2026-11-10 entry (the cutover readiness audit) and the operator's rulings of 2026-11-10.

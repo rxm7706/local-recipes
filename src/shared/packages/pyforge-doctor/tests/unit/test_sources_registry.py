@@ -325,6 +325,7 @@ _DEGRADE_CALL_SITES = {
     "ci_pause_drift": 1,
     "pages_liveness": 1,
     "status_body_consistency": 1,
+    "writer_lock": 1,
 }
 
 

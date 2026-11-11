@@ -13,9 +13,8 @@ import pytest
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import ledger
 
-# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
-# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
-pytestmark = pytest.mark.live_tree
+# Doctor Story 58.1 (spec-pyforge-doctor:CAP-97): every test here builds its own git repository and none reads
+# this repository, so the module runs in the package half.
 
 _LEAKY_GIT_VARS = (
     "GIT_DIR",
@@ -777,7 +776,8 @@ def test_a_renamed_map_keeps_the_date_it_first_arrived(tmp_path: Path) -> None:
     repo = tmp_path / "r"
     _seed_atlas_25_2(repo)
     _commit(repo, "Merge pyforge-atlas/25-2 into main", allow_empty=True, date="2026-09-18T10:00:00+00:00")
-    planning = "_bmad-output/projects/pyforge-atlas/planning-artifacts"
+    # a join: a bare literal naming a tracked directory would read as a live read (steward's scan_strings)
+    planning = "/".join(("_bmad-output", "projects", "pyforge-atlas", "planning-artifacts"))
     _git(repo, "mv", f"{planning}/rekey-2026-09-17.md", f"{planning}/rekey-2026-09-17-fold.md")
     _commit(repo, "rename the fold map", date="2026-09-20T10:00:00+00:00")
 

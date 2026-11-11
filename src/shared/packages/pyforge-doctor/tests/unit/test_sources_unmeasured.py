@@ -12,6 +12,8 @@ The names are listed below, one per ``detectors-ci`` row (``scripts/detectors.py
 repo-level twin ``tests/scripts/test_detectors_doctor_sources.py`` runs the registry itself over an empty tree, so
 the two lists cannot drift apart unnoticed. New cases for this story live here, not in the modules Stories 58.1 and
 58.2 split -- including the one rider with behaviour: ``one_chain``'s station fallback is the core roster.
+Story 56.5 (spec-pyforge-doctor:CAP-100) added ``writer-lock``: with no roster to read, it is one
+``writer-lock-unevaluable`` WARN, so it reads ``unmeasured`` too.
 """
 
 from __future__ import annotations
@@ -59,6 +61,7 @@ DETECTORS_CI_NAMES: tuple[str, ...] = (
     "bmad-output-hygiene",
     "dreams-hygiene",
     "frontmatter-duplicate-keys",
+    "writer-lock",
 )
 
 #: Unchanged by Story 56.4, each with the reason it stays as it is.
@@ -96,6 +99,10 @@ NEW_UNEVALUABLE_NAMES: tuple[str, ...] = (
     "platform-policy-suite",
     "status-body-consistency",
 )
+
+#: A source added after Story 56.4 with its cannot-evaluate WARN from the start: Story 56.5's `writer-lock` reads
+#: no roster over an empty tree, so it measured nothing (spec-pyforge-doctor:CAP-100).
+BORN_UNEVALUABLE_NAMES: tuple[str, ...] = ("writer-lock",)
 
 _LEAKY_GIT_VARS = (
     "GIT_DIR",
@@ -154,6 +161,8 @@ def test_the_partition_names_are_detectors_ci_names_and_dispatch_entries() -> No
     assert PASS_NAMES | FINDINGS_NAMES <= set(UNCHANGED)
     assert set(NEW_UNEVALUABLE_NAMES) <= names
     assert not set(NEW_UNEVALUABLE_NAMES) & set(UNCHANGED)
+    assert set(BORN_UNEVALUABLE_NAMES) <= names
+    assert not set(BORN_UNEVALUABLE_NAMES) & (set(UNCHANGED) | set(NEW_UNEVALUABLE_NAMES))
 
 
 @pytest.mark.parametrize("name", DETECTORS_CI_NAMES)
@@ -167,7 +176,7 @@ def test_an_empty_tree_reads_as_what_the_source_measured(name: str, empty_tree: 
         assert all(f.status is DoctorStatus.WARN for f in findings), [f.to_json_dict() for f in findings]
 
 
-@pytest.mark.parametrize("name", NEW_UNEVALUABLE_NAMES)
+@pytest.mark.parametrize("name", NEW_UNEVALUABLE_NAMES + BORN_UNEVALUABLE_NAMES)
 def test_an_absent_subject_is_one_source_unevaluable_warn(name: str, tmp_path: Path) -> None:
     findings = DISPATCH[name](_empty_tree(tmp_path / "empty", committed=True))
 

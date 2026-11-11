@@ -7,25 +7,12 @@ from pathlib import Path
 
 import pytest
 
-pytest.importorskip("jsonschema")
-
-from jsonschema import Draft202012Validator
-
 from pyforge.doctor import cli_bridge
 from pyforge.doctor.cli_bridge import CliBridgeError
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import ci_pause_drift
 
-# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
-# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
-pytestmark = pytest.mark.live_tree
-
-REPO_ROOT = Path(__file__).resolve().parents[6]
 FIXTURES = Path(__file__).resolve().parent.parent / "fixtures" / "ci_pause_drift"
-SCHEMA_PATH = REPO_ROOT / "src/shared/packages/pyforge-steward/src/pyforge/steward/data/ci-status-schema.json"
-SCHEMA = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
-_VALIDATOR = Draft202012Validator(SCHEMA)
-_ALL_FIXTURES = sorted(FIXTURES.glob("*.json"))
 
 
 def _load_fixture(name: str) -> dict:
@@ -56,13 +43,6 @@ def _checks(findings: tuple) -> list[str]:
 
 def _warn_checks(findings: tuple) -> list[str]:
     return [f.check for f in findings if f.status == DoctorStatus.WARN]
-
-
-@pytest.mark.parametrize("fixture_path", _ALL_FIXTURES, ids=lambda p: p.name)
-def test_fixture_matches_ci_status_schema(fixture_path: Path) -> None:
-    payload = json.loads(fixture_path.read_text(encoding="utf-8"))
-    errors = sorted(_VALIDATOR.iter_errors(payload), key=lambda e: e.json_path)
-    assert not errors, f"{fixture_path.name}: {[e.message for e in errors]}"
 
 
 def test_row_drift_yields_one_ci_pause_drift_warn(monkeypatch, tmp_path: Path) -> None:
@@ -247,27 +227,6 @@ def test_mutation_partial_as_unobserved_would_drop_row_findings(monkeypatch, tmp
 
 def test_source_is_ci_pause_drift() -> None:
     assert Source.CI_PAUSE_DRIFT.value == "ci-pause-drift"
-
-
-def test_partial_read_on_stdout(monkeypatch, tmp_path: Path) -> None:
-    """Steward Story 103.7: a partial read prints its report, with partial and run_list_errors, on stdout."""
-    payload = {
-        **_load_fixture("partial_with_drift.json"),
-        "partial": True,
-        "run_list_errors": [".github/workflows/platform-ci.yml: HTTP 404"],
-    }
-    assert not list(_VALIDATOR.iter_errors(payload))
-    text = json.dumps(payload)
-
-    def _run(argv, *, cwd, timeout=120.0):
-        assert argv[-3:] == ["ci", "status", "--json"]
-        return 1, text, ""
-
-    monkeypatch.setattr(cli_bridge, "run_argv", _run)
-    findings = ci_pause_drift.gather(tmp_path)
-    assert "ci-pause-drift" in _warn_checks(findings)
-    assert "ci-pause-partial" in _warn_checks(findings)
-    assert "ci-pause-unobserved" not in _checks(findings)
 
 
 # --- Story 45.4 (CAP-89; DOC-M-Z3, DOC-D-C5): steward's reason on every rule, inside fleet-picture's cut ---------

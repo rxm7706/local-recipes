@@ -236,6 +236,9 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         # Story 42.1 (CAP-81 / CAP-86): duplicate frontmatter keys in tracked
         # story specs.
         "frontmatter-duplicate-keys",
+        # Story 56.5 (spec-pyforge-doctor CAP-100): a chain path changed on a
+        # checkout that is not the writer.
+        "writer-lock",
     }
 
 

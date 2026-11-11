@@ -333,6 +333,12 @@ _DOCTOR_SOURCE_TASKS: tuple[tuple[str, str], ...] = (
     # Story 42.1 (CAP-81 / CAP-86): duplicate frontmatter keys in tracked
     # story specs -- offline, deterministic, beside dreams-hygiene above.
     ("frontmatter-duplicate-keys", "frontmatter-duplicate-keys-check"),
+    # Story 56.5 (spec-pyforge-doctor CAP-100): the branch half of the
+    # chain-write guard (spec-python-foundry-cutover:CAP-8) -- a chain path
+    # changed on a checkout that is not the writer is a FAIL. Offline: the
+    # roster, the merge base and the flag tree at it, all read from git.
+    # The `writer-lock-check` pixi task is steward Story 124.1's.
+    ("writer-lock", "writer-lock-check"),
 )
 
 
