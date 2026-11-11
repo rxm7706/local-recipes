@@ -1,6 +1,6 @@
 # pyforge-scribe (Scribe) — pixi build workspace member (warden mirror, Story 1.1).
 #
-# This is a MEMBER package of the parent `staged-recipes` workspace: there is
+# This is a MEMBER package of the parent `local-recipes` workspace: there is
 # deliberately NO [workspace] table here. The root ../../../../pixi.toml owns
 # workspace config (channels, platforms, environments, the `preview = ["pixi-build"]`
 # flag) and pulls this package in via a path dependency in the
@@ -21,11 +21,11 @@ name = "pixi-build-python"
 version = "0.*"
 
 [package.host-dependencies]
-python = ">=3.12"          # matches pyforge-warden's floor (architecture Stack)
+python = ">=3.14"          # decision D6: the floor is 3.14, matching pyproject.toml's requires-python
 hatchling = "*"
 
 [package.run-dependencies]
-python = ">=3.12"
+python = ">=3.14"
 typer = ">=0.27.0"
 pydantic = ">=2.13.4"
 pyforge-core = { path = "../pyforge-core" }

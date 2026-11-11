@@ -128,3 +128,61 @@ Type / Effort / Deps: chore / M / none in this station (cross-station order in N
   (second addendum, item 7). The Approach's line-10 bullet, AC1's need-list and the clauses `test_cutover_wording.py`
   requires now carry it, and CAP-27 took the matching amendment (memlog, rendered by script). The cross-station
   note now says steward:S-121.4 builds before this story and the PR closes only once this story's block lands.
+
+## Auto Run Result
+
+Built 2026-11-11 on `cutover-readiness-2026-11-10` (wave BUILD-1), awaiting independent review; frontmatter status
+unchanged (the ledger close promotes it).
+
+### The refresh
+
+`bmad-project-context` ran in refresh mode, headless, on the operator's per-PR approval (b) of 2026-11-10 (second
+addendum, item 7), with the 2026-11-10 rulings as the rules brought. No custom layer exists
+(`_bmad/scripts/resolve_customization.py` returned empty arrays). Step 1 as a diff: the provenance line read
+`2026-11-01 against 03a7aff5d9`; `git log --diff-filter=DR --name-only 03a7aff5d9..72f3e3158f` deletes or renames
+recipe files and two doctor and warden test fixtures, none named in the block. Every path the block names was
+re-checked against the tree; the misses are the foundry target tree (under its ignore marker), relative or
+placeholder paths, a runtime log, gitignored `.claude/data/conda-forge-expert/`, and the two B paths this refresh
+removes. The block is stamped `Verified 2026-11-11 against 72f3e3158f`. The complete block is `AGENTS.md` between
+the `bmad:context` markers at the branch head; approval (b) asks the PR to show it whole.
+
+### Settled ledger
+
+| Entry | Decision | Reason and evidence |
+|---|---|---|
+| Orientation, "its engines rebuilt from Frame + Spec" | rewrite | Ruling 1 and the second addendum, item 7: the seed is Dream plus memlog, `archive/**/.memlog.md` included with no backfill, and a Frame is a pointer. The rest of the paragraph is retained word for word. |
+| Policy, writer-lock line | rewrite | Ruling 1 reverses who writes: A writes every Dream, Frame, Spec and capability-ledger row until `pyforge.cutover_root` flips, and B reads A at a pinned SHA. Lost parts, deleted on ground 1 (incorrect since the ruling): "foundry-product Dreams, Frames, Spec five-fields ... are B's — never mint a second one here" and "A pins B's SHA (B's `docs/foundry/PIN.md`)". Kept: kernel package commits stay on B (`spec-foundry-regenerate-not-fold` Constraints) and A invents the factory, CFE and recipes until a foundry CFE exists. |
+| Policy, mode line, "The table is B's `docs/foundry/modes.md`" | rewrite | Ground 1: the file does not exist on A and the ruled mode table is A's `docs/foundry/capability-ledger.yaml`; the rules are `spec-foundry-capability-ledger`'s `modes.md`. The four modes and "never `move`" are retained. |
+| The ignore markers around those two lines | delete | Ground 1: no B-only path remains in them, so `governance-currency` reads them in full. |
+| The foundry-tree line, "never mint a lasting `src/shared/packages/` path" | rewrite | RUL-A-F3, the operator's accepted text of 2026-11-05 (`DW-scribe-egm-2026-11-05-3`). The narrowing (a new file in an existing station package is no longer covered) is a deletion on ground 4, approved by that acceptance, and on ground 3: read literally the old line contradicted the workspace-package conventions. |
+| That line's ignore-marker reason | rewrite | Ground 1: `.claude/skills/pyforge-mason/` resolves since its 2026-10-05 compile; the marker stays for `src/packages/`. |
+| Provenance line | rewrite | Refresh date and verified SHA. |
+| Outside the block, § Dates: "1,926 recipes ... (57 as `/v{{ version }}`)" | rewrite | Ground 1, stale: on 2026-11-11 a `git grep` over tracked recipe files counted 10,521 of 11,000 with a version-templated URL, 609 in the `/v` form. The count is dropped and the rule kept, since a typed count goes stale with every recipe. |
+| Every other line of the block | retain | Paths re-checked; no deletion or rename since `03a7aff5d9` touches them. |
+
+The superseded sentences are quoted under 2026-11-10 in `docs/reference/agent-instruction-notes.md` § *Moved from
+AGENTS.md*. In the same file, a pre-existing dead path found by doctor's `docs-currency` scan (the archived
+`spec-upstream-discovery` folder, moved 2026-10-27) now names its archive home.
+
+Requests left for others: steward-station's lint-paragraph request (both suite halves, the package `pixi.toml`
+floors) sits inside the block and can only be true after Epic 124 builds; control-plane's request (3) names
+`cutover plan --regenerate` and `plan --check`, which Stories 121.2 and 121.7 have not built; the guardrail count and
+the SKF row are Story 31.4's. Contradictions in other files, owned by their stories: CHAIN-STANDARD § 0's Frame row
+(steward 120.3), `modes.md`'s "re-derive from Frame/Spec" (control-plane), the dossier's "rebuilt from Frame + Spec"
+(herald 51.2).
+
+### Commands run (exit codes)
+
+- AC1 block check: exit 0, prints `[] []`.
+- AC2 `git grep -n 'Frame + Spec' -- AGENTS.md`: exit 1.
+- AC3 provenance grep: prints 1.
+- AC4 `git grep -n '1,926 recipes' -- AGENTS.md`: exit 1.
+- AC5 RUL-A-F3 grep: prints 1.
+- AC6 `grep -c '2026-11-10' docs/reference/agent-instruction-notes.md`: prints 3.
+- AC7 pointer-file grep: exit 1.
+- AC8 `test_cutover_wording.py` (12 cases) and `test_instruction_surface_parity.py`: exit 0, 61 passed. The one warning
+  is the unregistered `live_tree` marker, which Story 33.1 registers.
+- AC9 `pixi run --frozen -e pyforge-guild governance-currency`: exit 0.
+- The guard run against the pre-refresh `AGENTS.md` (`git show HEAD:AGENTS.md`) names all five required clauses as
+  missing and all four superseded clauses as present.
+- `ruff check` and `ruff format --check` on the new test: exit 0.

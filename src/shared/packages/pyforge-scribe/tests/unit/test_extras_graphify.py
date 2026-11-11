@@ -6,14 +6,16 @@ env (it is an optional extra, off by default per AD-6/air-gap) -- every "on
 mode" test here drives the adapter through a hand-rolled fake `graphify`
 module double rather than the real package, so this suite passes
 identically whether or not graphifyy happens to be installed. The one
-"genuinely unavailable" test below is the exception: it skips itself if
-graphifyy IS installed in the current environment, rather than asserting a
-result that would flip.
+"genuinely unavailable" test below simulates absence instead (Story 33.1):
+`sys.modules["graphify"] = None` makes the adapter's lazy import raise, so
+the branch runs in `-e pyforge-scribe`, where graphifyy is installed, rather
+than skipping there.
 """
 
 from __future__ import annotations
 
 import ast
+import sys
 from pathlib import Path
 
 import pytest
@@ -137,13 +139,10 @@ def test_ingest_repo_missing_target_warns_and_never_imports_graphify(tmp_path: P
     assert "do not exist" in warnings[0]
 
 
-def test_ingest_repo_raises_clear_error_when_graphify_not_installed(tmp_path: Path) -> None:
-    try:
-        import graphify  # noqa: F401
-    except ImportError:
-        pass
-    else:
-        pytest.skip("graphifyy is installed in this environment")
+def test_ingest_repo_raises_clear_error_when_graphify_not_installed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setitem(sys.modules, "graphify", None)  # Story 33.1: absent, whatever the env installs
 
     target = tmp_path / DEFAULT_GRAPHIFY_TARGET
     target.mkdir(parents=True)

@@ -3,6 +3,10 @@
 Story 41.3 (CAP-9 / red-team S-4) moved this driver's DDL into the governed
 Liquibase changelog: the runtime path is assert-only and works as a DML-only
 role.
+
+Story 33.1 (spec-pyforge-scribe CAP-31): the module reads the host's changesets and the
+platform tree, so it is ``live_tree``; every test that needs the server carries ``postgres``
+and fails, never skips, when nothing answers on SCRIBE_GRAPH_DSN.
 """
 
 from __future__ import annotations
@@ -36,8 +40,9 @@ from pyforge.scribe.graph_store_pg import (
 from pyforge.scribe.graph_store_plugins import open_graph_store
 from pyforge.scribe.models import GraphNode
 
+pytestmark = pytest.mark.live_tree
+
 _SCRIBE_ROOT = Path(__file__).resolve().parents[2]
-_REPO_ROOT = Path(__file__).resolve().parents[6]
 _ADAPTER = _SCRIBE_ROOT / "src" / "pyforge" / "scribe" / "graph_store_pg.py"
 _DDL_STATEMENT = re.compile(
     r"\b(CREATE|ALTER|DROP|TRUNCATE)\s+"
@@ -57,6 +62,7 @@ def _node(node_id: str, text: str = "body") -> GraphNode:
     )
 
 
+@pytest.mark.postgres
 def test_postgres_commit_does_not_write_json_document(tmp_path: Path, pg_dsn: str) -> None:
     store_path = tmp_path / "graph.json"
     store = PostgresGraphStore(pg_dsn, store_path)
@@ -89,6 +95,7 @@ def test_driver_emits_no_ddl() -> None:
     assert GRANTS_CHANGESET_ID == "pyforge-scribe:3"
 
 
+@pytest.mark.postgres
 def test_nodes_live_only_in_scribe_schema(tmp_path: Path, pg_dsn: str) -> None:
     import psycopg
 
@@ -121,6 +128,7 @@ def test_nodes_live_only_in_scribe_schema(tmp_path: Path, pg_dsn: str) -> None:
         assert forbidden == []
 
 
+@pytest.mark.postgres
 def test_absent_relation_raises_a_named_error(tmp_path: Path, pg_dsn: str) -> None:
     """Story 41.3: fail loudly and name the changeset, never create it."""
     absent = f"scribe_absent_{secrets.token_hex(4)}"
@@ -132,6 +140,7 @@ def test_absent_relation_raises_a_named_error(tmp_path: Path, pg_dsn: str) -> No
     assert isinstance(error.value, PluginError)
 
 
+@pytest.mark.postgres
 def test_legacy_table_without_stale_is_back_filled_by_the_changeset(
     tmp_path: Path, pg_dsn: str, apply_changesets: Callable[[str], None]
 ) -> None:
@@ -173,6 +182,7 @@ def test_legacy_table_without_stale_is_back_filled_by_the_changeset(
         admin.close()
 
 
+@pytest.mark.postgres
 def test_unreadable_schema_names_the_grants_changeset(tmp_path: Path, pg_dsn: str) -> None:
     """Finding 2: `to_regclass` RAISES on a privilege gap; `:3` is onFail:CONTINUE."""
     import psycopg
@@ -202,6 +212,7 @@ def test_unreadable_schema_names_the_grants_changeset(tmp_path: Path, pg_dsn: st
         admin.close()
 
 
+@pytest.mark.postgres
 def test_store_works_as_a_ddl_revoked_role(tmp_path: Path, pg_dsn: str) -> None:
     """CAP-9: a role that provably cannot CREATE still reads and writes rows."""
     import psycopg
@@ -251,6 +262,7 @@ def test_store_works_as_a_ddl_revoked_role(tmp_path: Path, pg_dsn: str) -> None:
         admin.close()
 
 
+@pytest.mark.postgres
 def test_concurrent_commits_do_not_corrupt_durable_store(tmp_path: Path, pg_dsn: str) -> None:
     path = tmp_path / "ignored"
     errors: list[BaseException] = []
@@ -284,6 +296,7 @@ def test_concurrent_commits_do_not_corrupt_durable_store(tmp_path: Path, pg_dsn:
     assert all(node.text == node.id for node in final)
 
 
+@pytest.mark.postgres
 def test_steward_plugin_returns_postgres_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, pg_dsn: str) -> None:
     monkeypatch.setenv("SCRIBE_GRAPH_DSN", pg_dsn)
     registry = PluginRegistry()
@@ -340,8 +353,8 @@ def test_compile_recall_cli_have_no_driver_isinstance_branch() -> None:
         assert "isinstance(store" not in src
 
 
-def test_no_pyforge_package_under_src_platform() -> None:
-    platform = _REPO_ROOT / "src" / "platform"
+def test_no_pyforge_package_under_src_platform(live_repo_root: Path) -> None:
+    platform = live_repo_root / "src" / "platform"
     if not platform.is_dir():
         pytest.fail("src/platform must exist; refusing a vacuum pass")
     py_files = list(platform.rglob("*.py"))
@@ -349,7 +362,7 @@ def test_no_pyforge_package_under_src_platform() -> None:
     for path in py_files:
         text = path.read_text(encoding="utf-8", errors="replace")
         if "graph_store_pg" in text or "PostgresGraphStore" in text:
-            offenders.append(str(path.relative_to(_REPO_ROOT)))
+            offenders.append(str(path.relative_to(live_repo_root)))
     assert offenders == []
     # Adapter module itself must live in the scribe package, not platform.
     adapter = _SCRIBE_ROOT / "src" / "pyforge" / "scribe" / "graph_store_pg.py"

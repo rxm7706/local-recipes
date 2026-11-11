@@ -119,3 +119,18 @@ Type / Effort / Deps: feature (flag-exempt: detector-or-gate) / M / none.
 
 - 2026-11-10: minted with Epic 32 at the cutover-readiness mint; the Guild Specs' rows name `control-plane` as owner
   because the operator ruled the same day that steward Story 120.3 re-derives both.
+- 2026-11-11: built in wave BUILD-1. The known-rows file is written from the tree the story builds on (the mint head
+  plus the wave's uncommitted renders): 84 rows in 6 folders, not the plan's 43 in 8. The mint commits re-rendered
+  spec-pyforge-steward, spec-pyforge-herald, spec-pyforge-mason and spec-foundry-regenerate-not-fold, so those rows
+  cleared; it appended capability, change, decision and event entries to four memlogs without a render, which their
+  build stories re-derive (spec-pyforge-marshal 25 rows, owner `marshal`; spec-pyforge-core 18, of which the 5
+  plan-time events, and spec-pyforge-testing-charter 10, owner `core-kit`; spec-pyforge-unifying-strategy 7, of which
+  the 3 plan-time events, owner `steward-station`). The 24 rows of the two Guild Specs are unchanged (`control-plane`).
+  An entry not yet committed carries no row (warden Story 25.1's entries were rendered in the same wave). `committed`
+  is the committer date of the commit that added the entry line, read with `git blame`. The repository root is
+  resolved, and `fleet_scan` imported, inside the tests only, so collecting the package half outside the repository
+  (Story 33.1) imports nothing from it. Story 31.4 re-measures the file at the integration head.
+
+## Gate findings (build, BUILD-1)
+
+- 2026-11-11, `pixi run -e pyforge-scribe pyforge-scribe-test`: `test_live_tree_no_spec_is_behind_its_memlog` failed the shrink rule on 52 known rows (the gate's count of 53 included the assertion's repr line) that are no longer behind, because this wave re-rendered spec-pyforge-core (18 rows), spec-pyforge-testing-charter (10), spec-one-chain-per-station (21) and spec-coverage-gate-independence (3). Fixed: exactly those rows are pruned from `tests/meta/data/spec_behind_memlog_known.json` (84 rows to 32, 6 folders to 2). No Spec is newly behind; the module passes (10 tests) with full history, and the station suite exits 0.

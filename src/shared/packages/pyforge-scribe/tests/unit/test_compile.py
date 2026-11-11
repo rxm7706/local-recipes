@@ -1122,13 +1122,7 @@ def test_graphify_extra_on_writes_code_nodes_through_the_same_store(
 def test_graphify_extra_on_but_unavailable_degrades_to_warning_not_abort(
     tmp_path: Path, memory_root: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    try:
-        import graphify  # noqa: F401
-    except ImportError:
-        pass
-    else:
-        pytest.skip("graphifyy is installed in this environment")
-
+    monkeypatch.setitem(sys.modules, "graphify", None)  # Story 33.1: absent, whatever the env installs
     monkeypatch.setenv("SCRIBE_GRAPHIFY_EXTRA", "1")
     (tmp_path / "src" / "shared" / "packages").mkdir(parents=True)
     (tmp_path / "src" / "shared" / "packages" / "example.py").write_text("x = 1\n", encoding="utf-8")

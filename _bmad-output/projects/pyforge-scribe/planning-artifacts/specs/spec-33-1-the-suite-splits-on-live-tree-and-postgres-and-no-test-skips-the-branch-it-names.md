@@ -130,3 +130,63 @@ Type / Effort / Deps: fix / M / none.
 ## Spec Change Log
 
 - 2026-11-10: minted with Epic 33 at the cutover-readiness mint.
+- 2026-11-11: built (wave BUILD-1). The conftest fixture is `live_repo_root`, not `repo_root`: `test_promote.py` and
+  `test_transcripts.py` define their own tmp-tree `repo_root`. `test_instruction_surface_parity.py` and
+  `test_guild_env_membership.py` resolved the root at import, which AC6's copied package cannot import; both now resolve
+  it lazily. The guard also names a server test without `postgres`, a `postgres` param without `live_tree`, and a listed
+  skip site that no longer exists; the plane `importorskip`s are listed per module (duckdb, the atlas writer).
+
+## Review findings (build, round 1, 2026-11-11)
+
+An independent reviewer failed the first build. Each finding, with where it sits and what this round did:
+
+1. **Major.** Where: `tests/meta/test_public_contract.py:46`, Story 31.1's file. Problem: AC6 exits 2 at the
+   integration head. The module assigns `ROOT = _repo_root()` at import, so collecting the copied package raises
+   `AssertionError: could not locate repo root`. With that one file left out of the copy, AC6 exits 0. Response: the
+   reviewer is right, and none of this story's files cause it. The fix belongs to Story 31.1: resolve the root lazily,
+   the way this story did for `test_instruction_surface_parity.py`. Story 33.1 does not own that file, so it is not
+   edited here. The guard now names an import-time root resolution (finding 2), so in-lane it reds the file until
+   31.1 lands that fix. AC5 and AC6 both stay red until then.
+2. **Minor.** Where: `test_live_tree_split.py`, `problems` / `_root_resolution`. Problem: the guard did not name a
+   marked module that resolves the root at import, and that is the one property AC6 needs from every module. Response:
+   fixed. Every `.py` under `tests/` is read for code that runs at import (the module body, class bodies, decorators,
+   default values; never a function body). A walk-up, a parent count past the package, or a call to a resolver there is
+   named, whether the resolver is local or a helper module's. A resolution inside a `try` that handles its failure is
+   allowed, because it never raises out of the import. `test_instruction_surface_parity.py`'s `CURSOR_RULES =
+   _cursor_rules()` is that case. Planted: a module-level `ROOT = _repo_root()`, a `parametrize` argument that calls
+   `find_repo_root()`, and a helper module that counts parents at import. The negative control is a cached resolver
+   called inside the tests, plus a handled resolution at import. On the live tree the guard now names exactly one
+   module, `meta/test_public_contract.py`. A scratch copy with only that module's `ROOT = _repo_root()` made lazy
+   gives `problems() == []`, and AC6 exits 0 on it (378 passed, 4 skipped on the listed duckdb `importorskip`s,
+   152 deselected).
+3. **Minor.** Where: `test_spec_not_behind_memlog.py` (Story 32.3), through AC8. Problem: AC8 fails 1 test,
+   `test_live_tree_no_spec_is_behind_its_memlog`. Its known-rows file is stale after this wave's concurrent core-kit
+   re-derives. Response: not this story's file or defect. Story 32.3 or the gate refreshes
+   `spec_behind_memlog_known.json`, then re-runs AC8.
+4. **Minor.** Where: `spec-pyforge-scribe`'s memlog and its spec-surface baseline. Problem: `spec-surface-check` reports
+   `drift-presumed` on `test_graph_store_operations.py`, `test_navigation_owner.py` and `test_recall_semantic.py`, and
+   no reconcile entry names them. Response: this story names no memlog step, and the build may append only the memlog
+   entries the story spec names. The reconcile event and the scoped stamp happen at the gate, after `git add`.
+5. **Minor.** Where: `test_live_tree_split.py` (the `SKIP_SITES` key, `_tests`, `problems`). Problem: three coverage
+   limits, none of them present in today's tree. (a) A second skip of the same kind in a listed function passes. (b)
+   Only `test_*.py` modules are read for root resolution. (c) A fixture that takes `pg_dsn` transitively does not make
+   its tests need `postgres`. Response: all three are closed.
+   - (a) Each listed entry allows exactly one site, and a repeat is named.
+   - (b) Every `.py` is read for the import-time property. A helper module's functions that resolve the root, directly
+     or through one another, count as resolvers when a test module calls them. A helper fixture that resolves the root
+     counts as a root fixture.
+   - (c) A fixture that takes a server fixture or calls `require_pg_dsn` is a server fixture, transitively. That holds
+     in a helper module and in the test module itself. The one exception is a fixture whose server param carries the
+     marks itself, which is `graph_store_factory`'s `postgres` param.
+
+   Each case is planted and named.
+
+Re-run after the fixes (2026-11-11):
+
+- AC1, AC2, AC3, AC4 (7 passed, no `SKIPPED`), AC7 and AC9 exit as specified.
+- AC2 is also checked with a plain `grep` over the untracked guard. A literal `parents[6]` in one planted source was
+  rewritten to `parents[{6}]`, so `git grep` stays clean once the gate stages the file.
+- AC5 exits 1 (28 passed, 1 failed). AC6 exits 2. Both are Story 31.1's `ROOT = _repo_root()` alone, as finding 1
+  says.
+- AC8 exits 1 (531 passed, 2 failed, 5 skipped). One failure is AC5's live test. The other is 32.3's stale
+  known-rows file (finding 3). The 5 skips are closed-list sites.

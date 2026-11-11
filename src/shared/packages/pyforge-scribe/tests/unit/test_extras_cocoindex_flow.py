@@ -6,9 +6,10 @@ env (it is an optional extra, off by default per AD-6/air-gap) -- every "on
 mode" test here drives the adapter through a hand-rolled fake `cocoindex`
 module double rather than the real package, so this suite passes
 identically whether or not cocoindex happens to be installed. The one
-"genuinely unavailable" test below is the exception: it skips itself if
-cocoindex IS installed in the current environment, rather than asserting a
-result that would flip. Mirrors `test_extras_graphify.py` exactly.
+"genuinely unavailable" test below simulates absence instead (Story 33.1):
+`sys.modules["cocoindex"] = None` makes the adapter's lazy import raise, so
+the branch runs in `-e pyforge-scribe`, where cocoindex is installed, rather
+than skipping there. Mirrors `test_extras_graphify.py` exactly.
 """
 
 from __future__ import annotations
@@ -16,6 +17,7 @@ from __future__ import annotations
 import ast
 import json
 import re
+import sys
 from pathlib import Path
 
 import pytest
@@ -97,14 +99,9 @@ def test_cocoindex_extra_enabled_parses_env_var(monkeypatch: pytest.MonkeyPatch,
 
 
 def test_refresh_incremental_raises_clear_error_when_cocoindex_not_installed(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    try:
-        import cocoindex  # noqa: F401
-    except ImportError:
-        pass
-    else:
-        pytest.skip("cocoindex is installed in this environment")
+    monkeypatch.setitem(sys.modules, "cocoindex", None)  # Story 33.1: absent, whatever the env installs
 
     artifact = DerivedArtifact(name="a", sources=(), derive=lambda: None)
     with pytest.raises(CocoindexUnavailableError):

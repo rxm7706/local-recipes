@@ -10,7 +10,12 @@ import json
 import re
 from pathlib import Path
 
+import pytest
 from pyforge.testing_kit import changed_paths_since, pyforge_import_offenders
+
+# Story 33.1 (spec-pyforge-scribe CAP-31, relay of spec-pyforge-steward:CAP-175): the module reads the repository
+# outside this package, so it runs in the live-tree half.
+pytestmark = pytest.mark.live_tree
 
 PROOF_STATION = "scribe"
 PERSONA = "bmad-agent-scribe"

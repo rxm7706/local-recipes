@@ -3,18 +3,16 @@
 The framework-neutral contract for every agent and harness (§ *How each harness loads this file*).
 
 <!-- bmad:context -->
-<!-- Verified 2026-11-01 against 03a7aff5d9 (EGM audit refresh, marshal Story 113.7). Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+<!-- Verified 2026-11-11 against 72f3e3158f (cutover-readiness refresh, scribe Story 32.1, from the operator's rulings of 2026-11-10). Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
 
 ## local-recipes (PyForge)
 
-This is A (`rxm7706/local-recipes`), the PyForge control plane and BMAD Agentic-SDLC host: Dreams in `docs/dreams/`; Specs, spines, epics and ledgers under `_bmad-output/projects/<station>/planning-artifacts/`; a Django + Wagtail host at `src/platform/` and eight `pyforge-<station>` packages with their `django-<station>` portals under `src/shared/packages/`, on Python 3.14 via pixi (`pixi.toml` is the task and dependency registry). The conda-forge recipe factory (`recipes/`, driven by the `conda-forge-expert` skill) is one cell of A, not the product. B (`rxm7706/python-foundry`, private) is the lasting root, its engines rebuilt from Frame + Spec; A stays the control plane and the oracle, and the root of record until `pyforge.cutover_root` flips to `foundry`; A is never archived. That cutover is under contract (`spec-python-foundry-cutover`, Epic 44; its live state is herald's dossier § A→B and the steward ledger, never restated here) — the estate has not moved.
+This is A (`rxm7706/local-recipes`), the PyForge control plane and BMAD Agentic-SDLC host: Dreams in `docs/dreams/`; Specs, spines, epics and ledgers under `_bmad-output/projects/<station>/planning-artifacts/`; a Django + Wagtail host at `src/platform/` and eight `pyforge-<station>` packages with their `django-<station>` portals under `src/shared/packages/`, on Python 3.14 via pixi (`pixi.toml` is the task and dependency registry). The conda-forge recipe factory (`recipes/`, driven by the `conda-forge-expert` skill) is one cell of A, not the product. B (`rxm7706/python-foundry`, private) is the lasting root, its engines rebuilt from the seed: Dream plus memlog, archived memlogs (`archive/**/.memlog.md`) included with no backfill; a Frame is a pointer to that seed, not part of it. A stays the control plane and the oracle, and the root of record until `pyforge.cutover_root` flips to `foundry`; A is never archived. That cutover is under contract (`spec-python-foundry-cutover`, Epic 44; its live state is herald's dossier § A→B and the steward ledger, never restated here) — the estate has not moved.
 
 ## Policy
 
-<!-- governance-currency:ignore-start (PIN.md and modes.md live on B -- rxm7706/python-foundry -- and are named here precisely to say they are NOT on A) -->
-- Write each artifact on the root that owns it (the writer lock): foundry-product Dreams, Frames, Spec five-fields and kernel package commits are B's — never mint a second one here; A pins B's SHA (B's `docs/foundry/PIN.md`) and invents the factory, CFE and recipes until a foundry CFE exists.
-- A capability crosses to B only by its mode — `rebuild` (B re-derives it; A is its oracle until it is `verified-in-foundry`), `retire` (never appears on B), `A-only` (with an expiry story or date) or `B-only` (named on a Spec before `done`); never `move`, never a package fold or copy of A into B. The table is B's `docs/foundry/modes.md`.
-<!-- governance-currency:ignore-end -->
+- Write each chain artifact on the root that holds the writer lock: A writes every Dream, Frame, Spec and capability-ledger row until `pyforge.cutover_root` flips to `foundry`, and the flip hands the lock to B. B keeps its own repository, epoch, CI and kernel package commits, reads A at a pinned SHA, and writes none of those artifacts; a Frame is a pointer to the seed, never a second seed. A invents the factory, CFE and recipes until a foundry CFE exists.
+- A capability crosses to B only by its mode — `rebuild` (B re-derives it; A is its oracle until it is `verified-in-foundry`), `retire` (never appears on B), `A-only` (with an expiry story or date) or `B-only` (named on a Spec before `done`); never `move`, never a package fold or copy of A into B. Each capability's mode is its row in the mode table, `docs/foundry/capability-ledger.yaml`, which A writes like the rest of the chain; the mode rules are `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-capability-ledger/modes.md`.
 - Never mix `meta.yaml` and `recipe.yaml` recipes in one build run; the tooling rejects it.
 - Never code from a bare prompt: a Dream in `docs/dreams/` and a Spec under `planning-artifacts/specs/spec-<slug>/` come first.
 - Never hand-edit a `SPEC.md`; append to its `.memlog.md` with `uv run _bmad/scripts/memlog.py` and re-derive with `bmad-spec`.
@@ -29,8 +27,8 @@ This is A (`rxm7706/local-recipes`), the PyForge control plane and BMAD Agentic-
 - Commit messages carry no `Co-Authored-By` line and no AI attribution; the `commit-msg` hook in `.pre-commit-config.yaml` refuses them (`steward setup` installs it; `precommit-config-check` reds the file going missing).
 - Never open a feedstock, staged-recipes or upstream PR without an explicit ask; a green local build ends the task.
 - Never flip a ledger `blocked` key, and never dispatch outward work (a new repo, an upstream PR, disabling CI) without operator confirmation.
-<!-- governance-currency:ignore-start (the foundry target tree is not built on A; .claude/skills/pyforge-mason/ resolves only once mason Story 19.1 compiles it under the dated A-only exception below -- Mason's skill cell is then pyforge-mason plus conda-forge-expert, operator ruling 2026-09-28) -->
-- New paths must fit the foundry target tree (`src/packages/`, `factory/`, `skills/{stations,personas,domain}/`, `docs/foundry/`); never mint a lasting `src/shared/packages/` path. One dated exception (operator ruling 2026-09-28; `docs/dreams/pyforge-mason.md` § Realization log, the 2026-09-27 entry *Mason has its own skills*): `.claude/skills/pyforge-mason/`, Mason's SKF-compiled station skill, is `A-only` until `pyforge.cutover_root` flips to `foundry`; B rebuilds Mason's skills under `skills/stations/`.
+<!-- governance-currency:ignore-start (src/packages/ belongs to the foundry target tree, which is not built on A) -->
+- New paths must fit the foundry target tree (`src/packages/`, `factory/`, `skills/{stations,personas,domain}/`, `docs/foundry/`); never mint a lasting `src/shared/packages/` package (a new package directory; files in an existing station package are not new paths). One dated exception (operator ruling 2026-09-28; `docs/dreams/pyforge-mason.md` § Realization log, the 2026-09-27 entry *Mason has its own skills*): `.claude/skills/pyforge-mason/`, Mason's SKF-compiled station skill, is `A-only` until `pyforge.cutover_root` flips to `foundry`; B rebuilds Mason's skills under `skills/stations/`.
 <!-- governance-currency:ignore-end -->
 
 ## Where things are
@@ -442,7 +440,7 @@ normalized version does **not** text-sort correctly (`2026.10.1` sorts before `2
 A second release on one day takes a fourth segment: `2026.7.30.1`.
 
 **A git tag is a version alias, not a date** — unpadded, byte-identical to the version.
-Do not pad it: 1,926 recipes here build their source URL from `{{ version }}` (57 as
+Do not pad it: most recipes here build their source URL from `{{ version }}` (some as
 `/v{{ version }}`), so a `v2026.07.30` tag against a `2026.7.30` version resolves to a URL
 that 404s.
 

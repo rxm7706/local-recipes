@@ -12,6 +12,7 @@ dangling team-memory path reds the scribe suite. Research (every harness's live 
 
 from __future__ import annotations
 
+import functools
 import json
 import os
 import re
@@ -22,7 +23,13 @@ from pathlib import Path
 
 import pytest
 
+# Story 33.1 (spec-pyforge-scribe CAP-31, relay of spec-pyforge-steward:CAP-175): the module reads the repository
+# outside this package, so it runs in the live-tree half. It resolves the root lazily: with the package copied alone
+# the module still imports (and is deselected); a test run there fails on the missing root, never skips.
+pytestmark = pytest.mark.live_tree
 
+
+@functools.cache
 def _repo_root() -> Path:
     here = Path(__file__).resolve()
     for candidate in here.parents:
@@ -31,8 +38,18 @@ def _repo_root() -> Path:
     raise AssertionError("could not locate repo root (pixi.toml + .claude/skills)")
 
 
-ROOT = _repo_root()
-AGENTS = ROOT / "AGENTS.md"
+def _agents_md() -> Path:
+    return _repo_root() / "AGENTS.md"
+
+
+def _cursor_rules() -> list[str]:
+    """Every Cursor rule, for the duplicate guard's parametrization; none outside the repository."""
+    try:
+        root = _repo_root()
+    except AssertionError:
+        return []
+    return sorted(p.relative_to(root).as_posix() for p in (root / ".cursor" / "rules").glob("*.mdc"))
+
 
 # The per-tool entry files: each is an addendum for one harness and points at AGENTS.md.
 POINTER_FILES = (
@@ -41,7 +58,7 @@ POINTER_FILES = (
     ".cursor/rules/specs.mdc",
 )
 # Every Cursor rule is loaded beside AGENTS.md, so none may repeat one of its sections.
-CURSOR_RULES = sorted(p.relative_to(ROOT).as_posix() for p in (ROOT / ".cursor" / "rules").glob("*.mdc"))
+CURSOR_RULES = _cursor_rules()
 POINTER_MAX_LINES = 60
 
 _H2 = re.compile(r"^## +(.+?)\s*$", re.M)
@@ -100,7 +117,7 @@ def test_claude_md_imports_agents_md_as_a_bare_line() -> None:
     has a CLAUDE.md), AGENTS.md reaches Claude Code only through this `@AGENTS.md` import (Story 19.3
     / CAP-29 pins `claude-md-and-agents-md` on top, which dedupes the import by path). A backticked
     `@AGENTS.md` is an inert code span, not an import."""
-    lines = _lines_outside_fences((ROOT / "CLAUDE.md").read_text(encoding="utf-8"))
+    lines = _lines_outside_fences((_repo_root() / "CLAUDE.md").read_text(encoding="utf-8"))
     assert "@AGENTS.md" in [line.strip() for line in lines], (
         "CLAUDE.md must carry a bare `@AGENTS.md` line -- without it the verified bmad:context "
         "block never loads in a Claude Code session"
@@ -109,7 +126,7 @@ def test_claude_md_imports_agents_md_as_a_bare_line() -> None:
 
 def test_gemini_settings_name_agents_md_first() -> None:
     """Gemini CLI reads AGENTS.md only when `context.fileName` names it (default: GEMINI.md only)."""
-    settings = json.loads((ROOT / ".gemini" / "settings.json").read_text(encoding="utf-8"))
+    settings = json.loads((_repo_root() / ".gemini" / "settings.json").read_text(encoding="utf-8"))
     names = settings["context"]["fileName"]
     if isinstance(names, str):
         names = [names]
@@ -119,13 +136,13 @@ def test_gemini_settings_name_agents_md_first() -> None:
 
 def test_vscode_chat_loads_agents_md() -> None:
     """VS Code Copilot chat reads AGENTS.md only with `chat.useAgentsMdFile` (off by default)."""
-    settings = json.loads(_strip_jsonc((ROOT / ".vscode" / "settings.json").read_text(encoding="utf-8")))
+    settings = json.loads(_strip_jsonc((_repo_root() / ".vscode" / "settings.json").read_text(encoding="utf-8")))
     assert settings.get("chat.useAgentsMdFile") is True
 
 
 @pytest.mark.parametrize("rel", POINTER_FILES)
 def test_pointer_file_points_at_agents_md_and_stays_thin(rel: str) -> None:
-    text = (ROOT / rel).read_text(encoding="utf-8")
+    text = (_repo_root() / rel).read_text(encoding="utf-8")
     assert "AGENTS.md" in text, f"{rel} must point at AGENTS.md"
     n = len(text.splitlines())
     assert n <= POINTER_MAX_LINES, f"{rel} is {n} lines; a per-tool file is an addendum (<= {POINTER_MAX_LINES})"
@@ -145,15 +162,15 @@ def _duplicate_h2(agents_text: str, tool_text: str) -> list[str]:
 @pytest.mark.parametrize("rel", DUPLICATE_GUARD_FILES)
 def test_per_tool_file_repeats_no_agents_md_section(rel: str) -> None:
     """The duplication guard: a per-tool file may not carry an H2 that AGENTS.md also carries."""
-    dup = _duplicate_h2(AGENTS.read_text(encoding="utf-8"), (ROOT / rel).read_text(encoding="utf-8"))
+    dup = _duplicate_h2(_agents_md().read_text(encoding="utf-8"), (_repo_root() / rel).read_text(encoding="utf-8"))
     assert not dup, f"{rel} repeats AGENTS.md section(s) {dup}; move the content to AGENTS.md and point at it"
 
 
 def test_duplicate_guard_reports_a_planted_normalised_duplicate_in_claude_md() -> None:
     """Story 23.2: the guard path itself, not only the normaliser, flags the CAP-29 duplicate."""
-    agents = AGENTS.read_text(encoding="utf-8")
+    agents = _agents_md().read_text(encoding="utf-8")
     assert "## Behavioural guidelines (every harness)" in agents
-    claude = (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
+    claude = (_repo_root() / "CLAUDE.md").read_text(encoding="utf-8")
     assert _duplicate_h2(agents, claude) == []
     planted = claude + "\n## Behavioral Guidelines\n\n1. Think before coding.\n"
     assert _duplicate_h2(agents, planted) == [_normalise_heading("Behavioural guidelines (every harness)")]
@@ -161,7 +178,7 @@ def test_duplicate_guard_reports_a_planted_normalised_duplicate_in_claude_md() -
 
 
 def test_agents_md_names_the_team_memory_boot_read_and_the_way_in() -> None:
-    text = AGENTS.read_text(encoding="utf-8")
+    text = _agents_md().read_text(encoding="utf-8")
     assert ".claude/memory/MEMORY.md" in text, "AGENTS.md must name the session-boot read"
     assert "scribe capture" in text, "AGENTS.md must name `scribe capture` as the way into team memory"
     assert "~/.claude/projects" in text, (
@@ -173,7 +190,7 @@ def test_agents_md_states_the_session_close_ritual_with_hygiene() -> None:
     """Story 46.3 / spec-pyforge-marshal CAP-192: the close ritual is named once, in
     AGENTS.md, with capture hygiene stated alongside it -- not left implicit in the
     conditional bullets around it."""
-    text = AGENTS.read_text(encoding="utf-8")
+    text = _agents_md().read_text(encoding="utf-8")
     assert "session-close ritual" in text.casefold(), "AGENTS.md must name the session-close ritual"
     assert "no secrets, decision-grade facts only" in text, "AGENTS.md must state capture hygiene"
 
@@ -192,7 +209,7 @@ def test_agents_md_states_the_session_close_ritual_with_hygiene() -> None:
 def test_harness_profile_points_at_the_session_close_ritual(rel: str) -> None:
     """Each harness profile / station skill note carries a one-line pointer to the ritual,
     never a restatement."""
-    text = (ROOT / rel).read_text(encoding="utf-8")
+    text = (_repo_root() / rel).read_text(encoding="utf-8")
     assert "scribe capture" in text and "session-close ritual" in text.casefold(), (
         f"{rel} must point at the AGENTS.md session-close ritual"
     )
@@ -200,23 +217,23 @@ def test_harness_profile_points_at_the_session_close_ritual(rel: str) -> None:
 
 def test_every_team_memory_path_agents_md_cites_exists() -> None:
     """PR #1513 cited five memory files that lived only in one operator's home directory."""
-    text = AGENTS.read_text(encoding="utf-8")
+    text = _agents_md().read_text(encoding="utf-8")
     cited = sorted(set(_MEMORY_PATH.findall(text)))
     assert cited, "AGENTS.md should cite at least the MEMORY.md index"
-    missing = [c for c in cited if not (ROOT / c).is_file()]
+    missing = [c for c in cited if not (_repo_root() / c).is_file()]
     assert not missing, f"AGENTS.md cites team-memory paths that do not exist in the repo: {missing}"
 
 
 def test_agents_md_documents_every_pointer_mechanism() -> None:
     """The harness table must name the exact mechanism this test enforces for each harness."""
-    text = AGENTS.read_text(encoding="utf-8")
+    text = _agents_md().read_text(encoding="utf-8")
     for token in ("@AGENTS.md", "context.fileName", "chat.useAgentsMdFile", "copilot-setup-steps.yml"):
         assert token in text, f"AGENTS.md's harness table must name {token}"
 
 
 def test_bmad_context_block_is_intact() -> None:
     """CAP-27 edits only the prose outside bmad-project-context's managed block."""
-    text = AGENTS.read_text(encoding="utf-8")
+    text = _agents_md().read_text(encoding="utf-8")
     assert text.count("<!-- bmad:context -->") == 1 and text.count("<!-- /bmad:context -->") == 1
     assert text.index("<!-- bmad:context -->") < text.index("<!-- /bmad:context -->")
 
@@ -235,7 +252,7 @@ def test_agents_md_claude_code_row_states_the_mod_version_and_the_pinned_mode() 
     """The mod's default mode stays out of a project that has a CLAUDE.md; the
     row must say which version, which pinned mode, and that the import is the
     floor -- so nobody deletes CLAUDE.md to \"default to AGENTS.md\"."""
-    text = AGENTS.read_text(encoding="utf-8")
+    text = _agents_md().read_text(encoding="utf-8")
     row = next((line for line in text.splitlines() if line.startswith("| Claude Code |")), "")
     assert row, "AGENTS.md's harness table has no Claude Code row"
     for needle in ("@AGENTS.md", "2.1.277", "agents-md", "claude-md-and-agents-md", "claude_instruction_mode_check.py"):
@@ -244,7 +261,7 @@ def test_agents_md_claude_code_row_states_the_mod_version_and_the_pinned_mode() 
 
 def test_claude_md_does_not_restate_the_behavioural_guidelines() -> None:
     """CAP-29 collapsed the duplicate: CLAUDE.md points at AGENTS.md's section."""
-    text = (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
+    text = (_repo_root() / "CLAUDE.md").read_text(encoding="utf-8")
     assert "Think Before Coding** —" not in text, "CLAUDE.md restates the five principles; point at AGENTS.md instead"
     assert "Behavioural guidelines (every harness)" in text
 
@@ -261,7 +278,7 @@ def _agents_md_principles(agents_text: str) -> list[str]:
 def test_project_settings_custom_instructions_point_at_agents_md() -> None:
     """Story 23.2 (operator ruling 2026-11-01): one sentence pointing at the AGENTS.md
     section, never a list of its principles -- a list goes stale (it named five of eight)."""
-    settings = json.loads((ROOT / ".claude" / "settings.json").read_text(encoding="utf-8"))
+    settings = json.loads((_repo_root() / ".claude" / "settings.json").read_text(encoding="utf-8"))
     entries = settings.get("customInstructions", [])
     joined = " ".join(entries)
     assert "AGENTS.md" in joined and "CLAUDE.md" not in joined
@@ -271,13 +288,16 @@ def test_project_settings_custom_instructions_point_at_agents_md() -> None:
     assert len(re.findall(r"[.!?](?:\s|$)", sentence)) == 1 and ":" not in sentence, (
         f"customInstructions must be one sentence with no list: {sentence!r}"
     )
-    principles = _agents_md_principles(AGENTS.read_text(encoding="utf-8"))
+    principles = _agents_md_principles(_agents_md().read_text(encoding="utf-8"))
     assert len(principles) >= 8, principles
     listed = [p for p in principles if p.casefold() in sentence.casefold()]
     assert not listed, f"customInstructions restates AGENTS.md principles {listed}; point at the section instead"
 
 
-SCRIPT = ROOT / "scripts" / "claude_instruction_mode_check.py"
+def _mode_check_script() -> Path:
+    return _repo_root() / "scripts" / "claude_instruction_mode_check.py"
+
+
 _PINNED_SETTINGS = {
     "pluginConfigs": {"agents-md@builtin": {"options": {"instructionFiles": "claude-md-and-agents-md"}}}
 }
@@ -287,7 +307,7 @@ def _run_mode_check(path_dir: Path, settings: Path, *extra: str) -> subprocess.C
     """Run the check with PATH holding only ``path_dir``, so ``shutil.which`` sees a stub or nothing."""
     env = {**os.environ, "PATH": str(path_dir)}
     return subprocess.run(
-        [sys.executable, str(SCRIPT), "--settings", str(settings), *extra],
+        [sys.executable, str(_mode_check_script()), "--settings", str(settings), *extra],
         capture_output=True,
         text=True,
         env=env,
@@ -307,9 +327,9 @@ def test_runtime_mode_check_is_registered() -> None:
     detector with a pixi task."""
     import importlib.util as _ilu
 
-    script = SCRIPT
+    script = _mode_check_script()
     assert script.is_file()
-    assert "[feature.guild-tasks.tasks.claude-instruction-mode-check]" in (ROOT / "pixi.toml").read_text(
+    assert "[feature.guild-tasks.tasks.claude-instruction-mode-check]" in (_repo_root() / "pixi.toml").read_text(
         encoding="utf-8"
     )
     spec = _ilu.spec_from_file_location("claude_instruction_mode_check", script)
@@ -388,7 +408,7 @@ def _aspiration_lines(text: str) -> list[str]:
 
 
 def test_managed_block_carries_no_todo_or_not_yet_landed_line() -> None:
-    hits = _aspiration_lines(AGENTS.read_text(encoding="utf-8"))
+    hits = _aspiration_lines(_agents_md().read_text(encoding="utf-8"))
     assert not hits, (
         "AGENTS.md's bmad:context block states present truth; a decision without a Story is a "
         "Dream entry, never a TODO line every session pays for (spec-pyforge-scribe CAP-30):\n  " + "\n  ".join(hits)
@@ -440,7 +460,7 @@ def _typed_counts(text: str) -> list[str]:
 
 
 def test_managed_block_types_no_suite_member_or_skill_family_count() -> None:
-    hits = _typed_counts(AGENTS.read_text(encoding="utf-8"))
+    hits = _typed_counts(_agents_md().read_text(encoding="utf-8"))
     assert not hits, (
         "AGENTS.md's bmad:context block types a count the estate catalog derives; point at "
         "docs/reference/bmad-estate-llms-full.md instead (spec-pyforge-scribe CAP-32):\n  " + "\n  ".join(hits)
@@ -471,7 +491,9 @@ def test_typed_count_guard_reports_a_planted_count_inside_the_block(line: str) -
 # reds the regression either way. That AGENTS.md carries the block is mason's assert
 # (tests/meta/test_persona_consults_cfe.py), not repeated here.
 
-SKF_CONFIG = ROOT / "_bmad" / "skf" / "config.yaml"
+
+def _skf_config() -> Path:
+    return _repo_root() / "_bmad" / "skf" / "config.yaml"
 
 
 def _governance_currency_bullet(agents_text: str) -> str:
@@ -529,8 +551,8 @@ def _top_level_list(text: str, key: str) -> list[str] | None:
 
 
 def _live_skf_end_state() -> tuple[str, object, str]:
-    ides = _top_level_list(SKF_CONFIG.read_text(encoding="utf-8"), "ides")
-    return (ROOT / "CLAUDE.md").read_text(encoding="utf-8"), ides, AGENTS.read_text(encoding="utf-8")
+    ides = _top_level_list(_skf_config().read_text(encoding="utf-8"), "ides")
+    return (_repo_root() / "CLAUDE.md").read_text(encoding="utf-8"), ides, _agents_md().read_text(encoding="utf-8")
 
 
 def test_the_2026_09_26_skf_end_state_holds() -> None:

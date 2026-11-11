@@ -1,4 +1,10 @@
-"""Shared fixtures for GraphStore tests (Story 28.1)."""
+"""Shared fixtures for GraphStore tests (Story 28.1), and the one repository-root finder (Story 33.1).
+
+Story 33.1 (spec-pyforge-scribe CAP-31): a test that reads the repository outside this package asks
+``find_repo_root()`` (or the ``live_repo_root`` fixture) and its module carries ``pytestmark = pytest.mark.live_tree``;
+nothing counts parents. The finder is called lazily, so with the package copied alone every module still imports
+and the package half (``-m "not live_tree and not postgres"``) runs; a live-tree test run there fails, never skips.
+"""
 
 from __future__ import annotations
 
@@ -15,13 +21,33 @@ _DEFAULT_PG_DSN = "postgres://postgres:scribe@127.0.0.1:5433/scribe_graph"
 # Story 41.3 / CAP-9: the driver no longer creates its own relations, so the
 # test database is provisioned the way production is -- from the governed
 # Liquibase changesets, which are the one source of this DDL.
-_CHANGELOG_DIR = Path(__file__).resolve().parents[5] / "platform" / "db" / "changelog" / "changes"
 _SCRIBE_CHANGESETS = "pyforge-scribe-*.sql"
 # The header may carry Liquibase attributes after the id -- db/README.md's
 # `runInTransaction:false` exception process mandates exactly that -- so the
 # seq must not be anchored to end-of-line.
 _CHANGESET_SEQ = re.compile(r"^--changeset\s+\S+?:([1-9][0-9]*)(?:\s|$)", re.MULTILINE)
 _provisioned: set[str] = set()
+
+
+def find_repo_root() -> Path:
+    """The repository root: the nearest ancestor holding ``pixi.toml`` and ``.claude/skills``."""
+    here = Path(__file__).resolve()
+    for candidate in here.parents:
+        if (candidate / "pixi.toml").is_file() and (candidate / ".claude" / "skills").is_dir():
+            return candidate
+    pytest.fail(
+        f"{here} is not inside the repository (no ancestor holds pixi.toml and .claude/skills); "
+        "a test that reads the live tree is marked live_tree and runs in the live-tree half"
+    )
+
+
+@pytest.fixture
+def live_repo_root() -> Path:
+    return find_repo_root()
+
+
+def _changelog_dir() -> Path:
+    return find_repo_root() / "src" / "platform" / "db" / "changelog" / "changes"
 
 
 def _seq(path: Path) -> int:
@@ -47,10 +73,11 @@ def scribe_changeset_paths() -> list[Path]:
     grants: ``platform_app`` does not exist in a test database, and Liquibase
     itself skips them there (``onFail:CONTINUE``).
     """
-    paths = sorted(_CHANGELOG_DIR.glob(_SCRIBE_CHANGESETS), key=_seq)
+    changelog_dir = _changelog_dir()
+    paths = sorted(changelog_dir.glob(_SCRIBE_CHANGESETS), key=_seq)
     if not paths:
         pytest.fail(
-            f"scribe's Liquibase changesets are missing from {_CHANGELOG_DIR}; "
+            f"scribe's Liquibase changesets are missing from {changelog_dir}; "
             "the durable GraphStore has no other source of DDL (Story 41.3)"
         )
     return [path for path in paths if "--preconditions" not in path.read_text(encoding="utf-8")]
@@ -104,7 +131,9 @@ def apply_changesets() -> Callable[[str], None]:
 StoreFactory = Callable[[], GraphStore]
 
 
-@pytest.fixture(params=["flatfile", "postgres"])
+#: Story 33.1: the postgres param needs the server and reads the host's changesets, so it carries both marks and the
+#: flat-file param stays in the package half.
+@pytest.fixture(params=["flatfile", pytest.param("postgres", marks=[pytest.mark.live_tree, pytest.mark.postgres])])
 def graph_store_factory(request: pytest.FixtureRequest, tmp_path: Path) -> StoreFactory:
     kind = request.param
     if kind == "flatfile":

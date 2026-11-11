@@ -112,3 +112,7 @@ Type / Effort / Deps: feature (flag-exempt: detector-or-gate) / M / none.
 ## Spec Change Log
 
 - 2026-11-10: minted with Epic 31 at the cutover-readiness mint, from the station Dream's entry of the same date.
+
+## Gate findings (build, BUILD-1)
+
+- 2026-11-11, `pixi run -e pyforge-scribe pyforge-scribe-test`: Story 33.1's split guard (`test_live_tree_split.py::test_the_suite_splits_on_live_tree_and_postgres_and_skips_only_listed_sites`) named `tests/meta/test_public_contract.py` for resolving the repository root at import (`ROOT = _repo_root()` in the module body). Fixed in that file: `_repo_root()` is cached with `functools.cache`, and the module constants are now the helpers `_packages()`, `_contract()` and `_mcp_asgi()`, called only inside the tests and fixtures. Both modules pass (37 tests), ruff check and format are clean, and the station suite exits 0 (533 passed, 5 skipped).

@@ -12,6 +12,39 @@ moved (§ *Moved from CLAUDE.md* opens with the map).
 
 ## Moved from AGENTS.md
 
+### 2026-11-10: the writer lock, the seed and the mode table (operator ruling 1)
+
+Ruling 1 of 2026-11-10 (`docs/dreams/pyforge-unifying-strategy.md` § Realization log, the
+2026-11-10 entry, accepted in full) says A writes every Dream, Frame, Spec and the capability
+ledger until the flip, B reads A at a pinned SHA, the flip moves the writer lock, and the seed is
+Dream plus memlog, with a Frame as a pointer and not a seed. The second addendum of the same day
+(item 7) adds that the seed includes `archive/**/.memlog.md`, with no backfill, and gives scribe
+Story 32.1 per-PR approval to refresh the `bmad:context` block from these rulings. That refresh
+(2026-11-11, verified against `72f3e3158f`) replaced these sentences; they read:
+
+<!-- governance-currency:ignore-start (B's paths, quoted as the superseded text) -->
+- Orientation: "B (`rxm7706/python-foundry`, private) is the lasting root, its engines rebuilt
+  from Frame + Spec; A stays the control plane and the oracle, and the root of record until
+  `pyforge.cutover_root` flips to `foundry`; A is never archived."
+- Policy, first line: "Write each artifact on the root that owns it (the writer lock):
+  foundry-product Dreams, Frames, Spec five-fields and kernel package commits are B's — never
+  mint a second one here; A pins B's SHA (B's `docs/foundry/PIN.md`) and invents the factory,
+  CFE and recipes until a foundry CFE exists."
+- Policy, second line, its last sentence: "The table is B's `docs/foundry/modes.md`." Neither
+  file exists on A; the mode table is now `docs/foundry/capability-ledger.yaml`, its rules in
+  `spec-foundry-capability-ledger`'s `modes.md`.
+<!-- governance-currency:ignore-end -->
+- Policy, the foundry-tree line (finding RUL-A-F3, accepted by the operator 2026-11-05 and
+  parked on `DW-scribe-egm-2026-11-05-3` until a refresh): "never mint a lasting
+  `src/shared/packages/` path." Read literally it forbade every new file in a station package;
+  it now names a lasting package (a new package directory).
+- Outside the block, § *Dates, tags and versions*: "Do not pad it: 1,926 recipes here build their
+  source URL from `{{ version }}` (57 as `/v{{ version }}`), so a `v2026.07.30` tag against a
+  `2026.7.30` version resolves to a URL that 404s." The count was stale: on 2026-11-11,
+  `git grep -lE 'url:.*\{\{ *version *\}\}|url:.*\$\{\{ *version *\}\}' -- 'recipes/*/meta.yaml'
+  'recipes/*/recipe.yaml'` listed 10,521 of the 11,000 tracked recipe files, 609 of them in the
+  `/v` form. The rule stays; the count left, since it goes stale with every recipe added.
+
 ### Team memory: operator-only asks (the finding behind the bullet)
 
 The bullet stays in `AGENTS.md` § *Team memory*; its evidence clause read:
@@ -416,7 +449,7 @@ their corrected entries.
 |---|---|
 | `archive/docs/specs/bmad-loop-adoption.md` | BMAD 6.6.0→6.10.0 upgrade + bmad-loop adoption — SHIPPED, closed out 2026-08-21 (Rule-2 CFE retro = skill v8.83.0). The fleet has since moved on: core 6.11.0 / bmad-loop 0.11.0, and repeatability is now owned by `spec-bmad-method-core-upgrade` (steward Epic 14) + `spec-bmad-method-version-drift` CAP-4 (doctor Epic 14). |
 | `archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md` | cf_atlas orchestrator migrated to a Kedro/Dagster/DuckDB stack — Waves 0 + A–H (22 FRs incl. FR-19 Basilisk / FR-20 release velocity / FR-21 readiness / FR-22 factory layer) executed via bmad-loop under BMAD project `pyforge-atlas`; **PRs #58–#105 MERGED; the original 32 stories all done, epics 0–9 done** — SHIPPED 2026-07-18 (CFE v8.79.0). Impl-artifact truncation incident reconciled 2026-07-23 (`_bmad-output/projects/pyforge-atlas/_root-fallback-fork-2026-07-19/README.md`); trust only canonical hyphenated files there. **`pyforge-atlas` has since grown well past this original migration** (epics 10–16: dashboard provenance, run-admission hardening, kedro-skills adoption, the real DAG publish, and — absorbing `archive/docs/specs/trendshift-conda-forge.md`, below — the trending-candidates discovery engine); track ongoing atlas work via `pixi run -e pyforge-guild fleet-picture`, not this spec. |
-| `archive/docs/specs/trendshift-conda-forge.md` | Two-track upstream-sweep packaging. **Track A superseded 2026-07-25** by the spec's own `superseded_by` pointer to `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-upstream-discovery/` — Phase T was reframed as Kedro-pipeline work and became atlas Epic 13 (`spec-13-1-trending-ingest` through `spec-13-5-downstream-handoff-to-mason`), **now fully shipped** as part of atlas's own story count. Track B (absorbed `microsoft-conda-forge.md`, the `github.com/microsoft/*` org audit) status not re-verified in this pass — check `archive/docs/specs/trendshift-conda-forge.md` § Track B directly before assuming it's also absorbed. Do not run BMAD against Track A via this file; it's a historical record now. |
+| `archive/docs/specs/trendshift-conda-forge.md` | Two-track upstream-sweep packaging. **Track A superseded 2026-07-25** by the spec's own `superseded_by` pointer to `spec-upstream-discovery` (archived 2026-10-27 to `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-upstream-discovery/`) — Phase T was reframed as Kedro-pipeline work and became atlas Epic 13 (`spec-13-1-trending-ingest` through `spec-13-5-downstream-handoff-to-mason`), **now fully shipped** as part of atlas's own story count. Track B (absorbed `microsoft-conda-forge.md`, the `github.com/microsoft/*` org audit) status not re-verified in this pass — check `archive/docs/specs/trendshift-conda-forge.md` § Track B directly before assuming it's also absorbed. Do not run BMAD against Track A via this file; it's a historical record now. |
 | `archive/docs/specs/pyforge-warden.md` | **Warden** — pluggable multi-axis Python dependency compliance gate (hygiene `deptry`, security `osv-scanner`+CISA-KEV+EPSS gates, license + currency, baseline & grandfathering, opt-in fix-PR actuator) over Python/Conda/Pixi manifests. This legacy intake spec's own frontmatter still reads `status: in-progress` (stale — not corrected in this pass, since story specs are the source of truth per this file's own Tier convention) but the work it specced **shipped in full as the `pyforge-warden` BMAD project**: all 6 epics / 31 stories done (verified 2026-08-15, `pixi run -e pyforge-guild fleet-picture` reports it `complete`), including a dedicated fleet-wide code-verification campaign (PRs #145–147, 2026-07-30) re-confirming every tracked deferred-work finding against live code. Do not run BMAD against this legacy file; the BMAD project's own `planning-artifacts/` is authoritative. |
 | `archive/docs/specs/lts-registry-gap.md` | `lts-registry-gap` CLI — read-only suggester diffing endoflife.date's product list against `v_actionable_packages` to propose lts-registry.yaml entries (exact/likely tiers; the registry stays hand-curated, git review decides) — SHIPPED 2026-07-06 (CFE v8.74.0). |
 | `archive/docs/specs/seed-gap-suggesters.md` | `cwe-seed-gap` + `spdx-schema-gap` + `license-map-gap` — read-only suggesters proposing `cwe_categories_seed.json` / `spdx.schema.json` / in-code `_LICENSE_TO_SPDX` entries (keyword-classified `Other` CWEs; vendored-vs-upstream SPDX diff; unmapped-PyPI-license ranking); the curated maps stay hand-owned, git review decides — SHIPPED 2026-07-06 (CFE v8.75.0 + v8.76.0). |

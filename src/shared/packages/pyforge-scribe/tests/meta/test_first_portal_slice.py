@@ -12,6 +12,10 @@ from pathlib import Path
 import pytest
 from pyforge.testing_kit import changed_paths_since, diff_text_since
 
+# Story 33.1 (spec-pyforge-scribe CAP-31, relay of spec-pyforge-steward:CAP-175): the module reads the repository
+# outside this package, so it runs in the live-tree half.
+pytestmark = pytest.mark.live_tree
+
 STATION = "scribe"
 _HTTP_TOPLEVEL = frozenset({"httpx", "requests", "http.client"})
 _CHROME_COPY = frozenset({"base.html", "switcher.html", "theme.css"})

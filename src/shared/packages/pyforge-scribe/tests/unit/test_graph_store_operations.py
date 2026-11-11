@@ -2,6 +2,9 @@
 
 The same protocol suite must pass against both drivers. A missing durable
 backend fails the suite; it is not skipped green.
+
+Story 33.1: conftest's ``graph_store_factory`` marks its ``postgres`` param
+``live_tree`` and ``postgres``, so the flat-file param stays in the package half.
 """
 
 from __future__ import annotations

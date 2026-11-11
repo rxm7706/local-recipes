@@ -117,3 +117,19 @@ Ledger key: `33-2-the-package-s-metadata-and-docs-agree-with-the-estate`. Type /
 ## Spec Change Log
 
 - 2026-11-10: minted with Epic 33 at the cutover-readiness mint.
+- 2026-11-11: built (wave BUILD-2).
+  - The estate pins read from the root `pixi.toml` at build time match the plan's: `psycopg>=3.2.10,<3.2.11`,
+    `graphifyy>=0.9.89`, `cocoindex>=1.0.25`.
+  - Run against the pre-fix `pyproject.toml` (HEAD), `test_package_metadata_matches_estate.py` names all three
+    extras. Its planted cases are a floor below the pin, a missing cap, a floor past the cap, a package the estate
+    does not pin, and a drifted manifest pair on disk. It carries `live_tree`, resolves the root inside a function,
+    and passes `test_live_tree_split.py`.
+  - The README status paragraph keeps its four lines, so the compiled skill's `[SRC:README.md:L19-L33]` anchors
+    stay put until steward:S-29.5 recompiles.
+  - The runbook had three `-e local-recipes` sites. One was wrapped across a line break, which AC4's line grep
+    cannot see. All three now read `-e pyforge-guild`, which carries `guild-tasks`.
+  - In the two staleness paragraphs this story rewrites (`models.py`, `compile.py`) and in `compile.py`'s staleness
+    section comment, Story 6.3's id is qualified `token-economy:CAP-13`, and the clock cites CAP-11 and CAP-26.
+  - Coverage: the gate diffs `origin/main...HEAD`, so before the wave commit it judges no scribe module. Run with
+    `--paths-file` naming the three modules against the same report, it passes: `compile.py` 90.35, `models.py` 98.1,
+    `recall.py` 95.56. No unit test was added.

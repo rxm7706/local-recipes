@@ -135,7 +135,7 @@ $ pixi run -e pyforge-scribe pyforge-scribe-nightly-compile
 ```
 
 then check `tail ~/.cache/scribe-nightly-compile.log` or run `pixi run -e
-local-recipes scribe-graph-freshness-check` to confirm the graph store's
+pyforge-guild scribe-graph-freshness-check` to confirm the graph store's
 mtime just advanced.
 
 To disable/uninstall the `crontab` backend's entry, edit it out by hand:
@@ -149,7 +149,7 @@ operator's own crontab: the trigger's definition is checked into git,
 reviewable in a PR, and installed by running one named command. PRD SM-4
 ("completes unattended across at least 4 consecutive scheduled runs") is
 validated against the log above, or against `graph.json`'s own mtime
-series (`pixi run -e local-recipes scribe-graph-freshness-check`), on the
+series (`pixi run -e pyforge-guild scribe-graph-freshness-check`), on the
 operator machine that installs it.
 
 If the configured `GraphStore` driver is PostgreSQL
@@ -273,7 +273,7 @@ re-render it.
 
 ### `scribe-graph-freshness-check` reports a missing or stale graph store
 
-Advisory only (never a PR gate) — run `pixi run -e local-recipes
+Advisory only (never a PR gate) — run `pixi run -e pyforge-guild
 scribe-graph-freshness-check` for the age report. A missing store means
 the trigger has never fired on this machine (run
 `scribe-install-nightly-trigger`, or check `systemctl --user status

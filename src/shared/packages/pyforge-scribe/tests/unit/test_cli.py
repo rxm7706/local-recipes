@@ -9,6 +9,7 @@ spec-1-1-package-scaffold-direct-capture-into-team-memory.md.
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -769,12 +770,7 @@ def test_index_build_happy_path_writes_nodes_through_the_store(tmp_path: Path, m
 
 
 def test_index_build_graphify_unavailable_exits_2(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    try:
-        import graphify  # noqa: F401
-    except ImportError:
-        pass
-    else:
-        pytest.skip("graphifyy is installed in this environment")
+    monkeypatch.setitem(sys.modules, "graphify", None)  # Story 33.1: absent, whatever the env installs
     monkeypatch.chdir(tmp_path)
     target = tmp_path / "src" / "shared" / "packages"
     target.mkdir(parents=True)
@@ -950,12 +946,7 @@ def test_index_refresh_on_mode_one_changed_source_refreshes_only_that_artifact(
 
 
 def test_index_refresh_graphify_unavailable_exits_2(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    try:
-        import graphify  # noqa: F401
-    except ImportError:
-        pass
-    else:
-        pytest.skip("graphifyy is installed in this environment")
+    monkeypatch.setitem(sys.modules, "graphify", None)  # Story 33.1: absent, whatever the env installs
     monkeypatch.chdir(tmp_path)
     target = tmp_path / "src" / "shared" / "packages"
     target.mkdir(parents=True)
@@ -969,15 +960,11 @@ def test_index_refresh_graphify_unavailable_exits_2(tmp_path: Path, monkeypatch:
 def test_index_refresh_cocoindex_unavailable_exits_2(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """AC/fix: `SCRIBE_COCOINDEX_EXTRA` on but `cocoindex` not installed ->
     a clean exit 2 (`CocoindexUnavailableError`), never an unhandled
-    traceback. Deliberately does NOT fake `_import_cocoindex` -- mirrors
-    `test_index_refresh_graphify_unavailable_exits_2`'s own
-    skip-if-actually-installed shape."""
-    try:
-        import cocoindex  # noqa: F401
-    except ImportError:
-        pass
-    else:
-        pytest.skip("cocoindex is installed in this environment")
+    traceback. Deliberately does NOT fake `_import_cocoindex` -- like
+    `test_index_refresh_graphify_unavailable_exits_2` it makes the real lazy
+    import fail (Story 33.1: `sys.modules["cocoindex"] = None`), so the branch
+    runs where cocoindex is installed instead of skipping there."""
+    monkeypatch.setitem(sys.modules, "cocoindex", None)
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("SCRIBE_COCOINDEX_EXTRA", "1")
 
@@ -1129,12 +1116,7 @@ def test_index_refresh_declare_cocoindex_unavailable_exits_2(tmp_path: Path, mon
     `--declare` run needs the real `cocoindex` package exactly as much as
     the built-in path does, even though it never consults
     `SCRIBE_COCOINDEX_EXTRA`."""
-    try:
-        import cocoindex  # noqa: F401
-    except ImportError:
-        pass
-    else:
-        pytest.skip("cocoindex is installed in this environment")
+    monkeypatch.setitem(sys.modules, "cocoindex", None)  # Story 33.1: absent, whatever the env installs
     monkeypatch.chdir(tmp_path)
     manifest_path = _write_declare_manifest(tmp_path)
 
