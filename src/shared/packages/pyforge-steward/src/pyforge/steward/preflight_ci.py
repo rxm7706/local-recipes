@@ -45,6 +45,8 @@ from typing import Any, Protocol
 import yaml
 from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 
+from .root_layout import STATION_PACKAGES
+
 BASE_BRANCH = "main"
 BASE_REF = f"refs/remotes/origin/{BASE_BRANCH}"
 WORKFLOWS_RELATIVE = Path(".github") / "workflows"
@@ -1695,7 +1697,6 @@ def service_mutex_keys(
 # ---------------------------------------------------------------------------
 
 LINT_TYPES_TASK = "lint-types"
-STATION_PACKAGES = "src/shared/packages"
 _STATION_ENVIRONMENT_PREFIX = "pyforge-"
 _STATION_PACKAGE_PREFIXES = ("pyforge-", "django-")
 _PYTHON_SUFFIXES = (".py", ".pyi")

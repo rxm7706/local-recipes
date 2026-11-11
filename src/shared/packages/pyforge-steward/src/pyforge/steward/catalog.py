@@ -63,9 +63,10 @@ import yaml
 from .bootstrap import repo_root
 from .frames import preflight_frames
 from .interfaces import DutyResult
+from .root_layout import MARKETPLACE_GIT_URL, STEWARD_PACKAGE_DIR
 from .suite import INSTALL_CLASS_MODULE, SUITE_PACKAGES, read_recipe_version
 
-CATALOG_RELATIVE = Path("src/shared/packages/pyforge-steward/catalog")
+CATALOG_RELATIVE = STEWARD_PACKAGE_DIR / "catalog"
 CONFIG_FILENAME = "catalog.yaml"
 CLAUDE_MANIFEST_RELATIVE = Path(".claude-plugin/marketplace.json")
 CODEX_MANIFEST_RELATIVE = Path(".agents/plugins/marketplace.json")
@@ -145,7 +146,7 @@ MARKETPLACE_SPARSE_PATHS = (
 #: Codex reads ``.agents/plugins/marketplace.json`` in the directory ``codex plugin marketplace add`` names
 #: (the catalog directory holds one). The ``owner/repo`` form needs that file at the repository root.
 CODEX_ROOT_MANIFEST_RELATIVE = ".agents/plugins/marketplace.json"
-PUBLIC_MARKETPLACE_GIT_URL = "https://github.com/rxm7706/local-recipes.git"
+PUBLIC_MARKETPLACE_GIT_URL = MARKETPLACE_GIT_URL
 
 
 @dataclass(frozen=True)

@@ -83,6 +83,7 @@ from typing import Any, Protocol
 import yaml
 
 from .interfaces import DutyResult
+from .root_layout import MARSHAL_PACKAGE_DIR
 
 _BMAD_LOOP_WORKTREE_RELATIVE_PATH = Path("scripts/bmad-loop-worktree")
 _MANIFEST_RELATIVE_PATH = Path("_bmad/_config/manifest.yaml")
@@ -138,7 +139,7 @@ _BMAD_LOOP_UV_GIT_SPEC = "bmad-loop[tui] @ git+https://github.com/bmad-code-org/
 _MANTICORE_CUSTOM_SOURCE_URL = "https://github.com/bmad-code-org/bmad-manticore"
 
 # Relative paths for the trap-5 pin fan-out catalog (2026-08-21 session).
-_MARSHAL_PKG = Path("src/shared/packages/pyforge-marshal")
+_MARSHAL_PKG = MARSHAL_PACKAGE_DIR
 _PIN_ROOT_PIXI = Path("pixi.toml")
 _PIN_MARSHAL_PYPROJECT = _MARSHAL_PKG / "pyproject.toml"
 _PIN_MARSHAL_PIXI = _MARSHAL_PKG / "pixi.toml"
@@ -3552,9 +3553,11 @@ GateRunner = Callable[[], GateResult]
 LoopHomeRunner = Callable[[Path, bool], GateResult]
 
 
-# The repo task that IS the integrity verdict when pyforge.doctor is not
-# importable from the steward env (it is a local-recipes-env module; the
-# 2026-09-06 prove-landed FAILed on the import alone — failure-modes trap 15).
+# The repo task that IS the integrity verdict. Doctor owns it, so steward reads it from doctor's
+# command by exit code -- the task runs ``python -m pyforge.doctor.sources bmad-drift``, whose exit
+# is ``exit_code_for(factory.gather(...))`` -- and never imports ``pyforge.doctor`` (Story 123.2,
+# spec-pyforge-steward:CAP-182). The steward env does not ship doctor either: the 2026-09-06
+# prove-landed FAILed on that import alone (failure-modes trap 15).
 _BMAD_DRIFT_TASK_ARGV: tuple[str, ...] = (
     "pixi",
     "run",
@@ -3564,19 +3567,11 @@ _BMAD_DRIFT_TASK_ARGV: tuple[str, ...] = (
 )
 
 
-def _import_drift_factory() -> tuple[Any, Any]:
-    """Import seam for tests; raises ImportError outside the Guild env."""
-    from pyforge.doctor.models import DoctorStatus
-    from pyforge.doctor.sources import factory as bmad_drift_factory
-
-    return DoctorStatus, bmad_drift_factory
-
-
 def _run_bmad_drift_task(
     repo: Path,
     runner: CommandRunner | None = None,
 ) -> GateResult:
-    """Fallback: the documented pixi task, exit 0 pass / 1 findings / 2 could-not-run."""
+    """``bmad-drift-check``'s verdict: exit 0 pass, 1 findings, anything else could-not-run."""
     run = runner or _default_command_runner
     try:
         proc = run(_BMAD_DRIFT_TASK_ARGV, repo)
@@ -3584,7 +3579,7 @@ def _run_bmad_drift_task(
         return GateResult(
             name="bmad-drift-integrity",
             ok=False,
-            detail=f"pyforge.doctor not importable here and the pixi task failed to launch: {exc}",
+            detail=f"bmad-drift-check could-not-run: the pixi task failed to launch: {exc}",
         )
     tail = ((proc.stdout or "") + (proc.stderr or "")).strip().splitlines()
     preview = "; ".join(line.strip() for line in tail[-3:]) if tail else "(no output)"
@@ -3605,39 +3600,16 @@ def _run_bmad_drift_task(
 def run_bmad_drift_integrity(
     repo: Path,
     *,
-    fallback_runner: CommandRunner | None = None,
+    runner: CommandRunner | None = None,
 ) -> GateResult:
-    """HARD/FAIL findings from ``factory.gather`` (= bmad-drift-check integrity).
+    """HARD/FAIL integrity findings, as ``bmad-drift-check`` reports them by exit code.
 
-    When ``pyforge.doctor`` is not importable (the steward env does not ship
-    it), the same verdict is taken from the repo's own pixi task instead of
-    failing on the import.
+    Always runs ``pixi run -e pyforge-guild bmad-drift-check`` through the command runner
+    (``runner`` is the test seam), wherever ``pyforge.doctor`` happens to be importable: a
+    verdict another station owns is read from that station's command, never by import
+    (Story 123.2, spec-pyforge-steward:CAP-182).
     """
-    try:
-        DoctorStatus, bmad_drift_factory = _import_drift_factory()
-    except ImportError:
-        return _run_bmad_drift_task(repo, fallback_runner)
-    try:
-        findings = bmad_drift_factory.gather(repo)
-    except Exception as exc:  # noqa: BLE001 — surface as gate failure
-        return GateResult(
-            name="bmad-drift-integrity",
-            ok=False,
-            detail=f"factory.gather raised: {exc}",
-        )
-    hard = [f for f in findings if f.status is DoctorStatus.FAIL]
-    if hard:
-        preview = "; ".join(f"[{f.check}] {f.message}" for f in hard[:5])
-        return GateResult(
-            name="bmad-drift-integrity",
-            ok=False,
-            detail=f"{len(hard)} HARD finding(s): {preview}",
-        )
-    return GateResult(
-        name="bmad-drift-integrity",
-        ok=True,
-        detail="no HARD/FAIL integrity findings",
-    )
+    return _run_bmad_drift_task(repo, runner)
 
 
 def run_cfe_meta_tests(

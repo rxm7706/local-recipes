@@ -465,6 +465,13 @@ def _default_transport(request: urllib.request.Request) -> TransportResponse:
         raise SyncAPIError(f"{request.get_method()} {request.full_url}: {exc.reason}") from exc
 
 
+#: The real transport under its public name (Story 123.2, spec-pyforge-steward:CAP-182), the name a
+#: caller outside steward imports. The host's ``src/platform/ingest/github_projects/`` still imports
+#: ``_default_transport`` until DW-steward-cutover-2026-11-10-3 (under DW-steward-74-1) closes; both
+#: names are the one function.
+default_transport: TransportFn = _default_transport
+
+
 def _header_dict(raw: object) -> dict[str, str]:
     """A response's headers as a plain dict (`http.client.HTTPMessage.items()`);
     a response that carries none (`HTTPError.headers` can be `None`) is `{}`."""

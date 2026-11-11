@@ -26,6 +26,7 @@ from pathlib import Path
 
 from .interfaces import DutyResult
 from .provision import check_environment_sync, materialize_environment
+from .root_layout import BOOTSTRAP_DEFAULT_URL
 
 _BMAD_LOOP_WORKTREE_RELATIVE_PATH = Path("scripts/bmad-loop-worktree")
 _PIXI_TOML_RELATIVE_PATH = Path("pixi.toml")
@@ -33,7 +34,7 @@ _PRE_COMMIT_CONFIG_RELATIVE_PATH = Path(
     ".pre-commit-config.yaml"
 )  # the canonical dotfile; the dotless name never matched anything (fixed 2026-09-20, Story 66.2)
 _PYFORGE_TOML_RELATIVE_PATH = Path("pyforge.toml")
-_DEFAULT_REPO_URL = "https://github.com/rxm7706/local-recipes.git"
+_DEFAULT_REPO_URL = BOOTSTRAP_DEFAULT_URL
 # Story 63.6 (spec-pyforge-steward CAP-152): the default a bare clone bootstraps is the
 # Guild env -- the bare minimum every harness gets at runtime. `local-recipes` (the recipe
 # factory, 10 GB) is an explicit `--env local-recipes` for recipe work, never the default.

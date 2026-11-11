@@ -51,6 +51,7 @@ from pyforge.steward.catalog import (
     PUBLIC_MARKETPLACE_GIT_URL,
 )
 from pyforge.steward.pages import RELEASE_TAG
+from pyforge.steward.root_layout import MARKETPLACE_OWNER
 
 SCHEMA_ID = "pyforge.bmad-marketplace/v1"
 INDEX_VERSION = 1
@@ -1197,7 +1198,7 @@ def _marketplace_document(rows: list[dict[str, Any]], source_for: Any) -> str:
         )
     document = {
         "name": MARKETPLACE_NAME,
-        "owner": {"name": "rxm7706"},
+        "owner": {"name": MARKETPLACE_OWNER},
         "metadata": {
             "description": ("BMAD skills, modules, and agents hosted in this monorepo at docs/foundry/marketplace/.")
         },

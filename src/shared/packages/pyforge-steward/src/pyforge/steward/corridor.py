@@ -49,8 +49,9 @@ import yaml
 
 from .bootstrap import repo_root
 from .interfaces import DutyResult
+from .root_layout import STEWARD_PACKAGE_DIR
 
-CORRIDOR_RELATIVE = Path("src/shared/packages/pyforge-steward/corridor")
+CORRIDOR_RELATIVE = STEWARD_PACKAGE_DIR / "corridor"
 CONFIG_FILENAME = "corridor.yaml"
 
 STATES: tuple[str, ...] = ("on", "off")

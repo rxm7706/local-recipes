@@ -20,8 +20,9 @@ import yaml
 
 from .bootstrap import repo_root
 from .interfaces import DutyResult
+from .root_layout import STEWARD_PACKAGE_DIR
 
-MEASURES_RELATIVE = Path("src/shared/packages/pyforge-steward/measures")
+MEASURES_RELATIVE = STEWARD_PACKAGE_DIR / "measures"
 CONFIG_FILENAME = "measures.yaml"
 
 STATES: tuple[str, ...] = ("on", "off", "archived")

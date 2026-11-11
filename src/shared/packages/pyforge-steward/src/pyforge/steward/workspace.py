@@ -31,6 +31,7 @@ from pathlib import Path
 
 import yaml
 from pyforge.core.atomic_write import atomic_write
+from pyforge.core.cutover_root import LOCAL_DEV_RELATIVE
 from pyforge.core.flags import read_boolean
 from pyforge.core.preserve_refs import (
     PreserveGitError,
@@ -1082,7 +1083,8 @@ def _remote_tracking_name(source: str, *, root: Path) -> str | None:
 
 
 def default_flags_path() -> Path:
-    return repo_root() / "src/platform/config/flags.json"
+    """The flag tree under this checkout's root: ``pyforge.core.cutover_root.LOCAL_DEV_RELATIVE`` (Story 123.2)."""
+    return repo_root() / LOCAL_DEV_RELATIVE
 
 
 def workspace_preserve_tag_enabled(*, flags_path: Path | None = None) -> bool:
