@@ -1182,3 +1182,11 @@ Entries through 2026-08-31: [archive § Realization log (historical)](<https://g
   `bmad-spec` re-derives `spec-python-foundry-cutover`, `spec-foundry-regenerate-not-fold` and
   `spec-foundry-capability-ledger` from it, and each station whose code changes (steward, marshal,
   doctor, mason) takes its own dated Dream entry first.
+- **2026-11-10 (addendum)** — Operator ruling on the first of the two open questions: "Retire both".
+  The never-built capabilities are `retire`, not `B-only`: atlas's Unity and Wasm satellites
+  (`spec-pyforge-atlas:CAP-18` to `CAP-31`, marked shipped 2026-09-09 while the Spec itself says
+  neither has epics, stories or code) and Mason's Presenton set (`spec-pyforge-mason:CAP-8` to
+  `CAP-13`, marked shipped while its own section says blocked). Their ledger rows take mode
+  `retire`, their Spec text says they were never built, and B does not rebuild them. The planning
+  text that describes them stays on A as history; a later want re-enters as a new Dream entry. The
+  flip trigger is still the operator's to name.
