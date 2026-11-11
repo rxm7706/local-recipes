@@ -17,14 +17,17 @@ from pyforge.marshal.cli import upstream as upstream_cli
 
 pytestmark = pytest.mark.live_tree
 
-_TRACKED_REGISTER = (
-    Path(__file__).resolve().parents[6]
-    / "_bmad-output"
-    / "projects"
-    / "pyforge-marshal"
-    / "planning-artifacts"
-    / "upstream-register.json"
-)
+
+def _tracked_register() -> Path:
+    # tests/unit -> ... -> repo root, found when a test reads the register, never at import (Story 116.2)
+    return (
+        Path(__file__).resolve().parents[6]
+        / "_bmad-output"
+        / "projects"
+        / "pyforge-marshal"
+        / "planning-artifacts"
+        / "upstream-register.json"
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -33,8 +36,9 @@ def _patch_repo_root(monkeypatch):
 
 
 def _tracked_register_text() -> str:
-    assert _TRACKED_REGISTER.is_file(), f"tracked register file not present in this checkout: {_TRACKED_REGISTER}"
-    return _TRACKED_REGISTER.read_text(encoding="utf-8")
+    register = _tracked_register()
+    assert register.is_file(), f"tracked register file not present in this checkout: {register}"
+    return register.read_text(encoding="utf-8")
 
 
 def test_the_real_register_content_round_trips(capsys):

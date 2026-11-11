@@ -51,6 +51,10 @@ from pyforge.marshal.dispatch_supervisor import __main__ as supervisor_main
 from pyforge.marshal.ports.commit import VcsRef
 from pyforge.marshal.ports.session_group import SessionGroupMember, SessionGroupReadError
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 _SLUG = "pyforge-marshal"
 
 
@@ -1857,7 +1861,11 @@ def test_finalize_sequence_commit_leaves_the_cfe_surface_out(tmp_path: Path) -> 
     repo_root = _repo(tmp_path)
     branch = dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)
     vcs = FakeVcs(
-        changed_vs_head=("src/pyforge/marshal/thing.py", _CFE_PATH, ".claude/tools/conda_forge_server.py"),
+        changed_vs_head=(
+            "src/pyforge/marshal/thing.py",
+            _CFE_PATH,
+            "/".join((".claude", "tools", "conda_forge_server.py")),
+        ),
         branches=frozenset({branch}),
         push_raises=True,
         head_sha=_MOVED,

@@ -17,13 +17,21 @@ from pathlib import Path
 
 import pytest
 
-# meta → tests → package → packages → shared → src → repo
-REPO_ROOT = Path(__file__).resolve().parents[6]
-SCRIPT = REPO_ROOT / "_bmad" / "scripts" / "bmad_tea_playwright.py"
+# Story 116.2 (spec-pyforge-marshal:CAP-305): this module reads the repository outside this package, so it runs in
+# the live-tree half; it finds the repository root when a test runs, never at import, so the module imports off
+# the tree (the package half collects it before the marker deselects it).
+pytestmark = pytest.mark.live_tree
+
+
+def _repo_root() -> Path:
+    # meta → tests → package → packages → shared → src → repo
+    return Path(__file__).resolve().parents[6]
 
 
 def _load_generator():
-    spec = importlib.util.spec_from_file_location("bmad_tea_playwright", SCRIPT)
+    spec = importlib.util.spec_from_file_location(
+        "bmad_tea_playwright", _repo_root() / "_bmad" / "scripts" / "bmad_tea_playwright.py"
+    )
     assert spec and spec.loader
     mod = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = mod
@@ -194,10 +202,10 @@ def test_idempotent_generate_twice(tea, tmp_path: Path):
 @pytest.mark.parametrize("project", ["pyforge-herald", "pyforge-marshal"])
 def test_herald_marshal_dry_run_regenerable_without_tbd(tea, project: str):
     """Live smoke: Herald + Marshal dry-run / render without TBD."""
-    result = tea.generate_station(REPO_ROOT, project, dry_run=True)
+    result = tea.generate_station(_repo_root(), project, dry_run=True)
     assert result.story_count >= 1
-    station = tea.load_station(REPO_ROOT, project)
-    doc = tea.render_document(station, REPO_ROOT)
+    station = tea.load_station(_repo_root(), project)
+    doc = tea.render_document(station, _repo_root())
     tea.assert_no_tbd(doc, project=project)
     assert tea.GENERATOR_VERSION == "2.1.0"
 

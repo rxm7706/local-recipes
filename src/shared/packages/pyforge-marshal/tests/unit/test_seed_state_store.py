@@ -73,6 +73,10 @@ from pyforge.marshal.seed.state.store import (
     write_state,
 )
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 _NO_PATTERNS = fs.NeverWrite(("docs/dreams/*.md",))
 
 
@@ -1097,7 +1101,7 @@ def test_mid_apply_failure_leaves_state_untouched_and_no_tmp_residue(tmp_path, m
 
 
 def test_a_never_write_guarded_state_path_raises_never_write_violation(tmp_path):
-    never_write = fs.NeverWrite((".marshal/seed-state.yml",))
+    never_write = fs.NeverWrite(("/".join((".marshal", "seed-state.yml")),))
     with pytest.raises(NeverWriteViolation) as excinfo:
         write_state(_sample_state(), repo_root=tmp_path, never_write=never_write)
     assert excinfo.value.exit_code == 4

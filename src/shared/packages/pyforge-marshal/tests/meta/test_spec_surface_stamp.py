@@ -27,8 +27,16 @@ from pathlib import Path
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[6]
-CHECKER = REPO_ROOT / "scripts" / "spec_surface_check.py"
+# Story 116.2 (spec-pyforge-marshal:CAP-305): this module reads the repository outside this package, so it runs in
+# the live-tree half; it finds the repository root when a test runs, never at import, so the module imports off
+# the tree (the package half collects it before the marker deselects it).
+pytestmark = pytest.mark.live_tree
+
+
+def _checker_path() -> Path:
+    # tests/meta -> tests -> pyforge-marshal -> packages -> shared -> src -> repo root
+    return Path(__file__).resolve().parents[6] / "scripts" / "spec_surface_check.py"
+
 
 _ALPHA = "proj/spec-alpha"
 _BETA = "proj/spec-beta"
@@ -60,7 +68,7 @@ def repo(tmp_path: Path) -> Path:
 
 def _checker(repo: Path) -> Path:
     """The script loaded by path, with ``REPO_ROOT`` repointed at ``repo``."""
-    source = CHECKER.read_text(encoding="utf-8")
+    source = _checker_path().read_text(encoding="utf-8")
     patched = source.replace("REPO_ROOT = Path(__file__).resolve().parent.parent", f"REPO_ROOT = Path({str(repo)!r})")
     assert patched != source, "the script's REPO_ROOT line moved; update this harness"
     destination = repo / "scripts" / "checker.py"
@@ -98,12 +106,12 @@ def _narrate(repo: Path, slug: str, text: str) -> None:
 def test_the_script_is_loadable_by_path_with_the_new_surface() -> None:
     """The harness's own premise: the file exists where this package expects it
     and carries the stamp rule and the ``--accept`` flag."""
-    spec = importlib.util.spec_from_file_location("spec_surface_check_under_test", CHECKER)
+    spec = importlib.util.spec_from_file_location("spec_surface_check_under_test", _checker_path())
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     assert hasattr(module, "StampRefused")
-    assert "--accept" in CHECKER.read_text(encoding="utf-8")
+    assert "--accept" in _checker_path().read_text(encoding="utf-8")
 
 
 def test_a_drifted_path_the_memlog_does_not_name_refuses_and_leaves_the_baseline_byte_identical(repo: Path) -> None:

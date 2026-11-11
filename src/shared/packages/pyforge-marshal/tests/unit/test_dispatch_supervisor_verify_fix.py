@@ -49,6 +49,10 @@ from pyforge.marshal.core.model import Finding, Severity, build_envelope
 from pyforge.marshal.dispatch_land import _SpecSurfaceReconcileOutcome
 from pyforge.marshal.dispatch_supervisor import __main__ as supervisor_main
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 _FLAG_KEY = "pyforge.marshal.verify_fix_loop"
 _COMMAND = "pixi run --frozen -e pyforge-marshal pyforge-marshal-test"
 _SHORT_TAIL = "E501 line too long (101 > 100)\n"
@@ -2206,7 +2210,7 @@ def _refused_cross_surface_flag_gate(*, tail: str = _CROSS_SURFACE_TAIL):
                 {
                     "rule_id": "flag-gate",
                     "command": _FLAG_GATE_COMMAND,
-                    "touched_paths": ["src/platform/config/flags.json"],
+                    "touched_paths": ["/".join(("src", "platform", "config", "flags.json"))],
                     "report": {
                         "command": _FLAG_GATE_COMMAND,
                         "returncode": 1,

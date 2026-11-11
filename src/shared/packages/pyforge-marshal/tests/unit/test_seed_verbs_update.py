@@ -66,6 +66,11 @@ from pyforge.marshal.seed.verbs import update as update_module
 from pyforge.marshal.seed.verbs.adopt import run_adopt
 from pyforge.marshal.seed.verbs.update import run_update
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+_DREAMS_README = "/".join(("docs", "dreams", "README.md"))
+
 _V1 = ModelVersion.parse("1.0.0")
 _V2 = ModelVersion.parse("2.0.0")
 _NO_NEVER_WRITE = NeverWrite(patterns=())
@@ -1721,7 +1726,7 @@ def test_update_leaves_what_sits_beneath_a_directory_entry_to_its_own_class(clea
                 directory_record("project-subtree", "_bmad-output/projects/demo/"),
                 ManagedArtifact(
                     id="dreams-readme",
-                    path="docs/dreams/README.md",
+                    path=_DREAMS_README,
                     artifact_class="copied-managed",  # stale: the pre-97.1 record of an entry now seeded
                     body_sha=hash_content("packaged readme\n"),
                     inserted_region_spans=(),

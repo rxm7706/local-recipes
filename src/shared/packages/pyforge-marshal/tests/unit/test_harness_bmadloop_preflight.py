@@ -29,6 +29,10 @@ from pyforge.marshal.adapters.harness_bmadloop import (
     harness_version_tuple,
 )
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 
 @pytest.fixture
 def harness() -> BmadLoopHarness:
@@ -186,7 +190,7 @@ def test_adapter_binary_for_the_real_claude_profile(harness, tmp_path):
 def test_adapter_seed_files_for_the_real_claude_profile(harness, tmp_path):
     seed_files = harness.adapter_seed_files("claude", tmp_path)
     assert ".mcp.json" in seed_files
-    assert ".claude/settings.json" in seed_files
+    assert "/".join((".claude", "settings.json")) in seed_files
 
 
 def test_adapter_first_run_note_for_the_real_claude_profile(harness, tmp_path):

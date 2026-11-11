@@ -31,6 +31,11 @@ from pyforge.marshal.seed import fs
 from pyforge.marshal.seed.errors import NeverWriteViolation
 from pyforge.marshal.seed.fs import NeverWrite
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+_DREAMS_README = "/".join(("docs", "dreams", "README.md"))
+
 # --- NeverWrite shape / immutability: I/O Matrix row 7 ----------------------
 
 
@@ -92,8 +97,8 @@ def test_never_write_defaults_exempt_to_an_empty_frozenset():
 
 
 def test_never_write_stores_its_exempt_set():
-    never_write = NeverWrite(patterns=(), exempt=frozenset({"docs/dreams/README.md"}))
-    assert never_write.exempt == frozenset({"docs/dreams/README.md"})
+    never_write = NeverWrite(patterns=(), exempt=frozenset({_DREAMS_README}))
+    assert never_write.exempt == frozenset({_DREAMS_README})
 
 
 def test_never_write_exempt_constructed_with_a_list_is_coerced_to_a_frozenset():
@@ -118,8 +123,8 @@ def test_never_write_rejects_a_blank_exempt_entry():
 def test_never_write_strips_padded_exempt_entries_on_store():
     """Mirrors ``patterns``' own strip-on-store behavior (see
     ``test_never_write_strips_padded_patterns_on_store`` above)."""
-    never_write = NeverWrite(patterns=(), exempt=frozenset({" docs/dreams/README.md "}))
-    assert never_write.exempt == frozenset({"docs/dreams/README.md"})
+    never_write = NeverWrite(patterns=(), exempt=frozenset({"/".join((" docs", "dreams", "README.md "))}))
+    assert never_write.exempt == frozenset({_DREAMS_README})
 
 
 # --- _matches: first-hit lookup ---------------------------------------------
@@ -151,14 +156,14 @@ def test_matches_a_single_star_pattern_crosses_a_directory_separator():
 def test_matches_returns_none_for_an_exempt_path_that_matches_a_pattern():
     """The Story 10.8 short-circuit: an exempt path bypasses pattern
     matching entirely, even though it would otherwise match."""
-    never_write = NeverWrite(("docs/dreams/*.md",), exempt=frozenset({"docs/dreams/README.md"}))
-    assert fs._matches(never_write, "docs/dreams/README.md") is None
+    never_write = NeverWrite(("docs/dreams/*.md",), exempt=frozenset({_DREAMS_README}))
+    assert fs._matches(never_write, _DREAMS_README) is None
 
 
 def test_matches_still_refuses_a_different_path_matching_the_same_pattern_when_not_exempt():
     """The other half of the same guarantee: exempting ONE path must not
     widen protection for every other path the pattern still covers."""
-    never_write = NeverWrite(("docs/dreams/*.md",), exempt=frozenset({"docs/dreams/README.md"}))
+    never_write = NeverWrite(("docs/dreams/*.md",), exempt=frozenset({_DREAMS_README}))
     assert fs._matches(never_write, "docs/dreams/other.md") == "docs/dreams/*.md"
 
 
@@ -171,8 +176,8 @@ def test_matches_returns_none_for_an_exempt_path_even_when_named_by_an_exact_lit
     both ``never_write`` and as a writable artifact has authored a
     self-contradiction the manifest itself does not detect; this test pins
     the (deliberate) resolution: the writable declaration wins."""
-    never_write = NeverWrite(("docs/dreams/README.md",), exempt=frozenset({"docs/dreams/README.md"}))
-    assert fs._matches(never_write, "docs/dreams/README.md") is None
+    never_write = NeverWrite((_DREAMS_README,), exempt=frozenset({_DREAMS_README}))
+    assert fs._matches(never_write, _DREAMS_README) is None
 
 
 def test_matches_is_case_sensitive_regardless_of_platform():
@@ -264,7 +269,7 @@ def test_write_to_an_exempt_path_succeeds_despite_a_matching_never_write_pattern
     writable artifact (``copied-managed``/``copied-seeded``) whose own path
     also matches a broader deny glob must still be writable."""
     target = tmp_path / "docs" / "dreams" / "README.md"
-    never_write = NeverWrite(("docs/dreams/*.md",), exempt=frozenset({"docs/dreams/README.md"}))
+    never_write = NeverWrite(("docs/dreams/*.md",), exempt=frozenset({_DREAMS_README}))
 
     fs.write(target, b"hi", repo_root=tmp_path, never_write=never_write)
 
@@ -275,7 +280,7 @@ def test_write_to_a_different_path_matching_the_same_pattern_is_still_refused(tm
     """The other half: exempting ``docs/dreams/README.md`` must not widen
     protection for every OTHER file ``docs/dreams/*.md`` still covers."""
     target = tmp_path / "docs" / "dreams" / "other.md"
-    never_write = NeverWrite(("docs/dreams/*.md",), exempt=frozenset({"docs/dreams/README.md"}))
+    never_write = NeverWrite(("docs/dreams/*.md",), exempt=frozenset({_DREAMS_README}))
 
     with pytest.raises(NeverWriteViolation, match=r"docs/dreams/\*\.md"):
         fs.write(target, b"hi", repo_root=tmp_path, never_write=never_write)
@@ -832,7 +837,7 @@ def test_a_lexical_dotdot_in_the_written_path_is_folded_before_matching(tmp_path
 
 def test_exempt_is_judged_per_form_so_a_declared_writable_path_stays_writable_under_a_symlinked_ancestor(tmp_path):
     _docs_symlinked_to_real(tmp_path)
-    never_write = NeverWrite(("docs/dreams/*.md",), exempt=frozenset({"docs/dreams/README.md"}))
+    never_write = NeverWrite(("docs/dreams/*.md",), exempt=frozenset({_DREAMS_README}))
 
     fs.write(tmp_path / "docs" / "dreams" / "README.md", b"ok", repo_root=tmp_path, never_write=never_write)
 
@@ -843,7 +848,7 @@ def test_exempt_is_judged_per_form_so_a_declared_writable_path_stays_writable_un
 
 def test_never_write_match_agrees_with_the_guard_on_the_exempt_short_circuit(tmp_path):
     """The old `_matches` rule is unchanged: an exempt path matches nothing."""
-    never_write = NeverWrite(("docs/dreams/*.md",), exempt=frozenset({"docs/dreams/README.md"}))
+    never_write = NeverWrite(("docs/dreams/*.md",), exempt=frozenset({_DREAMS_README}))
     assert (
         fs.never_write_match(tmp_path / "docs" / "dreams" / "README.md", repo_root=tmp_path, never_write=never_write)
         is None

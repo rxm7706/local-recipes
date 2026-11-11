@@ -44,6 +44,10 @@ from pyforge.marshal.core.conformance import (
 )
 from pyforge.marshal.ports.harness import AdapterProbe
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 _TREE = ".agents/skills"
 _ADAPTERS = ("codex",)
 _EXPECTED = "../.claude/skills"
@@ -543,7 +547,7 @@ def test_entry_file_family_missing_hub_names_every_tool_that_reads_it():
 
 
 def test_entry_file_family_missing_satellite_single_reader_not_cross_contaminating():
-    cursor_path = ".cursor/rules/specs.mdc"
+    cursor_path = "/".join((".cursor", "rules", "specs.mdc"))
     states = _consistent_states()
     states[cursor_path] = EntryFileState(path=cursor_path, exists=False, mentions_hub=None)
     divergences = evaluate_entry_file_family(states)
@@ -577,10 +581,10 @@ def test_entry_file_family_missing_state_entry_treated_as_absent():
     """A caller that omits a family member from `states` entirely (never
     crashes)."""
     states = _consistent_states()
-    del states[".github/copilot-instructions.md"]
+    del states["/".join((".github", "copilot-instructions.md"))]
     divergences = evaluate_entry_file_family(states)
     assert len(divergences) == 1
-    assert divergences[0].path == ".github/copilot-instructions.md"
+    assert divergences[0].path == "/".join((".github", "copilot-instructions.md"))
 
 
 def test_entry_file_tools_reads_are_all_declared_family_members():

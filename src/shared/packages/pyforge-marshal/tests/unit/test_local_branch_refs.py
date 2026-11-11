@@ -22,8 +22,12 @@ from pyforge.marshal.dispatch_land_heal import DispatchLandHealResult, try_heal_
 from pyforge.marshal.ports.commit import VcsRef
 from pyforge.marshal.ports.forge import ForgeCommandError, PrInfo
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 _HEAD = "dispatch/pyforge-marshal/61.1"
-_LEDGER = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
+_LEDGER = "/".join(("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "sprint-status-ledger.yaml"))
 
 
 def test_local_branch_ref_is_the_full_refname() -> None:

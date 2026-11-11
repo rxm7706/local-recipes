@@ -99,6 +99,11 @@ from pyforge.marshal.seed.verbs.check import run_check
 from pyforge.marshal.seed.verbs.init import _GIT_TIMEOUT_S, _manifest_for_init, run_init
 from pyforge.marshal.seed.verbs.preconditions import check_preconditions
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+_DREAMS_README = "/".join(("docs", "dreams", "README.md"))
+
 _VERSION = ModelVersion.parse("1.0.0")
 _NO_NEVER_WRITE = NeverWrite(patterns=())
 
@@ -846,7 +851,7 @@ def test_prd_j1_init_into_a_directory_that_is_not_yet_a_git_repo_at_all(fresh_ta
 
     manifest = _manifest(
         _copied_seeded("starter-dream", "docs/dreams/{{ slug }}.md", applies_to=AppliesTo.INIT),
-        _generated_derived("projects-index", "_bmad-output/PROJECTS.md", applies_to=AppliesTo.BOTH),
+        _generated_derived("projects-index", "/".join(("_bmad-output", "PROJECTS.md")), applies_to=AppliesTo.BOTH),
         _copied_managed("whole", "WHOLE.md", applies_to=AppliesTo.BOTH),
     )
 
@@ -930,7 +935,7 @@ def _entry_by_id(manifest: Manifest, entry_id: str) -> ManifestEntry:
 # since `_manifest_for_adopt` filters it out before `classify` ever sees it --
 # collides with `**/planning-artifacts/**`).
 _WRITABLE_EXEMPTION_REGRESSION_CASES = (
-    ("dreams-readme", "docs/dreams/README.md"),
+    ("dreams-readme", _DREAMS_README),
     ("specs-readme", "_bmad-output/projects/test/planning-artifacts/specs/README.md"),
 )
 

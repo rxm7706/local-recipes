@@ -17,14 +17,25 @@ from __future__ import annotations
 import tomllib
 from pathlib import Path
 
+import pytest
+
 import pyforge.marshal
+
+# Story 116.2 (spec-pyforge-marshal:CAP-305): this module reads the repository outside this package, so it runs in
+# the live-tree half; it finds the repository root when a test runs, never at import, so the module imports off
+# the tree (the package half collects it before the marker deselects it).
+pytestmark = pytest.mark.live_tree
 
 _PACKAGE_FILE = pyforge.marshal.__file__
 if _PACKAGE_FILE is None:
     raise ValueError("installed package has no __file__")
 PACKAGE_ROOT = Path(_PACKAGE_FILE).resolve().parent.parent.parent.parent
 MEMBER_PIXI = PACKAGE_ROOT / "pixi.toml"
-ROOT_PIXI = PACKAGE_ROOT.parent.parent.parent.parent / "pixi.toml"
+
+
+def _root_pixi() -> Path:
+    # pyforge-marshal -> packages -> shared -> src -> repo root
+    return PACKAGE_ROOT.parent.parent.parent.parent / "pixi.toml"
 
 
 def _member_run_dependencies() -> dict[str, object]:
@@ -42,7 +53,7 @@ def test_member_pixi_run_dependencies_contain_no_pip_prefixes():
 
 
 def test_root_env_pyforge_marshal_is_lean_no_default_feature():
-    with ROOT_PIXI.open("rb") as stream:
+    with _root_pixi().open("rb") as stream:
         data = tomllib.load(stream)
     env = data["environments"]["pyforge-marshal"]
     assert env.get("no-default-feature") is True, (

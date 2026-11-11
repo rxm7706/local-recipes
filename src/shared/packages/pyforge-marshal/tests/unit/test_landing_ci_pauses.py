@@ -405,11 +405,6 @@ def test_steward_cli_partial_envelope_on_stdout_is_a_read_carrying_partial() -> 
 # Story 101.1: the master switch's surfaces, read from steward's ``paused_by_master``
 # ---------------------------------------------------------------------------
 
-# tests/unit -> tests -> pyforge-marshal -> packages: steward 103.1's AC6 fixture, read as a file, never imported.
-_STEWARD_MASTER_ON_FIXTURE = (
-    Path(__file__).resolve().parents[3] / "pyforge-steward" / "tests" / "fixtures" / "ci_status_master_on.json"
-)
-
 _MASTER_ROW: dict[str, Any] = {
     "id": "master:PAUSE_ALL_CI",
     "declared_state": "live",
@@ -552,11 +547,6 @@ def _master_on_envelope() -> dict[str, Any]:
     }
 
 
-def _listed_by_story_100_1(row: dict[str, Any]) -> bool:
-    """Story 100.1's rule alone: the row as a steward before 103.1 would send it."""
-    return row_counts_as_paused_at_merge({k: v for k, v in row.items() if k != "paused_by_master"})
-
-
 @pytest.mark.parametrize(
     ("row", "expected"),
     [pytest.param(row, True, id=str(row["id"])) for row in _MASTER_LISTED_ROWS]
@@ -635,25 +625,6 @@ def test_101_1_ac4_journal_record_and_pr_line_agree(tmp_path: Path, monkeypatch)
     body = forge.bodies[-1]
     assert body.count("CI paused at merge:") == 1
     assert body.endswith("\nCI paused at merge: " + ", ".join(_MASTER_LISTED_IDS))
-
-
-def test_101_1_ac5_steward_master_on_fixture() -> None:
-    """AC5: steward 103.1's checked-in payload, read as a file; a missing file fails, never skips."""
-    assert _STEWARD_MASTER_ON_FIXTURE.is_file(), f"steward 103.1's fixture is missing: {_STEWARD_MASTER_ON_FIXTURE}"
-    payload = json.loads(_STEWARD_MASTER_ON_FIXTURE.read_text(encoding="utf-8"))
-    assert envelope_is_valid(payload) is True
-    rows = [row for row in payload["rows"] if isinstance(row, dict)]
-    surfaces = surfaces_from_envelope(payload)
-    assert surfaces == sorted(set(surfaces))
-    assert "master:PAUSE_ALL_CI" in surfaces
-    gated_paused = [row["id"] for row in rows if row.get("verdict") == "paused" and row.get("paused_by_master") is True]
-    assert gated_paused, "the fixture holds no gated paused row; the check below would be vacuous"
-    for row_id in gated_paused:
-        assert row_id in surfaces, row_id
-    ungated = [row for row in rows if row.get("paused_by_master") is False]
-    assert ungated, "the fixture holds no ungated row; the check below would be vacuous"
-    for row in ungated:
-        assert (row["id"] in surfaces) is _listed_by_story_100_1(row), row
 
 
 # Review nit 4: a row with no usable id names no surface; it is skipped, never a KeyError out of the landing.

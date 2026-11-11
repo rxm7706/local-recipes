@@ -31,7 +31,15 @@ from pyforge.marshal.core.dispatch_verification import (
 )
 from pyforge.marshal.dispatch_supervisor import __main__ as supervisor_main
 
-_REPO_ROOT = Path(__file__).resolve().parents[6]
+# Story 116.2 (spec-pyforge-marshal:CAP-305): this module reads the repository outside this package, so it runs in
+# the live-tree half; it finds the repository root when a test runs, never at import, so the module imports off
+# the tree (the package half collects it before the marker deselects it).
+pytestmark = pytest.mark.live_tree
+
+
+def _repo_root() -> Path:
+    # tests/unit -> tests -> pyforge-marshal -> packages -> shared -> src -> repo root
+    return Path(__file__).resolve().parents[6]
 
 
 class _DupLoader(yaml.SafeLoader):
@@ -89,14 +97,15 @@ def test_story_spec_paths_in_changed_scopes_to_story_specs() -> None:
 
 
 def test_tracked_story_specs_carry_each_top_level_frontmatter_key_once() -> None:
+    repo_root = _repo_root()
     files = [
         p
-        for p in subprocess.check_output(["git", "-C", str(_REPO_ROOT), "ls-files"], text=True).splitlines()
+        for p in subprocess.check_output(["git", "-C", str(repo_root), "ls-files"], text=True).splitlines()
         if "/planning-artifacts/specs/spec-" in p and p.endswith(".md")
     ]
     offenders: list[tuple[str, list[str]]] = []
     for rel in files:
-        text = (_REPO_ROOT / rel).read_text(encoding="utf-8")
+        text = (repo_root / rel).read_text(encoding="utf-8")
         split = _split_story_spec(text)
         if split is None:
             continue

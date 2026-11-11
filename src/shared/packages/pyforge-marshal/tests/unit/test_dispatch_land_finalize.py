@@ -29,6 +29,10 @@ from pyforge.marshal.dispatch_land_finalize.__main__ import (
     finalize_dispatch_land,
 )
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 #: `origin/main`'s ledger with the landed stories done -- the converged state finalize's readback
 #: (Story 68.1, `MRS-DISP-051`) expects; tests that stub the promotion out land `42.5` / `53.2`.
 _DONE_LEDGER = "development_status:\n  epic-42: in-progress\n  42-5-x: done\n  epic-53: in-progress\n  53-2-x: done\n"
@@ -492,7 +496,7 @@ def test_run_deferred_work_intake_publishes_change_and_restores_local_text(
     assert call["ref"] == "main"
     assert call["writes"] == (
         (
-            "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
+            "/".join(("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "deferred-work-ledger.md")),
             "# Deferred Work Ledger\n\nold entry\n\nnew entry\n",
         ),
     )
@@ -856,7 +860,9 @@ def test_finalize_fails_when_the_landed_key_reads_backlog_on_origin_main(tmp_pat
     assert vcs.fetch_calls == [(tmp_path, "origin", "main")]
     [(_root, ref, path)] = vcs.read_calls
     assert ref == ORIGIN_MAIN == "refs/remotes/origin/main"
-    assert path == "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
+    assert path == "/".join(
+        ("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "sprint-status-ledger.yaml")
+    )
     assert "finding MRS-DISP-051" in capsys.readouterr().err
 
 

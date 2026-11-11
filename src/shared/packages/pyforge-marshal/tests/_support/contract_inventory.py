@@ -50,6 +50,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import pytest
+
+# Story 116.2 (spec-pyforge-marshal:CAP-305): only the live-tree tests/meta/test_public_contract.py uses this
+# helper, and it reads sibling packages' sources, so it carries the live_tree mark for steward's trigger-map
+# derivation, which routes a marked module's reads to the live half (pytest ignores the mark outside a test
+# module, as in pyforge-steward's tests/integration/nkp_probes.py).
+pytestmark = pytest.mark.live_tree
+
 # Families, as the meta-test names them in its findings.
 VERB_PATH = "verb path"
 FLAG = "flag"

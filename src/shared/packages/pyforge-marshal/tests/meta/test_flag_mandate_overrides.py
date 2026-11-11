@@ -13,9 +13,17 @@ from typing import Any
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[6]
+# Story 116.2 (spec-pyforge-marshal:CAP-305): this module reads the repository outside this package, so it runs in
+# the live-tree half; it finds the repository root when a test runs, never at import, so the module imports off
+# the tree (the package half collects it before the marker deselects it).
+pytestmark = pytest.mark.live_tree
 
-_CUSTOM = REPO_ROOT / "_bmad" / "custom"
+
+def _custom() -> Path:
+    # tests/meta -> tests -> pyforge-marshal -> packages -> shared -> src -> repo root
+    return Path(__file__).resolve().parents[6] / "_bmad" / "custom"
+
+
 _BUILDER_SNIPPET = "Feature-flag governance (Builder)"
 _STORY96_SNIPPET = "Story spec frontmatter (Story 96.1)"
 _ARCHITECT_SNIPPET = "Feature-flag governance (Architect)"
@@ -87,11 +95,11 @@ def _validate_no_config_collision(*override_paths: Path, config_path: Path) -> N
 
 
 def test_flag_mandates_sit_under_declared_tables_and_do_not_collide_with_config() -> None:
-    spec_path = _CUSTOM / "bmad-spec.toml"
-    build_path = _CUSTOM / "bmad-build.toml"
-    auto_path = _CUSTOM / "bmad-build-auto.toml"
-    tea_path = _CUSTOM / "bmad-tea.toml"
-    config_path = _CUSTOM / "config.toml"
+    spec_path = _custom() / "bmad-spec.toml"
+    build_path = _custom() / "bmad-build.toml"
+    auto_path = _custom() / "bmad-build-auto.toml"
+    tea_path = _custom() / "bmad-tea.toml"
+    config_path = _custom() / "config.toml"
 
     for path in (spec_path, build_path, auto_path, tea_path, config_path):
         assert path.is_file(), f"missing override layer: {path}"
@@ -106,7 +114,7 @@ def test_flag_mandates_sit_under_declared_tables_and_do_not_collide_with_config(
 
 
 def test_builder_mandate_under_agent_in_bmad_build_fails_validation() -> None:
-    build = _load(_CUSTOM / "bmad-build.toml")
+    build = _load(_custom() / "bmad-build.toml")
     workflow = dict(build.get("workflow", {}))
     agent_facts = list(build.get("agent", {}).get("persistent_facts") or [])
     facts = workflow.pop("persistent_facts", [])
@@ -114,8 +122,8 @@ def test_builder_mandate_under_agent_in_bmad_build_fails_validation() -> None:
     mutated = {**build, "workflow": workflow, "agent": {"persistent_facts": agent_facts}}
     with pytest.raises(AssertionError):
         _validate_mandate_tables(
-            _load(_CUSTOM / "bmad-spec.toml"),
+            _load(_custom() / "bmad-spec.toml"),
             mutated,
-            _load(_CUSTOM / "bmad-build-auto.toml"),
-            _load(_CUSTOM / "bmad-tea.toml"),
+            _load(_custom() / "bmad-build-auto.toml"),
+            _load(_custom() / "bmad-tea.toml"),
         )

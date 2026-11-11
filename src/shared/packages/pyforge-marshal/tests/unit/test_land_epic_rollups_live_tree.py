@@ -21,15 +21,17 @@ from test_land_epic_rollups import _ac3_finalize, _git
 
 pytestmark = pytest.mark.live_tree
 
-#: This tree's Doctor source, put first on ``sys.path`` by the bootstrap.
-_DOCTOR_SOURCE = Path(__file__).resolve().parents[6] / "src" / "shared" / "packages" / "pyforge-doctor" / "src"
 
-#: Doctor's documented command module (the one the ``ledger-regression-check`` task runs), as ``__main__``.
-_DOCTOR_BOOTSTRAP = (
-    "import runpy, sys; "
-    f"sys.path.insert(0, {str(_DOCTOR_SOURCE)!r}); "
-    "runpy.run_module('pyforge.doctor.sources', run_name='__main__', alter_sys=True)"
-)
+def _doctor_bootstrap() -> str:
+    """Doctor's documented command module (the one the ``ledger-regression-check`` task runs), as ``__main__``,
+    with this tree's Doctor source first on ``sys.path``; the tree is found when the test runs, never at import
+    (Story 116.2)."""
+    doctor_source = Path(__file__).resolve().parents[6] / "src" / "shared" / "packages" / "pyforge-doctor" / "src"
+    return (
+        "import runpy, sys; "
+        f"sys.path.insert(0, {str(doctor_source)!r}); "
+        "runpy.run_module('pyforge.doctor.sources', run_name='__main__', alter_sys=True)"
+    )
 
 
 def test_ledger_regression_reports_ok_over_the_ac3_promotion_commit(tmp_path: Path, monkeypatch) -> None:
@@ -40,7 +42,7 @@ def test_ledger_regression_reports_ok_over_the_ac3_promotion_commit(tmp_path: Pa
     _git(primary, "fetch", "origin", "main")
 
     result = subprocess.run(
-        [sys.executable, "-c", _DOCTOR_BOOTSTRAP, "ledger-regression", "--base", parent, "--head", commit, "--json"],
+        [sys.executable, "-c", _doctor_bootstrap(), "ledger-regression", "--base", parent, "--head", commit, "--json"],
         cwd=primary,
         capture_output=True,
         text=True,

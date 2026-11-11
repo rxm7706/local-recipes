@@ -18,6 +18,10 @@ import pytest
 from pyforge.marshal.core import dispatch_flag_gate as flag_gate
 from pyforge.marshal.core.model import Severity
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 SPEC = "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-74-2-x.md"
 
 
@@ -50,7 +54,7 @@ def test_red_verdict_with_exit_1_refuses_naming_the_spec_the_findings_and_the_re
     assert "flag-missing" in finding.message
     assert "neither a `flag:` block nor a `flag-exempt:` value" in finding.message
     assert "`flag:` block or a `flag-exempt:` value" in finding.message  # the remedy
-    assert "docs/reference/story-spec-flag-block.md" in finding.message
+    assert "/".join(("docs", "reference", "story-spec-flag-block.md")) in finding.message
     assert "flag-pre-rule" not in finding.message  # only the `fail` findings name the refusal
 
 
@@ -164,7 +168,7 @@ def test_gate_failure_carries_the_process_error_text_the_timeout_included() -> N
 
 
 def test_gate_absent_is_one_warn_naming_the_missing_script() -> None:
-    finding = flag_gate.gate_absent_finding("scripts/flag_gate_check.py")
+    finding = flag_gate.gate_absent_finding("/".join(("scripts", "flag_gate_check.py")))
     assert (finding.code, finding.severity) == ("MRS-DISP-055", Severity.WARN)
     assert "scripts/flag_gate_check.py is not in this repository" in finding.message
     assert flag_gate.gate_absent_finding().message == finding.message

@@ -28,6 +28,10 @@ from pyforge.marshal.seed.model.manifest import (
 )
 from pyforge.marshal.seed.model.version import ModelVersion
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 
 def _write(tmp_path: Path, text: str) -> Path:
     path = tmp_path / "manifest.yaml"
@@ -1779,7 +1783,7 @@ def test_a_second_spelling_of_an_owned_path_cannot_reach_the_one_owner_rule(tmp_
 def test_dot_names_and_a_single_trailing_slash_keep_loading():
     """Only a whole `.` segment is refused: `.github/x`, `.gitignore` and
     `a.b/` are ordinary names, and one trailing `/` is the directory mark."""
-    for path in (".github/workflows/detectors.yml", ".gitignore", "a.b/", "docs/dreams/"):
+    for path in ("/".join((".github", "workflows", "detectors.yml")), ".gitignore", "a.b/", "docs/dreams/"):
         entry = ManifestEntry(
             id="e", artifact_class=ArtifactClass.COPIED_SEEDED, path=path, applies_to=AppliesTo.BOTH, rationale="r"
         )

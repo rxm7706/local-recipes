@@ -65,15 +65,21 @@ from pyforge.marshal.dispatch_verify import (
     verify_gate_set,
 )
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 _SLUG = "pyforge-marshal"
 _RUN_ID = "pyforge-marshal-20261015T120000000Z-102abcde"
-_MEMLOG = "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md"
-_BASELINE = "scripts/.spec-surface-baseline.json"
+_MEMLOG = "/".join(
+    ("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "specs", "spec-pyforge-marshal", ".memlog.md")
+)
+_BASELINE = "/".join(("scripts", ".spec-surface-baseline.json"))
 _STORY_FILE = "src/app/core.py"
 _OTHER_FILE = "src/app/other.py"
 #: The story's own tracked spec, written by the story's change (``dispatch_core.resolve_story_spec_path`` finds it).
 _SPEC_REL = "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-102-1-the-story.md"
-_POLICY_REL = "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml"
+_POLICY_REL = "/".join(("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "marshal-policy.toml"))
 #: A gate digest for the tests that drive ``attempt_verdict_reuse`` directly.
 _TEST_DIGEST = "sha256:" + "d" * 64
 

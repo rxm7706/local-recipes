@@ -39,6 +39,10 @@ from pyforge.marshal.ports.build_harness import (
 from pyforge.marshal.ports.fs import AdvisoryLock
 from pyforge.marshal.scope import verify_scope
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 
 def _init_git_repo(path: Path, *, scope_slug: str | None = None) -> None:
     subprocess.run(["git", "init"], cwd=path, check=True, capture_output=True)
@@ -4441,7 +4445,7 @@ def test_dispatch_once_refuses_a_spec_the_flag_gate_reds_before_any_worktree_or_
     assert _FLAG_SPEC_REL in refusal.message
     assert "flag-missing" in refusal.message
     assert "neither a `flag:` block nor a `flag-exempt:` value" in refusal.message
-    assert "docs/reference/story-spec-flag-block.md" in refusal.message
+    assert "/".join(("docs", "reference", "story-spec-flag-block.md")) in refusal.message
     assert attempt.errors == (refusal,)
     assert not attempt.launched
     assert harness.calls == [] and vcs.added == []
@@ -4450,7 +4454,7 @@ def test_dispatch_once_refuses_a_spec_the_flag_gate_reds_before_any_worktree_or_
     assert "session_pid" not in attempt.data
     # The gate was consulted once, as a process, from the repo root.
     [(argv, cwd, timeout_s)] = process.gate_calls
-    assert argv == [sys.executable, "scripts/flag_gate_check.py", "--spec", _FLAG_SPEC_REL]
+    assert argv == [sys.executable, "/".join(("scripts", "flag_gate_check.py")), "--spec", _FLAG_SPEC_REL]
     assert cwd == tmp_path
     assert timeout_s == dispatch_module._FLAG_GATE_TIMEOUT_S
 

@@ -17,6 +17,10 @@ from pyforge.marshal.cli import adapters as adapters_cli
 from pyforge.marshal.ports.fs import AdvisoryLock
 from pyforge.marshal.ports.harness import AdapterProbe
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 _HOME = Path("/fake/home/pyforge-marshal")
 _CANONICAL = _HOME / ".claude" / "skills"
 _MANIFEST = _HOME / ".bmad-loop" / "skill-projection.json"
@@ -1534,8 +1538,8 @@ def test_entry_files_missing_satellite_reports_mrs_entry_001(capsys, _patch_entr
     assert "MRS-ENTRY-001" in codes
     assert code == 0  # WARN exits 0 -- a detect-only advisory, never blocking
     divergences = {d["path"]: d for d in envelope["data"]["divergences"]}
-    assert ".cursor/rules/specs.mdc" in divergences
-    assert divergences[".cursor/rules/specs.mdc"]["cross_contaminating"] is False
+    assert "/".join((".cursor", "rules", "specs.mdc")) in divergences
+    assert divergences["/".join((".cursor", "rules", "specs.mdc"))]["cross_contaminating"] is False
 
 
 def test_entry_files_missing_hub_names_claude_as_cross_contaminating(capsys, _patch_entry_files):

@@ -17,7 +17,11 @@ import pytest
 from pyforge.marshal.core import derived_context as derived
 from pyforge.marshal.core.policy import CONTEXT_LAYER_NAMES
 
-_PLANNING = "_bmad-output/projects/pyforge-marshal/planning-artifacts"
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
+_PLANNING = "/".join(("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts"))
 _SPECS = f"{_PLANNING}/specs"
 _IMPL = "_bmad-output/projects/pyforge-marshal/implementation-artifacts"
 

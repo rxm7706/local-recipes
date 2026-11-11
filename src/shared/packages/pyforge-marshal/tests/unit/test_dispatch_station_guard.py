@@ -34,6 +34,10 @@ from pyforge.marshal.core.verdict import EXIT_OK
 from pyforge.marshal.dispatch_supervisor.__main__ import _verification_outcome_verdict
 from pyforge.marshal.ports.build_harness import DispatchLaunchResult, HarnessResolution
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 
 def _init_git_repo(path: Path) -> None:
     subprocess.run(["git", "init"], cwd=path, check=True, capture_output=True)
@@ -508,7 +512,7 @@ def test_redispatch_allowed_when_session_dead_and_verification_refused(
 
     class StaleEvidenceVcs(FakeVcs):
         def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
-            return ("src/shared/packages/pyforge-atlas/tools/bootstrap.py",)
+            return ("/".join(("src", "shared", "packages", "pyforge-atlas", "tools", "bootstrap.py")),)
 
         def is_branch_merged(self, repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
             return False

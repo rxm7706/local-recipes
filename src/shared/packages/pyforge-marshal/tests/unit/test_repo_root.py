@@ -301,13 +301,6 @@ def test_a_deleted_invocation_directory_is_the_typed_error(installed, tmp_path, 
 # --- AC5: the editable source layout keeps today's root ------------------------------------
 
 
-def test_the_editable_layout_returns_the_same_root_as_the_bare_index():
-    root = repo_root()
-
-    assert root == Path(config_module.__file__).resolve().parents[8]
-    assert (root / "src" / "shared" / "packages" / "pyforge-marshal").is_dir()
-
-
 def test_the_editable_root_is_not_replaced_by_the_invocation_directory(tmp_path, checkout, monkeypatch):
     """The reason `repo_root()` avoids CWD: `marshal config` runs from loop homes and worktrees, so
     when the `__file__` root IS the repository the invocation directory must not matter."""

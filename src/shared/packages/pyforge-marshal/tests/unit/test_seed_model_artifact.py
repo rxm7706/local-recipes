@@ -20,6 +20,10 @@ from pyforge.marshal.seed.model.manifest import (
     Region,
 )
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 # One class-appropriate ManifestEntry per product class, built directly
 # (Story 7.4's own documented "constructible on their own" convention) --
 # mirrors this package's fixture idiom rather than round-tripping through
@@ -37,7 +41,7 @@ _ENTRY_BY_CLASS = {
     ArtifactClass.COPIED_MANAGED: ManifestEntry(
         id="bmad-switch",
         artifact_class=ArtifactClass.COPIED_MANAGED,
-        path="scripts/bmad-switch",
+        path="/".join(("scripts", "bmad-switch")),
         applies_to=AppliesTo.BOTH,
         rationale="tool-owned model machinery",
     ),

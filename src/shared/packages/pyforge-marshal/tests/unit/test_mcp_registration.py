@@ -5,10 +5,17 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.cli.init import _render_mcp_json
 from pyforge.marshal.core import policy as policy_mod
 from pyforge.marshal.mcp.tools import assert_no_absolute_command, mcp_server_registration_spec
+
+# Story 116.2 (spec-pyforge-marshal:CAP-305): this module reads the repository outside this package, so it runs in
+# the live-tree half; it finds the repository root when a test runs, never at import, so the module imports off
+# the tree (the package half collects it before the marker deselects it).
+pytestmark = pytest.mark.live_tree
 
 
 class _MemFs:

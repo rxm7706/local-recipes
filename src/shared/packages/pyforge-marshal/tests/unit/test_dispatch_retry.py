@@ -14,6 +14,11 @@ from pyforge.marshal.core.dispatch_retry import (
     should_dispatch_retry_escalate,
 )
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): this module reads the repository outside this package, so it runs in
+# the live-tree half; it finds the repository root when a test runs, never at import, so the module imports off
+# the tree (the package half collects it before the marker deselects it).
+pytestmark = pytest.mark.live_tree
+
 
 @pytest.mark.parametrize(
     ("prior", "max_dev", "expected"),

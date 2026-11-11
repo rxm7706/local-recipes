@@ -33,6 +33,11 @@ from pathlib import Path
 
 import pytest
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): this module reads the repository outside this package, so it runs in
+# the live-tree half; it finds the repository root when a test runs, never at import, so the module imports off
+# the tree (the package half collects it before the marker deselects it).
+pytestmark = pytest.mark.live_tree
+
 #: The store path the packaged claude profile's ``wrapper.store_relpath``
 #: declares, relative to a loop home -- and, one directory deeper, the same
 #: store in a loop home that is not itself a worktree root.

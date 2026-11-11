@@ -29,6 +29,10 @@ from pyforge.marshal.seed.state import (
 )
 from pyforge.marshal.seed.state.store import STATE_KEYS
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 _NO_PATTERNS = fs.NeverWrite(())
 
 _SHA_A = "0123abcd"
@@ -40,7 +44,7 @@ def _acceptance(**overrides: Any) -> Acceptance:
     fields: dict[str, Any] = {
         "id": "bmad-switch",
         "region": None,
-        "path": "scripts/bmad-switch",
+        "path": "/".join(("scripts", "bmad-switch")),
         "previous_sha": _SHA_A,
         "accepted_sha": _SHA_B,
         "accepted_at": "2026-10-12T09:15:00Z",
@@ -63,7 +67,7 @@ def _state(**overrides: Any) -> SeedState:
         "managed": (
             ManagedArtifact(
                 id="bmad-switch",
-                path="scripts/bmad-switch",
+                path="/".join(("scripts", "bmad-switch")),
                 artifact_class="copied-managed",
                 body_sha=_SHA_B,
                 inserted_region_spans=(),

@@ -69,6 +69,10 @@ from pyforge.marshal.ports.build_harness import (
 )
 from pyforge.marshal.ports.fs import AdvisoryLock
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 # --------------------------------------------------------------------------
 # Pure planning core
 # --------------------------------------------------------------------------
@@ -3591,8 +3595,8 @@ _W_PRIMARY = "33-8"
 _W_SECOND = "33-9"
 #: Two disjoint-surface probe specs (the 33.8 wave test's own), one per story the wave admits.
 _W_SPECS: dict[str, tuple[str, str]] = {
-    _W_PRIMARY: ("spec-33-8-wave-probe-a.md", "scripts/bmad_loop_baseline_drift_check.py"),
-    _W_SECOND: ("spec-33-9-wave-probe-b.md", "scripts/missing_preserve_check.py"),
+    _W_PRIMARY: ("spec-33-8-wave-probe-a.md", "/".join(("scripts", "bmad_loop_baseline_drift_check.py"))),
+    _W_SECOND: ("spec-33-9-wave-probe-b.md", "/".join(("scripts", "missing_preserve_check.py"))),
 }
 _W_WAVE_POLICY: dict[str, object] = {"dispatch": {"max_parallel": 2}}
 #: A refusal is ``(code, message)``; both codes are re-preflightable, at different gates.

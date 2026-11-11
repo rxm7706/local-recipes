@@ -13,14 +13,24 @@ import importlib.util
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[6]
-FLEET_PICTURE = REPO_ROOT / "scripts" / "fleet_picture.py"
+import pytest
+
+# Story 116.2 (spec-pyforge-marshal:CAP-305): this module reads the repository outside this package, so it runs in
+# the live-tree half; it finds the repository root when a test runs, never at import, so the module imports off
+# the tree (the package half collects it before the marker deselects it).
+pytestmark = pytest.mark.live_tree
+
+
+def _fleet_picture_path() -> Path:
+    # tests/meta -> tests -> pyforge-marshal -> packages -> shared -> src -> repo root
+    return Path(__file__).resolve().parents[6] / "scripts" / "fleet_picture.py"
+
 
 AWAITING_LABEL = "awaiting-operator (run bmad-loop confirm)"
 
 
 def _load_fleet_picture():
-    spec = importlib.util.spec_from_file_location("fleet_picture_missing_spec_test", FLEET_PICTURE)
+    spec = importlib.util.spec_from_file_location("fleet_picture_missing_spec_test", _fleet_picture_path())
     mod = importlib.util.module_from_spec(spec)
     sys.modules["fleet_picture_missing_spec_test"] = mod
     spec.loader.exec_module(mod)

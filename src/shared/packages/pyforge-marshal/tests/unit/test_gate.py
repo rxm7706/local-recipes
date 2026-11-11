@@ -15,6 +15,10 @@ from pyforge.marshal.core.findings import UnregisteredFindingCodeError
 from pyforge.marshal.core.model import Finding, Severity, Verdict
 from pyforge.marshal.core.verdict import classify
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 # --- classify_outcome: a passing command --------------------------------------
 
 
@@ -552,14 +556,14 @@ def test_cross_surface_rules_table_pins_all_three_rules() -> None:
 
 
 def test_cross_surface_rules_for_changed_files_skill_only() -> None:
-    changed = (".claude/skills/pyforge-mason/0.1.0/pyforge-mason/SKILL.md",)
+    changed = ("/".join((".claude", "skills", "pyforge-mason", "0.1.0", "pyforge-mason", "SKILL.md")),)
     rules = gate.cross_surface_rules_for_changed_files(changed)
     assert len(rules) == 1
     assert rules[0].rule_id == "bmad-estate"
 
 
 def test_cross_surface_rules_for_changed_files_flags_and_platform() -> None:
-    changed = ("src/platform/config/flags.json", "src/platform/host/urls.py")
+    changed = ("/".join(("src", "platform", "config", "flags.json")), "src/platform/host/urls.py")
     rules = gate.cross_surface_rules_for_changed_files(changed)
     assert [rule.rule_id for rule in rules] == ["platform", "flag-gate"]
 

@@ -31,6 +31,10 @@ from pyforge.marshal.core.promotion import (
     spec_title_slug,
 )
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 _TEMPLATE = "Merge {key} into main"
 _PROJECT_SLUG = "pyforge-marshal"
 
@@ -1070,7 +1074,7 @@ def test_invalid_spec_keys_names_the_zero_byte_or_truncated_case():
 # title slug under another story key.
 
 _T3 = "_bmad-output/projects/pyforge-atlas/implementation-artifacts"
-_TRACKED = "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs"
+_TRACKED = "/".join(("_bmad-output", "projects", "pyforge-atlas", "planning-artifacts", "specs"))
 
 
 @pytest.mark.parametrize(

@@ -33,10 +33,19 @@ _PACKAGE_FILE = pyforge.marshal.__file__
 if _PACKAGE_FILE is None:
     raise ValueError("installed package has no __file__")
 #: .../src/shared/packages/pyforge-marshal/src/pyforge/marshal/__init__.py
-REPO_ROOT = Path(_PACKAGE_FILE).resolve().parents[7]
-SKILL_DIR = REPO_ROOT / ".claude" / "skills" / "bmad-build-auto"
-STEP_01 = SKILL_DIR / "step-01-clarify-and-route.md"
-COMPILE = SKILL_DIR / "compile-epic-context.md"
+
+
+def _skill_dir() -> Path:
+    # the repository root is found when a test reads a skill file, never at import (Story 116.2)
+    return Path(_PACKAGE_FILE).resolve().parents[7] / ".claude" / "skills" / "bmad-build-auto"
+
+
+def _step_01() -> Path:
+    return _skill_dir() / "step-01-clarify-and-route.md"
+
+
+def _compile() -> Path:
+    return _skill_dir() / "compile-epic-context.md"
 
 
 def _read(path: Path) -> str:
@@ -47,17 +56,17 @@ def _read(path: Path) -> str:
 
 class TestEpicContextContractUntouched:
     def test_the_distill_still_lives_where_it_always_did(self):
-        text = _read(STEP_01)
+        text = _read(_step_01())
         assert "{{.implementation_artifacts}}/epic-<N>-context.md" in text
         # ...and marshal's own declaration names the identical location, so
         # the freshness answer and the file the skill loads cannot diverge.
         assert derived.epic_context_output_relpath("s", "7").endswith("/implementation-artifacts/epic-7-context.md")
 
     def test_the_required_header_is_unchanged(self):
-        assert "# Epic <N> Context:" in _read(STEP_01)
+        assert "# Epic <N> Context:" in _read(_step_01())
 
     def test_the_exact_output_format_headings_are_unchanged(self):
-        text = _read(COMPILE)
+        text = _read(_compile())
         for heading in (
             "## Goal",
             "## Stories",
@@ -69,36 +78,36 @@ class TestEpicContextContractUntouched:
             assert heading in text
 
     def test_the_token_target_is_unchanged(self):
-        assert "800–1500 tokens" in _read(COMPILE)
+        assert "800–1500 tokens" in _read(_compile())
 
     def test_the_generated_provenance_comment_is_unchanged(self):
         """The distill's own bytes are its content contract -- this story
         may not add a fingerprint line to a file BMAD owns."""
         assert (
             "<!-- Generated from planning artifacts. Regenerate with "
-            "compile-epic-context if planning docs change. -->" in _read(COMPILE)
+            "compile-epic-context if planning docs change. -->" in _read(_compile())
         )
 
 
 class TestFreshnessMechanismIsWiredToWhatMarshalShips:
     def test_step_01_calls_the_verb_marshal_actually_registers(self):
-        assert "marshal context refresh" in _read(STEP_01)
+        assert "marshal context refresh" in _read(_step_01())
         choices = _top_level_choices()
         assert "context" in choices
         assert "refresh" in _nested_choices(choices["context"], "context_command")
 
     def test_step_01_reads_the_modes_marshal_actually_emits(self):
-        text = _read(STEP_01)
+        text = _read(_step_01())
         assert derived.MODE_INCREMENTAL in text
         assert derived.MODE_COMPILE_ON_HUNCH in text
 
     def test_step_01_reads_the_states_marshal_actually_emits(self):
-        text = _read(STEP_01)
+        text = _read(_step_01())
         for state in (derived.STATE_FRESH, derived.STATE_STALE, derived.STATE_UNKNOWN):
             assert f"state: {state}" in text
 
     def test_step_01_names_the_artifact_suffixes_marshal_actually_produces(self):
-        text = _read(STEP_01)
+        text = _read(_step_01())
         for name in (
             derived.epic_context_artifact_name("slug", "<N>"),
             derived.continuity_artifact_name("slug", "<N>"),
@@ -110,7 +119,7 @@ class TestFreshnessMechanismIsWiredToWhatMarshalShips:
         from pyforge.marshal.core.findings import REGISTERED_CODES
         from pyforge.marshal.core.verdict import Verdict, classify
 
-        assert "MRS-CTX-*" in _read(STEP_01)
+        assert "MRS-CTX-*" in _read(_step_01())
         ctx_codes = {code for code in REGISTERED_CODES if code.startswith("MRS-CTX-")}
         # Story 46.1 (spec-pyforge-marshal CAP-192) grew the area with the
         # substrate verbs' codes -- emitted only by `context bootstrap` /
@@ -143,10 +152,10 @@ class TestLayerOffKeepsTheOldRule:
     def test_the_previous_mtime_rule_survives_verbatim_as_the_fallback(self):
         """AC 3's "today's compile-on-hunch behavior is unchanged" is only
         true if the old rule is still literally written down."""
-        assert "no file in `{{.planning_artifacts}}` is newer" in _read(STEP_01)
+        assert "no file in `{{.planning_artifacts}}` is newer" in _read(_step_01())
 
     def test_the_continuity_cache_write_is_explicitly_layer_gated(self):
-        text = _read(STEP_01)
+        text = _read(_step_01())
         marker = text.index(":epic-<N>-continuity")
         window = text[marker - 800 : marker + 900]
         assert re.search(r"`mode: incremental` only", window)

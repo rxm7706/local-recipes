@@ -40,6 +40,11 @@ from pyforge.marshal.seed.model.kit import (
     CODEGRAPH_INDEX_RELPATH,
 )
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): this module reads the repository outside this package, so it runs in
+# the live-tree half; it finds the repository root when a test runs, never at import, so the module imports off
+# the tree (the package half collects it before the marker deselects it).
+pytestmark = pytest.mark.live_tree
+
 #: Each kit artifact at a worktree root AND one directory deeper -- a loop
 #: home is normally its own worktree root, but an anchored rule would
 #: silently stop ignoring the moment a home sat below one.
