@@ -776,16 +776,6 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   restored, rendered into `SPEC.md` by script from the memlog decision; no flag; no FR text change; the satellite FR
   series untouched. Operator rulings, 2026-10-25: "Restore 2 atlas CAPs (Recommended)" and "Cite the constraint
   (Recommended)". Owner `spec-pyforge-atlas`. → Epic 40 / Story 40.1, specced 2026-10-25.
-
-## 2026-09-17 — One-chain fold (atlas, CAP-3)
-
-Atlas rebases to one Dream, one Spec, one PRD, one spine, one epic chain.
-Topic Dreams are archived in place with `Consolidated into [[pyforge-atlas]]`
-banners. Station Spec `spec-pyforge-atlas` is `ready`. Epic 12–25 rekey to
-11–24 to close the missing Epic 11 gap. Done rows keep status; `25-2` stays
-`blocked` as `24-2`.
-
-Folded topic Dreams: [[artifactory-download-intelligence]], [[atlas-kedro-catalog-expansion]], [[atlas-query-dashboards]], [[conda-forge-packaging-inventory-operations]], [[enterprise-data-models-and-apis]], [[kedro-org-tooling-adoption]], [[microsoft-org-sweep]], [[pyforge-atlas-intelligence-platform]], [[unity-data-stack]], [[upstream-discovery]], [[wagtail-corporate-brain]], [[wasm-analytics-stack]].
 - **2026-10-26 (every requirement derives from a capability) — Found:** FR-15 cited a Spec Constraint, not a capability (the 2026-10-25 ruling for Story 40.1); the 2026-09-17 fold cut 86 of the Spec's intent and success bullets at their first line; none of the ten NFR lines cites anything; the Unity and Wasm satellite PRDs reuse the kernel's FR ids (39 duplicates) and carry no arrows. **Ruled** (2026-10-26, operator, fleet-wide: "yes forbid it"): a requirement cites one or more defined capabilities and nothing else — `spec-one-chain-per-station` CAP-5 as amended, CHAIN-STANDARD § 12. **For atlas:** CAP-72 is minted from the Constraint "Conda-forge-only, pixi-managed, py3.14-floored provisioning" (ruling (b)) and FR-15 cites it; AD-16 names the Constraint; the cut bullets are restored by script from `86d1cdf3ee^` with every id stable; the satellite renumber (ruling (d)) and the NFR backfill (ruling (c)) are minted `backlog` as Stories 41.2 and 41.3 so the detector's baseline has an owner for every atlas row it still carries. Epic 41 / Story 41.1, built in the one-PR effort with the other seven stations; CAP-72 routes `rebuild` (ruling (e)).
 - **2026-10-26 (every pre-rule runtime capability sits behind a kill switch) — Found:** the flag inventory (doctor Story 34.4, regenerated on the fixed join) reads 3 atlas capabilities minted before the rule date as reachable at runtime with no flag; the operator ruled on 2026-09-28 that every capability ships behind a flag, with one retrofit flag per capability defaulting ON (Q6), and no station had minted its retrofit. **Ruled** (2026-10-26, operator: the CAP-7 retrofit sheet approved as recommended, R1–R8 — flag the unflagged runtime rows only, one key per CAP, an invariant's switch makes the dependent verb refuse, the 90-day clock stands and each station mints its retirement story now). **For atlas:** 2 keys `pyforge.atlas.<capability>` ON in dev, staging and production with their clocks from 2026-10-26, each read through `pyforge.core.flags` at its verb or behaviour site with one two-state test; a flag-off verb stays listed and refuses with the usage code 2 (Q3); no exit code changes. Epic 42 / Stories 42.1–42.3, built in the one-PR retrofit effort; Story 42.4 (the retirement, due 2027-01-24) minted backlog; no atlas CAP minted.
 - **2026-11-01 (the EGM fleet audit) — Found:** the one-time fresh-context audit (marshal Story 113.7,
@@ -805,6 +795,43 @@ Folded topic Dreams: [[artifactory-download-intelligence]], [[atlas-kedro-catalo
   spec-pyforge-marshal:CAP-302) read the compiled skill, CAP-72 and Epic 41: 16 high findings, 7 accepted, 7 rejected,
   2 deferred, with 60 medium and 24 low not triaged; residue
   `_bmad-output/projects/pyforge-atlas/planning-artifacts/research/egm-audit-2026-11-05.md`. The accepted findings land here as one re-derive of CAP-70, CAP-71 and CAP-72; Story 29.5 carries the skill note.
+- **2026-11-10 (cutover readiness) — Found:** the read-only cutover readiness audit at main `82a2b18828`
+  (`_bmad-output/projects/pyforge-atlas/planning-artifacts/research/cutover-readiness-audit-2026-11-10.md`) read
+  `spec-pyforge-atlas` against the tree and found the Spec behind the code in five ways: it counts seven pipelines and
+  86 datasets where twelve pipelines and 147 catalog entries are registered; two capabilities (CAP-51, CAP-52) carry
+  no intent or success; markers read shipped on work whose attended half never ran (CAP-7, CAP-52, CAP-58..CAP-60) and
+  on the Unity and Wasm satellites, which were never built; no Spec file records the station's public names (its 13
+  MCP tools, the `ipython` and `package` verbs, most flag keys and environment variables, the bring-up tool's exit
+  codes); and no atlas test is split from A's tree. The audit also found that `pyforge/atlas/views/`, retired by the
+  operator on 2026-09-09 and deleted by Story 24.1, was re-landed by a baseline-drift recovery on 2026-09-18 (PR #1451).
+  **Ruled** (operator, 2026-11-10, on `docs/dreams/pyforge-unifying-strategy.md` § Realization log, the entry of that
+  date and its two addenda: "Accept all", "Retire both", "Accept all, run mint"): A writes every Dream, Spec and the
+  capability ledger until the flip, which the operator makes by hand once the Launch slice is proven; a capability
+  that was never built is not `rebuild`, so the Unity and Wasm satellites (CAP-18..CAP-31) are retired, never built,
+  B does not rebuild them, and their planning text stays on A as history; `views/` leaves again and CAP-44..CAP-47 read
+  retired; CAP-7 is `A-only` until mason Story 39.2; CAP-68 is `B-only` (Story 36.3 is blocked); CAP-64 and CAP-65 hold
+  to the story-close figures `live-sources.md` records; this effort adds no behaviour and no kill switch. **For
+  atlas:** one capability is minted, CAP-73, the public contract (`contract.md` beside the Spec, and a meta-test that
+  holds the code to it; FR-78). The markers and text of the rest are amended so each says what is built, open or
+  retired, in the marker grammar CHAIN-STANDARD § 4 gains (steward Story 120.3). The legacy reads (conda-forge-expert's
+  seeds and scripts, `cf_atlas.db`, the `vuln-db` env) are stated as they are, not re-plumbed, and atlas adopts
+  steward's `live_tree` marker (a relay of spec-pyforge-steward:CAP-175). Chains it binds: spec-pyforge-atlas, as Epic
+  46 (the Spec says what is built, open or retired; Stories 46.1 and 46.2), Epic 47 (the public contract is written
+  and held to the code; Stories 47.1 and 47.2) and Epic 48 (the package and its suite stand apart from A's tree and from
+  what the operator retired; Stories 48.1 to 48.4), all built in the one cutover-readiness PR; Story 41.2 leaves
+  backlog re-scoped (the two satellite sections of the PRD become dated `Fold provenance` record sections, no FR id
+  renumbered) and Story 41.3 retires, never dispatched (its key `blocked`); spec-pyforge-steward:CAP-175; and
+  `spec-python-foundry-cutover`'s capability ledger, whose modes for these rows its owner writes (steward Epic 121).
+
+## 2026-09-17 — One-chain fold (atlas, CAP-3)
+
+Atlas rebases to one Dream, one Spec, one PRD, one spine, one epic chain.
+Topic Dreams are archived in place with `Consolidated into [[pyforge-atlas]]`
+banners. Station Spec `spec-pyforge-atlas` is `ready`. Epic 12–25 rekey to
+11–24 to close the missing Epic 11 gap. Done rows keep status; `25-2` stays
+`blocked` as `24-2`.
+
+Folded topic Dreams: [[artifactory-download-intelligence]], [[atlas-kedro-catalog-expansion]], [[atlas-query-dashboards]], [[conda-forge-packaging-inventory-operations]], [[enterprise-data-models-and-apis]], [[kedro-org-tooling-adoption]], [[microsoft-org-sweep]], [[pyforge-atlas-intelligence-platform]], [[unity-data-stack]], [[upstream-discovery]], [[wagtail-corporate-brain]], [[wasm-analytics-stack]].
 
 ## 2026-10-26 — An enterprise Artifactory mirror's own download telemetry joins the universe picture (folded from artifactory-download-intelligence)
 

@@ -2,7 +2,7 @@
 id: SPEC-pyforge-atlas
 spec: pyforge-atlas
 status: ready
-updated: "2026-11-05"   # AMENDED 2026-11-05 (EGM audit, marshal Story 113.18): CAP-70, CAP-71 and CAP-72 re-derived. Prior "2026-11-01": AMENDED 2026-11-01 (EGM fleet audit, marshal Story 113.7): CAP-64 amended (a plain run is __default__; the pass set and its per-row floors live in live-sources.md; the network-blocked run is over a filled root; Stories 34.14 and 34.15), CAP-65 amended (five batched registries; a plain run fills GitLab, Codeberg and the registries; the switch holds on both live_vcs_universe branches, Story 35.5), CAP-66 amended (population ~ the distinct conda names; no code-method names), CAP-67 amended (the identity_source values; the rows a public run gives), CAP-68 amended (its deferral on the CAP; success needs a non-empty, non-fixture estate frame; spec-qualified cite) and CAP-69 amended (boards listed by page id; Stories 37.5-37.10 realized; the data-root precedence); the Constraint 'Public sources live by default' amended; CAP-68's open question noted; live-sources.md gains CAP and Floor columns and the core-sources row; glossary.md companion added. Prior "2026-10-26"   # AMENDED 2026-10-26 (every requirement derives from a capability): CAP-72 minted from the Constraint "Conda-forge-only, pixi-managed, py3.14-floored provisioning" (operator ruling 2026-10-26, reversing the 2026-10-25 "cite the constraint" ruling for FR-15); FR-15 <- CAP-72. Prior "2026-10-25"
+updated: "2026-11-10"   # AMENDED 2026-11-10 (cutover readiness mint; station Dream entry 2026-11-10; operator rulings of 2026-11-10 in docs/dreams/pyforge-unifying-strategy.md): CAP-73 minted (the public contract written beside the Spec and held to the code; FR-78; Stories 47.1 and 47.2), and `contract.md` joins companions:. The same day's memlog also logs the marker and text amendments of CAP-1, CAP-7, CAP-18..CAP-31, CAP-35, CAP-36, CAP-43..CAP-47, CAP-50..CAP-52, CAP-54..CAP-56, CAP-58..CAP-72 and two Constraints; Stories 46.1 and 46.2 render those at build. Prior "2026-11-05": AMENDED 2026-11-05 (EGM audit, marshal Story 113.18): CAP-70, CAP-71 and CAP-72 re-derived. Prior "2026-11-01": AMENDED 2026-11-01 (EGM fleet audit, marshal Story 113.7): CAP-64 amended (a plain run is __default__; the pass set and its per-row floors live in live-sources.md; the network-blocked run is over a filled root; Stories 34.14 and 34.15), CAP-65 amended (five batched registries; a plain run fills GitLab, Codeberg and the registries; the switch holds on both live_vcs_universe branches, Story 35.5), CAP-66 amended (population ~ the distinct conda names; no code-method names), CAP-67 amended (the identity_source values; the rows a public run gives), CAP-68 amended (its deferral on the CAP; success needs a non-empty, non-fixture estate frame; spec-qualified cite) and CAP-69 amended (boards listed by page id; Stories 37.5-37.10 realized; the data-root precedence); the Constraint 'Public sources live by default' amended; CAP-68's open question noted; live-sources.md gains CAP and Floor columns and the core-sources row; glossary.md companion added. Prior "2026-10-26"   # AMENDED 2026-10-26 (every requirement derives from a capability): CAP-72 minted from the Constraint "Conda-forge-only, pixi-managed, py3.14-floored provisioning" (operator ruling 2026-10-26, reversing the 2026-10-25 "cite the constraint" ruling for FR-15); FR-15 <- CAP-72. Prior "2026-10-25"
 owner-dream: docs/dreams/pyforge-atlas.md
 covers-dreams:
   - docs/dreams/pyforge-atlas.md
@@ -88,6 +88,7 @@ companions:
   - live-sources.md          # CAP-64..CAP-68: each live source, the datasets it fills, its legacy phase, parity measure, floor, credential, owning CAP, story
   - catalog-sources.md       # live companion carried 2026-10-27 from spec-atlas-kedro-catalog-expansion (spec-one-chain-per-station:CAP-11)
   - glossary.md              # the station's own terms, one line each, pointing where each is defined; fleet terms: CHAIN-STANDARD § 0
+  - contract.md              # CAP-73: every CLI verb and option, MCP tool, flag key, environment variable and exit code the package has, and what it reads outside itself (written by Story 47.1)
 sources:
   - ../../../../../../docs/dreams/pyforge-atlas.md
 open_questions: []
@@ -590,6 +591,18 @@ One-chain rebase 2026-09-17. Each reminted CAP keeps provenance `← spec-<old> 
     `.pixi/config.toml` is an operator file outside the repo, the channel fallback in `datasets/core_sources.py` reads
     `<CHANNEL>_BASE_URL` directly and hard-codes its public defaults, and no network-denied run is part of this success.
     Delivered by Stories 2.1 and 2.2 (the spec's Stories A1 and A2, Epic 2, done); FR-15 derives from it.
+- **CAP-73 — the public contract is written beside the Spec and held to the code** ← the station Dream `docs/dreams/pyforge-atlas.md`, Realization log entry 2026-11-10, cutover readiness (ready 2026-11-10; minted from the cutover readiness audit's finding MUST 7 and decision D1; Story 47.1 realizes it and Story 47.2 its catalog and gate half; FR-78 derives from it)
+  - **intent:** a reader who has only the Spec folder can name everything atlas exposes. `contract.md` lists every
+    CLI verb path and option, every MCP tool, every feature-flag key the package reads with its default per
+    environment, every environment variable it reads with its default, and every exit code it defines;
+    `catalog-contract.md` lists every catalog dataset and `gate-contract.md` every gate task. `contract.md` also lists
+    what the package reads outside itself: the conda-forge-expert seeds and scripts, the legacy `cf_atlas.db`, the
+    `vuln-db` env, the `recipes/` tree and the planning tree.
+  - **success:**
+    `pixi run --frozen -e pyforge-atlas pytest src/shared/packages/pyforge-atlas/tests/meta/test_public_contract.py src/shared/packages/pyforge-atlas/tests/meta/test_catalog_contract.py -q`
+    exits 0, and exits 1 when the code has a verb, an option, a tool, a flag key, an environment variable, an exit
+    code, a catalog dataset or a gate task that the three files lack: each family has a case that adds one synthetic
+    name to the derived set and expects the comparison to fail.
 
 ## Constraints
 

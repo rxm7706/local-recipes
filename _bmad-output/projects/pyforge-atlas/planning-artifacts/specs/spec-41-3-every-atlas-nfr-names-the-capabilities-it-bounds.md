@@ -2,7 +2,7 @@
 title: "41.3: Every atlas NFR names the capabilities it bounds"
 type: 'chore'
 created: '2026-10-26'
-status: 'backlog'
+status: 'blocked'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: true
@@ -17,6 +17,17 @@ context:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/one_chain.py
   - docs/governance/fr-baseline.json
 ---
+
+> **Retired 2026-11-10 — never dispatch.** Operator rulings of 2026-11-10
+> (`docs/dreams/pyforge-unifying-strategy.md` § Realization log, the second addendum, ruling 6): the ten NFR lines
+> are the Unity satellite's (`prd.md` § Satellite: Unity Data Stack), which is retired, never built, and kept on A as
+> history; Story 41.2 turns that section into a dated `Fold provenance` record section. Tracing ten Unity NFRs to
+> retired capabilities would promote history into the live requirement space. A record section stops only the
+> duplicate findings: doctor's parser (`sources/one_chain.py` `_fr_definitions`) still reads a first definition there,
+> so the ten NFRs and the Unity satellite's FR-23..FR-60, the 48 baseline `projects` ids this story owned, stay
+> arrowless and baselined for good, and doctor Story 58.4's `--prune` keeps them. That gap is DW-atlas-46-1-9, which
+> Story 46.1 writes (owner: none; retired satellite history held in the baseline). The ledger key is `blocked`; an
+> operator flip does not revive it. Text kept as history.
 
 <intent-contract>
 
@@ -76,11 +87,15 @@ Type / Effort / Deps: chore / S / 41.1.
 
 ## Auto Run Result
 
-Status: backlog (minted 2026-10-26, operator ruling (c): the NFR backfill is its own story per station).
+Status: blocked (retired 2026-11-10, never dispatched; minted 2026-10-26, operator ruling (c): the NFR backfill is its own story per station).
 
 ## Spec Change Log
 
 - 2026-10-26: minted from the station Dream's entry of 2026-10-26 (every requirement derives from a capability) at the operator's rulings of 2026-10-26 ("yes forbid it"; the ruling sheet accepted in full).
+
+- 2026-11-10: retired at the cutover readiness mint (operator rulings of 2026-11-10, the second addendum, ruling 6), as steward Stories 44.4 to 44.6 were: the key moves from `backlog` to `blocked` and the story is never dispatched.
+
+- 2026-11-10 (second review of the mint): the retired note names what happens to the 48 baseline ids this story owned. Story 41.2's record section does not remove them (it suppresses duplicates only), so they stay baselined as retired history, the gap DW-atlas-46-1-9 that Story 46.1 writes (rule R4).
 
 ## Review Triage Log
 

@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: 544bfa19ffd6de52
-story_count: 160
+source_fingerprint: f291592606a6fa64
+story_count: 168
 test_file_count: 190
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 160
-- **Epics parsed:** 44
+- **Stories parsed:** 168
+- **Epics parsed:** 47
 - **Test files inventoried:** 190 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `544bfa19ffd6de52`
+- **Source fingerprint:** `f291592606a6fa64`
 
 ## Risk Assessment
 
@@ -76,6 +76,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 42: Every pre-rule atlas runtime capability sits behind a kill switch (2 flags, one per CAP; the Guild flag rule's retrofit capability, Q6)
 - Epic 44: The archived atlas Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 - Epic 45: The absorbed atlas Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
+- Epic 46: The atlas Spec says what is built, what is open and what is retired (spec-pyforge-atlas CAP-1, CAP-7, CAP-18..CAP-31, CAP-35, CAP-36, CAP-43..CAP-47, CAP-50..CAP-52, CAP-54..CAP-56, CAP-58..CAP-72)
+- Epic 47: The atlas public contract is written and held to the code (spec-pyforge-atlas CAP-73, FR-78)
+- Epic 48: The atlas package and its suite stand apart from A's tree and from what the operator retired (relay of spec-pyforge-steward:CAP-175; spec-pyforge-atlas CAP-44..CAP-47 retired; fixes under CAP-48 and CAP-69)
 
 ### Low-risk epics
 
@@ -440,6 +443,14 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 42.4 | the retrofit kill switches retire on their cleanup date | none observed |
 | 44.1 | Atlas's twelve archived Dreams leave the live tree | none observed |
 | 45.1 | Atlas's absorbed Spec folders and spec-archive move to the archive home | none observed |
+| 46.1 | Each atlas capability's marker says what is built, open or retired | none observed |
+| 46.2 | The atlas capabilities describe the code that runs | none observed |
+| 47.1 | Atlas's public contract is written beside the Spec and a meta-test holds the ... | none observed |
+| 47.2 | The catalog and gate companions name every dataset and gate the code has | none observed |
+| 48.1 | Atlas's live-tree readers carry the marker and the subtree guide matches the ... | none observed |
+| 48.2 | Atlas's two root literals resolve from the member | none observed |
+| 48.3 | The retired views runtime leaves the package again | none observed |
+| 48.4 | One memlog event reconciles every atlas path this effort moved | none observed |
 
 ## Quality Gates
 
