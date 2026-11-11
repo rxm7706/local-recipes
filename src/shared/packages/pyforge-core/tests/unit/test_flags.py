@@ -1094,6 +1094,8 @@ _SHIPPED_CLOCKS = {
     "pyforge.steward.start_loop_dispatch": ("steward", "119-4-", "2026-11-06", "", ""),
     "pyforge.steward.nkp_deploy": ("steward", "118-1-", "2026-10-31", "2026-10-31", "2027-01-29"),
     "pyforge.steward.nkp_packs": ("steward", "118-2-", "2026-10-31", "2026-10-31", "2027-01-29"),
+    # Stories 121.1 / 121.2 (fnd:CAP-9): steward cutover plan's two write modes; registered by Story 124.4.
+    "pyforge.steward.cutover_ledger_write": ("steward", "121-2-", "2026-11-10", "2026-11-10", "2027-02-08"),
 }
 
 
@@ -1139,6 +1141,7 @@ _LATER_KILL_SWITCHES = {
     "pyforge.steward.start_tool_cli": "2027-02-04",  # steward Story 119.1
     "pyforge.steward.nkp_deploy": "2027-01-29",  # steward Story 118.1 (CAP-176), minted 2026-10-31
     "pyforge.steward.nkp_packs": "2027-01-29",  # steward Story 118.2 (CAP-177), minted 2026-10-31
+    "pyforge.steward.cutover_ledger_write": "2027-02-08",  # steward Stories 121.1 / 121.2 (fnd:CAP-9), 2026-11-10
 }
 
 
@@ -1243,6 +1246,7 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.steward.start_tool_cli": {"dev": True, "staging": True, "production": True},
         "pyforge.steward.nkp_deploy": {"dev": True, "staging": True, "production": True},
         "pyforge.steward.nkp_packs": {"dev": True, "staging": True, "production": True},
+        "pyforge.steward.cutover_ledger_write": {"dev": True, "staging": True, "production": True},
         "pyforge.marshal.verify_fix_loop": {"dev": True, "staging": True, "production": False},
         "pyforge.marshal.landing_ci_pauses": {"dev": True, "staging": False, "production": False},
         "pyforge.atlas.dependency_history_sensor": {"dev": True, "staging": True, "production": False},

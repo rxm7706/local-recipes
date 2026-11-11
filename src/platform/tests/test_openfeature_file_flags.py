@@ -829,6 +829,12 @@ _SHIPPED_BOOLEANS = {
         "staging": True,
         "production": True,
     },
+    # Stories 121.1 / 121.2 (fnd:CAP-9): cutover plan's write modes, ON everywhere.
+    "pyforge.steward.cutover_ledger_write": {
+        "dev": True,
+        "staging": True,
+        "production": True,
+    },
     "pyforge.marshal.verify_fix_loop": {
         "dev": True,
         "staging": True,

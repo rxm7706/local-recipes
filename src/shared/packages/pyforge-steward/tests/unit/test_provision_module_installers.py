@@ -251,8 +251,17 @@ def test_supported_installer_modules_have_disjoint_skill_names():
             claimed[skill] = name
 
 
+#: The two share-tree tests below read the pyforge-guild env's installed share data. They are
+#: Guild-environment tests: the pyforge-steward feature carries no bmad share package, so they skip
+#: where the Guild env is not installed and run where it is (Story 123.3).
+_GUILD_SHARE_SKIP = (
+    "pyforge-guild pixi env share data not present (.pixi/envs/pyforge-guild/share); "
+    "this share-tree test runs where the Guild env is installed"
+)
+
+
 def test_live_share_skill_names_are_disjoint_across_installer_modules():
-    """When the pixi local-recipes env is present, discovered skill names
+    """When the pyforge-guild pixi env is present, discovered skill names
     across tea/cis/utility-skills/manticore must not collide."""
     root = Path(__file__).resolve()
     repo = None
@@ -263,7 +272,7 @@ def test_live_share_skill_names_are_disjoint_across_installer_modules():
     assert repo is not None
     share = repo / ".pixi/envs/pyforge-guild/share"
     if not share.is_dir():
-        pytest.skip("local-recipes pixi env share data not present")
+        pytest.skip(_GUILD_SHARE_SKIP)
 
     claimed: dict[str, str] = {}
     for name, backend in _SUPPORTED_MODULES.items():
@@ -310,7 +319,7 @@ def test_live_utility_skills_share_tree_matches_the_ten_expected_names():
     assert repo is not None
     share = repo / ".pixi/envs/pyforge-guild/share"
     if not share.is_dir():
-        pytest.skip("local-recipes pixi env share data not present")
+        pytest.skip(_GUILD_SHARE_SKIP)
 
     backend = _SUPPORTED_MODULES["utility-skills"]
     assert isinstance(backend, CondaInstallBackend)

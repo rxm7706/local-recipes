@@ -10,6 +10,7 @@ extends: spec-pyforge-unifying-strategy  # cite this file's ids as fnd:CAP-N out
 surface: []
 companions:
   - cutover.md
+  - launch-slice.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 sources:
   - ../../../../../../docs/dreams/pyforge-unifying-strategy.md
@@ -18,17 +19,19 @@ sources:
 open_questions: []
 ---
 
-> **Canonical contract.** Re-derived 2026-09-25 from `.memlog.md` (D1–D3,
-> regenerate-not-fold, and the 2026-09-25 consolidation of PRs #1563 / #1564 /
-> #1576). Invent in `local-recipes`; foundry receives proven capability as
-> **regenerated** packages, not a fold of `src/shared/packages/`. **`local-recipes`
-> is never archived** (CAP-7 retired 2026-09-25). Extends
-> `spec-pyforge-unifying-strategy`; cite this file as `fnd:CAP-1..15`. Decomposed as
-> steward **Epic 44** (44.1–44.15), **Epic 54** (kernel) and **Epic 67** (laptop
-> SBOM, dossier, instruction surface), with herald **26.1** and scribe **21.1**
-> taking the stories on the surfaces they own. 44.4 / 44.5 / 44.6 are parked
-> file-move stories and 44.10 is retired — do not dispatch. The cutover is
-> regenerative: Dreams and memlogs seed foundry.
+> **Canonical contract.** Re-derived 2026-11-11 from `.memlog.md` (D1–D3,
+> regenerate-not-fold, the 2026-09-25 consolidation of PRs #1563 / #1564 / #1576 and
+> the operator's rulings of 2026-11-10). `local-recipes` (A) writes every Dream, Frame,
+> Spec and the capability ledger until the flip; foundry receives proven capability by
+> the mode its ledger row names, as **regenerated** packages, never a fold of
+> `src/shared/packages/`. **`local-recipes` is never archived** (CAP-7 retired
+> 2026-09-25). Extends `spec-pyforge-unifying-strategy`; cite this file as
+> `fnd:CAP-1..15`. Decomposed as steward **Epic 44** (44.1–44.15), **Epic 54** (kernel),
+> **Epic 67** (laptop SBOM, dossier, instruction surface) and **Epics 120 and 121** (the
+> 2026-11-10 rulings), with herald **26.1** and scribe **21.1** taking the stories on the
+> surfaces they own. Stories 44.1, 44.4, 44.5 and 44.6 (retired 2026-11-10) and 44.10
+> (retired 2026-09-25) are never dispatched. The cutover is regenerative: Dreams and
+> memlogs, `archive/**/.memlog.md` included, seed foundry.
 
 # SPEC — Cutover to `python-foundry` (Phases 0–6)
 
@@ -48,7 +51,7 @@ laptop, the claim surface and the agents all describe the same two-root estate.
 
 ## Capabilities
 
-- **CAP-1 — Open foundry (Phase 0).**
+- **CAP-1 — Open foundry (Phase 0).** (shipped 2026-09-13)
   - **intent:** The operator can create `rxm7706/python-foundry` as a fresh,
     recipe-free, lean-pixi estate with estate-only CI.
   - **success:** The clone exists; no `recipes/` directory; the `environment.yaml`
@@ -58,7 +61,7 @@ laptop, the claim surface and the agents all describe the same two-root estate.
     may stay red; force-merge after that local proof is the campaign gate
     (operator 2026-09-13 D1). Fresh-clone local is not provisional.
 
-- **CAP-2 — Realize the estate (Phase 1).**
+- **CAP-2 — Realize the estate (Phase 1).** (ready 2026-11-10)
   - **intent:** Every capability of the estate reaches foundry by the mode its capability-ledger
     row names (`rebuild`, `retire`, `A-only`, `B-only`). Launch is a self-hosting slice: B lands
     one story on itself through its own dispatch, gated by its own detectors, and the ledger rows
@@ -73,7 +76,7 @@ laptop, the claim surface and the agents all describe the same two-root estate.
     may remain on `local-recipes` indefinitely; the ledger's A-only rows decide what stays. No
     Containerfile `COPY` of package source. Host boot is not a Launch success criterion.
 
-- **CAP-3 — CFE on foundry (Phase 2).**
+- **CAP-3 — CFE on foundry (Phase 2).** (ready 2026-11-10)
   - **intent:** Foundry gains conda-forge-expert by **rebuild from its own Spec** after the
     flip, using `local-recipes` as the legacy oracle — never by carrying the
     `.claude/skills/conda-forge-expert` cell across.
@@ -83,26 +86,26 @@ laptop, the claim surface and the agents all describe the same two-root estate.
     `local-recipes`. A foundry-born CFE then matches its rebuilt Spec and the archived suite.
     Story 44.6 is retired (2026-11-10).
 
-- **CAP-4 — Factory island (Phase 3).**
+- **CAP-4 — Factory island (Phase 3).** (shipped 2026-09-13)
   - **intent:** Recipe work runs from `factory/` with its own `pixi.toml` and lock
     and a recipes-only CI.
   - **success:** `mason recipe build factory/recipes/<r>` matches today's CFE wrap;
     the estate lock holds no factory solver dependency; factory CI triggers on
     `paths: factory/**` only. Mason's half of the island is `spec-pyforge-mason:CAP-36`.
 
-- **CAP-5 — Working set (Phase 4).**
+- **CAP-5 — Working set (Phase 4).** (ready 2026-11-10)
   - **intent:** Only in-flight and sole-maintainer recipes are carried into the working set.
   - **success:** `factory/recipes/` is the working set under a count ceiling asserted against a
     working-set list, not manifest rows; the 7,855-dir universe is not copied.
 
-- **CAP-6 — Mason talks to conda-forge (Phase 5).**
+- **CAP-6 — Mason talks to conda-forge (Phase 5).** (ready 2026-09-13)
   - **intent:** From foundry, `submit` targets staged-recipes or the bot fork and
     `update` targets the feedstock maintainer-edit path.
   - **success:** Later Phase 5: an agent-opened PR never targets `local-recipes`
     (asserted on the submit path). Out of this campaign; 44.9 stays blocked
     (operator 2026-09-13 D2).
 
-- **CAP-7 — Archive `local-recipes` (Phase 6). RETIRED 2026-09-25.**
+- **CAP-7 — Archive `local-recipes` (Phase 6).** (retired 2026-09-25)
   - **intent:** (retired) `local-recipes` was to become read-only history.
   - **success:** None — retired by the operator's no-archive ruling (2026-09-25).
     Two git roots stay live after the `cutover_root` flip; what `local-recipes`
@@ -110,7 +113,7 @@ laptop, the claim surface and the agents all describe the same two-root estate.
     retires with it (ledger key stays `blocked`, never dispatched). The id is not
     reused.
 
-- **CAP-9 — Capability ledger and rebuild harness.**
+- **CAP-9 — Capability ledger and rebuild harness.** (ready 2026-11-10)
   - **intent:** The operator sets a mode per capability by the written rules of
     `spec-foundry-capability-ledger` `modes.md`; `steward cutover plan` generates and validates
     the ledger from the live Specs; a `rebuild` re-derives Spec, spine and epics on B from Dream
@@ -125,7 +128,7 @@ laptop, the claim surface and the agents all describe the same two-root estate.
     a `rebuilding` row is judged by `spec-pyforge-doctor:CAP-94`, not by `plan`. The four scored
     decision signals are retired in favour of `modes.md`'s written rules (operator 2026-11-10).
 
-- **CAP-8 — The root-of-record flag is the writer lock.**
+- **CAP-8 — The root-of-record flag is the writer lock.** (ready 2026-11-10)
   - **intent:** The operator names, with one flag, the root that writes every Dream, Frame,
     Spec and the capability ledger; `steward cutover flip` is the cutover and flipping back the
     rollback. Routing per capability is the ledger row, never the flag.
@@ -138,7 +141,7 @@ laptop, the claim surface and the agents all describe the same two-root estate.
     `chain-write-off-the-writer`) and doctor's `writer-lock` source in `detectors-ci`
     (`spec-pyforge-doctor:CAP-100`, Story 56.5), which judges the branch for every harness and
     reads the flag at the merge base, never at HEAD, so the branch that carries the flip passes
-    (fnd:AD-24, minted by Story 120.1). A checkout knows its own root from `docs/governance/guild-roster.json`
+    (fnd:AD-24). A checkout knows its own root from `docs/governance/guild-roster.json`
     `roots.this`; an answer whose `source` is `default` does not prove the checkout is the
     writer. A flip is refused while a loop runs and stamps the Realization log.
     The operator flips `pyforge.cutover_root` by hand, with no loop running, once the Launch slice is proven; nothing flips it automatically.
@@ -150,7 +153,7 @@ laptop, the claim surface and the agents all describe the same two-root estate.
     `pixi run --frozen -e pyforge-doctor pytest src/shared/packages/pyforge-doctor/tests/unit/test_sources_writer_lock.py -q`
     each exit 0.
 
-- **CAP-11 — Foundry kernel regenerate.**
+- **CAP-11 — Foundry kernel regenerate.** (ready 2026-11-10)
   - **intent:** The operator can regenerate `pyforge-core`, steward, and marshal in
     foundry `src/packages/` from Dream plus memlog and the re-derived Spec, against a thin
     archived-test oracle; a Frame is a pointer, not a seed. The seed includes
@@ -162,7 +165,7 @@ laptop, the claim surface and the agents all describe the same two-root estate.
     Specs pass the truth sweep. Stories 44.4 and 44.5 are retired (2026-11-10). Full contract:
     `spec-foundry-regenerate-not-fold`.
 
-- **CAP-10 — Metered minutes budget.**
+- **CAP-10 — Metered minutes budget.** (ready 2026-09-13)
   - **intent:** `steward budget` knows the account's GitHub Actions-minutes spend and
     ceiling, so the foundry dispatch, Marshal's drains and the rebuild harness never run
     blind into a billing block again.
@@ -170,11 +173,11 @@ laptop, the claim surface and the agents all describe the same two-root estate.
     `steward budget check` returns a real under/over verdict against the plan's
     included minutes and the declared ceiling from a metering source (the Actions
     billing API through a `user`-scoped credential held in `steward keys`, never
-    in the manifest); those drains and the rebuild harness read it as their
+    in a tracked file); those drains and the rebuild harness read it as their
     ceiling; the honest-stub property is retired for this source only. Not a
     Launch / 44.3 confirmation gate (operator 2026-09-13 D1b).
 
-- **CAP-12 — The laptop SBOM.**
+- **CAP-12 — The laptop SBOM.** (shipped 2026-10-08)
   - **intent:** A developer laptop installs `pyforge-foundry-full` and from it
     alone runs the stations, local recipe generation and builds, tests, lint and
     the local CI mirrors, and — through a layer environment — the platform local
@@ -195,7 +198,7 @@ laptop, the claim surface and the agents all describe the same two-root estate.
     `local-recipes` nor a `desktop-lab` feature is composed; `AGENTS.md` names it the
     laptop install.
 
-- **CAP-13 — The SBOM is checkable.**
+- **CAP-13 — The SBOM is checkable.** (shipped 2026-10-10)
   - **intent:** The operator can prove the laptop needs nothing beyond the SBOM,
     and every gap has an owner.
   - **success:** One pixi task run from the SBOM (plus its layer) alone runs
@@ -206,7 +209,7 @@ laptop, the claim surface and the agents all describe the same two-root estate.
     — promote, won't-do or upstream — with an owner. Upstream filing is outward and
     operator-flipped; closing conda-forge gaps is Mason work minted from that list.
 
-- **CAP-14 — The dossier is the cutover's control plane.**
+- **CAP-14 — The dossier is the cutover's control plane.** (ready 2026-11-10)
   - **intent:** Operators and Smiths read the A→B cutover's state in one place.
   - **success:** `docs-site/src/content/dossier/dossier.yml` (`docsite/content/` until herald Story 43.7, 2026-10-15) carries Estate, Foundation,
     Synthesis and Verified sections stating the A/B roles, the modes of
@@ -223,7 +226,7 @@ laptop, the claim surface and the agents all describe the same two-root estate.
     re-provisioned on B from the adoption register, not established until B's own dispatch runs
     a suite member.
 
-- **CAP-15 — The instruction surface names the estate first.**
+- **CAP-15 — The instruction surface names the estate first.** (shipped 2026-09-26)
   - **intent:** Every harness reads first what this repository is and how A and B
     divide work, then a short behavioural core.
   - **success:** `AGENTS.md` opens with A's identity (control plane and BMAD
@@ -239,17 +242,23 @@ laptop, the claim surface and the agents all describe the same two-root estate.
 - Solutioning before implementation (operator 2026-09-04): this Spec, the cutover spine
   and Epic 44 are BMAD Phase 3 artifacts the operator reviews and refines in iterations;
   no story spec is drafted and no 44.x leaves ledger `blocked` until the operator flips it.
-- The seed is Dreams plus memlogs only: rendered `SPEC.md`, spines, epics and stories are
-  re-derived in foundry; memlog fidelity (44.13) precedes Phase 0.
+- The seed is Dreams plus memlogs only, `archive/**/.memlog.md` included, with no backfill:
+  rendered `SPEC.md`, spines, epics and stories are re-derived in foundry, and a Frame is a
+  pointer to the seed; memlog fidelity (44.13) precedes Phase 0.
 - The oracle gate is non-negotiable: no rebuilt capability is verified without the archived
   suite or an equivalence check passing against it.
-- Mode is per capability, decided by the operator on scored signals; this is not a rebuild
-  of everything and not a move of everything.
-- The cutover is a flag, not a date: `pyforge.cutover_root` in the CAP-13 flag tree is the
-  only switch of the root of record; the transition point is the flip (after 44.5 today);
-  before it nothing in `local-recipes` is frozen.
-- Every move is a replay: a move the `steward cutover apply` step cannot reproduce is
-  review-blocking.
+- Mode is per capability (`rebuild`, `retire`, `A-only`, `B-only`), decided by the operator by
+  the written rules of `spec-foundry-capability-ledger` `modes.md`; this is not a rebuild of
+  everything, and no capability reaches foundry by a file copy.
+- The cutover is a flag, not a date: `pyforge.cutover_root` in the `canopy:CAP-13` flag tree
+  is the only switch of the root of record and the writer lock. The operator flips
+  `pyforge.cutover_root` by hand, with no loop running, once the Launch slice is proven;
+  nothing flips it automatically. Before the flip `local-recipes` evolves normally; only the
+  source of a `rebuilding` row is frozen, and Doctor judges that freeze
+  (`spec-pyforge-doctor:CAP-94`).
+- `steward cutover apply` and the file manifest are retired (operator 2026-11-10): no
+  capability is copied into foundry by a replay; a `rebuild` is a regeneration drill against
+  the oracle.
 - No symlink is tracked in git; runtime links are generated per machine (symlink on POSIX,
   junction on Windows) and gitignored. Runtime state lives in gitignored `var/`.
 - Contract before repo: CAP-1 is not dispatched until this Spec is `ready` and Epic 44
@@ -279,11 +288,13 @@ laptop, the claim surface and the agents all describe the same two-root estate.
   (plus CRC IFF the empty repo already carries the estate Helm chart). GHA is a
   twin and may stay red; a registered runner and `steward budget check` (CAP-10)
   are not confirmation gates for 44.3.
-- Fresh repo (operator 2026-09-04): no history import; source SHAs live in the
-  move-list manifest.
-- The move-list manifest (Story 44.1) is derived from the spec-surface map and precedes
-  CAP-2. Never a hand list.
-- Package fold and the skills / BMAD move are separate stories. Never one.
+- Fresh repo (operator 2026-09-04): no history import. B keeps its repository, its epoch
+  (`docs/foundry/EPOCH.md`) and its CI, and reads A at a pinned SHA (operator 2026-11-10).
+- The capability ledger (`docs/foundry/capability-ledger.yaml`) is generated by
+  `steward cutover plan` from the live Specs (CAP-9); never a hand list. Story 44.1 is retired
+  (2026-11-10); its ledger half lands in Stories 121.1 to 121.7.
+- No package fold and no tree copy: Stories 44.4, 44.5 and 44.6 are retired (2026-11-10);
+  B rebuilds what its ledger rows name.
 - The estate `pixi.lock` never absorbs the factory solver farm.
 - No `services/` or `:800x` tree; no root `docker-compose.yml`; no
   `src/platform/compliance_face/` as the portal; no lasting `.claude/skills/pyforge-mason/`
@@ -310,6 +321,8 @@ laptop, the claim surface and the agents all describe the same two-root estate.
 - Copying the `recipes/` universe or the feedstock mirrors.
 - Migrating the 268 registered worktrees.
 - Archiving `local-recipes` (CAP-7 retired 2026-09-25).
+- A package fold or a tree copy into foundry: `steward cutover apply` and the file
+  manifest are retired (operator 2026-11-10).
 - Closing conda-forge gaps inside Epic 67; Mason stories are minted from CAP-13's
   gap list.
 - Adopting a claim from the BMAD-method whitepaper without re-verifying it
@@ -319,18 +332,22 @@ laptop, the claim surface and the agents all describe the same two-root estate.
 
 ## Success signal
 
-A fresh clone of `rxm7706/python-foundry` runs the regenerated kernel (core,
-steward, marshal CLI + MCP) against the thin oracle (`fnd:CAP-11` / Epic 54)
-and `mason recipe build factory/recipes/<r>` builds a recipe there with the
-publish path a SelfExplainML upload — not an agent-opened conda-forge PR
-(operator 2026-09-13 D2). Host boot is not a Launch signal. Two git roots stay
-live, and `local-recipes` is never archived (CAP-7 retired). Beside it, a laptop
-on linux-64, osx-arm64 or win-64 installs `pyforge-foundry-full` and passes the
-laptop gate from it alone, and the dossier's Verified section cites only ledger,
-case-list or CI evidence. Launch stories: 44.3 / 44.7 / 44.12 done; Epic 54 kernel;
-44.4 / 44.5 / 44.6 parked file-move. Consolidation: Epic 67, herald 26.1, scribe
-21.1. Later: CFE rebuild-from-spec, 44.8, 44.14, 44.15. Out: 44.9, 44.11. Retired:
-44.10.
+B lands one story on itself: a merge on B's `main` with subject
+`Merge <station>/<key> into main`, made by B's own `marshal factory dispatch`, with B's own
+`detectors-ci` exit 0 at that SHA, and every ledger row marked `launch: true` reading
+`verified-in-foundry` (`fnd:CAP-2`, `launch-slice.md`). Then the operator flips
+`pyforge.cutover_root` by hand, with no loop running, once the Launch slice is proven, and the
+writer lock passes to B. A fresh clone of `rxm7706/python-foundry` runs the regenerated kernel
+(core, steward, marshal CLI + MCP) against the thin oracle (`fnd:CAP-11` / Epic 54) and
+`mason recipe build factory/recipes/<r>` builds a recipe there with the publish path a
+SelfExplainML upload — not an agent-opened conda-forge PR (operator 2026-09-13 D2). Host boot is
+not a Launch signal. Two git roots stay live, and `local-recipes` is never archived (CAP-7
+retired). Beside it, a laptop on linux-64, osx-arm64 or win-64 installs `pyforge-foundry-full` and
+passes the laptop gate from it alone, and the dossier's Verified section cites only ledger,
+case-list or CI evidence. Launch stories: 44.3 / 44.7 / 44.12 done; Epic 54 kernel; Epics 120 and
+121. Consolidation: Epic 67, herald 26.1, scribe 21.1. Later: CFE rebuild-from-spec (mason 39.2),
+44.8, 44.14, 44.15. Out: 44.9, 44.11. Retired: 44.1, 44.4, 44.5, 44.6 (2026-11-10) and 44.10
+(2026-09-25).
 
 ## Assumptions
 
@@ -352,10 +369,12 @@ case-list or CI evidence. Launch stories: 44.3 / 44.7 / 44.12 done; Epic 54 kern
 None. `deck-carriage` answered 2026-09-25 (operator): the deck binaries under
 `presentations/` stay `A-only`; B regenerates any deck on demand from its `.dc.html`
 prototype through herald's deck pipeline, already a `rebuild` row
-(`deck-family-lockstep:CAP-1..4`). Nothing moves, no story; 44.5's former deck-filter
-question closes with it.
+(`spec-pyforge-herald:CAP-20` to `spec-pyforge-herald:CAP-23`). Nothing is carried and no
+story is needed; 44.5's former deck-filter question closes with it.
 
 Also answered: `actions-minutes` (2026-09-04, amended 2026-09-13 D1/D1b — authoritative CAP-1
 evidence is fresh-clone local `detectors-ci` + `platform-ci-local`; CAP-10 / 44.15 is
 later metering, not a 44.3 gate); `repo-visibility` (2026-09-04 — private, permanently,
-spine fnd:AD-14).
+spine fnd:AD-14); `flip-trigger` (2026-11-10, second addendum ruling 1 — the operator
+flips `pyforge.cutover_root` by hand, with no loop running, once the Launch slice is proven;
+CAP-8).

@@ -1,8 +1,24 @@
 # Foundry Frames (git store)
 
-Story 53.2 / `spec-intelligence-hub` CAP-2: one Company Frame plus eight
+Story 53.2 / `spec-pyforge-steward:CAP-53`: one Company Frame plus eight
 station Frames. Git is the store. Community Frame and a registry are later-caps
 and must not appear here.
+
+## A Frame is a pointer, not a seed (operator ruling 2026-11-10)
+
+The seed is the Dream plus the Spec's `.memlog.md`; `SPEC.md` and its
+companions are rendered from it (`docs/dreams/pyforge-unifying-strategy.md`
+§ Realization log, the 2026-11-10 entry, ruling 1). A Frame points at the seed
+and never stands in for it. Each station Frame carries exactly two
+`` - Seed: `<path>` `` lines, its station Dream (`docs/dreams/pyforge-<station>.md`)
+and its Spec's `.memlog.md`, and one `- Derived: ` line naming the files rendered
+from them: `SPEC.md` and `contract.md` (steward adds `oracle-map.md`). A derived
+file is never named on a `Seed:` line. The rule lines a Frame keeps are few; the
+full surface is the one `contract.md` lists.
+
+A (`rxm7706/local-recipes`) writes these nine Frames, like every Dream, Spec and
+the capability ledger, until the flip of `pyforge.cutover_root` to `foundry`;
+B reads them at a pinned SHA (Story 120.4).
 
 ## Layout
 
@@ -96,7 +112,9 @@ pixi run -e pyforge-steward frame-upstream-check   # opt-in, network: upstream's
 temp dir and runs *its* `tools/validate_frame.py` over the nine Frames and
 `--check-profile` over our profile (exit `0` ok / `1` upstream FAIL / `2`
 could not run). The tool is never vendored. Verified 2026-09-16 at
-`4596579f`: 9/9 OK, profile complete.
+`4596579f`: 9/9 OK, profile complete. Re-pinned and verified 2026-11-11 at
+`219bff7a` (draft) and `89dffdd1` (validator), Story 120.4: 9/9 OK, profile
+complete; what moved is recorded in the pin file's header.
 
 Neither is a detector. Neither joins `detectors` / `detectors-ci`. Warden
 stays the sole PR verdict.

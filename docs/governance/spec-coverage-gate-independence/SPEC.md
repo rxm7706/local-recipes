@@ -7,7 +7,7 @@ status: ready   # 2026-09-14 — seeded `draft` in the morning; ruled and flippe
                 # docs/governance/ beside spec-pyforge-charter because its Dream is guild-owned
                 # (chain.py `_expected_spec_dir`: guild -> docs/governance/spec-<slug>/).
 created: "2026-09-14"
-updated: "2026-09-27"
+updated: "2026-11-11"   # RE-DERIVED 2026-11-11 (steward Story 120.3): the memlog's three events of 2026-10-08 and 2026-10-09 (Stories 71.4, 71.6, 76.4) are recorded in the Canonical contract note; no capability text changes. Prior "2026-09-27"
 owner-dream: docs/dreams/coverage-gate-independence.md
 surface:        # Declared 2026-09-20 by doctor Story 24.1 (CAP-1/CAP-2): the evaluator and
                 # its thresholds moved outside every pyforge.<station> package. All four
@@ -44,7 +44,12 @@ open_questions: []
 
 > **Canonical contract.** Seeded 2026-09-14 from `docs/dreams/coverage-gate-independence.md` as a
 > chain-only draft; **ruled the same day** and now the complete contract for what to build, test and
-> validate. The Dream in frontmatter is traceability only.
+> validate. The Dream in frontmatter is traceability only. Re-derived 2026-11-11 (steward Story
+> 120.3) through the memlog's events of 2026-10-08 and 2026-10-09 — Story 71.4 (`--plan`), Story
+> 71.6 (the station test task's `-n`/`--dist` flags) and the Story 76.4 landing repair (the first
+> run's `--ignore`, and the ignored paths run alone): driver internals of
+> `scripts/coverage_gates_ci.py` under CAP-1's surface that change no floor, evaluate path or
+> workflow caller, so no capability text changes.
 
 # SPEC — the gate that judges a station never ships inside it
 

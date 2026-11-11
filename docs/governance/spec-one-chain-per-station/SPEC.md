@@ -10,7 +10,7 @@ status: ready   # 2026-09-16 — seeded `draft` the morning the token-savings fo
                 # because its Dream is guild-owned (chain.py `_expected_spec_dir`: guild ->
                 # docs/governance/spec-<slug>/) — the second instance of the 09-14 §5 shape.
 created: "2026-09-16"
-updated: "2026-10-26"   # AMENDED 2026-10-26: CAP-5 (requirements cite defined CAPs only; the 2026-10-25 constraint-arrow rulings reversed by dated amendment, CHAIN-STANDARD section 12). Prior "2026-09-29"
+updated: "2026-11-11"   # AMENDED 2026-11-11 (steward Story 120.3, on the operator rulings of 2026-11-10 and the 2026-11-01 marker ruling): CAP-6 names the CHAIN-STANDARD section 4 markers; CAP-9 names section 0, the factory-doc set and the three CAP markers; the Evergreen and portable Constraint names B as rxm7706/python-foundry and A as the writer until the flip. Prior "2026-10-26": AMENDED 2026-10-26: CAP-5 (requirements cite defined CAPs only; the 2026-10-25 constraint-arrow rulings reversed by dated amendment, CHAIN-STANDARD section 12). Prior "2026-09-29"
 owner-dream: docs/dreams/one-chain-per-station.md
 surface: []     # Deliberately empty until the mechanism stories land: chain-sprawl-check and
                 # fr-without-cap will be doctor sources (declared here when they exist, the way
@@ -134,8 +134,9 @@ the PRD as the BMAD artifact it is, derived rather than duplicated.
     `fr-without-cap` green on `main`.
 - **CAP-6 — Living station tiers, with zero new vocabulary.**
   - **intent:** The eight `spec-pyforge-<s>` read **`ready`** — "the contract
-    binds" — and stay there; `shipped` belongs to CAPs (`(Met <date>)`) and
-    stories. *(Corrected 2026-09-16 from `in-progress`: that is a state, not
+    binds" — and stay there; `shipped` belongs to CAPs (each reads
+    `(ready <date>)`, then `(shipped <date>)`, or `(retired <date>[: <reason>])`;
+    CHAIN-STANDARD § 4) and stories. *(Corrected 2026-09-16 from `in-progress`: that is a state, not
     an act, and vocabulary CAP-1/2 already wanted it gone — it retires from
     the Spec enum at the rebase, 17 → 0.)* Station Dreams then read
     `specified` by the README's existing rule ("a Spec at `ready` or beyond")
@@ -170,11 +171,17 @@ the PRD as the BMAD artifact it is, derived rather than duplicated.
     `epics.md`; planning detectors green; `fleet-picture` story counts
     unchanged; CHAIN-STANDARD §7 checklist green.
 - **CAP-9 — The chain standard is one page, and every fold conforms to it.**
-  - **intent:** `CHAIN-STANDARD.md` (companion) holds the hierarchy (one of
-    each per station, plus declared seams and the Guild chain), the relations
+  - **intent:** `CHAIN-STANDARD.md` (companion) holds the fleet's terms, each
+    defined once (§ 0: A writes every Dream, Frame, Spec and the capability
+    ledger until the flip, and B rebuilds from Dream plus memlog and the
+    re-derived Spec, a Frame being a pointer, not a seed), the hierarchy (one
+    of each per station, plus declared seams, the Guild chain and marshal's
+    declared factory-doc set), the relations
     (every arrow points up: Dream section → CAP → FR → AD → Story → ledger key
     → story spec → code), the sequence (four BMAD phases, seven acts, none
-    skipped), one closed status enum per tier, one name-form per concept, one
+    skipped), one closed status enum per tier and three closed CAP markers
+    (`(ready <date>)`, `(shipped <date>)`, `(retired <date>[: <reason>])`, each
+    taking optional qualifiers after a semicolon), one name-form per concept, one
     id family per job, and the fold-PR checklist. Composed from the existing
     rulings — `vocabulary-one-name-one-job` CAP-1..8, the steward spine's
     station token, the README ladder, AGENTS.md § Dates, the Charter Lexicon
@@ -250,7 +257,8 @@ the PRD as the BMAD artifact it is, derived rather than duplicated.
   `chain-sprawl-check` baselines from a dated snapshot — only *new*
   unexempted folders are findings. No flag day.
 - **Evergreen and portable.** Written once, applied to both roots —
-  local-recipes now, pyforge-foundry on cutover. B inherits Dream-append-
+  `rxm7706/local-recipes` (A) now, `rxm7706/python-foundry` (B) on cutover;
+  A writes the chain until the flip. B inherits Dream-append-
   first, the exemption vocabulary, the seam rule, and FR ← CAP as its
   starting discipline (CAP-7 records the standard, not just the eight Specs).
 - **Sequence (operator, 2026-09-16; mason correction 2026-09-17).**

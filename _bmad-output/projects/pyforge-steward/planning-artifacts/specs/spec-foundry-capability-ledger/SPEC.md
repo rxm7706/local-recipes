@@ -3,13 +3,14 @@ fold-exemption: different-lifecycle
 spec: foundry-capability-ledger
 status: ready
 created: "2026-09-13"
-updated: "2026-11-10"
+updated: "2026-11-11"
 owner-dream: docs/dreams/foundry-capability-ledger.md
 extends: spec-foundry-regenerate-not-fold
 surface: []
 companions:
   - modes.md
   - extract.md
+  - remode-2026-11-10.md
 sources:
   - ../../../../../../docs/dreams/foundry-capability-ledger.md
 open_questions: []
@@ -32,7 +33,7 @@ ID/heading extract, not a SPEC novel and not a 20k truncate.
 
 ## Capabilities
 
-- **CAP-1 — Tracked ledger.**
+- **CAP-1 — Tracked ledger.** (shipped 2026-11-10, Stories 55.1, 121.1, 121.3, 121.6 and 121.7)
   - **intent:** The operator can classify every live capability as
     `rebuild`, `retire`, `A-only`, or `B-only` in one tracked file, each
     mode by a written rule.
@@ -54,7 +55,7 @@ ID/heading extract, not a SPEC novel and not a 20k truncate.
     `pixi run -e pyforge-steward pytest src/shared/packages/pyforge-steward/tests/unit/test_cutover_ledger_check.py -q`
     exits 0. Story 44.1 is retired.
 
-- **CAP-2 — Extract detector.**
+- **CAP-2 — Extract detector.** (shipped 2026-11-10, Story 55.2, doctor Story 56.2 and Story 121.6)
   - **intent:** `detectors-ci` can refuse unclassified or undated
     rows using a CAP heading extract, not wholesale SPEC bodies.
   - **success:** Unclassified `CAP-N` is HARD; `A-only` without
@@ -76,7 +77,7 @@ ID/heading extract, not a SPEC novel and not a 20k truncate.
     `pixi run -e pyforge-steward pytest src/shared/packages/pyforge-steward/tests/unit/test_cutover_ledger_check.py -q -k flip_expiry`
     each exit 0.
 
-- **CAP-3 — Case-list join.**
+- **CAP-3 — Case-list join.** (shipped 2026-09-13, Story 55.3)
   - **intent:** A `verified-in-foundry` claim is meaningless without
     a named case.
   - **success:** A ledger row that claims `verified-in-foundry`
@@ -85,17 +86,22 @@ ID/heading extract, not a SPEC novel and not a 20k truncate.
 
 ## Constraints
 
-- **Strangler fig, not a mirror branch.** The facade is the public CLI
-  (and later `cutover_root`). Each `rebuild` row is a new vine on B
-  from Frame + Spec. A long-lived B branch that mirrors A is out of
-  contract. Two trunks; PIN + behavior compare (`ab-sync.md`).
+- **Strangler fig, not a mirror branch.** The facade is the public CLI;
+  routing per capability is the ledger row, never the
+  `pyforge.cutover_root` flag (`fnd:CAP-8`). Each `rebuild` row is a new
+  vine on B, re-derived from the Dream plus its memlog (a Frame is a
+  pointer to them, not a seed). A long-lived B branch that mirrors A is
+  out of contract. Two trunks; PIN + behavior compare (`ab-sync.md`).
 - Inventory is extract-only (`extract.md`). Do not ingest Why or
   prose bodies.
-- Modes are exactly the four in `modes.md`. No `move`.
+- Modes are the four destinations in `modes.md` § Schema v1 plus
+  `pending`, a placeholder on a named operator question that B never
+  acts on. No `move`.
 - Do not flip Epic 44 `blocked` keys, including 44.1.
 - Do not rsync `_bmad-output` or `src/shared/packages` onto foundry.
-- Public CLI verbs stay. `pyforge.cutover_root` stays
-  `local-recipes` until the kernel list is green.
+- Public CLI verbs stay. `pyforge.cutover_root` stays `local-recipes`
+  until the operator flips it by hand, with no loop running, once the
+  Launch slice is proven; nothing flips it automatically.
 - Never commit on the shared checkout; never `scripts/bmad-switch`
   from a parallel agent.
 

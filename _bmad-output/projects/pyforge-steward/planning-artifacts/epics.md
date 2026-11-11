@@ -854,7 +854,7 @@ GitHub-Pages site — mutually exclusive with role isolation, never a second cod
 
 ## Epic 10: python-agent-platform — the host takes root
 
-**Spec binding.** Decomposes `spec-pyforge-unifying-strategy` host platform (`pap:CAP-1..145`;
+**Spec binding.** Decomposes `spec-pyforge-unifying-strategy` host platform (`pap:CAP-1..6`;
 merged from `spec-python-agent-platform` by Story 48.8). All open questions resolved
 2026-08-14, operator: OCP-first with GKE as a CI portability profile; in-repo at
 `src/platform/` per the monorepo goal; ship on py3.12 with py3.14 as a release gate; Docker
@@ -1044,7 +1044,7 @@ exists at all — decisions recorded, not silently implemented.
 
 ### Epic 13 extension (2026-08-22): the multi-repo layer — Stories 13.3–13.4
 
-**Spec binding.** Decomposes `spec-multi-repo-workspaces` CAP-1..145 (seeded from the
+**Spec binding.** Decomposes `spec-multi-repo-workspaces` CAP-1..2 (seeded from the
 sibling org's developer-workspace-management dream — pattern only, unlicensed; the
 extend-vs-new decision is recorded in that spec's memlog: extend, because 13.1/13.2 are
 this layer's substrate).
@@ -1239,7 +1239,7 @@ verdict PASS 8/8. `pyforge-steward-test`: 1104 passed.
 
 ## Epic 15: The bmad-suite channel is a governed product
 
-**Spec binding.** Decomposes `spec-bmad-suite-channel-product` CAP-1..145 (Spec landed
+**Spec binding.** Decomposes `spec-bmad-suite-channel-product` CAP-1..4 (Spec landed
 2026-08-22 from `docs/dreams/bmad-suite-channel-product.md`; companion `install-matrix.md`
 is the dual-path contract). CAP-5 (ambient drift) is doctor's — decomposed as doctor
 Epic 15 the same day. Operator decisions locked at spec time: channel bmad-method
@@ -1284,7 +1284,7 @@ reported not gating, and the matrix stays the cited source of truth.
 
 ### Epic 12 extension (2026-08-22): the local OCP hybrid environment — Stories 12.4–12.8
 
-**Spec binding.** Decomposes `spec-local-ocp-hybrid-environment` CAP-1..145 (Spec landed
+**Spec binding.** Decomposes `spec-local-ocp-hybrid-environment` CAP-1..5 (Spec landed
 2026-08-22 from `docs/dreams/local-ocp-hybrid-environment.md` + the verbatim operator
 intake under `docs/intake/`; companions `reconciliation-and-corrections.md` — every
 STRIKE binding — and `cluster-bringup-facts.md`). Operator-locked at spec time: this
@@ -1340,7 +1340,7 @@ board created and repo-linked, queryable end to end; kin-declared to
 
 **Stories 12.4–12.6 and 12.8 clear to dispatch (12.8 after 12.4); 12.7 follows all three chart/bring-up stories. Story 12.9 (OCP portability profile) is dispatchable after 12.1+12.2; it does not replace 12.7.**
 
-**Spec binding (2026-08-24).** Story 12.9 decomposes `spec-ocp-as-a-portability-profile` CAP-1..145
+**Spec binding (2026-08-24).** Story 12.9 decomposes `spec-ocp-as-a-portability-profile` CAP-1..3
 (chain Spec landed 2026-08-24 from `docs/dreams/ocp-as-a-portability-profile.md`; INV-1 requires
 the folder `spec-ocp-as-a-portability-profile/`, not a `spec-12-9-*` story-spec name). Parent
 `spec-python-agent-platform` CAP-6 / pap:AD-11 remain. Adopted companions: `cluster-bringup-facts.md`,
@@ -1358,7 +1358,7 @@ admitted Route — proving SCC-assigned UIDs and the OCP edge path end-to-end; c
 
 ## Epic 16: The platform host earns its 15 factors
 
-**Spec binding.** Decomposes `spec-platform-fifteen-factors` CAP-1..145 (seeded 2026-08-22
+**Spec binding.** Decomposes `spec-platform-fifteen-factors` CAP-1..5 (seeded 2026-08-22
 from the seven-repo external analysis; MIT reference implementations
 django-15-factor-base + devinfra — borrow with notices; intake report carries the
 inventory). **HARD:** AD-4/pap:AD-17 topology and the 12.1 chart contract untouched — factors
@@ -1623,7 +1623,7 @@ After parity (including supervisor-backed run state), the generator and its inbo
 
 ### Epic 31: Non-module suite pieces install by class
 Non-module suite pieces follow a class-keyed playbook; `wired-or-not` is class-correct.
-**FRs covered:** spec-bmad-suite-install-class-wiring CAP-1..145 (not Canopy FRs)
+**FRs covered:** spec-bmad-suite-install-class-wiring CAP-1..3 (not Canopy FRs)
 
 ### Epic 32: One plugin API for eight stations
 `pyforge-core` ships the shared hook-spec + registration shape; steward deploy-profile adapters become plugins. Warden Epic 9 and peer station process stories consume this contract.
@@ -2163,7 +2163,7 @@ So that two consoles cannot become permanent.
 
 ## Canopy obligations (2026-08-24)
 
-**Owner:** `pyforge-steward` owns the Canopy (`src/platform/` host + residual CAP-1..145 over
+**Owner:** `pyforge-steward` owns the Canopy (`src/platform/` host + residual CAP-1..17 over
 shipped python-agent-platform work). The Canopy is not a ninth station.
 
 **Build surface:** Epics 18–30 (appended above) are the steward implementation chain for
@@ -2185,7 +2185,7 @@ steward story.
 
 ## Epic 31: Non-module suite pieces install by class
 
-**Spec binding.** Decomposes `spec-bmad-suite-install-class-wiring` CAP-1..145 (Spec landed
+**Spec binding.** Decomposes `spec-bmad-suite-install-class-wiring` CAP-1..3 (Spec landed
 2026-08-24 from `docs/dreams/bmad-suite-install-class-wiring.md`; companion
 `install-class-playbook.md` cites parent `install-matrix.md`). **HARD:** Epic 15 stays
 **done** — this is a new epic, not 15.5+. CAP-3 five and the WDS skip are not reopened.
@@ -2306,7 +2306,7 @@ So that one operator job works in HTMX without leaving the host session.
 
 ## Epic 34: One query plane (CAP-19)
 
-Canopy residual after CAP-1..145 closeout. Atlas owns the engine; stations rebuild onto it.
+Canopy residual after CAP-1..18 closeout. Atlas owns the engine; stations rebuild onto it.
 Do not re-dispatch 18–32. Defaults: in-process DuckDB; named new Atlas pipeline; Scribe
 store-port driver on the plane (34.5). Story spec for 34.1 is tracked.
 
@@ -2737,8 +2737,8 @@ So that the interpreter move is validated against work the sidecar actually does
 
 ## Epic 44: Cutover to python-foundry (spec-python-foundry-cutover fnd:CAP-1 fnd:CAP-2 fnd:CAP-3 fnd:CAP-4 fnd:CAP-5 fnd:CAP-6 fnd:CAP-7 fnd:CAP-8 fnd:CAP-9 fnd:CAP-10)
 
-The estate moves from `rxm7706/local-recipes` to `python-foundry` in six phases behind a derived move-list manifest; the recipe plant becomes the `factory/` island; `local-recipes` is archived read-only. Dream § *Cutover to `python-foundry`* (2026-09-04); spine `architecture-python-foundry-cutover-2026-09-04` (`fnd:AD-1..19`). **The cutover is a flag, not a date (`fnd:AD-17`): `local-recipes` evolves normally until `pyforge.cutover_root` flips (after 44.5); the plan regenerates or appends at will and every move is a replay (`fnd:AD-18`).**
-Minted by `sprint-change-proposal-2026-09-04-foundry-cutover.md`. **Iteration 3 (`fnd:AD-20..22`): the cutover is regenerative — Dreams and memlogs seed foundry, and every capability is rebuilt or moved per the capability ledger, with the archive as oracle.** **Iteration 4 (`fnd:AD-23`, `fnd:CAP-10`): the last two open questions are closed — foundry is private permanently (`fnd:AD-14`), CI evidence is a real run with the remote host as self-hosted fallback, and 44.15 meters Actions minutes.** **Solutioning iteration 4 — every story below is ledger `blocked` until the operator flips it (`fnd:AD-9`); no story spec is drafted before that flip.** Additive over shipped epics; none reopened. Phase n ↔ Story 44.(n+3); 44.11–44.15 are enablers. **Order amended 2026-09-09
+Capabilities reach `rxm7706/python-foundry` (B) one at a time, each by the mode its capability-ledger row names — `rebuild`, `retire`, `A-only` or `B-only` (`fnd:CAP-2`); nothing is moved and nothing is folded. The recipe plant becomes the `factory/` island. `rxm7706/local-recipes` (A) is never archived: two git roots stay live after the flip (`fnd:CAP-7` retired 2026-09-25). Dream § *Cutover to `python-foundry`* (2026-09-04); spine `architecture-python-foundry-cutover-2026-09-04` (`fnd:AD-1..19`). **The cutover is a flag, not a date (`fnd:AD-17`): `pyforge.cutover_root` is the writer lock and the root of record (`fnd:CAP-8`). A writes every Dream, Frame, Spec and the capability ledger until the operator flips the flag by hand, with no loop running, once the Launch slice is proven; nothing flips it automatically. Its three consumers read it through one seam, `pyforge.core.cutover_root.root_of_record()` (marshal Story 117.2): the guard that refuses a chain write off the writer (Story 121.4 in session, doctor Story 56.5 on the branch), marshal's default forge remote (marshal Story 115.4) and, with Story 44.8, Mason's ship and submit root. Routing per capability stays in the ledger row, never in the flag.** **Retired, never dispatched:** Stories 44.4, 44.5 and 44.6 (2026-11-10, operator ruling 2: the file-move path retires with `steward cutover apply`), 44.10 (2026-09-25, no archive of A) and 44.1 (2026-11-10: the move-list manifest and mode `move` retire; its ledger half is Stories 121.1 to 121.7). This paragraph was rewritten 2026-11-10 by Story 120.3 from `docs/dreams/pyforge-unifying-strategy.md` § Realization log (the 2026-11-10 entry, its two addenda and the mint entry); the 2026-09-04 text it replaces described a move of the estate in six phases behind a derived move-list manifest.
+Minted by `sprint-change-proposal-2026-09-04-foundry-cutover.md`. **Iteration 3 (`fnd:AD-20..22`): the cutover is regenerative — Dreams and memlogs seed foundry, and every capability reaches foundry by its capability-ledger mode, with A as the oracle.** **Iteration 4 (`fnd:AD-23`, `fnd:CAP-10`): the last two open questions are closed — foundry is private permanently (`fnd:AD-14`), CI evidence is a real run with the remote host as self-hosted fallback, and 44.15 meters Actions minutes.** **Solutioning iteration 4 — every story below is ledger `blocked` until the operator flips it (`fnd:AD-9`); no story spec is drafted before that flip.** Additive over shipped epics; none reopened. Phase n ↔ Story 44.(n+3); 44.11–44.15 are enablers. **Order amended 2026-09-09
 (`sprint-change-proposal-2026-09-09-currency-review.md`):** Epic 47's P1–P18 readiness lines
 precede the operator's 44.3 flip (47's HARD boundary); Story 48.1 precedes any ledger write on
 this project; Story 48.8 precedes the regeneration drill.
@@ -2858,13 +2858,23 @@ So that recipe churn never re-solves the estate and `mason recipe build factory/
 
 ### Story 44.8: The working set
 
+> **Amended 2026-11-10 — a working-set list replaces manifest rows, and Mason's root follows the root of record.**
+> Operator rulings of 2026-11-10 (`docs/dreams/pyforge-unifying-strategy.md` § Realization log, the entry's
+> ruling 2 and its second addendum): the move-list manifest retires with `steward cutover apply`, so the
+> working set is a list, not manifest rows, and every other recipe stays on `local-recipes`, which is never
+> archived. Ruling 2's third consumer of the root of record lands with this story: Mason's ship and submit
+> root resolves through `pyforge.core.cutover_root.root_of_record()` (`fnd:CAP-8`, consumer 3; the seam is
+> marshal Story 117.2). The Given and the first two And lines below are rewritten to match (`fnd:CAP-5` as
+> amended at the 2026-11-10 mint). The ledger key stays `blocked`.
+
 As a platform operator,
 I want only in-flight and sole-maintainer recipes in `factory/recipes/`,
 So that the 7,855-directory universe is never copied.
 
-**Type:** feature • **Effort:** M • **Deps:** S-44.7 • **FR/AD:** fnd:CAP-5 • fnd:AD-2, fnd:AD-10
-**Given** manifest rows with `reason ∈ {in-flight, sole-maintainer, referenced-by-spec}` **When** the recipes move **Then** `factory/recipes/` is exactly that set and island CI asserts `count <= manifest rows`
-**And** every other `recipes/**` row reads `stays` (archived with `local-recipes`)
+**Type:** feature • **Effort:** M • **Deps:** S-44.7 • **FR/AD:** fnd:CAP-5, fnd:CAP-8 • fnd:AD-2, fnd:AD-10
+**Given** a working-set list with `reason ∈ {in-flight, sole-maintainer, referenced-by-spec}` **When** the working set is carried into `factory/recipes/` **Then** `factory/recipes/` is exactly that set and island CI asserts its directory count is at most the list's length
+**And** every other recipe stays on `local-recipes`, which is never archived
+**And** Mason's ship and submit root resolves through `pyforge.core.cutover_root.root_of_record()` (`fnd:CAP-8`, consumer 3), never a hard-coded root
 **And** — reciprocal note, not a `Deps:` token: **`spec-fleet-stewardship` CAP-1's `recipes/**` surface is mostly archived after this story**; its Dream and Spec carry a dated dormancy note (mason, 2026-09-09) so the surface is not read later as live (fleet readiness 2026-09-09, mason-E4 / Class D D11)
 
 ### Story 44.9: Mason submits to conda-forge
@@ -2907,6 +2917,17 @@ So that the Windows population does recipe, station and planning work first-clas
 
 ### Story 44.12: Cutover flag and replay harness
 
+> **Amended 2026-11-10 — stays `done`; its consumer clause is carried by later Stories.** Operator ruling 2
+> of 2026-11-10 (`docs/dreams/pyforge-unifying-strategy.md` § Realization log): `pyforge.cutover_root` is the
+> writer lock and the root of record, and the audit found it had no consumer beyond its own reader and the
+> summary line `flip` prints. This story's flag, its `pyforge-core` reader and the flip refusal stand. The
+> clause that the value alone decides the ledger of record, Mason's targets and the loop-home remotes is
+> carried by Story 121.4 (the chain-write guard, in session), doctor Story 56.5 (the same guard on the
+> branch, reading the flag at the merge base) and marshal Story 115.4 (marshal's default forge remote), each
+> through `pyforge.core.cutover_root.root_of_record()` (marshal Story 117.2); Mason's ship and submit root
+> follows with Story 44.8. The `plan --regenerate` / `--append` and `apply --phase` clause is history: Story
+> 121.2 retires `apply` and the manifest. Routing per capability is the ledger row, never the flag.
+
 As a platform operator,
 I want one flag that names the root of record and a harness that regenerates, appends and replays the cutover plan,
 So that `local-recipes` keeps evolving until the flip and foundry never falls behind it.
@@ -2931,13 +2952,23 @@ So that Dreams plus memlogs can seed foundry and nothing decided is lost in the 
 
 ### Story 44.14: Rebuild harness and oracle gate
 
+> **Amended 2026-11-10 — re-derived from the memlog B reads at the pin; no `moving` state.** Operator
+> rulings of 2026-11-10 (`docs/dreams/pyforge-unifying-strategy.md` § Realization log, ruling 1 and the mint
+> entry): nothing is moved, so a `rebuild` row's Spec, spine and epics are re-derived on B from Dream plus
+> memlog, read from A at the pinned SHA (B reads A at a pinned SHA; a Frame is a pointer, not a seed). The
+> ledger states are `planned`, `rebuilding`, `verified-in-foundry` and `cut` (`fnd:CAP-9` as amended at the
+> 2026-11-10 mint); there is no `moving` state. `rebuilding` is the one freezing state, and a change under a
+> `rebuilding` row's frozen paths is named by doctor's `frozen-path-changed` source
+> (`spec-pyforge-doctor:CAP-94`), not by `steward cutover plan --append`. The Given and the first And line
+> below are rewritten to match. The ledger key stays `blocked`.
+
 As a platform operator,
 I want a rebuild path in foundry — Dream and memlog to re-derived Spec, spine and epics, drained by Marshal — that cannot pass without the archived suite passing against it,
 So that a rebuilt capability is a regeneration drill, never a rewrite by another name.
 
 **Type:** feature • **Effort:** L • **Deps:** S-44.12, S-44.15 • **FR/AD:** fnd:CAP-9 • fnd:AD-18, fnd:AD-21, fnd:AD-22, fnd:AD-23 • regenerable-factory Dream (the drill)
-**Given** one pilot capability marked `rebuild` (Scribe, per the first pass) **When** the harness runs in foundry **Then** its Spec, spine and epics are re-derived from the moved memlog, Marshal drains its stories under the metered `steward budget` ceiling (44.15), and the archived Scribe suite passes against the rebuilt code before the row reads `verified-in-foundry`
-**And** the moment the row entered `rebuilding` its source paths froze in `local-recipes`, and `steward cutover plan --append` reports any change against them as a finding
+**Given** one pilot capability marked `rebuild` (Scribe, per the first pass) **When** the harness runs in foundry **Then** its Spec, spine and epics are re-derived from Dream plus memlog read from A at the pinned SHA, Marshal drains its stories under the metered `steward budget` ceiling (44.15), and the archived Scribe suite passes against the rebuilt code before the row reads `verified-in-foundry`
+**And** the moment the row entered `rebuilding` its source paths froze in `local-recipes`, and doctor's `frozen-path-changed` source (`spec-pyforge-doctor:CAP-94`) reports any change against them as a finding
 **And** the harness is reusable for every later `rebuild` row without operator scripting
 
 ### Story 44.15: Actions-minutes metering
@@ -2960,7 +2991,7 @@ spine (`architecture-pyforge-unifying-strategy-2026-08-24`) already listed in
 `inputDocuments`: every `### Story` heading still maps 1:1 to a
 `sprint-status-ledger.yaml` key (marshal:AD-72 holds; 37 epics / 131 stories, all `done` per the
 ledger as of this date), the Epic 18–37 chain sections match the strategy SPEC's
-CAP-1..145 state (`open_questions: []` since 2026-08-26; CAP-19's first slice = Epics 34
+CAP-1..19 state (`open_questions: []` since 2026-08-26; CAP-19's first slice = Epics 34
 and 36 here; Epic 35 correctly attributed to `spec-mcp-era-isolation` CAP-4, not the
 unifying CAP set), and the AD-4 amendment (Story 30.2's `dashboard-gen` retirement) is
 already reflected by Epic 30's own text. No epic or story required correction.
@@ -2995,9 +3026,9 @@ So that the last line of defence under `gate_mode = "none"` has a catch rate the
 **And** a one-trial `eval-quality-review-twin-run` preflights both arms; the mutated arm's review cites `pkg/discount.py:17` and the clean arm does not; `-- --trials 3` yields a policy-comparable strength vector with a catch rate; `eval-quality-review-replay` replays a sealed record
 **And** none of the three pixi tasks joins `detectors` / `detectors-ci`; Warden stays the sole PR verdict
 
-## Epic 46: The bmad-suite is wielded by the fleet (spec-bmad-suite-lifecycle CAP-1..145)
+## Epic 46: The bmad-suite is wielded by the fleet (spec-bmad-suite-lifecycle CAP-1..8)
 
-**Spec binding.** Decomposes `spec-bmad-suite-lifecycle` CAP-1..145 (Spec landed 2026-09-06 from
+**Spec binding.** Decomposes `spec-bmad-suite-lifecycle` CAP-1..8 (Spec landed 2026-09-06 from
 `docs/dreams/bmad-suite-lifecycle.md`; companions `adoption-register.md`, `release-cadence.md`;
 PRD `prd-bmad-suite-lifecycle-2026-09-06` suite:FR-1..suite:FR-8; spine
 `architecture-bmad-suite-lifecycle-2026-09-06` AD-1..AD-7). Operator decisions 2026-09-06: adopt
@@ -3177,8 +3208,8 @@ this epic's keys is correct); 48.8 never renames `[feature.python-agent-platform
 
 ### Story 48.8: The Single-Spec merge
 **Type:** docs • **Effort:** M • **Deps:** — • **FR/AD:** Dream Grounding "Single-Spec merge — parked"; Spec § Residual • `fnd:AD-18`
-**Surface:** `spec-pyforge-unifying-strategy/SPEC.md` (inherited-host table → full `pap:CAP-1..145` text), `specs/spec-python-agent-platform/SPEC.md` (`absorbed-into`), Epic 10–12 citations in `epics.md`, `convergence.md`, **plus the six artifacts that name the parent and were omitted** (fleet readiness 2026-09-09, stA-B13 / stB-B9): the four sibling Specs whose own frontmatter reads `absorbed-into: spec-python-agent-platform` and would otherwise become pointers to a superseded pointer — `spec-asgi-multiplexer-monolith/SPEC.md:5`, `spec-db-gpt-django-plugin/SPEC.md:5`, `spec-enterprise-multi-agent-orchestration/SPEC.md:5`, `spec-langflow-django-plugin/SPEC.md:5`; steward's own spine `architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md:281,:617` (parent pointer + the `pap:AD-n` citation form); and — **cross-station, a relay not an edit** — `_bmad-output/projects/pyforge-mason/…/spec-django-accelerator-framework/SPEC.md:11,:95`
-**Given** the operator's 2026-09-09 ruling ("now, before any 44.x flip") **When** `pap:CAP-1..145` full text is copied into the Unifying SPEC, Epic 10–12 citations retarget to `pap:CAP-*` / `pap:AD-*`, and the parent Spec is superseded **Then** `dream-chain-check` and `chain-completeness-check` stay green, `extends:` is retired, and **`[feature.python-agent-platform]` is not renamed** — that is a separate named story if ever
+**Surface:** `spec-pyforge-unifying-strategy/SPEC.md` (inherited-host table → full `pap:CAP-1..6` text), `specs/spec-python-agent-platform/SPEC.md` (`absorbed-into`), Epic 10–12 citations in `epics.md`, `convergence.md`, **plus the six artifacts that name the parent and were omitted** (fleet readiness 2026-09-09, stA-B13 / stB-B9): the four sibling Specs whose own frontmatter reads `absorbed-into: spec-python-agent-platform` and would otherwise become pointers to a superseded pointer — `spec-asgi-multiplexer-monolith/SPEC.md:5`, `spec-db-gpt-django-plugin/SPEC.md:5`, `spec-enterprise-multi-agent-orchestration/SPEC.md:5`, `spec-langflow-django-plugin/SPEC.md:5`; steward's own spine `architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md:281,:617` (parent pointer + the `pap:AD-n` citation form); and — **cross-station, a relay not an edit** — `_bmad-output/projects/pyforge-mason/…/spec-django-accelerator-framework/SPEC.md:11,:95`
+**Given** the operator's 2026-09-09 ruling ("now, before any 44.x flip") **When** `pap:CAP-1..6` full text is copied into the Unifying SPEC, Epic 10–12 citations retarget to `pap:CAP-*` / `pap:AD-*`, and the parent Spec is superseded **Then** `dream-chain-check` and `chain-completeness-check` stay green, `extends:` is retired, and **`[feature.python-agent-platform]` is not renamed** — that is a separate named story if ever
 **And** the story states as a rule that **`pap:` stays a live id prefix** — 280 citation sites across 60 files and four other stations (`_bmad-output/projects/pyforge-{doctor,marshal,mason,scribe}/…`, `AGENTS.md`, `pixi.toml`), with `scripts/ad_citation_check.py:123-124` special-casing it in its lookbehind; the merge moves the **TEXT**, never the namespace, and folding `pap:` into `canopy:` is the exact namespace collapse Story 48.7 exists to undo
 **And** the parent Dream's two knowingly-false lines are fixed **before or inside** this merge, never carried forward by it: `docs/dreams/python-agent-platform.md`'s "no `src/platform/` tree" claim (struck through and dated 2026-09-09) and its absolutely-stated `pyforge.*` import ban — a regeneration over dangling parents and false absolutes is the failure the drill exists to catch, and 48.8 explicitly precedes that drill
 
@@ -3221,14 +3252,14 @@ index rows only — steward tracks, and never edits another station's surface**,
 
 ### Story 49.1: The verified column on every capability
 **Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** Spec Constraints (2026-09-09) • review § 1.4
-**Surface:** `spec-pyforge-unifying-strategy/SPEC.md` § Capabilities (CAP-1..145)
+**Surface:** `spec-pyforge-unifying-strategy/SPEC.md` § Capabilities (CAP-1..19)
 **Given** the review's per-CAP grading with file:line evidence **When** each capability gains a `**verified:**` line **Then** it names which success clause has a live exercise (artifact, deployed check, measured number) and which is fixture-only, with file:line; eleven read fully verified today and six read partial, and the line is the input `capability-effect-check` reads
 
 ### Story 49.2: The capability effect check
 **Type:** feat • **Effort:** S • **Deps:** S-49.1; cross-station: doctor's own Dream + Spec for the implementation (ledger `blocked` until doctor's story lands — never a foreign-station `Deps:` token) • **FR/AD:** Spec Constraints (2026-09-09) • doctor advisory doctrine • fleet readiness 2026-09-09 § 2.3 C8
 **Surface:** this Spec's `verified:` column (the **criterion** stays here). The implementation lives in doctor's own chain and is **named as a relay, never edited by steward** — Dream `docs/dreams/capability-effect-check.md`, Spec `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-capability-effect-check/`, code at `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/` (a new source), `pixi.toml` (`detectors` membership), doctor `report-schema.json` (additive)
 **Given** 49.1's column **When** `capability-effect-check` runs **Then** it reports every capability whose ledger stories are all `done` but whose `verified:` line names an unexercised clause — advisory, exit-code domain unchanged, never a second PR verdict — and runs in `detectors` beside `story-status`
-**And** the check's **input is widened beyond this Spec's own CAP list** to every station's Specs: the pass that minted this story found the five worst cases in steward's *own* satellites (`unified-container`, `secure-live-dashboards`, `ocp-as-a-portability-profile`, `scratch-worktree-lifecycle`, `multi-repo-workspaces`), none of which is a Unifying CAP — a detector scoped to CAP-1..145 would be built to miss its own station on day one (fleet readiness 2026-09-09, stB-D1)
+**And** the check's **input is widened beyond this Spec's own CAP list** to every station's Specs: the pass that minted this story found the five worst cases in steward's *own* satellites (`unified-container`, `secure-live-dashboards`, `ocp-as-a-portability-profile`, `scratch-worktree-lifecycle`, `multi-repo-workspaces`), none of which is a Unifying CAP — a detector scoped to CAP-1..19 would be built to miss its own station on day one (fleet readiness 2026-09-09, stB-D1)
 **And** it adopts the cheapest effect test the pass found: **"has a caller outside its own test file"** (fleet readiness 2026-09-09, mars-B-E6 / Class D D4)
 **And** the **implementation is relayed to a new doctor Dream + Spec** (fleet readiness § 2.3 C8): every other doctor Source came through doctor's own chain, and `sources/bmad_method.py:9-20` is doctor's own precedent for a dedicated module. **Doctor records the incoming surface claim in `spec-pyforge-doctor`'s memlog BEFORE any code lands**, otherwise `spec-surface-check` reds this story and 49.8 at merge. This story closes when doctor's story lands; it is minted `blocked` until then
 **Status:** done
@@ -3280,7 +3311,7 @@ index rows only — steward tracks, and never edits another station's surface**,
 ### Story 49.10: Index — atlas realization-gate effect stories
 **Type:** index • **Effort:** S • **Deps:** S-49.2; cross-station: atlas's effect epic (ledger `blocked` until it closes) • **FR/AD:** fleet readiness 2026-09-09 § 2.3 C1 / C6
 **Surface:** this file only (the index row). Atlas's own artifacts are **named, never edited** by steward
-**Given** `atlas-query-dashboards` shipped a second Lane-3 runtime at `pyforge/atlas/views/` (Epic 14, CAP-1..145, 4/4 `done`) that nothing reaches — no CLI verb, pixi task, ASGI mount or portal imports it, only `tests/unit/views/*` — and it reads the legacy SQLite store through a dynamic-import bridge whose own docstring declares the evasion of CAP-19's "no private DuckDB" ruling (`cli_bridge.py:11-17`) **When** atlas records the **retirement** (operator ruling C1: delete the package + tests, record the supersession on its Spec, keep the widget-registry idea only if a Vizro page wants it) **Then** this row flips `done`; the Unifying Dream's Kinships line has already been corrected here to say `retired 2026-09-09`
+**Given** `atlas-query-dashboards` shipped a second Lane-3 runtime at `pyforge/atlas/views/` (Epic 14, CAP-1..4, 4/4 `done`) that nothing reaches — no CLI verb, pixi task, ASGI mount or portal imports it, only `tests/unit/views/*` — and it reads the legacy SQLite store through a dynamic-import bridge whose own docstring declares the evasion of CAP-19's "no private DuckDB" ruling (`cli_bridge.py:11-17`) **When** atlas records the **retirement** (operator ruling C1: delete the package + tests, record the supersession on its Spec, keep the widget-registry idea only if a Vizro page wants it) **Then** this row flips `done`; the Unifying Dream's Kinships line has already been corrected here to say `retired 2026-09-09`
 **And** the live Lane-3 runtime is and remains the Vizro/BSL board (31 pages)
 **Status:** done
 **Outcome (2026-09-13):** confirmed shipped 2026-09-10 via atlas Story 25.1 (PR #1114, `caeae255d05`) — `pyforge/atlas/views/`, its tests, and `cli_bridge.py` are all deleted (verified: zero repo-wide importers outside this Spec's own narrative text), `docs/dreams/atlas-query-dashboards.md` is `status: archived` with a Realization log entry, and `spec-atlas-query-dashboards/SPEC.md` marks CAP-1..CAP-4 `SUPERSEDED`. Ledger was never flipped after the work landed.
@@ -3328,7 +3359,7 @@ CAP-1 / CAP-2; its story keys are present in `sprint-status-ledger.yaml` (`45-1-
 
 ## Currency validation note — 2026-09-06
 
-`spec→prd→arch→epics` cascade for the new chain `spec-bmad-suite-lifecycle` (Dream `docs/dreams/bmad-suite-lifecycle.md`, PRD `prd-bmad-suite-lifecycle-2026-09-06`, spine `architecture-bmad-suite-lifecycle-2026-09-06`, all 2026-09-06). Structural delta: Story 14.9 (core-upgrade CAP-9 `--no-shims`), Epic 46 (Stories 46.1–46.10, CAP-1..145) and Epic 47 (Stories 47.1–47.5, CAP-9), hand-authored mirroring Epic 45; every new `### Story` heading maps 1:1 to a `sprint-status-ledger.yaml` key minted by `sprint_plan.py generate` + scoped `sprint-ledger-sync` the same day. Ledger corrections the same day: 14-6/14-7/14-8 `backlog → done` (code on main since PRs #1074/#1076), 45-2 `blocked → backlog` (operator flip 2026-09-06). Validated against the steward spine (no AD changed) and the lifecycle spine AD-1..AD-8; no existing story text altered.
+`spec→prd→arch→epics` cascade for the new chain `spec-bmad-suite-lifecycle` (Dream `docs/dreams/bmad-suite-lifecycle.md`, PRD `prd-bmad-suite-lifecycle-2026-09-06`, spine `architecture-bmad-suite-lifecycle-2026-09-06`, all 2026-09-06). Structural delta: Story 14.9 (core-upgrade CAP-9 `--no-shims`), Epic 46 (Stories 46.1–46.10, CAP-1..8) and Epic 47 (Stories 47.1–47.5, CAP-9), hand-authored mirroring Epic 45; every new `### Story` heading maps 1:1 to a `sprint-status-ledger.yaml` key minted by `sprint_plan.py generate` + scoped `sprint-ledger-sync` the same day. Ledger corrections the same day: 14-6/14-7/14-8 `backlog → done` (code on main since PRs #1074/#1076), 45-2 `blocked → backlog` (operator flip 2026-09-06). Validated against the steward spine (no AD changed) and the lifecycle spine AD-1..AD-8; no existing story text altered.
 
 
 ## Currency validation note — 2026-09-08
@@ -3591,7 +3622,7 @@ the opt-in marshal VS Code surface. Does not flip any Epic 44 `blocked` key.
 ### Story 52.1: Module-template is authoring-only and mybmad is an isolated sidecar never the console
 
 **Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-suite-scaffold-and-mybmad-sidecar
-CAP-1..145; spec-bmad-suite-lifecycle CAP-1 (register rows 11 and 13)
+CAP-1..3; spec-bmad-suite-lifecycle CAP-1 (register rows 11 and 13)
 **Note:** Wielded path is consume, not isolate. Same `DATABASE_URL` host as
 the platform (self-hosted or Epic 51 BYO), `?schema=mybmad`. Same
 `COMPONENT_OIDC_*` / Keycloak issuer. Forbidden: second cluster as the
@@ -3623,7 +3654,7 @@ embed) after the same OIDC session, as a surface — not station nine, not
 `/stations/mybmad/`, not `/console/`; the process stays the sidecar
 **Status:** done
 
-## Epic 53: Intelligence Hub realization (spec-intelligence-hub hub:CAP-1..145)
+## Epic 53: Intelligence Hub realization (spec-intelligence-hub hub:CAP-1..4)
 
 Minted 2026-09-13 from `docs/dreams/intelligence-hub.md` / `spec-intelligence-hub`
 after D4 (Non-goals vs adopt-anytime later-caps). Owner steward; **marshal**
@@ -3751,7 +3782,7 @@ Markdown writer; `title`/`composition` belong to the YAML/JSON encodings
 repeatable, and still resolves a `path-ref` parent
 **Status:** done
 
-## Epic 54: Foundry kernel regenerate (spec-foundry-regenerate-not-fold fnr:CAP-1..145 / fnd:CAP-11)
+## Epic 54: Foundry kernel regenerate (spec-foundry-regenerate-not-fold fnr:CAP-1..5 / fnd:CAP-11)
 
 Minted 2026-09-13 from `docs/dreams/foundry-regenerate-not-fold.md`. Operator
 accepted regenerate-not-fold, A + thin oracle, Launch = CLI + MCP, CFE
@@ -3849,7 +3880,7 @@ docs that do not say "replay 44.4"
 **And** A does not receive a copy of B's slim chain
 **Status:** done
 
-## Epic 55: Foundry capability ledger (spec-foundry-capability-ledger fcl:CAP-1..145)
+## Epic 55: Foundry capability ledger (spec-foundry-capability-ledger fcl:CAP-1..3)
 
 Minted 2026-09-13 from `docs/dreams/foundry-capability-ledger.md`.
 **Strangler fig:** facade is public CLI (+ later `cutover_root`); ledger
@@ -4041,7 +4072,7 @@ So that adding real-tool hosting for one station cannot regress the other eight.
 
 **Type:** feature • **Effort:** S • **Deps:** S-58.1 • **FR/AD:** spec-mcp-host-real-station-tools CAP-2
 **Given** only marshal has a real app **When** this story lands **Then**
-`spec-mcp-era-isolation`'s CAP-1..145 acceptance (dual-era handshake, protocol-version
+`spec-mcp-era-isolation`'s CAP-1..3 acceptance (dual-era handshake, protocol-version
 negotiation, 405 on non-POST) still holds unchanged for every station without one
 **And** `_apps` covers all 9 default stations while `_real_apps` covers only `{"marshal"}`
 **And** a `django.setup()` failure for any reason falls back to the stub for **every**
@@ -4065,7 +4096,7 @@ run's evidence
 **And** the run's timing is queryable after the workstation that drove it is gone
 **Status:** done — shipped `20a85dcc79` (2026-09-12)
 
-## Epic 59: One name, one job (spec-vocabulary-one-name-one-job CAP-1..145)
+## Epic 59: One name, one job (spec-vocabulary-one-name-one-job CAP-1..8)
 
 Minted 2026-09-15 from `docs/dreams/vocabulary-one-name-one-job.md` after the
 operator accepted Q1–20. Spec `ready`. **CAP-4** (`Track` / `Gate`) is already
@@ -4164,7 +4195,7 @@ except `type(scope):` under `recipes/` and the CFE changelog
 **Then** those sites put the data in `evidence` and `check=` stays a kebab code
 **Status:** done
 
-## Epic 60: Estate BMAD catalog (spec-self-hosted-bmad-marketplace CAP-1..145)
+## Epic 60: Estate BMAD catalog (spec-self-hosted-bmad-marketplace CAP-1..7)
 
 Minted 2026-09-15 from `docs/dreams/self-hosted-bmad-marketplace.md` after the
 operator approved Q1–7. Spec `ready`. **CAP-5** (Claude-skill source slot)
@@ -4218,7 +4249,7 @@ install hint)
 **And** it is not an App Store, MyBMAD, Collab, or nebari-frames
 **Status:** done
 
-## Epic 61: Work passports and dated extracts (spec-work-passports-dated-extracts CAP-1..145)
+## Epic 61: Work passports and dated extracts (spec-work-passports-dated-extracts CAP-1..7)
 
 Minted 2026-09-15 from `docs/dreams/work-passports-dated-extracts.md` after the
 operator approved Q1–6. Spec `ready`. **CAP-6** and **CAP-7** (larva) are
@@ -4276,7 +4307,7 @@ the existing Postgres app / a steward load duty.
 **And** no title-match endpoint exists
 **Status:** done
 
-## Epic 62: Published measure catalog (spec-build-league-scorecard CAP-1..145)
+## Epic 62: Published measure catalog (spec-build-league-scorecard CAP-1..4)
 
 Minted 2026-09-15 from `docs/dreams/build-league-scorecard.md` after the
 operator approved the eight already-counted signals and required on/off/

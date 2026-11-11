@@ -102,7 +102,8 @@
     "pyforge.steward.nkp_deploy": "on",
     "pyforge.steward.nkp_packs": "on",
     "pyforge.steward.start_tool_cli": "on",
-    "pyforge.steward.start_loop_dispatch": "off"
+    "pyforge.steward.start_loop_dispatch": "off",
+    "pyforge.steward.cutover_ledger_write": "on"
   },
   "staging": {
     "pyforge.cutover_root": "local-recipes",
@@ -207,7 +208,8 @@
     "pyforge.steward.nkp_deploy": "on",
     "pyforge.steward.nkp_packs": "on",
     "pyforge.steward.start_tool_cli": "on",
-    "pyforge.steward.start_loop_dispatch": "off"
+    "pyforge.steward.start_loop_dispatch": "off",
+    "pyforge.steward.cutover_ledger_write": "on"
   },
   "production": {
     "pyforge.cutover_root": "local-recipes",
@@ -312,6 +314,7 @@
     "pyforge.steward.nkp_deploy": "on",
     "pyforge.steward.nkp_packs": "on",
     "pyforge.steward.start_tool_cli": "on",
-    "pyforge.steward.start_loop_dispatch": "off"
+    "pyforge.steward.start_loop_dispatch": "off",
+    "pyforge.steward.cutover_ledger_write": "on"
   }
 }

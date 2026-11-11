@@ -6962,7 +6962,9 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred 939d6f0417a1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-11-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: resolved
+  resolution: 2026-11-11 — src/shared/packages/pyforge-steward/src/pyforge/steward/estate.py `run_plan` now reads the process result of its `pixi upgrade --dry-run --json` and, on a non-zero exit, refuses with `EXIT_ESTATE_REFUSAL` (3) and a summary naming pixi's exit code, ahead of the `--due` branch, so a failed pixi no longer reads as no moves, exit 0, on the plain path, on `--json` or on `--due` (whose exit 1 still means overdue only).
+  verified: 2026-11-11 — resolved — Story 123.3 (spec-pyforge-steward CAP-167): src/shared/packages/pyforge-steward/src/pyforge/steward/estate.py:446 refuses a non-zero dry run with exit 3 ahead of the `--due` branch; `pixi run --frozen -e pyforge-steward env PYTHONPATH=src/shared/packages/pyforge-steward/src:scripts pytest src/shared/packages/pyforge-steward/tests/unit/test_estate.py -q -k 'plan and pixi_fails'` exit 0 (4 passed); `pixi run --frozen -e pyforge-steward env PYTHONPATH=src/shared/packages/pyforge-steward/src:scripts pytest src/shared/packages/pyforge-steward/tests/unit/test_estate.py -q -k due` exit 0 (4 passed, among them a failed dry run while overdue, which reads 3, never 1).
 
 ### DW-steward-119-2-2: _grammar_recall, the scribe portal's recall path, runs the CLI with the whole process environment, unlike the start tools' scrubbed one.
 

@@ -17,6 +17,15 @@ deferred: []
 declared_low_risk: false
 ---
 
+> **Amended 2026-11-10 (Story 120.3) — re-derived from the memlog B reads at the pin; no `moving` state.** Operator
+> rulings of 2026-11-10 (`docs/dreams/pyforge-unifying-strategy.md` § Realization log, ruling 1 and the mint
+> entry): nothing is moved, so a `rebuild` row's Spec, spine and epics are re-derived on B from Dream plus memlog,
+> read from A at the pinned SHA (a Frame is a pointer, not a seed). The ledger states are `planned`, `rebuilding`,
+> `verified-in-foundry` and `cut` (`fnd:CAP-9` as amended at the 2026-11-10 mint); there is no `moving` state.
+> `rebuilding` is the one freezing state, and a change under its frozen paths is named by doctor's
+> `frozen-path-changed` source (`spec-pyforge-doctor:CAP-94`), not by `steward cutover plan --append`. The matrix
+> and the epic excerpt below follow the amended story body in `epics.md`. The ledger key stays `blocked`.
+
 <intent-contract>
 
 ## Intent
@@ -42,8 +51,9 @@ declared_low_risk: false
 
 | Scenario | Input / State | Expected Output / Behavior | Error Handling |
 |---|---|---|---|
-| one pilot capability marked `rebuild` (Scribe, per the first pass) **When** the harness runs in foundry **Then** its Spec, spine and epics are re-derived from… | the harness runs in foundry **Then** its Spec, spine and epics are re-derived from the moved memlog, Marshal drains its… | its Spec, spine and epics are re-derived from the moved memlog, Marshal drains its stories under the metered `steward budget` ceiling (44.15), and the archived Scribe suite passes against the rebuilt… | fail loud; never silent skip |
-| And-clause from epics.md | when the story lands | the moment the row entered `rebuilding` its source paths froze in `local-recipes`, and `steward cutover plan --append` reports any change against them as a finding | n/a |
+| one pilot capability marked `rebuild` (Scribe, per the first pass) | the harness runs in foundry | its Spec, spine and epics are re-derived from Dream plus memlog read from A at the pinned SHA, Marshal drains its stories under the metered `steward budget` ceiling (44.15), and the archived Scribe suite passes against the rebuilt code before the row reads `verified-in-foundry` | fail loud; never silent skip |
+| And-clause from epics.md | when the story lands | the moment the row entered `rebuilding` its source paths froze in `local-recipes`, and doctor's `frozen-path-changed` source (`spec-pyforge-doctor:CAP-94`) reports any change against them as a finding | n/a |
+| States (amended 2026-11-10) | any ledger row the harness reads or writes | its state is one of `planned`, `rebuilding`, `verified-in-foundry`, `cut`; there is no `moving` state | n/a |
 | And-clause from epics.md | when the story lands | the harness is reusable for every later `rebuild` row without operator scripting | n/a |
 
 </intent-contract>
@@ -63,7 +73,7 @@ I want a rebuild path in foundry — Dream and memlog to re-derived Spec, spine 
 So that a rebuilt capability is a regeneration drill, never a rewrite by another name.
 
 **Type:** feature • **Effort:** L • **Deps:** S-44.12, S-44.15 • **FR/AD:** fnd:CAP-9 • fnd:AD-18, fnd:AD-21, fnd:AD-22, fnd:AD-23 • regenerable-factory Dream (the drill)
-**Given** one pilot capability marked `rebuild` (Scribe, per the first pass) **When** the harness runs in foundry **Then** its Spec, spine and epics are re-derived from the moved memlog, Marshal drains its stories under the metered `steward budget` ceiling (44.15), and the archived Scribe suite passes against the rebuilt code before the row reads `verified-in-foundry`
-**And** the moment the row entered `rebuilding` its source paths froze in `local-recipes`, and `steward cutover plan --append` reports any change against them as a finding
+**Given** one pilot capability marked `rebuild` (Scribe, per the first pass) **When** the harness runs in foundry **Then** its Spec, spine and epics are re-derived from Dream plus memlog read from A at the pinned SHA, Marshal drains its stories under the metered `steward budget` ceiling (44.15), and the archived Scribe suite passes against the rebuilt code before the row reads `verified-in-foundry`
+**And** the moment the row entered `rebuilding` its source paths froze in `local-recipes`, and doctor's `frozen-path-changed` source (`spec-pyforge-doctor:CAP-94`) reports any change against them as a finding
 **And** the harness is reusable for every later `rebuild` row without operator scripting
 
