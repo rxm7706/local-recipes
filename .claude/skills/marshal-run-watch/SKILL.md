@@ -55,7 +55,7 @@ Example invocations:
 Not applicable to `fleet` scope — see Step 1's fleet branch instead.
 
 If `pattern` is omitted: check whether `~/.bmad-loops/<slug>/.bmad-loop/runs/`
-exists and `cd ~/.bmad-loops/<slug> && pixi run -e local-recipes bmad-loop list --json`
+exists and `cd ~/.bmad-loops/<slug> && pixi run -e pyforge-guild bmad-loop list --json`
 has any row with `status` in `running`/`paused`. If so, pattern is `bmad-loop`.
 Otherwise, pattern is `bmad-build-auto`.
 
@@ -82,8 +82,8 @@ Step 0 finds no `running`/`paused` row and no live `dispatch_run_id`.
 
 **`bmad-loop` pattern:**
 ```
-cd ~/.bmad-loops/<slug> && pixi run -e local-recipes bmad-loop status <run_id> --json
-pixi run -e local-recipes bmad-loop list --json
+cd ~/.bmad-loops/<slug> && pixi run -e pyforge-guild bmad-loop status <run_id> --json
+pixi run -e pyforge-guild bmad-loop list --json
 ```
 (same directory) — confirms overall run state and catches a status the
 per-run call doesn't surface (e.g. `stopped`).

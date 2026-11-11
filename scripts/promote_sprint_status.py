@@ -69,7 +69,7 @@ LEDGER_NAME = "sprint-status-ledger.yaml"
 
 _HEADER = """\
 # GENERATED — do not hand-edit. Regenerate with:
-#     pixi run -e local-recipes sprint-ledger-sync
+#     pixi run -e pyforge-guild sprint-ledger-sync
 #
 # TRACKED twin of {src}
 # which is gitignored Tier-3 (.gitignore:736) and therefore invisible to CI and

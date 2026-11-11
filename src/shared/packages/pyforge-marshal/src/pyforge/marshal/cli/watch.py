@@ -25,6 +25,7 @@ from typing import Any
 from pyforge.core.errors import PyforgeError
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
+from ..adapters.forge_root import forge_repo
 from ..core import challenge as challenge_core
 from ..core.context import MarshalContext
 from ..core.dispatch import DispatchJournalFacts
@@ -32,6 +33,7 @@ from ..core.dispatch_completion import DispatchSessionVerdict
 from ..core.model import Finding, Severity, build_envelope
 from ..core.refs import remote_tracking_ref
 from ..core.verdict import compute_verdict, exit_code_for
+from ..ports.forge import ForgeCommandError
 from .config import _suppress_downstream_pipe_close, repo_root
 from .init import _loop_home_root
 
@@ -654,6 +656,12 @@ def _default_ports(process: ProcessPort, root: Path) -> WatchPorts:
 
     def list_prs(slug: str) -> list[Mapping[str, Any]]:
         del slug
+        # Story 115.4 (CAP-208): the root of record's repository, read at this use; a malformed
+        # flag tree is a failed probe (MRS-WATCH-004), never a fabricated PR list.
+        try:
+            repo = forge_repo()
+        except ForgeCommandError as exc:
+            raise ProbeError("gh pr list", str(exc)) from exc
         try:
             result = process.run(
                 [
@@ -661,7 +669,7 @@ def _default_ports(process: ProcessPort, root: Path) -> WatchPorts:
                     "pr",
                     "list",
                     "--repo",
-                    "rxm7706/local-recipes",
+                    repo,
                     "--state",
                     "all",
                     "--json",

@@ -3,6 +3,7 @@ title: "114.1: Every marshal capability carries a marker that matches the ledger
 type: 'docs'
 created: '2026-11-10'
 status: 'blocked'
+retires-flag: pyforge.marshal.context_bundle_digest   # spec-46-2 declared this key and never shipped it; flags.json never held it and no tracked file reads it (BUILD-3 gate)
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -158,3 +159,7 @@ Parent: `spec-pyforge-marshal` (renders spec-pyforge-marshal:CAP-304, spec-pyfor
 
 - 2026-11-10: minted at `blocked` (forward dependency: until S-117.5 and S-118.2 are done) by the cutover-readiness mint (operator 2026-11-10, "Accept all, run mint"; `docs/dreams/pyforge-unifying-strategy.md`, Realization log, the 2026-11-10 entry and its two addenda). The Dream entry (`docs/dreams/pyforge-marshal.md`, 2026-11-10) and the memlog entries of `spec-pyforge-marshal` came first; `SPEC.md` is rendered by Story 114.1.
 - 2026-11-11: fix pass after the third review of the mint. The Always clause's parenthetical now says that under the plan's CLOSE-LEDGERS step none of the seven fix stories reads done at this render. AC2 no longer exempts spec-pyforge-marshal:CAP-304 and spec-pyforge-marshal:CAP-305: it checks them against the stories that cite them, so it applies the Always rule to every capability and holds at the moment this story runs.
+
+## Integrator note (BUILD-3 gate, 2026-11-11)
+
+This story moved `spec-46-2` from `backlog` to `done`, which puts its `flag:` block in front of the flag gate. The gate then failed with `flag-key-not-in-tree`: `pyforge.marshal.context_bundle_digest` was never in `src/platform/config/flags.json` (`git log -S` finds no commit), and no tracked file reads it. Story 46.2 shipped without the flag it declared. This spec now carries `retires-flag:` for the key, the owning station's declaration that the gate reads (Story 34.7), so the done spec stays as the key's history.

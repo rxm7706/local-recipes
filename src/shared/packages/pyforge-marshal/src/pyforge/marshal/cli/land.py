@@ -122,6 +122,7 @@ from pyforge.core.process import PosixProcess, ProcessPort
 
 from ..adapters.clock_system import SystemClock
 from ..adapters.forge_gh import GhForge
+from ..adapters.forge_root import forge_repo
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import resolve_loop_runner
 from ..adapters.vcs_git import GitVcs, VcsCommandError
@@ -161,11 +162,9 @@ if TYPE_CHECKING:
     # a runtime dependency this module doesn't otherwise need.
     from ..core.context import MarshalContext
 
-# The same physical-repo constant ``cli/deploy.py::_FORGE_REPO`` already
-# establishes -- every Marshal station lives inside this one repo, so this
-# module names the SAME fact rather than importing deploy's private copy
-# (a plain constant, not a helper this story's Code Map lists for reuse).
-_FORGE_REPO = "rxm7706/local-recipes"
+# Story 115.4 (CAP-208): the forge repository is the root of record's, read at
+# each use through ``adapters/forge_root.py::forge_repo`` -- this module holds
+# no repository slug.
 _MERGE_BASE_BRANCH_FALLBACK = "main"
 
 _MRS_LAND_001 = "MRS-LAND-001"
@@ -687,8 +686,8 @@ def run_land(
         # Always bullet).
         data["already_landed"] = True
         data["merged"] = True
-        repo_ref = ForgeRef(_FORGE_REPO)
         try:
+            repo_ref = ForgeRef(forge_repo())
             existing = forge.find_open_pr(repo_ref, ForgeRef(head_branch))
         except ForgeCommandError as exc:
             findings.append(
@@ -804,7 +803,17 @@ def run_land(
         )
         return _emit(args, data, findings)
 
-    repo_ref = ForgeRef(_FORGE_REPO)
+    try:
+        repo_ref = ForgeRef(forge_repo())
+    except ForgeCommandError as exc:
+        findings.append(
+            Finding(
+                code="MRS-DEPLOY-014",
+                severity=Severity.ERROR,
+                message=f"cannot resolve the forge repository for {head_branch!r}: {exc}",
+            )
+        )
+        return _emit(args, data, findings)
     head_branch_ref = ForgeRef(head_branch)
 
     # `_evaluate_hygiene` is reused VERBATIM for the PR-open/update gate

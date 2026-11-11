@@ -31,6 +31,7 @@ from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from .adapters.doctor_cli import Unavailable, read_spec_surface
 from .adapters.forge_gh import GhForge
+from .adapters.forge_root import forge_repo
 from .adapters.fs_local import LocalFs
 from .adapters.steward_cli import StewardCli
 from .adapters.vcs_git import GitVcs, VcsCommandError
@@ -70,7 +71,6 @@ from .ports.forge import ForgeCommandError, ForgePort, ForgeRef
 from .ports.fs import FsPort
 from .ports.vcs import VcsPort
 
-_FORGE_REPO = "rxm7706/local-recipes"
 _MERGE_BASE = "main"
 _MAINTENANCE_LABEL = "maintenance"
 # Story 51.1: `_ORIGIN_MAIN` (imported above from `core.refs`, Story 60.1) is
@@ -1575,9 +1575,11 @@ def execute_dispatch_land(
         return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
     data["head_sha"] = head_sha
 
-    repo_ref = ForgeRef(_FORGE_REPO)
     head_branch_ref = ForgeRef(head_branch)
     try:
+        # Story 115.4 (CAP-208): the root of record's repository, read at this use; a malformed
+        # flag tree is a ForgeCommandError, so it refuses here as MRS-DISP-018.
+        repo_ref = ForgeRef(forge_repo())
         existing = forge.find_open_pr(repo_ref, head_branch_ref)
     except ForgeCommandError as exc:
         findings.append(

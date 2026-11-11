@@ -255,6 +255,7 @@ from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from ..adapters.clock_system import SystemClock
 from ..adapters.forge_gh import GhForge
+from ..adapters.forge_root import forge_repo
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
 from ..adapters.vcs_git import GitVcs, VcsCommandError
@@ -400,14 +401,12 @@ _BATCH_PR_WRITE_KIND = "deploy-batch-pr-write"
 _LEDGER_COMMIT_KIND = "deploy-reconcile-ledger-commit"
 _RECONCILIATION_KIND = "reconciliation"
 
-# Story 4.4's own repo constant: every Marshal station lives inside this ONE
-# physical repo (this repo's own `local-recipes` fork, per the team's own
-# reference note "gh pr create needs --repo rxm7706/local-recipes" -- this
-# repo is a staged-recipes fork, so the forge's own repo-inference from cwd
-# is never trustworthy here). No policy field names this -- it is not a
-# per-project decision the way `landing_base_branch` is; it is a fact about
-# which physical repo Marshal itself runs inside.
-_FORGE_REPO = "rxm7706/local-recipes"
+# Story 4.4 named the forge repository explicitly (`gh pr create --repo`): the
+# forge's own repo-inference from cwd is never trustworthy here. No policy
+# field names it -- it is not a per-project decision the way
+# `landing_base_branch` is. Story 115.4 (CAP-208): it is the root of record's
+# repository, read at each use through `adapters/forge_root.py::forge_repo`;
+# this module holds no repository slug.
 
 
 def add_deploy_subparser(subparsers: argparse._SubParsersAction) -> None:
@@ -2903,7 +2902,19 @@ def run_batch_pr(
         )
         return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
 
-    repo_ref = ForgeRef(_FORGE_REPO)
+    try:
+        repo_ref = ForgeRef(forge_repo())
+    except ForgeCommandError as exc:
+        findings.append(
+            Finding(
+                code=_MRS_DEPLOY_014,
+                severity=Severity.ERROR,
+                message=f"cannot resolve the forge repository for {head_branch!r}: {exc}",
+            )
+        )
+        data["opened"] = False
+        data["updated"] = False
+        return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
     head_branch_ref = ForgeRef(head_branch)
 
     # Hygiene preflight, BEFORE any PR write (the story's own Always

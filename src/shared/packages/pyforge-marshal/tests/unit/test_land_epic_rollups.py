@@ -373,6 +373,9 @@ _DOCTOR_BEFORE = (_FIXTURES / "doctor_ledger_before_b9869e5c6d.yaml").read_text(
 _DOCTOR_BEFORE_BLOB = "99d425d8ed51144f8c19748a6913d29c483827a6"
 #: The tracked twin ``b9869e5c6d`` wrote: 41-5 ``done`` and ``epic-41`` dropped to ``backlog``.
 _DOCTOR_B9869E5C6D_BLOB = "430d290a42be37a46b18940717d25d4a549a09b6"
+#: The sync's header line then and now (marshal 114.2 renamed the environment).
+_HEADER_THEN = "#     pixi run -e local-recipes sprint-ledger-sync\n"
+_HEADER_NOW = "#     pixi run -e pyforge-guild sprint-ledger-sync\n"
 
 
 def _doctor_feed_statuses() -> dict[str, str]:
@@ -392,7 +395,8 @@ def test_the_replayed_inputs_reproduce_b9869e5c6d_without_the_roll_up() -> None:
         _plain_render(_DOCTOR, _doctor_feed_statuses()), frozenset({_DOCTOR_41_5})
     )
     assert matched == {_DOCTOR_41_5}
-    assert _blob_sha(unfixed) == _DOCTOR_B9869E5C6D_BLOB
+    assert _HEADER_NOW in unfixed
+    assert _blob_sha(unfixed.replace(_HEADER_NOW, _HEADER_THEN)) == _DOCTOR_B9869E5C6D_BLOB
 
 
 def test_the_doctor_41_5_replay_publishes_epic_41_in_progress(tmp_path: Path, monkeypatch) -> None:
@@ -407,7 +411,9 @@ def test_the_doctor_41_5_replay_publishes_epic_41_in_progress(tmp_path: Path, mo
     _assert_promotion_commit(origin, parent)
     published = _origin_text(origin, _DOCTOR)
     assert _statuses(published)["epic-41"] == "in-progress"
-    assert published == _DOCTOR_BEFORE.replace(f"  {_DOCTOR_41_5}: backlog\n", f"  {_DOCTOR_41_5}: done\n")
+    assert published == _DOCTOR_BEFORE.replace(_HEADER_THEN, _HEADER_NOW).replace(
+        f"  {_DOCTOR_41_5}: backlog\n", f"  {_DOCTOR_41_5}: done\n"
+    )
 
 
 # -- Story 107.1: a stale-slug feed key never reaches the twin through a landing -------------------------------

@@ -133,6 +133,87 @@ Parent: `spec-pyforge-marshal` CAP-229 (the script line); spec-one-chain-per-sta
 - The script's header change reaches each station's ledger at that station's next `sprint-ledger-sync`; marshal's at its own sync.
 - Deferred rows this story's findings feed (written by Story 116.5): DW-marshal-114-2-1 (`devin.toml` `verified = false` and the undated cost rows, not re-checked offline), DW-marshal-114-2-2 (17 to 45 large modules named by no capability).
 
+## Guard ALLOW table (copied at build)
+
+`ALLOW` in `src/shared/packages/pyforge-marshal/tests/meta/test_spec_names_live_paths.py`, copied 2026-11-11. Each
+name is right by design: a loop home's runtime file, bmad-loop's own module or run output, an upstream file, the
+untracked active-project marker, a fixture or function name, a name kept as history, or a file a later story writes.
+Glob fragments such as `spec-<e>-<n>-*.md` and commands such as `python -m pyforge.doctor.sources <name>` are templated
+tokens and pass without an entry. The test fails an entry whose capability no longer carries its token, so the table
+cannot outlive the text it excuses.
+
+| Capability | Token | Reason |
+|---|---|---|
+| spec-pyforge-marshal:CAP-19 | `policy.toml` | a loop home's rendered bmad-loop policy, a runtime file never tracked |
+| spec-pyforge-marshal:CAP-20 | `policy.toml` | a loop home's rendered bmad-loop policy, a runtime file never tracked |
+| spec-pyforge-marshal:CAP-39 | `project-context.md` | the eight per-station rulebooks this capability refreshed, since retired |
+| spec-pyforge-marshal:CAP-40 | `removals.txt` | bmad-method's own removals list, an upstream file |
+| spec-pyforge-marshal:CAP-41 | `project-context.md` | the per-station rulebooks this capability retired |
+| spec-pyforge-marshal:CAP-42 | `llms-full.txt` | bmad-method's discontinued upstream documentation file |
+| spec-pyforge-marshal:CAP-42 | `llms.txt` | bmad-method's discontinued upstream documentation file |
+| spec-pyforge-marshal:CAP-45 | `policy.toml` | the eight loop homes' rendered bmad-loop policy, runtime files |
+| spec-pyforge-marshal:CAP-50 | `failed/*/changes.patch` | a bmad-loop run output under .bmad-loop/runs/ |
+| spec-pyforge-marshal:CAP-52 | `engine.py:1707` | bmad-loop's own module, cited in the upstream issue |
+| spec-pyforge-marshal:CAP-52 | `runs.py:872-908` | bmad-loop's own module, cited in the upstream issue |
+| spec-pyforge-marshal:CAP-59 | `.bmad-loop/policy.toml` | a loop home's rendered bmad-loop policy, gitignored |
+| spec-pyforge-marshal:CAP-69 | `src/pyforge_genesis` | the pre-split installer tree, named as what was removed |
+| spec-pyforge-marshal:CAP-72 | `project-context.md` | the per-station rulebooks this capability regenerated, since retired |
+| spec-pyforge-marshal:CAP-74 | `product-brief-pyforge-marshal.md` | the loose name of the brief this capability moved, history |
+| spec-pyforge-marshal:CAP-105 | `orphans.json` | a consolidation run's output under its run folder |
+| spec-pyforge-marshal:CAP-105 | `orphans.md` | a consolidation run's output under its run folder |
+| spec-pyforge-marshal:CAP-132 | `.bmad-loop/policy.toml` | a loop home's rendered bmad-loop policy, gitignored |
+| spec-pyforge-marshal:CAP-134 | `.bmad-loop/policy.toml` | a loop home's rendered bmad-loop policy, gitignored |
+| spec-pyforge-marshal:CAP-134 | `policy.toml` | a loop home's rendered bmad-loop policy, a runtime file never tracked |
+| spec-pyforge-marshal:CAP-164 | `changes.patch` | a bmad-loop run output, named as the analog dispatch keeps |
+| spec-pyforge-marshal:CAP-165 | `policy.toml` | a loop home's rendered bmad-loop policy, a runtime file never tracked |
+| spec-pyforge-marshal:CAP-171 | `.bmad-loop/runs/` | bmad-loop's runtime run directory, gitignored |
+| spec-pyforge-marshal:CAP-172 | `.bmad-loop/runs/` | bmad-loop's runtime run directory, gitignored |
+| spec-pyforge-marshal:CAP-227 | `.bmad-loop/runs` | bmad-loop's runtime run directory, the literal the guard matches |
+| spec-pyforge-marshal:CAP-263 | `.pixi/envs/local-recipes` | named as what the watch must never reach |
+| spec-pyforge-marshal:CAP-273 | `_bmad/custom/.active-project` | the shared active-project marker, untracked by design |
+| spec-pyforge-marshal:CAP-279 | `.bmad-loop/policy.toml` | a loop home's rendered bmad-loop policy, gitignored |
+| spec-pyforge-marshal:CAP-279 | `_bmad/custom/.active-project` | the shared active-project marker, untracked by design |
+| spec-pyforge-marshal:CAP-279 | `docs/dreams/demo.md` | a fixture name in the seed check's test project |
+| spec-pyforge-marshal:CAP-279 | `run_check` | a function in seed/verbs/check.py, not a script |
+| spec-pyforge-marshal:CAP-298 | `installed_plugins.json` | Claude Code's own plugin registry, outside the repository |
+| spec-pyforge-marshal:CAP-298 | `plugin.json` | the cached EGM plugin's manifest, outside the repository |
+| spec-pyforge-marshal:CAP-298 | `report.json` | a challenge run's output under implementation-artifacts/egm/<run>/ |
+| spec-pyforge-marshal:CAP-305 | `tests/_support/tree_read_guard.py` | written by Story 116.4, open while CAP-305 reads ready |
+| spec-pyforge-marshal:CAP-305 | `tests/meta/test_tree_read_guard.py` | written by Story 116.4, open while CAP-305 reads ready |
+
+## Planned deferral (written at build)
+
+The row below is not in the deferred-work ledger yet and is not in this spec's frontmatter (`deferred-work-check` reds a
+frontmatter row with no tracked ledger twin). The marshal station closer of the cutover-readiness PR (Story 116.5)
+writes it to `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md`: open if the two entries
+below are still on `ALLOW` when the closer runs, otherwise resolved with a pointer to the change that dropped them.
+
+- **`DW-marshal-114-2-3`** (low; owner Story 116.5, after Story 116.4; location
+  `src/shared/packages/pyforge-marshal/tests/meta/test_spec_names_live_paths.py`, `ALLOW`): the two
+  spec-pyforge-marshal:CAP-305 entries, `tests/_support/tree_read_guard.py` and `tests/meta/test_tree_read_guard.py`,
+  excuse files Story 116.4 (BUILD-7) writes. Once `git ls-files` lists them the names resolve on their own and the two
+  entries are dead weight; the stale-entry test does not catch that, because the capability still carries the tokens.
+  Drop both entries (and their rows above) once Story 116.4 has landed on the branch.
+
 ## Spec Change Log
 
 - 2026-11-10: minted at `blocked` (forward dependency: until S-114.1 and S-116.1 are done) by the cutover-readiness mint (operator 2026-11-10, "Accept all, run mint"; `docs/dreams/pyforge-unifying-strategy.md`, Realization log, the 2026-11-10 entry and its two addenda). The Dream entry (`docs/dreams/pyforge-marshal.md`, 2026-11-10) and the memlog entries of `spec-pyforge-marshal` came first; `SPEC.md` is rendered by Story 114.1.
+- 2026-11-11 (build): one accepted deviation. The Always line and AC4's context name `tests/meta/test_engine_version_range_sync.py` as the test that keeps the harness range equal; that test keeps copier's range (`COPIER_VERSION_RANGE` against `pixi.toml`), not bmad-loop's. `tests/meta/test_manifest_sync.py::test_harness_range_constants_match_pyproject_dependency_pin` keeps `pyproject.toml`'s `bmad-loop` pin, the package `pixi.toml` and `HARNESS_VERSION_RANGE_TEXT` (`adapters/harness_bmadloop.py`) equal, so spec-pyforge-marshal:CAP-8 names that test; writing the other would plant a stale name in the Spec this story cleans. The range itself, `bmad-loop >=0.11.0,<0.13`, is as the Always line states, and AC4 holds. The spec-pyforge-marshal:CAP-91 text names `marshal status` (its `unpushed_work` row field), not `scripts/fleet_scan.py` or the Doctor sources as the memlog addendum of 2026-11-10 grouped it: neither holds that behaviour; the memlog change entry of 2026-11-11 records the refinement.
+
+## Gate findings (build, BUILD-3)
+
+- 2026-11-11, `pyforge-marshal-test` (wave gate BUILD-3): red on two tests in
+  `src/shared/packages/pyforge-marshal/tests/unit/test_land_epic_rollups.py`, a file of marshal:S-116.1 (BUILD-1,
+  done): `test_the_replayed_inputs_reproduce_b9869e5c6d_without_the_roll_up` (line 395; the replay's blob is no longer
+  the pinned `430d290a…`) and `test_the_doctor_41_5_replay_publishes_epic_41_in_progress` (line 410; the published
+  header line differs from the fixture). Cause: this story's `_HEADER` change in `scripts/promote_sprint_status.py`
+  (`-e local-recipes` to `-e pyforge-guild`, spec-pyforge-marshal:CAP-229, AC6). Both tests render the historical
+  `b9869e5c6d` ledger through the live script, and its header no longer matches the historical bytes. Not fixable in
+  this story's files: reverting the header line fails AC6, and no script change can reproduce the historical bytes
+  without the old environment name. Re-run by the wave fix: the module still gives 2 failed, 9 passed (exit 1). A
+  three-hunk fix to the test file passes on a scratch copy (11 passed): constants `_HEADER_THEN` and `_HEADER_NOW` hold
+  the sync's header line then and now; the replay test asserts `_HEADER_NOW in unfixed` and compares the blob of
+  `unfixed.replace(_HEADER_NOW, _HEADER_THEN)` to the pin; the finalize test compares the published text to
+  `_DOCTOR_BEFORE.replace(_HEADER_THEN, _HEADER_NOW)` with the 41-5 row advanced. The pinned blob ids and the
+  fixture stay as they are. Left to the orchestrator: give the test file an owner in this wave (for example add it to
+  this story's files_owned, since marshal:S-116.1 is done), then apply that patch.

@@ -3,21 +3,43 @@
 General documentation (architecture, operations, how-tos): docs/MAP.md at the repository root.
 
 The shared leaf every pyforge station may depend on, and that depends on
-none of them. Pure stdlib, zero third-party runtime dependencies. Stories
-14.2–14.4 extracted the atomic-write primitive, verdict lattice, report
-envelope, exception root, and subprocess guard here. Story 32.1 adds the
-**shared hook-spec and plugin registration** surface (`pyforge.core.hooks`)
-in this same package — stations consume it; they do not ship a second
-loader. See
+none of them: pure stdlib at import, zero third-party runtime dependencies
+(spec-pyforge-core:CAP-1). See
 [`_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md`](../../../../_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md)
-for the leaf contract, and
-[`_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-32-1-shared-hook-spec-and-plugin-registration-in-pyforge-core.md`](../../../../_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-32-1-shared-hook-spec-and-plugin-registration-in-pyforge-core.md)
-for the hook-spec contract.
+for the leaf's Spec, and its companion
+[`contract.md`](../../../../_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/contract.md)
+(spec-pyforge-core:CAP-12) for the public contract: every module with the
+capability that governs it, every public name a station may import, the
+environment variables, feature-flag keys, exit codes, entry points and the
+Python floor. `tests/meta/test_public_contract.py` fails the suite when the
+source and the contract differ, so a change to that surface changes
+`contract.md` in the same change. The hook-spec contract is
+[`_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-32-1-shared-hook-spec-and-plugin-registration-in-pyforge-core.md`](../../../../_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-32-1-shared-hook-spec-and-plugin-registration-in-pyforge-core.md).
 
-**Status:** The leaf is no longer an empty 14.1 scaffold. Primitives live
-here; the canonical plugin group is `pyforge.core.hooks` only. Story 22.1
-adds the unified `pyforge` console script (CAP-5 / FR-13): dispatch to
-existing station binaries, never a second implementation of station logic.
+## Modules
+
+Import from the module; the package itself (`pyforge.core`) exports only
+`__version__`. The public names of each module are in `contract.md`.
+
+| Module | What it is | Governed by |
+|---|---|---|
+| `pyforge.core.atomic_write` | The one tmp-in-dir + `os.replace` write | spec-pyforge-core:CAP-2 |
+| `pyforge.core.verdict` | The verdict-lattice rank and exit-domain bookkeeping | spec-pyforge-core:CAP-3 |
+| `pyforge.core.report` | The base report envelope schema and its compose | spec-pyforge-core:CAP-4 |
+| `pyforge.core.errors` | The shared exception root, `PyforgeError` | spec-pyforge-core:CAP-5 |
+| `pyforge.core.process` | The one subprocess seam (`ProcessPort`, `PosixProcess`) | spec-pyforge-core:CAP-6 |
+| `pyforge.core.dispatch` | The `pyforge <station> <noun> <verb>` front door | spec-pyforge-unifying-strategy:CAP-5, spec-pyforge-core:CAP-11 |
+| `pyforge.core.roster` | The one Guild station roster | spec-pyforge-steward:CAP-137 |
+| `pyforge.core.hooks` | The shared hook-spec and plugin registration | spec-pyforge-unifying-strategy:CAP-18 |
+| `pyforge.core.client` | The host-relative station API client | spec-pyforge-unifying-strategy:CAP-6 |
+| `pyforge.core.assertion` | The host-mint assertion client | spec-pyforge-unifying-strategy:CAP-6 |
+| `pyforge.core.station_port` | The in-process station API port | spec-pyforge-unifying-strategy:CAP-6 |
+| `pyforge.core.flags` | The fleet-wide CLI flag contract and kill switch | spec-feature-flag-governance:CAP-5, spec-feature-flag-governance:CAP-7, spec-pyforge-unifying-strategy:CAP-13 |
+| `pyforge.core.cutover_root` | The root of record and its forge slug | fnd:CAP-8, spec-pyforge-core:CAP-13 |
+| `pyforge.core.landing_evidence` | The one grammar of landing-evidence shapes | spec-pyforge-marshal:CAP-126 |
+| `pyforge.core.preserve_refs` | The one grammar for preserved-work refs | spec-pyforge-marshal:CAP-287, spec-pyforge-steward:CAP-165 |
+| `pyforge.core.published_loop` | The read side of the run-state publisher | spec-pyforge-unifying-strategy:CAP-17, spec-pyforge-marshal:CAP-227 |
+| `pyforge.core.league_measure` | The published-measure cite gate | spec-pyforge-steward:CAP-46 |
 
 ## Unified CLI (`pyforge <station> <noun> <verb>`)
 
