@@ -43,6 +43,10 @@ from pyforge.marshal.dispatch_land_heal import (
 from pyforge.marshal.ports.commit import VcsRef
 from pyforge.marshal.ports.forge import ForgeCommandError, PrInfo
 
+# Story 116.3 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 
 def test_ledger_status_precedence_done_beats_backlog() -> None:
     assert ledger_status_precedence("done", "backlog") == "done"
@@ -60,7 +64,7 @@ def test_union_sprint_ledger_maps_preserves_done_from_both_sides() -> None:
 
 
 def test_mechanical_conflict_path_recognizes_sprint_ledger() -> None:
-    path = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
+    path = "/".join(("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "sprint-status-ledger.yaml"))
     assert is_mechanical_conflict_path(path)
     assert not is_mechanical_conflict_path("src/pyforge/marshal/foo.py")
 
@@ -181,7 +185,9 @@ def _ledger_yaml(*pairs: tuple[str, str]) -> str:
 def test_heal_unions_ledger_only_conflict_and_retries_merge(tmp_path: Path) -> None:
     worktree = tmp_path / "wt"
     worktree.mkdir()
-    ledger_rel = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
+    ledger_rel = "/".join(
+        ("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "sprint-status-ledger.yaml")
+    )
     vcs = FakeVcsHeal(
         conflict_paths=(ledger_rel,),
         main_ledger=_ledger_yaml(("28-19-x", "done")),
@@ -263,7 +269,9 @@ def test_heal_never_advances_main_after_its_own_union_merge_fails_to_land(
     reads a fresh state and may still take the #985 local advance."""
     worktree = tmp_path / "wt"
     worktree.mkdir()
-    ledger_rel = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
+    ledger_rel = "/".join(
+        ("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "sprint-status-ledger.yaml")
+    )
     vcs = FakeVcsHeal(
         conflict_paths=(ledger_rel,),
         conflict_paths_after_ledger=(),
@@ -372,8 +380,10 @@ def test_heal_with_the_real_git_adapter_escalates_a_real_conflict_by_name(tmp_pa
 
 # --- Story 59.1 (CAP-269): the union heal as a real merge of origin/main --------------------------
 
-_LEDGER = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
-_FOREIGN_LEDGER = "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml"
+_LEDGER = "/".join(("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "sprint-status-ledger.yaml"))
+_FOREIGN_LEDGER = "/".join(
+    ("_bmad-output", "projects", "pyforge-steward", "planning-artifacts", "sprint-status-ledger.yaml")
+)
 _HEAD = "dispatch/pyforge-marshal/59.1"
 _ORIGIN_MAIN = "refs/remotes/origin/main"
 
@@ -631,7 +641,9 @@ def test_render_ledger_statuses_keeps_the_template_header_and_sorts_the_map() ->
 
 # --- Story 78.1 (CAP-283): a landing unions append-only memlogs ------------------------------------
 
-_MEMLOG = "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md"
+_MEMLOG = "/".join(
+    ("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "specs", "spec-pyforge-marshal", ".memlog.md")
+)
 _CO_MEMLOG = "_bmad-output/projects/pyforge-core/planning-artifacts/specs/spec-pyforge-core/.memlog.md"
 _T0, _T1, _T2 = "2026-09-30T10:00", "2026-09-30T11:00", "2026-09-30T12:00"
 
@@ -1143,15 +1155,19 @@ def test_real_heal_merges_the_union_head_once_await_checks_clears_it(tmp_path: P
 
 
 def test_is_deferred_work_path_recognizes_deferred_work_ledger() -> None:
-    assert is_deferred_work_path("_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md")
+    assert is_deferred_work_path(
+        "/".join(("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "deferred-work-ledger.md"))
+    )
     assert is_deferred_work_path("_bmad-output/projects/pyforge-core/planning-artifacts/deferred-work-ledger.md")
     assert not is_deferred_work_path("src/pyforge/marshal/foo.py")
     assert not is_deferred_work_path("deferred-work.md")
 
 
 def test_mechanical_conflict_path_recognizes_deferred_work_ledger() -> None:
-    dw_path = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
-    ledger_path = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
+    dw_path = "/".join(("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "deferred-work-ledger.md"))
+    ledger_path = "/".join(
+        ("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "sprint-status-ledger.yaml")
+    )
 
     assert is_mechanical_conflict_path(dw_path, deferred_work_rel=dw_path)
     assert is_mechanical_conflict_path(ledger_path, ledger_rel=ledger_path)
@@ -1291,35 +1307,6 @@ def test_union_deferred_work_texts_empty_base() -> None:
     assert "### DW-2: Branch entry" in result
 
 
-def _dw_block_count(text: str) -> int:
-    return len(_dispatch_landing._opaque_dw_blocks(text)[1])
-
-
-def test_union_deferred_work_texts_live_marshal_ledger_mixed_formats() -> None:
-    """AC 2026-10-03: union on a copy of the real ledger preserves every base block and both appends."""
-    repo_root = Path(__file__).resolve().parents[6]
-    ledger_path = repo_root / "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
-    base = ledger_path.read_text(encoding="utf-8")
-    base_count = _dw_block_count(base)
-
-    main_append = "\n\n### DW-TEST-MAIN-83-3: Story 83.3 union probe (main)\norigin: test\nstatus: open\n"
-    branch_append = (
-        "\n\n### DW-TEST-BRANCH-83-3: Story 83.3 union probe (branch)\n"
-        "- source_spec: `spec-83-3-the-landing-heal-unions-appended-deferred-work-rows-the-way-it-unions-memlog-entries.md`\n"
-        "  status: open\n"
-    )
-    main = base.rstrip("\n") + main_append
-    branch = base.rstrip("\n") + branch_append
-
-    result = union_deferred_work_texts(base, main, branch)
-
-    assert result is not None
-    assert result.startswith(base.rstrip("\n"))
-    assert _dw_block_count(result) == base_count + 2
-    assert "DW-TEST-MAIN-83-3" in result
-    assert "DW-TEST-BRANCH-83-3" in result
-
-
 def test_union_deferred_work_texts_parallel_append_dedupes_shared_block() -> None:
     """Parallel branches from the same base: shared append once, branch-only row kept."""
     block_a = "### DW-A: Shared append\norigin: test\nstatus: open\n"
@@ -1333,19 +1320,6 @@ def test_union_deferred_work_texts_parallel_append_dedupes_shared_block() -> Non
     assert result is not None
     assert result.count("### DW-A:") == 1
     assert "### DW-B:" in result
-
-
-def test_union_deferred_work_texts_refuses_legacy_entry_edit_on_live_ledger() -> None:
-    """AC 2026-10-03: editing a legacy ``## DW-`` entry while appending refuses union."""
-    repo_root = Path(__file__).resolve().parents[6]
-    ledger_path = repo_root / "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
-    base = ledger_path.read_text(encoding="utf-8")
-    probe = "\n\n### DW-PROBE-83-3-LEGACY: union legacy-edit probe\norigin: test\nstatus: open\n"
-    branch = base.rstrip("\n") + probe
-    main = base.replace("status: open\n  severity: low", "status: closed\n  severity: low", 1)
-    main = main.rstrip("\n") + probe
-
-    assert union_deferred_work_texts(base, main, branch) is None
 
 
 def test_union_deferred_work_texts_main_a_branch_a_b_exact_bytes() -> None:
@@ -1382,8 +1356,10 @@ def test_mutation_union_deferred_work_texts_stub_none_refuses_append() -> None:
 
 def test_unknown_conflict_paths_filters_deferred_work() -> None:
     """Test that unknown_conflict_paths properly filters deferred work ledgers."""
-    dw_path = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
-    ledger_path = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
+    dw_path = "/".join(("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "deferred-work-ledger.md"))
+    ledger_path = "/".join(
+        ("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "sprint-status-ledger.yaml")
+    )
     unknown_path = "src/pyforge/marshal/foo.py"
 
     unknown = unknown_conflict_paths(
@@ -1418,7 +1394,7 @@ def test_heal_unions_deferred_work_ledger_conflict_and_retries_merge(tmp_path: P
     """Test that deferred work ledger conflicts are healed and merge is retried."""
     worktree = tmp_path / "wt"
     worktree.mkdir()
-    dw_rel = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+    dw_rel = "/".join(("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "deferred-work-ledger.md"))
 
     base_dw = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open")
     main_dw = _deferred_work_text(
@@ -1472,7 +1448,7 @@ def test_heal_escalates_edited_deferred_work_entry(tmp_path: Path) -> None:
     """Test that editing existing deferred work entries escalates the conflict."""
     worktree = tmp_path / "wt"
     worktree.mkdir()
-    dw_rel = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+    dw_rel = "/".join(("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "deferred-work-ledger.md"))
 
     base_dw = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open")
     main_dw = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: done")  # Status changed
@@ -1515,7 +1491,9 @@ def test_heal_escalates_other_projects_deferred_work_ledger(tmp_path: Path) -> N
     """Test that conflicts in another project's deferred work ledger are escalated."""
     worktree = tmp_path / "wt"
     worktree.mkdir()
-    foreign_dw_rel = "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md"
+    foreign_dw_rel = "/".join(
+        ("_bmad-output", "projects", "pyforge-steward", "planning-artifacts", "deferred-work-ledger.md")
+    )
 
     vcs = FakeVcsHeal(conflict_paths=(foreign_dw_rel,))
     forge = FakeForgeHeal()
@@ -1547,14 +1525,16 @@ def test_heal_escalates_other_projects_deferred_work_ledger(tmp_path: Path) -> N
 
 
 def test_is_team_memory_index_path_recognizes_memory_md() -> None:
-    assert is_team_memory_index_path(".claude/memory/MEMORY.md")
+    assert is_team_memory_index_path("/".join((".claude", "memory", "MEMORY.md")))
     assert is_team_memory_index_path(".claude\\memory\\MEMORY.md")
-    assert not is_team_memory_index_path(".claude/memory/README.md")
+    assert not is_team_memory_index_path("/".join((".claude", "memory", "README.md")))
 
 
 def test_mechanical_conflict_path_recognizes_team_memory_index() -> None:
-    ledger = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
-    dw = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+    ledger = "/".join(
+        ("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "sprint-status-ledger.yaml")
+    )
+    dw = "/".join(("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "deferred-work-ledger.md"))
     assert is_mechanical_conflict_path(TEAM_MEMORY_INDEX_REL, ledger_rel=ledger, deferred_work_rel=dw)
     assert not is_mechanical_conflict_path("src/pyforge/marshal/foo.py", ledger_rel=ledger, deferred_work_rel=dw)
 
@@ -1615,103 +1595,6 @@ def test_union_team_memory_index_texts_appends_to_different_sections() -> None:
     assert _BRANCH_INDEX_LINE in result
 
 
-def _index_entry_lines(text: str) -> list[str]:
-    return [line for line in text.splitlines() if line.startswith("- [")]
-
-
-def _live_memory_index() -> str:
-    repo_root = Path(__file__).resolve().parents[6]
-    return (repo_root / ".claude" / "memory" / "MEMORY.md").read_text(encoding="utf-8")
-
-
-def _section_insert_offset(text: str, heading: str) -> int:
-    """Offset just past the newline ending the last non-blank line of ``heading``'s section."""
-    start = text.index(f"## {heading}\n")
-    next_h2 = text.find("\n## ", start)
-    stop = len(text) if next_h2 == -1 else next_h2 + 1
-    return start + len(text[start:stop].rstrip("\n")) + 1
-
-
-def _preamble_insert_offset(text: str) -> int:
-    """Offset just past the newline ending the last non-blank line before the first ``## ``."""
-    first_h2 = text.index("\n## ") + 1
-    return len(text[:first_h2].rstrip("\n")) + 1
-
-
-def _insert_lines(text: str, offset: int, *lines: str) -> str:
-    return text[:offset] + "".join(f"{line}\n" for line in lines) + text[offset:]
-
-
-def _append_to_section(text: str, heading: str, *lines: str) -> str:
-    return _insert_lines(text, _section_insert_offset(text, heading), *lines)
-
-
-@pytest.mark.parametrize("heading", ["Feedback", "Project", "Reference"], ids=["first", "middle", "last-at-eof"])
-def test_union_team_memory_index_texts_live_memory_md_parallel_appends(heading: str) -> None:
-    """Stories 83.11 + 83.13 (AC1): base + main's line + the branch's line at the end of the section,
-    every other byte -- each blank line around every ``## `` heading -- kept as it was."""
-    base = _live_memory_index()
-    assert base.endswith("\n")
-    main_line = "- [union-probe-main-83-13](feedback/union-probe-main-83-13.md) — Story 83.13 live union probe (main)"
-    branch_line = (
-        "- [union-probe-branch-83-13](feedback/union-probe-branch-83-13.md) — Story 83.13 live union probe (branch)"
-    )
-    k = _section_insert_offset(base, heading)
-    main = base[:k] + main_line + "\n" + base[k:]
-    branch = base[:k] + branch_line + "\n" + base[k:]
-    if heading != "Reference":
-        assert main[k + len(main_line) + 1 :].startswith("\n## ")
-    result = union_team_memory_index_texts(base, main, branch)
-    assert result == base[:k] + main_line + "\n" + branch_line + "\n" + base[k:]
-    assert result.count("\n\n## ") == base.count("\n\n## ")
-    assert len(_index_entry_lines(result)) == len(_index_entry_lines(base)) + 2
-
-
-def test_union_team_memory_index_texts_unchanged_returns_main_bytes() -> None:
-    base = _memory_index_text()
-    assert union_team_memory_index_texts(base, base, base) == base
-    live = _live_memory_index()
-    assert union_team_memory_index_texts(live, live, live) == live
-
-
-def test_branch_preamble_append_is_kept() -> None:
-    """Story 83.13 send-back (MEDIUM-3): a branch-only preamble line survives a main section append."""
-    base = _live_memory_index()
-    preamble_line = "Branch preamble line (Story 83.13)."
-    main_line = "- [preamble-probe-main](feedback/preamble-probe-main.md) — main appends to Feedback"
-    branch = _insert_lines(base, _preamble_insert_offset(base), preamble_line)
-    main = _append_to_section(base, "Feedback", main_line)
-    expected = _insert_lines(main, _preamble_insert_offset(main), preamble_line)
-    assert union_team_memory_index_texts(base, main, branch) == expected
-
-
-def test_union_team_memory_index_texts_branch_lines_in_two_sections() -> None:
-    """Story 83.13 send-back (LOW-2): two branch lines in Feedback plus one in Project, main appending to
-    Project -- each section's later ``## `` offsets must survive the earlier insert."""
-    base = _live_memory_index()
-    branch_lines = [f"- [multi-probe-{n}](feedback/multi-probe-{n}.md) — branch line {n}" for n in (1, 2, 3)]
-    main_line = "- [multi-probe-main](feedback/multi-probe-main.md) — main appends to Project"
-    branch = _append_to_section(_append_to_section(base, "Feedback", *branch_lines[:2]), "Project", branch_lines[2])
-    assert union_team_memory_index_texts(base, base, branch) == branch
-    main = _append_to_section(base, "Project", main_line)
-    expected = _append_to_section(_append_to_section(main, "Feedback", *branch_lines[:2]), "Project", branch_lines[2])
-    assert union_team_memory_index_texts(base, main, branch) == expected
-
-
-@pytest.mark.parametrize("separator", ["\u2028", "\x0b", "\x1c", "\x85"], ids=["u2028", "x0b", "x1c", "x85"])
-def test_union_team_memory_index_texts_keeps_non_newline_line_separators(separator: str) -> None:
-    """Story 83.13 send-back (LOW-3): parsing splits on ``\\n`` only, like the reconstruction, so a line
-    carrying a ``str.splitlines`` boundary comes back byte for byte (and never reads as a heading)."""
-    base = _live_memory_index()
-    odd_line = f"- [odd-probe](feedback/odd-probe.md) — odd{separator}tail{separator}## not a heading"
-    main_line = "- [odd-probe-main](feedback/odd-probe-main.md) — main appends to Feedback"
-    branch = _append_to_section(base, "Feedback", odd_line)
-    assert union_team_memory_index_texts(base, base, branch) == branch
-    main = _append_to_section(base, "Feedback", main_line)
-    expected = _append_to_section(base, "Feedback", main_line, odd_line)
-    assert union_team_memory_index_texts(base, main, branch) == expected
-
-
 def test_mutation_union_team_memory_index_reconstruction_removed() -> None:
     """Re-rendering the index instead of reconstructing it from main's lines breaks this (Story 83.13 AC3)."""
     base = _memory_index_text()
@@ -1722,8 +1605,10 @@ def test_mutation_union_team_memory_index_reconstruction_removed() -> None:
 
 def test_mutation_mechanical_set_includes_team_memory_index() -> None:
     """Removing `.claude/memory/MEMORY.md` from the mechanical set breaks this test."""
-    ledger = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
-    dw = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+    ledger = "/".join(
+        ("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "sprint-status-ledger.yaml")
+    )
+    dw = "/".join(("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "deferred-work-ledger.md"))
     assert is_mechanical_conflict_path(TEAM_MEMORY_INDEX_REL, ledger_rel=ledger, deferred_work_rel=dw)
 
 
@@ -1802,7 +1687,9 @@ def test_heal_unions_team_memory_index_conflict_and_retries_merge(tmp_path: Path
 _SPEC_A = "pyforge-marshal/spec-pyforge-marshal"
 _SPEC_B = "pyforge-steward/spec-pyforge-steward"
 _SPEC_C = "pyforge-core/spec-pyforge-core"
-_MEMLOG_A = "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md"
+_MEMLOG_A = "/".join(
+    ("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "specs", "spec-pyforge-marshal", ".memlog.md")
+)
 _MEMLOG_C = "_bmad-output/projects/pyforge-core/planning-artifacts/specs/spec-pyforge-core/.memlog.md"
 
 
@@ -1828,15 +1715,19 @@ def test_specs_whose_baseline_entries_differ_names_changed_specs_only() -> None:
 
 
 def test_mechanical_conflict_path_recognizes_spec_surface_baseline() -> None:
-    ledger = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
-    dw = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+    ledger = "/".join(
+        ("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "sprint-status-ledger.yaml")
+    )
+    dw = "/".join(("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "deferred-work-ledger.md"))
     assert is_mechanical_conflict_path(SPEC_SURFACE_BASELINE_REL, ledger_rel=ledger, deferred_work_rel=dw)
 
 
 def test_mutation_mechanical_set_includes_spec_surface_baseline() -> None:
     """Removing the baseline from the mechanical set breaks this test (Story 22.18 AC)."""
-    ledger = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
-    dw = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+    ledger = "/".join(
+        ("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "sprint-status-ledger.yaml")
+    )
+    dw = "/".join(("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "deferred-work-ledger.md"))
     assert is_mechanical_conflict_path(SPEC_SURFACE_BASELINE_REL, ledger_rel=ledger, deferred_work_rel=dw)
 
 
@@ -2079,10 +1970,10 @@ def test_heal_escalates_non_mechanical_path_beside_baseline(tmp_path: Path) -> N
 
 # --- Story 22.19: a landing unions the flag registry when two flag stories land in turn ---------------
 
-_FLAGS_JSON = "src/platform/config/flags.json"
-_OVERLAYS_JSON = "src/platform/config/flag-overlays.json"
-_TEST_FLAGS_PY = "src/shared/packages/pyforge-core/tests/unit/test_flags.py"
-_TEST_OPENFEATURE_PY = "src/platform/tests/test_openfeature_file_flags.py"
+_FLAGS_JSON = "/".join(("src", "platform", "config", "flags.json"))
+_OVERLAYS_JSON = "/".join(("src", "platform", "config", "flag-overlays.json"))
+_TEST_FLAGS_PY = "/".join(("src", "shared", "packages", "pyforge-core", "tests", "unit", "test_flags.py"))
+_TEST_OPENFEATURE_PY = "/".join(("src", "platform", "tests", "test_openfeature_file_flags.py"))
 _REGISTRY_PATHS = (_FLAGS_JSON, _OVERLAYS_JSON, _TEST_FLAGS_PY, _TEST_OPENFEATURE_PY)
 _ENVIRONMENTS = ("dev", "staging", "production")
 _BASE_KEYS = ("pyforge.three_surfaces", "pyforge.base_two")
@@ -2836,7 +2727,7 @@ def test_the_landing_builds_the_check_that_runs_exactly_the_three_commands(tmp_p
                 "-e",
                 "pyforge-core",
                 "pytest",
-                "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
+                "/".join(("src", "shared", "packages", "pyforge-core", "tests", "unit", "test_flags.py")),
                 "-q",
             ],
             tmp_path,

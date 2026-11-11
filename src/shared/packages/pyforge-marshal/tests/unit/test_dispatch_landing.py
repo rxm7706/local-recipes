@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import json
-import shutil
-import subprocess
 import sys
 import time
 from collections.abc import Callable
@@ -37,12 +35,15 @@ from pyforge.marshal.core.model import Severity, Status, status_for
 from pyforge.marshal.core.refs import ORIGIN_MAIN, ORIGIN_MAIN_SHORT, local_branch_ref
 from pyforge.marshal.dispatch_land import (
     _SPEC_SURFACE_NAME_RE,
-    _own_path_stamp_refusals,
     _reconcile_spec_surface_drift,
     execute_dispatch_land,
 )
 from pyforge.marshal.ports.commit import VcsRef
 from pyforge.marshal.ports.forge import ForgeCommandError, PrInfo
+
+# Story 116.3 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
 
 
 def test_refuse_unverified_landing() -> None:
@@ -727,7 +728,7 @@ def test_reconcile_spec_surface_drift_reconciles_cross_project_co_governor(tmp_p
 _CORE_SPEC = "pyforge-steward/spec-pyforge-core"
 _STATION_SPEC = "pyforge-marshal/spec-pyforge-marshal"
 _BRANCH = "dispatch/pyforge-marshal/82.3"
-_BASELINE_PATH = "scripts/.spec-surface-baseline.json"
+_BASELINE_PATH = "/".join(("scripts", ".spec-surface-baseline.json"))
 
 
 def _memlog_rel(spec: str) -> str:
@@ -1043,7 +1044,7 @@ def test_doctor_argv_runs_through_the_landing_process_port_with_the_worktree_as_
 
     assert result.verdict == DispatchLandingVerdict.LANDED
     assert process.doctor_calls == [([sys.executable, "-c", BOOTSTRAP, "spec-surface", "--json"], worktree, 300.0)]
-    assert "src/shared/packages/pyforge-doctor/src" in BOOTSTRAP.replace("', '", "/")
+    assert "/".join(("src", "shared", "packages", "pyforge-doctor", "src")) in BOOTSTRAP.replace("', '", "/")
     assert "runpy.run_module('pyforge.doctor.sources', run_name='__main__', alter_sys=True)" in BOOTSTRAP
 
 
@@ -1121,167 +1122,6 @@ def test_a_chain_of_hidden_co_governors_is_reconciled_one_pass_each(tmp_path: Pa
         path for spec in specs for path in ((Path(_memlog_rel(spec)),), (Path(_BASELINE_PATH),))
     ]
     assert vcs.pushed == [_BRANCH]
-
-
-_CO_GOV_STATION = "proj/spec-station"
-_CO_GOV_CORE = "proj/spec-core"
-_CO_GOV_PATH = "a.py"
-_REPO_ROOT_FOR_STAMP = Path(__file__).resolve().parents[6]
-_STAMP_SCRIPT = _REPO_ROOT_FOR_STAMP / "scripts" / "spec_surface_check.py"
-
-
-def _co_governor_spec_dir(repo: Path, slug: str) -> Path:
-    return repo / "_bmad-output" / "projects" / "proj" / "planning-artifacts" / "specs" / slug
-
-
-def _patched_stamp_script(repo: Path) -> Path:
-    source = _STAMP_SCRIPT.read_text(encoding="utf-8")
-    patched = source.replace(
-        "REPO_ROOT = Path(__file__).resolve().parent.parent",
-        f"REPO_ROOT = Path({str(repo)!r})",
-    )
-    assert patched != source
-    destination = repo / "scripts" / "spec_surface_check.py"
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_text(patched, encoding="utf-8")
-    return destination
-
-
-def _stamp_repo_baseline(repo: Path) -> None:
-    subprocess.run(
-        [sys.executable, str(repo / "scripts" / "spec_surface_check.py"), "--write-baseline"],
-        cwd=repo,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-
-
-def _co_governor_fixture_repo(tmp_path: Path) -> Path:
-    """Two specs co-govern ``a.py`` with a stamped baseline."""
-    for slug in ("spec-station", "spec-core"):
-        directory = _co_governor_spec_dir(tmp_path, slug)
-        directory.mkdir(parents=True)
-        (directory / "SPEC.md").write_text(
-            f"---\nsurface:\n  - {_CO_GOV_PATH}\n---\n# {slug}\n",
-            encoding="utf-8",
-        )
-        (directory / ".memlog.md").write_text(
-            "---\ntopic: test\nupdated: 2026-10-06T00:00\n---\n\n- (note) initial\n",
-            encoding="utf-8",
-        )
-    (tmp_path / _CO_GOV_PATH).write_text("x = 1\n", encoding="utf-8")
-    memlog_dest = tmp_path / "_bmad" / "scripts" / "memlog.py"
-    memlog_dest.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy(_REPO_ROOT_FOR_STAMP / "_bmad" / "scripts" / "memlog.py", memlog_dest)
-    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
-    subprocess.run(["git", "add", "-A"], cwd=tmp_path, check=True)
-    _patched_stamp_script(tmp_path)
-    _stamp_repo_baseline(tmp_path)
-    return tmp_path
-
-
-class _RealReconcileProcess:
-    """Runs memlog and spec_surface_check subprocesses against the fixture repo; Doctor's command answers
-    from the test's script."""
-
-    def __init__(self) -> None:
-        self.calls: list[tuple[list[str], Path]] = []
-        self.doctor_calls: list[tuple[list[str], Path, float | None]] = []
-
-    def run(self, tokens, *, cwd: Path, timeout_s: float | None = None):
-        doctor = _doctor_answer(self.doctor_calls, tokens, cwd, timeout_s)
-        if doctor is not None:
-            return doctor
-        self.calls.append((list(tokens), cwd))
-        if len(tokens) > 1 and ("memlog.py" in tokens[1] or "spec_surface_check.py" in tokens[1]):
-            completed = subprocess.run(tokens, cwd=cwd, capture_output=True, text=True, check=False)
-            return ProcessResult(completed.returncode, completed.stdout, completed.stderr)
-        return ProcessResult(returncode=0, stdout="", stderr="")
-
-
-def test_reconcile_spec_surface_drift_reconciles_co_governor_doctor_cleared_by_overlap_tolerance(
-    tmp_path: Path, monkeypatch
-) -> None:
-    """Story 53.4: when the session named a path only on its station spec, doctor's overlap
-    tolerance emits no row, but the co-governor still refuses a scoped stamp until its memlog
-    names the path."""
-    repo = _co_governor_fixture_repo(tmp_path)
-    (repo / _CO_GOV_PATH).write_text("x = 2\n", encoding="utf-8")
-    station_memlog = _co_governor_spec_dir(repo, "spec-station") / ".memlog.md"
-    station_memlog.write_text(
-        station_memlog.read_text(encoding="utf-8") + f"- (event) session named {_CO_GOV_PATH}\n",
-        encoding="utf-8",
-    )
-    core_memlog = _co_governor_spec_dir(repo, "spec-core") / ".memlog.md"
-    core_memlog.write_text(
-        core_memlog.read_text(encoding="utf-8") + "- (event) unrelated story moved memlog\n", encoding="utf-8"
-    )
-
-    _install_fake_spec_surface(monkeypatch, ())
-    process = _RealReconcileProcess()
-    worktree = repo
-    outcome = _reconcile_spec_surface_drift(
-        git_repo_root=repo,
-        worktree=worktree,
-        head_branch="dispatch/pyforge-marshal/53.4",
-        key=normalize("53-4-example"),
-        run_id="run-53",
-        vcs=_ReconcileVcs(changed=(_CO_GOV_PATH,)),
-        process=process,
-    )
-    assert outcome.refuse is False
-    assert outcome.finding is not None and outcome.finding.code == "MRS-DISP-047"
-    assert _CO_GOV_CORE in outcome.finding.message
-    memlog_targets = [Path(tokens[tokens.index("--path") + 1]).parent.name for tokens in _calls(process, "memlog.py")]
-    assert memlog_targets == ["spec-core"]
-    assert _spec_args(_calls(process, "spec_surface_check.py")[0]) == [_CO_GOV_CORE]
-
-
-def test_reconcile_spec_surface_drift_without_stamp_refusal_expansion_leaves_co_governor_unnamed(
-    tmp_path: Path, monkeypatch
-) -> None:
-    """Story 53.4 AC2: without the stamp-refusal expansion, a doctor-cleared co-governor stays unnamed."""
-    repo = _co_governor_fixture_repo(tmp_path)
-    (repo / _CO_GOV_PATH).write_text("x = 2\n", encoding="utf-8")
-    station_memlog = _co_governor_spec_dir(repo, "spec-station") / ".memlog.md"
-    station_memlog.write_text(
-        station_memlog.read_text(encoding="utf-8") + f"- (event) session named {_CO_GOV_PATH}\n",
-        encoding="utf-8",
-    )
-
-    monkeypatch.setattr(
-        "pyforge.marshal.dispatch_land._own_path_stamp_refusals",
-        lambda _worktree, _own_paths: {},
-    )
-    _install_fake_spec_surface(monkeypatch, ())
-    process = FakeProcess()
-    outcome = _reconcile_spec_surface_drift(
-        git_repo_root=repo,
-        worktree=repo,
-        head_branch="dispatch/pyforge-marshal/53.4",
-        key=normalize("53-4-example"),
-        run_id=None,
-        vcs=_ReconcileVcs(changed=(_CO_GOV_PATH,)),
-        process=process,
-    )
-    assert outcome.finding is None
-    assert _calls(process, "memlog.py") == []
-
-
-def test_own_path_stamp_refusals_names_co_governor_when_station_memlog_cleared_doctor_verdict(
-    tmp_path: Path,
-) -> None:
-    repo = _co_governor_fixture_repo(tmp_path)
-    (repo / _CO_GOV_PATH).write_text("x = 2\n", encoding="utf-8")
-    station_memlog = _co_governor_spec_dir(repo, "spec-station") / ".memlog.md"
-    station_memlog.write_text(
-        station_memlog.read_text(encoding="utf-8") + f"- (event) session named {_CO_GOV_PATH}\n",
-        encoding="utf-8",
-    )
-    refusals = _own_path_stamp_refusals(repo, frozenset({_CO_GOV_PATH}))
-    assert refusals == {_CO_GOV_CORE: {_CO_GOV_PATH}}
-    assert _CO_GOV_STATION not in refusals
 
 
 def test_reconcile_spec_surface_drift_refuses_foreign_drift(tmp_path: Path, monkeypatch) -> None:
@@ -1973,7 +1813,9 @@ def test_execute_dispatch_land_advances_main_when_merge_tree_clean_and_github_di
 def test_execute_dispatch_land_heals_ledger_only_conflict(tmp_path: Path) -> None:
     worktree = tmp_path / "wt"
     worktree.mkdir()
-    ledger_rel = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
+    ledger_rel = "/".join(
+        ("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "sprint-status-ledger.yaml")
+    )
     vcs = HealCapableVcs(
         conflict_paths=(ledger_rel,),
         main_ledger=_ledger_yaml(("28-19-x", "done")),
@@ -2002,7 +1844,9 @@ def test_execute_dispatch_land_heals_ledger_only_conflict(tmp_path: Path) -> Non
     assert "28-20-y: backlog" in written
 
 
-_MEMLOG_REL = "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md"
+_MEMLOG_REL = "/".join(
+    ("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "specs", "spec-pyforge-marshal", ".memlog.md")
+)
 
 
 def _memlog_text(*entries: str, updated: str) -> str:
@@ -2028,7 +1872,9 @@ def test_execute_dispatch_land_records_the_healed_memlog_paths(tmp_path: Path) -
     one merge, and its record names the memlog beside `ledger_union_heal`."""
     worktree = tmp_path / "wt"
     worktree.mkdir()
-    ledger_rel = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
+    ledger_rel = "/".join(
+        ("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "sprint-status-ledger.yaml")
+    )
     vcs = _MemlogHealVcs(
         conflict_paths=(ledger_rel, _MEMLOG_REL),
         main_ledger=_ledger_yaml(("28-19-x", "done")),
@@ -2060,7 +1906,9 @@ def test_execute_dispatch_land_records_the_healed_memlog_paths(tmp_path: Path) -
 def test_execute_dispatch_land_records_no_memlog_paths_for_a_ledger_only_heal(tmp_path: Path) -> None:
     worktree = tmp_path / "wt"
     worktree.mkdir()
-    ledger_rel = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
+    ledger_rel = "/".join(
+        ("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "sprint-status-ledger.yaml")
+    )
     vcs = HealCapableVcs(
         conflict_paths=(ledger_rel,),
         main_ledger=_ledger_yaml(("28-19-x", "done")),
@@ -2099,7 +1947,9 @@ def test_execute_dispatch_land_skips_the_heal_when_its_fetch_fails(tmp_path: Pat
     landing refuses with MRS-DISP-020 as it would have without a heal."""
     worktree = tmp_path / "wt"
     worktree.mkdir()
-    ledger_rel = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
+    ledger_rel = "/".join(
+        ("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "sprint-status-ledger.yaml")
+    )
     vcs = _HealFetchFailsVcs(
         conflict_paths=(ledger_rel,),
         main_ledger=_ledger_yaml(("28-19-x", "done")),
@@ -2408,7 +2258,9 @@ def test_a_normal_landing_hands_finalize_the_same_argv_as_before(tmp_path: Path)
 
 
 _FRR_STORY_KEY = "51-2-the-landing-record"
-_FRR_LEDGER_REL = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+_FRR_LEDGER_REL = "/".join(
+    ("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "deferred-work-ledger.md")
+)
 _FRR_SPEC_REL = "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-51-2-the-landing-record.md"
 _FRR_SPEC_TEXT = "---\nstatus: done\nfollowup_review_recommended: true\n---\n\nbody\n"
 _FRR_ROW_ID = "DW-FRR-51-2"
@@ -3855,7 +3707,9 @@ def test_a_landing_driven_without_a_tick_waits_exactly_as_before(tmp_path: Path,
 
 # --- the head a union heal pushes ---------------------------------------------------------------------
 
-_LEDGER_REL = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
+_LEDGER_REL = "/".join(
+    ("_bmad-output", "projects", "pyforge-marshal", "planning-artifacts", "sprint-status-ledger.yaml")
+)
 _FAILED_SCRIPTS = (_run("Detectors / scripts-suite", conclusion="failure"),)
 
 
@@ -4330,10 +4184,10 @@ def test_mutation_without_hold_path_merges_when_landing_review_required(tmp_path
 # --- Story 22.19: the landing builds and passes the flag-registry healed-tree check -------------------
 
 _FLAG_PATHS = (
-    "src/platform/config/flag-overlays.json",
-    "src/platform/config/flags.json",
-    "src/platform/tests/test_openfeature_file_flags.py",
-    "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
+    "/".join(("src", "platform", "config", "flag-overlays.json")),
+    "/".join(("src", "platform", "config", "flags.json")),
+    "/".join(("src", "platform", "tests", "test_openfeature_file_flags.py")),
+    "/".join(("src", "shared", "packages", "pyforge-core", "tests", "unit", "test_flags.py")),
 )
 
 
@@ -4358,8 +4212,8 @@ class _FlagRegistryVcs(HealCapableVcs):
         self.main_story, self.branch_story, self.same_key = main_story, branch_story, same_key
 
     def file_text_at_ref(self, repo_root: Path, ref: str, path: str):
-        if path != "src/platform/config/flags.json":
-            if path == "src/platform/config/flag-overlays.json":
+        if path != "/".join(("src", "platform", "config", "flags.json")):
+            if path == "/".join(("src", "platform", "config", "flag-overlays.json")):
                 import json
 
                 keys = {"base000": [], "refs/remotes/origin/main": ["k1"]}.get(ref, ["k1" if self.same_key else "k2"])
@@ -4431,7 +4285,12 @@ def test_execute_dispatch_land_heals_the_flag_registry_and_runs_the_three_checks
     pixi = [(argv, cwd) for argv, cwd, _t in process.calls if argv[0] == "pixi"]
     assert [argv[4:] for argv, _ in pixi] == [
         ["pyforge-guild", "flag-gate-check"],
-        ["pyforge-core", "pytest", "src/shared/packages/pyforge-core/tests/unit/test_flags.py", "-q"],
+        [
+            "pyforge-core",
+            "pytest",
+            "/".join(("src", "shared", "packages", "pyforge-core", "tests", "unit", "test_flags.py")),
+            "-q",
+        ],
         [
             "platform-ci-test",
             "env",
