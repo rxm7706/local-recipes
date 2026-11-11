@@ -33,7 +33,7 @@ which is the exact false-positive class that already bit an early draft of
   captures, `import`/`from ... import` names and aliases, call-site keyword
   arguments, PEP 695 type aliases and type parameters (`type run_exports =
   ...`, `def build[pin_subpackage](...)` -- live syntax at this package's
-  Python >=3.12 floor, review pass), **every bare name in any context, load
+  Python >=3.14 floor, review pass), **every bare name in any context, load
   included** (review pass: only binding positions were collected, so
   `from .helpers import *` followed by `return run_exports` was invisible and
   the "or read" claim above was false), and **every attribute name, read or
@@ -531,7 +531,7 @@ def _collect_identifier_targets(tree: ast.Module) -> list[tuple[int, str]]:
             targets.append((node.lineno, node.id))
 
         # PEP 695 type parameters and type aliases (review pass): the package
-        # floor is Python >=3.12, so `type run_exports = list[str]` and
+        # floor is Python >=3.14, so `type run_exports = list[str]` and
         # `def build[pin_subpackage](...)` are live syntax that bound a
         # denied name at a position nothing here looked at.
         if isinstance(node, ast.TypeAlias):
@@ -1162,7 +1162,7 @@ def test_detector_fires_on_a_lowercase_check_code(tmp_path):
 
 
 def test_detector_fires_on_a_v1_field_bound_by_a_pep695_type_alias(tmp_path):
-    """Review pass: the package floor is Python >=3.12, so `type X = ...` and
+    """Review pass: the package floor is Python >=3.14, so `type X = ...` and
     `def f[X](...)` are live syntax -- and both bound a denied name at a
     position the identifier scan never looked at, while the docstring claimed
     "every place a denied name can be bound"."""

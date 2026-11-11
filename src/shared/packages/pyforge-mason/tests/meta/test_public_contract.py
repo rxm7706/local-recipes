@@ -51,21 +51,47 @@ pytestmark = pytest.mark.live_tree
 
 PKG_ROOT = Path(__file__).resolve().parents[2]
 PKG_SRC = PKG_ROOT / "src" / "pyforge" / "mason"
-REPO_ROOT = PKG_ROOT.parents[3]
-CONTRACT = (
-    REPO_ROOT
-    / "_bmad-output"
-    / "projects"
-    / "pyforge-mason"
-    / "planning-artifacts"
-    / "specs"
-    / "spec-pyforge-mason"
-    / "contract.md"
-)
-MCP_ASGI = REPO_ROOT / "src" / "shared" / "packages" / "django-mason" / "src" / "django_mason_portal" / "mcp_asgi.py"
-ASSERTION_CLIENT = (
-    REPO_ROOT / "src" / "shared" / "packages" / "django-pyforge" / "src" / "django_pyforge" / "assertion" / "client.py"
-)
+
+
+# The three files outside the package are derived when a test runs, never at import: pytest imports a module before
+# `-m` deselects it, so a root derived at import stops collection of the package half run from a copy outside the
+# repository (Story 38.2, `tests/meta/test_live_tree_split.py`).
+
+
+def _repo_root() -> Path:
+    return PKG_ROOT.parents[3]
+
+
+def _contract() -> Path:
+    return (
+        _repo_root()
+        / "_bmad-output"
+        / "projects"
+        / "pyforge-mason"
+        / "planning-artifacts"
+        / "specs"
+        / "spec-pyforge-mason"
+        / "contract.md"
+    )
+
+
+def _mcp_asgi() -> Path:
+    return _repo_root() / "src" / "shared" / "packages" / "django-mason" / "src" / "django_mason_portal" / "mcp_asgi.py"
+
+
+def _assertion_client() -> Path:
+    return (
+        _repo_root()
+        / "src"
+        / "shared"
+        / "packages"
+        / "django-pyforge"
+        / "src"
+        / "django_pyforge"
+        / "assertion"
+        / "client.py"
+    )
+
 
 PARSER_PATH = "parser path"
 OPTION = "option"
@@ -124,8 +150,8 @@ def _real_inputs() -> CodeInputs:
         parser=build_parser(),
         sources=_package_sources(),
         portal={
-            "mcp_asgi.py": MCP_ASGI.read_text(encoding="utf-8"),
-            "client.py": ASSERTION_CLIENT.read_text(encoding="utf-8"),
+            "mcp_asgi.py": _mcp_asgi().read_text(encoding="utf-8"),
+            "client.py": _assertion_client().read_text(encoding="utf-8"),
         },
     )
 
@@ -373,7 +399,7 @@ def real_inputs() -> CodeInputs:
 
 @pytest.fixture(scope="module")
 def contract_text() -> str:
-    return CONTRACT.read_text(encoding="utf-8")
+    return _contract().read_text(encoding="utf-8")
 
 
 @pytest.mark.parametrize("family", FAMILIES)

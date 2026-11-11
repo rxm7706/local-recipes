@@ -14,6 +14,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
 from pyforge.testing_kit import (
     cfe_surface,
     changed_paths_since,
@@ -22,6 +23,11 @@ from pyforge.testing_kit import (
 )
 
 from pyforge.mason.cli import build_parser
+
+# Story 38.2 (spec-pyforge-mason CAP-7, relaying spec-pyforge-steward:CAP-175): this module reads the live tree
+# outside its package (.claude/skills/pyforge-mason and AGENTS.md), so it runs in the station's live-tree half and
+# fires on what it reads.
+pytestmark = pytest.mark.live_tree
 
 STATION = "mason"
 SKILL_NAME = f"pyforge-{STATION}"

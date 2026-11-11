@@ -46,7 +46,6 @@ from pyforge.mason import cfe
 pytestmark = pytest.mark.live_tree
 
 _HERE = Path(__file__).resolve()
-_REPO_ROOT = _HERE.parents[6]
 _MASON_SRC = _HERE.parents[2] / "src" / "pyforge" / "mason"
 _ADAPTER_MODULE = _MASON_SRC / "cfe.py"
 _USE_CASE_MODULE = _MASON_SRC / "recipe.py"
@@ -499,16 +498,24 @@ def _copy_read_files(verdict: _Verdict, source_root: Path, dest_root: Path, *, s
 # --- the live tree --------------------------------------------------------------------------------
 
 
+def _repo_root() -> Path:
+    """The repository root, derived when a test runs, never at import: pytest imports a module before `-m`
+    deselects it, so a root derived at import stops collection of the package half run from a copy outside the
+    repository (Story 38.2, `tests/meta/test_live_tree_split.py`)."""
+    return _HERE.parents[6]
+
+
 def test_every_script_the_adapter_table_names_exists_at_the_real_cfe_root() -> None:
-    verdict = _check(_REPO_ROOT, _mason_side())
+    repo_root = _repo_root()
+    verdict = _check(repo_root, _mason_side())
     assert not verdict.missing, (
-        f"adapter table key(s) with no script file under {_REPO_ROOT}: {list(verdict.missing)} -- "
+        f"adapter table key(s) with no script file under {repo_root}: {list(verdict.missing)} -- "
         "a renamed or removed conda-forge-expert script; record it as a deferral, never patch CFE from here"
     )
 
 
 def test_every_option_an_adapter_can_pass_is_declared_by_the_wrapped_script() -> None:
-    verdict = _check(_REPO_ROOT, _mason_side())
+    verdict = _check(_repo_root(), _mason_side())
     assert verdict.parsers, "no wrapped script's argument parser was read -- the option check would be vacuous"
     assert not verdict.undeclared, (
         f"options a Mason adapter can pass that the wrapped script never declares: {list(verdict.undeclared)} -- "
@@ -520,11 +527,12 @@ def test_every_option_an_adapter_can_pass_is_declared_by_the_wrapped_script() ->
 
 
 def test_planted_script_table_entry_with_no_file_is_reported(tmp_path: Path) -> None:
+    repo_root = _repo_root()
     mason = _mason_side()
-    live = _check(_REPO_ROOT, mason)
+    live = _check(repo_root, mason)
     key = next(iter(mason.table))
-    script = _REPO_ROOT.joinpath(*mason.location[key], mason.table[key])
-    _copy_read_files(live, _REPO_ROOT, tmp_path, skip=script)
+    script = repo_root.joinpath(*mason.location[key], mason.table[key])
+    _copy_read_files(live, repo_root, tmp_path, skip=script)
 
     planted = _check(tmp_path, mason)
 
@@ -533,15 +541,16 @@ def test_planted_script_table_entry_with_no_file_is_reported(tmp_path: Path) -> 
 
 
 def test_planted_script_source_lacking_a_passed_option_is_reported(tmp_path: Path) -> None:
+    repo_root = _repo_root()
     mason = _mason_side()
-    live = _check(_REPO_ROOT, mason)
+    live = _check(repo_root, mason)
     key, option = next(
         (k, sorted(mason.passed[k])[0]) for k in mason.table if mason.passed.get(k) and k in live.parsers
     )
-    _copy_read_files(live, _REPO_ROOT, tmp_path)
+    _copy_read_files(live, repo_root, tmp_path)
     changed = 0
     for parser in live.parsers[key]:
-        copy = tmp_path / parser.relative_to(_REPO_ROOT)
+        copy = tmp_path / parser.relative_to(repo_root)
         text = copy.read_text(encoding="utf-8")
         planted_text = text.replace(f'"{option}"', '"--planted-undeclared"').replace(
             f"'{option}'", "'--planted-undeclared'"

@@ -14,13 +14,20 @@ import subprocess
 import sys
 from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parents[6]
-_GUARD = _REPO_ROOT / "scripts" / "cfe_rebuild_guard_check.py"
+import pytest
+
+# Story 38.2 (spec-pyforge-mason CAP-7, relaying spec-pyforge-steward:CAP-175): this module reads the live tree
+# outside its package (scripts/cfe_rebuild_guard_check.py), so it runs in the station's live-tree half and fires on
+# what it reads. The root is derived inside the test, not at import: the package half still imports (collects) this
+# module before deselecting it, and a copy of the package outside the repository has no parents[6].
+pytestmark = pytest.mark.live_tree
+
 _SURFACE = ".claude/skills/conda-forge-expert"
 
 
 def _load_guard():
-    spec = importlib.util.spec_from_file_location("_cfe_rebuild_guard_under_test", _GUARD)
+    guard_path = Path(__file__).resolve().parents[6] / "scripts" / "cfe_rebuild_guard_check.py"
+    spec = importlib.util.spec_from_file_location("_cfe_rebuild_guard_under_test", guard_path)
     assert spec and spec.loader
     mod = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = mod
