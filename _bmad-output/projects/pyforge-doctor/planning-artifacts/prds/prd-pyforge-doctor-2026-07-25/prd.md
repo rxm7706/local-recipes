@@ -1,7 +1,7 @@
 ---
 title: Doctor (pyforge-doctor)
 created: 2026-07-25
-updated: '2026-11-05'   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief -> PRD and spec -> PRD); no CAP, FR or AD is minted. Prior '2026-11-01'   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): chain-currency cascade (research -> brief -> PRD and spec -> PRD) for research/egm-audit-2026-11-01.md (30 findings, 24 accepted, 6 rejected) and the Spec re-derive that amended CAP-89..CAP-93 in place; FR-15, FR-22, FR-23 and FR-24 carry dated in-place amendments; fix Stories 45.4, 48.3 and 50.2 done; no FR registered, renumbered or removed. See § Currency reconciliation — 2026-11-01. Prior '2026-10-27'   # RE-STAMPED 2026-10-27 (chain currency, behind-code): Story 55.4 registered the live_tree pytest marker in the package pyproject.toml on 2026-10-27, so the code stage moved past this PRD; no requirement, arrow or capability changes. See § Currency reconciliation — 2026-10-27 (behind-code). Prior '2026-10-26'   # RE-STAMPED 2026-10-26 (CAP-7 retrofit, Epic 51): the station memlog gained the retrofit decision; no requirement changes. Prior '2026-10-26'   # RE-STAMPED 2026-10-26 (Story 50.1): FR-14 <- CAP-9 and FR-15 <- CAP-93 (minted 2026-10-26; no capability carried FR-15) on the operator ruling of 2026-10-26 that a requirement cites defined capabilities only, never a Charter clause; FR-16 (the classifier recognizes a spike report, Story 6.11) gains the PRD heading it lacked, <- CAP-11, CAP-12; no FR renumbered or amended. See § Currency reconciliation — 2026-10-26 (Story 50.1). Prior '2026-10-24'   # RE-STAMPED 2026-10-24: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-24 entries (Story 30.4 minted and promoted done, a fix under FR-17 / CAP-84 and CAP-42: the docs, Dream and planning warn backlog); no FR registered. See § Currency reconciliation — 2026-10-24. Prior '2026-10-22'   # RE-STAMPED 2026-10-22: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-22 entries (Story 45.3 minted done, a test-only fix under FR-22 / CAP-89); no FR registered. See § Currency reconciliation — 2026-10-22. Prior '2026-10-17'   # RE-STAMPED 2026-10-17: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-14..17 entries (Story 49.1 minted, a fix under FR-15; co-governor surface reconciles); no FR registered. See § Currency reconciliation — 2026-10-17. Prior '2026-10-14'   # RE-STAMPED 2026-10-14 (Pages site): chain-currency cascade (spec -> PRD) for FR-23 / CAP-90 and FR-24 / CAP-91 (Epic 48, the Pages site registry and the pages-liveness source); FR-23 and FR-24 registered; § Currency reconciliation — 2026-10-14 (Pages site) appended. Prior '2026-10-14'   # RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for FR-22 / CAP-89 (Epic 45, the ci-pause-drift source, consuming spec-pyforge-steward:CAP-166); FR-22 registered; § Currency reconciliation — 2026-10-14 appended. Prior '2026-10-13'   # RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10..13 entries (Stories 42.1, 43.1, 44.1 and 46.1 minted and landed; co-governor surface reconciles); no FR registered. See § Currency reconciliation — 2026-10-13. Prior '2026-10-10'   # RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Stories 33.1 and 37.1's gates cleared, their keys flipped blocked -> backlog by operator ruling) and the 2026-10-07 mint of fix Stories 6.13 and 34.6; no FR registered; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 26 entries of 2026-10-04..07 (Stories 41.2, 41.3, 41.4, 41.6, 6.12, 40.2, 34.3 and 27.6, Story 41.5's review fixes, four co-governor regenerations, herald 28.1); no FR registered; § Currency reconciliation — 2026-10-07 appended. Prior: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; no FR registered; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for FR-21 / CAP-88 (Epic 38); § Currency reconciliation — 2026-10-01 appended. Prior: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. Prior: RE-STAMPED 2026-09-27 (late): chain-currency cascade (spec -> PRD) for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. Prior: RE-STAMPED 2026-09-24: chain-currency sweep (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full — the .memlog''s 2026-09-24 entry moved spec ahead of this PRD past the 2-day feeds grace window); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-11-10'   # AMENDED 2026-11-10 (the cutover readiness audit, the mint of Epics 56-58): FR-25..FR-33 registered, each citing CAP-94..CAP-100, CAP-93, CAP-87 or CAP-59; FR-34 is the next free id; see § Currency reconciliation — 2026-11-10. Prior '2026-11-05'   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief -> PRD and spec -> PRD); no CAP, FR or AD is minted. Prior '2026-11-01'   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): chain-currency cascade (research -> brief -> PRD and spec -> PRD) for research/egm-audit-2026-11-01.md (30 findings, 24 accepted, 6 rejected) and the Spec re-derive that amended CAP-89..CAP-93 in place; FR-15, FR-22, FR-23 and FR-24 carry dated in-place amendments; fix Stories 45.4, 48.3 and 50.2 done; no FR registered, renumbered or removed. See § Currency reconciliation — 2026-11-01. Prior '2026-10-27'   # RE-STAMPED 2026-10-27 (chain currency, behind-code): Story 55.4 registered the live_tree pytest marker in the package pyproject.toml on 2026-10-27, so the code stage moved past this PRD; no requirement, arrow or capability changes. See § Currency reconciliation — 2026-10-27 (behind-code). Prior '2026-10-26'   # RE-STAMPED 2026-10-26 (CAP-7 retrofit, Epic 51): the station memlog gained the retrofit decision; no requirement changes. Prior '2026-10-26'   # RE-STAMPED 2026-10-26 (Story 50.1): FR-14 <- CAP-9 and FR-15 <- CAP-93 (minted 2026-10-26; no capability carried FR-15) on the operator ruling of 2026-10-26 that a requirement cites defined capabilities only, never a Charter clause; FR-16 (the classifier recognizes a spike report, Story 6.11) gains the PRD heading it lacked, <- CAP-11, CAP-12; no FR renumbered or amended. See § Currency reconciliation — 2026-10-26 (Story 50.1). Prior '2026-10-24'   # RE-STAMPED 2026-10-24: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-24 entries (Story 30.4 minted and promoted done, a fix under FR-17 / CAP-84 and CAP-42: the docs, Dream and planning warn backlog); no FR registered. See § Currency reconciliation — 2026-10-24. Prior '2026-10-22'   # RE-STAMPED 2026-10-22: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-22 entries (Story 45.3 minted done, a test-only fix under FR-22 / CAP-89); no FR registered. See § Currency reconciliation — 2026-10-22. Prior '2026-10-17'   # RE-STAMPED 2026-10-17: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-14..17 entries (Story 49.1 minted, a fix under FR-15; co-governor surface reconciles); no FR registered. See § Currency reconciliation — 2026-10-17. Prior '2026-10-14'   # RE-STAMPED 2026-10-14 (Pages site): chain-currency cascade (spec -> PRD) for FR-23 / CAP-90 and FR-24 / CAP-91 (Epic 48, the Pages site registry and the pages-liveness source); FR-23 and FR-24 registered; § Currency reconciliation — 2026-10-14 (Pages site) appended. Prior '2026-10-14'   # RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for FR-22 / CAP-89 (Epic 45, the ci-pause-drift source, consuming spec-pyforge-steward:CAP-166); FR-22 registered; § Currency reconciliation — 2026-10-14 appended. Prior '2026-10-13'   # RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10..13 entries (Stories 42.1, 43.1, 44.1 and 46.1 minted and landed; co-governor surface reconciles); no FR registered. See § Currency reconciliation — 2026-10-13. Prior '2026-10-10'   # RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Stories 33.1 and 37.1's gates cleared, their keys flipped blocked -> backlog by operator ruling) and the 2026-10-07 mint of fix Stories 6.13 and 34.6; no FR registered; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 26 entries of 2026-10-04..07 (Stories 41.2, 41.3, 41.4, 41.6, 6.12, 40.2, 34.3 and 27.6, Story 41.5's review fixes, four co-governor regenerations, herald 28.1); no FR registered; § Currency reconciliation — 2026-10-07 appended. Prior: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; no FR registered; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for FR-21 / CAP-88 (Epic 38); § Currency reconciliation — 2026-10-01 appended. Prior: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. Prior: RE-STAMPED 2026-09-27 (late): chain-currency cascade (spec -> PRD) for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. Prior: RE-STAMPED 2026-09-24: chain-currency sweep (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full — the .memlog''s 2026-09-24 entry moved spec ahead of this PRD past the 2-day feeds grace window); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 status: final
 currency_review: 'Reviewed 2026-09-24 — chain-currency sweep (doctor Story 30.3 landing).
   Story 30.2 (docs/map.yaml + the three docs-currency checks, hand-landed ''Merge
@@ -793,6 +793,114 @@ block shows one line per WARN and `could not check Pages liveness` when the prob
 
 *Decomposed as Epic 48 — Story 48.2. `flag-exempt: detector-or-gate` by bmad-spec ruling (memlog, 2026-10-14).*
 
+## FR-25 — A change under a rebuilding capability's frozen paths is a named finding ← CAP-94
+
+Added 2026-11-10 (the cutover readiness audit; operator rulings 2 and 4 of 2026-11-10). `frozen-path-changed` probes
+`docs/foundry/manifest.{yaml,yml,json}`, a file that never existed, so every run answers OK `no capability ledger found
+(pre-cutover)`. The ledger is `docs/foundry/capability-ledger.yaml`; its v1 rows carry `state` and, on a rebuilding
+row, `frozen_paths`.
+
+**Consequences (testable):** a change under the frozen paths of a capability the ledger marks `rebuilding` is a FAIL
+naming the row and the path; a rebuilding row with no `frozen_paths` is a FAIL, because it guards nothing; zero
+rebuilding rows is one OK naming `0 frozen of <N> rows`; a missing or unparseable ledger, or an unresolvable
+`refs/remotes/origin/main`, is one cannot-evaluate WARN, never a pass; the source imports no station.
+
+*Decomposed as Epic 56 — Story 56.1. `flag-exempt: detector-or-gate`.*
+
+## FR-26 — A capability-ledger row whose heading, Spec, mode or expiry is untrue is a named finding ← CAP-95, CAP-87
+
+Added 2026-11-10 (operator rulings 3 and 4 of 2026-11-10: rows on archived Specs leave the ledger, and the `A-only`
+expiry gains a detector that warns 30 days ahead and fails after). The source matched a row by id alone, read station
+Spec folders only, judged no expiry and answered OK when the ledger was absent.
+
+**Consequences (testable):** a row whose id no live Spec defines, whose heading differs from the extract's, whose path
+sits under `archive/` or whose mode is outside rebuild, retire, `A-only` and `B-only` is a named FAIL (`pending` is one
+WARN); an `A-only` expiry date warns 30 days or less ahead and fails once past; a qualified Story expiry
+(`<station>:<E>.<S>`) fails once that station's ledger key is `done` or absent; `flip` fails once the root of record
+reads foundry; an unquoted number fails; a missing ledger is one cannot-evaluate WARN; FR-20's post-PIN rule is
+unchanged.
+
+*Decomposed as Epic 56 — Story 56.2. `flag-exempt: detector-or-gate`.*
+
+## FR-27 — A conformance detector that measured nothing reads unmeasured, never pass ← CAP-93
+
+Added 2026-11-10 (the cutover readiness audit; the operator's ruling of 2026-11-10, second addendum). Over an empty
+tree 27 of the 29 `detectors-ci` Doctor sources exit 0, and `scripts/detectors.py` reads every result without a FAIL
+as `pass`, so a source that could not find its subject is a green row.
+
+**Consequences (testable):** a row whose findings hold no FAIL and are all gather failures reads `unmeasured` and is
+counted on the aggregate's summary line; an empty result reads `pass`; a source whose subject is absent says so in one
+`<source>-unevaluable` WARN, never an OK or nothing; the aggregate's exit codes are unchanged, and `unmeasured` is a
+warning the merge bar does not fail on.
+
+*Decomposed as Epic 56 — Stories 56.3 (the aggregate) and 56.4 (each source). `flag-exempt: detector-or-gate`.*
+
+## FR-28 — Doctor's public contract is one companion file, and the suite fails when the code has an entry it lacks ← CAP-97
+
+Added 2026-11-10 (decision D1 of the cutover readiness plan). No Spec named Doctor's MCP tools, the sources dispatcher,
+its import closure, the inputs each source reads or the capability that governs each source, and 1,247 of 2,164 test
+functions sat in the live-tree half although about 30 read the tree.
+
+**Consequences (testable):** `contract.md` beside the Spec lists the verbs and flags, the MCP tools, the feature-flag
+keys (none), the environment variables, the exit codes, the sources, the check codes and the inputs each source reads;
+a meta-test fails on a code entry the file lacks and on a file entry the code lacks; the package-local half
+(`-m 'not live_tree'`) builds every tree it reads and exercises every source and gather, so it is the rebuild oracle.
+
+*Decomposed as Epic 57 — Stories 57.2 and 57.3, and Epic 58 — Stories 58.1 and 58.2.*
+
+## FR-29 — An operator can disable one flag through Doctor's kill switch, the one actuator ← CAP-96
+
+Added 2026-11-10 (the operator's ruling of 2026-11-10: the verb stays in Doctor). NFR-1 and the first Non-goal said
+Doctor has no actuator while `doctor flags kill-switch` ships.
+
+**Consequences (testable):** the verb sets one flag's state to DISABLED in the flag tree and changes nothing else; an
+unknown key exits 2 and leaves the tree byte-identical; every other Doctor verb and every source stays read-only.
+
+*Decomposed as Epic 57 — Story 57.1 (the capability writes down existing code). `flag-exempt: docs-only`.*
+
+## FR-30 — The platform policy suite's verdict is Doctor's ← CAP-98
+
+Added 2026-11-10 (the cutover readiness audit: the `platform-policy-suite` source had no capability).
+
+**Consequences (testable):** a failing manifest-only policy suite is a FAIL; an absent `platform-ci-test` environment
+or an absent `src/platform` is cannot-evaluate; the source imports nothing from the platform or steward.
+
+*Decomposed as Epic 57 — Story 57.1 (existing code).*
+
+## FR-31 — A central BMAD config key set at two paths is named as a warning with both paths ← CAP-99
+
+Added 2026-11-10 (the cutover readiness audit: the `bmad-render-config-ambiguity` source had no capability).
+
+**Consequences (testable):** a key that resolves at two paths of the central config layers is one WARN naming the key
+and both paths; removing the second path clears it; the source never fails and reads no installer code.
+
+*Decomposed as Epic 57 — Story 57.1 (existing code).*
+
+## FR-32 — A chain write on a checkout that is not the writer is a named finding for every harness ← CAP-100
+
+Added 2026-11-10 (operator ruling 2 of 2026-11-10: `pyforge.cutover_root` is the writer lock and the root of record).
+The session hook (steward Story 121.4) refuses an Edit or Write in a Claude or Cursor session only; a Bash write or
+another harness passes it.
+
+**Consequences (testable):** the `writer-lock` source reads the root of record at the merge base of HEAD and
+`refs/remotes/origin/main`; when it differs from this checkout's `roots.this`, each changed chain path is a FAIL naming
+the path and both roots; on the writer it is one OK, and a flip branch passes; an unreadable roster, flag tree or base,
+or a `default` answer, is one cannot-evaluate WARN; the source never decides when the flag flips.
+
+*Decomposed as Epic 56 — Story 56.5. `flag-exempt: detector-or-gate`.*
+
+## FR-33 — A baseline entry for a Spec that no longer exists can be removed without accepting any live Spec's drift ← CAP-59
+
+Added 2026-11-10 (the cutover readiness audit). 166 of the 180 keys in `scripts/.spec-surface-baseline.json` name a
+Spec discovery no longer finds; a scoped stamp of a gone Spec exits 2 and a bare stamp is forbidden, so no sanctioned
+verb removes them.
+
+**Consequences (testable):** `spec_surface_check.py --prune` removes and prints each dead key under the stamp's lock;
+every live key stays byte-identical; zero discovered Specs over a non-empty baseline exits 1 and leaves the file
+untouched; `--prune` with `--spec`, `--write-baseline` or `--accept` is a usage error; a second prune removes nothing.
+
+*Decomposed as Epic 58 — Story 58.3; Story 58.4 runs the prune once, last on the branch.*
+
 ## 9. Assumptions Index
 
 - §1/Brief carry-over — Doctor adds no new detection capability beyond credential
@@ -1318,3 +1426,29 @@ same EGM-audit change, with the fix stories and the re-derive. No FR renumbered 
 *Chain-currency cascade (research -> brief -> PRD and spec -> PRD), EGM audit, marshal Story 113.18.*
 
 `research/egm-audit-2026-11-05.md` (marshal Story 113.18, `spec-pyforge-marshal:CAP-302`): 12 high findings, 1 accepted, 9 rejected, 2 deferred; the medium and low findings are not triaged. CAP-93 names its pre-write guard test. FR-15 keeps its text. No FR is added, renumbered or re-scoped.
+
+## Currency reconciliation — 2026-11-10
+
+*Chain-currency cascade (spec → PRD): the station Dream's 2026-11-10 entry (the cutover readiness audit) and the
+operator's rulings of 2026-11-10 (`docs/dreams/pyforge-unifying-strategy.md` § Realization log, the three 2026-11-10
+entries, "Accept all, run mint"). `spec-pyforge-doctor`'s re-derive of the same day minted CAP-94 to CAP-100 at
+`(ready 2026-11-10)` and amended CAP-59, CAP-87 and CAP-93; the spine adds AD-15.*
+
+- **Nine FRs registered above, each traced from its capability's intent and success:** the frozen paths of a
+  rebuilding row (FR-25, CAP-94); ledger row truth and the expiry clock (FR-26, CAP-95 with CAP-87); a source that
+  measured nothing reads `unmeasured` (FR-27, CAP-93); the public contract and the package-local oracle (FR-28,
+  CAP-97); the one actuator (FR-29, CAP-96); the platform policy suite (FR-30, CAP-98); a config key at two paths
+  (FR-31, CAP-99); the writer lock (FR-32, CAP-100); the baseline prune (FR-33, CAP-59). Numbering starts at this
+  PRD's stated next free id, FR-25; the FR-45 this PRD cites in § Currency reconciliation — 2026-08-26 (Epic 17) is
+  canopy's, not doctor's.
+- **Rulings applied.** A source that measured nothing is a warning the merge bar does not fail on (FR-27); `doctor
+  flags kill-switch` stays Doctor's one actuator (FR-29); the operator flips `pyforge.cutover_root` by hand once the
+  Launch slice is proven, and the writer lock never decides it (FR-32); doctor's closed one-time campaigns retire,
+  which Story 57.1 writes as Spec markers and which moves no FR.
+- **Decomposition.** Epic 56 (Stories 56.1-56.5), Epic 57 (57.1-57.3) and Epic 58 (58.1-58.4), twelve stories minted
+  on the one integration branch `cutover-readiness-2026-11-10`: eleven `backlog` and Story 57.3 `blocked` (its Deps
+  name Stories 58.1 and 58.2 of a later epic; unblocked only with operator confirmation once they are done).
+
+**The FR space now FR-1..FR-33** (FR-34 is the next free id).
+
+**Content changed:** FR-25 to FR-33 registered and this section added. No FR renumbered or removed. `updated:` bumped.

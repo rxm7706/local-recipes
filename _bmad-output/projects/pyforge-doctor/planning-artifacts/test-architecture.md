@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: 6adc96276cd7c116
-story_count: 172
+source_fingerprint: 2c2da84e9ed7b7d8
+story_count: 184
 test_file_count: 99
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 172
-- **Epics parsed:** 54
+- **Stories parsed:** 184
+- **Epics parsed:** 57
 - **Test files inventoried:** 99 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `6adc96276cd7c116`
+- **Source fingerprint:** `2c2da84e9ed7b7d8`
 
 ## Risk Assessment
 
@@ -90,6 +90,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 53: The archived doctor Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 - Epic 54: The absorbed doctor Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
 - Epic 55: The repo-scope detectors and the doctor suite answer in seconds (fixes under spec-pyforge-doctor CAP-20 and CAP-42; relay of spec-pyforge-steward:CAP-175)
+- Epic 56: The cutover's detectors read the real ledger and the writer lock, and a source that measured nothing is never a pass (spec-pyforge-doctor CAP-93, CAP-94, CAP-95, CAP-100)
+- Epic 57: The doctor Spec says what the code does, and its public contract is written once (spec-pyforge-doctor CAP-96..CAP-99; decisions D1 and D4)
+- Epic 58: The package-local half is the rebuild oracle, and the branch's baselines name only live Specs (spec-pyforge-doctor CAP-97, CAP-59)
 
 ## Test Inventory
 
@@ -371,6 +374,18 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 55.2 | The chain-currency sweep audits the eight stations in one process | none observed |
 | 55.3 | The doctor suite takes its worker count from the caller, not its own cmd | none observed |
 | 55.4 | Doctor's live-tree readers run as their own half | none observed |
+| 56.1 | frozen-path-changed reads the ledger's rebuilding rows, not a manifest that n... | none observed |
+| 56.2 | capability-ledger judges every v1 row by its Spec heading, its mode and its e... | none observed |
+| 56.3 | The aggregate reads a source that measured nothing as unmeasured, never pass | none observed |
+| 56.4 | A source that finds no subject says so, in one cannot-evaluate warning | none observed |
+| 56.5 | A chain write on a checkout that is not the writer is a named finding | none observed |
+| 57.1 | The doctor Spec's markers and text say what the code does | none observed |
+| 57.2 | Doctor's public contract is one companion file, and a meta-test reds what it ... | none observed |
+| 57.3 | Doctor's chain closes: the oracle meta-test, the live ledger proof, the new c... | none observed |
+| 58.1 | The chain, ledger, board and one-chain tests that build their own tree run in... | none observed |
+| 58.2 | The docs, factory, method, env-hygiene and Pages tests that build their own t... | none observed |
+| 58.3 | spec_surface_check.py prunes the baseline keys of Specs that no longer exist,... | none observed |
+| 58.4 | The branch's baselines and governance reports are refreshed once, after every... | none observed |
 
 ## Quality Gates
 
