@@ -702,6 +702,13 @@ def test_run_nic_up_refuses_a_missing_pack_cli_before_nic_starts(
     monkeypatch.setattr(
         "pyforge.steward.deploy_nic_packs.shutil.which", lambda name: None if name == "helm" else f"/usr/bin/{name}"
     )
+    # Switch the key the way preflight_pack_clis and apply_nkp_packs read it (pyforge.core.flags.read_boolean),
+    # never by test order: an earlier read in the same xdist worker pins the OpenFeature provider, and the
+    # in-memory provider alone then decides nothing (cutover-readiness BUILD-3 gate).
+    monkeypatch.setattr(
+        "pyforge.core.flags.read_boolean",
+        lambda key, default=False, **_kw: flag_provider.get(key, default),
+    )
     calls: list[list[str]] = []
 
     def runner(argv: list[str], cwd: Path, env: dict[str, str]) -> _Proc:
@@ -711,7 +718,6 @@ def test_run_nic_up_refuses_a_missing_pack_cli_before_nic_starts(
     deps = NicDeps(root=tmp_path, runner=runner, nic_executable=lambda: "/usr/bin/nic")
     if not flag_provider["pyforge.steward.nkp_packs"]:
         # Packs off: no pack step, so no pack CLI is needed and nic runs.
-        monkeypatch.setattr("pyforge.steward.deploy_nic_packs.apply_nkp_packs", lambda **_kw: None)
         assert run_nic(deps, action="up", config=config).ok is True
         assert any(len(cmd) > 1 and cmd[1] == "deploy" for cmd in calls)
         return

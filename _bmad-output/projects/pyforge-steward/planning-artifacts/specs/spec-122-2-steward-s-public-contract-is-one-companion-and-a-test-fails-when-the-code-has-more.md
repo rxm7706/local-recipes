@@ -128,3 +128,47 @@ Parent: `spec-pyforge-steward` CAP-179
 - `sync._default_transport` is listed as a private name the host still imports (DW-steward-74-1); `five_tier.py` is a check library with no verb.
 - Until Story 124.2 lands, steward's trigger-map test may red on other units' new reads (a planned red window); this story is judged by its own test modules and by steward's package half without that module.
 - No build story appends a `Surface reconcile` line to another Spec's memlog or runs `spec_surface_check.py --write-baseline`: each Spec's own closer writes its reconcile event from `git diff --name-only origin/main...HEAD` (steward and host: Story 122.5) and doctor Story 58.4 runs every scoped stamp once, after the last edit.
+
+## Review findings (build, round 1, 2026-11-11)
+
+An independent review failed the first build. Each finding, and what this round did with it:
+
+1. **major** — `contract.md` § *Python names other packages import* left out an importer. pyforge-herald's
+   `tests/meta/test_preflight_pages_lane.py` imports `pyforge.steward.preflight` and `pyforge.steward.preflight_ci`
+   (on origin/main before this PR), including the private `preflight_ci._step_matches`; the plan's "six importers"
+   came from an audit grep that missed it. **Fixed:** a row for it (CAP-159), with `_step_matches` flagged private the
+   way `sync._default_transport` is. Re-running `git grep -nE '(from|import) pyforge\.steward' --
+   ':!src/shared/packages/pyforge-steward'` found four more importers the table lacked, all now rows:
+   `scripts/guild_image_ci.sh` and `scripts/platform-ci-local.sh` (an inline `python -` heredoc imports
+   `preflight_ci.emit_twin_banner`, Story 99.5, CAP-166), `.claude/skills/bmad-sprint-ledger-query/SKILL.md` (its
+   documented engine API, `sprint_ledger_query.SprintLedgerQueryEngine` and `get_runnable_backlog`, CAP-146) and
+   `docs/foundry/marketplace/README.md` (its documented render snippet, `marketplace_pages.write_plugin_manifests`
+   and `write_site_from_index`, CAP-171). The rest of that grep's hits are prose that names the package (skill
+   metadata, a deferred-work row, a test fixture's comment string) or a bare `import pyforge.steward` smoke
+   (`.github/workflows/copilot-setup-steps.yml`, now named in the section's prose); none imports a name.
+2. **minor** — the *Feature-flag keys* row `pyforge.steward.sync_github_only_marker` said `off; dev on`;
+   `flag-overlays.json` turns it on in staging as well. **Fixed:** `off; dev and staging on`. Every other row of the
+   column was re-checked against `flags.json` and the three overlays and matches; the column's preamble now says it
+   names each overlay that differs (dev, staging), not dev alone.
+3. **minor** — AC3 expects `30 []`; the live tree prints `31 []` because control-plane Story 121.2 added
+   `pyforge.steward.cutover_ledger_write` to `flags.json` (origin/main has 30). The command and what it checks are
+   unchanged (exit 0, no key missing). **No change here**, as the reviewer asked: the AC text is outside this
+   story's editable sections and the oracle is not wrong, only its quoted count is stale. Steward's closer (Story
+   122.5) or the PR's ledger-close notes record 31 steward keys and cite Story 121.2 as the reason.
+4. **minor** — two blind spots in `test_public_contract.py`'s flag-key scan. (a) A literal that names a module is
+   dropped even when it is also a flag key (`pyforge.steward.budget`, `pyforge.steward.pages_duty`,
+   `pyforge.steward.marketplace_pages`); (b) `_names_a_module` read other stations' `src/pyforge/<station>/` trees
+   through a path built at run time, which steward's live job does not fire on. **Fixed both ways the reviewer
+   offered.** The scan now checks a collision only against steward's own package and a fixed, named set of the
+   other-station module literals steward's source uses (`pyforge.doctor.sources`, `pyforge.scribe.cli`), so it never
+   reads another station's tree and a new other-station literal is reported as a flag key until it is listed (fail
+   closed; a `fires` test plants one). `contract.md` now says which flag-key literals the scan drops for naming a
+   module, beside the concatenation sentence, and a test reds when a dropped literal that is also a key of the flag
+   tree is missing from that sentence, so the written blind spot stays current.
+5. **minor** — the *Environment variables* preamble's list of names steward sets for a child was incomplete.
+   **Fixed:** it now also names `PIXI_FROZEN` (`steward session check`'s `bmad-drift-check` child), `CONDA_PREFIX`
+   (`steward provision`'s installer child), `BMAD_ACTIVE_PROJECT` (`steward upgrade bmad-core`'s config-layer
+   probe), `PATH` (`steward upgrade bmad-core --apply`'s installer), the git identity and `GIT_DIR`/`GIT_WORK_TREE`/
+   `GIT_INDEX_FILE` of the preflight's snapshot git, `PYFORGE_PREFLIGHT_SCOPE` (`steward preflight
+   verify-deferred`'s child), the config's `.env` secrets (`steward deploy nic`) and the `PYFORGE_REPO_ROOT` and
+   `PATH` that `steward shell-init` prints for the caller's shell; a name that is also a read stays a table row.
