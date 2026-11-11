@@ -138,6 +138,24 @@ Each command runs from the worktree root; read every verdict from its exit code,
 
 Status: backlog (minted 2026-11-10).
 
+Build 2026-11-11 (wave BUILD-2; the status moves at the ledger close, not here):
+- Memlog first: four `correction` entries read the 2026-11-10 entries against the tree, then the anchored script
+  render of `SPEC.md` (26 anchors, each asserted once after a check-only run), then both self-validate passes logged
+  as `event` entries.
+- Where the tree disagreed with the logged text: `artifactory_downloads` writes five Parquet datasets and one TSV
+  partition, not "4 catalog entries"; twelve pipelines are registered at the default of CAP-13's kill switch (eleven
+  with it off); `wasm/build.py` expects Node 22 at `/opt/node22/bin` while the env carries nodejs 24; the workbook and
+  its dated identity and Mason handoff tabs were retired by Story 23.9, so CAP-51 and CAP-52 describe the Parquet
+  actuators, the `Work` bucket and the dated AOSS-Free CSV and name their tests; `pyforge.atlas.live_public_sources`
+  gates only the refreshers wired from Story 34.4 on, and CAP-65's VCS and registry fetches do not read it.
+- One clause no 2026-11-10 entry logged: the Constraint 'Seven closed domain pipelines' said "The pipeline set is
+  fixed." against CAP-1's twelve; it gains one dated sentence (a memlog `correction` records it).
+- The PRD's FR-77 carried the same A-tree member literal as CAP-69; its first consequence is amended in place, dated,
+  and recorded in the PRD's reconciliation section.
+- Commands: the eight acceptance commands exit 0 (AC2 prints `6 []`); `pixi run --frozen -e pyforge-atlas
+  kedro-catalog-check` exits 0; the tests the restored capabilities cite exit 0 (CAP-1 pair 27 passed, CAP-51 pair 2
+  passed, CAP-52 79 passed).
+
 ## Spec Change Log
 
 - 2026-11-10: minted from the station Dream's entry of 2026-11-10 (cutover readiness) under the operator's rulings of 2026-11-10 ("Accept all", "Retire both", "Accept all, run mint"). Acceptance adjusted by the rulings: CAP-64 and CAP-65 hold to the story-close figures in `live-sources.md` (ruling 4), where the plan left 'what a root with no legacy database is held to' as an operator question; the memlog entries were written at the mint.

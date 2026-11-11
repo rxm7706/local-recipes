@@ -74,9 +74,25 @@ DEFAULT_HOST = "127.0.0.1"
 # Bound from the installed server source: pkg/server.py::server hard-codes
 # app.listen(3000, …); no CLI flag can change it (duckdb-server 0.27–0.31).
 DEFAULT_PORT = 3000
-# Repo-root-relative default for the CLI (the pixi task runs at repo root);
-# lands inside the atlas member's gitignored data/ tree.
-DEFAULT_PLANE_PATH = Path("src/shared/packages/pyforge-atlas/data/plane") / ATLAS_DUCKDB_NAME
+#: Story 48.2: the Kedro project this module ships in (``src/shared/packages/pyforge-atlas`` here).
+_MEMBER_ROOT = Path(__file__).resolve().parents[3]
+
+
+def _member_root() -> Path:
+    """The atlas member, found from this file the way ``dashboard/data.default_data_root`` finds it.
+
+    Trusted only when it holds ``conf/base/catalog.yml``: installed from the built artifact,
+    ``parents[3]`` lands in ``site-packages`` (``admission._resolve_base`` records the same trap),
+    and an installed layout has no member, so the working directory stands in for it.
+    """
+    member = (_MEMBER_ROOT / "conf" / "base" / "catalog.yml").is_file()
+    return _MEMBER_ROOT if member else Path.cwd()
+
+
+# The CLI default, inside the atlas member's gitignored data/ tree: absolute, so it is the same file
+# from any working directory (the pixi task, which runs at the repo root, keeps the file it used
+# before). ``--path`` overrides it; ``PYFORGE_ATLAS_DATA_ROOT`` does not move it.
+DEFAULT_PLANE_PATH = _member_root() / "data" / "plane" / ATLAS_DUCKDB_NAME
 
 Launcher = Callable[[Sequence[str]], Any]
 

@@ -25,6 +25,11 @@ from pyforge.atlas.datasets import s3_downloads as S3
 from pyforge.atlas.pipelines.core.nodes import compute_downloads, compute_version_download_history
 from pyforge.atlas.provenance import resolve_for_catalog_dataset
 
+# Story 48.1 (a relay of spec-pyforge-steward:CAP-175): this module reads the live tree outside its package (the flag
+# tree under src/platform), so it runs in atlas's live-tree half and fires on what it reads, not on every edit of the
+# package.
+pytestmark = pytest.mark.live_tree
+
 BASE = "https://bucket.example.invalid"
 ROWS = {
     "2026-08": [

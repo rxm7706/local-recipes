@@ -12,8 +12,8 @@ entries: 60
 real deferrals** (the run log's index of "54" double-counted two aliases; see § Provenance).
 Follow-up intake and verification campaigns added more `## DW-` headings without retiring
 that migration set — the frontmatter `entries` field tracks **`## DW-` headings only**, not
-the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**216** `### DW-` headings
-today). Stale narrative prose here is exactly what Story 27.4's counting test guards against.
+the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**229** `### DW-` headings
+on 2026-11-11). Stale narrative prose here is exactly what Story 27.4's counting test guards against.
 
 ## Why this file exists
 
@@ -47,7 +47,7 @@ Tier-2 `planning-artifacts/`, where it cannot be lost to a Tier-3 accident again
     entry alongside `DW-D2-1/2/3`.
 
   The real migration count is **52** bodies recovered into this durable ledger; the live
-  file now carries **60** top-level `## DW-` headings and **178** `### DW-` sub-entries
+  file carries **60** top-level `## DW-` headings and **229** `### DW-` sub-entries on 2026-11-11
   after years of follow-up intake — nothing from the migration's deferred work is missing.
 
 Six of these are also re-stated as contract-level capabilities **DC-1…DC-6** in
@@ -5316,4 +5316,130 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-11-05 — EGM audit landing (marshal Story 113.18)
   reason: deferred by triage: a fleet SKF property, not an atlas defect; it fits a recompile pass.
+  status: open
+
+### DW-atlas-46-1-1: Package comments still cite the pre-`tests/unit/` test layout and the archived intake spec's section numbers.
+
+- source_spec: `_bmad-output/projects/pyforge-atlas/planning-artifacts/research/cutover-readiness-audit-2026-11-10.md`
+  summary: Docstrings and comments under src/shared/packages/pyforge-atlas/ name test paths that moved under tests/unit/ on 2026-09-07 and `spec § n` sections of docs/specs/cfe-atlas-datapipeline-kedro-migration.md, now under archive/. A reader following one lands nowhere. The audit counted 86 of 109 `tests/…` citations at the old layout and 123 `spec §` citations.
+  evidence: `git grep -c "tests/catalog\|tests/parity\|spec §" -- src/shared/packages/pyforge-atlas`
+  location: src/shared/packages/pyforge-atlas/src, conf and tools (comments and docstrings)
+  origin: cutover readiness audit 2026-11-10 (atlas Story 46.1)
+  fix: fix a module's citations when the module is next touched for another reason, so the touched-module coverage floor is paid once.
+  owner: atlas
+  severity: low
+  promoted: 2026-11-10 — cutover readiness landing (atlas Story 46.1)
+  reason: deferred by a named blocker: the touched-module coverage floor turns a comment sweep into a coverage effort on about 60 modules.
+  status: open
+
+### DW-atlas-46-1-2: Most open rows of this ledger carry no `severity:` and none was re-checked against the tree for the cutover.
+
+- source_spec: `_bmad-output/projects/pyforge-atlas/planning-artifacts/research/cutover-readiness-audit-2026-11-10.md`
+  summary: The audit counted 137 open rows and 109 with no severity field, some with HIGH in their title; a plain count on 2026-11-10 gives 220 `### DW-` headings and 145 `status: open` lines. A sweep verifies each against the code, closes what is already resolved and gives the rest a severity.
+  evidence: the audit's SHOULD RECHECK list (deferred work); `grep -c 'status: open'`
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md
+  origin: cutover readiness audit 2026-11-10 (atlas Story 46.1)
+  fix: run bmad-loop-sweep over the open rows and record the partition.
+  owner: atlas
+  severity: low
+  promoted: 2026-11-10 — cutover readiness landing (atlas Story 46.1)
+  reason: deferred as a Dream-sized effort: a per-row check of about 145 rows against the tree.
+  status: open
+
+### DW-atlas-46-1-3: Atlas still reads A's conda-forge-expert tree and, in attended parity, the legacy cf_atlas.db.
+
+- source_spec: `_bmad-output/projects/pyforge-atlas/planning-artifacts/research/cutover-readiness-audit-2026-11-10.md`
+  summary: `paths.seed_root` defaults to .claude/skills/conda-forge-expert/data (three catalog seeds); `dashboard/scan_submit.py` and `datasets/refresh.py` shell to the vuln-db env and to .claude/scripts/conda-forge-expert/env_inspect.py; `parity/legacy_surface.py` reads the real legacy database. Stories 46.2 and 47.1 record each read in the Spec and in contract.md; Story 48.3 removes the views read.
+  evidence: conf/base/globals.yml:165; dashboard/scan_submit.py:45-47; datasets/refresh.py; parity/legacy_surface.py
+  location: src/shared/packages/pyforge-atlas/conf/base/globals.yml; src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/scan_submit.py; datasets/refresh.py; parity/
+  origin: cutover readiness audit 2026-11-10 (atlas Story 46.1)
+  fix: move the seeds into the package and give the scan pages a station-owned entry once conda-forge-expert has its own Spec.
+  owner: atlas
+  severity: medium
+  promoted: 2026-11-10 — cutover readiness landing (atlas Story 46.1)
+  reason: deferred by a named blocker: conda-forge-expert's Spec Story comes after the flip (operator ruling 3, 2026-11-10; mason Story 39.2).
+  status: open
+
+### DW-atlas-46-1-4: Seven atlas gate tasks run only in `-e local-recipes`.
+
+- source_spec: `_bmad-output/projects/pyforge-atlas/planning-artifacts/research/cutover-readiness-audit-2026-11-10.md`
+  summary: `dashboard-dryrun`, `dashboard-serve`, `vizro-ai-dryrun`, `publish`, `publish-range`, `wasm-build` and `wasm-smoke` are in feature.local-recipes.tasks. CI already runs the wasm build and these suites in `-e pyforge-atlas`. gate-contract.md records the feature each task sits in. Steward declined the move in the 2026-11-10 change: it is an estate change (which environment solves the tasks' dependencies), not a truth fix, and steward Story 124.1 keeps the tasks in `-e local-recipes`. This is the row the plan's working id DW-atlas-cutover-2026-11-10-4 names, which steward Story 124.1's spec cites.
+  evidence: pixi.toml feature.local-recipes.tasks; gate-contract.md; `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-124-1-every-suite-that-marked-its-live-tree-readers-has-its-two-task-halves.md` (Boundaries, Never)
+  location: pixi.toml (steward's); _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/gate-contract.md
+  origin: cutover readiness audit 2026-11-10 (atlas Story 46.1)
+  fix: move the tasks to feature.pyforge-atlas, then update the gate-contract.md table (its meta-test names the rows).
+  owner: steward
+  severity: low
+  promoted: 2026-11-10 — cutover readiness landing (atlas Story 46.1)
+  reason: deferred by a named blocker: the file is steward's, and steward declined the move for the 2026-11-10 change (steward Story 124.1).
+  status: open
+
+### DW-atlas-46-1-5: The attended floors of CAP-64 and CAP-65 can only be measured where the legacy cf_atlas.db exists.
+
+- source_spec: `_bmad-output/projects/pyforge-atlas/planning-artifacts/research/cutover-readiness-audit-2026-11-10.md`
+  summary: Each live-sources.md row is held to the legacy figure of the same day (operator ruling 2026-11-01). A second root has no legacy database, so it cannot re-measure the attended floors of CAP-64 and CAP-65.
+  evidence: live-sources.md header; SPEC.md CAP-64 and CAP-65 success
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/live-sources.md
+  origin: cutover readiness audit 2026-11-10 (atlas Story 46.1)
+  fix: none to build. Ruling 4 of the 2026-11-10 second addendum (docs/dreams/pyforge-unifying-strategy.md § Realization log): CAP-64 and CAP-65 hold to the story-close figures live-sources.md records, so a root with no legacy database is held to the recorded figures and re-measures nothing; Story 46.2 writes that sentence into the companion's header and both capabilities.
+  owner: atlas
+  severity: low
+  promoted: 2026-11-10 — cutover readiness landing (atlas Story 46.1)
+  reason: recorded, not blocked: the operator ruled what the floors are held to; the row keeps visible that they cannot be re-measured off A.
+  status: open
+
+### DW-atlas-46-1-6: tier-taxonomy.md and complete-export-contract.md are live contracts that sit under archive/.
+
+- source_spec: `_bmad-output/projects/pyforge-atlas/planning-artifacts/research/cutover-readiness-audit-2026-11-10.md`
+  summary: Story 45.1 archived the absorbed Spec folders with every companion. CAP-43 reads complete-export-contract.md and CAP-54 and CAP-55 read tier-taxonomy.md, so both are live; CHAIN-STANDARD § 11 item 2 says a live companion is carried into the station Spec folder. Story 46.2 cites all five companions by their archive path as the interim. org-audit-precedent.md, kedro-skills-audit-report.md and vscode-kedro-decision.md are records and may stay.
+  evidence: `git ls-files | grep -E 'tier-taxonomy|complete-export-contract'` lists archive/ paths only; SPEC.md CAP-43, CAP-54, CAP-55
+  location: archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/; archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-upstream-discovery/
+  origin: cutover readiness audit 2026-11-10 (atlas Story 46.1)
+  fix: `git mv` the two files into specs/spec-pyforge-atlas/, add them to `companions:`, re-point the three cites through the memlog.
+  owner: atlas
+  severity: medium
+  promoted: 2026-11-10 — cutover readiness landing (atlas Story 46.1)
+  reason: deferred by a named blocker: the 2026-11-10 change does not edit archive/.
+  status: open
+
+### DW-atlas-46-1-7: The OpenLineage producer URI points at `…/tree/main/pyforge-atlas`, which does not exist.
+
+- source_spec: `_bmad-output/projects/pyforge-atlas/planning-artifacts/research/cutover-readiness-audit-2026-11-10.md`
+  summary: `observability.PRODUCER` is stamped on every emitted event and facet. The path was never right after the package moved under src/shared/packages/. contract.md records the value as the code has it.
+  evidence: src/shared/packages/pyforge-atlas/src/pyforge/atlas/observability.py:84
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/observability.py
+  origin: cutover readiness audit 2026-11-10 (atlas Story 46.1)
+  fix: rule what the producer names (a repository path, or a layout-free identifier), then change the constant and its test.
+  owner: atlas
+  severity: low
+  promoted: 2026-11-10 — cutover readiness landing (atlas Story 46.1)
+  reason: deferred by a named blocker: no ruling on what the producer URI names once two roots exist.
+  status: open
+
+### DW-atlas-46-1-8: Story 24.2's attended, credentialed run has not happened, so CAP-43 stays ready and CAP-52's live-execution half stays open.
+
+- source_spec: `planning-artifacts/specs/spec-24-2-materialize-cap-8-s-canonical-parquets-one-recorded-run.md`
+  summary: Story 24.2 is CAP-43's one recorded run (the absorbed `spec-atlas-kedro-catalog-expansion:CAP-8`): an attended operator runs the pipelines against live sources with the Artifactory credentials configured, and `identity_complete_export` and `enterprise_jfrog_consumption` both land with non-zero rows. Its ledger key is `blocked` on the credentialed Artifactory path. Until it runs, CAP-43 reads `(ready 2026-09-09; not met: …)`, and CAP-52's live-execution verification, the same attended run, stays open. No other open row names it: the story spec cites only DW-FU-23-5, closed 2026-10-03 by Story 27.1.
+  evidence: sprint-status-ledger.yaml (`24-2-materialize-cap-8-s-canonical-parquets-one-recorded-run: blocked`); SPEC.md CAP-43 and CAP-52 markers; DW-FU-23-5 (`closed: 2026-10-03`, `closed_by: Story 27.1`)
+  location: src/shared/packages/pyforge-atlas/conf/base/catalog.yml (`identity_complete_export`, `enterprise_jfrog_consumption`); the operator's credentialed Artifactory path
+  origin: the independent review of the cutover readiness mint, 2026-11-10 (atlas Story 46.1)
+  fix: the operator runs Story 24.2's attended, credentialed run and records it; CAP-43 then reads shipped and CAP-52 drops its `not met` qualifier.
+  owner: operator
+  severity: medium
+  promoted: 2026-11-10 — cutover readiness landing (atlas Story 46.1)
+  reason: deferred by a named blocker: a credentialed, attended run is the operator's act (AD-11).
+  status: open
+
+### DW-atlas-46-1-9: The retired Unity satellite's 48 first-defined requirement ids stay arrowless and baselined in the FR baseline for good.
+
+- source_spec: `planning-artifacts/specs/spec-41-3-every-atlas-nfr-names-the-capabilities-it-bounds.md` (retired 2026-11-10)
+  summary: The PRD's Unity satellite section first defines FR-23..FR-60 and NFR-1..NFR-10, 48 ids with no capability arrow, and `docs/governance/fr-baseline.json` `projects.pyforge-atlas` holds all 48. Story 41.3, which owned them, is retired with the satellite (the operator's "Retire both", 2026-11-10). Story 41.2's `Fold provenance` record section suppresses duplicates only: doctor's `sources/one_chain.py` `_fr_definitions` still returns a first definition there, so a `python scripts/fr_baseline.py --prune` (Story 41.2's, then doctor Story 58.4's final one) keeps them. They are retired satellite history held in the baseline, and no story gives them an arrow.
+  evidence: `docs/governance/fr-baseline.json` (`projects.pyforge-atlas`: the 48 ids; `owners.pyforge-atlas`: two rows naming Stories 41.2 and 41.3 before Story 41.2 is built); src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/one_chain.py (`_fr_definitions`)
+  location: docs/governance/fr-baseline.json; _bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-pyforge-atlas-2026-07-17/prd.md (the Unity satellite section)
+  origin: the second review of the cutover readiness mint, 2026-11-10 (atlas Stories 41.2, 41.3 and 46.1)
+  fix: none to build: the ids are retired history. Story 41.2 replaces the hand-maintained `owners.pyforge-atlas` rows, which name Stories 41.2 and 41.3, with one row naming this one, and doctor Story 58.4's final `--prune` keeps it (its AC12).
+  owner: none (retired satellite history held in the baseline)
+  severity: low
+  promoted: 2026-11-10 — cutover readiness landing (atlas Story 46.1)
+  reason: recorded, not blocked: the satellite is retired, never built (rule R4: each gap is a deferred-work row).
   status: open

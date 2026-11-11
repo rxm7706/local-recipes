@@ -18,6 +18,10 @@ from kedro.framework.project import configure_project
 from pyforge.atlas import pipeline_registry
 from pyforge.atlas.pipeline_registry import AFTER_RUN_PIPELINES, NAMED_RUN_ONLY_PIPELINES, register_pipelines
 
+# Story 48.1 (a relay of spec-pyforge-steward:CAP-175): this module reads the live tree outside its package (the root
+# pixi.toml), so it runs in atlas's live-tree half and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 README = Path(__file__).resolve().parents[2] / "README.md"
 PIXI_TOML = Path(__file__).resolve().parents[6] / "pixi.toml"  # the repo root
 

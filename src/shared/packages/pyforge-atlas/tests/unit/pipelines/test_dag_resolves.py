@@ -8,6 +8,8 @@ same invariants offline.
 
 from __future__ import annotations
 
+import pytest
+
 from pyforge.atlas.pipelines.artifactory_downloads import create_pipeline as artifactory_create
 from pyforge.atlas.pipelines.core import create_pipeline as core_create
 from pyforge.atlas.pipelines.derived_artifacts import create_pipeline as derived_create
@@ -17,6 +19,10 @@ from pyforge.atlas.pipelines.universal_sbom import create_pipeline as sbom_creat
 from pyforge.atlas.pipelines.upstream_discovery import create_pipeline as discovery_create
 from pyforge.atlas.pipelines.vcs_health import create_pipeline as vcs_create
 from pyforge.atlas.pipelines.vulnerability import create_pipeline as vuln_create
+
+# Story 48.1 (a relay of spec-pyforge-steward:CAP-175): this module reads the live tree outside its package (the root
+# pixi.toml), so it runs in atlas's live-tree half and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
 
 
 def test_core_pipeline_has_eight_nodes():

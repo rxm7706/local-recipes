@@ -197,11 +197,25 @@ def _find_repo_root(start: Path) -> Path:
     return start.parents[min(5, len(start.parents) - 1)]
 
 
+#: Story 48.2: the Kedro project this module ships in (``src/shared/packages/pyforge-atlas`` here).
+_MEMBER_ROOT = Path(__file__).resolve().parents[4]
+
+
+def _member_root() -> Path:
+    """The atlas member, found from this file the way ``data.default_data_root`` finds it.
+
+    Trusted only when it holds ``conf/base/catalog.yml``: an installed layout has no member and
+    ``parents[4]`` would land in ``site-packages``, so the working directory stands in for it.
+    """
+    member = (_MEMBER_ROOT / "conf" / "base" / "catalog.yml").is_file()
+    return _MEMBER_ROOT if member else Path.cwd()
+
+
 def _pyforge_atlas_root(export_path: Path) -> Path:
     for parent in export_path.parents:
         if parent.name == "pyforge-atlas":
             return parent
-    return _find_repo_root(export_path) / "src/shared/packages/pyforge-atlas"
+    return _member_root()
 
 
 def _data_root_from_export(export_path: Path) -> Path:

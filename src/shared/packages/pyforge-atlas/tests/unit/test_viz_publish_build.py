@@ -40,6 +40,11 @@ if str(TOOLS) not in sys.path:
 import bootstrap  # noqa: E402
 import viz_build_check  # noqa: E402
 
+# Story 48.1 (a relay of spec-pyforge-steward:CAP-175): this module reads the live tree outside its package (the
+# kedro-viz workflow and the root pixi.toml), so it runs in atlas's live-tree half and fires on what it reads, not on
+# every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 _RAW_CREDENTIALS_LINE = re.compile(r"^\s+credentials:\s*([A-Za-z_][A-Za-z0-9_-]*)\s*(?:#.*)?$", re.MULTILINE)
 
 

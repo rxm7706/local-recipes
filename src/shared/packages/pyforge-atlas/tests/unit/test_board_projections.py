@@ -37,6 +37,11 @@ from pyforge.atlas.pipelines.derived_artifacts.release_cadence import project_re
 from pyforge.atlas.pipelines.pypi_intelligence.nodes import classify_mapping_gap
 from pyforge.atlas.pipelines.vulnerability.nodes import diff_vulnerability_snapshots, snapshot_vulnerability_rollup
 
+# Story 48.1 (a relay of spec-pyforge-steward:CAP-175): this module reads the live tree outside its package (the flag
+# tree and its overlays under src/platform, and atlas's epics.md and sprint status), so it runs in atlas's live-tree
+# half and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 FLAG = "pyforge.atlas.board_projections"
 REPO_ROOT = Path(__file__).resolve().parents[6]
 FLAGS = REPO_ROOT / "src" / "platform" / "config" / "flags.json"

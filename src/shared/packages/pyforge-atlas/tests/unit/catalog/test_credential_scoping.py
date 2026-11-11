@@ -19,7 +19,14 @@ from __future__ import annotations
 import subprocess
 from urllib.parse import urlparse
 
+import pytest
+
 from .conftest import CONF_SOURCE, CREDENTIAL_ALLOWLIST, MEMBER_DIR, REPO_ROOT
+
+# Story 48.1 (a relay of spec-pyforge-steward:CAP-175): this module reads the live tree outside its package (the
+# repository's git ignore rules), so it runs in atlas's live-tree half and fires on what it reads, not on every edit
+# of the package.
+pytestmark = pytest.mark.live_tree
 
 _JFROG_KEY_TOKENS = ("jfrog", "artifactory")
 

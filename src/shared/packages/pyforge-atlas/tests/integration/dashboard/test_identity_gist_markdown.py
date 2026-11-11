@@ -13,6 +13,11 @@ import pytest
 from pyforge.atlas.dashboard import identity_gist
 from pyforge.atlas.pipelines.derived_artifacts.nodes import build_identity_complete_export
 
+# Story 48.1 (a relay of spec-pyforge-steward:CAP-175): this module reads the live tree outside its package (the
+# inventory scripts under scripts/ and the recipes/ tree), so it runs in atlas's live-tree half and fires on what it
+# reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 _REPO_ROOT = Path(__file__).resolve().parents[7]
 _SCRIPT_DIR = _REPO_ROOT / "scripts"
 _FIXTURE_JSON = (

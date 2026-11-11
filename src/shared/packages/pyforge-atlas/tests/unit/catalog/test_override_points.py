@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import re
 
+import pytest
+
 from .conftest import (
     CATALOG_YML,
     DERIVED_STORE_PATHS,
@@ -29,6 +31,11 @@ from .conftest import (
     STORY_23_1_OVERRIDE_POINTS,
     make_config_loader,
 )
+
+# Story 48.1 (a relay of spec-pyforge-steward:CAP-175): this module reads the live tree outside its package
+# (conda-forge-expert's seed data under .claude/skills, the shipped seed_root default), so it runs in atlas's
+# live-tree half and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
 
 # P6: the default may not contain a comma — OmegaConf splits custom-resolver
 # arguments on commas, so `${env_or:X,https://a,b}` would silently pass THREE

@@ -40,6 +40,11 @@ from pyforge.atlas.datasets.dependency_history import (
 )
 from pyforge.atlas.pipelines.vcs_health.nodes import build_repo_dependency_history
 
+# Story 48.1 (a relay of spec-pyforge-steward:CAP-175): this module reads the live tree outside its package (the root
+# pixi.toml and the flag tree under src/platform), so it runs in atlas's live-tree half and fires on what it reads,
+# not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 MEMBER_DIR = Path(__file__).resolve().parents[3]
 REPO_ROOT = MEMBER_DIR.parents[2].parent
 CONF_SOURCE = MEMBER_DIR / "conf"

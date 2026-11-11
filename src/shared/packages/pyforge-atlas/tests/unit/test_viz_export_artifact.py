@@ -45,6 +45,11 @@ if str(_TOOLS) not in __import__("sys").path:
     __import__("sys").path.insert(0, str(_TOOLS))
 import viz_manifest  # noqa: E402
 
+# Story 48.1 (a relay of spec-pyforge-steward:CAP-175): this module reads the live tree outside its package (the
+# kedro-viz workflow, docs/dashboard, the CI surfaces registry and git's index), so it runs in atlas's live-tree half
+# and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 
 def _load_workflow() -> dict:
     assert WORKFLOW.is_file()

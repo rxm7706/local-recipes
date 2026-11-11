@@ -159,6 +159,22 @@ Each command runs from the worktree root; read every verdict from its exit code,
 
 Status: backlog (minted 2026-11-10).
 
+Build 2026-11-11 (wave BUILD-1; the status moves at the ledger close, not here):
+- Memlog first: two `correction` entries and one `change` entry (the shipped dates and where each was read; the
+  Story 24.3 key and the Spec's head note), then the anchored script render of `SPEC.md` (62 anchors, each asserted
+  once), then both self-validate passes logged as `event` entries.
+- Shipped dates: only Stories 34.14, 34.15 and 35.5 carry a dated `done` in an Auto Run Result, and Story 32.1 in its
+  Spec Change Log; for Stories 25.1, 36.1, 36.2, 37.12, 37.13 and 38.1 the date is the landing merge that names the
+  key (the memlog `correction` records this). CAP-61 2026-10-11, CAP-62 2026-10-17, CAP-63 2026-10-24, CAP-64 and
+  CAP-65 2026-11-01, CAP-66 2026-10-19, CAP-67 2026-10-21, CAP-69 2026-10-24.
+- The rendered text cites the ruling without "brief decision D5": that brief is not in the tree, so the cite would not
+  resolve for a reader of the Spec.
+- Row 9 follows the tree: Story 41.2's spec (orchestrator decision 2026-11-11) and doctor Story 58.4's AC12 say Story
+  41.2 writes the one `owners.pyforge-atlas` row and 58.4's final prune keeps it, so the row says that rather than
+  "58.4 replaces".
+- `deferred-work-ledger.md`'s two stale `### DW-` counts (216, 178) now read 229, the count after rows 1..9.
+- Story 36.3's story spec is written `blocked` with its flag block; `flag_gate_check.py --spec` prints verdict `pass`.
+
 ## Spec Change Log
 
 - 2026-11-10: minted from the station Dream's entry of 2026-11-10 (cutover readiness) under the operator's rulings of 2026-11-10 ("Accept all", "Retire both", "Accept all, run mint"). Acceptance adjusted by the rulings: the deferred-row check expects all seven rows (steward declined moving the gate tasks); CAP-64 and CAP-65 carry no open leg (ruling 4); markers follow CHAIN-STANDARD § 4 as steward Story 120.3 amends it (ruling 2), so the plan's colon forms became semicolon qualifiers; the memlog entries were written at the mint; AC4 looks for the qualified `spec-pyforge-steward:CAP-153` (CHAIN-STANDARD § 2: a citation of another Spec's capability is always qualified).

@@ -44,6 +44,11 @@ from pyforge.atlas.pipelines.core.nodes import enumerate_anaconda_main_packages
 
 from .conftest import CONF_SOURCE
 
+# Story 48.1 (a relay of spec-pyforge-steward:CAP-175): this module reads the live tree outside its package (the
+# repository's git ignore rules), so it runs in atlas's live-tree half and fires on what it reads, not on every edit
+# of the package.
+pytestmark = pytest.mark.live_tree
+
 # The documented order-of-magnitude floors (catalog-sources.md "Scale sanity gates").
 AOSS_FREE_FLOOR = 1_000
 ANACONDA_MAIN_FLOOR = 5_000

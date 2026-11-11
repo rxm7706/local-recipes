@@ -8,7 +8,10 @@ since mason Story 34.1 (2026-10-26) the legacy reader fills them again, so those
 is what the row is held to: the story-close measurement against the same-day legacy figure (operator ruling
 2026-11-01, amending the 2026-10-18 "recorded per story"); a row with no legacy figure is held to its measure.
 **Credential:** `—` public, unauthenticated; `opt-in` runs only with `PYFORGE_ATLAS_CREDENTIALED=1`. **CAP** is the
-capability whose success counts the row: CAP-64's success counts only its own rows.
+capability whose success counts the row: CAP-64's success counts only its own rows. A root with no legacy database
+has the story-close figures this table records, and only those: CAP-64 and CAP-65 hold to them and it re-measures
+nothing (operator ruling 4 of the 2026-11-10 second addendum; Story 46.2), because the same-day legacy measure can be
+taken only on A, where `cf_atlas.db` lives.
 
 | Source | Atlas datasets it fills | Legacy phase | Parity measure | Floor | Credential | CAP | Story |
 |---|---|---|---|---|---|---|---|

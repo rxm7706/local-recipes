@@ -24,6 +24,11 @@ from vizro.managers import model_manager
 
 from pyforge.atlas.dashboard import app
 
+# Story 48.1 (a relay of spec-pyforge-steward:CAP-175): this module reads the live tree outside its package (atlas's
+# DESIGN.md under _bmad-output), so it runs in atlas's live-tree half and fires on what it reads, not on every edit of
+# the package.
+pytestmark = pytest.mark.live_tree
+
 _DESIGN_RELPATH = "_bmad-output/projects/pyforge-atlas/planning-artifacts/DESIGN.md"
 
 
@@ -34,7 +39,8 @@ def _design_md() -> Path:
         candidate = parent / _DESIGN_RELPATH
         if candidate.is_file():
             return candidate
-    pytest.skip(f"{_DESIGN_RELPATH} not reachable (installed package, no planning tree)")
+    # Called at import, so the module-level form: without it pytest reports a collection error, not this skip.
+    pytest.skip(f"{_DESIGN_RELPATH} not reachable (installed package, no planning tree)", allow_module_level=True)
 
 
 DESIGN_MD = _design_md()

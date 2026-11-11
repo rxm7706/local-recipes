@@ -2,7 +2,7 @@
 title: 'Product Brief: Atlas (pyforge-atlas)'
 status: complete
 created: 2026-07-25
-updated: "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior "2026-11-01"
+updated: "2026-11-10"   # RE-STAMPED 2026-11-10 (cutover readiness, atlas Story 46.1): chain-currency cascade (research -> brief) for research/cutover-readiness-audit-2026-11-10.md; the Unity and Wasm satellites are retired, never built; no CAP, FR or AD is minted. Prior "2026-11-05": RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior "2026-11-01"
 inputs:
   - 'docs/dreams/pyforge-atlas.md'
   - 'docs/dreams/pyforge-charter.md § 3 Atlas'
@@ -14,6 +14,7 @@ inputs:
   - '_bmad-output/projects/pyforge-atlas/planning-artifacts/research/technical-atlas-post-ship-debt-and-cross-station-integration-research-2026-08-08.md  # folded in 2026-08-26'
   - '_bmad-output/projects/pyforge-atlas/planning-artifacts/research/technical-kedro-ecosystem-and-stack-currency-research-2026-08-08.md  # folded in 2026-08-26'
   - '_bmad-output/projects/pyforge-atlas/planning-artifacts/research/egm-audit-2026-11-01.md  # folded in 2026-11-01'
+  - '_bmad-output/projects/pyforge-atlas/planning-artifacts/research/cutover-readiness-audit-2026-11-10.md  # folded in 2026-11-10'
   - 'src/shared/packages/pyforge-atlas/ (shipped package — README.md, pyproject.toml, tests/)'
 note: 'RETROSPECTIVE brief — Atlas shipped 2026-07-18 (32/32 stories, PRs #58-#105) before the factory adopted the research-first convention (2026-07-25 campaign). This brief backfills the missing product-brief tier and describes what was actually built and why it was worth building, grounded in the real, shipped evidence — it is not a pre-build planning input.'
 ---
@@ -908,3 +909,15 @@ toolchain), just without the Wasm differentiation this brief leads with.
 *Chain-currency cascade (research -> brief), EGM audit, marshal Story 113.18.*
 
 The station's audit record joins this brief's inputs: `research/egm-audit-2026-11-05.md` (marshal Story 113.18, `spec-pyforge-marshal:CAP-302`): 16 high findings, 7 accepted, 7 rejected, 2 deferred; the medium and low findings are not triaged. The product scope does not change.
+
+## Currency reconciliation — 2026-11-10 (Story 46.1)
+
+*Chain-currency cascade (research -> brief), cutover readiness, atlas Story 46.1.*
+
+The cutover readiness audit joins this brief's inputs: `research/cutover-readiness-audit-2026-11-10.md`, read at main
+`82a2b18828`, found the Spec behind the code (twelve registered pipelines counted as seven, capabilities marked
+shipped whose attended half never ran, and the two satellites marked shipped with no code). Under the operator's
+rulings of 2026-11-10 (`docs/dreams/pyforge-unifying-strategy.md` § Realization log, the entry of that date and its
+two addenda) the Unity Data Stack and Wasm Analytics Stack satellites are retired, never built: B does not rebuild
+them, and their `## Satellite:` sections below stay as history that describes no product of this station. The Spec's
+capability markers now say what is built, open or retired (Story 46.1). The product scope does not change.

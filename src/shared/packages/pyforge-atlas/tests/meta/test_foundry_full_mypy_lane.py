@@ -6,6 +6,13 @@ import re
 import tomllib
 from pathlib import Path
 
+import pytest
+
+# Story 48.1 (a relay of spec-pyforge-steward:CAP-175): this module reads the live tree outside its package (the root
+# pixi.toml and the lint-types workflow), so it runs in atlas's live-tree half and fires on what it reads, not on
+# every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 _REPO_ROOT = Path(__file__).resolve().parents[6]
 
 
