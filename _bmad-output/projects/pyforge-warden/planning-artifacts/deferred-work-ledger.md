@@ -1289,3 +1289,33 @@ verified: 2026-11-11 — still-open — DW-FU-5-1: no review of 5-1-actionable-d
   reason: sequenced after Story 26.2
   status: open
   verified: 2026-11-11 — still-open — in _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md:66-129 (CAP-1 to CAP-22) no block names a `pixi run` command and 18 of the 22 name no test; proof-map.md does not exist yet (Story 26.2 runs after this story).
+
+### DW-warden-cutover-2026-11-10-12: No test proves CAP-16's success clause: an uploaded pixi.lock returns a job id and completes against the real engines.
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-warden/SPEC.md` (CAP-16); `planning-artifacts/specs/spec-pyforge-warden/proof-map.md` § Gaps
+  summary: No test proves CAP-16's success clause: an uploaded pixi.lock returns a job id and completes against the real engines.
+  evidence: django-warden's upload view (`upload_manifest`, django-warden/src/django_warden_fabric/views.py:153) answers 202 with a `job_id` and enqueues `run_compliance_job` (tasks.py:95), which calls the CLI's scan in-process (`_run_warden_engines`, tasks.py:153). No test posts a manifest or runs the task: the platform tests reach the upload only as a redirect and a route resolve (src/platform/tests/test_warden_fabric_rename.py:58-74) and the task only as an AST signature check (src/platform/tests/test_warden_fabric_phases.py:54). Story 26.2's proof map cites those two modules for CAP-16's keys-not-blobs half and records this clause as a gap.
+  location: src/shared/packages/django-warden/src/django_warden_fabric/views.py; src/shared/packages/django-warden/src/django_warden_fabric/tasks.py
+  origin: Story 26.2 (warden Epic 26, the cutover readiness plan of 2026-11-10): the proof map's Gaps section
+  fix: add a platform test that posts a pixi.lock fixture to `/stations/warden/upload/`, reads the `job_id` from the 202, runs the task eagerly against the provisioned warden engines and asserts the job reaches `succeeded` with a report; then cite its module in proof-map.md's CAP-16 row and drop the gap row.
+  owner: warden
+  severity: medium
+  promoted: 2026-11-10 — cutover readiness plan (Story 26.2)
+  reason: Story 26.2 writes no new product test (its Never); the test belongs to a django-warden story, the portal half whose mode is A-only.
+  status: open
+  verified: 2026-11-11 — still-open — `git grep -n -e upload_manifest -e run_compliance_job -e /stations/warden/upload -- src/platform/tests 'src/shared/packages/*/tests'` exits 0 with five hits, all in src/platform/tests/test_warden_fabric_phases.py:54-60 and src/platform/tests/test_warden_fabric_rename.py:61-74 (a signature check, two redirects and a route resolve); none posts a manifest or runs the job.
+
+### DW-warden-cutover-2026-11-10-13: No test proves CAP-17's success clause that a job's reports match the CLI engines byte-for-byte on the same input.
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-warden/SPEC.md` (CAP-17); `planning-artifacts/specs/spec-pyforge-warden/proof-map.md` § Gaps
+  summary: No test proves CAP-17's success clause that a job's reports match the CLI engines byte-for-byte on the same input.
+  evidence: `_run_warden_engines` (django-warden/src/django_warden_fabric/tasks.py:153-174) stores the CLI's `--format json` stdout as the job's `report_json` and returns `"{}"` as its `sbom_json` (tasks.py:174), so `job_report` with `kind=sbom` (views.py:319) serves `{}`, while CAP-17's intent names an SBOM rendered from engine output. No test compares a job's stored report with a `warden scan` of the same input: the platform tests that set `report_json` build it by hand (src/platform/tests/test_warden_fleet_proposals.py) or patch `_run_warden_engines` (src/platform/tests/test_warden_fleet_run.py:161). Story 26.2's proof map cites src/platform/tests/test_warden_fabric_phases.py for the monotonic-progress half and records this clause as a gap.
+  location: src/shared/packages/django-warden/src/django_warden_fabric/tasks.py; src/shared/packages/django-warden/src/django_warden_fabric/views.py
+  origin: Story 26.2 (warden Epic 26, the cutover readiness plan of 2026-11-10): the proof map's Gaps section
+  fix: add a platform test that runs one job and `warden scan --format json` on the same fixture and compares the stored report with the CLI's stdout byte for byte; settle the SBOM half with the operator first (render the SBOM through `--sbom-output`, or re-derive CAP-17's intent to say the portal serves no SBOM); then cite the module in proof-map.md's CAP-17 row and drop the gap row.
+  owner: warden
+  severity: medium
+  promoted: 2026-11-10 — cutover readiness plan (Story 26.2)
+  reason: Story 26.2 writes no new product test and edits no `SPEC.md` (its Never); the SBOM half needs a ruling or a re-derive.
+  status: open
+  verified: 2026-11-11 — still-open — `git grep -n -e job_report -e report_json -e sbom_json -- src/platform/tests 'src/shared/packages/*/tests'` exits 0 and every hit sets `report_json` by hand in src/platform/tests/test_warden_fleet_proposals.py; tasks.py:174 still returns `report_json, "{}", int(code)`.
