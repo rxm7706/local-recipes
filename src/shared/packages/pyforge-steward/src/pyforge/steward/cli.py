@@ -198,7 +198,10 @@ _HELP = {
         "Hub Guard library — catalog, spec lacking, source-ground (AD-8 copy); "
         "never a PR verdict (Story 53.4 / hub:CAP-4)"
     ),
-    "cutover": ("flag-gated cutover plan/apply/flip (Story 44.12 / fnd:CAP-8); default root stays local-recipes"),
+    "cutover": (
+        "the capability ledger's generator and validator, and the root-of-record flag "
+        "(spec-python-foundry-cutover fnd:CAP-8, fnd:CAP-9)"
+    ),
     "session": (
         "one verdict for the session preconditions -- pixi/pyforge-guild, bmad-method drift, "
         "the token-economy kit + codegraph index, gh auth/rate-limit, the Tier-3 sprint-status "
@@ -616,16 +619,43 @@ def _add_deck_drift_arguments(deck_drift_parser: argparse.ArgumentParser) -> Non
 
 
 def _add_cutover_subparsers(cutover_parser: argparse.ArgumentParser) -> None:
-    """Story 44.12: plan / apply / flip."""
-    cutover_subs = cutover_parser.add_subparsers(dest="cutover_verb", metavar="{plan,apply,flip}")
-    plan = cutover_subs.add_parser("plan", help="regenerate or append the move-list")
-    plan.add_argument("--regenerate", action="store_true")
-    plan.add_argument("--append", action="store_true")
-    plan.add_argument("--manifest", default=None, metavar="PATH")
-    apply = cutover_subs.add_parser("apply", help=retrofit_help(("cutover", "apply"), "replay one phase into foundry"))
-    apply.add_argument("--phase", required=True, metavar="N", help="1a or 1b")
-    apply.add_argument("--manifest", default=None, metavar="PATH")
-    apply.add_argument("--foundry-root", default=None, metavar="DIR")
+    """Story 121.2 (spec-python-foundry-cutover fnd:CAP-8, fnd:CAP-9): plan / flip; apply is retired."""
+    cutover_subs = cutover_parser.add_subparsers(dest="cutover_verb", metavar="{plan,flip}")
+    plan = cutover_subs.add_parser(
+        "plan",
+        help="generate (--regenerate, --append) or validate (--check, the default) the capability ledger",
+    )
+    plan.set_defaults(plan_mode="check")
+    plan_mode = plan.add_mutually_exclusive_group()
+    plan_mode.add_argument(
+        "--regenerate",
+        dest="plan_mode",
+        action="store_const",
+        const="regenerate",
+        help="rewrite the derived fields from the live Specs, keep the decided ones "
+        "(behind pyforge.steward.cutover_ledger_write)",
+    )
+    plan_mode.add_argument(
+        "--append",
+        dest="plan_mode",
+        action="store_const",
+        const="append",
+        help="add rows for new capabilities only (behind pyforge.steward.cutover_ledger_write)",
+    )
+    plan_mode.add_argument(
+        "--check",
+        dest="plan_mode",
+        action="store_const",
+        const="check",
+        help="judge the ledger against the live Specs and the written rules; write nothing, exit 1 on a finding",
+    )
+    plan.add_argument(
+        "--ledger",
+        default=None,
+        metavar="PATH",
+        help="the ledger file (default: <repo root>/docs/foundry/capability-ledger.yaml)",
+    )
+    plan.add_argument("--json", action="store_true", help="print the report as JSON")
     flip = cutover_subs.add_parser(
         "flip",
         help=retrofit_help(("cutover", "flip"), "set pyforge.cutover_root (refuses if a loop is running)"),

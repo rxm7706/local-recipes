@@ -1,15 +1,21 @@
-"""Cutover plan / apply / flip (Story 44.12 / fnd:CAP-8)."""
+"""Cutover plan and flip (spec-python-foundry-cutover fnd:CAP-8, fnd:CAP-9; Stories 44.12 and 121.2).
+
+``steward cutover plan`` generates and validates the capability ledger, ``docs/foundry/capability-ledger.yaml``:
+``--regenerate`` and ``--append`` are the generator's two write modes (``cutover_ledger``, Story 121.1) and ``--check``,
+the default, is its validator (``cutover_ledger_check``, Story 121.6), which writes nothing and fails on a broken rule.
+The two write modes sit behind the kill switch ``pyforge.steward.cutover_ledger_write`` (default on); ``--check`` is
+never gated. ``steward cutover flip`` sets ``pyforge.cutover_root``, the root of record and writer lock: it is refused
+while a Marshal loop runs and stamps the Realization log. Copying trees into foundry is retired (operator ruling 2,
+2026-11-10): the ledger row decides each capability's mode, never a file list.
+"""
 
 from __future__ import annotations
 
 import argparse
 import json
-import os
-import shutil
-import subprocess
+from collections.abc import Callable
 from datetime import date
 from pathlib import Path
-from typing import Any
 
 from pyforge.core import flags as core_flags
 from pyforge.core.atomic_write import atomic_write_text
@@ -22,28 +28,24 @@ from pyforge.core.cutover_root import (
     resolve_flags_path,
 )
 
+from .cutover_ledger import DEFAULT_LEDGER, CutoverLedgerError, LedgerReport
+from .cutover_ledger import append as append_ledger
+from .cutover_ledger import regenerate as regenerate_ledger
+from .cutover_ledger_check import CheckReport, Issue
+from .cutover_ledger_check import check as check_ledger
 from .interfaces import DutyResult
 
-_CUTOVER_VERBS: tuple[str, ...] = ("plan", "apply", "flip")
-DEFAULT_MANIFEST = Path("docs/foundry/manifest.json")
-FOUNDRY_EPOCH = "6e0607b530f5fa5db2faffd12cbc49da9d880083"
+_CUTOVER_VERBS: tuple[str, ...] = ("plan", "flip")
 REALIZATION_LOG = Path("docs/dreams/pyforge-unifying-strategy.md")
-ENV_FOUNDRY = "CUTOVER_FOUNDRY_ROOT"
 CUTOVER_FLAG_STORY = "44-12-cutover-flag-and-replay-harness"
 
-# Launch apply trees only — 44.1 still owns 100% coverage.
-_PHASE_RULES: dict[str, tuple[str, ...]] = {
-    "1a": ("src/shared/packages/",),
-    "1b": (
-        ".claude/skills/",
-        "_bmad/",
-        "_bmad-output/projects/",
-        "docs/dreams/",
-        "presentations/",
-    ),
+# fnd:CAP-9: the kill switch over the ledger's two write modes, read with `read_boolean` before either writes.
+LEDGER_WRITE_FLAG = "pyforge.steward.cutover_ledger_write"
+PLAN_CHECK = "check"
+_PLAN_WRITERS: dict[str, Callable[[Path, Path], LedgerReport]] = {
+    "regenerate": regenerate_ledger,
+    "append": append_ledger,
 }
-
-_CFE_PREFIX = ".claude/skills/conda-forge-expert/"
 
 
 def _repo_root(start: Path | None = None) -> Path:
@@ -54,173 +56,89 @@ def _repo_root(start: Path | None = None) -> Path:
     return here
 
 
-def _git(root: Path, *args: str) -> str:
-    result = subprocess.run(  # noqa: S603
-        ["git", "-C", str(root), *args],
-        check=False,
-        capture_output=True,
-        text=True,
+def _count(n: int, noun: str) -> str:
+    return f"{n} {noun}" if n == 1 else f"{n} {noun}s"
+
+
+def _issue_rows(issues: tuple[Issue, ...]) -> list[dict[str, str]]:
+    return [{"code": code, "id": item, "message": message} for code, item, message in issues]
+
+
+def _issue_lines(kind: str, issues: tuple[Issue, ...]) -> list[str]:
+    return [f"  {kind} {code} {item}: {message}" for code, item, message in issues]
+
+
+def _plan_result(ok: bool, lines: list[str], payload: dict[str, object], as_json: bool) -> DutyResult:
+    if as_json:
+        # A failed --check still hands its JSON report to stdout, where a machine reader looks for it.
+        return DutyResult(
+            ok=ok,
+            summary=json.dumps(payload, indent=2),
+            details={**payload, "summary_stream": "stdout"},
+        )
+    return DutyResult(ok=ok, summary="\n".join(lines), details=payload)
+
+
+def _checked(report: CheckReport, ledger: Path, as_json: bool) -> DutyResult:
+    payload: dict[str, object] = {
+        "mode": PLAN_CHECK,
+        "ledger": str(ledger),
+        "ok": report.ok,
+        "findings": _issue_rows(report.findings),
+        "warnings": _issue_rows(report.warnings),
+    }
+    head = (
+        f"cutover plan --check: {ledger}: "
+        f"{_count(len(report.findings), 'finding')}, {_count(len(report.warnings), 'warning')}"
     )
-    if result.returncode != 0:
-        raise RuntimeError(result.stderr.strip() or result.stdout.strip())
-    return result.stdout
+    lines = [head, *_issue_lines("finding", report.findings), *_issue_lines("warning", report.warnings)]
+    return _plan_result(report.ok, lines, payload, as_json)
 
 
-def _source_sha(root: Path) -> str:
-    return _git(root, "rev-parse", "HEAD").strip()
+def _written(mode: str, report: LedgerReport, ledger: Path, as_json: bool) -> DutyResult:
+    payload: dict[str, object] = {"mode": mode, "ledger": str(ledger), **report.as_dict()}
+    state = "written" if report.changed else "unchanged"
+    head = (
+        f"cutover plan --{mode}: {ledger}: {state}; "
+        f"{len(report.added)} added, {len(report.dropped)} dropped, {len(report.remoded)} remoded"
+    )
+    lines = [head, *(f"  {code} {item}" for code, item in report.events)]
+    return _plan_result(True, lines, payload, as_json)
 
 
-def _ls_files(root: Path) -> tuple[str, ...]:
-    text = _git(root, "ls-files", "-z")
-    return tuple(part for part in text.split("\0") if part)
+def plan(ns: argparse.Namespace, root: Path) -> DutyResult:
+    """``steward cutover plan``: ``--check`` (the default) judges the ledger and writes nothing; ``--regenerate`` and
+    ``--append`` write it unless the kill switch ``pyforge.steward.cutover_ledger_write`` reads off.
 
+    ``--ledger`` names another ledger file (relative to the working directory); the default is the repository's.
+    A broken rule fails the result, so the process exits 1; an OFF switch or an unknown mode asks for steward's usage
+    code and writes nothing.
+    """
+    from .cli import EXIT_USAGE  # function-local: cli resolves this duty lazily
 
-def _dest_for(path: str, phase: str) -> str:
-    if phase == "1a" and path.startswith("src/shared/packages/"):
-        return "src/packages/" + path[len("src/shared/packages/") :]
-    return path
-
-
-def _kind_for(path: str) -> str:
-    name = Path(path).name.lower()
-    if name in {".env", ".netrc"} or name.endswith(".pem"):
-        return "secret"
-    return "file"
-
-
-def _phase_for(path: str) -> str | None:
-    if path.startswith(_CFE_PREFIX):
-        return None
-    for phase, prefixes in _PHASE_RULES.items():
-        if any(path.startswith(prefix) for prefix in prefixes):
-            return phase
-    return None
-
-
-def _row(path: str, phase: str, status: str = "planned") -> dict[str, Any]:
-    return {
-        "path": path,
-        "dest": _dest_for(path, phase),
-        "status": status,
-        "kind": _kind_for(path),
-        "phase": phase,
-    }
-
-
-def _load_manifest(path: Path) -> dict[str, Any]:
-    if not path.is_file():
-        return {"source_sha": "", "foundry_epoch": FOUNDRY_EPOCH, "rows": []}
-    raw = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(raw, dict):
-        return {"source_sha": "", "foundry_epoch": FOUNDRY_EPOCH, "rows": []}
-    raw.setdefault("rows", [])
-    raw.setdefault("foundry_epoch", FOUNDRY_EPOCH)
-    return raw
-
-
-def _write_manifest(path: Path, payload: dict[str, Any]) -> None:
-    atomic_write_text(path, json.dumps(payload, indent=2, sort_keys=True) + "\n")
-
-
-def _preserve_moved(existing: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
-    kept: dict[str, dict[str, Any]] = {}
-    for row in existing:
-        if isinstance(row, dict) and row.get("status") == "moved" and row.get("path"):
-            kept[str(row["path"])] = row
-    return kept
-
-
-def plan_regenerate(root: Path, manifest_path: Path) -> dict[str, Any]:
-    existing = _load_manifest(manifest_path)
-    moved = _preserve_moved(list(existing.get("rows") or []))
-    rows: list[dict[str, Any]] = []
-    seen: set[str] = set()
-    for path in _ls_files(root):
-        phase = _phase_for(path)
-        if phase is None:
-            continue
-        if path in moved:
-            rows.append(moved[path])
-        else:
-            rows.append(_row(path, phase))
-        seen.add(path)
-    for path, row in moved.items():
-        if path not in seen:
-            rows.append(row)
-    payload = {
-        "source_sha": _source_sha(root),
-        "foundry_epoch": FOUNDRY_EPOCH,
-        "rows": rows,
-    }
-    _write_manifest(manifest_path, payload)
-    return payload
-
-
-def plan_append(root: Path, manifest_path: Path) -> dict[str, Any]:
-    existing = _load_manifest(manifest_path)
-    by_path = {str(row["path"]): row for row in existing.get("rows") or [] if isinstance(row, dict) and row.get("path")}
-    old_sha = str(existing.get("source_sha") or "")
-    candidates: set[str] = set(_ls_files(root))
-    if old_sha:
-        try:
-            delta = _git(root, "diff", "--name-only", old_sha, "HEAD")
-            candidates.update(line for line in delta.splitlines() if line)
-        except RuntimeError:
-            pass
-    for path in sorted(candidates):
-        phase = _phase_for(path)
-        if phase is None:
-            continue
-        current = by_path.get(path)
-        if current and current.get("status") == "moved":
-            continue
-        if current is None:
-            by_path[path] = _row(path, phase)
-    payload = {
-        "source_sha": _source_sha(root),
-        "foundry_epoch": FOUNDRY_EPOCH,
-        "rows": list(by_path.values()),
-    }
-    _write_manifest(manifest_path, payload)
-    return payload
-
-
-def _foundry_root(explicit: Path | None = None) -> Path:
-    if explicit is not None:
-        return explicit
-    raw = os.environ.get(ENV_FOUNDRY)
-    if raw:
-        return Path(raw)
-    sibling = _repo_root().parent / "python-foundry"
-    return sibling
-
-
-def apply_phase(
-    root: Path,
-    manifest_path: Path,
-    phase: str,
-    dest_root: Path,
-) -> dict[str, Any]:
-    manifest = _load_manifest(manifest_path)
-    copied = 0
-    skipped = 0
-    for row in manifest.get("rows") or []:
-        if not isinstance(row, dict) or row.get("phase") != phase:
-            continue
-        src = root / str(row["path"])
-        dest = dest_root / str(row["dest"])
-        if not src.is_file():
-            continue
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        if dest.is_file() and dest.read_bytes() == src.read_bytes():
-            skipped += 1
-            row["status"] = "moved"
-            continue
-        shutil.copy2(src, dest)
-        row["status"] = "moved"
-        copied += 1
-    _write_manifest(manifest_path, manifest)
-    return {"copied": copied, "skipped": skipped, "phase": phase}
+    mode = str(getattr(ns, "plan_mode", None) or PLAN_CHECK)
+    raw = getattr(ns, "ledger", None)
+    ledger = Path(raw).absolute() if raw else root / DEFAULT_LEDGER
+    as_json = bool(getattr(ns, "json", False))
+    if mode == PLAN_CHECK:
+        return _checked(check_ledger(root, ledger), ledger, as_json)
+    writer = _PLAN_WRITERS.get(mode)
+    if writer is None:
+        return DutyResult(
+            ok=False,
+            summary=f"cutover plan: unknown mode {mode!r}; pass --regenerate, --append or --check",
+            details={"exit_code": EXIT_USAGE},
+        )
+    if not core_flags.read_boolean(LEDGER_WRITE_FLAG, default=True):
+        return DutyResult(
+            ok=False,
+            summary=(
+                f"cutover plan --{mode}: refused, the kill switch {LEDGER_WRITE_FLAG} is off; "
+                "nothing was written (plan --check still runs)"
+            ),
+            details={"exit_code": EXIT_USAGE, "mode": mode, "ledger": str(ledger)},
+        )
+    return _written(mode, writer(root, ledger), ledger, as_json)
 
 
 def loops_running(home: Path | None = None) -> bool:
@@ -297,42 +215,11 @@ class CutoverDuty:
     def run(self, ns: argparse.Namespace) -> DutyResult:
         verb = getattr(ns, "cutover_verb", None)
         if verb not in _CUTOVER_VERBS:
-            return DutyResult(ok=False, summary="cutover: need plan, apply, or flip")
+            return DutyResult(ok=False, summary="cutover: need plan or flip")
         root = _repo_root()
-        manifest = Path(getattr(ns, "manifest", None) or root / DEFAULT_MANIFEST)
         try:
             if verb == "plan":
-                if getattr(ns, "regenerate", False):
-                    payload = plan_regenerate(root, manifest)
-                    mode = "regenerate"
-                elif getattr(ns, "append", False):
-                    payload = plan_append(root, manifest)
-                    mode = "append"
-                else:
-                    return DutyResult(
-                        ok=False,
-                        summary="cutover plan: pass --regenerate or --append",
-                    )
-                n = len(payload.get("rows") or [])
-                return DutyResult(
-                    ok=True,
-                    summary=f"cutover plan --{mode}: {n} rows → {manifest}",
-                    details={"rows": n, "path": str(manifest)},
-                )
-            if verb == "apply":
-                phase = str(getattr(ns, "phase", "") or "")
-                if phase not in _PHASE_RULES:
-                    return DutyResult(
-                        ok=False,
-                        summary="cutover apply: --phase must be 1a or 1b",
-                    )
-                dest = _foundry_root(Path(ns.foundry_root) if getattr(ns, "foundry_root", None) else None)
-                stats = apply_phase(root, manifest, phase, dest)
-                return DutyResult(
-                    ok=True,
-                    summary=(f"cutover apply --phase {phase}: copied {stats['copied']}, skipped {stats['skipped']}"),
-                    details=stats,
-                )
+                return plan(ns, root)
             target = str(getattr(ns, "to", "") or "")
             flags = resolve_flags_path(getattr(ns, "flags", None))
             if flags is None:
@@ -342,5 +229,5 @@ class CutoverDuty:
                 ok=True,
                 summary=f"cutover flip → {read_cutover_root(flags)}",
             )
-        except (CutoverRootError, RuntimeError, OSError, json.JSONDecodeError) as exc:
+        except (CutoverRootError, CutoverLedgerError, OSError, json.JSONDecodeError) as exc:
             return DutyResult(ok=False, summary=f"cutover: {exc}")
