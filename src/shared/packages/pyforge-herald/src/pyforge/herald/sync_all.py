@@ -1,5 +1,5 @@
-"""``herald deck sync-all`` -- Story 23.6 (``spec-design-sync-loop`` CAP-8,
-plus CAP-3's "sweep" half): one command composing every existing kernel
+"""``herald deck sync-all`` -- Story 23.6 (CAP-36,
+plus CAP-31's "sweep" half): one command composing every existing kernel
 verb -- enumerate, pull, refresh, derive, push, prove, publish -- into one
 ordered per-deck run, for every registered deck or one ``--slug``.
 
@@ -685,7 +685,7 @@ def sync_all(
     prover: LocalProver | None = None,
     now: Callable[[], datetime] | None = None,
 ) -> SyncAllReport:
-    """CAP-8 + CAP-3's sweep half (Story 23.6): enumerate -> pull -> refresh
+    """CAP-36 + CAP-31's sweep half (Story 23.6): enumerate -> pull -> refresh
     -> derive -> push -> prove -> publish, in order, for every registered
     deck (``slug is None``) or just ``slug``.
 

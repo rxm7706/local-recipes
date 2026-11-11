@@ -96,7 +96,7 @@ class ExportConflictError(HeraldError):
 
 
 class ReadBackMismatchError(HeraldError):
-    """``herald deck push --prove`` (Story 23.4, CAP-6) found a pushed
+    """``herald deck push --prove`` (Story 23.4, CAP-34) found a pushed
     file whose read-back, after ``deck_pipeline._strip_serve_harness``,
     does not match the bytes actually sent.
 
@@ -167,7 +167,7 @@ class DeckUsageError(HeraldError):
 class PptxTemplateError(HeraldError):
     """``herald deck pptx-spec``/``pptx-fill``'s ``--template`` path does
     not exist, or python-pptx could not open it as a ``.pptx``/``.potx``
-    (Story 15.1, CAP-1). Falls through to the default exit code (``1``) --
+    (Story 15.1, CAP-41). Falls through to the default exit code (``1``) --
     a bad template path is a usage problem for the operator to fix, not a
     transport outage."""
 
@@ -176,8 +176,8 @@ class InvalidContentPlanError(HeraldError):
     """``herald deck pptx-fill``'s ``content_plan.json`` is malformed, or
     references a layout or placeholder idx absent from the resolved
     template, or a placeholder value that is neither a string nor a list of
-    strings (Story 15.1, CAP-1). Also covers a slide entry's optional
-    ``"shapes"`` list (Story 15.2, spec-pptx-custom-shapes CAP-1): a
+    strings (Story 15.1, CAP-41). Also covers a slide entry's optional
+    ``"shapes"`` list (Story 15.2, CAP-40): a
     ``"shapes"`` value that is not
     a JSON array, an individual shape entry that is not a JSON object, an
     unknown shape ``"type"``, a missing/malformed required field for that
@@ -188,7 +188,7 @@ class InvalidContentPlanError(HeraldError):
 
 
 class PaginationStalledError(HeraldError):
-    """``_windowed_read`` (CAP-2 from spec-design-sync-loop, Story 23.2)
+    """``_windowed_read`` (CAP-30, Story 23.2)
     asked the server to resume past a window's ``last_line`` and got back
     a window whose own ``last_line`` did not advance past it (DW-FU-23-2,
     Story 23.2's Edge Case Hunter finding: the un-guarded loop would

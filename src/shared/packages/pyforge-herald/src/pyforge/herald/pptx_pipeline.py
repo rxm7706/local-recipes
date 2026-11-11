@@ -1,4 +1,4 @@
-"""CAP-1 template-parse-then-fill (Story 15.1): a second, parallel
+"""CAP-41 template-parse-then-fill (Story 15.1): a second, parallel
 PPTX-generation module producing genuinely editable ``.pptx`` decks --
 coexisting with, never replacing, the existing Marp/bridge pipeline
 (``deck_pipeline.py``, ``cli.py``'s ``marp-*`` pull targets).
@@ -33,7 +33,7 @@ output ``spec.json``/``.pptx``) around the pure-computation
 ``extract_spec``/``fill_template`` functions, which take/return in-memory
 objects only.
 
-**Story 15.2 (spec-pptx-custom-shapes CAP-1) adds four directly-callable
+**Story 15.2 (CAP-40) adds four directly-callable
 shape functions** -- :func:`add_card`/:func:`add_metric_box`/
 :func:`add_table`/:func:`add_section_label` -- rendering real, editable
 python-pptx objects at caller-given EMU geometry for dense content no

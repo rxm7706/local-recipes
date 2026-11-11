@@ -192,3 +192,47 @@ EOF
   docstrings, but for `registry.py:437`). Both join the known stays beside `registry.py:437`, the Always rule allows
   keeping a site that is not a comment or a first-statement docstring, and AC2's expected text and the epics Then line
   name the four.
+
+## Planned deferral (written at build)
+
+The row below is not in the deferred-work ledger yet. Story 50.2 writes it to
+`planning-artifacts/deferred-work-ledger.md` as `DW-herald-50-4-1` and adds it to this spec's `deferred:` frontmatter
+in the same change, because `deferred-work-check` refuses a frontmatter deferral with no tracked twin.
+
+The map used at build. In this section a bare `CAP-n` is spec-pyforge-herald's, and a pre-fold id carries its own
+Spec's name. Each pre-fold id became the spec-pyforge-herald id that absorbed it. The 2026-09-17 remint table
+(`planning-artifacts/rekey-2026-09-17.md`, and the `←` provenance on each SPEC.md CAP heading) gives:
+
+- spec-design-sync-loop CAP-1, CAP-2, CAP-3, CAP-5, CAP-6 and CAP-8 → CAP-29, CAP-30, CAP-31, CAP-33, CAP-34 and
+  CAP-36.
+- spec-deck-visual-qa CAP-2 → CAP-27.
+- spec-pptx-deck-generation CAP-1 (Story 15.1) → CAP-41, and spec-pptx-custom-shapes CAP-1 (Story 15.2) → CAP-40.
+
+The bridge's own ids (spec-design-code-bridge CAP-1..CAP-5, Epics 1 to 5) were folded on 2026-08-02 into HER-1, the
+CLI foundation, and HER-4, the Design-Code-Bridge Framework, which the remint made CAP-1 and CAP-4. Each bridge verb
+takes its row in `contract.md` (Story 50.3, spec-pyforge-herald:CAP-62): seed (bridge CAP-1) and pull (bridge CAP-2)
+→ CAP-1/CAP-4; status (bridge CAP-3), watch (bridge CAP-4) and push (bridge CAP-5) → CAP-4.
+
+The `PptxTemplateExporter` docstring (deck_pipeline.py line 562) cited "CAP-1's `.potx` template-fill path". That
+CAP-1 is the template-fill path: the class fills through `pptx_pipeline.run_fill`, the spec-pptx-deck-generation
+CAP-1 that pptx_pipeline.py's module docstring cites. So it became CAP-41, with Story 23.3 cited as CAP-33.
+
+60 of the 67 sites are re-keyed. The 7 sites below are kept as written:
+
+- **`DW-herald-50-4-1`** (low, open; location `src/shared/packages/pyforge-herald/src/pyforge/herald/`): seven
+  pre-fold citations stay in herald's source, each for the reason given:
+  - `registry.py:437`: code, not a comment. The f-string heading `(spec-design-sync-loop CAP-6)` is what the
+    push-and-prove ledger writes into a deck README. Changing it changes output. `presentations/pyforge-warden/README.md`
+    already carries that heading, and herald's unit tests assert it. Fix: a feature story that re-keys the heading to
+    CAP-34 and migrates the README sections that carry it.
+  - `registry.py:447`: the docstring that quotes `registry.py:437`'s heading verbatim. It moves when the heading
+    moves.
+  - `transport/base.py:117`: an attribute docstring of `MODERNIST_DESIGN_SYSTEM_ID` (a string statement after an
+    assignment). AC1's fingerprint and `scripts/coverage_gate.py`'s `ast_fingerprint` keep it as code, so re-keying
+    its bridge `CAP-1` (seed → CAP-1/CAP-4) changes the syntax tree.
+  - `transport/mcp_transport.py:129`: the attribute docstring of `_FETCH_TIMEOUT_SECONDS`. It is kept as code for the
+    same reason. Its `CAP-6` is spec-design-sync-loop CAP-6 → CAP-34.
+  - `state.py:4`: `CAP-4 (watch)`, the bridge's CAP-4. That id already names the folded Design-Code-Bridge CAP-4
+    that `contract.md` assigns to `herald deck watch`. Line 3 beside it is re-keyed (status → CAP-4).
+  - `watch.py:1`: `Epic 4's CAP-4`, the bridge's watch. It already names the folded CAP-4.
+  - `watch.py:210`: `CAP-4: poll every deck`, the bridge's watch. It already names the folded CAP-4.
