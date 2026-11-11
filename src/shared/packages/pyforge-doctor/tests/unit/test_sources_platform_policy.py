@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from pyforge.doctor import cli_bridge
-from pyforge.doctor.models import DoctorStatus, Source
+from pyforge.doctor.models import DoctorStatus, Source, is_gather_failure
 from pyforge.doctor.sources.platform_policy import gather
 
 
@@ -25,8 +25,12 @@ def _make_interpreter(tmp_path: Path) -> Path:
     return interpreter
 
 
-def test_no_platform_surface_returns_no_findings(tmp_path: Path):
-    assert gather(tmp_path) == ()
+def test_no_platform_surface_returns_one_unevaluable_warn(tmp_path: Path):
+    # Story 56.4 (spec-pyforge-doctor:CAP-93): no subject is one cannot-evaluate WARN, never ().
+    (finding,) = gather(tmp_path)
+    assert (finding.check, finding.status) == ("platform-policy-suite-unevaluable", DoctorStatus.WARN)
+    assert finding.evidence["unevaluable"] is True
+    assert is_gather_failure(finding)
 
 
 def test_interpreter_absent_warns_with_install_hint(tmp_path: Path):
@@ -38,6 +42,7 @@ def test_interpreter_absent_warns_with_install_hint(tmp_path: Path):
     assert findings[0].source is Source.PLATFORM_POLICY_SUITE
     assert findings[0].status is DoctorStatus.WARN
     assert "pixi install -e platform-ci-test" in findings[0].message
+    assert findings[0].evidence["unevaluable"] is True
 
 
 def test_clean_run_returns_no_findings(tmp_path: Path, monkeypatch):
@@ -81,6 +86,7 @@ def test_cli_bridge_error_degrades_to_warn_never_raises(tmp_path: Path, monkeypa
     assert len(findings) == 1
     assert findings[0].status is DoctorStatus.WARN
     assert "timed out" in findings[0].message
+    assert findings[0].evidence == {"unevaluable": True}
 
 
 def test_relative_target_resolves_before_invoking_run_pytest(tmp_path: Path, monkeypatch):

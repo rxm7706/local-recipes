@@ -27,7 +27,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from ..models import DoctorStatus, Finding, Source
+from ..models import UNEVALUABLE_EVIDENCE_KEY, DoctorStatus, Finding, Source
 from . import degrade_on_exception
 
 __all__ = (
@@ -1366,6 +1366,21 @@ def _dedupe_unparseable_findings(
 
 
 def _gather_all(target: Path) -> tuple[Finding, ...]:
+    if not iter_frontmatter_documents(target):
+        # Story 56.4 (spec-pyforge-doctor:CAP-93): no Dream, Spec or story spec
+        # to scan, no subject -- one cannot-evaluate WARN, alone (never beside
+        # the roster-degraded WARN the four CAPs would each raise here).
+        return (
+            Finding(
+                source=Source.STATUS_BODY_CONSISTENCY,
+                check="status-body-consistency-unevaluable",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"no Dream, Spec or story spec under {target} — status/body consistency cannot be evaluated here"
+                ),
+                evidence={"documents": 0, UNEVALUABLE_EVIDENCE_KEY: True},
+            ),
+        )
     cap1 = gather_progress_phrase(target)
     cap2 = gather_open_questions_reconcile(target)
     cap3 = gather_promissory_language(target)

@@ -8,6 +8,7 @@ as an equally-covered symptom, exercised here too.
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 
 import pytest
@@ -26,8 +27,13 @@ _CLEAN = _FIXTURES / "clean"
 # --- clean MAP fixture is silent (both checks) ------------------------------
 
 
-def test_clean_fixture_gather_is_a_single_ok_finding():
-    findings = docs_shelf.gather(_CLEAN)
+def test_clean_fixture_gather_is_a_single_ok_finding(tmp_path: Path):
+    # Story 56.4 (spec-pyforge-doctor:CAP-93): the allow-list is docs/MAP.md's, so a clean OK needs the map
+    # present; without it the same tree is one cannot-evaluate WARN (test_sources_unmeasured.py).
+    clean = tmp_path / "clean"
+    shutil.copytree(_CLEAN, clean)
+    (clean / "docs" / "MAP.md").write_text("# Documentation map\n", encoding="utf-8")
+    findings = docs_shelf.gather(clean)
     assert len(findings) == 1
     finding = findings[0]
     assert finding.source == Source.DOCS_SHELF_OCCUPANCY

@@ -21,13 +21,15 @@ import yaml
 from yaml.nodes import MappingNode
 
 from ..cli_bridge import CliBridgeError, run_git
-from ..models import DoctorStatus, Finding, Source
+from ..models import UNEVALUABLE_EVIDENCE_KEY, DoctorStatus, Finding, Source
 from . import chain, degrade_on_exception
 
 __all__ = ("gather",)
 
 _CHECK_DUPLICATE = "frontmatter-duplicate-key"
 _CHECK_UNREADABLE = "frontmatter-unreadable"
+#: spec-pyforge-doctor:AD-15's ``<source>-unevaluable`` check (Story 56.4).
+_CHECK_UNEVALUABLE = f"{Source.FRONTMATTER_DUPLICATE_KEYS.value}-unevaluable"
 # Story specs are flat files: ``specs/spec-<slug>.md`` — never a folder's
 # ``SPEC.md`` or ``.memlog.md`` (``spec-.*`` would swallow ``/`` via ``.``).
 _STORY_SPEC_RE = re.compile(r"^_bmad-output/projects/[^/]+/planning-artifacts/specs/spec-[^/]+\.md$")
@@ -179,8 +181,21 @@ def _iter_tracked_story_specs(target: Path) -> tuple[str, ...]:
 
 
 def _gather_all(target: Path) -> tuple[Finding, ...]:
+    specs = _iter_tracked_story_specs(target)
+    if not specs:
+        # Story 56.4 (spec-pyforge-doctor:CAP-93): no tracked story spec (or
+        # no git to list them), no subject -- one cannot-evaluate WARN.
+        return (
+            Finding(
+                source=Source.FRONTMATTER_DUPLICATE_KEYS,
+                check=_CHECK_UNEVALUABLE,
+                status=DoctorStatus.WARN,
+                message="no tracked story spec found (git ls-files) — frontmatter keys cannot be evaluated here",
+                evidence={"story_spec_count": 0, UNEVALUABLE_EVIDENCE_KEY: True},
+            ),
+        )
     findings: list[Finding] = []
-    for rel in _iter_tracked_story_specs(target):
+    for rel in specs:
         path = target / rel
         try:
             text = path.read_text(encoding="utf-8")
@@ -268,7 +283,7 @@ def _gather_all(target: Path) -> tuple[Finding, ...]:
             check=_CHECK_DUPLICATE,
             status=DoctorStatus.OK,
             message="every tracked story spec carries each frontmatter key once",
-            evidence={"story_spec_count": len(_iter_tracked_story_specs(target))},
+            evidence={"story_spec_count": len(specs)},
         ),
     )
 

@@ -176,6 +176,23 @@ Type / Effort / Deps: fix / L / S-56.1, S-56.2, S-56.3.
 **Run before the push:**
 - `pixi run --frozen -e pyforge-guild chain-completeness-check`, `story-status-check`, `flag-gate-check` — expected: exit 0 each.
 
+## Planned deferral (written at build)
+
+The row below is not in the deferred-work ledger yet and is not in this spec's frontmatter (`deferred-work-check`
+reds a frontmatter row with no tracked ledger twin). The doctor station closer of the cutover-readiness PR writes it
+to `_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md`.
+
+- **`DW-doctor-56-4-1`** (low; owner doctor, a later story under `spec-pyforge-doctor:CAP-93`; locations
+  `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py` (`gather_story_status`),
+  `sources/pixi_currency.py` (`_gather`), `sources/chain.py` (`_gather_dreams_hygiene`), `sources/one_chain.py`
+  (`_gather_chain_sprawl`)): four whole-source cannot-evaluate WARNs that an empty tree never reaches, so the
+  audit's probe did not list them, still lack `evidence["unevaluable"]`, and each reads `pass` rather than
+  `unmeasured` when it fires alone: story-status with feeds present but git unavailable, pixi-currency-ledger's
+  unreadable `pixi.toml` (`pixi-currency-pixi-toml-unreadable`), dreams-hygiene's unreadable guild roster (its
+  `roster_err` WARN), and chain-sprawl with no declared `fold_exemptions`. This story's per-source decisions were
+  fixed from the probe, and the build adds nothing beyond them (operator ruling of 2026-11-10: each gap is a
+  deferred-work row). The fix is one evidence key per WARN plus an in-place assertion each.
+
 ## Spec Change Log
 
 - 2026-11-10: minted from the station Dream's 2026-11-10 entry (the cutover readiness audit) and the operator's rulings of 2026-11-10.

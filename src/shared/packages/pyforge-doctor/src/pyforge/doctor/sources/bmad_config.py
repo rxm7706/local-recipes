@@ -33,7 +33,12 @@ is signalling ambiguity risk in whatever central config actually exists
 right now, not re-enforcing the renderer's own installation-completeness
 contract -- a missing ``config.toml`` here just means there is nothing to be
 ambiguous about yet (a degenerate, harmless case), not a misconfiguration
-this detector should raise on. There is therefore no outer
+this detector should raise on. With no layer content at all (every layer
+folded to ``{}``) it reports one cannot-evaluate WARN
+(``bmad-render-config-ambiguity-unevaluable``, ``evidence["unevaluable"] is
+True``), never an OK over nothing (spec-pyforge-doctor:CAP-93); a layer
+holding only the excluded ``agents`` key was read, so it stays an OK with
+zero keys checked. There is therefore no outer
 ``degrade_on_exception``-worthy raise path inside ``_gather`` for a missing/
 malformed layer at all; ``gather``'s own wrapper exists only as the same
 last-resort net every sibling source carries for a genuinely unexpected
@@ -67,7 +72,7 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
-from ..models import DoctorStatus, Finding, Source
+from ..models import UNEVALUABLE_EVIDENCE_KEY, DoctorStatus, Finding, Source
 from . import degrade_on_exception
 
 __all__ = ("gather",)
@@ -178,14 +183,25 @@ def _gather(target: Path) -> tuple[Finding, ...]:
     checked = len(leaf_paths)
     ambiguous = {name: paths for name, paths in leaf_paths.items() if len(paths) > 1}
 
+    if not merged:
+        # Story 56.4 (spec-pyforge-doctor:CAP-93): no central config layer, no
+        # subject -- one cannot-evaluate WARN, never an OK over nothing.
+        return (
+            Finding(
+                source=Source.BMAD_RENDER_CONFIG_AMBIGUITY,
+                check="bmad-render-config-ambiguity-unevaluable",
+                status=DoctorStatus.WARN,
+                message="no central config layers found — config ambiguity cannot be evaluated here",
+                evidence={"checked": 0, UNEVALUABLE_EVIDENCE_KEY: True},
+            ),
+        )
     if not ambiguous:
-        suffix = f"({checked} checked -- no central config layers found)" if checked == 0 else f"({checked} checked)"
         return (
             Finding(
                 source=Source.BMAD_RENDER_CONFIG_AMBIGUITY,
                 check="bmad-render-config-ambiguity",
                 status=DoctorStatus.OK,
-                message=(f"no ambiguous config keys in the merged central config {suffix}"),
+                message=(f"no ambiguous config keys in the merged central config ({checked} checked)"),
                 evidence={"checked": checked},
             ),
         )

@@ -23,7 +23,7 @@ from pathlib import Path
 
 from ..checks.env_hygiene import _PRUNED_DIR_NAMES
 from ..cli_bridge import CliBridgeError, run_git
-from ..models import DoctorStatus, Finding, Source
+from ..models import UNEVALUABLE_EVIDENCE_KEY, DoctorStatus, Finding, Source
 from . import degrade_on_exception
 from .board import (
     _CAP_CITATION_RE,
@@ -1039,6 +1039,18 @@ def gather(target: Path) -> tuple[Finding, ...]:
     """Capability-effect gather — verified-line pass plus caller reach (CAP-1/2)."""
 
     def _run() -> tuple[Finding, ...]:
+        if not (target / "_bmad-output" / "projects").is_dir():
+            # Story 56.4 (spec-pyforge-doctor:CAP-93): no projects tree, no
+            # subject -- one cannot-evaluate WARN, never an empty result.
+            return (
+                Finding(
+                    source=Source.CAPABILITY_EFFECT,
+                    check="capability-effect-unevaluable",
+                    status=DoctorStatus.WARN,
+                    message="no _bmad-output/projects/ here — capability effect cannot be evaluated",
+                    evidence={"path": "_bmad-output/projects", UNEVALUABLE_EVIDENCE_KEY: True},
+                ),
+            )
         return gather_verified_line(target) + gather_caller_reach(target)
 
     return degrade_on_exception(

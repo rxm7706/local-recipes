@@ -419,6 +419,7 @@ def test_a_missing_or_unreadable_baseline_is_a_warn_not_a_crash(tmp_path: Path, 
         _write(root, str(one_chain.FOLD_COMPLETE_BASELINE_REL), payload)
     (f,) = one_chain.gather_fold_complete(root)
     assert f.check == "fold-complete-no-baseline" and f.status is DoctorStatus.WARN
+    assert f.evidence["unevaluable"] is True  # Story 56.4: a cannot-evaluate WARN carries the marker
 
 
 def test_an_empty_tree_is_an_ok_summary(tmp_path: Path) -> None:

@@ -272,6 +272,7 @@ def test_missing_projects_dir_warns_rather_than_raising(tmp_path: Path) -> None:
     assert len(findings) == 1
     assert findings[0].status is DoctorStatus.WARN
     assert findings[0].check == "coverage"
+    assert findings[0].evidence["unevaluable"] is True  # Story 56.4: a cannot-evaluate WARN carries the marker
 
 
 def test_every_finding_carries_the_source_tag(tmp_path: Path) -> None:

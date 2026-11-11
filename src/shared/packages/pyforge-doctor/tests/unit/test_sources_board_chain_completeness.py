@@ -1000,17 +1000,19 @@ def test_missing_data_js_never_raises(tmp_path: Path) -> None:
 # --- No projects / never raises ----------------------------------------------
 
 
-def test_no_projects_directory_reports_ok_with_zero_projects(tmp_path: Path) -> None:
+def test_no_projects_directory_reports_one_unevaluable_warn(tmp_path: Path) -> None:
     findings = board.gather_chain_completeness(tmp_path)
 
     assert len(findings) == 1
     finding = findings[0]
     assert finding.source is Source.CHAIN_COMPLETENESS
-    assert finding.check == "chain-completeness"
-    assert finding.status is DoctorStatus.OK
+    # Story 56.4 (spec-pyforge-doctor:CAP-93): no project is no subject -- one
+    # cannot-evaluate WARN, never an OK over zero projects.
+    assert finding.check == "chain-completeness-unevaluable"
+    assert finding.status is DoctorStatus.WARN
     # `board_read` is False here: with no docs/dashboard/data.js there is no
-    # board to compare, and the OK must say so rather than assert agreement.
-    assert finding.evidence == {"projects": 0, "board_read": False}
+    # board to compare either.
+    assert finding.evidence == {"projects": 0, "board_read": False, "unevaluable": True}
 
 
 def test_multiple_projects_are_all_reported_independently(tmp_path: Path) -> None:

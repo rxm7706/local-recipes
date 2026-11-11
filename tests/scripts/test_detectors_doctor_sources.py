@@ -496,6 +496,31 @@ def test_the_real_hygiene_gather_runs_through_the_aggregate_and_reads_pass(monke
     assert "orphan-file: warn" in row["output"]
 
 
+def test_no_detectors_ci_row_is_empty_on_an_empty_tree(monkeypatch, tmp_path: Path):
+    """Story 56.4 (spec-pyforge-doctor:CAP-93): the real registry over an empty `git init` tree, NO stub. Every
+    `_DOCTOR_SOURCE_TASKS` name gathers at least one finding; only the two reintroduction gates read `pass`, the
+    two sources that FAIL on a missing input read `FINDINGS`, and every other row says it measured nothing.
+    The package half pins the same partition source by source (pyforge-doctor's test_sources_unmeasured.py)."""
+    _doctor_dispatch()
+    for var in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY",
+                "GIT_CEILING_DIRECTORIES", "GIT_COMMON_DIR"):
+        monkeypatch.delenv(var, raising=False)
+    subprocess.run(["git", "init", "-q", "--initial-branch=main"], cwd=tmp_path, capture_output=True, check=True)
+    monkeypatch.setattr(detectors, "ROOT", tmp_path)
+
+    rows = detectors._run_doctor_sources("all")
+
+    assert [r["name"] for r in rows] == [name for name, _task in detectors._DOCTOR_SOURCE_TASKS]
+    assert [r["name"] for r in rows if r["summary"] == "no findings"] == []
+    by_status: dict[str, set[str]] = {}
+    for row in rows:
+        by_status.setdefault(row["status"], set()).add(row["name"])
+    assert by_status.pop("pass") == {"dashboard-drift", "check-layout"}, rows
+    assert by_status.pop("FINDINGS") == {"spec-surface", "docs-map-hygiene"}, rows
+    assert set(by_status) == {"unmeasured"}, by_status
+    assert all(r["rc"] == 0 for r in rows if r["status"] == "unmeasured")
+
+
 def test_main_scope_repo_reports_unknown_rows_and_never_exits_zero_when_unimportable(
     monkeypatch, tmp_path: Path, capsys,
 ):

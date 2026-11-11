@@ -128,6 +128,7 @@ def test_unreadable_dream_degrades_to_named_finding(tmp_path: Path) -> None:
     assert len(findings) == 1
     assert findings[0].check == "pixi-currency-dream-unreadable"
     assert findings[0].status == DoctorStatus.WARN
+    assert findings[0].evidence["unevaluable"] is True  # Story 56.4: a cannot-evaluate WARN carries the marker
 
 
 def test_unreadable_pixi_toml_degrades_to_named_finding(tmp_path: Path) -> None:

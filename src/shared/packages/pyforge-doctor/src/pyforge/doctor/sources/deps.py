@@ -85,7 +85,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from ..models import DoctorStatus, Finding, Source
+from ..models import UNEVALUABLE_EVIDENCE_KEY, DoctorStatus, Finding, Source
 
 # The same set ``bmad_loop.sprintstatus`` declares, RESTATED rather than
 # imported -- see this module's docstring and AD-13 for why.
@@ -257,6 +257,7 @@ def gather_forward_dependency(target: Path) -> tuple[Finding, ...]:
                 "epics docs to read, so forward-dependency coverage is unknown, "
                 "not clean.",
                 projects_dir=str(projects),
+                **{UNEVALUABLE_EVIDENCE_KEY: True},
             ),
         )
 

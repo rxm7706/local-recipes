@@ -67,7 +67,7 @@ from ..hygiene_definitions import (
     is_readme_placeholder,
     is_stale_dream_status,
 )
-from ..models import DoctorStatus, Finding, Source
+from ..models import UNEVALUABLE_EVIDENCE_KEY, DoctorStatus, Finding, Source
 
 __all__ = ("gather",)
 
@@ -103,7 +103,10 @@ def gather(target: Path) -> tuple[Finding, ...]:
     Aggregation mirrors ``sources/ledger.py::gather``: zero findings across
     the whole sweep returns exactly one ``Finding(status=OK)``; any positives
     return one ``Finding`` per instance only, no baseline-OK noise for a
-    clean station x class pair.
+    clean station x class pair. A sweep that evaluated no station at all (no
+    project with a ``planning-artifacts/`` tree) is one cannot-evaluate WARN
+    (``bmad-output-hygiene-unevaluable``, ``evidence["unevaluable"] is
+    True``), never an OK over nothing (spec-pyforge-doctor:CAP-93).
     """
     projects_dir = target / "_bmad-output" / "projects"
     findings: list[Finding] = []
@@ -117,7 +120,7 @@ def gather(target: Path) -> tuple[Finding, ...]:
                 check="bmad-output-hygiene-unevaluable",
                 status=DoctorStatus.WARN,
                 message=(f"fleet hygiene could not list {projects_dir} — {exc.__class__.__name__}: {exc}"),
-                evidence={"path": "_bmad-output/projects"},
+                evidence={"path": "_bmad-output/projects", UNEVALUABLE_EVIDENCE_KEY: True},
             ),
         )
     if projects_listable:
@@ -130,7 +133,7 @@ def gather(target: Path) -> tuple[Finding, ...]:
                     check="bmad-output-hygiene-unevaluable",
                     status=DoctorStatus.WARN,
                     message=(f"fleet hygiene could not list {projects_dir} — {exc.__class__.__name__}: {exc}"),
-                    evidence={"path": "_bmad-output/projects"},
+                    evidence={"path": "_bmad-output/projects", UNEVALUABLE_EVIDENCE_KEY: True},
                 ),
             )
         for project_dir in project_entries:
@@ -168,6 +171,21 @@ def gather(target: Path) -> tuple[Finding, ...]:
                     )
                 )
 
+    if not findings and stations_evaluated == 0:
+        # Story 56.4 (spec-pyforge-doctor:CAP-93): no project, no subject --
+        # one cannot-evaluate WARN, never an OK swept over zero stations.
+        return (
+            Finding(
+                source=Source.BMAD_OUTPUT_HYGIENE,
+                check="bmad-output-hygiene-unevaluable",
+                status=DoctorStatus.WARN,
+                message=(
+                    "no project with a planning-artifacts/ tree under _bmad-output/projects — "
+                    "fleet hygiene cannot be evaluated here"
+                ),
+                evidence={"path": "_bmad-output/projects", "stations": 0, UNEVALUABLE_EVIDENCE_KEY: True},
+            ),
+        )
     if not findings:
         return (
             Finding(

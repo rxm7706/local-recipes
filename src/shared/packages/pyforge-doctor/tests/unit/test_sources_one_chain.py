@@ -148,6 +148,7 @@ def test_sprawl_missing_baseline_is_warn_not_fail(tmp_path: Path) -> None:
     (root / one_chain.CHAIN_SPRAWL_BASELINE_REL).unlink()
     (f,) = one_chain.gather_chain_sprawl(root)
     assert f.check == "chain-sprawl-no-baseline" and f.status is DoctorStatus.WARN
+    assert f.evidence["unevaluable"] is True  # Story 56.4: a cannot-evaluate WARN carries the marker
 
 
 def test_sprawl_exemption_list_comes_from_roster_only(tmp_path: Path) -> None:
@@ -243,6 +244,7 @@ def test_fr_missing_baseline_is_warn(tmp_path: Path) -> None:
     (root / one_chain.FR_BASELINE_REL).unlink()
     (f,) = one_chain.gather_fr_without_cap(root)
     assert f.check == "fr-without-cap-no-baseline" and f.status is DoctorStatus.WARN
+    assert f.evidence["unevaluable"] is True  # Story 56.4: a cannot-evaluate WARN carries the marker
 
 
 def test_fr_rebaseline_one_project_carries_the_others(tmp_path: Path) -> None:

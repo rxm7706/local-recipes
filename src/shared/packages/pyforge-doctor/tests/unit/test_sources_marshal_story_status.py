@@ -245,7 +245,9 @@ def test_hand_landed_story_with_no_run_record_stays_silent(tmp_path: Path) -> No
 # --- No Tier-3 feeds present at all -----------------------------------
 
 
-def test_no_tier3_feeds_present_reports_ok_with_zero_audited(tmp_path: Path) -> None:
+def test_no_feeds_present_reports_one_unevaluable_warn_with_zero_audited(tmp_path: Path) -> None:
+    """Story 56.4 (spec-pyforge-doctor:CAP-93) supersedes the earlier I/O-matrix row that pinned this case at OK
+    ``{"audited": 0}``: no Tier-3 feed is no subject, so one WARN that keeps ``audited: 0`` and gains the marker."""
     target = tmp_path / "target"
     target.mkdir()
     _init_repo(target)
@@ -258,9 +260,9 @@ def test_no_tier3_feeds_present_reports_ok_with_zero_audited(tmp_path: Path) -> 
     assert len(findings) == 1
     finding = findings[0]
     assert finding.source is Source.STORY_STATUS
-    assert finding.check == "story-status"
-    assert finding.status is DoctorStatus.OK
-    assert finding.evidence == {"audited": 0}
+    assert finding.check == "story-status-unevaluable"
+    assert finding.status is DoctorStatus.WARN
+    assert finding.evidence == {"audited": 0, "unevaluable": True}
 
 
 # --- Multi-feed aggregation ----------------------------------------------

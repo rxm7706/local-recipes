@@ -245,13 +245,16 @@ def test_gather_returns_one_ok_finding_for_a_fully_clean_sweep(tmp_path: Path) -
     assert findings[0].evidence["stations"] == 2
 
 
-def test_gather_returns_one_ok_finding_when_no_projects_dir_exists(
+def test_gather_returns_one_unevaluable_warn_when_no_projects_dir_exists(
     tmp_path: Path,
 ) -> None:
+    # Story 56.4 (spec-pyforge-doctor:CAP-93): no project is no subject -- one cannot-evaluate WARN, not an OK.
     findings = hygiene.gather(tmp_path)
     assert len(findings) == 1
-    assert findings[0].status is DoctorStatus.OK
+    assert findings[0].check == "bmad-output-hygiene-unevaluable"
+    assert findings[0].status is DoctorStatus.WARN
     assert findings[0].evidence["stations"] == 0
+    assert findings[0].evidence["unevaluable"] is True
 
 
 # --- Row: one station's file is unreadable ----------------------------------

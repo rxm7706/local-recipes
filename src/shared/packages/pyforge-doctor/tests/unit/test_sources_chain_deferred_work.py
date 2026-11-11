@@ -418,7 +418,7 @@ def test_target_with_no_projects_tree_reports_unevaluable_warn(
     assert finding.source is Source.DEFERRED_WORK
     assert finding.check == "deferred-work-unevaluable"
     assert finding.status is DoctorStatus.WARN
-    assert finding.evidence == {"target": str(tmp_path)}
+    assert finding.evidence == {"target": str(tmp_path), "unevaluable": True}
 
 
 def test_fully_promoted_project_reports_ok(tmp_path: Path) -> None:

@@ -1150,8 +1150,12 @@ def gather_chain_completeness(target: Path) -> tuple[Finding, ...]:
     and board agree -- the library form of
     ``scripts/chain_completeness_check.py``'s own ``main()``, minus the
     print/exit CLI surface. Every INV-A/B/C/D violation becomes one FAIL
-    ``Finding``; an unreadable/absent ``_bmad-output/projects`` degrades to a
-    vacuous OK rather than raising.
+    ``Finding``; an absent ``_bmad-output/projects`` (or one holding no
+    project with a ``planning-artifacts/`` tree) is one cannot-evaluate WARN
+    (``chain-completeness-unevaluable``, ``evidence["unevaluable"] is
+    True``), never a vacuous OK (spec-pyforge-doctor:CAP-93), and an
+    unreadable one degrades through ``degrade_on_exception`` rather than
+    raising.
     """
     return degrade_on_exception(
         Source.CHAIN_COMPLETENESS,
@@ -1232,7 +1236,7 @@ def _gather_chain_layers_audit(target: Path, project: str) -> tuple[Finding, ...
                     UNEVALUABLE_EVIDENCE_KEY: True,
                     "project": project,
                     "detail": str(exc),
-                    "subject": "pyforge.doctor.sources.fleet_scan",
+                    "subject": "scripts/fleet_scan.py",
                 },
             ),
         )
@@ -1432,6 +1436,21 @@ def _gather_chain_completeness(target: Path) -> tuple[Finding, ...]:
         # refused exactly this coercion for `gather_dashboard_drift`, so the
         # same bytes produced a confident OK here and an honest WARN there --
         # which is why this guard exists and must stay.
+        if n == 0:
+            # Story 56.4 (spec-pyforge-doctor:CAP-93): no project, no subject
+            # -- one cannot-evaluate WARN, never an OK over nothing.
+            return (
+                Finding(
+                    source=Source.CHAIN_COMPLETENESS,
+                    check="chain-completeness-unevaluable",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"no project with a planning-artifacts/ tree under {projects_dir} — "
+                        "chain completeness cannot be evaluated here"
+                    ),
+                    evidence={"projects": 0, "board_read": board is not None, UNEVALUABLE_EVIDENCE_KEY: True},
+                ),
+            )
         return (
             Finding(
                 source=Source.CHAIN_COMPLETENESS,

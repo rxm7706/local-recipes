@@ -424,7 +424,7 @@ REGISTRY: tuple[SourceRegistration, ...] = (
         owning_station="doctor",
     ),  # Story 17.3 (Epic 17 / FR-150 residual, FR-152) + Story 21.1 (CAP-3) --
     # board.gather_chain_layers_audit. CAP-3 pass/fail per checkpoint for one
-    # named project, seeded from pyforge.doctor.sources.fleet_scan + dream-chain.
+    # named project, seeded from scripts/fleet_scan.py + dream-chain.
     # Not a DISPATCH name: invoked as `chain-completeness --layers --project <slug>`.
     SourceRegistration(
         source=Source.PLATFORM_POLICY_SUITE,

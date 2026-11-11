@@ -380,7 +380,7 @@ def test_target_with_neither_input_tree_reports_unevaluable_warn(
     assert finding.source is Source.DREAM_CHAIN
     assert finding.check == "dream-chain-unevaluable"
     assert finding.status is DoctorStatus.WARN
-    assert finding.evidence == {"target": str(tmp_path)}
+    assert finding.evidence == {"target": str(tmp_path), "unevaluable": True}
 
 
 # --- Never raises ---------------------------------------------------------------
