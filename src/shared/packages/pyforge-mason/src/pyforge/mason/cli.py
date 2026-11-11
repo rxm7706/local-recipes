@@ -131,8 +131,8 @@ _RECIPE_SUBMIT_HELP = (
 )
 _RECIPE_UPDATE_HELP = (
     "bump a recipe to its latest upstream version via CFE's autotick scripts (PyPI by "
-    "default; --github for GitHub Releases; shows the plan before writing, in both the "
-    "default and --dry-run paths)"
+    "default; --github for GitHub Releases; writes the field-scoped update by default; "
+    "--dry-run computes and shows the plan without writing)"
 )
 _PACKAGE_BUILD_HELP = (
     "build a project's distributable artifacts: wheel+sdist via PEP 517, and a .conda "

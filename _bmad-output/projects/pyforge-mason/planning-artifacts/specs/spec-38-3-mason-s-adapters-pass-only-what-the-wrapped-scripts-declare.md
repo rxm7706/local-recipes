@@ -16,7 +16,11 @@ context:
   - .claude/skills/conda-forge-expert/SKILL.md
 surface:
   - src/shared/packages/pyforge-mason/tests/meta/test_cfe_adapter_argv_live.py
-deferred: []
+deferred:
+  - id: real-cfe-fidelity-nine-wrapped-scripts
+    summary: "Mason's fidelity test runs one of ten wrapped scripts for real (validate); the other nine wrapped scripts have a static option check only. Generate, update, scan and submit need the network or credentials and submit is outward; the argv contract proper belongs to conda-forge-expert's own Spec (Story 39.2, blocked on the flip)."
+    location: src/shared/packages/pyforge-mason/tests/integration/test_delegation_fidelity.py
+    severity: low
 ---
 
 <intent-contract>
@@ -135,3 +139,7 @@ Expect: 0.
 - Cross-station: the root file `build-locally.py` joins steward's `mason_paths` trigger list (steward:S-124.2).
 - Row this story writes to its `deferred:` at build, with any mismatch row the check finds (not at mint, so no row sits in frontmatter without a ledger twin; Story 37.4's intake mints the DW-mason twin, and `deferred-work-check` reads the row as `spec-frontmatter-only-deferral` until then):
   - id `real-cfe-fidelity-nine-wrapped-scripts`; severity low; location `src/shared/packages/pyforge-mason/tests/integration/test_delegation_fidelity.py`; summary: "Mason's fidelity test runs one of ten wrapped scripts for real (validate); the other nine wrapped scripts have a static option check only. Generate, update, scan and submit need the network or credentials and submit is outward; the argv contract proper belongs to conda-forge-expert's own Spec (Story 39.2, blocked on the flip)."
+
+## Gate findings (build, BUILD-1)
+
+- 2026-11-11, `pixi run -e pyforge-guild deferred-work-check` (exit 2): `spec-frontmatter-only-deferral` for this spec's frontmatter `deferred:` row `real-cfe-fidelity-nine-wrapped-scripts`, which has no twin in `pyforge-mason/planning-artifacts/deferred-work-ledger.md`. Not fixed here, by plan (Notes above): the mason ledger belongs to Story 37.4 (BUILD-9), whose intake mints the DW-mason twin. The finding stays red at each wave gate until 37.4 lands, unless the orchestrator moves the intake earlier.

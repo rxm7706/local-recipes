@@ -16,7 +16,19 @@ context:
 surface:
   - src/shared/packages/pyforge-mason/src/pyforge/mason/resolve.py
   - src/shared/packages/pyforge-mason/tests/unit/test_factory_island.py
-deferred: []
+deferred:
+  - id: factory-island-docker-build-reports-a-directory-it-never-writes
+    summary: "The Docker build of a factory-island recipe builds nothing from the island and reports an island artifact directory the script never wrote: cfe.py runs [interpreter, build-locally.py, config], build-locally.py reads neither factory variable, and cfe.py reports <factory root>/build_artifacts/<config>. Wiring it is a conda-forge-expert change, A-only by operator ruling 2026-11-10, and --docker on a factory path stays as recorded."
+    location: src/shared/packages/pyforge-mason/src/pyforge/mason/cfe.py:1296
+    severity: medium
+  - id: ship-and-submit-root-does-not-follow-the-root-of-record
+    summary: "Mason's ship and submit root does not follow the root of record, and no test asserts a ship never targets local-recipes: a conda-forge ship and a submit resolve <cfe-root>/recipes/<name> only (package.py:819). Blocked on steward Stories 44.8 and 44.9 (operator ruling 2026-11-10)."
+    location: src/shared/packages/pyforge-mason/src/pyforge/mason/package.py:819
+    severity: medium
+  - id: mason-runtime-capabilities-have-no-kill-switch
+    summary: "Mason's runtime capabilities have no kill switch; the 2026-10-26 retrofit skipped mason because its inventory read 7 capabilities (docs/governance/flag-inventory/pyforge-mason.md: CAP rows 7, runtime 0; src/platform/config/flags.json holds no pyforge.mason key). No retrofit switch is added in this change (operator ruling 2026-11-10)."
+    location: docs/governance/flag-inventory/pyforge-mason.md
+    severity: medium
 ---
 
 <intent-contract>
@@ -140,3 +152,7 @@ Expect: 0.
   - id `factory-island-docker-build-reports-a-directory-it-never-writes`; severity medium; location `src/shared/packages/pyforge-mason/src/pyforge/mason/cfe.py:1296`; summary: "The Docker build of a factory-island recipe builds nothing from the island and reports an island artifact directory the script never wrote: cfe.py runs [interpreter, build-locally.py, config], build-locally.py reads neither factory variable, and cfe.py reports <factory root>/build_artifacts/<config>. Wiring it is a conda-forge-expert change, A-only by operator ruling 2026-11-10, and --docker on a factory path stays as recorded."
   - id `ship-and-submit-root-does-not-follow-the-root-of-record`; severity medium; location `src/shared/packages/pyforge-mason/src/pyforge/mason/package.py:819`; summary: "Mason's ship and submit root does not follow the root of record, and no test asserts a ship never targets local-recipes: a conda-forge ship and a submit resolve <cfe-root>/recipes/<name> only (package.py:819). Blocked on steward Stories 44.8 and 44.9 (operator ruling 2026-11-10)."
   - id `mason-runtime-capabilities-have-no-kill-switch`; severity medium; location `docs/governance/flag-inventory/pyforge-mason.md`; summary: "Mason's runtime capabilities have no kill switch; the 2026-10-26 retrofit skipped mason because its inventory read 7 capabilities (docs/governance/flag-inventory/pyforge-mason.md: CAP rows 7, runtime 0; src/platform/config/flags.json holds no pyforge.mason key). No retrofit switch is added in this change (operator ruling 2026-11-10)."
+
+## Gate findings (build, BUILD-1)
+
+- 2026-11-11, `pixi run -e pyforge-guild deferred-work-check` (exit 2): `spec-frontmatter-only-deferral` for this spec's three frontmatter `deferred:` rows (the Docker island build, the ship and submit root, the kill switch), none with a twin in `pyforge-mason/planning-artifacts/deferred-work-ledger.md`. Not fixed here, by plan (Notes above): the mason ledger belongs to Story 37.4 (BUILD-9), whose intake mints each DW-mason twin. The findings stay red at each wave gate until 37.4 lands, unless the orchestrator moves the intake earlier.
