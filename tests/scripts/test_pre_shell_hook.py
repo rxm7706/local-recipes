@@ -118,6 +118,7 @@ def _write_fixture_roster(
     dest.parent.mkdir(parents=True, exist_ok=True)
     denials = [rule for rule in real["session_denials"] if rule["id"] not in omit_session_denial_ids]
     payload: dict[str, Any] = {
+        "roots": real.get("roots", {}),
         "session_denials": denials,
         "protected_refs": real.get("protected_refs", []),
     }
@@ -201,6 +202,9 @@ def _run(
 ) -> subprocess.CompletedProcess:
     env = dict(os.environ)
     env.pop("BMAD_ACTIVE_PROJECT", None)
+    # The writer lock reads the flag tree these name (Story 121.4); each test says its own.
+    env.pop("PYFORGE_FLAGS_PATH", None)
+    env.pop("PYFORGE_ENVIRONMENT", None)
     if env_extra:
         env.update(env_extra)
     return subprocess.run(
@@ -978,7 +982,7 @@ def test_outward_git_push_allowed_origin_and_home(push_fixture: Path) -> None:
 
 def test_outward_git_push_allowed_local_path(push_fixture: Path) -> None:
     result = _run(
-        _claude_bash(f"git push ../other-clone b", push_fixture),
+        _claude_bash("git push ../other-clone b", push_fixture),
         push_fixture,
     )
     assert result.stdout.strip() == ""
@@ -1291,7 +1295,6 @@ def test_no_roster_cwd_allows_ls_and_denies_outward_github(tmp_path: Path) -> No
 
 def test_protected_ref_deletion_reads_hook_roster_when_cwd_roster_empty(fake_repo: Path) -> None:
     roster = fake_repo / "docs" / "governance" / "guild-roster.json"
-    real = json.loads(REAL_ROSTER.read_text(encoding="utf-8"))
     _write_fixture_roster(
         roster,
         roster_override={"protected_refs": []},
@@ -1374,3 +1377,150 @@ def test_split_subcommands_sees_env_and_bundled_c_shells(hook_module) -> None:
     assert ["echo", "inner"] in hook_module.split_subcommands("timeout -k 5 60 bash -c 'echo inner'")
     assert ["echo", "inner"] in hook_module.split_subcommands("sudo -u root nice -n 5 sh -o pipefail -c 'echo inner'")
     assert hook_module.split_subcommands("timeout 60 python run.py") == [["timeout", "60", "python", "run.py"]]
+
+
+# --------------------------------------------------------------------------
+# chain-write-off-the-writer: the writer lock's session half (steward Story
+# 121.4, fnd:CAP-8, fnd:AD-24). The flag tree is a fixture named by
+# PYFORGE_FLAGS_PATH, or one inside the fake checkout that core's walk-up finds.
+# --------------------------------------------------------------------------
+
+_CHAIN_PATHS = (
+    "docs/dreams/pyforge-steward.md",
+    "docs/foundry/frames/frame-example.md",
+    "docs/foundry/capability-ledger.yaml",
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/cutover.md",
+    "docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md",
+)
+_NON_CHAIN_PATHS = (
+    "src/foo.py",
+    # a story spec sits beside the Spec folders, not in one
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-121-4-a-story.md",
+    "docs/foundry/PIN.md",
+    "docs/governance/guild-roster.json",
+)
+_CORE_CUTOVER_ROOT = (
+    REPO_ROOT / "src" / "shared" / "packages" / "pyforge-core" / "src" / "pyforge" / "core" / "cutover_root.py"
+)
+
+
+def _core_forge_slugs() -> dict[str, str]:
+    """Core's `FORGE_SLUGS`, read from the in-repo source by path -- independent of the hook's loader."""
+    spec = importlib.util.spec_from_file_location("core_cutover_root_for_slug_parity", _CORE_CUTOVER_ROOT)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module  # dataclasses needs this in sys.modules to resolve
+    spec.loader.exec_module(module)
+    return dict(module.FORGE_SLUGS)
+
+
+def _chain_reason(key: str, root: str) -> str:
+    real = json.loads(REAL_ROSTER.read_text(encoding="utf-8"))
+    for rule in real["session_denials"]:
+        if rule["id"] == "chain-write-off-the-writer":
+            return str(rule["reason"][key]).format(root=root, slug=_core_forge_slugs()[root])
+    raise KeyError("chain-write-off-the-writer")
+
+
+def _flag_tree(directory: Path, root: str) -> Path:
+    directory.mkdir(parents=True, exist_ok=True)
+    tree = directory / "flags.json"
+    entry = {
+        "state": "ENABLED",
+        "variants": {"local-recipes": "local-recipes", "foundry": "foundry"},
+        "defaultVariant": root,
+    }
+    tree.write_text(json.dumps({"flags": {"pyforge.cutover_root": entry}}), encoding="utf-8")
+    return tree
+
+
+@pytest.mark.parametrize("rel", _CHAIN_PATHS)
+def test_chain_write_flipped_tree_denies_on_claude(fake_repo: Path, tmp_path: Path, rel: str) -> None:
+    tree = _flag_tree(tmp_path / "flipped", "foundry")
+    result = _run(_claude_write(str(fake_repo / rel), fake_repo), fake_repo, {"PYFORGE_FLAGS_PATH": str(tree)})
+    assert result.returncode == 0
+    assert _claude_deny_reason(result) == _chain_reason("off_writer", "foundry")
+
+
+def test_chain_write_flipped_tree_warns_on_cursor(fake_repo: Path, tmp_path: Path) -> None:
+    tree = _flag_tree(tmp_path / "flipped", "foundry")
+    result = _run(
+        _cursor_after_edit(str(fake_repo / "docs" / "dreams" / "pyforge-steward.md"), fake_repo),
+        fake_repo,
+        {"PYFORGE_FLAGS_PATH": str(tree)},
+    )
+    # Cursor has no before-edit deny: the signal is stderr plus a non-zero exit.
+    assert result.stdout.strip() == ""
+    assert result.returncode == 1
+    assert _chain_reason("off_writer", "foundry") in result.stderr
+
+
+def test_chain_write_on_the_writer_is_allowed(fake_repo: Path, tmp_path: Path) -> None:
+    """The tree lives in the checkout the write lands in and is found by core's walk-up from
+    that checkout, though the hook process itself runs outside it."""
+    _flag_tree(fake_repo / "src" / "platform" / "config", "local-recipes")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    for rel in _CHAIN_PATHS:
+        claude = _run(_claude_write(str(fake_repo / rel), fake_repo), outside)
+        assert claude.returncode == 0, claude.stderr
+        assert claude.stdout.strip() == ""
+    cursor = _run(_cursor_after_edit(str(fake_repo / _CHAIN_PATHS[0]), fake_repo), outside)
+    assert cursor.returncode == 0, cursor.stderr
+    assert cursor.stderr.strip() == ""
+
+
+@pytest.mark.parametrize("root", ["local-recipes", "foundry"])
+@pytest.mark.parametrize("rel", _NON_CHAIN_PATHS)
+def test_chain_write_non_chain_path_allowed_under_either_flag(
+    fake_repo: Path, tmp_path: Path, root: str, rel: str
+) -> None:
+    tree = _flag_tree(tmp_path / root, root)
+    result = _run(_claude_write(str(fake_repo / rel), fake_repo), fake_repo, {"PYFORGE_FLAGS_PATH": str(tree)})
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == ""
+
+
+def test_chain_write_outside_the_checkout_is_not_judged(fake_repo: Path, tmp_path: Path) -> None:
+    tree = _flag_tree(tmp_path / "flipped", "foundry")
+    elsewhere = tmp_path / "elsewhere" / "docs" / "dreams" / "x.md"
+    result = _run(_claude_write(str(elsewhere), fake_repo), fake_repo, {"PYFORGE_FLAGS_PATH": str(tree)})
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == ""
+
+
+def test_chain_write_default_source_denies(fake_repo: Path) -> None:
+    """No PYFORGE_FLAGS_PATH and no tree in the checkout: `root_of_record()` answers the default,
+    which proves no writer."""
+    result = _run(_claude_write(str(fake_repo / _CHAIN_PATHS[0]), fake_repo), fake_repo)
+    assert result.returncode == 0, result.stderr
+    assert _claude_deny_reason(result) == _chain_reason("default", "local-recipes")
+
+
+def test_chain_write_unreadable_tree_exits_2(fake_repo: Path, tmp_path: Path) -> None:
+    bad = tmp_path / "bad" / "flags.json"
+    bad.parent.mkdir()
+    bad.write_text("{not json", encoding="utf-8")
+    result = _run(
+        _claude_write(str(fake_repo / _CHAIN_PATHS[0]), fake_repo),
+        fake_repo,
+        {"PYFORGE_FLAGS_PATH": str(bad)},
+    )
+    # Exit 2: Claude Code's PreToolUse blocks only on exit 2 (see test_missing_session_denials_fails_loud).
+    assert result.returncode == 2
+    assert "CutoverRootError" in result.stderr
+    assert result.stdout.strip() == ""
+
+
+def test_chain_write_matcher_removal_is_loud(hook_module, monkeypatch: pytest.MonkeyPatch) -> None:
+    trimmed = {k: v for k, v in hook_module.MATCHERS.items() if k != "chain-write-off-the-writer"}
+    monkeypatch.setattr(hook_module, "MATCHERS", trimmed)
+    with pytest.raises(RuntimeError, match="drifted") as excinfo:
+        hook_module.load_denial_rules(REPO_ROOT)
+    assert "chain-write-off-the-writer" in str(excinfo.value)
+
+
+def test_slug_parity_hook_reads_core_forge_slugs(hook_module) -> None:
+    """The hook's own slug is core's `FORGE_SLUGS[roots.this]`, never a literal of its own."""
+    roots = json.loads(REAL_ROSTER.read_text(encoding="utf-8"))["roots"]
+    assert hook_module._this_forge_slug() == _core_forge_slugs()[roots["this"]]

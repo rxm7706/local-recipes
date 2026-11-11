@@ -7,7 +7,8 @@ paradigm: 'hexagonal (ports-and-adapters): CLI as driving adapter, each duty a t
 scope: 'Steward v1 — pyforge-steward CLI (keys, deploy, provision, budget duties; FR-1..FR-18), packaged as a pixi workspace member mirroring pyforge-warden'
 status: final
 created: '2026-07-25'
-updated: '2026-11-06'   # RE-STAMPED 2026-11-06 (CAP-20, Epic 119): prd->arch cascade for canopy:FR-51; canopy:AD-24 added.
+updated: '2026-11-11'   # RE-STAMPED 2026-11-11 (steward Story 122.1): prd->arch cascade for the PRD's § Currency reconciliation — 2026-11-11 (Story 122.1): spec-pyforge-steward re-derived and the three cutover Specs re-derived the same day; FR delta FR-53..FR-56 (at mint); no AD added, amended or removed; a pointer on AD-4's v1 Rule line and the 2026-10-27 driver bullet corrected.
+# 2026-11-06  # RE-STAMPED 2026-11-06 (CAP-20, Epic 119): prd->arch cascade for canopy:FR-51; canopy:AD-24 added.
 # 2026-11-05  # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (PRD -> arch); no CAP, FR or AD is minted. Prior '2026-11-04'   # RE-STAMPED 2026-11-04: chain-currency cascade (prd -> arch) (the PRD's § Currency reconciliation — 2026-11-04); no CAP, FR, AD, epic or story moved. See § Currency reconciliation — 2026-11-04.
 # 2026-11-01  # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): prd->arch cascade for the PRD's § Currency reconciliation — 2026-11-01 (EGM fleet audit): FR-50 and FR-51 amended in place from the re-derived CAP-176 and CAP-177, FR-52 unchanged; no AD added, amended or removed; the 2026-10-31 pap:AD-16 line gains a dated note (kubectl and helm not yet in the pyforge-steward environment, Story 118.7). See § Currency reconciliation — 2026-11-01 (EGM fleet audit). Prior '2026-10-31'
 # 2026-10-31  # RE-STAMPED 2026-10-31 (CAP-176..CAP-178): prd->arch cascade for the PRD's § Currency reconciliation — 2026-10-31 (FR-50..FR-52, the NKP cluster, its packs and the gitops branch; Epic 118); no AD added, amended or removed. See § Currency reconciliation — 2026-10-31 (CAP-176..CAP-178). Prior '2026-10-30'   # RE-STAMPED 2026-10-30: prd->arch cascade for Stories 109.6, 109.1 and 109.7 (fixes and a closing review under FR-42..FR-44 / CAP-169..CAP-171). No AD added, amended or removed. See § Currency reconciliation — 2026-10-30.
@@ -84,7 +85,7 @@ graph TD
 
 - **Binds:** deploy
 - **Prevents:** an ArgoCD/Flux-class GitOps control plane entering scope (explicit non-goal, PRD §5)
-- **Rule:** `steward deploy dashboard` computes a diff (freshly-built `docs/dashboard/` output vs. the currently committed tree) before any git mutation; a no-diff run performs zero commits (FR-9's testable consequence). No daemon, scheduler, or new GitHub Actions workflow ships in v1 (PRD D6) — the operator or an existing workflow invokes the CLI.
+- **Rule:** `steward deploy dashboard` computes a diff (freshly-built `docs/dashboard/` output vs. the currently committed tree) before any git mutation; a no-diff run performs zero commits (FR-9's testable consequence). No daemon, scheduler, or new GitHub Actions workflow ships in v1 (PRD D6) — the operator or an existing workflow invokes the CLI. *(Superseded 2026-10-14 by the CAP-168 amendment below; Story 102.3 removed `deploy dashboard` on 2026-10-15.)*
 - **AMENDED 2026-08-26 (Story 30.2, CAP-2).** The wrapped external is **retired**: the `dashboard-gen` generator (the static Guildhall console's build path) was deleted 2026-08-25 with its 100+ inbound references, superseded by the CMS-managed Lane 1 front door on the Canopy host (`spec-pyforge-unifying-strategy` CAP-2, parity proven by `console-parity-inventory.md` first). `deploy.py`'s `build_dashboard` is now an injectable no-op (`("true",)`) and the verb survives as the reconciled diff+commit over `docs/dashboard/` (Kedro-Viz staging + the stub) — the AD-4 reconciliation invariant (diff-before-mutate, zero commits on no-diff) is unchanged and still tested. The mermaid diagram's `DEPLOY --> DASHGEN` edge is historical, like `PROVISION --> WORKTREE` after AD-5's 2026-08-09 amendment.
 - **AMENDED 2026-10-14 (CAP-168, FR-41, Epic 102).** The mutation moves from a git push to one `deploy-pages` run. The operator ruled 2026-10-13 that steward owns the Pages deploy workflow (the duct) and herald the content inside the artifact; `.github/workflows/dashboard.yml` becomes `.github/workflows/pages.yml` on this station's surface, in BMAD-METHOD `docs.yaml`'s shape. The invariant holds in its new form: the `deploy` job computes the built tree's hash (`build.json`, the built-from footer excluded) and compares it with the live site's before any `deploy-pages` call; an equal hash performs zero deploys, so a six-hourly scheduled rebuild of the fleet board costs a build and no deploy when nothing moved. `steward pages build|deploy|status` replaces `deploy dashboard` and `deploy status` (Story 102.3): `deploy` triggers one run of the one workflow through `gh workflow run` (AD-1), it never commits or pushes, and no `github-actions[bot]` commit lands on `main` for Pages. PRD D6's "no new GitHub Actions workflow in v1" clause is retired by the ruling: the workflow already existed, it moves here; the Deferred row below ("Formal GitHub Actions deploy workflow for the dashboard") is taken up by Epic 102. Still no daemon or standing controller: the schedule is GitHub's cron on the one workflow, and the duty is CLI-invoked.
 
@@ -2523,8 +2524,10 @@ Checked against the decisions as written:
 - **AD-8 (exit-code sole ownership).** `preflight-budget`'s report never changes an exit code (ruling D3); the
   preflight's frozen exit domain and stop-on-red are unchanged; the station suites' verdicts are still read from exit
   codes.
-- **No duty, port or adapter.** `station_suite_ci.py` is a script beside `coverage_gates_ci.py`; the registry gains a
-  `trigger:` field read by the render it already has; `ci status` reads the field.
+- **No duty, port or adapter.** The one driver is the script `coverage_gates_ci.py` (with
+  `run_station_coverage_gate.py` for the full-package named-module gate; corrected 2026-11-11, Story 122.1: the script named
+  here at 2026-10-27 was never written); the registry gains a `trigger:` field read by the render it already has;
+  `ci status` reads the field.
 
 No port, adapter or package boundary moves. No AD is added, amended or removed.
 
@@ -2603,3 +2606,21 @@ The audit record `research/egm-audit-2026-11-05.md` and the Spec memlog moved on
 ## Currency reconciliation — 2026-11-06 (CAP-20, Epic 119)
 
 `prd→arch` edge after the PRD's § Currency reconciliation — 2026-11-06 (CAP-20, Epic 119): canopy:FR-51 lands on canopy:AD-24, added here. No other AD moves.
+
+## Currency reconciliation — 2026-11-11 (Story 122.1)
+
+`prd→arch` edge after the PRD's § Currency reconciliation — 2026-11-11 (Story 122.1): `spec-pyforge-steward`
+re-derived from its verified change entries, and the three cutover Specs this project hosts re-derived the same day
+(`spec-python-foundry-cutover` (Story 120.1), `spec-foundry-regenerate-not-fold` and `spec-foundry-capability-ledger` (Story 120.2), each re-derived 2026-11-11 by the anchored script render with both self-validate passes on its memlog). FR delta of this PR: FR-53..FR-56, registered at mint, landing on AD-1 and AD-8 as the 2026-11-10 entry
+says. Checked against the decisions as written:
+
+- **AD-4 (deploy is CLI-invoked reconciliation).** Unchanged since its 2026-10-14 amendment; the Spec's AD-4 Constraint
+  now states that amended form, and the v1 **Rule:** line above carries a pointer to it.
+- **AD-6 (budget v1 is declared-not-enforced).** Unchanged; the Spec's CAP-4 now says `budget check` returns exit 3
+  and that exit 0 and exit 1 wait on a comparison no story has built.
+
+The 2026-10-27 section's driver bullet names `coverage_gates_ci.py`, the script that exists. No port, adapter or
+package boundary moves. No AD is added, amended or removed.
+
+**Content changed:** this section added; one pointer on AD-4's v1 **Rule:** line; the 2026-10-27 driver bullet;
+`updated:` bumped.

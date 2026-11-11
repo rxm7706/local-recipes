@@ -272,6 +272,21 @@
     "`stations`/`guild_dreams` specifically, per this file's own top comment)."
   ],
 
+  "$comment_roots": [
+    "`roots.this` names the root this checkout is (`local-recipes` here; B's",
+    "roster names `foundry`). The writer lock compares it with",
+    "`pyforge.core.cutover_root.root_of_record().root` (fnd:CAP-8, fnd:AD-24): the",
+    "session denial `chain-write-off-the-writer` below and doctor's writer-lock",
+    "source (spec-pyforge-doctor:CAP-100) both read it here, as data, because a",
+    "checkout's identity has to be readable without pyforge installed. Only the",
+    "name lives here: each root's forge slug stays in core's `FORGE_SLUGS`",
+    "(spec-pyforge-core:CAP-13), never a second copy, and the hook's `--repo`",
+    "and push checks read `FORGE_SLUGS[roots.this]` (steward Story 121.4)."
+  ],
+  "roots": {
+    "this": "local-recipes"
+  },
+
   "$comment_session_denials": [
     "The CLOSED list of what `.claude/hooks/pre-shell.py` denies -- the Guild",
     "session guardrails, enforced rather than merely asserted in AGENTS.md/",
@@ -279,16 +294,21 @@
     "script serves both harnesses (Claude Code's `PreToolUse` on `Bash` and on",
     "`Edit`/`Write`; Cursor's `beforeShellExecution` deny and `afterFileEdit`",
     "warn -- Cursor has no before-edit deny). Gemini CLI, GitHub Copilot CLI",
-    "and Devin have no verified deny surface for this hook; the sixteen rules and three steward denials stay",
+    "and Devin have no verified deny surface for this hook; the seventeen rules (the",
+    "writer lock's `chain-write-off-the-writer` among them) and three steward denials stay",
     "instruction-only there, as written in AGENTS.md.",
     "",
     "Each entry's `id` MUST have exactly one matching callable in the script's",
     "own `MATCHERS` dict, in both directions -- `load_denial_rules()` raises",
     "(fail loud, never a silent skip) on any drift between the two, at every",
     "invocation. `reason` is the one-line message shown to the agent, naming",
-    "the sanctioned form; for the two rules with more than one trigger shape",
-    "(`git-commit-guardrail`, `direct-write-governed-path`) it is an object",
-    "keyed by sub-case rather than a single string.",
+    "the sanctioned form; for the rules with more than one trigger shape",
+    "(`git-commit-guardrail`, `direct-write-governed-path`,",
+    "`unreachable-ref-deletion`, `chain-write-off-the-writer`) it is an object",
+    "keyed by sub-case rather than a single string. `chain-write-off-the-writer`",
+    "also carries `paths`, the one declared glob list both halves of the writer",
+    "lock read (this hook in session, doctor's writer-lock source on the branch):",
+    "`**` spans path separators, `*` and `?` do not.",
     "",
     "CHANGING THIS LIST IS A GOVERNANCE ACT, same as `stations`/`guild_dreams`",
     "above: adding, removing or reshaping a denial is a deliberate decision,",
@@ -451,6 +471,22 @@
       "applies_to": "mcp",
       "trigger": "mcp__conda_forge_server__submit_pr or prepare_submission_branch with dry_run not true; mcp__conda_forge_server__migrate_to_v1",
       "reason": "conda_forge_server MCP submission without dry_run, and migrate_to_v1, are outward work -- hand the operator the tool call (dry_run true for submit/prepare only) and wait for explicit confirmation."
+    },
+    {
+      "id": "chain-write-off-the-writer",
+      "applies_to": "edit_write",
+      "trigger": "an Edit or Write to a chain path (a Dream, a Frame, the capability ledger, a Spec folder or a governance Spec, the globs in paths) on a checkout that is not the root of record pyforge.cutover_root names, or with no flag tree in reach",
+      "paths": [
+        "docs/dreams/**",
+        "docs/foundry/frames/**",
+        "docs/foundry/capability-ledger.yaml",
+        "_bmad-output/projects/*/planning-artifacts/specs/spec-*/**",
+        "docs/governance/spec-*/**"
+      ],
+      "reason": {
+        "off_writer": "This checkout is not the writer: pyforge.cutover_root names {root} ({slug}) the root of record, and only the root of record writes a Dream, a Frame, a Spec or the capability ledger (the writer lock, fnd:CAP-8). Write it on the root of record, then bump the pin.",
+        "default": "No flag tree is in reach, so the root of record ({root}) is only the default, which proves no writer (fnd:AD-24). Run from a checkout whose src/platform/config/flags.json names the root of record, or set PYFORGE_FLAGS_PATH to that tree; off the writer, write on the root of record, then bump the pin."
+      }
     }
   ]
 }

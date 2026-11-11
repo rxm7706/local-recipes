@@ -2,7 +2,7 @@
 title: Product Brief — Steward
 status: draft
 created: 2026-07-25
-updated: "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): currency reconciliation — research->brief: research/egm-audit-2026-11-01.md landed (30 findings on CAP-176..CAP-178 and Epic 118: 25 accepted, 5 rejected, 0 deferred); CAP-176 and CAP-177 re-derived, CAP-178 unchanged (Story 118.8); no change to Steward's charter. See § Currency reconciliation — 2026-11-01. Prior 2026-10-07. Earlier: RE-STAMPED 2026-10-07: currency reconciliation — research->brief: the independent review of the free-threading readiness Dream entry (research/free-threading-readiness-dream-review-2026-10-07.md) landed in research/; no change to Steward's charter. See § Currency reconciliation — 2026-10-07. Prior 2026-09-25. Earlier: RE-STAMPED 2026-09-25: currency reconciliation — research->brief: the 2026-09-25 BMAD-method whitepaper verification landed in research/; no change to Steward's charter. Prior 2026-09-14
+updated: "2026-11-11"   # RE-STAMPED 2026-11-11 (steward Story 122.1): chain-currency cascade (research -> brief) for research/cutover-readiness-audit-2026-11-10.md and this PR's re-derives; no product scope moves. See § Currency reconciliation — 2026-11-11. Prior "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): currency reconciliation — research->brief: research/egm-audit-2026-11-01.md landed (30 findings on CAP-176..CAP-178 and Epic 118: 25 accepted, 5 rejected, 0 deferred); CAP-176 and CAP-177 re-derived, CAP-178 unchanged (Story 118.8); no change to Steward's charter. See § Currency reconciliation — 2026-11-01. Prior 2026-10-07. Earlier: RE-STAMPED 2026-10-07: currency reconciliation — research->brief: the independent review of the free-threading readiness Dream entry (research/free-threading-readiness-dream-review-2026-10-07.md) landed in research/; no change to Steward's charter. See § Currency reconciliation — 2026-10-07. Prior 2026-09-25. Earlier: RE-STAMPED 2026-09-25: currency reconciliation — research->brief: the 2026-09-25 BMAD-method whitepaper verification landed in research/; no change to Steward's charter. Prior 2026-09-14
 ---
 
 # Product Brief: Steward (`pyforge-steward`)
@@ -267,3 +267,20 @@ when Story 118.3 runs on Hetzner, and Story 118.8 carries the Spec's matching No
 *Chain-currency cascade (research -> brief), EGM audit, marshal Story 113.18.*
 
 The station's audit record joins this brief's inputs: `research/egm-audit-2026-11-05.md` (marshal Story 113.18, `spec-pyforge-marshal:CAP-302`): 19 high findings, 4 accepted, 10 rejected, 5 deferred; the medium and low findings are not triaged. The product scope does not change.
+
+## Currency reconciliation — 2026-11-11
+
+*Chain-currency cascade (research → brief), steward Story 122.1.*
+
+The station's cutover-readiness audit joins this brief's inputs: `research/cutover-readiness-audit-2026-11-10.md`
+(verdict NOT READY: the Spec did not describe the code in load-bearing places). Story 122.1 re-derived
+`spec-pyforge-steward` on 2026-11-11 from verified change entries (markers dated by their stories' merges; CAP-2
+retired 2026-10-15, superseded by CAP-168; CAP-180 gives `restore --drill` and `revoke --sub` the capability they
+lacked), and the three cutover Specs this project hosts were re-derived the same day (`spec-python-foundry-cutover` (Story 120.1), `spec-foundry-regenerate-not-fold` and `spec-foundry-capability-ledger` (Story 120.2), each re-derived 2026-11-11 by the anchored script render with both self-validate passes on its memlog). FR delta of this
+PR: FR-53..FR-56, registered at mint.
+
+**Why the brief does not change.** The four duties and the problem statement stand; `steward deploy`'s Pages half now
+runs through `steward pages` (CAP-168), which this brief's deploy duty already covers. No success criterion, scope
+line or vision moves.
+
+**Content changed:** this section only. `updated:` bumped.

@@ -186,3 +186,9 @@ Parent: `spec-pyforge-steward` CAP-180 (minted 2026-11-10) and the markers and t
   - CAP-175: the one driver is `scripts/coverage_gates_ci.py` (with `scripts/run_station_coverage_gate.py` for the named-module ratchet).
   - CAP-38, CAP-70, CAP-93, CAP-117, CAP-122, CAP-139: each companion citation carries its `archive/...` path.
   - Constraints (five leads) and Open Questions (two): the Constraint leads `- **CAP-5 (...`, CAP-6, CAP-166, CAP-167 and CAP-168 are reworded so no Constraint starts like a capability heading; the Open Questions that wait on Stories 100.1 and 102.2 are restated as they stand.
+
+## Planned deferral (written at build)
+
+- The AD-6 Constraint of `spec-pyforge-steward` (and AD-6 on the steward spine) still says `steward budget check` "returns one of three distinct exit codes"; the code returns exit 3 only, as the re-derived CAP-4 now says. The 2026-11-10 audit named CAP-4 alone and this story's amend list does not carry AD-6, so it is left as written here: it belongs with the close read of the other capability blocks and Constraints against the code, deferred row DW-steward-cutover-2026-11-10-6, which Story 122.5 writes.
+- Of the 15 `verified:` lines dated 2026-09-11, only CAP-7's carried a claim the tree now contradicts (the `1.4.1` floor); it is marked as that day's reading. The other 14 are dated readings already and are left as written; a re-verification of them, if wanted, rides the same deferred row.
+- `capability-ledger-check` reports heading-text mismatches between `docs/foundry/capability-ledger.yaml` and the live Specs (pre-existing, none from a marker this story moved); the ledger is regenerated from the live Specs by control-plane's `plan --regenerate` in Story 122.5's closing pass, so no row is written here.
