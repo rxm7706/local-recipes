@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: mason
-# stories: 201
+# stories: 216
 development_status:
   1-1-workspace-member-scaffold-and-dual-artifact-build: done
   1-10-configuration-surface-logging-and-child-output-streaming: done
@@ -124,6 +124,15 @@ development_status:
   34-1-the-atlas-reads-the-conda-forge-bot-s-split-graph-repos: done
   35-1-mason-s-twelve-archived-dreams-leave-the-live-tree: done
   36-1-mason-s-absorbed-spec-folders-move-to-the-archive-home: done
+  37-1-the-mason-spec-defines-each-capability-once-and-marks-it-as-it-stands: blocked
+  37-2-the-mason-brief-prd-and-spine-are-reviewed-against-the-spec-they-derive-from: backlog
+  37-3-mason-s-package-states-what-it-does-update-s-help-the-python-floor-and-the-readme: blocked
+  37-4-mason-s-change-closes-retro-surface-reconcile-deferrals-and-ledger: blocked
+  38-1-mason-s-public-contract-is-written-down-and-a-meta-test-holds-the-code-to-it: backlog
+  38-2-mason-s-suite-runs-as-a-package-half-and-a-live-tree-half: backlog
+  38-3-mason-s-adapters-pass-only-what-the-wrapped-scripts-declare: backlog
+  39-1-the-factory-island-build-is-a-mason-capability-and-its-error-names-only-what-exists: backlog
+  39-2-conda-forge-expert-gets-its-own-spec-after-the-root-of-record-flips: blocked
   4-1-lock-engine-adapter-and-provenance: done
   4-2-manifest-discovery: done
   4-3-mason-environment-lock: done
@@ -203,6 +212,12 @@ development_status:
   epic-35-retrospective: optional
   epic-36: done
   epic-36-retrospective: optional
+  epic-37: backlog
+  epic-37-retrospective: optional
+  epic-38: backlog
+  epic-38-retrospective: optional
+  epic-39: backlog
+  epic-39-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional
   epic-5: done

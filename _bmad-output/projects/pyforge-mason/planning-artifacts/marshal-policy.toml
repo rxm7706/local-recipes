@@ -380,6 +380,44 @@ verify_commands = [
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 
+"37" = [  # The mason Spec, PRD and package say what is built (spec-pyforge-mason CAP-2, CAP-37 and the re-marked capabilities), added 2026-11-10
+  # The station's planning and package paths, plus what Epic 37's stories touch: 37.1 the Spec and its memlog (under
+  # specs/**); 37.2 the brief, PRD, spine, epics and a dated readiness report; 37.3 the package's cli.py, models.py,
+  # pixi.toml, README and one new unit test; 37.4 the retro, the deferred-work ledger, Story 5.4's first spec, the
+  # memlog's surface reconcile and the Dream's closing line. No CFE file, recipes/** or pixi.lock.
+  "src/shared/packages/pyforge-mason/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-mason/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/briefs/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/prds/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/architecture/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/epics.md",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/implementation-readiness-report-*.md",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/retros/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
+  "docs/dreams/pyforge-mason.md",
+]
+
+"38" = [  # Mason's oracle travels: a written public contract and a suite split by what it reads (spec-pyforge-mason CAP-5, CAP-7), added 2026-11-10
+  # The station's planning and package paths: 38.1 writes contract.md beside the Spec and a meta-test; 38.2 the
+  # package pyproject.toml, tests/conftest.py, a meta-test and the live_tree marks; 38.3 one meta-test. No root
+  # pixi.toml, workflow or CFE file (steward's requests).
+  "src/shared/packages/pyforge-mason/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-mason/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
+]
+
+"39" = [  # Mason's cutover seam: the native factory-island build is a capability (spec-pyforge-mason CAP-36), added 2026-11-10
+  # The station's planning and package paths: 39.1 changes resolve.py and its factory-island unit test; 39.2 is minted
+  # blocked and builds nothing in this change.
+  "src/shared/packages/pyforge-mason/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-mason/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
+]
+
 "19" = [  # Mason has its own skills, and conda-forge-expert is one of them (spec-pyforge-mason CAP-29), added 2026-09-28
   "src/shared/packages/pyforge-mason/**",
   "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
