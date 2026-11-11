@@ -9175,3 +9175,15 @@ status: open
   promoted: 2026-11-01 — the Epic 113 build commit
   resolved: 2026-11-01 (marshal Story 113.8, spec-pyforge-marshal CAP-300) — `gather_dispatch_journal_facts` reads the launch intent's `readiness_challenge` into `DispatchJournalFacts.readiness_challenge`; `marshal status`'s dispatch row carries `dispatch_readiness_challenge` (JSON) and ` READINESS=` (text), and `marshal watch`'s station sections carry `readiness_challenge` and a `**Readiness Challenge:**` line, each with the report path and `MRS-DISP-067` when red (a finding or a review that could not run); with no `readiness_challenge` on the intent both render as before (`tests/unit/test_status.py`, `tests/unit/test_watch.py`).
   status: closed
+
+### DW-marshal-115-1: `marshal watch` reads a loop run's last-fact time from the loop home's own bmad-loop journal, not from the published run-state plane.
+
+- source_spec: `planning-artifacts/specs/spec-115-1-marshal-finds-the-checkout-and-the-loop-home-through-its-guarded-roots-and-the-guard-that-says-so-can-fire.md`
+  summary: `marshal watch` reads a loop run's last-fact time from the loop home's own bmad-loop journal, not from the published run-state plane.
+  evidence: CAP-227 (amended 2026-11-10) moves every run-state read outside the publisher (which runs are live, story phase, commit, timing) to the published plane. `_default_ports.loop_last_fact` in cli/watch.py reads `<loop home>/.bmad-loop/runs/<run_id>/journal.jsonl` for the newest `ts` (a timing read) to rank a loop run against a dispatch run. Story 115.1 resolves its root through BMAD_LOOP_HOME_ROOT, as `marshal init` does, and tags the line `CAP-4: loop-home FILE read -- run-state debt`; moving the read is new behaviour, which the operator ruling of 2026-11-10 (e) keeps out of this change. Every other site the honest guard names is marshal's own file, message text, run identity recovery, work durability or the supervisor's own budget sample, and is tagged with that reason instead.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/watch.py
+  origin: spec-deferred f8b99baf63ae — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  owner: marshal
+  severity: medium
+  promoted: 2026-11-11 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
