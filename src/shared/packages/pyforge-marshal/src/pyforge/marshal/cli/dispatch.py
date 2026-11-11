@@ -238,6 +238,7 @@ class FleetCycleReport:
         return dispatch_fleet.campaign_complete(self.results)
 
 
+# CAP-4: loop-home FILE read -- marshal's own file: the journal marshal writes in its own run dir, not bmad-loop run state
 _JOURNAL_FILENAME = "journal.jsonl"
 _LOG_FILENAME = "session.log"
 _SUPERVISOR_LOG_FILENAME = "dispatch-supervisor.log"

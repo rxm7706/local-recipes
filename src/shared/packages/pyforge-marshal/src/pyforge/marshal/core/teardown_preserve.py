@@ -25,6 +25,7 @@ from ..ports.vcs import VcsPort, WorktreeEntry
 
 _ORIGIN_MAIN = "refs/remotes/origin/main"
 _PRESERVE_ARCHIVE_PREFIXES = (PRESERVE_REF_PREFIX, ARCHIVE_REF_PREFIX)
+# CAP-4: loop-home FILE read -- failed-story patch files (work durability), not run-state truth
 _FAILED_PATCH_GLOB = ".bmad-loop/runs/*/failed/*/changes.patch"
 _BMAD_LOOP_BRANCH_PREFIX = "bmad-loop/"
 

@@ -167,6 +167,7 @@ if TYPE_CHECKING:
 # of these small literals" precedent (its own `_DONE_PHASE`/
 # `_RETIRE_JOURNAL_FILENAME`) rather than importing spin.py's PRIVATE
 # `_JOURNAL_FILENAME`/`_LAUNCH_KIND`/`_RESUME_KIND` attributes.
+# CAP-4: loop-home FILE read -- marshal's own file: the journal marshal writes in its own run dir, not bmad-loop run state
 _JOURNAL_FILENAME = "journal.jsonl"
 _LAUNCH_KIND = "run-launch"
 _RESUME_KIND = "run-resume"
@@ -779,6 +780,7 @@ def _latest_bmad_loop_run_id(home: Path) -> str | None:
         candidates = sorted(
             path.name
             for path in runs_dir.iterdir()
+            # CAP-4: loop-home FILE read -- names a run bmad-loop started directly, which marshal never published
             if path.is_dir() and not path.name.startswith(".retired") and (path / "state.json").is_file()
         )
     except OSError:
@@ -874,6 +876,7 @@ def _discover_harness_run_id_by_filesystem(home: Path, launched_at: datetime | N
     # CAP-4: loop-home FILE read -- correlate harness_run_id from bmad-loop run dirs
     runs_dir = home / ".bmad-loop" / "runs"
     try:
+        # CAP-4: loop-home FILE read -- recovers a poisoned journal's harness_run_id (run identity, not run state)
         candidates = [p.name for p in runs_dir.iterdir() if p.is_dir() and (p / "state.json").is_file()]
     except OSError:
         return None

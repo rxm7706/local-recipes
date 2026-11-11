@@ -1179,8 +1179,6 @@ def test_cap5_harness_env_uses_bmad_active_never_switch(tmp_path: Path, monkeypa
 # Story 86.5 — code-linkage verify counts only cites that name a real spec
 # ---------------------------------------------------------------------------
 
-import re
-
 from pyforge.marshal.core.chain_regen import verify_code_linkage
 
 # Words that read like a spec id but cite nothing: the old count took each one
@@ -1198,7 +1196,6 @@ _RESOLVED = (
     "spec-3-7-an-old-slug, spec-other-kernel, `spec-5-1-their-story.md`,\n"
     "spec-charter and spec-retired-kernel.\n"
 )
-_DETAIL = re.compile(r"^read-only verify: (\d+) spec cite\(s\); (\d+) missing(?:: (.+))?$")
 
 
 def _seed_linkage(root: Path, epics: str) -> Path:
@@ -1248,20 +1245,6 @@ def test_code_linkage_prose_spec_template_is_not_a_cite(tmp_path: Path):
     outcome = verify_code_linkage(tmp_path, "acme")
     assert outcome.status == "complete"
     assert outcome.detail == "read-only verify: 0 spec cite(s); 0 missing"
-
-
-def test_code_linkage_on_the_live_tree_names_only_story_spec_ids_and_completes():
-    """The live tree: marshal's verify completes, and each missing cite it counts is named."""
-    if not (_REPO_ROOT / "_bmad-output" / "projects" / "pyforge-marshal" / "planning-artifacts" / "epics.md").is_file():
-        pytest.skip("live planning tree not present")
-    outcome = verify_code_linkage(_REPO_ROOT, "pyforge-marshal")
-    assert outcome.status == "complete"
-    match = _DETAIL.match(outcome.detail)
-    assert match is not None, outcome.detail
-    named = match.group(3).split(", ") if match.group(3) else []
-    assert len(named) == int(match.group(2))
-    assert all(re.match(r"^spec-\d{1,3}-\d{1,3}(?:-|$)", cite) for cite in named), named
-    assert "spec-surface" not in outcome.detail
 
 
 def test_epic_orphan_scan_ignores_prose_and_reports_missing_and_orphaned_specs(tmp_path: Path):

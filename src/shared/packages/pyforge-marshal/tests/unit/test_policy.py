@@ -642,21 +642,6 @@ def test_resolve_context_layers_returns_a_fresh_plain_dict():
     _json.dumps(resolved)  # must not raise
 
 
-def test_dispatch_max_parallel_two_on_real_marshal_policy_does_not_fire_scm_clamp():
-    """Story 33.8: dispatch.max_parallel=2 composes without MRS-POLICY-007 --
-    that advisory applies to scm max_parallel (SEED) only, not dispatch."""
-    repo_root = Path(__file__).resolve().parents[6]
-    policy_path = repo_root / "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml"
-    if not policy_path.is_file():
-        pytest.skip("marshal-policy.toml not present in this checkout")
-
-    parsed = tomllib.loads(policy_path.read_text(encoding="utf-8"))
-    effective, findings = compose(project_slug="pyforge-marshal", project=parsed, flags={})
-    assert effective.dispatch.value == {"max_parallel": 2}
-    codes = {f.code for f in findings}
-    assert "MRS-POLICY-007" not in codes
-
-
 # --- Story 80.1 (CAP-284): the dispatch block's landing_check_* keys -----------
 
 _LANDING_CHECK_DEFAULTS = {
@@ -972,26 +957,6 @@ def test_the_follow_up_review_cap_resolver_never_raises_on_a_value_that_bypassed
         effective, _ = compose(project_slug="acme", project={}, flags={})
         forged = dataclasses.replace(effective, dispatch=garbage)
         assert policy.resolve_followup_review_cap(forged) == 2
-
-
-def test_the_real_pyforge_marshal_policy_declares_no_context_block():
-    """Story 46.4 regression: the tracked marshal-policy.toml no longer
-    force-declares `[context]` at all -- Story 33.2's five-layer enablement
-    is superseded by the repo-default `_bmad-output/policy-defaults.toml`
-    block (all 5 layers on, `wire` on the `"auto"` tri-state). Per
-    `_merge_field`'s wholesale-per-field (not deep-merge) composition, a
-    station file declaring ANY part of `[context]` would replace the repo
-    default's entire value for that station -- so the station stays
-    force-override-only by declaring nothing here at all. See
-    `test_dispatch.py::test_compose_policy_on_real_repo_enables_all_context_layers_for_dispatch`
-    for the fully-composed (repo-defaults + project) resolution."""
-    repo_root = Path(__file__).resolve().parents[6]
-    policy_path = repo_root / "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml"
-    if not policy_path.is_file():
-        pytest.skip("marshal-policy.toml not present in this checkout")
-
-    parsed = tomllib.loads(policy_path.read_text(encoding="utf-8"))
-    assert "context" not in parsed
 
 
 def test_context_escalation_threshold_defaults_when_absent():

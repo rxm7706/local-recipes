@@ -24,6 +24,15 @@ dummy = "pyforge.core.hooks:DummyPlugin"
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyforge"]
 
+[tool.pytest.ini_options]
+# Story 117.1 (spec-pyforge-core:CAP-14): a module that reads the repository outside this package carries
+# `pytestmark = pytest.mark.live_tree`; `-m "not live_tree"` is the package half a second root runs from a copy of
+# the package alone, `-m live_tree` the live-tree half, and `pyforge-core-test` runs both (spec-pyforge-core:CAP-8).
+markers = [
+    "unit: a pure unit test of one pyforge.core module, run in the package half",
+    "live_tree: the module reads the repository outside its own package (pixi.toml, the workflows, the governance and planning files, other stations); it runs in the core suite's live-tree half",
+]
+
 # Story 66.1 (spec-pyforge-steward CAP-153, 2026-09-20): the lint gate `pixi run -e pyforge-guild ruff`
 # / `ruff-format` reads THIS block (run from inside the package). Line width is ruff format's job;
 # E501 is off because 290 legacy long strings/comments predate the gate -- format keeps code at 120.

@@ -34,6 +34,13 @@ Positively asserts ``verdict.py`` itself defines ``LATTICE_ORDER`` +
 ``exit_code_for`` and that the lattice-order detector fires on it -- the
 guard is alive, not vacuous.
 
+Story 115.3 (CAP-13 amended 2026-11-10): the ``seed`` verb group keeps its
+own closed exit taxonomy (5 state invalid, 10 internal among its six codes),
+owned by ``seed/errors.py`` the way the lattice domain is owned by
+``verdict.py``: ``SEED_EXIT_CODES`` is derived there from the leaves, never
+spelled, and ``cli/main.py`` admits it by that name, spelling no seed-only
+code itself. The frozen domain above does not widen for it.
+
 Bounds (stated, not aspirational): this is a best-effort STATIC check.
 Indirection through helper functions (``exit(code())``), values built via
 f-strings/arithmetic, dynamic attribute access (``getattr``), and
@@ -386,3 +393,53 @@ def test_guard_is_alive_synthetic_violation_fires_and_verdict_defines_projection
     assert _lattice_ordering_literals(tree), (
         "the lattice-order detector failed to fire on verdict.py itself -- the guard would be vacuous"
     )
+
+
+# Story 115.3 (CAP-13 amended 2026-11-10): an independent copy of the codes
+# only seed's taxonomy names -- the ones the frozen domain above does not hold.
+SEED_ONLY_EXIT_LITERALS = frozenset({5, 10})
+_MAIN_MODULE = PACKAGE_DIR / "cli" / "main.py"
+_SEED_ERRORS_MODULE = PACKAGE_DIR / "seed" / "errors.py"
+
+
+def _int_literals(tree: ast.Module) -> set[int]:
+    return {
+        node.value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Constant) and isinstance(node.value, int) and not isinstance(node.value, bool)
+    }
+
+
+def test_seed_only_codes_stay_outside_the_frozen_domain():
+    assert not (SEED_ONLY_EXIT_LITERALS & GUARDED_EXIT_LITERALS)
+
+
+def test_main_admits_the_seed_taxonomy_by_name_and_spells_no_seed_only_code():
+    tree = _parse(_MAIN_MODULE)
+    assert not (_int_literals(tree) & SEED_ONLY_EXIT_LITERALS), (
+        "cli/main.py spells a seed-only exit code -- admit seed.errors.SEED_EXIT_CODES by name instead"
+    )
+    imported = {
+        alias.name
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ImportFrom) and (node.module or "").endswith("seed.errors")
+        for alias in node.names
+    }
+    assert "SEED_EXIT_CODES" in imported
+
+
+def test_seed_errors_derives_its_exit_set_from_the_leaves():
+    """``SEED_EXIT_CODES`` is computed from ``SeedError.__subclasses__()``, never a set literal."""
+    tree = _parse(_SEED_ERRORS_MODULE)
+    values = [
+        stmt.value
+        for stmt in tree.body
+        if isinstance(stmt, ast.AnnAssign)
+        and isinstance(stmt.target, ast.Name)
+        and stmt.target.id == "SEED_EXIT_CODES"
+        and stmt.value is not None
+    ]
+    assert len(values) == 1, "seed/errors.py binds SEED_EXIT_CODES exactly once, annotated"
+    (value,) = values
+    assert any(isinstance(node, ast.Attribute) and node.attr == "__subclasses__" for node in ast.walk(value))
+    assert not any(isinstance(node, (ast.Set, ast.List, ast.Tuple)) for node in ast.walk(value))

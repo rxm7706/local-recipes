@@ -2215,6 +2215,7 @@ def _teardown_op_failed_finding(message: str) -> Finding:
 # (AD-25/AD-28/AD-30), scoped to a single fresh "run" representing this
 # teardown's own abandonment event (there is no pre-existing run this event
 # belongs to -- teardown is not itself a story run).
+# CAP-4: loop-home FILE read -- marshal's own file: the journal marshal writes in its own run dir, not bmad-loop run state
 _ABANDON_JOURNAL_FILENAME = "journal.jsonl"
 _ABANDON_KIND = "promotion-abandoned"
 

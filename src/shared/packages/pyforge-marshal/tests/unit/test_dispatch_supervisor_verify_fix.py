@@ -32,8 +32,10 @@ from pathlib import Path
 
 import pytest
 import test_dispatch_supervisor_main_loop as loop
+from pyforge.core.process import ProcessResult
 from pyforge.testing_kit.flags import flagd_tree
 
+from pyforge.marshal.adapters.doctor_cli import spec_surface_argv
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core.dispatch_verify_fix import (
@@ -168,7 +170,16 @@ def _finalize(
     branch = dispatch_core.dispatch_worktree_branch(loop._SLUG, loop._STORY_KEY)
     if vcs is None:
         vcs = loop.FakeVcs(branches=frozenset({branch}), head_sha=loop._MOVED)
-    return loop._finalize(fs, vcs, repo_root, worktree, journal_lines=journal_lines)
+    # ``loop._finalize`` with a process port that takes ``timeout_s`` and answers Doctor's command (Story 115.2).
+    return _finalize_with(
+        fs,
+        vcs,
+        repo_root,
+        worktree,
+        process=_FixTurnProcess(),
+        journal_lines=journal_lines,
+        writer_id="dispatch-supervisor-1",
+    )
 
 
 def _assert_parked_unverified(fs: loop.FakeFs, ok: bool) -> None:
@@ -521,6 +532,29 @@ def _fix_intent_lines(
     return tuple(lines)
 
 
+class _FixTurnProcess(loop.FakeProcess):
+    """``loop.FakeProcess`` that also takes ``ProcessPort.run``'s ``timeout_s`` and answers Doctor's
+    spec-surface command (Story 115.2): the fix turn's spec-surface reconcile reads Doctor's verdict through
+    this port. The fake worktree holds no Doctor source and this env ships no ``pyforge.doctor``, so the
+    command exits 1 naming the missing module, as the real one does here -- no verdict, the non-blocking
+    MRS-DISP-047 the in-process import's ``ImportError`` gave these tests before. Every other command keeps
+    ``loop.FakeProcess``'s answer."""
+
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        super().__init__(*args, **kwargs)
+        self.doctor_calls: list[tuple[list[str], Path | None, float | None]] = []
+
+    def run(self, argv, *, cwd=None, env=None, timeout=None, timeout_s=None):
+        if list(argv) == list(spec_surface_argv()):
+            self.doctor_calls.append((list(argv), cwd, timeout_s))
+            return ProcessResult(
+                returncode=1,
+                stdout="",
+                stderr="Traceback (most recent call last):\nModuleNotFoundError: No module named 'pyforge.doctor'\n",
+            )
+        return super().run(argv, cwd=cwd, env=env, timeout=timeout if timeout is not None else timeout_s)
+
+
 def _finalize_with(
     fs: loop.FakeFs,
     vcs: loop.FakeVcs,
@@ -530,6 +564,7 @@ def _finalize_with(
     process: object,
     journal_lines: tuple[str, ...],
     publish_heartbeat=None,
+    writer_id: str = "dispatch-supervisor-2",
 ):
     """``loop._finalize`` with the process port chosen by the test -- a real one for a real detached session."""
     run_dir = loop._run_dir(repo_root)
@@ -541,7 +576,7 @@ def _finalize_with(
         process=process,
         run_dir=run_dir,
         run_id=loop._RUN_ID,
-        writer_id="dispatch-supervisor-2",
+        writer_id=writer_id,
         counter=0,
         repo_root=repo_root,
         slug=loop._SLUG,
@@ -1417,7 +1452,7 @@ def test_a_fix_turn_resumes_the_recorded_session_only_with_the_launch_profiles_o
         vcs,
         repo_root,
         worktree,
-        process=loop.FakeProcess(),
+        process=_FixTurnProcess(),
         journal_lines=(_launch_outcome(session_id=session_id),),
     )
 
@@ -1458,7 +1493,7 @@ def test_the_publisher_heartbeat_runs_during_a_new_fix_turns_wait(
         vcs,
         repo_root,
         worktree,
-        process=loop.FakeProcess(),
+        process=_FixTurnProcess(),
         journal_lines=(),
         publish_heartbeat=_publisher_events(events),
     )
@@ -1492,7 +1527,7 @@ def test_the_publisher_heartbeat_runs_while_a_restarted_supervisor_settles_an_in
         vcs,
         repo_root,
         worktree,
-        process=loop.FakeProcess(),
+        process=_FixTurnProcess(),
         journal_lines=(*_journaled_refusal_with_failed_commands(), *_fix_intent_lines(77123, started_at=_now())),
         publish_heartbeat=_publisher_events(events),
     )
@@ -1547,7 +1582,7 @@ def test_the_reverification_heartbeats_from_a_progress_thread_while_it_runs(
     supervisor_main._run_and_journal_verification(
         fs=loop.FakeFs(),
         vcs=loop.FakeVcs(),
-        process=loop.FakeProcess(),
+        process=_FixTurnProcess(),
         run_dir=loop._run_dir(repo_root),
         run_id=loop._RUN_ID,
         writer_id="dispatch-supervisor-1",
@@ -1599,7 +1634,7 @@ def test_the_reverification_returns_only_after_an_in_flight_progress_heartbeat_f
     supervisor_main._run_and_journal_verification(
         fs=loop.FakeFs(),
         vcs=loop.FakeVcs(),
-        process=loop.FakeProcess(),
+        process=_FixTurnProcess(),
         run_dir=loop._run_dir(repo_root),
         run_id=loop._RUN_ID,
         writer_id="dispatch-supervisor-1",
@@ -1675,7 +1710,7 @@ def _fix_turn_waited_on_a_stepped_clock(
         vcs,
         repo_root,
         worktree,
-        process=loop.FakeProcess(),
+        process=_FixTurnProcess(),
         journal_lines=(),
         publish_heartbeat=lambda: publisher_calls.append(clock.now),
     )

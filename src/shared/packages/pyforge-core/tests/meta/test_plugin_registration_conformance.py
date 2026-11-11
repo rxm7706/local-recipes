@@ -21,7 +21,13 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
+import pytest
 from conftest import PACKAGES_ROOT, sibling_station_dirs, station_source_files
+
+# Story 117.1 (spec-pyforge-core:CAP-14): this module reads every sibling station's pyproject.toml and src/ (through
+# conftest) outside pyforge-core, so it runs in the core suite's live-tree half (`-m live_tree`), never in the package
+# half a second root runs from the package alone.
+pytestmark = pytest.mark.live_tree
 
 _CANONICAL_GROUP = "pyforge.core.hooks"
 _PARALLEL_GROUP = re.compile(r"^pyforge\.[^.]+\.(hooks|plugins)$")

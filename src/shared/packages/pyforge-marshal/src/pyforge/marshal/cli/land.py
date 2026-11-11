@@ -143,8 +143,10 @@ from ..ports.harness import HarnessPort
 from ..ports.vcs import VcsPort
 from .config import (
     PolicyIOError,
+    RepoRootUnresolvedError,
     _read_project_policy,
     _suppress_downstream_pipe_close,
+    checkout_root,
     conventional_project_policy_path,
     repo_root,
 )
@@ -1368,14 +1370,20 @@ _fleet_scan_module: object | None = None
 
 
 def _load_fleet_scan_module() -> object | None:
-    """Install-free load of ``scripts/fleet_scan.py`` for ``parse_sprint_status`` only."""
+    """Install-free load of ``scripts/fleet_scan.py`` for ``parse_sprint_status`` only.
+
+    Story 115.1: the script is found in the checkout ``checkout_root()`` names;
+    outside a source checkout it is absent and this returns ``None``."""
     global _fleet_scan_module
     if _fleet_scan_module is not None:
         return _fleet_scan_module
     import importlib.util
 
-    checkout_root = Path(__file__).resolve().parents[8]
-    path = checkout_root / "scripts" / "fleet_scan.py"
+    try:
+        checkout = checkout_root()
+    except RepoRootUnresolvedError:
+        return None
+    path = checkout / "scripts" / "fleet_scan.py"
     if not path.is_file():
         return None
     spec = importlib.util.spec_from_file_location("_fleet_scan_land", path)
@@ -1442,11 +1450,18 @@ def _load_promote_sprint_status_module() -> object | None:
 
     Story 83.21: a script that raises while it loads is ``None`` too, never a
     crash of a landing whose PR has already merged; ``_promote_sprint_ledger``
-    then names the missing roll-up in an ``MRS-LAND-011`` WARN."""
+    then names the missing roll-up in an ``MRS-LAND-011`` WARN.
+
+    Story 115.1: the script is found in the checkout ``checkout_root()`` names;
+    outside a source checkout it is absent and this returns ``None`` -- the same
+    ``MRS-LAND-011`` WARN, never an ``IndexError`` after the PR merged."""
     import importlib.util
 
-    checkout_root = Path(__file__).resolve().parents[8]
-    path = checkout_root / "scripts" / "promote_sprint_status.py"
+    try:
+        checkout = checkout_root()
+    except RepoRootUnresolvedError:
+        return None
+    path = checkout / "scripts" / "promote_sprint_status.py"
     if not path.is_file():
         return None
     spec = importlib.util.spec_from_file_location("_promote_sprint_status_land", path)

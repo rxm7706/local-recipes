@@ -10,9 +10,10 @@ required heading, dropped its token target, or -- the failure this story
 is most exposed to -- rewired the skill onto a freshness verb marshal does
 not actually ship.
 
-Skipped (never failed) when the skill directory is absent: this package is
-installable and testable standalone, and a missing repo-level skill is a
-different repo, not a regression.
+Story 116.1 (spec-pyforge-marshal:CAP-305): the module reads the repo-level
+skill, outside this package, so it is marked ``live_tree`` and fails, never
+skips, when the skill file is absent -- a skip there false-greened the
+contract on a tree that is not this one.
 """
 
 from __future__ import annotations
@@ -26,6 +27,8 @@ import pyforge.marshal
 from pyforge.marshal.cli.main import _build_parser
 from pyforge.marshal.core import derived_context as derived
 
+pytestmark = pytest.mark.live_tree
+
 _PACKAGE_FILE = pyforge.marshal.__file__
 if _PACKAGE_FILE is None:
     raise ValueError("installed package has no __file__")
@@ -38,7 +41,7 @@ COMPILE = SKILL_DIR / "compile-epic-context.md"
 
 def _read(path: Path) -> str:
     if not path.is_file():
-        pytest.skip(f"repo-level skill file not present: {path}")
+        pytest.fail(f"repo-level skill file not present: {path} (this live-tree contract reads it)")
     return path.read_text(encoding="utf-8")
 
 

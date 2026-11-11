@@ -12,11 +12,18 @@ an explicit inventory contract:
 * a tool-only allowlist entry must not also claim a CLI verb.
 
 Drift fails the gated meta-test; review is not the gate.
+
+Story 115.3 (CAP-23 amended 2026-11-10) adds the registration half:
+:func:`registration_findings` compares the names ``server.build_server()``
+registers against ``TOOL_SPECS`` -- a spec with no registration is a tool
+``list_marshal_tools`` reports and no client can call, a registration with no
+spec is a tool the inventory hides. It takes the registered names as input,
+so this module never touches the ``mcp`` SDK.
 """
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -200,6 +207,35 @@ def parity_findings(
                 )
             )
 
+    return findings
+
+
+def registration_findings(
+    registered: Iterable[str],
+    *,
+    tool_specs: Mapping[str, Mapping[str, Any]] | None = None,
+) -> list[ParityFinding]:
+    """Compare the tool names the server registers with ``TOOL_SPECS``.
+
+    ``tool_specs`` defaults to the live ``TOOL_SPECS``, read at call time;
+    tests inject a fixture (or a mutated server) to prove a mismatch fails.
+    """
+    specs = TOOL_SPECS if tool_specs is None else tool_specs
+    names = frozenset(registered)
+    findings = [
+        ParityFinding(
+            "tool_spec_unregistered",
+            f"TOOL_SPECS lists {name!r} but build_server() does not register it",
+        )
+        for name in sorted(set(specs) - names)
+    ]
+    findings.extend(
+        ParityFinding(
+            "tool_registered_without_spec",
+            f"build_server() registers {name!r} but TOOL_SPECS has no such tool",
+        )
+        for name in sorted(names - set(specs))
+    )
     return findings
 
 

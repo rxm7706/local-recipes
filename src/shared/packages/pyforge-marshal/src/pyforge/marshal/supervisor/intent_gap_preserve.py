@@ -152,6 +152,7 @@ def park_preserve_artifact(
                 project_slug=project_slug,
                 story_key=snapshot.story_key,
                 run_id=harness_run_id,
+                # CAP-4: loop-home FILE read -- a path written into the preserve tag's trailer, not a read
                 journal_path=marshal_journal_path or str(bmad_run_dir / "journal.jsonl"),
                 push=False,
             )

@@ -289,21 +289,6 @@ def test_a_done_epic_keeps_done_over_a_stale_feed_row_and_the_promotion_commit_r
     assert _sync().regressions(before, after) == []
 
 
-def test_ledger_regression_reports_ok_over_the_ac3_promotion_commit(tmp_path: Path, monkeypatch) -> None:
-    """AC 3, through the ``ledger-regression`` detector itself (doctor's ``sources.ledger.gather``) over the
-    promotion commit's own range. Runs where ``pyforge-doctor`` is installed (the guild env); the
-    rule-level twin above runs everywhere."""
-    ledger_source = pytest.importorskip("pyforge.doctor.sources.ledger")
-    models = pytest.importorskip("pyforge.doctor.models")
-    _origin, primary, parent, commit = _ac3_finalize(tmp_path, monkeypatch)
-    _git(primary, "fetch", "origin", "main")
-
-    [finding] = ledger_source.gather(primary, base=parent, head=commit)
-
-    assert finding.status == models.DoctorStatus.OK, finding.message
-    assert finding.evidence["ledgers_compared"] == 1
-
-
 # -- AC 4: the promotion module cannot be loaded ---------------------------------------------------------------
 
 

@@ -7,6 +7,11 @@ from pathlib import Path
 
 import pytest
 
+# Story 117.1 (spec-pyforge-core:CAP-14): this module reads the repository's src/ and scripts/ outside pyforge-core,
+# so it runs in the core suite's live-tree half (`-m live_tree`), never in the package half a second root runs from
+# the package alone.
+pytestmark = pytest.mark.live_tree
+
 _REPO_ROOT = Path(__file__).resolve().parents[6]
 _SCAN_ROOTS = (_REPO_ROOT / "src", _REPO_ROOT / "scripts")
 _SOLE_MODULE = _REPO_ROOT / "src/shared/packages/pyforge-core/src/pyforge/core/preserve_refs.py"

@@ -2,7 +2,7 @@
 title: '46.2: The canonical context bundle is digest-pinned'
 type: 'feature'
 created: '2026-09-18'
-status: 'backlog'
+status: 'done'
 flag:
   key: pyforge.marshal.context_bundle_digest
   provider: openfeature-file
@@ -65,3 +65,7 @@ Contract recovered from `epics.md` Story 46.2 (Intent + ACs) so `marshal factory
 **Commands:**
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+
+## Spec Change Log
+
+- 2026-11-10 -- frontmatter `status` `backlog` -> `done` (marshal Story 114.1, the cutover-readiness audit's story-spec drift): the ledger key has read `done` since 2026-09-24 (`0ba6c15cff`); the landing left this spec behind. No contract change.

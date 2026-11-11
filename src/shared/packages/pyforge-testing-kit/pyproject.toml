@@ -24,7 +24,13 @@ dependencies = ["openfeature-sdk>=0.10.0", "pyforge-core"]
 packages = ["src/pyforge"]
 
 [tool.pytest.ini_options]
-markers = ["unit: unit tests (fast)"]
+# Story 118.1 (spec-pyforge-testing-charter:CAP-7): a module that reads the live tree outside this package carries
+# `pytestmark = pytest.mark.live_tree`; `-m "not live_tree"` is the package half (no host package on the path),
+# `-m live_tree` the live-tree half, and pyforge-testing-kit-test runs the whole suite.
+markers = [
+    "unit: unit tests (fast)",
+    "live_tree: the module reads the repository outside its own package (planning artifacts, docs, pixi.toml, the workflows, other stations); it runs in the station's live-tree half and fires on what it reads",
+]
 
 # Story 66.1 (spec-pyforge-steward CAP-153, 2026-09-20): the lint gate `pixi run -e pyforge-guild ruff`
 # / `ruff-format` reads THIS block (run from inside the package). Line width is ruff format's job;
@@ -40,7 +46,7 @@ ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]   # re-exports
-"**/tests/**" = ["E402"]    # test modules that bootstrap sys.path before importing the package
+# Story 118.1: the `**/tests/**` E402 waiver went with conftest.py's sys.path bootstrap; no test module needs it.
 
 # Story 66.1 (spec-pyforge-steward CAP-153, 2026-09-20): the type gate `pixi run -e pyforge-guild mypy`
 # reads THIS block (run from inside the package). The [[tool.mypy.overrides]] entries below are the

@@ -61,6 +61,7 @@ class EnginePromoteOutcome:
 
 
 def bmad_loop_journal_path(home: Path, harness_run_id: str) -> Path:
+    # CAP-4: loop-home FILE read -- the supervised run's journal, tailed for engine preserve events (work durability), not run-state truth
     return home / ".bmad-loop" / "runs" / harness_run_id / "journal.jsonl"
 
 

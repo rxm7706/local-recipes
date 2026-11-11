@@ -193,6 +193,7 @@ def read_dispatch_idle_timing(repo_root: Path, *, project_slug: str = "pyforge-m
             "recommended_idle_threshold_minutes": 25,
         }
     sessions: list[dict[str, object]] = []
+    # CAP-4: loop-home FILE read -- marshal's own file: dispatch journals under its Tier-3 dispatch-runs dir, not bmad-loop run state
     for journal_path in sorted(runs_dir.glob("*/journal.jsonl")):
         durations: list[float] = []
         for line in journal_path.read_text(encoding="utf-8").splitlines():
@@ -323,6 +324,7 @@ def read_rollup_by_harness(repo_root: Path, *, project_slug: str = "pyforge-mars
 
     harnesses: dict[str, dict[str, object]] = {}
     try:
+        # CAP-4: loop-home FILE read -- marshal's own file: dispatch journals under its Tier-3 dispatch-runs dir, not bmad-loop run state
         journal_paths = sorted(runs_dir.glob("*/journal.jsonl"))
     except OSError:
         # A permission-denied (or otherwise unreadable) subdirectory hit

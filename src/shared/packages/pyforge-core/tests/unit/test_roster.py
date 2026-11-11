@@ -1,34 +1,21 @@
 """Unit tests for ``pyforge.core.roster`` (Story 59.6, CAP-137).
 
-Covers: the roster is exactly the eight declared stations, matches
-``docs/governance/guild-roster.json``'s ``stations`` key, and
+Covers: the roster is exactly the eight declared stations, and
 ``long_form`` derives the ``pyforge-<station>`` path/package/env form.
+The check that the roster matches ``docs/governance/guild-roster.json``'s
+``stations`` key reads the repository, so it lives in
+``test_roster_matches_the_guild_roster.py`` in the live-tree half
+(Story 117.1, spec-pyforge-core:CAP-14).
 """
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
-
 from pyforge.core.roster import STATIONS, long_form
-
-
-def _repo_root() -> Path:
-    here = Path(__file__).resolve()
-    for candidate in here.parents:
-        if (candidate / "pixi.toml").is_file() and (candidate / ".claude").is_dir():
-            return candidate
-    raise AssertionError("could not locate repo root (pixi.toml + .claude)")
 
 
 def test_stations_is_eight_unique_names():
     assert len(STATIONS) == 8
     assert len(set(STATIONS)) == 8
-
-
-def test_stations_matches_guild_roster_json():
-    payload = json.loads((_repo_root() / "docs" / "governance" / "guild-roster.json").read_text(encoding="utf-8"))
-    assert list(STATIONS) == payload["stations"]
 
 
 def test_long_form_prefixes_pyforge():

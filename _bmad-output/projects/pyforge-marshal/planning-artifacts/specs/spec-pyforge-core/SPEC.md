@@ -2,22 +2,23 @@
 id: SPEC-pyforge-core
 spec: pyforge-core
 status: ready
-owner-dream: archive/docs/dreams/pyforge-core.md
+updated: "2026-11-10"   # RE-DERIVED 2026-11-10 (marshal Story 117.5, the cutover-readiness mint; operator rulings of 2026-11-10): every capability carries a dated marker; CAP-12..CAP-14 rendered from the mint's capability entries; CAP-1 and CAP-5..CAP-10 re-derived as built; Q1..Q3 closed; the Non-goals and two Constraints re-worded; owner-dream points at the station Dream; contract.md a companion; the surface: paths unchanged.
+owner-dream: docs/dreams/pyforge-marshal.md
 surface:
-  - src/shared/packages/pyforge-core/**            # net-new, not yet created
+  - src/shared/packages/pyforge-core/**            # the leaf itself
   # DW-FU-20-2 fix (2026-09-07): the prior single-line brace-expansion glob
   # (pyforge-{atlas,doctor,...}/src/**) never matched any real path --
   # chain.py::_glob_to_re has no {a,b,c} expansion support, so the literal
   # brace text could never appear in a scanned path. One real glob per
   # station below, matching each package's actual src/ tree.
-  - src/shared/packages/pyforge-atlas/src/**        # the copies each extraction retires
-  - src/shared/packages/pyforge-doctor/src/**       # the copies each extraction retires
-  - src/shared/packages/pyforge-herald/src/**       # the copies each extraction retires
-  - src/shared/packages/pyforge-marshal/src/**      # the copies each extraction retires
-  - src/shared/packages/pyforge-mason/src/**        # the copies each extraction retires
-  - src/shared/packages/pyforge-scribe/src/**       # the copies each extraction retires
-  - src/shared/packages/pyforge-steward/src/**      # the copies each extraction retires
-  - src/shared/packages/pyforge-warden/src/**       # the copies each extraction retires
+  - src/shared/packages/pyforge-atlas/src/**        # read by the sole-ownership scans (CAP-7)
+  - src/shared/packages/pyforge-doctor/src/**       # read by the sole-ownership scans (CAP-7)
+  - src/shared/packages/pyforge-herald/src/**       # read by the sole-ownership scans (CAP-7)
+  - src/shared/packages/pyforge-marshal/src/**      # read by the sole-ownership scans (CAP-7)
+  - src/shared/packages/pyforge-mason/src/**        # read by the sole-ownership scans (CAP-7)
+  - src/shared/packages/pyforge-scribe/src/**       # read by the sole-ownership scans (CAP-7)
+  - src/shared/packages/pyforge-steward/src/**      # read by the sole-ownership scans (CAP-7)
+  - src/shared/packages/pyforge-warden/src/**       # read by the sole-ownership scans (CAP-7)
   - pixi.toml                                       # the new workspace member + its per-station dep edges
 surface-drift-exclude:
   # 2026-09-12: also governed by the spec(s) named below, which already
@@ -26,30 +27,30 @@ surface-drift-exclude:
   # claiming them only produced permanent drift-presumed noise here.
   # Coverage is unchanged (still listed under `surface:` above); only
   # this spec's own drift tracking for these specific files is off.
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/publisher_host.py   # also governed by pyforge-marshal/spec-run-state-one-publisher
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/publisher_host.py   # also governed by pyforge-marshal/spec-pyforge-marshal
   - src/shared/packages/pyforge-core/src/pyforge/core/client.py   # also governed by pyforge-steward/spec-pyforge-unifying-strategy
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py   # also governed by pyforge-marshal/spec-pyforge-marshal
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py   # also governed by pyforge-marshal/spec-pyforge-marshal
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/model_cost.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/tier_routing.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py   # also governed by pyforge-marshal/spec-pyforge-marshal
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/model_cost.py   # also governed by pyforge-marshal/spec-pyforge-marshal
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/tier_routing.py   # also governed by pyforge-marshal/spec-pyforge-marshal
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py   # also governed by pyforge-marshal/spec-pyforge-marshal
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py   # also governed by pyforge-steward/spec-pyforge-steward (Story 59.2)
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py   # also governed by pyforge-steward/spec-pyforge-steward (Story 59.2)
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/status_body_consistency.py   # also governed by pyforge-steward/spec-pyforge-steward (Story 59.2)
+companions:
+  - contract.md   # the leaf's public contract (CAP-12), written by Story 117.4
 sources:
   - ../../../../../../archive/docs/dreams/pyforge-core.md
   - ../../research/technical-pyforge-unification-2026-08-08.md   # § 7 duplication census — figures superseded, see Assumptions
-open_questions:
-  - "Q1 — does the station roster belong in pyforge-core at all? It is the one census entry whose canonical home already exists (bmad_drift_check.STATIONS, imported rather than mirrored by generate.py). Moving it into a package that ships to conda would give a stdlib-only detector a package dependency it does not have today. Decide before CAP-4, not during."
-  - "Q2 — is pyforge-testing-kit (the testing charter's unbuilt CAP-3) a second leaf package or a module of this one? Both are stdlib-only shared floors with the same leaf constraint; shipping two may be splitting one thing, shipping one may couple test-only fixtures into a runtime dependency."
-  - "Q3 — the subprocess guard (CAP-6) is a design reconciliation, not an extraction: doctor's cli_bridge.run_cli_json and marshal's ProcessPort/process_posix are two genuinely different designs, and steward deliberately propagates raw CalledProcessError. Which design wins, and does steward's deliberate divergence become a sanctioned opt-out or get folded in?"
+open_questions: []
 fold-exemption: cross-station-seam
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for
-> what to build, test and validate. `docs/dreams/pyforge-core.md` carries the narrative
-> and the measured census; the research document in `sources:` is traceability only and
+> what to build, test and validate. `archive/docs/dreams/pyforge-core.md` carries the
+> narrative and the measured census, and `docs/dreams/pyforge-marshal.md` the station's
+> later entries for this Spec; the research document in `sources:` is traceability only and
 > its § 7 figures are **superseded** by the Dream's own measurement (see § Assumptions).
 
 # SPEC — pyforge-core
@@ -76,14 +77,17 @@ costs two stories of rework; deciding it now costs an epic ordering.
 
 ## Capabilities
 
-- **CAP-1 — the leaf exists and is provably a leaf.**
+- **CAP-1 — the leaf exists and is provably a leaf.** (shipped 2026-08-12)
   - **intent:** One package under `src/shared/packages/` that any station may depend on
     and that depends on no station.
   - **success:** `pyforge-core` builds, installs from a clean environment, and imports
-    with stdlib only; a meta-test fails the build if any module under it imports from
+    with no static import outside the stdlib and the `pyforge` namespace; its one
+    third-party reach is an optional dynamic OpenFeature load in `flags.read_boolean`,
+    which falls back to the leaf's own read when OpenFeature is absent; its Python floor
+    is 3.14; a meta-test fails the build if any module under it imports from
     `pyforge.<station>` for any of the eight; every station remains independently
     conda-installable with `pyforge-core` as its only new run-dependency.
-- **CAP-2 — atomic write has one implementation and twenty fewer copies.**
+- **CAP-2 — atomic write has one implementation and twenty fewer copies.** (shipped 2026-08-13)
   - **intent:** The tmp-in-dir + `os.replace` primitive is written once.
   - **success:** One implementation in `pyforge-core`; **all 20 measured copies across the
     6 stations that have them** (herald 6, atlas 5, marshal 5, steward 2, scribe 1,
@@ -91,7 +95,7 @@ costs two stories of rework; deciding it now costs an epic ordering.
     place; a grep for a second tmp-in-dir + `os.replace` pair outside `pyforge-core`
     returns nothing; the durability semantics each copy relied on are preserved, verified
     per call site rather than assumed uniform.
-- **CAP-3 — the verdict lattice is declared once, and narrowing is expressed, not asserted.**
+- **CAP-3 — the verdict lattice is declared once, and narrowing is expressed, not asserted.** (shipped 2026-08-13)
   - **intent:** Exit-code domains stop being redeclared per station, and a station whose
     domain is a subset of another's says so in types.
   - **success:** One lattice in `pyforge-core` with per-station domain restriction; doctor's
@@ -99,49 +103,61 @@ costs two stories of rework; deciding it now costs an epic ordering.
     docstring claim; the five existing declarations (atlas, doctor, herald, marshal, warden)
     are retired; each station's frozen exit contract is unchanged observably — a test asserts
     the same inputs still yield the same process exit codes.
-- **CAP-4 — one report envelope, extended rather than rivalled.**
+- **CAP-4 — one report envelope, extended rather than rivalled.** (shipped 2026-08-13)
   - **intent:** The `{tool, status, exit_code, findings[]}` shape has one schema.
   - **success:** One envelope schema in `pyforge-core`; warden's 22 KB schema is expressed
     as an extension of it and doctor's 4.5 KB and marshal's `envelope.v1.json` resolve to
     it; existing published report payloads validate unchanged against the composed schema
     (no consumer breakage), proven by validating a captured real report from each station.
-- **CAP-5 — one exception root.**
+- **CAP-5 — one exception root.** (shipped 2026-08-13)
   - **intent:** `except PyforgeError` is a sentence any station's caller can write.
   - **success:** A single base exception in `pyforge-core`; herald's and mason's
-    independently invented roots re-parent to it; the 12–13 scattered `*Error` classes in
-    warden, marshal and atlas gain it as an ancestor without changing any existing
-    `except` clause's behaviour — asserted by test, since re-parenting can silently widen
-    a catch.
-- **CAP-6 — the subprocess seam is reconciled, and the reconciliation is honest about Marshal.**
+    independently invented roots re-parent to it, and the error roots of warden, marshal,
+    atlas and scribe gain it as an ancestor, without changing any existing `except`
+    clause's behaviour — asserted by test, since re-parenting can silently widen a catch.
+    Steward's and doctor's roots and the leaf's own builtin-rooted classes are not
+    re-parented: CAP-7 pins them.
+- **CAP-6 — the subprocess seam is reconciled, and the reconciliation is honest about Marshal.** (shipped 2026-08-13)
   - **intent:** One sanctioned way to invoke a subprocess, chosen between two real designs
     rather than merged by copy count.
   - **success:** One guard in `pyforge-core` chosen deliberately between doctor's
     `cli_bridge.run_cli_json` and marshal's `ProcessPort`/`process_posix`, with the
-    rationale recorded; **Marshal's own 7 importing modules** — the widest ungated surface
-    in the fleet — route through it; steward's deliberate raw-`CalledProcessError`
-    propagation is either folded in or recorded as a sanctioned, tested opt-out, never
-    silently overridden; warden's existing single seam (`engines.py`, already annotated
-    *"the sole seam"*) is confirmed conforming rather than "fixed."
-- **CAP-7 — a second implementation cannot appear unnoticed.**
+    rationale recorded: marshal's `ProcessPort` won (Story 14.4); **Marshal's own 7
+    importing modules** — the widest ungated surface in the fleet — route through it;
+    doctor, warden and steward are station-level exclusions by that story, steward's
+    deliberate raw-`CalledProcessError` propagation a sanctioned opt-out, never silently
+    overridden, and herald, mason and scribe are excluded by discovery; CAP-7 pins all six;
+    warden's existing single seam (`engines.py`, already annotated *"the sole seam"*) is
+    confirmed conforming rather than "fixed."
+- **CAP-7 — a second implementation cannot appear unnoticed.** (ready 2026-11-10) *(amended 2026-11-10)*
   - **intent:** The floor stays a floor.
   - **success:** One sole-ownership meta-test per extracted primitive, following the
     pattern marshal and warden already use; each fails the build when a second
-    implementation of that primitive appears anywhere under `src/shared/packages/`.
-- **CAP-8 — the floor is enforced where the build happens.** *(minted 2026-09-19)*
+    implementation of that primitive appears anywhere under `src/shared/packages/`. A
+    station or package outside a sole-ownership scan is outside by a pinned set of paths
+    (exception roots as `path::Class`, subprocess call sites as files), the leaf's own
+    source included and `PyforgeError` excluded by name; the pins only shrink, and a new
+    entry and a stale pin both fail the core suite.
+- **CAP-8 — the floor is enforced where the build happens.** (ready 2026-11-10) *(minted 2026-09-19; amended 2026-11-10)*
   - **intent:** The conformance suite — the whole `pyforge-core` `tests/` tree, the four
     sole-ownership meta-tests included — runs on every PR that touches the shared surface or
     any `pyforge-*` package (the set the sole-ownership scan covers; narrowed from
     `src/shared/packages/**` 2026-09-19) and inside `pr-preflight`, so a CAP-5/CAP-7 violation
-    reds the PR that introduces it instead of accumulating on `main`.
+    reds the PR that introduces it instead of accumulating on `main`. The lane runs it in two
+    halves (mechanism: spec-pyforge-steward:CAP-175): the package half (CAP-14) and the
+    live-tree half, the live half keeping this capability's any-station trigger.
   - **success:** A `core-test` job beside the eight station jobs (same shared-surface
-    triggers) runs `pixi run --frozen -e pyforge-core pyforge-core-test`; `pr-preflight`
-    depends on it; a fixture PR introducing a second `subprocess.run` implementation under
-    `src/shared/packages/` reds the lane; the lane is green on `main` at the story's merge.
+    triggers) runs the suite, whole (`pixi run --frozen -e pyforge-core pyforge-core-test`)
+    or as its two halves; `pyforge-core-test` stays the whole suite; the lane-wired
+    meta-test accepts one whole-suite job or the two halves and reds a wiring that drops a
+    half; `pr-preflight` depends on it; a fixture PR introducing a second `subprocess.run`
+    implementation under `src/shared/packages/` reds the lane; the lane is green on `main`
+    at the story's merge.
     Evidence for the gap: #1086's retirement of `pyforge-core.yml` was coverage-neutral —
     it and `pyforge-pip-install.yml` run the same enumerated subset, and
     `tests/meta/*_sole_ownership.py` were never wired into any workflow; no workflow
     invokes the `pyforge-core-test` task at all.
-- **CAP-9 — the six accumulated violations are cleared.** *(minted 2026-09-19)*
+- **CAP-9 — the six accumulated violations are cleared.** (shipped 2026-09-19) *(minted 2026-09-19)*
   - **intent:** The six CAP-5/CAP-7 conformance failures on `main` are cleared the way
     CAP-5 and CAP-6 prescribe, so the suite is green before CAP-8's lane is born.
   - **success:** `pixi run --frozen -e pyforge-core pyforge-core-test` → 0 failed (2026-09-19:
@@ -149,19 +165,22 @@ costs two stories of rework; deciding it now costs an epic ordering.
     warden `tea_advisory.py`; second subprocess implementation: marshal `cli/login.py`,
     `cli/refresh.py`, testing-kit `branch_diff_guard.py`); each re-parent widens no `except`
     clause (the CAP-5 test); marshal's two subprocess sites route through the core guard, and
-    the kit's file — outside this Spec's scope (Non-goals; Q2) and a stdlib leaf by Q-26 — is
-    cleared as CAP-6's recorded, tested opt-out: a file-level guard exemption pinned to the
-    kit's `dependencies == []` so it self-retires if Q2 changes the declaration (corrected
-    2026-09-19 at Story 52.1's review); the touched stations' own suites stay green.
-- **CAP-10 — the station-tests lane picks suites from the remote-tracking ref.** *(minted 2026-09-27)*
+    the kit's file — outside this Spec's scope (Non-goals) and then a stdlib leaf by Q-26 —
+    was cleared as CAP-6's recorded, tested opt-out: a file-level guard exemption pinned to
+    the kit's `dependencies == []` (corrected 2026-09-19 at Story 52.1's review). That
+    exemption retired on 2026-09-30 (Story 74.1): the kit declares `pyforge-core` and
+    `openfeature-sdk`, and `branch_diff_guard.py` is scanned (corrected 2026-11-10). The
+    touched stations' own suites stay green.
+- **CAP-10 — the station-tests lane picks suites from the remote-tracking ref.** (shipped 2026-09-27) *(minted 2026-09-27)*
   - **intent:** CAP-8's lane (`.github/workflows/pyforge-station-tests.yml`) chooses which suites run
     from `git diff "$BASE"...HEAD`; for a pull request `BASE` names `refs/remotes/origin/${GITHUB_BASE_REF}`,
     never the short `origin/<name>` — its checkout fetches tags, and a pushed tag named `origin/main`
     wins over the remote-tracking ref, empties the selection and runs no suite.
-  - **success:** the lane's pull_request `BASE` is the full ref (as `coverage-gates.yml`'s is); a
-    scripts-suite test reds any workflow under `.github/workflows/` that builds a diff base from a
-    short `origin/${…}`, and fails on the pre-fix tree; the push path's sha is unchanged.
-- **CAP-11 — the front door names the environment a roster station runs in.** *(minted 2026-09-28)*
+  - **success:** the lane's pull_request `BASE` is the full ref; a scripts-suite test
+    (`tests/scripts/test_workflow_diff_bases_name_full_refs.py`) reds any workflow under
+    `.github/workflows/` that builds a diff base from a short `origin/${…}`, and fails on the
+    pre-fix tree; the push path's sha is unchanged.
+- **CAP-11 — the front door names the environment a roster station runs in.** (shipped 2026-10-08) *(minted 2026-09-28)*
   - **intent:** `pyforge.core.dispatch.dispatch_argv` resolves a token as today — an installed station,
     the single-name distribution fallback, then `NOUN_ALIASES` — and only then, when the token is on
     `pyforge.core.roster.STATIONS` but not installed in the running environment, refuses naming it:
@@ -179,6 +198,48 @@ costs two stories of rework; deciding it now costs an epic ordering.
     `pyforge context …` still aliases to marshal; an installed station still dispatches; the usage
     listing names the three missing roster stations; removing the roster check brings back "unknown
     station 'warden'" (mutation); `pyforge-core-test` green.
+- **CAP-12 — the leaf's public surface is written down, and the suite reds what it lacks.** (ready 2026-11-10) *(minted 2026-11-10)*
+  - **intent:** A companion `contract.md` beside this Spec names every module of
+    `pyforge.core` and the capability that governs it (this Spec's, or another's written
+    `spec-<x>:CAP-n` or `fnd:CAP-n`), every public name a station may import, every
+    environment variable and feature-flag key the leaf reads, every exit code it defines,
+    its console script and entry-point group, and its Python floor, so a second root can
+    rebuild the leaf from Dream, memlog and Spec.
+  - **success:**
+    `pixi run --frozen -e pyforge-core pytest src/shared/packages/pyforge-core/tests/meta/test_public_contract.py -q`
+    exits 0; that module (marked `live_tree`) exits 1 naming the item when the source has a
+    module, public top-level name, environment variable, flag key, exit code or entry point
+    `contract.md` lacks, and when `contract.md` names one the source lacks; both directions
+    are proven on synthetic input in the same module.
+- **CAP-13 — one function answers the root of record and the forge slug.** (ready 2026-11-10) *(minted 2026-11-10)*
+  - **intent:** `pyforge.core.cutover_root.root_of_record(path=None)` returns the root of
+    record (`local-recipes` or `foundry`, read from `pyforge.cutover_root` as the current
+    environment renders the tree), that root's forge repository slug, and where the answer
+    came from (`flag-tree`, or `default` when no tree is in reach); `forge_slug_for(root)`
+    maps a root to its slug with no I/O. The slug table lives in that module alone and
+    stations call the function instead of holding a slug (operator ruling 2 of 2026-11-10;
+    `fnd:CAP-8` is the flag's own capability).
+  - **success:**
+    `pixi run --frozen -e pyforge-core pytest src/shared/packages/pyforge-core/tests/unit/test_cutover_root.py -q`
+    exits 0 with cases for: a `local-recipes` tree; a `foundry` tree; a per-environment
+    overlay; no tree in reach (default root, source `default`); an explicit path that is not
+    a file, a malformed tree and an unknown variant (each `CutoverRootError`);
+    `forge_slug_for` on both roots and on an unknown root (`CutoverRootError`); the keys of
+    `FORGE_SLUGS` equal `CUTOVER_VARIANTS`.
+    `git grep -l 'rxm7706/local-recipes\|rxm7706/python-foundry' -- src/shared/packages/pyforge-core/src`
+    names `cutover_root.py` alone.
+- **CAP-14 — the core suite has a package half a second root runs from the package alone.** (ready 2026-11-10) *(minted 2026-11-10)*
+  - **intent:** Every core test module, and the conftest, that reads the repository outside
+    `pyforge-core` carries `pytestmark = pytest.mark.live_tree`; the unmarked rest is the
+    package half, the oracle a second root runs with no tree but the package. (How the lane
+    runs the halves is CAP-8's.)
+  - **success:** From a copy of `src/shared/packages/pyforge-core` alone, with the working
+    directory outside the repository,
+    `pytest src/shared/packages/pyforge-core/tests -m "not live_tree"` exits 0 and no skip
+    reason names a path outside the package; on the repository the two marker selections
+    add up to the whole collection; steward's
+    trigger-map derivation finds no outside read and no root handoff in an unmarked core
+    test module.
 
 ## Constraints
 
@@ -186,9 +247,12 @@ costs two stories of rework; deciding it now costs an epic ordering.
   enumeration is how the meta-tests were lost the first time. **CAP-9 lands before CAP-8** — a
   gate born red is a gate nobody trusts.
 
-- **Leaf or nothing.** Pure stdlib; no module in `pyforge-core` may import from any
-  `pyforge.<station>`. If a primitive needs a station's type, the extraction was wrong and
-  the primitive stays where it is.
+- **Leaf or nothing.** No static import outside the stdlib and the `pyforge` namespace, and
+  no module in `pyforge-core` may import from any `pyforge.<station>`. The one third-party
+  reach is optional and dynamic: `flags.read_boolean` loads OpenFeature through
+  `importlib.import_module` and falls back to the leaf's own structural read when the import
+  fails; `pyproject.toml` declares no dependency. If a primitive needs a station's type, the
+  extraction was wrong and the primitive stays where it is.
 - **Retire the copy in the story that extracts it.** Never a parallel path, never a
   deprecation window. The Atlas Kedro migration is the precedent on record: ~29 k LOC
   merged and marked `shipped` while the 8,902-LOC legacy module remained the live runtime,
@@ -197,27 +261,31 @@ costs two stories of rework; deciding it now costs an epic ordering.
 - **Stations stay independently conda-installable.** `pyforge-core` is a run-dependency,
   never a build-time coupling, and never a reason two stations must ship together.
 - **Extraction order follows the census** — atomic write → verdict lattice → report
-  envelope → roster (pending Q1) → exceptions → subprocess guard. Subprocess is last
+  envelope → roster (in `pyforge.core.roster` since steward Story 59.6; Q1 closed) →
+  exceptions → subprocess guard. Subprocess is last
   because it is the only entry that is a design reconciliation rather than a
   de-duplication.
 - **Observable behaviour is frozen across every extraction.** Exit codes, report payloads
   and exception-catch semantics are contracts other things already depend on; each
   extraction proves preservation by test rather than by review.
 - **No new primitive earns a place on one caller.** Two or more existing copies, measured,
-  or it does not belong here.
+  or it does not belong here. The rule binds this Spec's own extractions: the modules the
+  leaf hosts for another Spec were admitted by that Spec's own story as a shared grammar,
+  reader or seam, not by this copy count, and `contract.md` names each module's governor.
+  `league_measure` has no importer outside its own unit test.
 
 ## Non-goals
 
-- **Not a framework, plugin system, or service.** Six primitives, each with a measured
-  copy count.
+- **Not a framework or service.** The primitives this Spec extracts sit under its
+  capabilities (CAP-2 to CAP-6; the front door under CAP-11), and the leaf also hosts
+  modules whose capability is on another Spec; `contract.md` lists every module with the
+  capability that governs it, and no count is kept here.
 - **Not a ninth station.** It holds no Dream, delivers no outcome, and casts no verdict;
   Charter §5's roster stays at eight. It is a dependency, not a post.
 - **Not a fleet-wide test rewrite.** Stations adopt the floor as the extracting story
   retires their copy; nothing else is migrated on a schedule.
-- **Not `pyforge-testing-kit`.** That is the testing charter's CAP-3 and stays there until
-  Q2 decides whether the two are one package.
-- **Not the station roster, yet.** Q1 may keep it in `bmad_drift_check.py`, which is
-  already its single canonical home.
+- **Not `pyforge-testing-kit`.** That is the testing charter's CAP-3, its own package
+  (Q-26, Story 19.2; Q2 closed).
 
 ## Success signal
 
@@ -252,15 +320,11 @@ nothing objected.
 
 ## Open Questions
 
-- Q1 — does the station roster belong here at all? It is the one census entry whose
-  canonical home already exists (`bmad_drift_check.STATIONS`, imported rather than
-  mirrored by `generate.py`), and moving it into a shipped package would give a
-  deliberately stdlib-only, bare-CI detector a package dependency it does not have today.
-  Decide before CAP-4, not during.
-- Q2 — is `pyforge-testing-kit` a second leaf or a module of this one? Both are
-  stdlib-only shared floors under the same leaf constraint; two packages may be splitting
-  one thing, one package may couple test-only fixtures into a runtime dependency.
-- Q3 — which subprocess design wins, and what happens to steward's deliberate divergence?
-  Two real designs (doctor's `cli_bridge.run_cli_json`, marshal's `ProcessPort`) plus one
-  intentional non-participant. CAP-6 requires the choice to be made and recorded; this
-  Spec does not make it.
+None open. Q1 to Q3 closed 2026-11-10, each answered by the code:
+
+- Q1 — the station roster lives in `pyforge.core.roster` since steward Story 59.6
+  (spec-pyforge-steward:CAP-137, 2026-09-25).
+- Q2 — `pyforge-testing-kit` is its own package (Q-26, Story 19.2), and its stdlib-leaf
+  premise retired 2026-09-30 (Story 74.1).
+- Q3 — marshal's `ProcessPort` won in Story 14.4, and steward is a sanctioned
+  station-level opt-out (CAP-6, pinned by CAP-7).

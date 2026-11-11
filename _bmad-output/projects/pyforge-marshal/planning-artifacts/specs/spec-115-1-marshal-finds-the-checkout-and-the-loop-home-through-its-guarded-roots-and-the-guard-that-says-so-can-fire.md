@@ -46,7 +46,26 @@ context:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py
   - src/shared/packages/pyforge-marshal/tests/meta/test_no_loop_home_run_state_read.py
 warnings: []
-deferred: []
+deferred:
+  - summary: >-
+      `marshal watch` reads a loop run's last-fact time from the loop home's
+      own bmad-loop journal, not from the published run-state plane.
+    evidence: |-
+      CAP-227 (amended 2026-11-10) moves every run-state read outside the
+      publisher (which runs are live, story phase, commit, timing) to the
+      published plane. `_default_ports.loop_last_fact` in cli/watch.py reads
+      `<loop home>/.bmad-loop/runs/<run_id>/journal.jsonl` for the newest `ts`
+      (a timing read) to rank a loop run against a dispatch run. Story 115.1
+      resolves its root through BMAD_LOOP_HOME_ROOT, as `marshal init` does,
+      and tags the line `CAP-4: loop-home FILE read -- run-state debt`; moving
+      the read is new behaviour, which the operator ruling of 2026-11-10 (e)
+      keeps out of this change. Every other site the honest guard names is
+      marshal's own file, message text, run identity recovery, work
+      durability or the supervisor's own budget sample, and is tagged with
+      that reason instead.
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/watch.py
+    severity: medium
 ---
 
 <intent-contract>
@@ -146,3 +165,7 @@ Parent: `spec-pyforge-marshal` CAP-229 and CAP-227 (amended 2026-11-10). FR-136 
 ## Spec Change Log
 
 - 2026-11-10: minted at `backlog` by the cutover-readiness mint (operator 2026-11-10, "Accept all, run mint"; `docs/dreams/pyforge-unifying-strategy.md`, Realization log, the 2026-11-10 entry and its two addenda). The Dream entry (`docs/dreams/pyforge-marshal.md`, 2026-11-10) and the memlog entries of `spec-pyforge-marshal` came first; `SPEC.md` is rendered by Story 114.1.
+
+## Gate findings (build, BUILD-1)
+
+- 2026-11-11, `pixi run -e pyforge-guild deferred-work-check` (exit 2): `spec-frontmatter-only-deferral` for this spec's frontmatter `deferred:` row (`marshal watch` reads a loop run's last-fact time from the loop home's own bmad-loop journal), which has no twin in `pyforge-marshal/planning-artifacts/deferred-work-ledger.md`. Not fixed here, by plan: this story never edits that ledger; Story 116.5 (BUILD-17) owns it and runs the intake. The finding stays red at each wave gate until 116.5 lands the twin, unless the orchestrator moves the intake earlier.

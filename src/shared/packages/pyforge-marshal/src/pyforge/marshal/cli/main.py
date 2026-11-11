@@ -125,6 +125,7 @@ from ..core import policy as policy_core
 from ..core.context import MarshalContext
 from ..core.model import Verdict
 from ..core.verdict import EXIT_OK, EXIT_SIGINT, EXIT_USAGE, GUARDED_EXIT_CODES, exit_code_for
+from ..seed.errors import SEED_EXIT_CODES
 from . import adapters as adapters_cli
 from . import check as check_cli
 from . import config as config_cli
@@ -149,6 +150,21 @@ from . import watch as watch_cli
 # literal here instead. Acceptable at scaffold stage; keep the two in sync
 # by hand.
 __version__ = "0.1.0"
+
+# Story 115.3 (CAP-13 amended 2026-11-10): the one top-level command whose
+# handlers may also return seed's own closed exit taxonomy.
+_SEED_COMMAND = "seed"
+
+
+def _admitted_exit_codes(args: argparse.Namespace) -> frozenset[int]:
+    """The codes a handler's return reaches the process exit with: AD-7's
+    frozen ``GUARDED_EXIT_CODES`` for every verb, plus ``seed.errors``'
+    ``SEED_EXIT_CODES`` (one code per failure mode, 5 state invalid and 10
+    internal among them) only when the dispatched command is ``seed``. Every
+    other value is clamped by the caller, as before."""
+    if getattr(args, "command", None) == _SEED_COMMAND:
+        return GUARDED_EXIT_CODES | SEED_EXIT_CODES
+    return GUARDED_EXIT_CODES
 
 
 def _drain_stdout() -> None:
@@ -332,7 +348,8 @@ def _resolve_context(args: argparse.Namespace) -> MarshalContext | None:
 def main(argv: list[str] | None = None) -> int:
     """Parse ``argv`` and return an exit code -- never raises ``SystemExit``
     itself. Exit codes stay inside Marshal's frozen ``{0, 1, 2, 3, 4, 130}``
-    domain (AD-7): argparse's own ``--help``/``--version`` exits (``0``) and
+    domain (AD-7; a ``seed`` verb also admits seed's taxonomy, below):
+    argparse's own ``--help``/``--version`` exits (``0``) and
     usage errors (``2``) are relayed as plain ints via the ``SystemExit``
     catch below -- ``--version`` (Story 1.9) is ``_VersionAction``, a custom
     Action that calls ``parser.exit()`` itself, so it raises ``SystemExit``
@@ -342,6 +359,13 @@ def main(argv: list[str] | None = None) -> int:
     ``SystemExit`` path applies (see ``core/verdict.exit_code_for``),
     and a ``KeyboardInterrupt`` anywhere in parser construction, parsing, or
     handler dispatch returns the SIGINT constant.
+
+    Story 115.3 (CAP-13 amended 2026-11-10): the ``seed`` verb group keeps
+    its own closed exit taxonomy, so a ``seed`` handler's return is admitted
+    from ``seed/errors.py``'s ``SEED_EXIT_CODES`` as well (a schema-breaking
+    state file exits 5, a broken packaged manifest 10; see
+    ``_admitted_exit_codes``). Every other verb's domain is unchanged, and
+    ``GUARDED_EXIT_CODES`` does not move.
     """
     if argv is None:
         argv = sys.argv[1:]
@@ -386,11 +410,12 @@ def main(argv: list[str] | None = None) -> int:
             result = handler(args, context=_resolve_context(args))
         else:
             result = handler(args)
-        if isinstance(result, int) and not isinstance(result, bool) and result in GUARDED_EXIT_CODES:
+        if isinstance(result, int) and not isinstance(result, bool) and result in _admitted_exit_codes(args):
             return result
         # Same clamp as the SystemExit branch below, for the same reason: a
         # handler that returns None (fell off the end) or any value outside
-        # the frozen domain is an internal wiring bug, and the console
+        # its admitted domain (the frozen one, plus seed's taxonomy for a
+        # `seed` verb) is an internal wiring bug, and the console
         # script's sys.exit(None) would exit 0 -- masking the bug as
         # success. The docstring's frozen-domain claim is enforced, not
         # merely expected.

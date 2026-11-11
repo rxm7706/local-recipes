@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
+import json
 import shutil
 import subprocess
 import sys
 import time
-import types
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
 from pyforge.core.process import ProcessError, ProcessResult
 
+from pyforge.marshal.adapters.doctor_cli import BOOTSTRAP, SurfaceRow, spec_surface_argv
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.core import deferred_work, policy, promotion
 from pyforge.marshal.core.dispatch_harness_done import FollowupReview
@@ -244,11 +246,41 @@ class FakeForge:
         return None
 
 
+# Story 115.2 (spec-pyforge-marshal CAP-261 (b)): the landing reads Doctor's spec-surface verdict by
+# running Doctor's own command (`python -c BOOTSTRAP spec-surface --json`, the worktree's Doctor first on
+# the child's `sys.path`) through its `ProcessPort` -- never an import of `pyforge.doctor`. A test scripts
+# that command's result: the reader it installs with `monkeypatch` (so it never outlives the test) answers
+# every Doctor call a process fake below receives. Doctor's calls are recorded in `doctor_calls`, apart
+# from `calls`, so a test's assertions on the memlog, stamp and finalize commands stay about those.
+_DOCTOR_SCRIPT: dict[str, Callable[[], ProcessResult]] = {}
+
+#: The spec-surface rows Doctor reports as FAIL, which make it exit 2 (``drift-presumed`` is a WARN).
+_DOCTOR_FAIL_CHECKS = frozenset({"drift", "no-baseline"})
+
+
+def _doctor_answer(
+    doctor_calls: list[tuple[list[str], Path, float | None]], tokens, cwd: Path, timeout_s: float | None
+) -> ProcessResult | None:
+    """``None`` unless ``tokens`` is Doctor's command. For Doctor's command: record the call, then answer
+    with the scripted result -- or, when the test scripted none, with empty stdout, which is no verdict."""
+    if list(tokens) != list(spec_surface_argv()):
+        return None
+    doctor_calls.append((list(tokens), cwd, timeout_s))
+    reader = _DOCTOR_SCRIPT.get("read")
+    if reader is None:
+        return ProcessResult(returncode=0, stdout="", stderr="")
+    return reader()
+
+
 class FakeProcess:
     def __init__(self) -> None:
         self.calls: list[tuple[list[str], Path]] = []
+        self.doctor_calls: list[tuple[list[str], Path, float | None]] = []
 
-    def run(self, tokens, *, cwd: Path):
+    def run(self, tokens, *, cwd: Path, timeout_s: float | None = None):
+        doctor = _doctor_answer(self.doctor_calls, tokens, cwd, timeout_s)
+        if doctor is not None:
+            return doctor
         self.calls.append((list(tokens), cwd))
         return ProcessResult(returncode=0, stdout="", stderr="")
 
@@ -256,9 +288,10 @@ class FakeProcess:
 class BrokenProcess:
     """Story 51.2: a ``ProcessPort`` whose ``.run()`` always raises --
     simulates ``dispatch_land_finalize`` failing as a subprocess AFTER the
-    PR has already been merged (``data["merged"] = True``)."""
+    PR has already been merged (``data["merged"] = True``). Doctor's command
+    raises too, so the landing's first verdict read is unavailable."""
 
-    def run(self, tokens, *, cwd: Path):
+    def run(self, tokens, *, cwd: Path, timeout_s: float | None = None):
         raise ProcessError("dispatch land finalize subprocess failed")
 
 
@@ -273,14 +306,45 @@ class BrokenForge(FakeForge):
 
 
 class _SurfaceFinding:
-    """Duck-typed stand-in for ``pyforge.doctor.models.Finding`` -- only
-    ``.check``/``.message``/``.evidence`` are read by
-    ``_reconcile_spec_surface_drift``."""
+    """One row of Doctor's spec-surface verdict, as its ``--json`` prints it
+    (``Finding.to_json_dict()``) -- the reconcile reads ``check``, ``message``
+    and ``evidence``; ``source`` and ``status`` ride along as Doctor prints them."""
 
     def __init__(self, check: str, message: str, path: str) -> None:
         self.check = check
         self.message = message
         self.evidence = {"path": path}
+
+    def to_json_dict(self) -> dict[str, object]:
+        status = "fail" if self.check in _DOCTOR_FAIL_CHECKS else "warn"
+        return {
+            "source": "spec-surface",
+            "check": self.check,
+            "status": status,
+            "message": self.message,
+            "evidence": self.evidence,
+        }
+
+
+def _doctor_result(rows) -> ProcessResult:
+    """Doctor's ``spec-surface --json`` result for ``rows``: exit 2 when one of them FAILs, as Doctor's
+    ``exit_code_for`` projects it, else 0 -- a JSON list on stdout either way."""
+    returncode = 2 if any(row.check in _DOCTOR_FAIL_CHECKS for row in rows) else 0
+    return ProcessResult(returncode=returncode, stdout=json.dumps([row.to_json_dict() for row in rows]), stderr="")
+
+
+def _script_doctor_reads(monkeypatch, *answers: ProcessResult | ProcessError) -> None:
+    """Script Doctor's command read by read: each call takes the next answer (a ``ProcessError`` is raised,
+    as the real port raises on a launch failure or a timeout), and the last answer repeats."""
+    remaining = list(answers)
+
+    def read() -> ProcessResult:
+        answer = remaining.pop(0) if len(remaining) > 1 else remaining[0]
+        if isinstance(answer, ProcessError):
+            raise answer
+        return answer
+
+    monkeypatch.setitem(_DOCTOR_SCRIPT, "read", read)
 
 
 def _stamped_spec_names(process) -> set[str]:
@@ -300,14 +364,8 @@ def _install_fake_spec_surface(
     settles: bool = True,
     reveal_after: dict[str, str] | None = None,
 ) -> None:
-    """Install a fake ``pyforge.doctor.sources.chain`` module into
-    ``sys.modules`` so ``_reconcile_spec_surface_drift``'s own
-    ``from pyforge.doctor.sources.chain import gather_spec_surface``
-    (re-resolved fresh on every call) finds a controllable stand-in.
-    ``pyforge.doctor`` is not on this package's own pixi env (confirmed
-    live: a real dispatch worktree reaches it only via the ``sys.path``
-    insert onto its OWN checked-out doctor source tree), so patching the
-    real module by dotted path isn't an option here.
+    """Script Doctor's spec-surface command (Story 115.2) so every read the reconcile makes through a
+    process fake answers with ``findings``, as Doctor's ``--json`` prints them (exit 2 when one FAILs).
 
     Story 82.3: the verdict is STATEFUL when ``process`` (the fake the landing runs its stamp
     through) is given -- the reconcile re-reads it after each stamp, as the real verdict moves once
@@ -316,9 +374,8 @@ def _install_fake_spec_surface(
     spec to the spec that hides it, as Doctor's one-row-per-path collapse does for two co-governors of
     one path: the hidden spec's findings show only once the hiding spec has been stamped. Without
     ``process`` the verdict is fixed, which suits a test that never reaches a stamp."""
-    fake_chain = types.ModuleType("pyforge.doctor.sources.chain")
 
-    def gather_spec_surface(target):  # noqa: ARG001
+    def read() -> ProcessResult:
         stamped = _stamped_spec_names(process) if process is not None else set()
         visible = []
         for finding in findings:
@@ -330,10 +387,9 @@ def _install_fake_spec_surface(
             if settles and name in stamped:
                 continue
             visible.append(finding)
-        return tuple(visible)
+        return _doctor_result(visible)
 
-    fake_chain.gather_spec_surface = gather_spec_surface
-    monkeypatch.setitem(sys.modules, "pyforge.doctor.sources.chain", fake_chain)
+    monkeypatch.setitem(_DOCTOR_SCRIPT, "read", read)
 
 
 class _ReconcileVcs(FakeVcs):
@@ -362,10 +418,16 @@ class _ReconcileVcs(FakeVcs):
 
 
 class _RaisingReconcileProcess:
-    """A ``ProcessPort`` whose ``.run()`` always raises -- simulates the
-    memlog-append subprocess failing to even launch."""
+    """A ``ProcessPort`` whose ``.run()`` raises for every command but
+    Doctor's -- simulates the memlog-append subprocess failing to even launch."""
 
-    def run(self, tokens, *, cwd: Path):
+    def __init__(self) -> None:
+        self.doctor_calls: list[tuple[list[str], Path, float | None]] = []
+
+    def run(self, tokens, *, cwd: Path, timeout_s: float | None = None):
+        doctor = _doctor_answer(self.doctor_calls, tokens, cwd, timeout_s)
+        if doctor is not None:
+            return doctor
         raise ProcessError("memlog subprocess failed to launch")
 
 
@@ -803,28 +865,186 @@ def test_a_stamp_that_does_not_settle_its_spec_refuses_with_no_second_memlog_app
     assert vcs.pushed == []
 
 
-def test_a_verdict_re_read_that_raises_after_a_stamp_refuses(tmp_path: Path, monkeypatch) -> None:
-    """The post-stamp state is unverified, so it is MRS-DISP-048 -- never a quiet success."""
+@pytest.mark.parametrize(
+    ("re_read", "named"),
+    [
+        (
+            ProcessResult(
+                returncode=1,
+                stdout="",
+                stderr="Traceback (most recent call last):\nRuntimeError: doctor crashed mid-read\n",
+            ),
+            "doctor crashed mid-read",
+        ),
+        (
+            ProcessResult(returncode=2, stdout="", stderr="usage: python -m pyforge.doctor.sources\nerror: bad\n"),
+            "no verdict on stdout",
+        ),
+        (ProcessError("command timed out after 300.0s"), "timed out"),
+    ],
+    ids=["exit_1_crash", "exit_2_without_a_verdict", "timeout"],
+)
+def test_unavailable_reread_after_a_stamp_refuses_with_048(
+    tmp_path: Path, monkeypatch, re_read: ProcessResult | ProcessError, named: str
+) -> None:
+    """Story 115.2: the first read is Doctor's verdict, the re-read after the stamp is not -- the post-stamp
+    state is unverified, so it is MRS-DISP-048 naming why, never a quiet success."""
     process = FakeProcess()
-    reads: list[int] = []
-    fake_chain = types.ModuleType("pyforge.doctor.sources.chain")
-
-    def gather_spec_surface(target):  # noqa: ARG001
-        reads.append(1)
-        if len(reads) > 1:
-            raise RuntimeError("doctor crashed mid-read")
-        return (_drift_on(_CORE_SPEC, "src/a.py"),)
-
-    fake_chain.gather_spec_surface = gather_spec_surface
-    monkeypatch.setitem(sys.modules, "pyforge.doctor.sources.chain", fake_chain)
+    _script_doctor_reads(monkeypatch, _doctor_result((_drift_on(_CORE_SPEC, "src/a.py"),)), re_read)
     vcs = _ReconcileVcs(changed=("src/a.py",))
 
     outcome = _reconcile(tmp_path, vcs, process)
 
     assert outcome.refuse is True
     assert outcome.finding is not None and outcome.finding.code == "MRS-DISP-048"
-    assert "unverified" in outcome.finding.message and "doctor crashed mid-read" in outcome.finding.message
+    assert "unverified" in outcome.finding.message and named in outcome.finding.message
+    assert len(process.doctor_calls) == 2
+    assert len(_calls(process, "spec_surface_check.py")) == 1  # the one stamp before the re-read
     assert vcs.pushed == []
+
+
+def _doctor_stdout(*rows: dict[str, object]) -> str:
+    return json.dumps(list(rows))
+
+
+def _doctor_row(check: str, spec: str, path: str, **extra: object) -> dict[str, object]:
+    """One row as Doctor's ``--json`` prints it, plus any ``extra`` key a later Doctor may add."""
+    return {
+        "source": "spec-surface",
+        "check": check,
+        "status": "fail" if check in _DOCTOR_FAIL_CHECKS else "warn",
+        "message": f"{spec}: {path} changed but the spec's memlog did not move — reconcile the spec, then "
+        f"--write-baseline --spec {spec}",
+        "evidence": {"path": path},
+        **extra,
+    }
+
+
+def test_rc_2_with_own_path_drift_rows_reaches_the_grouping_and_reconciles(tmp_path: Path, monkeypatch) -> None:
+    """Story 115.2 AC4: Doctor exits 2 (``drift`` is a FAIL) with a JSON list -- that is its verdict. Each
+    row reaches ``_group_surface_findings`` as a record of ``check``/``message``/``evidence`` (the extra keys
+    Doctor prints are ignored), and the own-path drift is reconciled: memlog, scoped stamp, re-read, push."""
+    from pyforge.marshal import dispatch_land
+
+    grouped: list[tuple] = []
+    real_group = dispatch_land._group_surface_findings
+
+    def spy(rows):
+        rows = tuple(rows)
+        grouped.append(rows)
+        return real_group(rows)
+
+    monkeypatch.setattr(dispatch_land, "_group_surface_findings", spy)
+    _script_doctor_reads(
+        monkeypatch,
+        ProcessResult(
+            returncode=2,
+            stdout=_doctor_stdout(
+                _doctor_row("drift", _CORE_SPEC, "src/a.py", unevaluable=False),
+                _doctor_row("drift-presumed", _CORE_SPEC, "src/b.py"),
+            ),
+            stderr="",
+        ),
+        ProcessResult(returncode=0, stdout="[]", stderr=""),
+    )
+    process = FakeProcess()
+    vcs = _ReconcileVcs(changed=("src/a.py", "src/b.py"))
+
+    outcome = _reconcile(tmp_path, vcs, process)
+
+    assert outcome.refuse is False
+    assert outcome.finding is not None and outcome.finding.code == "MRS-DISP-047"
+    assert "src/a.py" in outcome.finding.message and "src/b.py" in outcome.finding.message
+    first_read = grouped[0]
+    assert all(isinstance(row, SurfaceRow) for row in first_read)
+    assert [(row.check, row.evidence["path"]) for row in first_read] == [
+        ("drift", "src/a.py"),
+        ("drift-presumed", "src/b.py"),
+    ]
+    assert grouped[1] == ()  # the re-read after the stamp: Doctor's clean verdict
+    assert [_spec_args(tokens) for tokens in _calls(process, "spec_surface_check.py")] == [[_CORE_SPEC]]
+    assert len(_calls(process, "memlog.py")) == 1
+    assert vcs.pushed == [_BRANCH]
+
+
+def test_rc_2_with_a_foreign_drift_row_refuses_with_048(tmp_path: Path, monkeypatch) -> None:
+    """Story 115.2 AC4: an exit-2 verdict whose spec also drifts on a path the branch did not touch is
+    foreign drift -- refused (MRS-DISP-048) naming that path, nothing appended, stamped or pushed."""
+    _script_doctor_reads(
+        monkeypatch,
+        ProcessResult(
+            returncode=2,
+            stdout=_doctor_stdout(
+                _doctor_row("drift", _STATION_SPEC, "src/mine.py"),
+                _doctor_row("drift", _STATION_SPEC, "src/not-mine.py"),
+            ),
+            stderr="",
+        ),
+    )
+    process = FakeProcess()
+    vcs = _ReconcileVcs(changed=("src/mine.py",))
+
+    outcome = _reconcile(tmp_path, vcs, process)
+
+    assert outcome.refuse is True
+    assert outcome.finding is not None and outcome.finding.code == "MRS-DISP-048"
+    assert "src/not-mine.py" in outcome.finding.message
+    assert len(process.doctor_calls) == 1
+    assert process.calls == []
+    assert vcs.committed == [] and vcs.pushed == []
+
+
+def test_rc_2_with_empty_stdout_on_the_first_read_is_047_and_no_refusal(tmp_path: Path, monkeypatch) -> None:
+    """Story 115.2 AC4: exit 2 with nothing on stdout is argparse refusing, not a verdict -- the first read
+    is unavailable, so the landing goes on with a non-blocking MRS-DISP-047 and reconciles nothing."""
+    _script_doctor_reads(
+        monkeypatch,
+        ProcessResult(
+            returncode=2,
+            stdout="",
+            stderr="usage: python -m pyforge.doctor.sources\nerror: argument source: invalid choice: 'spec-surface'\n",
+        ),
+    )
+    process = FakeProcess()
+    vcs = _ReconcileVcs(changed=("src/a.py",))
+
+    outcome = _reconcile(tmp_path, vcs, process)
+
+    assert outcome.refuse is False
+    assert outcome.finding is not None
+    assert outcome.finding.code == "MRS-DISP-047" and outcome.finding.severity == Severity.WARN
+    assert "cannot reach the spec-surface verdict" in outcome.finding.message
+    assert "invalid choice" in outcome.finding.message
+    assert process.calls == []
+    assert vcs.committed == [] and vcs.pushed == []
+
+
+def test_doctor_argv_runs_through_the_landing_process_port_with_the_worktree_as_cwd(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Story 115.2 AC5: the landing reads the verdict by running Doctor's command through the ProcessPort it
+    was handed -- ``[sys.executable, "-c", BOOTSTRAP, "spec-surface", "--json"]``, the worktree as cwd,
+    bounded at 300 s -- and the bootstrap runs the worktree's own Doctor command module."""
+    process = FakeProcess()
+    _install_fake_spec_surface(monkeypatch, (), process=process)
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+
+    result, _envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="22-4-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=FakeVcs(merged=False),
+        forge=FakeForge(),
+        process=process,
+    )
+
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert process.doctor_calls == [([sys.executable, "-c", BOOTSTRAP, "spec-surface", "--json"], worktree, 300.0)]
+    assert "src/shared/packages/pyforge-doctor/src" in BOOTSTRAP.replace("', '", "/")
+    assert "runpy.run_module('pyforge.doctor.sources', run_name='__main__', alter_sys=True)" in BOOTSTRAP
 
 
 def test_a_memlog_the_loop_wrote_is_the_branchs_own_on_a_re_read(tmp_path: Path, monkeypatch) -> None:
@@ -962,12 +1182,17 @@ def _co_governor_fixture_repo(tmp_path: Path) -> Path:
 
 
 class _RealReconcileProcess:
-    """Runs memlog and spec_surface_check subprocesses against the fixture repo."""
+    """Runs memlog and spec_surface_check subprocesses against the fixture repo; Doctor's command answers
+    from the test's script."""
 
     def __init__(self) -> None:
         self.calls: list[tuple[list[str], Path]] = []
+        self.doctor_calls: list[tuple[list[str], Path, float | None]] = []
 
-    def run(self, tokens, *, cwd: Path):
+    def run(self, tokens, *, cwd: Path, timeout_s: float | None = None):
+        doctor = _doctor_answer(self.doctor_calls, tokens, cwd, timeout_s)
+        if doctor is not None:
+            return doctor
         self.calls.append((list(tokens), cwd))
         if len(tokens) > 1 and ("memlog.py" in tokens[1] or "spec_surface_check.py" in tokens[1]):
             completed = subprocess.run(tokens, cwd=cwd, capture_output=True, text=True, check=False)
@@ -1149,8 +1374,12 @@ def test_reconcile_spec_surface_drift_refuses_when_memlog_append_exits_nonzero(t
     class _RefusingProcess:
         def __init__(self) -> None:
             self.calls: list[tuple[list[str], Path]] = []
+            self.doctor_calls: list[tuple[list[str], Path, float | None]] = []
 
-        def run(self, tokens, *, cwd: Path):
+        def run(self, tokens, *, cwd: Path, timeout_s: float | None = None):
+            doctor = _doctor_answer(self.doctor_calls, tokens, cwd, timeout_s)
+            if doctor is not None:
+                return doctor
             self.calls.append((list(tokens), cwd))
             return ProcessResult(returncode=1, stdout="", stderr="memlog locked")
 
@@ -1260,8 +1489,12 @@ def test_reconcile_spec_surface_drift_refuses_when_stamp_subprocess_exits_nonzer
     class _StampRefusingProcess:
         def __init__(self) -> None:
             self.calls: list[tuple[list[str], Path]] = []
+            self.doctor_calls: list[tuple[list[str], Path, float | None]] = []
 
-        def run(self, tokens, *, cwd: Path):
+        def run(self, tokens, *, cwd: Path, timeout_s: float | None = None):
+            doctor = _doctor_answer(self.doctor_calls, tokens, cwd, timeout_s)
+            if doctor is not None:
+                return doctor
             self.calls.append((list(tokens), cwd))
             if "spec_surface_check.py" in tokens[1]:
                 return ProcessResult(returncode=1, stdout="", stderr="baseline stamp refused")
@@ -1367,19 +1600,13 @@ def test_execute_dispatch_land_refuses_when_resolve_ref_fails_after_reconcile_pu
     assert forge.merge_calls == []
 
 
-def test_reconcile_spec_surface_drift_degrades_when_doctor_unreachable(tmp_path: Path, monkeypatch) -> None:
-    """`pyforge.doctor` is not importable at all here (no fake module
-    installed, and this package's own pixi env doesn't ship it) -- this is
-    the exact path a real dispatch worktree never hits (always a full
-    checkout with doctor's own source tree in place), but must degrade to
-    a non-blocking MRS-DISP-047 rather than refuse the landing on an
-    environment gap this story is not scoped to fix."""
-    for mod in (
-        "pyforge.doctor.sources.chain",
-        "pyforge.doctor.sources",
-        "pyforge.doctor",
-    ):
-        monkeypatch.delitem(sys.modules, mod, raising=False)
+def test_reconcile_spec_surface_drift_degrades_when_doctor_unreachable(tmp_path: Path) -> None:
+    """Doctor's command prints no verdict at all (nothing scripted: the
+    fake answers with empty stdout) -- the exact path a real dispatch
+    worktree never hits (always a full checkout with doctor's own source
+    tree in place), but it must degrade to a non-blocking MRS-DISP-047
+    rather than refuse the landing on an environment gap this story is not
+    scoped to fix."""
     worktree = tmp_path / "wt"
     worktree.mkdir()
     outcome = _reconcile_spec_surface_drift(
@@ -2399,8 +2626,12 @@ class ExitingProcess:
         self.stdout = stdout
         self.stderr = stderr
         self.calls: list[list[str]] = []
+        self.doctor_calls: list[tuple[list[str], Path, float | None]] = []
 
-    def run(self, tokens, *, cwd):
+    def run(self, tokens, *, cwd, timeout_s: float | None = None):
+        doctor = _doctor_answer(self.doctor_calls, tokens, cwd, timeout_s)
+        if doctor is not None:
+            return doctor
         self.calls.append(list(tokens))
         return ProcessResult(returncode=self.returncode, stdout=self.stdout, stderr=self.stderr)
 
@@ -2728,7 +2959,10 @@ class PreviewAwareProcess(FakeProcess):
         self._vcs = vcs
         self._stderr = stderr
 
-    def run(self, tokens, *, cwd: Path):
+    def run(self, tokens, *, cwd: Path, timeout_s: float | None = None):
+        doctor = _doctor_answer(self.doctor_calls, tokens, cwd, timeout_s)
+        if doctor is not None:
+            return doctor
         self.calls.append((list(tokens), cwd))
         if self._vcs.preview_home is not None and cwd == self._vcs.preview_home:
             return ProcessResult(returncode=1, stdout="", stderr=self._stderr)
@@ -3167,9 +3401,9 @@ def _land_waiting(
     on_wait_tick=None,
     seams: bool = True,
 ):
-    """Run the real landing. The spec-surface verdict is faked (``surface``, clean by default): the
-    marshal env has no `pyforge.doctor`, so an unfaked reconcile adds a WARN MRS-DISP-047 to every
-    landing -- noise these tests' exact finding-code assertions must not depend on."""
+    """Run the real landing. Doctor's spec-surface command is scripted (``surface``, clean by default):
+    unscripted, it prints no verdict, so the reconcile adds a WARN MRS-DISP-047 to every landing --
+    noise these tests' exact finding-code assertions must not depend on."""
     process = FakeProcess()
     _install_fake_spec_surface(monkeypatch, surface, process=process)
     worktree = tmp_path / "wt"

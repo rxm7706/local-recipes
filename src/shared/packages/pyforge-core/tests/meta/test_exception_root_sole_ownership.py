@@ -56,6 +56,11 @@ from pathlib import Path
 import pytest
 from conftest import PACKAGES_ROOT, parse_module, station_source_files
 
+# Story 117.1 (spec-pyforge-core:CAP-14): this module reads every sibling station's src/ (through conftest) outside
+# pyforge-core, so it runs in the core suite's live-tree half (`-m live_tree`), never in the package half a second
+# root runs from the package alone.
+pytestmark = pytest.mark.live_tree
+
 _parse = parse_module
 
 _STDLIB_ALLOWLIST = frozenset(

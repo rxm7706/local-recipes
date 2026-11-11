@@ -111,6 +111,27 @@ Parent: `spec-pyforge-marshal` CAP-287 (amended 2026-11-10; FR-234); AD-81, AD-6
 - Deps: none; it cites marshal's existing CAP-287.
 - No build story appends a `Surface reconcile` line to another Spec's memlog or runs `spec_surface_check.py --write-baseline`: each Spec's own closer writes its reconcile event from `git diff --name-only origin/main...HEAD` (core and the testing charter: Story 117.8; marshal: Story 116.5; steward and the host: steward:S-122.5), and doctor:S-58.4 runs every scoped stamp once, after the last edit on the branch.
 
+## Verification
+
+**Red first (AC2), 2026-11-11, on the module as it was** (`git merge-base origin/main HEAD`'s
+`preserve_refs.py` copied into a temporary `src/` on `PYTHONPATH`): `rc=1`, `2 failed, 1 passed`.
+`test_push_missing_purge_list_keeps_tag_local` died in `load_purge_list` (`preserve_refs.py:549`,
+called from `push_preserve_ref` at `:872`) with `FileNotFoundError` on
+`work/docs/governance/preserve-purge-list.json`; `test_push_unparsable_purge_list_keeps_tag_local`
+died there with `json.decoder.JSONDecodeError`. `test_load_purge_list_still_raises_for_direct_callers`
+passed, as it should on both modules: `load_purge_list` keeps raising.
+
+**Green, 2026-11-11, with the guard:**
+- AC1: exit 0, `3 passed, 37 deselected` (`-k purge_list`).
+- AC3: `pyforge-core-test` exit 0, `2609 passed, 1 skipped`.
+- AC4: marshal `-k preserve` exit 0 (`269 passed, 14 skipped`); steward unit `-k preserve` exit 0 (`18 passed`).
+- AC5: sole-grammar meta-test exit 0 (`4 passed`).
+- AC6: `ruff` and `ruff format --check` over `pyforge-core` ok, and the `mypy` leg exit 0 over all ten
+  `pyforge-*` packages; on 2026-11-11 the task as a whole exited 1 on `ruff format --check` of two
+  `pyforge-marshal` test files other stories on the branch were editing
+  (`tests/meta/test_no_loop_home_run_state_read.py`, `tests/unit/test_mcp_story_103.py`), not on this
+  story's surface.
+
 ## Spec Change Log
 
 - 2026-11-10: minted at `backlog` by the cutover-readiness mint (operator 2026-11-10, "Accept all, run mint"; `docs/dreams/pyforge-unifying-strategy.md`, Realization log, the 2026-11-10 entry and its two addenda). The Dream entry (`docs/dreams/pyforge-marshal.md`, 2026-11-10, the shared-floor section) and the memlog entries of `spec-pyforge-marshal` (the CAP-287 clause) came first; `SPEC.md` is rendered by Story 114.1.

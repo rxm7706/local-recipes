@@ -48,8 +48,16 @@ back into anything it will be imported by).
 
 Per AD-1 (shared shapes, no behaviour), this module holds the exception
 type and its validation only -- no formatting beyond `__str__`, no I/O, no
-CLI exit-code dispatch (mapping a caught `SeedError` to
-`sys.exit(exc.exit_code)` is a future verb/CLI story's surface).
+CLI exit-code dispatch (`cli/seed.py` maps a caught `SeedError` to its
+handler's return value).
+
+Story 115.3 (CAP-13 amended 2026-11-10): `SEED_EXIT_CODES` is the closed
+set of the six leaves' codes, derived from `SeedError.__subclasses__()`
+(this module's own leaves only) rather than spelled. `cli/main.py` admits it
+from a handler only when the dispatched command is `seed`, so a schema-
+breaking state file exits 5 and a broken packaged manifest exits 10, while
+every other verb keeps AD-7's frozen domain (`core/verdict.py`'s
+`GUARDED_EXIT_CODES`, which does not move).
 """
 
 from __future__ import annotations
@@ -182,3 +190,12 @@ class InternalError(SeedError):
     later story's surface (`seed/cli/seed.py`)."""
 
     exit_code: ClassVar[int] = 10
+
+
+#: The seed verb group's closed exit taxonomy (Story 115.3, CAP-13 amended
+#: 2026-11-10): one code per leaf above, computed at import from this
+#: module's own direct subclasses -- a subclass defined elsewhere in the
+#: process (a test stub) never widens it.
+SEED_EXIT_CODES: frozenset[int] = frozenset(
+    leaf.exit_code for leaf in SeedError.__subclasses__() if leaf.__module__ == __name__
+)

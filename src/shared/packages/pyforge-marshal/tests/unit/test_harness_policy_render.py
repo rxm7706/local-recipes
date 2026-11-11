@@ -18,6 +18,8 @@ import tomllib
 
 import pytest
 import tomlkit
+from bmad_loop import policy as bmad_loop_policy
+from bmad_loop import verify as bmad_loop_verify
 
 from pyforge.marshal.adapters.harness_bmadloop import (
     _SURFACE_RECONCILE_COMMAND,
@@ -359,8 +361,6 @@ def test_rendered_defaults_pass_the_installed_bmad_loop_load():
     value is never READ or CONSUMED by the harness itself, per AD-4 --
     it is still a real, rendered TOML key, just an inert one to bmad_loop's
     own loader)."""
-    bmad_loop_policy = pytest.importorskip("bmad_loop.policy")
-
     loaded = bmad_loop_policy.loads(render_policy_toml(_compose()))
     assert loaded.review.on_timeout == "retry"
     assert loaded.review.on_status_contradiction == "escalate"
@@ -397,7 +397,6 @@ def test_enum_frozensets_mirror_the_installed_bmad_loop_vocabularies():
     the live installed package, so a future bmad-loop bump that widens or
     respells either vocabulary reds this test instead of surfacing as a
     load-time PolicyError in a loop home."""
-    bmad_loop_policy = pytest.importorskip("bmad_loop.policy")
     from pyforge.marshal.core import policy as policy_module
 
     assert policy_module._REVIEW_ON_TIMEOUT_MODES == frozenset(bmad_loop_policy.REVIEW_ON_TIMEOUT_MODES)
@@ -1022,8 +1021,6 @@ def test_rendered_session_timeout_constant_is_the_value_the_rendered_policy_carr
 def test_rendered_preserve_keep_is_zero_and_passes_installed_bmad_loop_load():
     """Story 87.13 / AD-78: marshal renders ``preserve_keep = 0`` unflagged;
     the installed harness loader must accept it with zero warnings."""
-    bmad_loop_policy = pytest.importorskip("bmad_loop.policy")
-
     rendered = render_policy_toml(_compose())
     doc = tomllib.loads(rendered)
     assert doc["scm"]["preserve_keep"] == 0
@@ -1036,7 +1033,6 @@ def test_rendered_preserve_keep_is_zero_and_passes_installed_bmad_loop_load():
 def test_preserve_keep_zero_means_never_prune_in_installed_bmad_loop(tmp_path):
     """AD-78 drift guard: ``keep <= 0`` must keep meaning never prune in the
     installed ``bmad_loop`` package -- not only in marshal's render."""
-    verify = pytest.importorskip("bmad_loop.verify")
     import subprocess
 
     repo = tmp_path / "repo"
@@ -1056,7 +1052,7 @@ def test_preserve_keep_zero_means_never_prune_in_installed_bmad_loop(tmp_path):
             env=env,
         )
 
-    assert verify.prune_preserve_refs(repo, 0) == []
+    assert bmad_loop_verify.prune_preserve_refs(repo, 0) == []
     listed = subprocess.run(
         ["git", "-C", str(repo), "branch", "--list", "attempt-preserve/*"],
         capture_output=True,
@@ -1066,7 +1062,7 @@ def test_preserve_keep_zero_means_never_prune_in_installed_bmad_loop(tmp_path):
     ).stdout.strip()
     assert len([line for line in listed.splitlines() if line.strip()]) == 3
 
-    pruned = verify.prune_preserve_refs(repo, 1)
+    pruned = bmad_loop_verify.prune_preserve_refs(repo, 1)
     assert len(pruned) == 2
 
 

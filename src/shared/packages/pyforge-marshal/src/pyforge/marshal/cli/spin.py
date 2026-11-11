@@ -367,6 +367,7 @@ if TYPE_CHECKING:
 # never the same one: the journal is structured JSONL Marshal itself writes,
 # the log is bmad-loop's own raw stdout/stderr text, polled once for its
 # "starting" line and otherwise left for an operator to read directly.
+# CAP-4: loop-home FILE read -- marshal's own file: the journal marshal writes in its own run dir, not bmad-loop run state
 _JOURNAL_FILENAME = "journal.jsonl"
 _LOG_FILENAME = "harness.log"
 # The supervisor sidecar's OWN redirected stdout/stderr -- a SEPARATE file

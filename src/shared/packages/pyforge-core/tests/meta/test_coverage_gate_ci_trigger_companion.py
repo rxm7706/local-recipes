@@ -11,9 +11,10 @@ workflows/pyforge-station-tests.yml`'s ``doctor-test`` job runs only when
 so a PR touching exactly one OTHER station -- atlas, herald, mason, scribe,
 steward, or warden -- never runs it, and the reintroduction CAP-3 exists to
 catch would pass CI unnoticed for six of the eight stations it is supposed
-to protect (found live in review, Story 24.2). ``pyforge-core-test``, by
-contrast, already runs on ANY single-station change (Story 52.2, CAP-8 --
-its own sole-ownership meta-tests scan every sibling station's tree for the
+to protect (found live in review, Story 24.2). The core suite's live-tree
+half (``-m live_tree``, where this module runs since Story 117.1, CAP-14),
+by contrast, runs on ANY single-station change (Story 52.2, CAP-8 -- its
+own sole-ownership meta-tests scan every sibling station's tree for the
 identical reason), so hosting a copy of the check here is the one placement
 guaranteed to fire regardless of which station a PR touches.
 
@@ -36,7 +37,13 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
+import pytest
 from conftest import PACKAGES_ROOT, parse_module, station_source_files
+
+# Story 117.1 (spec-pyforge-core:CAP-14): this module reads every sibling station's src/ (through conftest) outside
+# pyforge-core, so it runs in the core suite's live-tree half (`-m live_tree`), never in the package half a second
+# root runs from the package alone.
+pytestmark = pytest.mark.live_tree
 
 _EXCLUDE = frozenset({"pyforge-testing-kit"})
 
