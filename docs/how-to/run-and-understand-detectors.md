@@ -5,7 +5,7 @@ sources:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/verdict.py
   - docs/reference/judgement-vocabulary.md
-verified: 2026-10-24
+verified: 2026-11-11
 ---
 
 # How to run and understand Detectors
@@ -48,12 +48,18 @@ The detector registry adheres strictly to a three-tier exit code system:
 
 | Exit Code | Status | Meaning |
 |-----------|--------|---------|
-| `0` | **Pass** | Every selected detector ran and passed. |
+| `0` | **Pass** | Every selected detector ran and passed, or ran and measured nothing (`unmeasured`, below). |
 | `1` | **FINDINGS** | At least one detector reported a violation of an invariant. |
 | `2` | **UNKNOWN** | At least one detector **could not run** (e.g., timed out, threw an exception, or a dependency like `pyforge.doctor` was unimportable), and no detector reported findings. |
 
 > [!WARNING]
 > **Exit code 2 is not a softer 0.** A detector that cannot run reports `unknown`, which is never green. The dashboard status strip will not claim "green" if it could not measure the metric.
+
+### A row that reads `unmeasured`
+
+A Doctor source row reads `unmeasured` (marked `○`) when the source ran but measured nothing: its findings hold no `fail` and every one is a gather failure — a cannot-evaluate `warn` (evidence `unevaluable: true`), a `degrade_on_exception` `warn`, or the atlas sentinel. It is never `pass`, and the text output ends with one line counting the rows that measured nothing and naming them. It is a warning the merge bar does not fail on, so the exit code stays `0` (operator ruling of 2026-11-10; spec-pyforge-doctor AD-15). A row that returned no findings at all still reads `pass`, because a source returns nothing only after it measured.
+
+- **Fix:** run the source alone (its `*-check` task) and read its warning, which says what it could not evaluate (a cannot-evaluate warning names the subject; a `degrade_on_exception` warning names the exception). Restore the subject, or run the source where its subject exists.
 
 > [!WARNING]
 > **A single Doctor-sourced task uses a different exit domain.** `spec-surface-check`, `story-status-check`, `docs-map-hygiene-check` and the other `python -m pyforge.doctor.sources <name>` tasks project through `pyforge.doctor.verdict.exit_code_for`: any `fail` finding exits `2`, and a `warn` finding never changes the exit code (`0`). So `2` from the registry means "could not run" while `2` from one source means "failed" — read the finding rows, and always read the exit code directly, never through a pipe (a pipe reports the last command's status). The full domain table is in [`judgement-vocabulary.md`](../reference/judgement-vocabulary.md) § *Severity and exit codes*.

@@ -66,11 +66,25 @@ stamp -- exit 1, baseline untouched, every path listed with the explicit form
 that accepts it. A spec with no usable baseline entry stamps as before, and
 the unscoped `--write-baseline` is unchanged.
 
+Doctor Story 58.3 (CAP-59, the `--prune` clause): `--prune` removes, under
+the same lock, the baseline entries of Specs discovery no longer finds. A
+scoped stamp of a gone Spec exits 2 (`unknown spec(s)`) and a full stamp is
+forbidden, so before this verb nothing sanctioned could drop a dead key.
+`_discover()` is the one function both verbs read, so "live" means exactly
+what a stamp means by it -- a Spec whose `surface:` is unreadable still
+exists and keeps its entry. The prune removes keys only: every live entry is
+left as it is (its unreconciled paths are each live Spec's own scoped
+stamp), every removed key is printed, and a prune that finds nothing to
+remove writes nothing. Zero discovered Specs over a non-empty baseline
+refuses (exit 1, baseline untouched), as the full stamp does. `--prune` is
+exclusive with `--write-baseline`, `--spec` and `--accept` (exit 2).
+
 Usage (plain `python`, no pixi task -- the `spec-surface-check` pixi task
-invokes the dispatcher below instead, which does not understand this flag):
+invokes the dispatcher below instead, which does not understand these flags):
         python scripts/spec_surface_check.py --write-baseline [--spec NAME ...] [--accept PATH ...]
+        python scripts/spec_surface_check.py --prune
 Verdict (coverage/drift/blindness, unchanged behavior):
-        pixi run -e local-recipes spec-surface-check
+        pixi run -e pyforge-guild spec-surface-check
         python -m pyforge.doctor.sources spec-surface
 """
 from __future__ import annotations
@@ -278,6 +292,20 @@ def contract_hash(s: dict) -> str:
     return h
 
 
+def _discover() -> list[tuple[str, Path]]:
+    """`(<project>/<spec-dir>, SPEC.md)` for every Spec under `SPEC_GLOB`,
+    sorted -- the one discovery the stamp and the prune both read, so a key
+    the prune calls dead is exactly a key no stamp could write."""
+    found: list[tuple[str, Path]] = []
+    for spec_md in sorted(REPO_ROOT.glob(SPEC_GLOB)):
+        # Key by <project>/<spec-dir>, never the bare dir name -- the same
+        # slug can legitimately exist in two projects, and a bare-name key
+        # would silently drop one surface.
+        project = spec_md.relative_to(REPO_ROOT).parts[2]
+        found.append((f"{project}/{spec_md.parent.name}", spec_md))
+    return found
+
+
 def _live_state(unevaluable: dict[str, str] | None = None) -> dict[str, dict]:
     """Every spec's CURRENT `{memlog, files}` baseline entry -- the ground
     truth `--write-baseline` merges into the committed file. Mirrors
@@ -293,12 +321,7 @@ def _live_state(unevaluable: dict[str, str] | None = None) -> dict[str, dict]:
     nobody could read would record "this spec governs nothing" as a
     reconciled fact. `main()` refuses on any such spec in scope."""
     specs: dict[str, dict] = {}
-    for spec_md in sorted(REPO_ROOT.glob(SPEC_GLOB)):
-        # Key by <project>/<spec-dir>, never the bare dir name -- the same
-        # slug can legitimately exist in two projects, and a bare-name key
-        # would silently drop one surface.
-        project = spec_md.relative_to(REPO_ROOT).parts[2]
-        name = f"{project}/{spec_md.parent.name}"
+    for name, spec_md in _discover():
         try:
             globs, excludes, drift = parse_surface(spec_md)
         except SurfaceUnevaluable as exc:
@@ -412,9 +435,9 @@ def _write_baseline(merged: dict) -> None:
 
 
 class StampAborted(Exception):
-    """A stamp refused for a reason that needs no per-path rendering -- its
-    `str()` IS the stderr text. Raised inside the locked section, before any
-    write, so the baseline is left byte-identical."""
+    """A stamp (or a prune) refused for a reason that needs no per-path
+    rendering -- its `str()` IS the stderr text. Raised inside the locked
+    section, before any write, so the baseline is left byte-identical."""
 
 
 class StampRefused(Exception):
@@ -431,9 +454,9 @@ class StampRefused(Exception):
         spec, the explicit command that accepts exactly those paths."""
         by_name: dict[str, list[str]] = {}
         lines = [
-            "refusing to stamp: these path(s) differ from the spec's baseline "
-            "and its memlog does not name them (the memlog must move AND name "
-            "the path):"
+            ("refusing to stamp: these path(s) differ from the spec's baseline "
+             "and its memlog does not name them (the memlog must move AND name "
+             "the path):")
         ]
         for name, path, what in self.refusals:
             lines.append(f"  {name}: {path} ({what})")
@@ -541,6 +564,30 @@ def _stamp_baseline(spec_names: list[str] | None, current: dict[str, dict],
     return scope
 
 
+def _prune_baseline(live: set[str]) -> list[str]:
+    """The prune's locked critical section (Story 58.3): read -> drop every
+    key not in `live` -> write, serialized against every stamp. Returns the
+    removed keys, sorted. Keys only: a live key's entry is carried over as
+    read, never recomputed. Nothing to remove writes nothing. Raises
+    `StampAborted` (nothing written) when `live` is empty over a non-empty
+    baseline, and `BaselineCorrupt` from the read."""
+    with _baseline_lock():
+        prior = _read_baseline()
+        if not live and prior:
+            raise StampAborted(
+                "refusing to prune: discovery found zero Specs, but the "
+                f"committed {BASELINE.relative_to(REPO_ROOT)} is not empty — "
+                "pruning would remove every entry. Run this from the repository "
+                "root and check that "
+                "_bmad-output/projects/*/planning-artifacts/specs/spec-*/SPEC.md "
+                "is readable.\nbaseline untouched"
+            )
+        removed = sorted(name for name in prior if name not in live)
+        if removed:
+            _write_baseline({name: entry for name, entry in prior.items() if name in live})
+    return removed
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--write-baseline", action="store_true",
@@ -554,8 +601,15 @@ def main() -> int:
                           "although the spec's memlog does not name it (repeatable). "
                           "A scoped stamp otherwise refuses any path that differs "
                           "from its baseline and is not narrated on the memlog."))
+    ap.add_argument("--prune", action="store_true",
+                    help=("remove the baseline entries of Specs discovery no longer "
+                          "finds, and print each one; never edits a live Spec's entry. "
+                          "Exclusive with --write-baseline, --spec and --accept."))
     args = ap.parse_args()
 
+    if args.prune and (args.write_baseline or args.spec or args.accept):
+        ap.error("--prune is exclusive with --write-baseline, --spec and --accept: "
+                 "it only removes the entries of Specs that no longer exist")
     if args.spec and not args.write_baseline:
         ap.error("--spec only makes sense with --write-baseline")
     if args.accept and not args.write_baseline:
@@ -564,12 +618,29 @@ def main() -> int:
         ap.error("--accept only makes sense with --spec (an unscoped stamp "
                  "already accepts every path)")
 
+    if args.prune:
+        try:
+            removed = _prune_baseline({name for name, _ in _discover()})
+        except (StampAborted, BaselineCorrupt) as aborted:
+            print(str(aborted), file=sys.stderr)
+            return 1
+        rel = BASELINE.relative_to(REPO_ROOT)
+        if not removed:
+            print(f"prune: nothing to remove from {rel}")
+            return 0
+        print(f"prune: removed {len(removed)} "
+              f"entr{'y' if len(removed) == 1 else 'ies'} from {rel}:")
+        for name in removed:
+            print(f"  - {name}")
+        return 0
+
     if not args.write_baseline:
         print(
             "this script no longer computes the coverage/drift verdict -- run "
             "`python -m pyforge.doctor.sources spec-surface` for that. Pass "
             "--write-baseline [--spec NAME ...] to stamp the baseline after a "
-            "spec reconciliation.",
+            "spec reconciliation, or --prune to remove the entries of Specs "
+            "that no longer exist.",
             file=sys.stderr,
         )
         return 2

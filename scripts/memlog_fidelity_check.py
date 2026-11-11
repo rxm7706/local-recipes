@@ -6,6 +6,13 @@ covers the deterministic half: discover every in-scope artifact, verify structur
 prerequisites, diff scratch re-derives against live rendered files, and print the
 headless invocation recipe (`render_skill.py` + `BMAD_ACTIVE_PROJECT`).
 
+What it checks, and where the rest is checked: this tool checks that every
+in-scope Spec and spine has a `.memlog.md` beside it and, with `--compare`,
+diffs a scratch re-derive against the live file. It does not judge currency
+(a Spec behind its memlog) or capability coverage; those are scribe's
+`src/shared/packages/pyforge-scribe/tests/meta/test_spec_not_behind_memlog.py`
+(spec-pyforge-scribe:CAP-35).
+
 Usage:
   python scripts/memlog_fidelity_check.py              # inventory (default)
   python scripts/memlog_fidelity_check.py --json

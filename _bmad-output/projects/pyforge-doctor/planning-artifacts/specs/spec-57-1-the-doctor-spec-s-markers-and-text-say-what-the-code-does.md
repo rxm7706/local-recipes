@@ -150,3 +150,7 @@ Type / Effort / Deps: docs / L / —.
 ## Spec Change Log
 
 - 2026-11-10: minted from the station Dream's 2026-11-10 entry (the cutover readiness audit) and the operator's rulings of 2026-11-10.
+
+## Gate findings (build, BUILD-1)
+
+- 2026-11-11, `pixi run -e pyforge-marshal pyforge-marshal-test`: `test_tracked_story_specs_carry_each_top_level_frontmatter_key_once` reads `spec-19-1-.../.memlog.md`, which `git ls-files` still lists after this story removed it on disk. Transient, no fix: staging the deletion in the wave commit clears it; a probe of the same logic over the remaining files finds 0 offenders.

@@ -260,6 +260,15 @@ def test_real_cannot_evaluate_emitters_grade_incomplete(tmp_path):
         assert grade((finding,)).grade is Grade.INCOMPLETE, finding
 
 
+def test_score_asks_the_one_predicate_in_models_and_keeps_no_copy():
+    # Story 56.3 (spec-pyforge-doctor:AD-15): one predicate, public, in models.py; the aggregate asks the same one.
+    from pyforge.doctor import models, score
+
+    assert score.is_gather_failure is models.is_gather_failure
+    assert not hasattr(score, "_is_gather_failure")
+    assert not hasattr(score, "_GATHER_FAILURE_CHECK")
+
+
 # --- per-check axes for independent capabilities (DW-FU-10-2) --------------
 
 

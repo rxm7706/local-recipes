@@ -1,10 +1,15 @@
-"""Unit tests for ``pyforge.doctor.sources.frozen_path`` (Story 20.3, Epic
-20) -- covers every row of the spec's I/O & Edge-Case Matrix. Every
-``gather()``-level test drives a REAL tmp git repository (mirrors
-``test_sources_ledger.py``'s own convention: never a mocked subprocess
-call); ``origin/main`` is a real remote-tracking ref (``git update-ref
-refs/remotes/origin/main <sha>``), no remote needed -- never a local branch named
-``origin/main``, the shadow Story 31.1 made the source read past.
+"""Unit tests for ``pyforge.doctor.sources.frozen_path`` (Story 56.1,
+spec-pyforge-doctor:CAP-94; first built by Story 20.3).
+
+Every ``gather()``-level test drives a REAL tmp git repository (mirrors
+``test_sources_ledger.py``'s own convention: never a mocked subprocess call);
+``origin/main`` is a real remote-tracking ref (``git update-ref
+refs/remotes/origin/main <sha>``), no remote needed -- never a local branch
+named ``origin/main``, the shadow Story 31.1 made the source read past.
+
+Every ledger is built under ``tmp_path`` with path joins, and every frozen path
+is an invented one: the module reads nothing of the repository it lives in,
+so it runs in the package half of the doctor suite and carries no mark.
 """
 
 from __future__ import annotations
@@ -14,12 +19,9 @@ from pathlib import Path
 
 import pytest
 
-from pyforge.doctor.models import DoctorStatus, Source
+from pyforge.doctor.models import DoctorStatus, Finding, Source
+from pyforge.doctor.sources import __main__ as dispatch
 from pyforge.doctor.sources import frozen_path
-
-# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
-# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
-pytestmark = pytest.mark.live_tree
 
 # A contributor's own git config must not decide whether this suite passes --
 # same rationale, and same autouse-fixture-on-os.environ shape, as
@@ -74,112 +76,87 @@ def _origin_main_at(repo: Path, sha: str) -> None:
     _git(repo, "update-ref", "refs/remotes/origin/main", sha)
 
 
-def _write_manifest(repo: Path, text: str, *, name: str = "manifest.yaml") -> Path:
-    path = repo / "docs" / "foundry" / name
+def _ledger_file(repo: Path) -> Path:
+    return repo / "docs" / "foundry" / "capability-ledger.yaml"
+
+
+def _write_ledger(repo: Path, text: str) -> Path:
+    path = _ledger_file(repo)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
     return path
 
 
-_ONE_REBUILDING_CAPABILITY = (
-    "capabilities:\n"
-    "  - capability: mason-recipe-writer\n"
-    "    state: rebuilding\n"
-    "    frozen_paths:\n"
-    "      - src/shared/packages/pyforge-mason\n"
-)
-_FROZEN_PATH_TOUCHED = "src/shared/packages/pyforge-mason/recipe_writer.py"
+def _touch(repo: Path, rel: str, text: str = "# touched\n") -> None:
+    path = repo.joinpath(*rel.split("/"))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
 
 
-# --- _find_manifest ----------------------------------------------------------
+def _repo_with_change(tmp_path: Path, ledger_text: str, changed: str) -> Path:
+    """A repo whose `origin/main` holds `ledger_text` and whose HEAD adds one commit changing `changed`."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_ledger(repo, ledger_text)
+    _origin_main_at(repo, _commit_all(repo, "seed ledger"))
+    _touch(repo, changed)
+    _commit_all(repo, "change one path")
+    return repo
 
 
-def test_find_manifest_none_when_docs_foundry_absent(tmp_path: Path) -> None:
-    assert frozen_path._find_manifest(tmp_path) is None
+def _only(findings: tuple[Finding, ...]) -> Finding:
+    assert len(findings) == 1, findings
+    finding = findings[0]
+    assert finding.source is Source.FROZEN_PATH_CHANGED
+    return finding
 
 
-def test_find_manifest_finds_yaml(tmp_path: Path) -> None:
-    path = _write_manifest(tmp_path, "capabilities: []\n", name="manifest.yaml")
-    assert frozen_path._find_manifest(tmp_path) == path
+def _assert_unevaluable(findings: tuple[Finding, ...]) -> Finding:
+    finding = _only(findings)
+    assert finding.status is DoctorStatus.WARN
+    assert finding.check == "frozen-path-changed-unevaluable"
+    assert finding.evidence["unevaluable"] is True
+    return finding
 
 
-def test_find_manifest_finds_yml(tmp_path: Path) -> None:
-    path = _write_manifest(tmp_path, "capabilities: []\n", name="manifest.yml")
-    assert frozen_path._find_manifest(tmp_path) == path
+# Invented paths, never a tracked one.
+_FROZEN_DIR = "kernel/leaf"
+_UNDER_FROZEN = "kernel/leaf/mod.py"
+_ROW_ID = "pyforge-testing-charter:CAP-4"
 
 
-def test_find_manifest_finds_json(tmp_path: Path) -> None:
-    path = _write_manifest(tmp_path, '{"capabilities": []}\n', name="manifest.json")
-    assert frozen_path._find_manifest(tmp_path) == path
-
-
-def test_find_manifest_prefers_yaml_over_yml_and_json(tmp_path: Path) -> None:
-    yaml_path = _write_manifest(tmp_path, "capabilities: []\n", name="manifest.yaml")
-    _write_manifest(tmp_path, "capabilities: []\n", name="manifest.yml")
-    _write_manifest(tmp_path, '{"capabilities": []}\n', name="manifest.json")
-    assert frozen_path._find_manifest(tmp_path) == yaml_path
-
-
-def test_find_manifest_prefers_yml_over_json(tmp_path: Path) -> None:
-    yml_path = _write_manifest(tmp_path, "capabilities: []\n", name="manifest.yml")
-    _write_manifest(tmp_path, '{"capabilities": []}\n', name="manifest.json")
-    assert frozen_path._find_manifest(tmp_path) == yml_path
-
-
-# --- _load_capabilities -------------------------------------------------------
-
-
-def test_load_capabilities_valid_yaml(tmp_path: Path) -> None:
-    path = _write_manifest(tmp_path, _ONE_REBUILDING_CAPABILITY)
-    assert frozen_path._load_capabilities(path) == [
-        {
-            "capability": "mason-recipe-writer",
-            "state": "rebuilding",
-            "frozen_paths": ["src/shared/packages/pyforge-mason"],
-        }
-    ]
-
-
-def test_load_capabilities_valid_json(tmp_path: Path) -> None:
-    path = _write_manifest(
-        tmp_path,
-        '{"capabilities": [{"capability": "x", "state": "planned", "frozen_paths": []}]}\n',
-        name="manifest.json",
+def _row(state: str, *, row_id: str = _ROW_ID, frozen: str | None = _FROZEN_DIR) -> str:
+    text = (
+        f"  - id: {row_id}\n"
+        "    spec: pyforge-testing-charter\n"
+        "    station: pyforge-marshal\n"
+        "    heading: Coverage gate enforced, not just measured\n"
+        "    mode: rebuild\n"
+        f"    state: {state}\n"
     )
-    assert frozen_path._load_capabilities(path) == [{"capability": "x", "state": "planned", "frozen_paths": []}]
+    if frozen is not None:
+        text += f"    frozen_paths:\n      - {frozen}\n"
+    return text
 
 
-def test_load_capabilities_malformed_yaml_raises(tmp_path: Path) -> None:
-    path = _write_manifest(tmp_path, "capabilities: [this is not: valid: yaml\n")
-    with pytest.raises(Exception):
-        frozen_path._load_capabilities(path)
+def _ledger(*rows: str, header: str = "schema: pyforge.capability-ledger/v1\n") -> str:
+    return header + "capabilities:\n" + "".join(rows)
 
 
-def test_load_capabilities_malformed_json_raises(tmp_path: Path) -> None:
-    path = _write_manifest(tmp_path, "{not valid json", name="manifest.json")
-    with pytest.raises(Exception):
-        frozen_path._load_capabilities(path)
+# The v1 header of modes.md § Schema v1 (steward Story 120.2): every key, in order.
+_V1_HEADER = (
+    "schema: pyforge.capability-ledger/v1\n"
+    "generated_by: pyforge steward cutover plan\n"
+    'updated: "2026-11-10"\n'
+    'source_sha: "0000000000000000000000000000000000000000"\n'
+    "extract: planning/specs/spec-foundry-capability-ledger/extract.md\n"
+    "modes: [rebuild, retire, A-only, B-only, pending]\n"
+    "states: [planned, rebuilding, verified-in-foundry, cut]\n"
+    "frozen_states: [rebuilding]\n"
+)
 
 
-def test_load_capabilities_missing_capabilities_key_raises(tmp_path: Path) -> None:
-    path = _write_manifest(tmp_path, "some_other_key: true\n")
-    with pytest.raises(ValueError):
-        frozen_path._load_capabilities(path)
-
-
-def test_load_capabilities_non_list_capabilities_raises(tmp_path: Path) -> None:
-    path = _write_manifest(tmp_path, "capabilities: not-a-list\n")
-    with pytest.raises(ValueError):
-        frozen_path._load_capabilities(path)
-
-
-def test_load_capabilities_non_mapping_document_raises(tmp_path: Path) -> None:
-    path = _write_manifest(tmp_path, "- just\n- a\n- list\n")
-    with pytest.raises(ValueError):
-        frozen_path._load_capabilities(path)
-
-
-# --- _is_frozen ----------------------------------------------------------------
+# --- _is_frozen ------------------------------------------------------------------
 
 
 def test_is_frozen_exact_match() -> None:
@@ -194,281 +171,351 @@ def test_is_frozen_false_match_guard_on_lookalike_sibling() -> None:
     assert frozen_path._is_frozen("src/foobar/x.py", "src/foo") is False
 
 
-def test_is_frozen_trailing_slash_in_prefix_normalized() -> None:
+def test_is_frozen_trailing_slash_and_leading_dot_slash_normalized() -> None:
     assert frozen_path._is_frozen("src/foo/bar.py", "src/foo/") is True
     assert frozen_path._is_frozen("src/foo", "src/foo/") is True
+    assert frozen_path._is_frozen("src/foo/bar.py", "./src/foo") is True
 
 
 def test_is_frozen_unrelated_path_is_false() -> None:
     assert frozen_path._is_frozen("docs/readme.md", "src/foo") is False
 
 
-# --- gather() -- I/O & Edge-Case Matrix, real git-repo fixtures ---------------
+# --- the subject: the capability ledger, and nothing else -------------------------
 
 
-def test_no_ledger_reports_ok(tmp_path: Path) -> None:
+def test_ledger_path_is_the_capability_ledger(tmp_path: Path) -> None:
+    assert frozen_path._ledger_path(tmp_path) == tmp_path / "docs" / "foundry" / "capability-ledger.yaml"
+
+
+def test_a_retired_manifest_file_is_never_read(tmp_path: Path) -> None:
+    """Pointed back at the retired manifest, the source would FAIL here; it reads only the ledger."""
     repo = tmp_path / "repo"
     _init_repo(repo)
-    (repo / "README.md").write_text("no capability ledger here\n", encoding="utf-8")
-    _commit_all(repo, "seed, no ledger")
+    manifest = repo / "docs" / "foundry" / "manifest.yaml"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text(_ledger(_row("rebuilding")), encoding="utf-8")
+    _origin_main_at(repo, _commit_all(repo, "seed a manifest, no ledger"))
+    _touch(repo, _UNDER_FROZEN)
+    _commit_all(repo, "touch the manifest's frozen path")
 
-    findings = frozen_path.gather(repo)
-
-    assert len(findings) == 1
-    finding = findings[0]
-    assert finding.source is Source.FROZEN_PATH_CHANGED
-    assert finding.check == "frozen-path-changed"
-    assert finding.status is DoctorStatus.OK
-    assert finding.message == "no capability ledger found (pre-cutover)"
+    _assert_unevaluable(frozen_path.gather(repo))
 
 
-def test_ledger_present_nothing_frozen_reports_ok(tmp_path: Path) -> None:
-    repo = tmp_path / "repo"
-    _init_repo(repo)
-    _write_manifest(
-        repo,
-        "capabilities:\n"
-        "  - capability: alpha\n"
-        "    state: planned\n"
-        "    frozen_paths: []\n"
-        "  - capability: beta\n"
-        "    state: verified-in-foundry\n"
-        "    frozen_paths: []\n"
-        "  - capability: gamma\n"
-        "    state: cut\n"
-        "    frozen_paths: []\n",
-    )
-    base_sha = _commit_all(repo, "seed ledger, nothing frozen")
-    _origin_main_at(repo, base_sha)
-
-    (repo / "unrelated.txt").write_text("noop\n", encoding="utf-8")
-    _commit_all(repo, "unrelated change")
-
-    findings = frozen_path.gather(repo)
-
-    assert len(findings) == 1
-    finding = findings[0]
-    assert finding.status is DoctorStatus.OK
-    assert finding.check == "frozen-path-changed"
+# --- AC4: each rule has its case --------------------------------------------------
 
 
-def test_frozen_path_violation_reports_fail_naming_capability_and_path(
-    tmp_path: Path,
-) -> None:
-    """The exact fixture the AC names: one `rebuilding` capability frozen
-    over `src/shared/packages/pyforge-mason`, a HEAD commit changing
-    `src/shared/packages/pyforge-mason/recipe_writer.py`."""
-    repo = tmp_path / "repo"
-    _init_repo(repo)
-    _write_manifest(repo, _ONE_REBUILDING_CAPABILITY)
-    base_sha = _commit_all(repo, "seed ledger")
-    _origin_main_at(repo, base_sha)
+def test_rebuilding_row_with_changed_path_fails_naming_row_and_path(tmp_path: Path) -> None:
+    repo = _repo_with_change(tmp_path, _ledger(_row("rebuilding")), _UNDER_FROZEN)
 
-    changed = repo / _FROZEN_PATH_TOUCHED
-    changed.parent.mkdir(parents=True, exist_ok=True)
-    changed.write_text("# touched during rebuild\n", encoding="utf-8")
-    _commit_all(repo, "touch a frozen path")
+    finding = _only(frozen_path.gather(repo))
 
-    findings = frozen_path.gather(repo)
-
-    assert len(findings) == 1
-    finding = findings[0]
-    assert finding.source is Source.FROZEN_PATH_CHANGED
-    assert finding.check == "frozen-path-changed"
     assert finding.status is DoctorStatus.FAIL
-    assert "mason-recipe-writer" in finding.message
-    assert _FROZEN_PATH_TOUCHED in finding.message
-    assert finding.evidence["capability"] == "mason-recipe-writer"
-    assert finding.evidence["path"] == _FROZEN_PATH_TOUCHED
+    assert finding.check == "frozen-path-changed"
+    assert _ROW_ID in finding.message and _UNDER_FROZEN in finding.message
+    assert finding.evidence["id"] == _ROW_ID
+    assert finding.evidence["path"] == _UNDER_FROZEN
 
 
-def test_frozen_capability_no_matching_change_reports_ok(tmp_path: Path) -> None:
+def test_rebuilding_row_without_paths_fails_guards_nothing(tmp_path: Path) -> None:
+    repo = _repo_with_change(tmp_path, _ledger(_row("rebuilding", frozen=None)), _UNDER_FROZEN)
+
+    finding = _only(frozen_path.gather(repo))
+
+    assert finding.status is DoctorStatus.FAIL
+    assert "guards nothing" in finding.message
+    assert finding.evidence["id"] == _ROW_ID
+
+
+def test_planned_row_reports_zero_frozen_of_one_rows(tmp_path: Path) -> None:
+    repo = _repo_with_change(tmp_path, _ledger(_row("planned")), _UNDER_FROZEN)
+
+    finding = _only(frozen_path.gather(repo))
+
+    assert finding.status is DoctorStatus.OK
+    assert "0 frozen of 1 rows" in finding.message
+    assert finding.evidence["frozen"] == 0
+
+
+def test_no_ledger_is_unevaluable(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     _init_repo(repo)
-    _write_manifest(repo, _ONE_REBUILDING_CAPABILITY)
-    base_sha = _commit_all(repo, "seed ledger")
-    _origin_main_at(repo, base_sha)
+    _touch(repo, "README.md", "no capability ledger here\n")
+    _origin_main_at(repo, _commit_all(repo, "seed, no ledger"))
 
-    (repo / "unrelated.txt").write_text("noop\n", encoding="utf-8")
-    _commit_all(repo, "unrelated change")
+    finding = _assert_unevaluable(frozen_path.gather(repo))
+    assert "missing" in finding.message
+
+
+def test_unparseable_ledger_is_unevaluable(tmp_path: Path) -> None:
+    repo = _repo_with_change(tmp_path, "capabilities: [this is not: valid: yaml\n", _UNDER_FROZEN)
+
+    _assert_unevaluable(frozen_path.gather(repo))
+
+
+def test_origin_main_unresolvable_is_unevaluable(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_ledger(repo, _ledger(_row("rebuilding")))
+    _commit_all(repo, "seed ledger")
+    # deliberately never create refs/remotes/origin/main
+
+    finding = _assert_unevaluable(frozen_path.gather(repo))
+    assert "could not diff origin/main..HEAD" in finding.message
+
+
+def test_v1_fixture_header_parses_with_only_the_ok(tmp_path: Path) -> None:
+    """The full v1 header (schema, generated_by, updated, source_sha, extract, modes, states,
+    frozen_states), one planned row and the `cells:` list: one OK and nothing else."""
+    text = (
+        _V1_HEADER
+        + "capabilities:\n"
+        + _row("planned", frozen=None)
+        + "cells:\n"
+        + "  - id: cell:conda-forge-expert/skill\n"
+        + "    path: skills/cfe/\n"
+        + "    mode: A-only\n"
+        + '    expiry: "mason:39.2"\n'
+    )
+    repo = _repo_with_change(tmp_path, text, _UNDER_FROZEN)
 
     findings = frozen_path.gather(repo)
 
-    assert len(findings) == 1
-    finding = findings[0]
+    assert [(f.status, f.message) for f in findings] == [
+        (DoctorStatus.OK, "0 frozen of 1 rows in docs/foundry/capability-ledger.yaml")
+    ]
+
+
+# --- the frozen set is the constant {rebuilding} ------------------------------------
+
+
+def test_header_frozen_states_is_never_read(tmp_path: Path) -> None:
+    header = _V1_HEADER.replace("frozen_states: [rebuilding]", "frozen_states: [planned]")
+    repo = _repo_with_change(tmp_path, _ledger(_row("planned"), header=header), _UNDER_FROZEN)
+
+    finding = _only(frozen_path.gather(repo))
+
     assert finding.status is DoctorStatus.OK
-    assert finding.check == "frozen-path-changed"
+    assert "0 frozen of 1 rows" in finding.message
 
 
-def test_multiple_simultaneous_violations_report_one_fail_per_pair(
-    tmp_path: Path,
-) -> None:
-    """Two frozen capabilities, each hit once in the same diff -- gather()
-    must return one FAIL Finding per (capability, path) pair, not collapse
-    them into one."""
+def test_the_moving_state_freezes_nothing(tmp_path: Path) -> None:
+    repo = _repo_with_change(tmp_path, _ledger(_row("moving")), _UNDER_FROZEN)
+
+    finding = _only(frozen_path.gather(repo))
+
+    assert finding.status is DoctorStatus.OK
+    assert "0 frozen of 1 rows" in finding.message
+
+
+@pytest.mark.parametrize("state", ["planned", "verified-in-foundry", "cut"])
+def test_every_other_state_freezes_nothing(tmp_path: Path, state: str) -> None:
+    repo = _repo_with_change(tmp_path, _ledger(_row(state)), _UNDER_FROZEN)
+
+    assert _only(frozen_path.gather(repo)).status is DoctorStatus.OK
+
+
+def test_a_cells_entry_is_never_frozen(tmp_path: Path) -> None:
+    text = _ledger(_row("planned")) + (
+        f"cells:\n  - id: cell:conda-forge-expert/scripts\n    state: rebuilding\n    frozen_paths:\n      - {_FROZEN_DIR}\n"
+    )
+    repo = _repo_with_change(tmp_path, text, _UNDER_FROZEN)
+
+    finding = _only(frozen_path.gather(repo))
+
+    assert finding.status is DoctorStatus.OK
+    assert "0 frozen of 1 rows" in finding.message
+
+
+def test_a_v0_ledger_without_state_reads_zero_frozen(tmp_path: Path) -> None:
+    """Today's v0 file: rows carry no `state`, so nothing is frozen until steward Story 121.3."""
+    text = (
+        "schema: pyforge.capability-ledger/v0\n"
+        "never_move: true\n"
+        "capabilities:\n"
+        "  - id: alpha:CAP-1\n    mode: rebuild\n"
+        "  - id: alpha:CAP-2\n    mode: retire\n"
+    )
+    repo = _repo_with_change(tmp_path, text, _UNDER_FROZEN)
+
+    finding = _only(frozen_path.gather(repo))
+
+    assert finding.status is DoctorStatus.OK
+    assert finding.message == "0 frozen of 2 rows in docs/foundry/capability-ledger.yaml"
+
+
+# --- the frozen rows ------------------------------------------------------------------
+
+
+def test_a_frozen_row_left_untouched_reports_ok(tmp_path: Path) -> None:
+    repo = _repo_with_change(tmp_path, _ledger(_row("rebuilding")), "unrelated.txt")
+
+    finding = _only(frozen_path.gather(repo))
+
+    assert finding.status is DoctorStatus.OK
+    assert "1 frozen of 1 rows" in finding.message
+
+
+def test_a_lookalike_sibling_change_is_not_under_the_frozen_path(tmp_path: Path) -> None:
+    repo = _repo_with_change(tmp_path, _ledger(_row("rebuilding")), "kernel/leafy/mod.py")
+
+    assert _only(frozen_path.gather(repo)).status is DoctorStatus.OK
+
+
+def test_one_fail_per_row_and_path_pair(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     _init_repo(repo)
-    _write_manifest(
+    _write_ledger(
         repo,
-        "capabilities:\n"
-        "  - capability: mason-recipe-writer\n"
-        "    state: rebuilding\n"
-        "    frozen_paths:\n"
-        "      - src/shared/packages/pyforge-mason\n"
-        "  - capability: warden-engine\n"
-        "    state: moving\n"
-        "    frozen_paths:\n"
-        "      - src/shared/packages/pyforge-warden\n",
+        _ledger(_row("rebuilding"), _row("rebuilding", row_id="alpha:CAP-2", frozen="kernel/stem")),
     )
-    base_sha = _commit_all(repo, "seed ledger")
-    _origin_main_at(repo, base_sha)
-
-    mason_path = repo / _FROZEN_PATH_TOUCHED
-    mason_path.parent.mkdir(parents=True, exist_ok=True)
-    mason_path.write_text("# touched\n", encoding="utf-8")
-    warden_touched = "src/shared/packages/pyforge-warden/engine.py"
-    warden_path = repo / warden_touched
-    warden_path.parent.mkdir(parents=True, exist_ok=True)
-    warden_path.write_text("# touched\n", encoding="utf-8")
+    _origin_main_at(repo, _commit_all(repo, "seed ledger"))
+    _touch(repo, _UNDER_FROZEN)
+    _touch(repo, "kernel/stem/engine.py")
     _commit_all(repo, "touch two frozen paths")
 
     findings = frozen_path.gather(repo)
 
-    assert len(findings) == 2
     assert all(f.status is DoctorStatus.FAIL for f in findings)
-    pairs = {(f.evidence["capability"], f.evidence["path"]) for f in findings}
-    assert pairs == {
-        ("mason-recipe-writer", _FROZEN_PATH_TOUCHED),
-        ("warden-engine", warden_touched),
+    assert {(f.evidence["id"], f.evidence["path"]) for f in findings} == {
+        (_ROW_ID, _UNDER_FROZEN),
+        ("alpha:CAP-2", "kernel/stem/engine.py"),
     }
 
 
-def test_gather_skips_a_stray_non_dict_capability_entry(tmp_path: Path) -> None:
-    """A `capabilities` list containing a bare string alongside a normal
-    dict entry must not crash `_gather` -- the non-dict entry is simply
-    skipped, the real entry still freezes normally."""
-    repo = tmp_path / "repo"
-    _init_repo(repo)
-    _write_manifest(
-        repo,
-        "capabilities:\n"
-        "  - a stray string, not a mapping\n"
-        "  - capability: mason-recipe-writer\n"
-        "    state: rebuilding\n"
-        "    frozen_paths:\n"
-        "      - src/shared/packages/pyforge-mason\n",
-    )
-    base_sha = _commit_all(repo, "seed ledger")
-    _origin_main_at(repo, base_sha)
-
-    changed = repo / _FROZEN_PATH_TOUCHED
-    changed.parent.mkdir(parents=True, exist_ok=True)
-    changed.write_text("# touched\n", encoding="utf-8")
-    _commit_all(repo, "touch a frozen path")
+def test_a_guards_nothing_row_and_a_violation_are_both_named(tmp_path: Path) -> None:
+    ledger = _ledger(_row("rebuilding"), _row("rebuilding", row_id="alpha:CAP-2", frozen=None))
+    repo = _repo_with_change(tmp_path, ledger, _UNDER_FROZEN)
 
     findings = frozen_path.gather(repo)
 
-    assert len(findings) == 1
-    assert findings[0].status is DoctorStatus.FAIL
-    assert findings[0].evidence["capability"] == "mason-recipe-writer"
+    assert len(findings) == 2
+    assert {(f.status, f.evidence["id"]) for f in findings} == {
+        (DoctorStatus.FAIL, _ROW_ID),
+        (DoctorStatus.FAIL, "alpha:CAP-2"),
+    }
+    assert any("guards nothing" in f.message for f in findings)
 
 
-def test_gather_skips_a_non_string_frozen_paths_entry(tmp_path: Path) -> None:
-    """A `frozen_paths` list containing `null` alongside a normal string
-    entry must not crash `_gather` -- the non-string entry is simply
-    skipped, the real string entry still freezes normally."""
+def test_frozen_paths_holding_no_usable_string_guards_nothing(tmp_path: Path) -> None:
+    row = _row("rebuilding", frozen=None) + "    frozen_paths:\n      - null\n      - ''\n"
+    repo = _repo_with_change(tmp_path, _ledger(row), _UNDER_FROZEN)
+
+    finding = _only(frozen_path.gather(repo))
+
+    assert finding.status is DoctorStatus.FAIL
+    assert "guards nothing" in finding.message
+
+
+def test_a_non_string_frozen_paths_entry_is_skipped(tmp_path: Path) -> None:
+    row = _row("rebuilding", frozen=None) + f"    frozen_paths:\n      - null\n      - {_FROZEN_DIR}\n"
+    repo = _repo_with_change(tmp_path, _ledger(row), _UNDER_FROZEN)
+
+    finding = _only(frozen_path.gather(repo))
+
+    assert finding.status is DoctorStatus.FAIL
+    assert finding.evidence["path"] == _UNDER_FROZEN
+
+
+def test_a_stray_non_mapping_row_is_counted_and_skipped(tmp_path: Path) -> None:
+    stray = "  - a stray string, not a mapping\n"
+    repo = _repo_with_change(tmp_path, _ledger(stray, _row("rebuilding")), _UNDER_FROZEN)
+
+    finding = _only(frozen_path.gather(repo))
+
+    assert finding.status is DoctorStatus.FAIL
+    assert finding.evidence["id"] == _ROW_ID
+
+
+def test_an_unhashable_state_freezes_nothing(tmp_path: Path) -> None:
+    row = _row("planned").replace("state: planned", "state: [rebuilding]")
+    repo = _repo_with_change(tmp_path, _ledger(row), _UNDER_FROZEN)
+
+    finding = _only(frozen_path.gather(repo))
+
+    assert finding.status is DoctorStatus.OK
+    assert "0 frozen of 1 rows" in finding.message
+
+
+# --- cannot-evaluate (spec-pyforge-doctor:AD-15) ------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "some_other_key: true\n",
+        "capabilities: not-a-list\n",
+        "- just\n- a\n- list\n",
+        "",
+    ],
+    ids=["no-capabilities-key", "capabilities-not-a-list", "not-a-mapping", "empty-file"],
+)
+def test_a_ledger_without_a_capabilities_list_is_unevaluable(tmp_path: Path, text: str) -> None:
+    repo = _repo_with_change(tmp_path, text, _UNDER_FROZEN)
+
+    _assert_unevaluable(frozen_path.gather(repo))
+
+
+def test_a_non_utf8_ledger_is_unevaluable(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     _init_repo(repo)
-    _write_manifest(
-        repo,
-        "capabilities:\n"
-        "  - capability: mason-recipe-writer\n"
-        "    state: rebuilding\n"
-        "    frozen_paths:\n"
-        "      - null\n"
-        "      - src/shared/packages/pyforge-mason\n",
-    )
-    base_sha = _commit_all(repo, "seed ledger")
-    _origin_main_at(repo, base_sha)
+    path = _ledger_file(repo)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"capabilities:\n  - id: \xff\xfe\n")
 
-    changed = repo / _FROZEN_PATH_TOUCHED
-    changed.parent.mkdir(parents=True, exist_ok=True)
-    changed.write_text("# touched\n", encoding="utf-8")
-    _commit_all(repo, "touch a frozen path")
-
-    findings = frozen_path.gather(repo)
-
-    assert len(findings) == 1
-    assert findings[0].status is DoctorStatus.FAIL
-    assert findings[0].evidence["path"] == _FROZEN_PATH_TOUCHED
+    _assert_unevaluable(frozen_path.gather(repo))
 
 
-def test_moving_state_also_freezes(tmp_path: Path) -> None:
-    repo = tmp_path / "repo"
-    _init_repo(repo)
-    _write_manifest(
-        repo,
-        "capabilities:\n"
-        "  - capability: mason-recipe-writer\n"
-        "    state: moving\n"
-        "    frozen_paths:\n"
-        "      - src/shared/packages/pyforge-mason\n",
-    )
-    base_sha = _commit_all(repo, "seed ledger")
-    _origin_main_at(repo, base_sha)
+def test_a_non_repository_target_is_unevaluable(tmp_path: Path) -> None:
+    target = tmp_path / "not-a-repo"
+    _write_ledger(target, _ledger(_row("rebuilding")))
 
-    changed = repo / _FROZEN_PATH_TOUCHED
-    changed.parent.mkdir(parents=True, exist_ok=True)
-    changed.write_text("# touched during move\n", encoding="utf-8")
-    _commit_all(repo, "touch a frozen path")
-
-    findings = frozen_path.gather(repo)
-
-    assert len(findings) == 1
-    assert findings[0].status is DoctorStatus.FAIL
+    _assert_unevaluable(frozen_path.gather(target))
 
 
-def test_malformed_ledger_reports_one_generic_warn(tmp_path: Path) -> None:
-    repo = tmp_path / "repo"
-    _init_repo(repo)
-    _write_manifest(repo, "capabilities: [this is not: valid: yaml\n")
-    _commit_all(repo, "seed malformed ledger")
+def test_an_unexpected_error_still_meets_the_degrade_net(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    repo = _repo_with_change(tmp_path, _ledger(_row("rebuilding")), _UNDER_FROZEN)
 
-    findings = frozen_path.gather(repo)
+    def _boom(*_args: object, **_kwargs: object) -> set[str]:
+        raise RuntimeError("boom")
 
-    assert len(findings) == 1
-    finding = findings[0]
-    assert finding.source is Source.FROZEN_PATH_CHANGED
-    assert finding.check == "frozen-path-changed"
+    monkeypatch.setattr(frozen_path, "_changed_paths", _boom)
+
+    finding = _only(frozen_path.gather(repo))
     assert finding.status is DoctorStatus.WARN
+    assert finding.evidence == {"exception": "RuntimeError"}
 
 
-def test_unresolvable_git_ref_reports_warn(tmp_path: Path) -> None:
+# --- the dispatcher: python -m pyforge.doctor.sources frozen-path-changed ------------------
+
+
+def test_the_dispatcher_exits_2_naming_the_row_and_the_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    repo = _repo_with_change(tmp_path, _ledger(_row("rebuilding")), _UNDER_FROZEN)
+    monkeypatch.chdir(repo)
+
+    assert dispatch.main(["frozen-path-changed"]) == 2
+    out = capsys.readouterr().out
+    assert _ROW_ID in out and _UNDER_FROZEN in out
+
+
+def test_the_dispatcher_exits_0_for_a_planned_row(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    repo = _repo_with_change(tmp_path, _ledger(_row("planned")), _UNDER_FROZEN)
+    monkeypatch.chdir(repo)
+
+    assert dispatch.main(["frozen-path-changed"]) == 0
+    assert "0 frozen of 1 rows" in capsys.readouterr().out
+
+
+def test_the_dispatcher_exits_0_on_a_cannot_evaluate_warn(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     repo = tmp_path / "repo"
     _init_repo(repo)
-    _write_manifest(repo, _ONE_REBUILDING_CAPABILITY)
-    _commit_all(repo, "seed ledger")
-    # deliberately never create an "origin/main" branch/ref
+    monkeypatch.chdir(repo)
 
-    findings = frozen_path.gather(repo)
-
-    assert len(findings) == 1
-    finding = findings[0]
-    assert finding.source is Source.FROZEN_PATH_CHANGED
-    assert finding.check == "frozen-path-changed"
-    assert finding.status is DoctorStatus.WARN
-    assert "could not diff" in finding.message
-
-
-def test_gather_never_raises_on_a_non_repository_target(tmp_path: Path) -> None:
-    """A target that is not a git repository at all is still degraded to a
-    WARN by _changed_paths's own git failure path -- exercised here via a
-    ledger that DOES have a frozen capability (so gather reaches the git
-    diff step) inside a directory with no .git at all."""
-    non_repo = tmp_path / "not-a-repo"
-    _write_manifest(non_repo, _ONE_REBUILDING_CAPABILITY)
-
-    findings = frozen_path.gather(non_repo)
-
-    assert len(findings) == 1
-    assert findings[0].status is DoctorStatus.WARN
+    assert dispatch.main(["frozen-path-changed"]) == 0
+    assert "frozen-path-changed-unevaluable: warn" in capsys.readouterr().out

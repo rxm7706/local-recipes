@@ -3170,7 +3170,9 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: low
   promoted: 2026-11-05 — EGM audit landing (marshal Story 113.18)
   reason: deferred by triage, so it is not among the 53 the operator accepted, and the re-derive of 2026-11-05 left it: no reader acts wrongly on it today.
-  status: open
+  status: closed
+  resolution: closed by doctor Story 57.1 (spec-pyforge-doctor, Epic 57) as its own fix says: the mint of 2026-11-10 amended CAP-93's intent to read "`Every` means the ten FR-15 names (DW-doctor-egm-2026-11-05-1's fix); each later Source is governed by the capability contract.md names for it", and Story 57.1's re-derive kept that clause and its success's ten named sources.
+  verified: 2026-11-11 doctor Story 57.1 -- `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md:346` (CAP-93's intent names the ten FR-15 names); `grep -c 'ten FR-15 names' _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md` exits 0 and prints 1; the clause's memlog entry is the mint's `(capability) CAP-93 (amended 2026-11-10 ...)` line in `specs/spec-pyforge-doctor/.memlog.md`.
 
 ### DW-doctor-egm-2026-11-05-2: No detector checks the (ready) and (shipped) date markers CHAIN-STANDARD requires (RUL-C-F5)
 

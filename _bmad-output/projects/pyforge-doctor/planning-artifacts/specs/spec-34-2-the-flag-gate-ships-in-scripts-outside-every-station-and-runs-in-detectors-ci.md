@@ -2,7 +2,7 @@
 title: '34.2: The flag gate ships in scripts, outside every station, and runs in detectors-ci'
 type: 'feature'
 created: '2026-09-28'
-status: 'in-review'
+status: 'done'
 baseline_revision: '7151e3d2653a6289c4f01a4ac17f8514aee3247a'
 flag-exempt: detector-or-gate   # a gated gate reports a silent green (spec-feature-flag-governance Q2)
 review_loop_iteration: 0

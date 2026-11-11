@@ -20,7 +20,8 @@ prescriptions}`` — ``prescriptions`` present (a list, possibly empty) only
 when ``verb == "diagnose"``; for ``check``/``monitor`` it stays ``None`` in
 the Python model AND is omitted (never ``null``) from the serialized JSON.
 
-This module is pure data: no I/O, no subprocess, no network, no clock.
+This module is pure data, plus one pure predicate over it
+(``is_gather_failure``): no I/O, no subprocess, no network, no clock.
 """
 
 from __future__ import annotations
@@ -237,7 +238,7 @@ class Source(StrEnum):
     DREAMS_HYGIENE = "dreams-hygiene"
     # Story 17.3 (Epic 17 / FR-150 residual + FR-152): read-only chain-layer
     # presence report for ONE named project, seeded from
-    # pyforge.doctor.sources.fleet_scan's FLEET_STAGES/_stage_globs/_resolve.
+    # scripts/fleet_scan.py's FLEET_STAGES/_stage_globs/_resolve.
     # Distinct from CHAIN_COMPLETENESS INV-A..D and from DREAMS_HYGIENE.
     # Invoked as `chain-completeness --layers --project <slug>`. Warn-only.
     CHAIN_LAYERS_AUDIT = "chain-layers-audit"
@@ -400,8 +401,16 @@ class Partition(StrEnum):
 #: The one evidence marker every cannot-evaluate WARN carries
 #: (``evidence[UNEVALUABLE_EVIDENCE_KEY] is True``): the source could not
 #: judge its subject at all, so ``score.grade`` reads its axis as
-#: ``incomplete``, never as a letter grade (DW-doctor-40-1).
+#: ``incomplete``, never as a letter grade (DW-doctor-40-1), and
+#: ``scripts/detectors.py`` reads a row of nothing else as ``unmeasured``.
 UNEVALUABLE_EVIDENCE_KEY = "unevaluable"
+
+#: ``sources/atlas.py``'s ``_one_fail_finding`` default ``check``. With an empty
+#: ``evidence`` it marks "this axis's OWN gather failed" (the atlas sentinel), as
+#: distinct from an ordinary FAIL about a real package problem. A duplicated
+#: literal, not an import: this module stays pure data (AD-3), and ``score``
+#: (AD-7) reads the predicate below, so neither imports ``sources.atlas``.
+_GATHER_FAILURE_CHECK = "doctor.sources.atlas"
 
 
 @dataclass(frozen=True)
@@ -441,6 +450,36 @@ class Finding:
             "message": self.message,
             "evidence": self.evidence,
         }
+
+
+def is_gather_failure(finding: Finding) -> bool:
+    """True when ``finding`` says its source's OWN gather did not complete.
+
+    The one predicate that tells a gather failure from a finding
+    (spec-pyforge-doctor:AD-15, spec-pyforge-doctor:CAP-93): ``score.grade``
+    reads such an axis as ``incomplete``, and ``scripts/detectors.py`` reads a
+    row whose findings hold no FAIL and are all gather failures as
+    ``unmeasured``, never ``pass``. Three shapes, all matched here:
+
+    * the ``sources/atlas.py`` sentinel -- ``check == "doctor.sources.atlas"``
+      with no evidence (see ``_GATHER_FAILURE_CHECK``);
+    * ``sources.degrade_on_exception``'s WARN -- the source's own ``check`` plus
+      ``evidence={"exception": <class name>}``, the shape a gather that raised
+      outright leaves behind. ``"exception"`` is that function's own key, so the
+      WARN is matched by the evidence it alone produces, not by a ``check`` name
+      every source spells differently;
+    * a cannot-evaluate WARN -- ``evidence[UNEVALUABLE_EVIDENCE_KEY] is True``
+      (an unresolvable ledger head, ``chain-layers-audit-unevaluable``,
+      ``bmad-drift-unevaluable``; DW-doctor-40-1).
+
+    An ordinary WARN about a real problem carries none of these and is still a
+    finding (DW-FU-6-6-11).
+    """
+    if finding.check == _GATHER_FAILURE_CHECK and not finding.evidence:
+        return True
+    if finding.status is not DoctorStatus.WARN:
+        return False
+    return "exception" in finding.evidence or finding.evidence.get(UNEVALUABLE_EVIDENCE_KEY) is True
 
 
 @dataclass(frozen=True)

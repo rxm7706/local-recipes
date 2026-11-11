@@ -39,7 +39,7 @@ if str(_DOCTOR_SRC) not in sys.path:
     sys.path.insert(0, str(_DOCTOR_SRC))
 
 # `scripts/` has no `__init__.py` -- reach detectors.py the same way
-# `pyforge.doctor.sources.fleet_scan` reaches its own scripts/ siblings.
+# `scripts/fleet_scan.py` reaches its own scripts/ siblings.
 _SCRIPTS_DIR = REPO_ROOT / "scripts"
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
@@ -355,6 +355,108 @@ def test_a_warn_only_hygiene_source_reads_pass_and_leaves_the_exit_code(monkeypa
     monkeypatch.setitem(DISPATCH, "bmad-output-hygiene", _hygiene_stub("fail"))
     (fail_row,) = detectors._run_doctor_sources("repo")
     assert (fail_row["status"], fail_row["rc"]) == ("FINDINGS", 1)
+
+
+# --- unmeasured: a row that measured nothing (Story 56.3, spec-pyforge-doctor:AD-15) ---
+
+
+def _one_source_row(monkeypatch, gather) -> dict:
+    """Run the aggregate over ONE Doctor source whose gather is ``gather``."""
+    DISPATCH = _doctor_dispatch()
+    monkeypatch.setattr(detectors, "_DOCTOR_SOURCE_TASKS", (("bmad-output-hygiene", "bmad-output-hygiene-check"),))
+    monkeypatch.setitem(DISPATCH, "bmad-output-hygiene", gather)
+    (row,) = detectors._run_doctor_sources("repo")
+    return row
+
+
+def _unevaluable_warn():
+    from pyforge.doctor.models import UNEVALUABLE_EVIDENCE_KEY, DoctorStatus, Finding, Source
+
+    return Finding(
+        source=Source.BMAD_OUTPUT_HYGIENE,
+        check="bmad-output-hygiene-unevaluable",
+        status=DoctorStatus.WARN,
+        message="no _bmad-output/projects here -- nothing to sweep",
+        evidence={"target": "/x", UNEVALUABLE_EVIDENCE_KEY: True},
+    )
+
+
+def test_an_unevaluable_warn_reads_unmeasured_with_rc_0(monkeypatch):
+    row = _one_source_row(monkeypatch, lambda _target: (_unevaluable_warn(),))
+    assert (row["status"], row["rc"]) == ("unmeasured", 0), row
+    assert "bmad-output-hygiene-unevaluable: warn" in row["output"]
+
+
+def test_a_degrade_on_exception_warn_reads_unmeasured(monkeypatch):
+    _doctor_dispatch()  # skips, naming the library, where Doctor's run-deps are absent (pyforge-ci)
+    from pyforge.doctor.models import Source
+    from pyforge.doctor.sources import degrade_on_exception
+
+    def raises():
+        raise OSError("the subject is absent")
+
+    # The real helper, so the row reads the shape `degrade_on_exception` actually leaves behind.
+    row = _one_source_row(
+        monkeypatch, lambda _target: degrade_on_exception(Source.BMAD_OUTPUT_HYGIENE, "bmad-output-hygiene", raises)
+    )
+    assert (row["status"], row["rc"]) == ("unmeasured", 0), row
+
+
+def test_an_empty_result_reads_pass_not_unmeasured(monkeypatch):
+    # A source returns () only after it measured: nothing found is a measurement.
+    row = _one_source_row(monkeypatch, lambda _target: ())
+    assert (row["status"], row["rc"], row["summary"]) == ("pass", 0, "no findings"), row
+
+
+def test_a_warn_about_a_real_subject_reads_pass_not_unmeasured(monkeypatch):
+    row = _one_source_row(monkeypatch, _hygiene_stub("warn"))
+    assert (row["status"], row["rc"]) == ("pass", 0), row
+
+
+def test_a_finding_beside_an_unevaluable_warn_reads_pass_not_unmeasured(monkeypatch):
+    # "All gather failures": one real measurement beside the cannot-evaluate WARN is a measurement.
+    row = _one_source_row(monkeypatch, lambda target: (_unevaluable_warn(), *_hygiene_stub("ok")(target)))
+    assert (row["status"], row["rc"]) == ("pass", 0), row
+
+
+def test_a_fail_beside_an_unevaluable_warn_reads_findings_not_unmeasured(monkeypatch):
+    row = _one_source_row(monkeypatch, lambda target: (_unevaluable_warn(), *_hygiene_stub("fail")(target)))
+    assert (row["status"], row["rc"]) == ("FINDINGS", 1), row
+
+
+def test_main_over_pass_and_unmeasured_rows_exits_0_and_counts_the_unmeasured(
+    monkeypatch, tmp_path: Path, capsys,
+):
+    """The exit codes are unchanged: `unmeasured` exits 0, a warning the merge bar does not fail on (operator ruling
+    of 2026-11-10). The text table marks the row `○` and the summary line counts it."""
+    DISPATCH = _doctor_dispatch()
+    _post_retirement_fixture(tmp_path)
+    monkeypatch.setattr(detectors, "ROOT", tmp_path)
+    monkeypatch.setattr(
+        detectors, "SEARCH",
+        ((tmp_path / "scripts", "*_check.py"),
+         (tmp_path / "docs" / "dashboard", "check_*.py")),
+    )
+    monkeypatch.setattr(
+        detectors,
+        "_DOCTOR_SOURCE_TASKS",
+        (("bmad-output-hygiene", "bmad-output-hygiene-check"), ("dreams-hygiene", "dreams-hygiene-check")),
+    )
+    monkeypatch.setitem(DISPATCH, "bmad-output-hygiene", lambda _target: (_unevaluable_warn(),))
+    monkeypatch.setitem(DISPATCH, "dreams-hygiene", lambda _target: ())
+    monkeypatch.setattr(sys, "argv", ["detectors.py", "--scope", "repo"])
+
+    exit_code = detectors.main()
+
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    rows = [ln.strip() for ln in out.splitlines() if ln.strip().startswith(("○", "✔"))]
+    assert any(ln.startswith("○ bmad-output-hygiene") and "unmeasured" in ln for ln in rows), out
+    assert any(ln.startswith("✔ dreams-hygiene") and "pass" in ln for ln in rows), out
+    summary = [ln for ln in out.splitlines() if "measured nothing" in ln]
+    assert len(summary) == 1, out
+    assert "1 measured nothing" in summary[0] and "bmad-output-hygiene" in summary[0]
+    assert "dreams-hygiene" not in summary[0]
 
 
 def test_the_real_hygiene_gather_runs_through_the_aggregate_and_reads_pass(monkeypatch, tmp_path: Path):
