@@ -2,7 +2,7 @@
 fr-derivation-from: "2026-09-17"
 title: pyforge-scribe
 created: 2026-07-25
-updated: "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief -> PRD and spec -> PRD); no CAP, FR or AD is minted. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): chain-currency cascade (spec -> PRD) for the Spec's 2026-11-01 re-derive (CAP-27, CAP-29, CAP-30, CAP-31 and CAP-32 amended; no CAP minted) and the brief's re-stamp for research/egm-audit-2026-11-01.md; FR-16 carries the 2026-09-26 end state; no other FR, NFR or arrow moves. See § Currency reconciliation — 2026-11-01 (EGM fleet audit). Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (CAP-7 retrofit, Epic 29): the station memlog gained the retrofit decision; no requirement changes. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 27.1): chain-currency cascade (spec -> PRD) for the Spec memlog's 2026-10-26 entries (the instruction surface carries the requirement-arrow rule under CAP-27 and CAP-29); no FR, NFR or arrow changes. See § Currency reconciliation — 2026-10-26 (Story 27.1). Prior "2026-10-15"   # RE-STAMPED 2026-10-15: chain-currency (spec -> PRD) for the spec memlog's 2026-10-15 surface decision (a stale surface glob re-pointed; no CAP, FR or AD moved). See § Currency reconciliation — 2026-10-15. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 26, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28: chain-currency (spec->prd) — spec-pyforge-scribe memlog moved 2026-09-26 (Stories 21.1 / 21.2 / 22.1 / 23.1 landing reconciles; surface gains the instruction pointer files) and 2026-09-28 (AGENTS.md Policy line, mason CAP-29 surface reconcile); no FR change. See § Currency reconciliation — 2026-09-28. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-scribe memlog moved 2026-09-24T20:28 (marshal 46.3 surface reconciles); no FR change. Prior 2026-09-20
+updated: "2026-11-10"   # AMENDED 2026-11-10 (cutover-readiness mint, Epics 31 to 33): FR-51 <- CAP-33, FR-52 <- CAP-34 (retired with it), FR-53 <- CAP-35 and FR-54 <- CAP-4 registered; no other FR, NFR or arrow moves; Story 31.3 re-stamps the chain. See § Currency reconciliation — 2026-11-10 (cutover-readiness mint). Prior "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief -> PRD and spec -> PRD); no CAP, FR or AD is minted. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): chain-currency cascade (spec -> PRD) for the Spec's 2026-11-01 re-derive (CAP-27, CAP-29, CAP-30, CAP-31 and CAP-32 amended; no CAP minted) and the brief's re-stamp for research/egm-audit-2026-11-01.md; FR-16 carries the 2026-09-26 end state; no other FR, NFR or arrow moves. See § Currency reconciliation — 2026-11-01 (EGM fleet audit). Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (CAP-7 retrofit, Epic 29): the station memlog gained the retrofit decision; no requirement changes. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 27.1): chain-currency cascade (spec -> PRD) for the Spec memlog's 2026-10-26 entries (the instruction surface carries the requirement-arrow rule under CAP-27 and CAP-29); no FR, NFR or arrow changes. See § Currency reconciliation — 2026-10-26 (Story 27.1). Prior "2026-10-15"   # RE-STAMPED 2026-10-15: chain-currency (spec -> PRD) for the spec memlog's 2026-10-15 surface decision (a stale surface glob re-pointed; no CAP, FR or AD moved). See § Currency reconciliation — 2026-10-15. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 26, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28: chain-currency (spec->prd) — spec-pyforge-scribe memlog moved 2026-09-26 (Stories 21.1 / 21.2 / 22.1 / 23.1 landing reconciles; surface gains the instruction pointer files) and 2026-09-28 (AGENTS.md Policy line, mason CAP-29 surface reconcile); no FR change. See § Currency reconciliation — 2026-09-28. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-scribe memlog moved 2026-09-24T20:28 (marshal 46.3 surface reconciles); no FR change. Prior 2026-09-20
 status: final
 currency_review: "Reviewed 2026-09-17 — one-chain scribe fold; FR-1..15 cite CAP-1..4; reminted station CAPs 1..26 live on spec-pyforge-scribe. FR delta: citations only."
 ---
@@ -170,6 +170,28 @@ audit, Story 23.2).
 The scribe core package is a member of the `pyforge-guild` feature (the default every harness's
 sandbox installs); the compile extras stay in `-e pyforge-scribe`. FR-13's "any session, any
 operator" now reads **any harness**.
+
+*Registered 2026-11-10 at the cutover-readiness mint (Epics 31 to 33), each traced from the intent and
+success of the capability it cites. Numbered from FR-51 so no id collides with the canopy ids this PRD
+cites bare (FR-45, FR-50).*
+
+#### FR-51: An operator refreshes the derived index artifacts without recomputing an unchanged one ← CAP-33
+An operator can refresh scribe's derived index artifacts without recomputing one whose sources did not
+change, and a caller can track its own artifact the same way (`scribe index refresh`, `--declare`).
+
+#### FR-52: An operator lists every line a package fold would touch ← CAP-34
+An operator can list every line a package fold would touch, by signal, without the graphify extra
+(`scribe index move-list`). *Retired 2026-11-10 with CAP-34: the package fold it served was retired by
+operator ruling 2 of 2026-11-10; the verb stays until a Story removes it.*
+
+#### FR-53: The suite fails when a Spec is behind its memlog ← CAP-35
+A session can trust the seed's currency: the suite fails, naming the Spec folder and the entry, when a
+memlog holds a contract entry its rendered Spec has not followed.
+
+#### FR-54: The station's public contract is recorded in one companion that cannot fall behind the code ← CAP-4
+The station's public contract is recorded in one companion and cannot fall behind the code: a verb, flag,
+MCP tool, flag key, environment variable or exit code present in the code and absent from `contract.md`
+fails the suite and is named.
 
 **Feature-specific NFRs:**
 - **Language/Runtime:** Python, matching this repo's existing pixi environments; no new language introduced.
@@ -507,3 +529,17 @@ before. No FR is added, renumbered or removed; no NFR, success metric or arrow m
 *Chain-currency cascade (research -> brief -> PRD and spec -> PRD), EGM audit, marshal Story 113.18.*
 
 `research/egm-audit-2026-11-05.md` (marshal Story 113.18, `spec-pyforge-marshal:CAP-302`): 11 high findings, 3 accepted, 5 rejected, 3 deferred; the medium and low findings are not triaged. CAP-32 is re-derived: in-tree means git-listed and not ignored, and the `governance-currency` clause is dropped. No FR is added, renumbered or re-scoped.
+
+## Currency reconciliation — 2026-11-10 (cutover-readiness mint)
+
+*`spec→prd` edge: the Spec re-derived on 2026-11-10 from the cutover-readiness mint entries (Dream § Realization log,
+the 2026-11-10 entry; the operator rulings of 2026-11-10 and their two addenda).*
+
+**What moved upstream.** CAP-33 (`scribe index refresh`, shipped by Story 6.2) and CAP-35 (no Spec is behind its
+memlog) are minted; CAP-34 (`scribe index move-list`, shipped by Story 6.1) is minted retired. CAP-4 now names five
+command groups and a written public contract (`contract.md`); CAP-1, CAP-27, CAP-28 and CAP-31 gain the clauses
+Stories 32.2, 32.1, 33.2 and 33.1 build.
+
+**FR delta.** FR-51 (← CAP-33), FR-52 (← CAP-34, retired with it), FR-53 (← CAP-35) and FR-54 (← CAP-4) are
+registered in § 4.4. FR-14's three-command wording follows CAP-4 in Story 31.3's re-stamp, with the rest of the
+chain; no other FR, NFR, success metric or arrow moves here.

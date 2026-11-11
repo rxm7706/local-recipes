@@ -11,7 +11,7 @@ inputDocuments:
   - _bmad-output/projects/pyforge-scribe/planning-artifacts/briefs/brief-pyforge-scribe-2026-07-25/brief.md
   - docs/specs/claude-team-memory.md
 mode: headless-express — no interactive elicitation; epic/story structure drafted directly from the PRD's Wave 1/Wave 2 split and the architecture spine's module breakdown
-updated: "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (arch -> epics); no CAP, FR or AD is minted. Prior "2026-11-01"   # AMENDED 2026-11-01 (EGM fleet audit, marshal Story 113.7): Stories 19.4, 22.2, 23.2 and 25.2 minted (fixes, no CAP, no flag; in-PR: 19.4, 22.2, 23.2, 25.2; backlog: none) under spec-pyforge-scribe CAP-28, CAP-31, CAP-27/CAP-29/CAP-30 and CAP-32, each into the epic it fixes (operator ruling 2026-10-04: a fix story joins its done epic; the epic-19, epic-22, epic-23 and epic-25 roll-ups follow the sync); the "One story." intros of Epics 22, 23 and 25 carry a dated append; append-only notes on Story 19.3 (its Surface line corrected for the flag inventory, EGM audit SCR-D-C5); keys through the Tier-3 feed and sprint-ledger-sync; no other epic or story moved. RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): arch->epics validation after the spine re-stamp of the same day; the four fix stories are done and build inside the spine's boundaries; no story, AC or ledger key moved. See § Currency reconciliation — 2026-11-01 (EGM fleet audit). Prior "2026-10-27"   # AMENDED 2026-10-27 (absorbed Spec folders to the archive home): Epic 30 / Story 30.1 minted in-progress under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 16 absorbed Spec folders move to archive/<original path>; keys 30-1, epic-30 (in-progress) and epic-30-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync. Prior "2026-10-26"   # AMENDED 2026-10-26 (one archive home): Epic 28 / Story 28.1 minted done under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 16 archived satellite Dreams left docs/dreams/ for archive/docs/dreams/, their bodies verbatim in the station Dream; keys 28-1, epic-28 (done) and epic-28-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync. Prior "2026-10-26"   # AMENDED 2026-10-26 (CAP-7 retrofit): Epic 29 / Stories 29.1–29.2 minted; keys through the Tier-3 feed and sprint-ledger-sync; no other epic or story moved. Prior "2026-10-26"   # AMENDED 2026-10-26 (every requirement derives from a capability): Epic 27 / Story 27.1 minted (chore under spec-pyforge-scribe CAP-27 and CAP-29, spec-one-chain-per-station CAP-5 as amended; no CAP, no flag): AGENTS.md items 6 and 7 carry the requirement-arrow and multi-station-PR bullets, the block the CHAIN-STANDARD pointer and the shared-Postgres pitfall, the notes file the incident, team memory two captures; keys 27-1 (in-progress), epic-27 (in-progress) and epic-27-retrospective (optional) added; no other epic or story moved. Prior "2026-10-15"   # RE-STAMPED 2026-10-15: arch->epics cascade after the 2026-10-15 spine re-stamp (a stale surface glob re-pointed); no story, AC or ledger key moved. See § Currency reconciliation — 2026-10-15. Prior: AMENDED 2026-10-03 (Phase 4+5 landing): Story 26.1's four follow-up-review rows withdrawn by operator ruling (they run as review batches); it closes 5 rows. Prior: RE-STAMPED 2026-10-03 (Phase 4+5): Epic 26 / Story 26.1 minted (fix, no CAP): nine of scribe's 14 open medium and low deferrals, operator rulings of 2026-10-03. Prior: RE-STAMPED 2026-09-29: Epic 24 minted (24.1–24.3, spec-pyforge-scribe CAP-32) from the station Dream entry of 2026-09-29. Prior 2026-09-28:  chain-currency cascade (arch -> epics) after the 2026-09-28 spine re-stamp; no story change. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics); Epic 21 minted (21.1, spec-python-foundry-cutover fnd:CAP-15). Prior 2026-09-20
+updated: "2026-11-10"   # AMENDED 2026-11-10 (cutover-readiness mint): Epics 31 to 33 minted under spec-pyforge-scribe (CAP-33 and CAP-34 minted, CAP-34 retired, CAP-35 minted; CAP-1, CAP-4, CAP-27, CAP-28 and CAP-31 amended), nine stories: 31.1 to 31.4, 32.1 to 32.3, 33.1 and 33.2, each with a tracked spec, all backlog except 31.2 and 31.4, which are blocked (forward dependency: their Deps name Epics 32 and 33; unblocked only with operator confirmation); every Deps field in the S-<epic>.<num> grammar forward-dependency-check reads (the mint fix pass also rewrote the older Deps of 4.1, 20.1, 21.2 and 29.2 into it, cross-station ones as trailing `<station>:S-<E>.<S>` context; no status of theirs moved); keys epic-31, epic-32 and epic-33 (backlog) with their epic-<n>-retrospective keys (optional) through the Tier-3 feed and sprint-ledger-sync; no other epic or story moved; Story 31.3 re-stamps the chain. Prior "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (arch -> epics); no CAP, FR or AD is minted. Prior "2026-11-01"   # AMENDED 2026-11-01 (EGM fleet audit, marshal Story 113.7): Stories 19.4, 22.2, 23.2 and 25.2 minted (fixes, no CAP, no flag; in-PR: 19.4, 22.2, 23.2, 25.2; backlog: none) under spec-pyforge-scribe CAP-28, CAP-31, CAP-27/CAP-29/CAP-30 and CAP-32, each into the epic it fixes (operator ruling 2026-10-04: a fix story joins its done epic; the epic-19, epic-22, epic-23 and epic-25 roll-ups follow the sync); the "One story." intros of Epics 22, 23 and 25 carry a dated append; append-only notes on Story 19.3 (its Surface line corrected for the flag inventory, EGM audit SCR-D-C5); keys through the Tier-3 feed and sprint-ledger-sync; no other epic or story moved. RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): arch->epics validation after the spine re-stamp of the same day; the four fix stories are done and build inside the spine's boundaries; no story, AC or ledger key moved. See § Currency reconciliation — 2026-11-01 (EGM fleet audit). Prior "2026-10-27"   # AMENDED 2026-10-27 (absorbed Spec folders to the archive home): Epic 30 / Story 30.1 minted in-progress under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 16 absorbed Spec folders move to archive/<original path>; keys 30-1, epic-30 (in-progress) and epic-30-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync. Prior "2026-10-26"   # AMENDED 2026-10-26 (one archive home): Epic 28 / Story 28.1 minted done under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 16 archived satellite Dreams left docs/dreams/ for archive/docs/dreams/, their bodies verbatim in the station Dream; keys 28-1, epic-28 (done) and epic-28-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync. Prior "2026-10-26"   # AMENDED 2026-10-26 (CAP-7 retrofit): Epic 29 / Stories 29.1–29.2 minted; keys through the Tier-3 feed and sprint-ledger-sync; no other epic or story moved. Prior "2026-10-26"   # AMENDED 2026-10-26 (every requirement derives from a capability): Epic 27 / Story 27.1 minted (chore under spec-pyforge-scribe CAP-27 and CAP-29, spec-one-chain-per-station CAP-5 as amended; no CAP, no flag): AGENTS.md items 6 and 7 carry the requirement-arrow and multi-station-PR bullets, the block the CHAIN-STANDARD pointer and the shared-Postgres pitfall, the notes file the incident, team memory two captures; keys 27-1 (in-progress), epic-27 (in-progress) and epic-27-retrospective (optional) added; no other epic or story moved. Prior "2026-10-15"   # RE-STAMPED 2026-10-15: arch->epics cascade after the 2026-10-15 spine re-stamp (a stale surface glob re-pointed); no story, AC or ledger key moved. See § Currency reconciliation — 2026-10-15. Prior: AMENDED 2026-10-03 (Phase 4+5 landing): Story 26.1's four follow-up-review rows withdrawn by operator ruling (they run as review batches); it closes 5 rows. Prior: RE-STAMPED 2026-10-03 (Phase 4+5): Epic 26 / Story 26.1 minted (fix, no CAP): nine of scribe's 14 open medium and low deferrals, operator rulings of 2026-10-03. Prior: RE-STAMPED 2026-09-29: Epic 24 minted (24.1–24.3, spec-pyforge-scribe CAP-32) from the station Dream entry of 2026-09-29. Prior 2026-09-28:  chain-currency cascade (arch -> epics) after the 2026-09-28 spine re-stamp; no story change. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics); Epic 21 minted (21.1, spec-python-foundry-cutover fnd:CAP-15). Prior 2026-09-20
 currency_review: "Reviewed 2026-09-17 (one-chain scribe fold) — INV-A window cites spec-pyforge-scribe CAP-1..26; epic numbers unchanged. No blocked keys flipped."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -374,7 +374,7 @@ steward `sprint-change-proposal-2026-08-24-hook-specs.md`; `DW-OM-2026-08-24`.
 
 ## Epic 4: GraphStore on the shared plugin contract
 
-**FR-45.** Deps: steward S-32.1. Cooperates with steward Epic 28; does not re-own PG/pgvector.
+**FR-45.** Deps: steward:S-32.1. Cooperates with steward Epic 28; does not re-own PG/pgvector.
 
 ### Story 4.1: Register GraphStore as CAP-18 plugins
 
@@ -382,7 +382,7 @@ As a scribe operator,
 I want `FlatFileGraphStore` (and the Epic 28 PG driver) as plugins on the shared contract,
 So that swapping a recall store does not fork scribe.
 
-**Type:** feature • **Effort:** M • **Deps:** steward S-32.1 • **FR/AD:** FR-45 • canopy:AD-21
+**Type:** feature • **Effort:** M • **Deps:** — (cross-station: steward:S-32.1) • **FR/AD:** FR-45 • canopy:AD-21
 **Given** the existing `GraphStore` port **When** this story completes **Then** today's flat-file backend is the default plugin
 **And** the durable PG driver (steward S-28.1) registers as a second plugin, not a fork
 **And** recall completeness is not published as a PR quality-gate verdict
@@ -764,7 +764,7 @@ As the maintainer of the instruction surface,
 I want `test_instruction_surface_parity.py` to fail on a `TODO:` / `FIXME:` / "not yet landed" line between the `bmad:context` markers,
 So that a decision without a Story cannot sit in the block as a line every session pays for.
 
-**Type:** feature • **Effort:** S • **Deps:** cross-project: steward 66.2 (the two lines standing on 2026-09-20) • **FR/AD:** spec-pyforge-scribe CAP-30 • Dream 2026-09-20 (evening)
+**Type:** feature • **Effort:** S • **Deps:** — (cross-station: steward:S-66.2, the two lines standing on 2026-09-20) • **FR/AD:** spec-pyforge-scribe CAP-30 • Dream 2026-09-20 (evening)
 **Surface:** `src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py` (one test + a planted-fixture self-test), `AGENTS.md` (nothing — the block is read, not written).
 **Given** two `TODO:` lines have stood in the managed block since 2026-09-04 with no Story behind them
 **When** this story lands
@@ -803,7 +803,7 @@ As an agent reading the instruction-file checklist before a PR,
 I want the line about `governance-currency` to say which lanes run it,
 So that I neither skip a gate that runs nor hand-run one out of a false belief that nothing does.
 
-**Type:** docs • **Effort:** S • **Deps:** 21.1 • **FR/AD:** spec-pyforge-scribe CAP-27 • minted 2026-09-26 from the station Dream's entry of the same date (a defect in 21.1's own output)
+**Type:** docs • **Effort:** S • **Deps:** S-21.1 • **FR/AD:** spec-pyforge-scribe CAP-27 • minted 2026-09-26 from the station Dream's entry of the same date (a defect in 21.1's own output)
 **Surface:** `AGENTS.md` (Pre-PR checklist item 10, outside the managed block); `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-21-1-agents-md-opens-with-what-this-repository-is.md` (a dated correction appended to its triage log).
 **Given** 21.1 wrote that neither `detectors-ci` nor `pr-preflight` runs `governance-currency`, while `scripts/detectors.py --scope repo` discovers `scripts/governance_currency_check.py` by its `*_check.py` glob
 **When** this story lands
@@ -1052,7 +1052,7 @@ As the operator who turned none of the 1 retrofit kill switches off in their 90-
 I want each key removed from the tree, its reader and its two-state test on 2027-01-24 (the Q4 clock, `on_everywhere` 2026-10-26 plus 90 days), declared with `retires-flag:` by this station,
 So that the gate's `flag-clock-overdue` never reds `detectors-ci`, no reader is left behind, and the inventory reads each row as retired by this story.
 
-**Type:** feature • **Effort:** M • **Deps:** 29.1 • **FR/AD:** the retirement path of the Guild flag rule (spec-feature-flag-governance, the gate capability as amended 2026-10-15; Q4)
+**Type:** feature • **Effort:** M • **Deps:** S-29.1 • **FR/AD:** the retirement path of the Guild flag rule (spec-feature-flag-governance, the gate capability as amended 2026-10-15; Q4)
 **Flag:** `flag-exempt: flag-infrastructure`; `retires-flag:` `pyforge.scribe.bmad_estate_catalog`
 **Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, the read sites and the two-state tests the Epic 29 stories name, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-scribe.md` (regenerated)
 **Spec:** `planning-artifacts/specs/spec-29-2-the-retrofit-kill-switch-retires-on-its-cleanup-date.md`
@@ -1125,6 +1125,183 @@ So that `specs/` holds the station Spec, its declared seams and its story specs 
 **Then** no folder under `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/` reads `status: absorbed`, each moved folder keeps its files, and every live pointer names the file's new path
 **And** `chain-sprawl` (its baseline pruned), `dream-chain`, `governance-currency`, `spec-surface`, `ad-citation`, `chain-completeness`, `chain-currency` and `detectors-ci` stay green, and the station suite passes
 **Status:** done
+
+## Epic 31: The scribe Spec and its public contract say what the code does (spec-pyforge-scribe CAP-4, CAP-33, CAP-34; the truth sweep amends CAP-1..3, CAP-6, CAP-9, CAP-17, CAP-18, CAP-21..23, CAP-31, CAP-32)
+
+Minted 2026-11-10 from the station Dream's Realization-log entry of the same date: the fleet cutover-readiness audit
+at `82a2b18828` (`research/cutover-readiness-audit-2026-11-10.md`) and the operator rulings of 2026-11-10 with their
+two addenda (`docs/dreams/pyforge-unifying-strategy.md` § Realization log). The code is right; the Spec text, its
+markers, its citations and the record of the public contract are wrong or missing. Four stories: 31.1 writes the
+contract and its meta-test, 31.2 re-derives the Spec from its memlog, 31.3 carries the planning chain after it, and
+31.4 closes scribe's part of the one PR at the integration head. One of the station epics of the 2026-11-10
+single-PR cutover-readiness change (branch `cutover-readiness-2026-11-10`). **HARD boundaries:** no product
+behaviour and no kill switch (second addendum, item 5); `SPEC.md` is never hand-edited (memlog entry, then the
+anchored script render, both self-validate passes logged); the `bmad:context` block changes only through
+`bmad-project-context`; a build story never writes the ledger (the CLOSE-LEDGERS job promotes every key once).
+
+### Story 31.1: Scribe's public contract is written down, and a meta-test holds it
+
+As a second root that rebuilds scribe from its Spec,
+I want every verb, flag, MCP tool, flag key, environment variable and exit code scribe serves written in one companion and held by a test,
+So that the contract a rebuild re-derives is the one the code serves, and a new verb cannot ship unrecorded.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-scribe CAP-4 (amended 2026-11-10; FR-54); AD-7 (the CLI is the sole public contract)
+**Flag:** `flag-exempt: detector-or-gate` (a contract record and the meta-test that judges it; a gated gate reports a silent green, `spec-feature-flag-governance` Q2)
+**Surface:** `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/contract.md` (new), `src/shared/packages/pyforge-scribe/tests/meta/test_public_contract.py` (new; `pytestmark = pytest.mark.live_tree`)
+**Spec:** `planning-artifacts/specs/spec-31-1-scribe-s-public-contract-is-written-down-and-a-meta-test-holds-it.md`
+**Given** at `82a2b18828` the Spec names three of the CLI's five command groups, no MCP tool and no environment variable, while `pyforge.scribe.cli.app` has five groups and django-scribe's MCP face serves `start_recall` and `get_recall`
+**When** this story lands
+**Then** `contract.md` has one table per family: the CLI verbs and flags (a row per verb path, starting `` | `scribe <path>` | ``; `index move-list` marked retired with CAP-34), the MCP tools, the flag key `pyforge.scribe.bmad_estate_catalog`, the environment variables (the package's, the surface scripts', and those inherited through `pyforge.core`) and the exit codes; `test_public_contract.py` derives the code side (the click tree, an AST scan of `typer.Exit(code=)` and of `os.environ` reads, flag-key literals, the `*_TOOL` constants of django-scribe's `mcp_asgi.py` read as text) and exits 1 naming each item present in the code and absent from `contract.md`
+**And** a planted contract missing one item of each family is reported by name (`-k test_checker_names_a_missing`: 6 passed); the test imports no host or portal code; `pixi run --frozen -e pyforge-guild lint-types` exits 0
+**Status:** backlog
+
+### Story 31.2: The scribe Spec says what the code does
+
+As a second root that reads scribe's Spec as its seed,
+I want every capability, marker and citation of `spec-pyforge-scribe` to state what the code does today,
+So that a rebuild from Dream plus memlog reproduces scribe and not a stale reading of it.
+
+**Type:** docs • **Effort:** M • **Deps:** S-31.1, S-32.1, S-32.2, S-32.3, S-33.1, S-33.2 • **FR/AD:** spec-pyforge-scribe CAP-1..3, CAP-6, CAP-9, CAP-17, CAP-18, CAP-21..23, CAP-31 and CAP-32 amended; CAP-33 and CAP-34 verified against the code; the markers of CAP-5..CAP-35; no AD moves
+**Flag:** none (`type: docs`, `spec-feature-flag-governance` Q1)
+**Surface:** `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/.memlog.md`, `SPEC.md` (re-derived by the anchored script render), `glossary.md`
+**Spec:** `planning-artifacts/specs/spec-31-2-the-scribe-spec-says-what-the-code-does.md`
+**Given** at `82a2b18828` the Spec states the memory schema flat where the code and all 121 records nest `metadata.type`, leaves CAP-17 and CAP-18 as "See absorbed memlog", carries 26 stale markers, eight `later-caps:CAP-n` cites, twelve success bullets with an inlined Constraints / Non-goals section, and a `pg16` CI service
+**When** each amendment is a memlog entry and `bmad-spec` re-derives the Spec once, after the six stories it depends on are built
+**Then** CAP-1 states the nested schema and `--source`; CAP-2 the compile surfaces, Story 8.1's trigger and supersession's one writer, `capture(supersedes=)`, with no CLI flag (operator ruling 2026-11-10); CAP-3 recency ties and the store's identity rule; CAP-6, CAP-9, CAP-21..23, CAP-31 and CAP-32 their named corrections; CAP-17 and CAP-18 are re-authored in full; every capability heading carries one dated marker, `(shipped <date>)` from the merge of the last story citing it, `(ready <date>)` while a story is open, and CAP-34's `(retired 2026-11-10: ...)`, and the not-met-until-Story qualifiers the mint fix pass wrote on the CAP-1, CAP-4 and CAP-33 headings are gone; the Non-goal *Not CAP-14* points at `spec-pyforge-unifying-strategy:CAP-14` and the four changesets `src/platform/db/changelog/changes/pyforge-scribe-1..4*.sql`; `surface:` gains the four contract files and `companions:` gains `contract.md`
+**And** both self-validate passes are logged under the `Story 31.2 re-derive` marker; `grep -c 'See absorbed memlog'` prints 0; the tests the amended capabilities name pass; no capability entry is backfilled, since the seed includes `archive/**/.memlog.md` (operator ruling 2026-11-10)
+**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+
+### Story 31.3: The scribe planning chain follows the Spec
+
+As a reader of scribe's planning chain,
+I want the brief, PRD, spine and epics re-stamped in order after the Spec's re-derive, with the retro and the deferred rows this change leaves,
+So that `chain-currency` reads scribe current and no planning artifact repeats a claim the Spec dropped.
+
+**Type:** docs • **Effort:** M • **Deps:** S-31.2 • **FR/AD:** FR-14, FR-16 and FR-51..FR-54 re-checked against spec-pyforge-scribe CAP-4, CAP-27 and CAP-33..CAP-35; no AD moves
+**Flag:** none (`type: docs`, `spec-feature-flag-governance` Q1)
+**Surface:** `briefs/brief-pyforge-scribe-2026-07-25/brief.md`, `prds/prd-pyforge-scribe-2026-07-25/prd.md`, `architecture/architecture-pyforge-scribe-2026-07-25/ARCHITECTURE-SPINE.md`, `epics.md`, `deferred-work-ledger.md`, `retros/retro-pyforge-scribe-2026-11-*.md` (new), `implementation-readiness-report-2026-11-*.md` (new), `docs/dreams/pyforge-scribe.md`
+**Spec:** `planning-artifacts/specs/spec-31-3-the-scribe-planning-chain-follows-the-spec.md`
+**Given** the research stage reads 2026-11-10 against a brief of 2026-11-05, Stories 33.1 and 33.2 move the code stage past the newest retro, and the PRD, spine and epics carry the three-command claim, a 3.12 floor, an unqualified FR-45 and an input document that does not exist
+**When** the chain is re-stamped in order, brief, PRD, spine, epics, after Story 31.2's re-derive
+**Then** the four read on or after 2026-11-10, in that order, none older than the package manifest's last commit; FR-14 names five command groups; the spine's Stack row reads `python >=3.14`; both FR-45 lines read `canopy:FR-45`; `inputDocuments` names `archive/docs/specs/claude-team-memory.md`; a retro covers Epics 31 to 33; the deferred-work ledger gains the seven rows the rulings leave open and closes DW-scribe-egm-2026-11-05-3 citing Story 32.1; DW-8-1-2 gains an evidence line; the Dream's Realization log closes the entry
+**And** `ad-citation-check` exits 0, the planning detectors name no scribe finding, and `chain-currency-sweep-check -- --project pyforge-scribe` exits 0
+**Status:** backlog
+
+### Story 31.4: Scribe's part of the cutover-readiness change closes at the integration head
+
+As the operator landing the single cutover-readiness PR,
+I want the catalogs scribe owns, the team-memory close, the known-rows file and the Spec surface made true once every unit has built,
+So that the PR lands with no scribe-owned artifact behind the tree it ships.
+
+**Type:** chore • **Effort:** M • **Deps:** S-31.1, S-31.2, S-31.3, S-32.1, S-32.2, S-32.3, S-33.1, S-33.2 (the cross-station order is in its spec) • **FR/AD:** spec-pyforge-scribe CAP-32 (the estate catalog), CAP-1 (team memory), CAP-35 (the known-rows file), CAP-27 (`AGENTS.md`); no CAP moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `docs/reference/bmad-estate-llms-full.md`, `docs/reference/library-llms-full.md` (each regenerated only if its check is red), `.claude/memory/MEMORY.md`, `.claude/memory/project/**` (one capture), `src/shared/packages/pyforge-scribe/tests/meta/data/spec_behind_memlog_known.json` (re-measured), `specs/spec-pyforge-scribe/.memlog.md` (one `Surface reconcile` event), `AGENTS.md` (the one late edit: the SKF block re-export, Pre-PR item 1 and the lint paragraph, the `src/platform` import-guard pitfall, and § Session guardrails' rule count and denial list)
+**Spec:** `planning-artifacts/specs/spec-31-4-scribe-s-part-of-the-cutover-readiness-change-closes-at-the-integration-head.md`
+**Given** every other unit's stories are built on the integration branch, `pixi.lock` is regenerated once, and the other units' capture texts and `AGENTS.md` requests are in hand
+**When** this story runs at the integration head
+**Then** `scribe catalog bmad-estate --check` and `llms-full-check` exit 0; the known-rows file is re-measured with full history and no row is scribe's; one `Surface reconcile` event names every scribe-governed path the change moved; one `scribe capture --type project` records the close, after Story 32.2's `MEMORY.md` edit; `AGENTS.md` names the chain-write denial and no stale rule count
+**And** the station suite passes in both halves with the server up; `test_instruction_surface_parity.py`, `test_team_memory_index.py`, `test_spec_not_behind_memlog.py` and `governance-currency` exit 0; `marshal context advisory` runs; the keys are promoted by the CLOSE-LEDGERS job, not here
+**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+
+## Epic 32: The instruction surface, team memory and the seed state the ruled cutover (spec-pyforge-scribe CAP-1, CAP-27, CAP-35)
+
+Minted 2026-11-10 from the station Dream's Realization-log entry of the same date. Ruling 1 of 2026-11-10 makes A the
+writer until the flip and Dream plus memlog the seed; `AGENTS.md` still says otherwise, nothing tests the team-memory
+index, and nothing reds a Spec its memlog has moved past. Three stories, each a guard test, with no product code:
+32.1 refreshes the `bmad:context` block from the rulings (per-PR approval b, given 2026-11-10), 32.2 holds the
+team-memory index and moves the operator-approved superseded records to the archive, and 32.3 mints CAP-35. **HARD
+boundaries:** the block changes only through `bmad-project-context`, its whole proposed text shown in the PR; a record
+moves with `git mv` and is never deleted; scribe re-derives no other owner's Spec; no new verb and no new detector.
+
+### Story 32.1: AGENTS.md states the writer lock and the seed as the operator ruled them
+
+As every harness that reads `AGENTS.md` before writing a Dream, Frame or Spec,
+I want the managed block to state the writer lock, the seed and the mode table as the operator ruled them on 2026-11-10,
+So that no session writes a chain artifact on B, or seeds a rebuild from a Frame, on the strength of a reversed rule.
+
+**Type:** chore • **Effort:** M • **Deps:** — (it builds late, after the other units' `AGENTS.md` requests and the stories that change a fact the block states; the cross-station order is in its spec) • **FR/AD:** spec-pyforge-scribe CAP-27 (amended 2026-11-10; FR-16)
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `AGENTS.md` (the `bmad:context` block through a `bmad-project-context` refresh; the recipe count outside it), `docs/reference/agent-instruction-notes.md` (§ *Moved from AGENTS.md*: the superseded sentences under the ruling's date), `src/shared/packages/pyforge-scribe/tests/meta/test_cutover_wording.py` (new; `pytestmark = pytest.mark.live_tree`)
+**Spec:** `planning-artifacts/specs/spec-32-1-agents-md-states-the-writer-lock-and-the-seed-as-the-operator-ruled-them.md`
+**Given** `AGENTS.md` says B is rebuilt from Frame + Spec and gives the writer lock and the mode table to B, while ruling 1 of 2026-11-10 says A writes every Dream, Frame, Spec and the capability ledger until the flip, B reads A at a pinned SHA, and the seed is Dream plus memlog
+**When** `bmad-project-context` refreshes the block headless with the 2026-11-10 rulings as the approved input (per-PR approval b), the whole proposed block shown in the PR
+**Then** the block names the seed as Dream plus memlog, archived memlogs (`archive/**/.memlog.md`) included with no backfill, and a Frame as a pointer, says A writes every Dream, Frame, Spec and capability-ledger row until `pyforge.cutover_root` flips and B reads A at a pinned SHA, names `docs/foundry/capability-ledger.yaml` as the mode table, carries the accepted RUL-A-F3 text, and its provenance line carries the refresh date and SHA; the recipe count outside the block is re-measured with its command or dropped; the notes file quotes the superseded sentences under 2026-11-10
+**And** `test_cutover_wording.py` removes each required clause (the seed's archived memlogs among them) and plants each superseded clause in a copy, and asserts that exactly that clause is named; the parity suite and `governance-currency` exit 0
+**Status:** backlog
+
+### Story 32.2: A test holds the team-memory index
+
+As a session that reads `.claude/memory/MEMORY.md` at start,
+I want a test that holds the index equal to the record files, and the superseded receipts moved out of it,
+So that every index line names a live record and the index stays a short, current read.
+
+**Type:** chore • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-scribe CAP-1 (amended 2026-11-10; FR-2)
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `src/shared/packages/pyforge-scribe/tests/meta/test_team_memory_index.py` (new; `pytestmark = pytest.mark.live_tree`), `.claude/memory/MEMORY.md`, `.claude/memory/project/**` (the records that move), `archive/.claude/memory/project/**` (their new home)
+**Spec:** `planning-artifacts/specs/spec-32-2-a-test-holds-the-team-memory-index.md`
+**Given** nothing tests that `MEMORY.md` and the record files agree, and about 45 of 121 index lines are receipts later records supersede
+**When** this story lands
+**Then** the test holds the index and the files equal, every link resolving, every record parsing with nested `metadata.type`, and the 200-line bound; the story spec carries the manifest, one row per record with its reason and the record that supersedes it; the operator-approved records (second addendum, item 7) move with `git mv` to `archive/.claude/memory/project/` and their index lines leave `MEMORY.md`
+**And** the guard fires on four planted fixture trees (4 passed); no record is deleted; `pixi run --frozen -e pyforge-guild lint-types` exits 0
+**Status:** backlog
+
+### Story 32.3: A Spec that is behind its memlog reds scribe's live-tree suite
+
+As a session that rebuilds from Dream plus memlog,
+I want the suite to fail, naming the Spec folder and the entry, when a memlog holds a contract entry its rendered Spec has not followed,
+So that the seed's two halves cannot drift apart unnoticed.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-scribe CAP-35 (minted 2026-11-10; FR-53)
+**Flag:** `flag-exempt: detector-or-gate` (a meta-test that judges; a gated gate reports a silent green, `spec-feature-flag-governance` Q2)
+**Surface:** `src/shared/packages/pyforge-scribe/tests/meta/test_spec_not_behind_memlog.py` (new; `pytestmark = pytest.mark.live_tree`), `src/shared/packages/pyforge-scribe/tests/meta/data/spec_behind_memlog_known.json` (new)
+**Spec:** `planning-artifacts/specs/spec-32-3-a-spec-that-is-behind-its-memlog-reds-scribe-s-live-tree-suite.md`
+**Given** ruling 1 makes Dream plus memlog the seed, and Story 44.13's tool checks only that a memlog file exists
+**When** this story lands
+**Then** for every live Spec folder the test compares the working-tree memlog with the memlog at the commit that last changed `SPEC.md`, and an added entry that is not bookkeeping (as `scripts/fleet_scan.py` classifies it, imported, never redefined) fails the suite naming the folder and the entry, unless a known row with its owner holds it; the known-rows file only shrinks, judged with full history; a shallow clone judges the change under test only
+**And** fixture repositories plant each case and its clean twin (8 passed); scribe's own Spec is judged with no known row; `pixi run --frozen -e pyforge-guild lint-types` exits 0
+**Status:** backlog
+
+## Epic 33: Scribe's suite is an oracle a second root can run (spec-pyforge-scribe CAP-28, CAP-31; relay of spec-pyforge-steward:CAP-175)
+
+Minted 2026-11-10 from the station Dream's Realization-log entry of the same date. Scribe's suite has no live-tree
+split, four unit modules find the repository by counting parents, the Postgres-bound tests carry no marker, seven
+tests of the "extra unavailable" branches skip in the only environment the suite runs in, and the package's own
+metadata disagrees with the estate (a psycopg past the estate cap, a 3.12 floor). Two `fix` stories, tests and
+metadata, with comments and docstrings the only edits under `src/`. **HARD boundaries:** every pixi command is
+`--frozen` (steward-station regenerates `pixi.lock` once for every manifest); the pixi task split, its CI job and
+the trigger map are steward-station's; no runtime behaviour moves.
+
+### Story 33.1: The suite splits on live_tree and postgres, and no test skips the branch it names
+
+As a second root that runs scribe's package tests without A's tree,
+I want the tests that read the repository marked `live_tree`, those that need the server marked `postgres` and failing when it is absent, and every "extra unavailable" branch run,
+So that the package half proves scribe alone and no green hides a skipped branch.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-scribe CAP-31 (amended 2026-11-10), CAP-33 (the cocoindex-absent branch); relay of spec-pyforge-steward:CAP-175
+**Flag:** none (`type: fix`, `spec-feature-flag-governance` Q1)
+**Surface:** `src/shared/packages/pyforge-scribe/pyproject.toml` (the two markers), `tests/unit/conftest.py` (one walk-up root finder; the `postgres` fixture param marked), `tests/unit/test_graph_store_pg.py`, `test_graph_store_operations.py`, `test_navigation_owner.py`, `test_recall_semantic.py`, `test_cli.py`, `test_compile.py`, `test_extras_cocoindex_flow.py`, `test_extras_graphify.py`, `tests/meta/test_first_portal_slice.py`, `test_guild_env_membership.py`, `test_instruction_surface_parity.py`, `test_skf_skill_ownership.py`, `test_station_persona.py`, `tests/meta/test_live_tree_split.py` (new)
+**Spec:** `planning-artifacts/specs/spec-33-1-the-suite-splits-on-live-tree-and-postgres-and-no-test-skips-the-branch-it-names.md`
+**Given** scribe has no live-tree split, four unit modules find the repository through `parents[5]` / `parents[6]`, the Postgres-bound tests fail with no marker saying so, and seven tests skip when graphifyy or cocoindex is installed, which it always is in `-e pyforge-scribe`
+**When** this story lands
+**Then** `live_tree` and `postgres` are registered markers; every module that reads outside the package carries `live_tree`; every test that needs the server carries `postgres` and fails, never skips, when nothing answers on `SCRIBE_GRAPH_DSN`; one walk-up finder replaces the parent counting; the seven tests simulate the extra's absence and run; `test_live_tree_split.py` holds a closed list of the skip sites that remain, each with its reason
+**And** the package half passes with the package copied alone and the working directory outside the repository; a missing server fails the pg tests without a skip; the whole suite passes with the server up; `pixi run --frozen -e pyforge-guild lint-types` exits 0
+**Status:** backlog
+
+### Story 33.2: The package's metadata and docs agree with the estate
+
+As a second root that installs scribe from its own manifests,
+I want the package's extras, its Python floor, its README, its runbook and its docstrings to agree with what the estate pins and the code does,
+So that a rebuild does not ask for a psycopg the estate forbids or teach a staleness rule against the wrong clock.
+
+**Type:** fix • **Effort:** M • **Deps:** S-33.1 (it shares `pyproject.toml` and `test_compile.py`) • **FR/AD:** spec-pyforge-scribe CAP-28 (amended 2026-11-10), CAP-11 and CAP-26 (the staleness clock, docstrings only)
+**Flag:** none (`type: fix`, `spec-feature-flag-governance` Q1)
+**Surface:** `src/shared/packages/pyforge-scribe/pixi.toml`, `pyproject.toml`, `README.md`, `docs/cli-runbooks.md`, `src/pyforge/scribe/models.py`, `compile.py` and `recall.py` (comments and docstrings only), `tests/meta/test_package_metadata_matches_estate.py` (new), `tests/unit/test_recall.py`, `test_capture.py`, `test_compile.py` (only if a touched module falls under the coverage floor)
+**Spec:** `planning-artifacts/specs/spec-33-2-the-package-s-metadata-and-docs-agree-with-the-estate.md`
+**Given** the postgres extra asks for `psycopg>=3.3` past the estate cap, the conda manifest says `python >=3.12`, two docstrings state the staleness rule against `valid_from`, recall.py cites archive-era capability ids, the README carries a hand count of stories and the runbook routes guild tasks to `-e local-recipes`
+**When** this story lands
+**Then** each extra's floor equals the pin the root `pixi.toml` carries in `[feature.pyforge-scribe.dependencies]`, cap included; the package `pixi.toml` floor is `>=3.14`; the docstrings name `compiled_at` and the recall-time withhold; recall.py cites station ids; the README points at the ledger; the runbook routes guild tasks through `-e pyforge-guild`
+**And** `test_package_metadata_matches_estate.py` exits 0 and fires on a planted drift; the touched modules hold the coverage floor; `pixi run --frozen -e pyforge-guild lint-types` exits 0
+**Status:** backlog
 
 ## Platform floor addendum — 2026-09-07
 
