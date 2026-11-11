@@ -128,6 +128,24 @@ Each command runs from the worktree root; read every verdict from its exit code,
 
 Status: blocked (forward dependency on S-48.1, S-48.2 and S-48.3, 2026-11-10; minted 2026-11-10).
 
+## Planned deferral (written at build)
+
+The row below is not in the deferred-work ledger yet and is not in this spec's frontmatter (`deferred-work-check`
+reds a frontmatter row with no tracked ledger twin). The atlas station closer of the cutover-readiness PR writes it
+to `_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md`.
+
+- **`DW-atlas-47-1-1`** (low; owner atlas; location
+  `src/shared/packages/pyforge-atlas/tests/meta/test_public_contract.py`): the meta-test derives environment reads
+  exactly as the Approach names them (`os.environ.get`, `os.environ[...]`, `os.getenv`, the five reads through a
+  variable, and `${env_or:…}` in `conf/base/*.yml`), in `src/` and `tools/`. Two reads stay outside that derivation,
+  and `contract.md` lists both as prose the test does not judge: (1) four modules read through an `env` mapping that
+  defaults to `os.environ` (`factory/lasuite.py`, `nl/backend.py`, `orchestration/definitions.py`,
+  `pipelines/universal_sbom/gate.py`; 13 names, among them the five `PYFORGE_ATLAS_<KEY>` profile overrides built
+  from `PROFILES` in a loop); (2) `wasm/build.py`, outside `src/` and `tools/`, whose `sys.exit("<message>")` exits
+  `1`. Fix: extend the derivation to a mapping parameter whose default is `os.environ` (the profile loop needs its
+  table resolved from `PROFILES`'s keys) and to the member's other script roots, then move those rows into the
+  judged tables (spec-pyforge-atlas:CAP-73).
+
 ## Spec Change Log
 
 - 2026-11-10: minted from the station Dream's entry of 2026-11-10 (cutover readiness) under the operator's rulings of 2026-11-10 ("Accept all", "Retire both", "Accept all, run mint"). Acceptance adjusted by the rulings: the views runtime is deleted (ruling 6), so the plan's branch for a stopped Story 48.3 is dropped; the `companions:` line was written at the mint.

@@ -146,6 +146,50 @@ Each command runs from the worktree root; read every verdict from its exit code,
 
 Status: blocked (forward dependency on S-46.2, 2026-11-10; minted 2026-10-26, operator ruling (d): not built in the one-PR effort; re-scoped 2026-11-10 and built in the cutover-readiness PR).
 
+Build 2026-11-11 (wave BUILD-3, after S-46.2 was built on the branch; the status moves at the ledger close, not here):
+- The two satellite headings are retitled to the `Fold provenance` record headings; no line inside either section
+  moves. The PRD gains `## Currency reconciliation — 2026-11-11 (Story 41.2)`.
+- A dry run of `prune_fr_baseline` on the retitled tree removed exactly the 22 atlas `findings` keys
+  `fr-duplicate-id:FR-1`..`FR-22` and nothing else; `python scripts/fr_baseline.py --prune` then printed
+  `pruned 22 entries`, all `pyforge-atlas: fr-duplicate-id:FR-n`, and kept the 48 atlas `projects` ids. The two
+  `owners.pyforge-atlas` rows became the one DW-atlas-46-1-9 row by hand; the marshal and mason rows are unchanged.
+- The PRD's `updated:` moves to 2026-11-11 with a dated comment, as every earlier reconciliation section of the PRD
+  did. Without it the PRD's date is older than the atlas code dated 2026-11-11 on the branch, and the chain-currency
+  sweep reported the PRD as behind its code. No FR or NFR line is touched by the move (AC3).
+- Commands: AC1 prints 0, AC2 prints 2, AC3 prints only the mint's `#### FR-78: …` heading and exits 0, AC4 prints 1,
+  AC5 exits 0 for both commands (the second prints `0 []`), AC6 prints `22 0 True` and doctor's live test passes
+  (1 passed); `pixi run --frozen -e pyforge-atlas kedro-catalog-check` exits 0 (70 passed).
+- Re-verified 2026-11-11 after the interrupted attempt: a dry `prune_fr_baseline` on the tree removes nothing (the file
+  is the prune's fixed point, `owners` aside), and every command above gives the same result.
+- Outside this story's files (reported, not edited): doctor's live test
+  `test_live_tree_reference_headings_never_duplicate_and_satellites_do`
+  (`src/shared/packages/pyforge-doctor/tests/unit/test_sources_one_chain_fr_arrows.py`, line 944) asserts
+  `fr-duplicate-id:FR-1` is still in atlas's findings, which the retitle ends by design, so it fails from this wave
+  until its owner, doctor:S-56.4 (BUILD-4, which owns that file and runs `pyforge-doctor-test`), flips the assertion
+  to atlas reporting no `fr-duplicate-id`. Recorded as a planned deferral with that owner (§ Planned deferral
+  (written at build)); doctor:S-58.1 only moves the file and is not the owner. The atlas chain-currency sweep still
+  reds on links this story does not own (the spine behind code dated 2026-11-11, the retro feed, the gate report's
+  shelf); the PRD link is current.
+
+## Planned deferral (written at build)
+
+The row below is not in the deferred-work ledger yet and is not in this spec's frontmatter (`deferred-work-check`
+reds a frontmatter row with no tracked ledger twin). The atlas station closer of the cutover-readiness PR writes it
+to `_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md`: open if the assertion below is
+still unflipped when the closer runs, otherwise resolved with a pointer to doctor:S-56.4's change.
+
+- **`DW-atlas-41-2-1`** (medium; owner doctor:S-56.4, wave BUILD-4; location
+  `src/shared/packages/pyforge-doctor/tests/unit/test_sources_one_chain_fr_arrows.py:944`): this story's retitle of
+  the two satellite sections to `Fold provenance` record sections ends atlas's `fr-duplicate-id` findings by design
+  (`sources/one_chain.py` `_fr_definitions` suppresses second definitions in a record section), so doctor's live test
+  `test_live_tree_reference_headings_never_duplicate_and_satellites_do` fails on its last line,
+  `assert "fr-duplicate-id:FR-1" in dups["pyforge-atlas"]` (`assert 'fr-duplicate-id:FR-1' in []`; reproduced
+  2026-11-11: 1 failed). The fix is a one-line flip of that assertion to `dups["pyforge-atlas"] == []` (atlas now
+  reports no `fr-duplicate-id`, the satellites being record sections), dropping the satellite comment. It lands with
+  doctor:S-56.4, which owns the file in BUILD-4 and whose AC runs `pixi run -e pyforge-doctor pyforge-doctor-test`;
+  doctor:S-58.1 (BUILD-5) only moves the live readers and is not the owner. Until BUILD-4 lands, `pyforge-doctor-test`
+  is red on this one test from BUILD-3. This story cannot make the flip: the file is outside its `files_owned`.
+
 ## Spec Change Log
 
 - 2026-10-26: minted from the station Dream's entry of 2026-10-26 (every requirement derives from a capability) at the operator's rulings of 2026-10-26 ("yes forbid it"; the ruling sheet accepted in full).
@@ -160,6 +204,8 @@ Status: blocked (forward dependency on S-46.2, 2026-11-10; minted 2026-10-26, op
 
 - 2026-11-11 (orchestrator decision: the story that makes baseline keys stale prunes them): left for doctor:S-58.4 (BUILD-18), the 22 stale keys this retitle leaves would keep doctor's live test `test_live_tree_fr_without_cap_has_no_fail_at_ruling_snapshot` (it asserts no `fr-baseline-stale`) red from BUILD-3 to BUILD-18 and break doctor Stories 56.4, 58.1, 58.2 and 57.3's AC13. This story now owns `docs/governance/fr-baseline.json` as its first writer (then 58.4): it runs `scripts/fr_baseline.py --prune` after the retitle and replaces the two atlas `owners` rows with the one DW-atlas-46-1-9 row (moved here from 58.4). Re-simulated on a copy of the tree with doctor's real parser: the retitle alone gives 22 `fr-baseline-stale` (all atlas `findings` keys `fr-duplicate-id:FR-1`..`FR-22`), the prune removes exactly those 22 and keeps the 48 `projects` ids, and 0 `fr-baseline-stale` remains. Surface gains the file; AC5 now requires no stale atlas key; AC6 is new (exact removed set against the merge-base, the owners row, and doctor's live test; it exits 1 today); Always/Never, the I/O matrix and the Binding follow.
 
+- 2026-11-11 (build, review round 1): two accepted points from the build review. (1) The PRD's frontmatter `updated:` is re-stamped to 2026-11-11 with a dated comment, beyond the Always line's "change only the two `##` headings; add one dated reconciliation section". This is an accepted deviation, not a scope change: `scripts/fleet_scan.py`'s behind-code check would otherwise report the PRD (2026-11-10) as behind atlas code dated 2026-11-11 on the branch, every earlier reconciliation section of this PRD re-stamped `updated:` the same way, and the line carries no FR or NFR definition, so AC3 holds. The Always line is read as including that re-stamp. (2) The retitle also makes doctor's live test `test_live_tree_reference_headings_never_duplicate_and_satellites_do` stale (it asserts atlas still reports `fr-duplicate-id:FR-1`), which the 2026-11-11 orchestrator decision above missed; the test file is outside this story's files, so it is a planned deferral, `DW-atlas-41-2-1`, owned by doctor:S-56.4 (§ Planned deferral (written at build)).
+
 ## Review Triage Log
 
 - (none yet)
@@ -167,3 +213,40 @@ Status: blocked (forward dependency on S-46.2, 2026-11-10; minted 2026-10-26, op
 ## History: the 2026-10-26 contract (superseded 2026-11-10)
 
 The story was minted to renumber the satellite series from FR-78 (Unity FR-1..FR-60 → FR-78..FR-137; Wasm FR-1..FR-17 → FR-138..FR-154), trace each heading's arrow to CAP-18..CAP-31 by subsection, commit `planning-artifacts/rekey-<date>.md` and re-point every reference, with `scripts/fr_baseline.py --prune` removing the 39 atlas `fr-duplicate-id` entries then baselined. The 2026-11-10 rulings withdrew that: the satellites are retired, never built, and their text stays as history.
+
+## Review findings (build, round 1, 2026-11-11)
+
+An independent reviewer failed the first build. Each finding, and what this round did:
+
+- **Major — `src/shared/packages/pyforge-doctor/tests/unit/test_sources_one_chain_fr_arrows.py:944` (not a 41.2 file)
+  and this story spec's body.** The retitle breaks `pyforge-doctor-test`:
+  `test_live_tree_reference_headings_never_duplicate_and_satellites_do` fails with
+  `assert 'fr-duplicate-id:FR-1' in []` (reproduced 2026-11-11: 1 failed). The spec's own rule (the story whose change
+  makes a doctor live test stale handles it) covered only `test_live_tree_fr_without_cap_has_no_fail_at_ruling_snapshot`
+  and missed this assertion; no story spec on the branch named the fix, and the finding was only in Auto Run Result,
+  not in a `## Planned deferral (written at build)` section, so the regression had no owner. **Fixed in this story's
+  files:** § Planned deferral (written at build) now carries `DW-atlas-41-2-1` (the file and line, the assertion to
+  flip to atlas reporting no `fr-duplicate-id`, owner doctor:S-56.4, BUILD-4), for the atlas closer to write; the Auto
+  Run Result bullet names doctor:S-56.4 alone as owner (doctor:S-58.1 only moves the file); the Spec Change Log
+  records the miss. **Not fixable here:** the test file is doctor:S-56.4's `files_owned`, so the one-line flip, and an
+  amendment to doctor:S-56.4's story spec (or the plan's files_owned) that lands it in BUILD-4, are the
+  orchestrator's; reported in the build notes.
+- **Minor — the PRD's frontmatter `updated:` (`prd.md:6`).** The Always line says to change only the two `##`
+  headings and add one dated reconciliation section, but the build also re-stamps `updated:`. The reviewer confirmed
+  the re-stamp is justified (`scripts/fleet_scan.py`'s behind-code check; every earlier reconciliation did the same;
+  no FR or NFR line moves, AC3 holds) but unreconciled with the Boundaries line. **Fixed:** a Spec Change Log line
+  (2026-11-11, build, review round 1) records the re-stamp as an accepted deviation. No change to the PRD.
+
+## Gate findings (build, BUILD-3)
+
+- 2026-11-11, `pyforge-doctor-live-test` (wave gate BUILD-3): red on one test,
+  `test_live_tree_reference_headings_never_duplicate_and_satellites_do`
+  (`src/shared/packages/pyforge-doctor/tests/unit/test_sources_one_chain_fr_arrows.py:944`,
+  `assert 'fr-duplicate-id:FR-1' in []`), the regression this story's planned deferral `DW-atlas-41-2-1` names. Not
+  fixable in this story's files: the test file is doctor:S-56.4's (BUILD-4), and the only change inside this story's
+  files that greens it would undo the retitle, which is this story's intent (AC5, AC6). Re-run by the wave fix: the
+  targeted test still fails (1 failed, exit 1). The flip is verified on the live tree: doctor's
+  `one_chain.snapshot_fr_findings` reports no `fr-duplicate-id` for any station (atlas `[]`), so
+  `assert dups["pyforge-atlas"] == []` holds; the one-line patch passes `git apply --check`. Left to the orchestrator:
+  name the flip in doctor:S-56.4's story spec and plan notes, and list this red in the gate's planned windows from
+  BUILD-3 until BUILD-4 lands.
