@@ -790,6 +790,32 @@ Herald rebases to one Dream, one Spec, one PRD, one spine, one epic chain. Folde
   spec-pyforge-marshal:CAP-302) read the compiled skill, CAP-61 and Epics 43 and 45: 14 high findings, 4 accepted, 7 rejected,
   3 deferred, with 95 medium and 34 low not triaged; residue
   `_bmad-output/projects/pyforge-herald/planning-artifacts/research/egm-audit-2026-11-05.md`. The accepted findings are skill findings, parked on Story 29.5. `DW-steward-43-6-1` stays open: `/changes/` and `/status/runs/` still publish "input absent".
+- **2026-11-10 (cutover readiness) — Found:** the fleet audit at `82a2b18828` ruled herald not ready as a rebuild
+  input (`_bmad-output/projects/pyforge-herald/planning-artifacts/research/cutover-readiness-audit-2026-11-10.md`).
+  42 of the Spec's 61 capability markers are stale against a ledger that reads 152/152 stories done. Seven capability
+  bodies still describe the retired docsite. The Spec lost its Constraints, Non-goals and Assumptions sections in the
+  2026-09-17 fold, though its memlog holds them. It names no CLI flag, MCP tool, flag key, environment variable or exit
+  code. No half of the suite can run off this tree. The dossier's A→B section, 31 of its 42 stats and its herald section
+  are typed claims that nothing re-checks. **Asked:** every capability says what is true: shipped, retired, or shipped
+  with a named clause not met. Herald's public contract is one companion that a meta-test holds the code to
+  (`spec-pyforge-herald` CAP-62, FR-14.1). Every figure in a dossier stats band and in the scale table is counted at
+  build, and a typed one fails the build (CAP-46 and FR-12.5 amended). Every A→B row carries assertions that a test
+  resolves against the steward ledger, the capability ledger and the flag tree. Herald's live-tree readers carry the
+  `live_tree` marker (a relay of `spec-pyforge-steward:CAP-175`). `local_ship` names this checkout's forge through
+  core's slug table (`roots.this`), not through the root of record. **Ruled** the same day (the second addendum of
+  `docs/dreams/pyforge-unifying-strategy.md`, rulings 2 and 4): CAP-6 retires, because no video was rendered and its
+  extractor is in no tracked path (the tracked narration extracts stay as history); CAP-11's cost-derivation clause is
+  struck, because cost is entered by hand; CAP-38 and CAP-39 are restated to the operator-run form (the
+  `herald-ship-local` task and an optional crontab line). A capability marker reads `ready`, `shipped` or `retired`, with
+  a qualifier after a semicolon where a clause is not met or an operator act stays open. **Not built here:** the clauses
+  still not met are stated and stay open rows: a live `sync-all` second run that reports all-unchanged
+  (`DW-FU-23-6-1`), and the inputs behind `/changes/` and `/status/runs/` (`DW-steward-43-6-1`). The CI-surfaces
+  snapshot and the dossier artifact's republish stay the operator's acts (`DW-herald-egm-2026-11-01-1`); this branch's
+  session refreshes the snapshot once at its head (doctor Story 58.4). Binds Epics 50, 51 and 52 (Stories 50.1 to 50.4,
+  51.1, 51.2, 52.1 and 52.2) on `spec-pyforge-herald`, and the three 2026-11-10 entries of
+  `docs/dreams/pyforge-unifying-strategy.md` (the four rulings, the single-PR instruction, the addendum and the second
+  addendum). Story 50.2 adds the landed line once the other seven stories (50.1, 50.3, 50.4, 51.1, 51.2, 52.1 and
+  52.2) are done.
 
 ## 2026-10-26 — The deck family stays current — infographics re-derived from the ledgers, not remembered (folded from deck-family-currency)
 

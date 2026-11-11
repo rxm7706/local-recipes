@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: 03f98ca35cbcb467
-story_count: 152
+source_fingerprint: 2a4e886cdca50b9b
+story_count: 160
 test_file_count: 98
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-herald`
-- **Stories parsed:** 152
-- **Epics parsed:** 49
+- **Stories parsed:** 160
+- **Epics parsed:** 52
 - **Test files inventoried:** 98 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `03f98ca35cbcb467`
+- **Source fingerprint:** `2a4e886cdca50b9b`
 
 ## Risk Assessment
 
@@ -73,6 +73,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 47: The herald Spec's capability text is whole again (spec-one-chain-per-station CAP-5 amended, CAP-3)
 - Epic 48: The archived herald Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 - Epic 49: The absorbed herald Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
+- Epic 51: The dossier's figures are counted and its cutover claims are bound to the ledgers (spec-pyforge-herald CAP-46; spec-python-foundry-cutover:CAP-14)
+- Epic 52: Herald's suite and package stand as an oracle a second root can run (relay of spec-pyforge-steward:CAP-175; no herald CAP)
 
 ### Low-risk epics
 
@@ -85,6 +87,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 43: One generator renders the whole Pages site (spec-pyforge-herald CAP-61)
 - Epic 44: Every docs page renders its body and its links resolve (fix under spec-pyforge-herald CAP-52; no CAP)
 - Epic 45: Herald's built-site tests install docs-site first, in preflight and CI (fix under spec-pyforge-herald CAP-61; no CAP)
+- Epic 50: The herald Spec says what is true (cutover readiness; spec-pyforge-herald CAP-62)
 
 ## Test Inventory
 
@@ -345,6 +348,14 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 47.1 | The herald Spec's fold-cut capability text is restored | none observed |
 | 48.1 | Herald's ten archived Dreams leave the live tree, and deck-facts reads a deck... | none observed |
 | 49.1 | Herald's absorbed Spec folders move to the archive home | none observed |
+| 50.1 | Every herald capability's marker and text say what is true | none observed |
+| 50.2 | The herald Spec has its Constraints, Non-goals and Assumptions again, and the... | none observed |
+| 50.3 | Herald's public contract is one companion, and a meta-test holds the code to it | none observed |
+| 50.4 | Herald's source comments and docstrings cite the folded Spec's capability ids | none observed |
+| 51.1 | No dossier figure is typed: every stats band and the scale table are counted ... | none observed |
+| 51.2 | The dossier's cutover claims, herald section and stale prose are true today, ... | none observed |
+| 52.1 | Herald's live-tree readers carry the live_tree marker | none observed |
+| 52.2 | Herald's landing record names this checkout's forge, and its package names Py... | none observed |
 
 ## Quality Gates
 
