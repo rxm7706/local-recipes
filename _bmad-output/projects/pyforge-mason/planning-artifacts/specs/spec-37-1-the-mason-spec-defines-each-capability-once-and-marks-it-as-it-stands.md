@@ -329,3 +329,17 @@ Expect: 0, 0 and 0.
 - Risk to check, not assume: `capability-effect-check` and the flag inventory read 30 more capabilities once every capability is a bullet.
 - Row this story writes to its `deferred:` at build (not at mint, so no row sits in frontmatter without a ledger twin; Story 37.4's intake mints the DW-mason twin, and `deferred-work-check` reads the row as `spec-frontmatter-only-deferral` until then):
   - id `airgap-contract-key-guard-is-dead`; severity low; location `src/shared/packages/pyforge-mason/src/pyforge/mason/airgap_contract.py:71`; summary: "validate_backend_shape's missing-contract-key branch is dead: `provided` is hard-coded to the three contract keys (airgap_contract.py:71-78), so the guard cannot fire. CAP-37 is worded as the code behaves and does not claim it; making the guard live is a small code fix for a later Story under CAP-37."
+
+## Planned deferral (written at build)
+
+The row below is not in the deferred-work ledger yet and is not in this spec's frontmatter `deferred:`
+(`deferred-work-check` reds a frontmatter row with no tracked ledger twin, so the build writes no frontmatter).
+Story 37.4, mason's station closer, writes it to
+`_bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md` and to this spec's `deferred:`,
+and its intake mints the DW-mason id; AC11 reads the row from then on.
+
+- **`airgap-contract-key-guard-is-dead`** (low; owner mason; location
+  `src/shared/packages/pyforge-mason/src/pyforge/mason/airgap_contract.py:71`): validate_backend_shape's
+  missing-contract-key branch is dead: `provided` is hard-coded to the three contract keys
+  (airgap_contract.py:71-78), so the guard cannot fire. spec-pyforge-mason:CAP-37 is worded as the code behaves and
+  does not claim it; making the guard live is a small code fix for a later Story under spec-pyforge-mason:CAP-37.
