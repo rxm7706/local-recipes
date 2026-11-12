@@ -150,6 +150,66 @@ Each command runs from the worktree root; read every verdict from its exit code,
 
 Status: backlog (minted 2026-11-10).
 
+Build 2026-11-12 (wave BUILD-10; the status moves at the ledger close, not here):
+- **CAP-73 flip (ruling 6).** Memlog first: one `change` entry, `(ready 2026-11-10)` becomes `(shipped 2026-11-11)`,
+  the provenance notes after the date kept. Neither 47.1's nor 47.2's Auto Run Result carries a done date (each key
+  moves at the ledger close), so the date is read from each build commit with `git log -1 --format=%cs`, the rule the
+  scribe and mason closers of this PR used: 47.1 `d063699879` and 47.2 `7554595df4`, both 2026-11-11. The success
+  command exits 0 (21 passed) before the flip. Then the anchored script render of `SPEC.md` (two anchors, each
+  asserted once; a check-only run and a dry-run copy first, the file byte-identical to the dry run; a second run
+  refuses): the diff is the `updated:` line (now `"2026-11-12"`, its prior comment kept after `Prior "2026-11-10":`)
+  and CAP-73's heading, nothing else. Then both self-validate passes, logged as `event` entries (73 headings before
+  and after, only CAP-73's changed; `pyforge.steward.cutover_ledger.marker` reads `('shipped', '2026-11-11')`;
+  `capability-ledger-check` exits 0; undoing the two replacements gives the prior file byte for byte).
+- **One reconcile event.** `Surface reconcile 2026-11-12 (…)` names the 58 paths `git diff --name-only` lists between
+  the merge base `82a2b18828` and HEAD `7b6286bd7b` under the package and the deferred-work ledger (14 deleted), each
+  in full, and `contract.md` on the integrator ruling of 2026-11-12 (spec-124-5). It carries the day it was written,
+  2026-11-12, where the Approach's template reads 2026-11-10 (the mint's day); `spec_surface_check.py` reads paths,
+  not the date. The co-governors' lists: `pyforge-steward/spec-pyforge-unifying-strategy` takes all 57 package paths,
+  `pyforge-marshal/spec-pyforge-core` the 9 under `src/shared/packages/pyforge-atlas/src/` (`views/` × 7,
+  `query_plane_boot.py`, `dashboard/identity_gist.py`); both are handed over in the event text for their closers.
+- **Chain close, after the last memlog append, on 2026-11-12.** The brief, PRD, spine and `epics.md` each move
+  `updated:` to `"2026-11-12"` (prior comment kept) and gain one `## Currency reconciliation — 2026-11-12 (Story 48.4)`
+  section of one paragraph. `retros/retro-pyforge-atlas-2026-11-12.md` was written through `bmad-retrospective`
+  (headless; machine verdict `rejected` because the built keys are not `done` in the feed yet; ten findings, five
+  proposed actions). `implementation-readiness-report-2026-11-12.md` was written through `bmad-sprint-planning`'s
+  readiness gate (headless, readiness only: gate PASS). `docs/dreams/pyforge-atlas.md` § Realization log gains the
+  `(cutover readiness, closed)` line after the 2026-11-10 entry.
+- **Commands.** AC1 prints `58 []`, exit 0. AC2 exits 0, but its `pixi run` has no `--frozen`, and on this branch's
+  moved path-dependency manifests it rewrote `pixi.lock` (herald, mason and scribe source hashes); the file was put
+  back from `HEAD` at once (no git write) and the check re-run with `--frozen`, exit 0; `pixi.lock` is unchanged. AC3
+  exit 0. AC4 prints 0, exit 0 (before the event it printed 10 `drift-presumed` rows, every one a listed path). AC5
+  prints `2026-11-12 2026-11-11`, exit 0. AC6 lists the new report. AC7 prints 1. AC8 exits 0 (`pyforge-atlas:
+  current`; before this story it reported code→retro feeds, the 2026-08-10 gate's shelf and the spine behind code).
+  AC9 prints True and the grep exits 0. Verification: `pixi run --frozen -e pyforge-atlas kedro-catalog-check` exits 0
+  (70 passed); `pyforge-atlas-test` exits 0 (2928 passed, 17 skipped; 57 passed, 1 skipped) and
+  `pyforge-atlas-live-test` exits 0 (368, 164, 103 passed). `chain-completeness-check`, `dream-chain-check`,
+  `dreams-hygiene-check`, `deferred-work-check`, `ledger-regression-check`, `story-status-check`, `ad-citation-check`
+  and `fr-without-cap-check` exit 0; `memlog-fidelity-check` exits 0.
+
+## Planned deferral (written at build)
+
+The rows below are not in the deferred-work ledger and not in this spec's frontmatter (`deferred-work-check` reds a
+frontmatter row with no tracked ledger twin); this story's files do not include
+`_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md`, so the change's ledger close writes
+them.
+
+- **`DW-atlas-47-1-1`** and **`DW-atlas-41-2-1`**: the two rows Stories 47.1 and 41.2 hand to "the atlas station
+  closer", verbatim from their § Planned deferral (written at build). `DW-atlas-47-1-1` is open;
+  `DW-atlas-41-2-1` is written resolved: the flip `assert dups["pyforge-atlas"] == []` is in
+  `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_one_chain_fr_arrows.py:179`.
+- **`DW-atlas-48-4-1`** (low; owner atlas; location
+  `src/shared/packages/pyforge-atlas/tests/meta/test_catalog_contract.py`): `_gate_problems` (lines 268-273) checks a
+  `gate-contract.md` table row only for its task existing in the feature it names, so a row for a task that runs no
+  pytest over the package passes (the `kedro-test` alias row today; a `viz` row passes too, reproduced 2026-11-12 with
+  the module's helpers). Fix: refuse a table row whose task is not a derived gate, or move the alias row out of the
+  table (spec-pyforge-atlas:CAP-73, the other direction of its success). Retro 2026-11-12 finding 7.
+- **`DW-atlas-48-4-2`** (low; owner atlas; location `src/shared/packages/pyforge-atlas/src/pyforge/atlas/`): the one
+  member-root rule has four resolvers, `query_plane_boot._member_root` (line 81) and `dashboard/identity_gist._member_root`
+  (line 204, the same body, Story 48.2), `dashboard/data.default_data_root` (line 127) and `admission._resolve_base`
+  (line 328). Fix: fold them into one helper in the next story that touches one (spec-pyforge-atlas:CAP-69). Retro
+  2026-11-12 finding 9.
+
 ## Spec Change Log
 
 - 2026-11-10: minted from the station Dream's entry of 2026-11-10 (cutover readiness) under the operator's rulings of 2026-11-10 ("Accept all", "Retire both", "Accept all, run mint"). Acceptance adjusted by the rulings: the retired-runtime check no longer carries the stopped-48.3 branch (ruling 6).

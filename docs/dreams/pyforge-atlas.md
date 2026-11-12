@@ -822,6 +822,16 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   backlog re-scoped (the two satellite sections of the PRD become dated `Fold provenance` record sections, no FR id
   renumbered) and Story 41.3 retires, never dispatched (its key `blocked`); spec-pyforge-steward:CAP-175; and
   `spec-python-foundry-cutover`'s capability ledger, whose modes for these rows its owner writes (steward Epic 121).
+- **2026-11-12 (cutover readiness, closed)** — Stories 46.1, 46.2, 47.1, 47.2, 48.1 to 48.3 and 41.2 are built and
+  reviewed on branch `cutover-readiness-2026-11-10`, Story 48.4 closes the chain, and Story 41.3 stays retired. `spec-pyforge-atlas:CAP-73` (the public
+  contract written beside the Spec and held to the code) reads `(shipped 2026-11-11)`; every capability marker says
+  what is built, open or retired; `pyforge/atlas/views/` is gone again and CAP-44..CAP-47 read retired; the package
+  suite runs as a package half and a live-tree half, both green. The Spec's memlog names every atlas path the change
+  moved in one `Surface reconcile 2026-11-12` event, for doctor Story 58.4's scoped stamp; the brief, PRD, spine and
+  `epics.md` are re-stamped 2026-11-12, the retro is `retros/retro-pyforge-atlas-2026-11-12.md` and the readiness
+  gate `implementation-readiness-report-2026-11-12.md` (PASS). The gaps the rulings keep are open ledger rows
+  (`DW-atlas-46-1-1` to `DW-atlas-46-1-9` and the two planned rows the retro names); the ledger keys move to `done`
+  in the change's ledger close. Owner `spec-pyforge-atlas`.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 
