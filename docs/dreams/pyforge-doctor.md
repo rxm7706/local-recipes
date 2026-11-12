@@ -751,6 +751,22 @@ Folded Dreams: [[bmad-drift-new-artifact-shape]], [[bmad-method-version-drift]],
   to CAP-100 at `(ready 2026-11-10)`, amends CAP-59, CAP-87 and CAP-93 (Story 57.1 amends the markers), registers
   FR-25 to FR-33, adds AD-15 and decomposes as Epics 56, 57 and 58, twelve stories on the one integration branch
   `cutover-readiness-2026-11-10`; Story 58.4 runs last and holds the PR bar.
+- **2026-11-12 (cutover readiness, landed) — Landed:** Stories 56.1 to 56.5, 57.1, 57.2 and 58.1 to 58.3 are built
+  and reviewed on branch `cutover-readiness-2026-11-10`, Story 57.3 closes the chain, and all land with its single PR;
+  Story 58.4 refreshes the baselines last. Story 56.1:
+  `frozen-path-changed` reads the ledger's rebuilding rows (`0 frozen of 923 rows` on this tree). Story 56.2:
+  `capability-ledger` judges every row by its Spec heading, its mode and its expiry clock. Stories 56.3 and 56.4: a
+  source that measured nothing reads `unmeasured`, and a source with no subject says so in one cannot-evaluate WARN.
+  Story 56.5: a chain write off the writer is a named finding (`writer-lock`). Story 57.1: the Spec's markers and text
+  say what the code does. Story 57.2: Doctor's public contract is `contract.md`, held to the code by
+  `tests/meta/test_public_contract.py`. Stories 58.1 and 58.2: the tests that build their own tree run in the package
+  half. Story 58.3: `spec_surface_check.py --prune` drops the baseline keys of Specs that no longer exist. Story 57.3:
+  `tests/meta/test_package_half_is_the_oracle.py` holds the package half to the oracle rule, and
+  `tests/unit/test_live_cutover_ledger.py` proves the two ledger detectors and the writer lock on this tree;
+  spec-pyforge-doctor:CAP-94 to spec-pyforge-doctor:CAP-100 read `(shipped 2026-11-12)` (77 shipped and 23 retired of
+  CAP-1 to CAP-100), `contract.md` joins the Spec's companions and `scripts/detectors.py` its surface. New open rows
+  of the change: `DW-doctor-cutover-2026-11-10-1` to `-9`, `DW-doctor-56-4-1`, `DW-doctor-56-5-1` and
+  `DW-doctor-58-1-1`; `DW-doctor-egm-2026-11-05-2` (no detector checks the markers) stays open.
 
 ## 2026-10-26 — A spike report is not a corrupt file, and the classifier can't yet tell the difference (folded from bmad-drift-new-artifact-shape)
 

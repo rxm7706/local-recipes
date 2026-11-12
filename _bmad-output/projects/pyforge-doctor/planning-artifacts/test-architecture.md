@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: 2c2da84e9ed7b7d8
+source_fingerprint: bba21084d22cccf6
 story_count: 184
-test_file_count: 99
+test_file_count: 131
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -21,10 +21,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Station:** `pyforge-doctor`
 - **Stories parsed:** 184
 - **Epics parsed:** 57
-- **Test files inventoried:** 99 under `src/shared/packages/pyforge-doctor/tests/`
+- **Test files inventoried:** 131 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `2c2da84e9ed7b7d8`
+- **Source fingerprint:** `bba21084d22cccf6`
 
 ## Risk Assessment
 
@@ -108,9 +108,11 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-doctor/tests/meta/test_flag_gate_stays_outside_every_station.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_hatchling_floor_agrees.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_no_warden_import.py` | meta | none observed |
+| `src/shared/packages/pyforge-doctor/tests/meta/test_package_half_is_the_oracle.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_portal_fleet_pulse.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_preflight_mirrors_scripts_suite.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_prescribe_pure_function.py` | meta | none observed |
+| `src/shared/packages/pyforge-doctor/tests/meta/test_public_contract.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_read_only_guard.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_refs_are_full_refnames.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_score_pure_function.py` | meta | none observed |
@@ -138,6 +140,34 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-doctor/tests/unit/test_hooks_plugins.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_hygiene_definitions.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_landing_evidence_conformance.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_capability_ledger_case_list.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_checks_env_hygiene.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_cutover_ledger.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_flag_kill_switch.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_hygiene_definitions.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_bmad_method.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_board.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_board_chain_layers_audit.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_capability_effect_caller_reach.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_chain_deferred_work.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_chain_dreams_hygiene.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_chain_due_for_verification.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_chain_source_spec_resolution.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_chain_spec_surface.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_ci_pause_drift.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_docs_shelf.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_factory.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_general_docs_consistency.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_hygiene.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_live_proof_surfaces.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_one_chain.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_one_chain_fold_complete.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_one_chain_fr_arrows.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_pages_liveness.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_status_body_consistency.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_status_body_open_questions.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_status_body_promissory.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_status_body_status_comment.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_main_stub.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_models.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_prescribe_partition.py` | unit | none observed |
@@ -194,7 +224,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_open_questions.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_promissory.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_status_comment.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_sources_unmeasured.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_warden.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_sources_writer_lock.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py` | unit | none observed |
 

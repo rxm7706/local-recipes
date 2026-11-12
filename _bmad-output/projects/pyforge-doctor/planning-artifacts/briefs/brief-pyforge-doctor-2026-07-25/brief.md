@@ -2,7 +2,7 @@
 title: 'Product Brief: Doctor (pyforge-doctor)'
 status: complete
 created: 2026-07-25
-updated: '2026-11-05'   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior '2026-11-01'
+updated: '2026-11-12'   # RE-STAMPED 2026-11-12 (cutover readiness, landed; doctor Story 57.3): chain-currency cascade (research -> brief) for research/cutover-readiness-audit-2026-11-10.md; the product scope does not change. See § Currency reconciliation — 2026-11-12 (cutover readiness, landed). Prior '2026-11-05'   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior '2026-11-01'
 inputs:
   - 'docs/dreams/pyforge-doctor.md'
   - 'docs/dreams/ecosystem-crew.md § 6 Doctor'
@@ -345,3 +345,13 @@ assumption in the body above changes.
 *Chain-currency cascade (research -> brief), EGM audit, marshal Story 113.18.*
 
 The station's audit record joins this brief's inputs: `research/egm-audit-2026-11-05.md` (marshal Story 113.18, `spec-pyforge-marshal:CAP-302`): 12 high findings, 1 accepted, 9 rejected, 2 deferred; the medium and low findings are not triaged. The product scope does not change.
+
+## Currency reconciliation — 2026-11-12 (cutover readiness, landed)
+
+*Chain-currency cascade (research -> brief), doctor Story 57.3.* 2026-11-12: `research/cutover-readiness-audit-2026-11-10.md`
+(the read-only audit of doctor's chain at main `82a2b18828`) is newer than this brief, and its findings are now built:
+Stories 56.1 to 58.2 are built and reviewed on branch `cutover-readiness-2026-11-10`, and spec-pyforge-doctor:CAP-94 to
+spec-pyforge-doctor:CAP-100 read shipped. The audit changed what Doctor's sources read and how the Spec says it (the
+capability ledger, the writer lock, a source that measured nothing read as `unmeasured`, the public contract, the
+package-local half as the rebuild oracle), not this brief's vision, problem, scope or success criteria; Doctor stays
+advisory and adds no second PR gate. **Content changed:** this section and `updated:`.

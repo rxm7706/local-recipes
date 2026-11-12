@@ -3179,6 +3179,7 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
 - source_spec: `docs/governance/spec-one-chain-per-station/SPEC.md`; EGM audit 2026-11-05 (marshal Story 113.18)
   summary: No detector checks the (ready) and (shipped) date markers CHAIN-STANDARD requires (RUL-C-F5)
   evidence: CHAIN-STANDARD section 4 asks for the markers; no detector reads them; qualified cites are checked only where an FR arrow resolves them.
+  2026-11-12 (doctor Story 57.3): steward-station asks for this check (its Story 122.1 found steward capabilities whose `(ready <date>)` marker outlived their done stories), as an optional detector of a stale ready marker or a missing one; the marker grammar was ruled 2026-11-10 (CHAIN-STANDARD section 4 as steward Story 120.3 amends it: `(ready <date>)`, `(shipped <date>)`, `(retired <date>[: <reason>])` and the `; ` qualifiers, no `(unbuilt)` token), so such a detector has one grammar to read. It stays new behaviour, outside this change (ruling R4).
   location: scripts/
   origin: EGM audit 2026-11-05 (marshal Story 113.18)
   fix: add the marker check to a doctor source if the operator wants it enforced.
@@ -3200,4 +3201,172 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: low
   promoted: 2026-11-05 — EGM audit landing (marshal Story 113.18)
   reason: deferred by triage: a code change with no running failure.
+  status: open
+
+### DW-doctor-cutover-2026-11-10-1: Doctor's sources name A's tree layout in string literals, so they measure nothing on a tree laid out as B
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-doctor/SPEC.md`; cutover readiness audit 2026-11-10
+  summary: Doctor's sources name A's tree layout in string literals, so they measure nothing on a tree laid out as B
+  evidence: the audit counted 269 path literals (62 `_bmad-output`, 41 `docs/dreams`, 20 governance, 19 `pyforge-<station>`, 10 `recipes`, 8 package root); contract.md lists the roots each source reads.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/
+  origin: cutover readiness audit 2026-11-10 (doctor Epic 57)
+  fix: read the packages root and the recipe root from one pyforge-core layout seam once the fleet has one.
+  owner: doctor
+  severity: medium
+  promoted: 2026-11-12 — doctor Story 57.3 (cutover readiness, branch `cutover-readiness-2026-11-10`)
+  reason: Dream-sized: a cross-station kernel seam no ruling decided.
+  status: open
+
+### DW-doctor-cutover-2026-11-10-2: `pages-liveness` holds the Pages root URL as a constant derived from A's repository slug
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-doctor/SPEC.md`; cutover readiness audit 2026-11-10
+  summary: `pages-liveness` holds the Pages root URL as a constant derived from A's repository slug
+  evidence: `PAGES_ROOT_URL = "https://rxm7706.github.io/local-recipes/"` and `_SIBLING_OWNER = "openteams-ai"` are module constants; the Spec's open question 1 keeps the URL a constant until the operator decides the host.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/pages_liveness.py
+  origin: cutover readiness audit 2026-11-10 (doctor Epic 57)
+  fix: derive the URL from pyforge.core.cutover_root's forge slug once that function exists and the operator has answered open question 1.
+  owner: doctor
+  severity: low
+  promoted: 2026-11-12 — doctor Story 57.3 (cutover readiness, branch `cutover-readiness-2026-11-10`)
+  reason: blocked on the operator's answer to CAP-91 open question 1 and on core-kit's root-of-record function.
+  status: open
+
+### DW-doctor-cutover-2026-11-10-3: About 300 source comments cite a bare `CAP-n`, some in pre-fold numbering
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-doctor/SPEC.md`; cutover readiness audit 2026-11-10
+  summary: About 300 source comments cite a bare `CAP-n`, some in pre-fold numbering
+  evidence: `git grep -c 'CAP-[0-9]' -- src/shared/packages/pyforge-doctor/src` sums to 303; the audit also counted 12 FR ids outside FR-1..24 and 30 story ids of other stations.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/
+  origin: cutover readiness audit 2026-11-10 (doctor Epic 57)
+  fix: qualify each citation (`spec-<x>:CAP-n`) when its module is next touched, with a memlog line (CHAIN-STANDARD section 6).
+  owner: doctor
+  severity: low
+  promoted: 2026-11-12 — doctor Story 57.3 (cutover readiness, branch `cutover-readiness-2026-11-10`)
+  reason: eventual consistency is the standing rule for code-cited ids; one sweep is Dream-sized.
+  status: open
+
+### DW-doctor-cutover-2026-11-10-4: Most folded capabilities prove themselves by a dated observation of A's tree, not by a command and an exit code
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-doctor/SPEC.md`; cutover readiness audit 2026-11-10
+  summary: Most folded capabilities prove themselves by a dated observation of A's tree, not by a command and an exit code
+  evidence: CAP-1..CAP-76 date from the 2026-09-17 fold; CHAIN-STANDARD section 2 asks a success clause to name the command or test and the exit code that prove it.
+  location: planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  origin: cutover readiness audit 2026-11-10 (doctor Epic 57)
+  fix: at each capability's next re-derive, replace the dated observation with the package-local test contract.md names for its source.
+  owner: doctor
+  severity: medium
+  promoted: 2026-11-12 — doctor Story 57.3 (cutover readiness, branch `cutover-readiness-2026-11-10`)
+  reason: Dream-sized: a rewrite of about 76 capability texts.
+  status: open
+
+### DW-doctor-cutover-2026-11-10-5: Doctor has no conformance lane that runs its package-local suite against a second root
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-doctor/SPEC.md`; cutover readiness audit 2026-11-10
+  summary: Doctor has no conformance lane that runs its package-local suite against a second root
+  evidence: `tests/` holds fixtures, meta and unit; the package-local half is the oracle (CAP-97) but nothing runs it on B.
+  location: src/shared/packages/pyforge-doctor/tests/
+  origin: cutover readiness audit 2026-11-10 (doctor Epic 58)
+  fix: when steward Story 44.14's rebuild harness exists, add doctor's package-local modules to the case list it runs.
+  owner: doctor
+  severity: low
+  promoted: 2026-11-12 — doctor Story 57.3 (cutover readiness, branch `cutover-readiness-2026-11-10`)
+  reason: blocked on steward Story 44.14 (operator-held).
+  status: open
+
+### DW-doctor-cutover-2026-11-10-6: `scripts/bmad_drift_check.py` and `sources/factory.py` each define `classify`, `_classify_tier`, `ground_truth` and `_is_kept_tier`
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-doctor/SPEC.md`; cutover readiness audit 2026-11-10
+  summary: `scripts/bmad_drift_check.py` and `sources/factory.py` each define `classify`, `_classify_tier`, `ground_truth` and `_is_kept_tier`
+  evidence: the script is kept as a mutation-only residual (scripts/spec_surface_allowlist.txt); the audit did not diff the bodies.
+  location: scripts/bmad_drift_check.py
+  origin: cutover readiness audit 2026-11-10 (doctor Epic 57)
+  fix: diff the four bodies; if equal, have the script import Doctor's, with marshal's SYNC-RUNBOOK reconciled.
+  owner: doctor
+  severity: low
+  promoted: 2026-11-12 — doctor Story 57.3 (cutover readiness, branch `cutover-readiness-2026-11-10`)
+  reason: blocked on marshal's reconcile of the runbook that runs the script.
+  status: open
+
+### DW-doctor-cutover-2026-11-10-7: Doctor's epics skip the number 52
+
+- source_spec: `planning-artifacts/epics.md`; cutover readiness audit 2026-11-10
+  summary: Doctor's epics skip the number 52
+  evidence: `## Epic` headings run 1..55 without 52 and the ledger has no `epic-52` key; CHAIN-STANDARD section 1 asks for no gaps.
+  location: planning-artifacts/epics.md
+  origin: cutover readiness audit 2026-11-10 (doctor Epic 57)
+  fix: record the number as never used; do not renumber done epics.
+  owner: doctor
+  severity: low
+  promoted: 2026-11-12 — doctor Story 57.3 (cutover readiness, branch `cutover-readiness-2026-11-10`)
+  reason: a done epic key never moves.
+  status: open
+
+### DW-doctor-cutover-2026-11-10-8: On a tree laid out as B, four repo-scope sources judge inputs that tree does not carry
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-doctor/SPEC.md`; cutover readiness audit 2026-11-10
+  summary: On a tree laid out as B, four repo-scope sources judge inputs that tree does not carry
+  evidence: the audit's doctor-only tree read spec-surface 473 FAIL (the Spec `surface:` names src/shared/packages/), deferred-work FAIL (no scripts/.deferred-work-baseline.json), docs-map-hygiene FAIL (no docs/MAP.md), bmad-drift unevaluable (no pyforge-marshal project); contract.md § Inputs each source reads lists them.
+  location: planning-artifacts/specs/spec-pyforge-doctor/contract.md
+  origin: cutover readiness audit 2026-11-10 (doctor Epic 57)
+  fix: B's own Spec declares B's surface and B stamps its own baselines when it rebuilds Doctor; nothing changes on A.
+  owner: doctor
+  severity: low
+  promoted: 2026-11-12 — doctor Story 57.3 (cutover readiness, branch `cutover-readiness-2026-11-10`)
+  reason: the writer lock: B's Spec is B's to write.
+  status: open
+
+### DW-doctor-cutover-2026-11-10-9: No detector fails a Spec that defines one CAP id twice
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-doctor/SPEC.md`; cutover readiness audit 2026-11-10 (mason unit's suggestion)
+  summary: No detector fails a Spec that defines one CAP id twice
+  evidence: spec-pyforge-mason carried 14 duplicate CAP definitions for eight weeks; INV-A, the ledger extract and ad-citation each read a different definition form.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/one_chain.py
+  origin: cutover readiness audit 2026-11-10 (doctor Epic 57)
+  fix: one `cap-duplicate-id` finding over one shared definition regex, entered as a Dream seed and a CAP.
+  owner: doctor
+  severity: low
+  promoted: 2026-11-12 — doctor Story 57.3 (cutover readiness, branch `cutover-readiness-2026-11-10`)
+  reason: new behaviour; this change builds none.
+  status: open
+
+### DW-doctor-56-4-1: Four whole-source cannot-evaluate WARNs carry no `unevaluable` evidence, so each reads `pass` when it fires alone
+
+- source_spec: `planning-artifacts/specs/spec-56-4-a-source-that-finds-no-subject-says-so-in-one-cannot-evaluate-warning.md`
+  summary: Four whole-source cannot-evaluate WARNs that an empty tree never reaches still lack `evidence["unevaluable"]`, so `scripts/detectors.py` reads each `pass` rather than `unmeasured` when it fires alone.
+  evidence: story-status with feeds present but git unavailable (`sources/marshal.py` `gather_story_status`); pixi-currency-ledger's unreadable `pixi.toml` (`pixi-currency-pixi-toml-unreadable`, `sources/pixi_currency.py` `_gather`); dreams-hygiene's unreadable guild roster (its `roster_err` WARN, `sources/chain.py` `_gather_dreams_hygiene`); chain-sprawl with no declared `fold_exemptions` (`sources/one_chain.py` `_gather_chain_sprawl`). Story 56.4's per-source decisions were fixed from the empty-tree probe, which none of the four reaches, and the build added nothing beyond them (operator ruling of 2026-11-10: each gap is a deferred-work row).
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py; src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/pixi_currency.py; src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py; src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/one_chain.py
+  origin: doctor Story 56.4's planned deferral (cutover readiness, 2026-11-11), written by the station closer, Story 57.3
+  fix: one evidence key per WARN (`unevaluable: true`) plus an in-place assertion each, under spec-pyforge-doctor:CAP-93 and spec-pyforge-doctor:AD-15.
+  owner: doctor
+  severity: low
+  promoted: 2026-11-12 — doctor Story 57.3 (cutover readiness, branch `cutover-readiness-2026-11-10`)
+  reason: new behaviour for four sources, outside this change (operator ruling R4 of 2026-11-10).
+  status: open
+
+### DW-doctor-56-5-1: The NFR-1 read-only guard cannot see `writer_lock.py`'s tempfile-scoped write
+
+- source_spec: `planning-artifacts/specs/spec-56-5-a-chain-write-on-a-checkout-that-is-not-the-writer-is-a-named-finding.md`
+  summary: `tests/meta/test_read_only_guard.py` does not match the `os.open`/`os.fdopen` form `sources/writer_lock.py` `_copy_out` uses, so a later write placed beside it would pass the guard silently.
+  evidence: `_copy_out` writes the two merge-base flag files (`flags.json`, `flag-overlays.json`) into a `tempfile.TemporaryDirectory` that is removed when the read returns; spec-pyforge-doctor:CAP-100's intent names that copy, and `pyforge.core.cutover_root.root_of_record` accepts only a path, so the copy cannot be dropped. The guard scans `open(..., "w")`, `Path.write_text` and similar calls only. Recorded by Story 56.5's review, round 1, finding 2 (no code change).
+  location: src/shared/packages/pyforge-doctor/tests/meta/test_read_only_guard.py
+  origin: doctor Story 56.5's planned deferral (cutover readiness, 2026-11-11), written by the station closer, Story 57.3
+  fix: in the guard's own file, either accept a write only under a `tempfile.TemporaryDirectory` it can see, or add `sources/writer_lock.py` to `_EXEMPT_RELATIVE_PATHS` as a named, bounded exemption (as `fleet_surface.py` and `actuators/flag_kill_switch.py` are) with a test that the module writes only under a temporary directory; the guard also learns the `os.open` write form. Owner spec-pyforge-doctor (NFR-1, spec-pyforge-doctor:CAP-96's two sanctioned writes).
+  owner: doctor
+  severity: low
+  promoted: 2026-11-12 — doctor Story 57.3 (cutover readiness, branch `cutover-readiness-2026-11-10`)
+  reason: the guard's file was outside Story 56.5's files, and this change adds no behaviour beyond its stories (ruling R4).
+  status: open
+
+### DW-doctor-58-1-1: The no-swallow proof on marshal's Tier-3 `deferred-work.md` skips on every clone, CI included
+
+- source_spec: `planning-artifacts/specs/spec-58-1-the-chain-ledger-board-and-one-chain-tests-that-build-their-own-tree-run-in-the-package-half.md`
+  summary: `test_live_marshal_file_all_nine_identified_plain_headers_do_not_swallow` proves Story 8.1's no-swallow property on marshal's gitignored `implementation-artifacts/deferred-work.md`, so it runs only where a primary checkout holds that local store.
+  evidence: the test sits in `tests/unit/test_live_sources_chain_deferred_work.py` (Story 58.1 kept its skip, the one skip left in the live modules, because the file is local state absent from every clone and an assert would turn the live half red on every CI run).
+  location: src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_chain_deferred_work.py
+  origin: doctor Story 58.1's planned deferral (cutover readiness, 2026-11-11), written by the station closer, Story 57.3
+  fix: move the property to a tracked excerpt as a package-local fixture test, or retire the test.
+  owner: doctor
+  severity: low
+  promoted: 2026-11-12 — doctor Story 57.3 (cutover readiness, branch `cutover-readiness-2026-11-10`)
+  reason: a test redesign outside Story 58.1's split; no story of this change carries it.
   status: open
