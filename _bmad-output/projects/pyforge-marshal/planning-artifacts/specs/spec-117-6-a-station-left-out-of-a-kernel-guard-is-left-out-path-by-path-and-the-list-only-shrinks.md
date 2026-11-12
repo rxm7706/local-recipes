@@ -123,6 +123,147 @@ Parent: `spec-pyforge-core` (spec-pyforge-core:CAP-7, amended 2026-11-10; FR-163
 - Deferred rows (written by Story 116.5): DW-marshal-117-6-1 (six stations stay outside the kernel's exception-root and subprocess guards; this story pins them, it does not migrate them), DW-marshal-117-6-2 (the leaf's own exception classes are rooted at builtins, not at PyforgeError).
 - No build story appends a `Surface reconcile` line to another Spec's memlog or runs `spec_surface_check.py --write-baseline`: each Spec's own closer writes its reconcile event from `git diff --name-only origin/main...HEAD` (core and the testing charter: Story 117.8; marshal: Story 116.5; steward and the host: steward:S-122.5), and doctor:S-58.4 runs every scoped stamp once, after the last edit on the branch.
 
+## Verification
+
+Measured 2026-11-12 on the integration branch `cutover-readiness-2026-11-10` (HEAD `a87df74b2c`, after BUILD-10),
+after every story of this PR that edits a station's `src/` (the Deps in Notes), with the two guards' own detectors:
+`_root_violations` over the exception-root guard's `_OUT_OF_SCOPE_STATIONS` (`pyforge-doctor`, `pyforge-steward`)
+plus `pyforge-core`, and `_subprocess_violations` over the subprocess guard's `_OUT_OF_SCOPE_STATIONS`
+(`pyforge-doctor`, `pyforge-herald`, `pyforge-mason`, `pyforge-scribe`, `pyforge-steward`, `pyforge-warden`). The
+module's own measurement agrees with it (AC1).
+
+- `_UNREPARENTED_ROOTS`: 45 pins (pyforge-core 7, doctor 8, steward 30); `errors.py::PyforgeError` is measured and
+  excluded by name. Plan time: 41 (pyforge-core 7, doctor 5, steward 29).
+- `_SUBPROCESS_FILES`: 39 pins (steward 20, herald 8, mason 7, scribe 2, doctor 1, warden 1). Plan time: 39, the
+  same counts; one path changed (below), which a count would have hidden.
+- Left the lists since plan time: `pyforge-steward/src/pyforge/steward/cutover.py` (subprocess file). Its one
+  `git rev-parse` call went to `cutover_ledger.py::_head_sha` (steward:S-121.1 added the file, steward:S-121.2 dropped
+  the call from `cutover.py`).
+
+Added pins: `pyforge-doctor/src/pyforge/doctor/sources/frozen_path.py::_Unevaluable` (doctor:S-56.1), `pyforge-doctor/src/pyforge/doctor/sources/capability_ledger.py::_Unevaluable` (doctor:S-56.2), `pyforge-doctor/src/pyforge/doctor/sources/writer_lock.py::_Unevaluable` (doctor:S-56.5), `pyforge-steward/src/pyforge/steward/cutover_ledger.py::CutoverLedgerError` (steward:S-121.1), `pyforge-steward/src/pyforge/steward/cutover_ledger.py` (steward:S-121.1)
+
+<details><summary>Plan-time measurement at <code>f614d6a9b8</code> (the guards' own detectors; scratch <code>guard_measure.json</code>)</summary>
+
+Roots (`_root_violations`, exception-root guard's exclusions plus pyforge-core; `errors.py::PyforgeError` shown as measured, never pinned):
+
+```text
+pyforge-core/src/pyforge/core/assertion.py::HostMintError
+pyforge-core/src/pyforge/core/client.py::StationClientError
+pyforge-core/src/pyforge/core/cutover_root.py::CutoverRootError
+pyforge-core/src/pyforge/core/errors.py::PyforgeError
+pyforge-core/src/pyforge/core/flags.py::FlagConfigError
+pyforge-core/src/pyforge/core/flags.py::FlagOff
+pyforge-core/src/pyforge/core/league_measure.py::LeagueMeasureError
+pyforge-core/src/pyforge/core/preserve_refs.py::PreserveRefError
+pyforge-doctor/src/pyforge/doctor/cli_bridge.py::CliBridgeError
+pyforge-doctor/src/pyforge/doctor/sources/atlas.py::_FetchFailed
+pyforge-doctor/src/pyforge/doctor/sources/chain.py::SurfaceUnevaluable
+pyforge-doctor/src/pyforge/doctor/sources/pages_liveness.py::_Unavailable
+pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py::_SiblingHTTPError
+pyforge-steward/src/pyforge/steward/budget.py::BudgetError
+pyforge-steward/src/pyforge/steward/budget.py::CapParseError
+pyforge-steward/src/pyforge/steward/catalog.py::CatalogConfigError
+pyforge-steward/src/pyforge/steward/corridor.py::CorridorConfigError
+pyforge-steward/src/pyforge/steward/corridor.py::CorridorLoadError
+pyforge-steward/src/pyforge/steward/dashboard/cache.py::LockUnavailableError
+pyforge-steward/src/pyforge/steward/dashboard/export.py::ExportUnauthorizedError
+pyforge-steward/src/pyforge/steward/dashboard/export.py::WebhookSecretMissingError
+pyforge-steward/src/pyforge/steward/dashboard/middleware.py::UntrustedIngressError
+pyforge-steward/src/pyforge/steward/deck_integrity.py::DeckIntegrityError
+pyforge-steward/src/pyforge/steward/deploy.py::UnshareableStateError
+pyforge-steward/src/pyforge/steward/estate.py::_RefreshRefused
+pyforge-steward/src/pyforge/steward/fresh_clone.py::FreshCloneError
+pyforge-steward/src/pyforge/steward/glass.py::GlassError
+pyforge-steward/src/pyforge/steward/keys.py::InventoryError
+pyforge-steward/src/pyforge/steward/marketplace_pages.py::MarketplaceIndexError
+pyforge-steward/src/pyforge/steward/marketplace_pages.py::MarketplacePagesDisabled
+pyforge-steward/src/pyforge/steward/measures.py::MeasureConfigError
+pyforge-steward/src/pyforge/steward/passport.py::PassportMintError
+pyforge-steward/src/pyforge/steward/preflight.py::PreflightConfigError
+pyforge-steward/src/pyforge/steward/preflight.py::PreflightScopeError
+pyforge-steward/src/pyforge/steward/preflight_ci.py::_SelectAll
+pyforge-steward/src/pyforge/steward/preflight_ci.py::_Unevaluable
+pyforge-steward/src/pyforge/steward/quarantine.py::QuarantineAdmitError
+pyforge-steward/src/pyforge/steward/suite.py::SuiteError
+pyforge-steward/src/pyforge/steward/sync.py::SyncConfigError
+pyforge-steward/src/pyforge/steward/sync.py::SyncError
+pyforge-steward/src/pyforge/steward/upgrade.py::UpgradeError
+pyforge-steward/src/pyforge/steward/workspace.py::WorkspaceError
+```
+
+Subprocess files (`_subprocess_violations`, subprocess guard's exclusions):
+
+```text
+pyforge-doctor/src/pyforge/doctor/cli_bridge.py
+pyforge-herald/src/pyforge/herald/deck_pipeline.py
+pyforge-herald/src/pyforge/herald/deck_publish.py
+pyforge-herald/src/pyforge/herald/local_ship.py
+pyforge-herald/src/pyforge/herald/pptx_native.py
+pyforge-herald/src/pyforge/herald/stamps.py
+pyforge-herald/src/pyforge/herald/sync_all.py
+pyforge-herald/src/pyforge/herald/transport/agent_sdk_transport.py
+pyforge-herald/src/pyforge/herald/twins.py
+pyforge-mason/src/pyforge/mason/cfe.py
+pyforge-mason/src/pyforge/mason/engines/__init__.py
+pyforge-mason/src/pyforge/mason/engines/condalock.py
+pyforge-mason/src/pyforge/mason/engines/gh.py
+pyforge-mason/src/pyforge/mason/engines/pep517.py
+pyforge-mason/src/pyforge/mason/engines/pixi.py
+pyforge-mason/src/pyforge/mason/engines/twine.py
+pyforge-scribe/src/pyforge/scribe/catalog.py
+pyforge-scribe/src/pyforge/scribe/compile.py
+pyforge-steward/src/pyforge/steward/bootstrap.py
+pyforge-steward/src/pyforge/steward/ci.py
+pyforge-steward/src/pyforge/steward/cutover.py
+pyforge-steward/src/pyforge/steward/deploy.py
+pyforge-steward/src/pyforge/steward/deploy_nic.py
+pyforge-steward/src/pyforge/steward/deploy_nic_packs.py
+pyforge-steward/src/pyforge/steward/estate.py
+pyforge-steward/src/pyforge/steward/estate_realize.py
+pyforge-steward/src/pyforge/steward/frames.py
+pyforge-steward/src/pyforge/steward/keys.py
+pyforge-steward/src/pyforge/steward/pages_duty.py
+pyforge-steward/src/pyforge/steward/preflight.py
+pyforge-steward/src/pyforge/steward/preflight_suite_reduction.py
+pyforge-steward/src/pyforge/steward/preflight_verify.py
+pyforge-steward/src/pyforge/steward/provision.py
+pyforge-steward/src/pyforge/steward/revoke.py
+pyforge-steward/src/pyforge/steward/session.py
+pyforge-steward/src/pyforge/steward/suite_advance.py
+pyforge-steward/src/pyforge/steward/upgrade.py
+pyforge-steward/src/pyforge/steward/workspace.py
+pyforge-warden/src/pyforge/warden/engines.py
+```
+
+</details>
+
+## Planned deferral (written at build)
+
+The rows below are not in the deferred-work ledger yet and are not in this spec's frontmatter (`deferred-work-check`
+reds a frontmatter row with no tracked ledger twin). Story 116.5, marshal's closer of the cutover-readiness PR, writes
+them to `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md` beside DW-marshal-117-6-1
+and DW-marshal-117-6-2, one row per pin this PR added (`## Verification`, `Added pins:`). Each row closes when its pin
+is lowered: the class rooted at `pyforge.core.errors.PyforgeError`, or the file's call launched through
+`pyforge.core.process`, in the owning station's chain. This story re-parents and reroutes nothing (operator ruling
+2026-11-10).
+
+- **`DW-marshal-117-6-3`** (low; added by doctor:S-56.1; location `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/frozen_path.py:84`): pin
+  `pyforge-doctor/src/pyforge/doctor/sources/frozen_path.py::_Unevaluable`, a module-private `_Unevaluable(Exception)`
+  sentinel, raised and caught in the module (`:202`), outside the exception-root guard's scan.
+- **`DW-marshal-117-6-4`** (low; added by doctor:S-56.2; location `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/capability_ledger.py:154`): pin
+  `pyforge-doctor/src/pyforge/doctor/sources/capability_ledger.py::_Unevaluable`, the same module-private sentinel
+  shape, caught in the module (`:565`).
+- **`DW-marshal-117-6-5`** (low; added by doctor:S-56.5; location `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/writer_lock.py:84`): pin
+  `pyforge-doctor/src/pyforge/doctor/sources/writer_lock.py::_Unevaluable`, the same module-private sentinel shape,
+  caught in the module (`:214`, `:252`).
+- **`DW-marshal-117-6-6`** (medium; added by steward:S-121.1; location `src/shared/packages/pyforge-steward/src/pyforge/steward/cutover_ledger.py:162`): pin
+  `pyforge-steward/src/pyforge/steward/cutover_ledger.py::CutoverLedgerError`, a public `CutoverLedgerError(ValueError)`
+  (in the module's `__all__`, caught by `cutover.py:232` and raised to `cutover_ledger_check.py`), outside the
+  exception-root guard's scan.
+- **`DW-marshal-117-6-7`** (medium; added by steward:S-121.1; location `src/shared/packages/pyforge-steward/src/pyforge/steward/cutover_ledger.py:536`): file pin
+  `pyforge-steward/src/pyforge/steward/cutover_ledger.py`, one raw `subprocess.run(["git", ..., "rev-parse", "HEAD"])`
+  in `_head_sha`, moved there from `cutover.py`'s `_git` (which left the list); outside the subprocess guard's scan.
+
 ## Spec Change Log
 
 - 2026-11-10: minted at `backlog` by the cutover-readiness mint (operator 2026-11-10, "Accept all, run mint"; `docs/dreams/pyforge-unifying-strategy.md`, Realization log, the 2026-11-10 entry and its two addenda). Its Deps (Stories of Epics 115 and 117) name no later epic of this station, so the one forward-dependency policy of this PR's mints (a story is minted `blocked` only when its Deps name a later epic) leaves it `backlog`; the integration branch's wave order and marshal's Deps-aware drain hold them. Its cross-station deps are in Notes, not in the Deps line, and only the integration branch's wave order holds them, since marshal's Deps parser is station-local. The Dream entry (`docs/dreams/pyforge-marshal.md`, 2026-11-10, the shared-floor section) and the memlog entries of `spec-pyforge-core` came first; `SPEC.md` is rendered by Story 117.5.
