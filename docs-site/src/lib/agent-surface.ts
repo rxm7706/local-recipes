@@ -454,7 +454,28 @@ export function plainText(text: string): string {
     .trim();
 }
 
-const NON_TEXT_KEYS = new Set(['type', 'id', 'key', 'accent', 'glyph', 'alarm', 'mono', 'href', 'src', 'tone', 'kind']);
+/**
+ * Keys whose values are machine data, not text a reader needs. Herald Story 51.2: the dossier's `asserts` (the
+ * closed grammar its claims test resolves), `check` (the measurer's key), `source` (a § 10 row's evidence id) and
+ * `section` (a scale-table row's station) are never published to `/llms-full.txt`.
+ */
+const NON_TEXT_KEYS = new Set([
+  'type',
+  'id',
+  'key',
+  'accent',
+  'glyph',
+  'alarm',
+  'mono',
+  'href',
+  'src',
+  'tone',
+  'kind',
+  'asserts',
+  'check',
+  'source',
+  'section',
+]);
 
 /** Every text leaf of a parsed YAML document (the dossier), in document order, as plain text. */
 export function flattenText(value: unknown, key = ''): string[] {
