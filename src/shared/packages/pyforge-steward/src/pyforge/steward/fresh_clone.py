@@ -28,7 +28,7 @@ from .suite import (
     repo_root as suite_repo_root,
 )
 
-FRESH_CLONE_HEADING = "## Fresh-clone class-path (CAP-3)"
+FRESH_CLONE_HEADING = "## Fresh-clone class-path (CAP-29)"
 _NATIVE_CMD = re.compile(r"`((?:npx |uv tool install |corepack |pnpm |cd )[^`]+)`")
 _IMPROVISED_INSTALLER = re.compile(r"\bnew\s+Installer\b|\bInstaller\s*\(")
 _MODULE_SKF_COMMAND = re.compile(r"steward\s+provision\s+--module\s+skf\b", re.IGNORECASE)
@@ -124,7 +124,7 @@ def matrix_path(repo: Path) -> Path:
 def fresh_clone_section(playbook_text: str) -> str:
     idx = playbook_text.find(FRESH_CLONE_HEADING)
     if idx < 0:
-        raise FreshCloneError(f"playbook missing {FRESH_CLONE_HEADING!r} — CAP-3 path is undocumented")
+        raise FreshCloneError(f"playbook missing {FRESH_CLONE_HEADING!r} — CAP-29 path is undocumented")
     rest = playbook_text[idx:]
     nxt = rest.find("\n## ", 1)
     return rest if nxt < 0 else rest[:nxt]

@@ -268,7 +268,7 @@ def _check_actor_and_role(
         raise TypeError(f"{caller}'s {actor_param} must be a string, got {type(actor).__name__}")
     if not actor.strip():
         raise ValueError(
-            f"{caller} requires a non-blank {actor_param} — CAP-4's 'who "
+            f"{caller} requires a non-blank {actor_param} — CAP-112's 'who "
             f"saw' must never be unanswerable by construction"
         )
     _check_string_field("actor", actor, label=actor_param)

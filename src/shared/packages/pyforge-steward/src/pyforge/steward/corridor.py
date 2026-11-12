@@ -311,12 +311,12 @@ def load_extract(
         if not slice_name:
             raise CorridorLoadError(
                 "an outbound load requires a named slice -- default deny "
-                "(Story 61.4, spec-work-passports-dated-extracts CAP-4)"
+                "(Story 61.4, spec-pyforge-steward CAP-142: outbound slice gate)"
             )
         if not signer:
             raise CorridorLoadError(
                 f"an outbound load requires a recorded {SIGNER_ROLE} -- default deny "
-                "(Story 61.4, spec-work-passports-dated-extracts CAP-4)"
+                "(Story 61.4, spec-pyforge-steward CAP-142: outbound slice gate)"
             )
 
     # Only now (past the slice/signer gate, when it applies) does the

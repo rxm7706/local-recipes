@@ -1123,7 +1123,7 @@ def format_pipeline_truth(report: PipelineTruthReport, *, as_json: bool) -> str:
         return json.dumps(report.to_dict(), indent=2, sort_keys=True)
 
     lines: list[str] = [
-        "steward suite pipeline-truth — CAP-1 whole-pipeline report",
+        "steward suite pipeline-truth — CAP-21 whole-pipeline report",
         f"packages: {len(report.packages)}",
     ]
     if report.baseline_id:
@@ -1179,8 +1179,8 @@ class SuiteDuty:
                 ok=True,
                 summary=(
                     "suite: available verbs are pipeline-truth "
-                    "(CAP-1 report-only whole-pipeline truth) and advance "
-                    "(CAP-2 one-command stale-package advance → reviewable PR, "
+                    "(CAP-21 report-only whole-pipeline truth) and advance "
+                    "(CAP-22 one-command stale-package advance → reviewable PR, "
                     "never auto-merged)"
                 ),
             )

@@ -130,7 +130,7 @@ same change.
 | CAP-109 | `dashboard/middleware.py`, `dashboard/declarations.py` | package | `unit/test_dashboard_middleware.py`, `unit/test_dashboard_declarations.py` | |
 | CAP-110 | `dashboard/declarations.py`, `dashboard/filtering.py`, `dashboard/cache.py` | package | `unit/test_dashboard_filtering.py`, `unit/test_dashboard_cache.py`, `unit/test_dashboard_declarations.py` | |
 | CAP-111 | `dashboard/navigation.py`, `dashboard/views.py` | package | `unit/test_dashboard_navigation.py`, `unit/test_dashboard_views.py` | |
-| CAP-112 | `dashboard/audit.py`, `dashboard/models.py`, `dashboard/admin.py`, `dashboard/apps.py`, `dashboard/__init__.py`, `dashboard/migrations/0001_initial.py`, `dashboard/migrations/0006_auditaction_purge.py`, `dashboard/migrations/0007_auditentry_scope.py` | package | `unit/test_dashboard_audit.py` | |
+| CAP-112 | `dashboard/audit.py`, `deploy.py`, `dashboard/models.py`, `dashboard/admin.py`, `dashboard/apps.py`, `dashboard/__init__.py`, `dashboard/migrations/0001_initial.py`, `dashboard/migrations/0006_auditaction_purge.py`, `dashboard/migrations/0007_auditentry_scope.py` | package | `unit/test_dashboard_audit.py` | `deploy.py` renders the audit table's append-only grants (Story 84.1). |
 | CAP-113 | `dashboard/export.py`, `keys.py` | package | `unit/test_dashboard_export.py` | |
 | CAP-114 | `deploy.py`, `cli.py` | package | `unit/test_deploy_perimeter.py` | |
 | CAP-115 | `dashboard/filtering.py`, `dashboard/views.py`, `dashboard/navigation.py`, `dashboard/export.py`, `dashboard/cache.py` | package | `unit/test_dashboard_isolation_proof.py` | |
@@ -187,7 +187,7 @@ same change.
 | CAP-176 | `deploy_nic.py`, `cli.py` | package | `unit/test_deploy_nic.py` | A Hetzner up is attended and operator-gated. |
 | CAP-177 | `deploy_nic_packs.py`, `deploy_nic.py`, `cli.py` | package, attended | `unit/test_deploy_nic_packs.py`, `integration/test_nkp_hub_spawn.py`, `integration/test_nkp_landing_cards.py`, `integration/test_nkp_landing_signin.py`, `integration/test_nkp_probes_offline.py` | The probes run in `pyforge-steward-nkp-probes`, attended. |
 | CAP-178 | `deploy_nic.py`, `deploy_nic_packs.py`, `cli.py` | package | `unit/test_deploy_nic.py`, `unit/test_deploy_nic_packs.py` | The `gitops/**` ruleset is proven by CAP-165's ruleset check. |
-| CAP-179 | `cli.py` | live-tree | `meta/test_public_contract.py` | The contract is the companion `contract.md`. |
+| CAP-179 | `cli.py` | live-tree | `meta/test_public_contract.py`, `meta/test_cap_citations.py` | The contract is the companion `contract.md`; `test_cap_citations.py` holds every capability id in steward's help and output to `SPEC.md`, this map's source modules and the contract (Story 122.3). |
 | CAP-180 | `restore.py`, `revoke.py`, `cli.py` | package | `unit/test_restore_duty.py`, `unit/test_revoke_duty.py` | |
 | CAP-181 | — | live-tree | `meta/test_oracle_map.py` | This companion. |
 | CAP-182 | `root_layout.py`, `bootstrap.py`, `catalog.py`, `ci.py`, `corridor.py`, `marketplace_pages.py`, `measures.py`, `preflight_ci.py`, `sync.py`, `upgrade.py` | package | `meta/test_portability.py` | `root_layout.py` names the layout and the repository; the others derive from it. |

@@ -256,6 +256,6 @@ def test_format_mentions_foreign(tmp_path: Path):
         loops_home=tmp_path / "loops",
     )
     text = format_pin_fan_out(report, as_json=False)
-    assert "CAP-4 report-only" in text
+    assert "CAP-12 report-only" in text
     assert "foreign" in text
     assert "root-pixi-floor:bmad-loop" in text

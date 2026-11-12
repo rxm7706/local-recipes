@@ -332,7 +332,7 @@ def render_daphne_unit(
         )
     else:
         placeholder_comment = ""
-    return f"""# pyforge-steward[dashboard] — daphne ASGI worker fleet (Story 9.5, CAP-6/AD-5/AD-8)
+    return f"""# pyforge-steward[dashboard] — daphne ASGI worker fleet (Story 9.5, CAP-114/sld:AD-5/sld:AD-8)
 # Template unit: one instance per worker, named by the port it binds. Enable
 # the full fleet for this topology (worker_count={topology.worker_count}) with:
 #   systemctl enable --now {enable_cmd}
@@ -421,7 +421,7 @@ def render_audit_table_grants(
 
     qualified = f"{schema}.{table}"
     return f"""\
--- CAP-4 audit trail — append-only for the application role (Story 84.1).
+-- CAP-112 audit trail — append-only for the application role (Story 84.1).
 -- Apply as the migration role after {qualified} exists.
 REVOKE ALL ON TABLE {qualified} FROM {app_role};
 GRANT SELECT, INSERT ON TABLE {qualified} TO {app_role};
@@ -521,7 +521,7 @@ def render_edge_config(
     upstream_servers = "\n".join(f"    server {bind_host}:{p};" for p in ports)
     allow_lines = "\n".join(f"    allow {addr};" for addr in trusted_addresses)
 
-    return f"""# pyforge-steward[dashboard] — nginx edge (Story 9.5, CAP-6/AD-4/AD-8)
+    return f"""# pyforge-steward[dashboard] — nginx edge (Story 9.5, CAP-114/sld:AD-4/sld:AD-8)
 # TLS termination + network-policy restriction to the declared trusted
 # ingress; proxies to the daphne worker fleet render_daphne_unit renders.
 

@@ -207,7 +207,7 @@ def _default_open_pr(repo: Path, package: str, dry_run: bool) -> Mapping[str, An
     branch = f"steward/suite-advance-{package}"
     title = f"chore(suite): advance {package} (steward suite advance)"
     body = (
-        f"Automated CAP-2 advance for `{package}` via "
+        f"Automated CAP-22 advance for `{package}` via "
         f"`steward suite advance`.\n\n"
         f"**Do not auto-merge** — human review required.\n"
     )

@@ -207,7 +207,7 @@ def test_format_and_cli_json(tmp_path: Path, capsys, monkeypatch):
         fake_build(repo=repo, loops_home=loops, refresh_relays=True),
         as_json=False,
     )
-    assert "CAP-5" in text
+    assert "CAP-13" in text
     assert "PASS" in text
 
 

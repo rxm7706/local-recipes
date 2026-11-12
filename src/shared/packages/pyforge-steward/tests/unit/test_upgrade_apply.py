@@ -1066,7 +1066,7 @@ def test_apply_custom_module_survives_core_apply_trap_13_14_replay(tmp_path):
     assert payload["custom_modules"][0]["own_installer_exit"] == 0
 
     text = format_apply(report, as_json=False)
-    assert "## CAP-7 custom modules" in text
+    assert "## CAP-15 custom modules" in text
     assert _SKF_CONFIG_REL in text and "restored" in text
     assert "sidecar_path" in text
 
@@ -1706,7 +1706,7 @@ def test_cli_apply_help_names_real_argv_shape(capsys, monkeypatch):
     """14.6's deferred item: the --apply help quotes the argv the apply really builds."""
     # argparse wraps help at the terminal width and hyphen-breaks long tokens
     # (`bmad-module-\nskill-forge`); a wide COLUMNS keeps every token whole.
-    monkeypatch.setenv("COLUMNS", "400")
+    monkeypatch.setenv("COLUMNS", "1000")
     rc = main(["upgrade", "bmad-core", "--help"])
     assert rc == EXIT_OK
     text = " ".join(capsys.readouterr().out.split())
@@ -1890,7 +1890,7 @@ def test_apply_cap8_three_files_two_clean_one_conflict(tmp_path):
     assert report.local_customizations_ok is False
 
     text = format_apply(report, as_json=False)
-    assert "## CAP-8 local customizations re-applied" in text
+    assert "## CAP-16 local customizations re-applied" in text
     assert "[merged_clean] _bmad/scripts/helper.py" in text
     assert "[conflict_needs_manual_merge] .claude/skills/bmad-dev-auto/step-02.md" in text
     assert "conflict file: .claude/skills/bmad-dev-auto/step-02.md.customization-conflict" in text

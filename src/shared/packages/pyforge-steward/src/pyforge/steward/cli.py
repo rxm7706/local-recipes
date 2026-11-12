@@ -146,7 +146,7 @@ _HELP = {
     ),
     "keys": "credential lifecycle — encrypt/decrypt/rotate/list/audit/revoke/exec",
     "deploy": (
-        "perimeter: AD-5 shareability + daphne/nginx manifests; static: CAP-8/AD-10 "
+        "perimeter: sld:AD-5 shareability + daphne/nginx manifests; static: CAP-116/sld:AD-10 "
         "static-export publish (the Pages artifact itself is `steward pages`); "
         "nic: CAP-176 NKP bring-up on kind (behind pyforge.steward.nkp_deploy)"
     ),
@@ -161,16 +161,16 @@ _HELP = {
         "(single-repo or repo-set; own-worktrees-only; archive-not-delete)"
     ),
     "upgrade": (
-        "BMAD-METHOD core upgrade — bmad-core pre-flight (CAP-1), "
-        "deliberate --apply (CAP-2), CAP-3 clobber detect/re-apply, "
-        "pin-fan-out report (CAP-4), prove-landed single verdict (CAP-5); "
+        "BMAD-METHOD core upgrade — bmad-core pre-flight (CAP-9), "
+        "deliberate --apply (CAP-10), CAP-11 clobber detect/re-apply, "
+        "pin-fan-out report (CAP-12), prove-landed single verdict (CAP-13); "
         "never edits foreign-station pin sites beyond documented loop-home "
         "relay refresh"
     ),
     "suite": (
-        "bmad-suite channel product — pipeline-truth (CAP-1) reports "
+        "bmad-suite channel product — pipeline-truth (CAP-21) reports "
         "upstream/recipe/channel/installed/wired for all 13 suite packages "
-        "with per-stage drift and fail-open probes; advance (CAP-2) chains "
+        "with per-stage drift and fail-open probes; advance (CAP-22) chains "
         "autotick→build→test→publish→listing→reviewable PR (never auto-merged)"
     ),
     "init": (
@@ -192,11 +192,11 @@ _HELP = {
     ),
     "track": (
         "assemble one tracked track.json per run from journal/gate-record/state "
-        "(Story 53.3 / hub:CAP-3); not a detector"
+        "(Story 53.3 / spec-pyforge-steward CAP-54); not a detector"
     ),
     "guards": (
         "Hub Guard library — catalog, spec lacking, source-ground (AD-8 copy); "
-        "never a PR verdict (Story 53.4 / hub:CAP-4)"
+        "never a PR verdict (Story 53.4 / spec-pyforge-steward CAP-55)"
     ),
     "cutover": (
         "the capability ledger's generator and validator, and the root-of-record flag "
@@ -1032,8 +1032,8 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
         "perimeter",
         help=retrofit_help(
             ("deploy", "perimeter"),
-            "validate the AD-5 cross-worker shareability of a dashboard "
-            "deployment topology and render its daphne+nginx manifests (CAP-6)",
+            "validate the sld:AD-5 cross-worker shareability of a dashboard "
+            "deployment topology and render its daphne+nginx manifests (CAP-114)",
         ),
     )
     perimeter.add_argument(
@@ -1106,7 +1106,7 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
 
     static_help = (
         "write a board as a self-contained static export (docs/dashboard/<board>/index.html) — "
-        "CAP-8/AD-10; the file lands through a pull request like any tracked file (no verb pushes)"
+        "CAP-116/sld:AD-10; the file lands through a pull request like any tracked file (no verb pushes)"
     )
     static = deploy_subs.add_parser("static", help=static_help, description=static_help)
     static.add_argument(
@@ -1184,7 +1184,7 @@ def _add_provision_subparsers(provision_parser: argparse.ArgumentParser) -> None
         "--prove-class-path",
         action="store_true",
         help=(
-            "prove the documented fresh-clone class-path (install-class CAP-3): "
+            "prove the documented fresh-clone class-path (CAP-29): "
             "method core, loop --runner, skill-forge own installer, labs plugin "
             "docs, the Kedro-Viz producer (kedro-viz-export artifact), template N/A"
         ),
@@ -1580,7 +1580,7 @@ def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
         "--apply",
         action="store_true",
         help=(
-            "CAP-2/6/7 deliberate apply: require a clean tree, consume the CAP-1 "
+            "CAP-10/14/15 deliberate apply: require a clean tree, consume the CAP-9 "
             "pre-flight, create the review branch, run `bmad-method install --action "
             "update -y --directory <repo> --modules <every manifest module, core "
             "first> [--pin <name>=<pin>]` with stdin closed, then for each catalog "
@@ -1605,7 +1605,7 @@ def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
         "--no-shims",
         action="store_true",
         help=(
-            "CAP-9: retire the installed core's deprecation shims on this apply "
+            "CAP-17: retire the installed core's deprecation shims on this apply "
             "(installShims: false); refused if a legacy-name _bmad/custom/** "
             "override exists (trap 2)"
         ),
@@ -1661,7 +1661,7 @@ def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
     pin_fan = upgrade_subs.add_parser(
         "pin-fan-out",
         help=(
-            "CAP-4 report-only: enumerate known pin sites for a bmad-loop or "
+            "CAP-12 report-only: enumerate known pin sites for a bmad-loop or "
             "bmad-method version change with moved/not-moved status; "
             "foreign-station sites are never edited"
         ),
@@ -1708,7 +1708,7 @@ def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
     prove = upgrade_subs.add_parser(
         "prove-landed",
         help=(
-            "CAP-5 post-apply gate: bmad-drift integrity + CFE meta-tests + "
+            "CAP-13 post-apply gate: bmad-drift integrity + CFE meta-tests + "
             "per-loop-home bmad-loop init (relay refresh) + validate; "
             "reports one pass/fail verdict"
         ),
@@ -1741,7 +1741,7 @@ def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
 
     verify = upgrade_subs.add_parser(
         "verify",
-        help=("alias for prove-landed (CAP-5 post-apply single-verdict gate)"),
+        help=("alias for prove-landed (CAP-13 post-apply single-verdict gate)"),
     )
     verify.add_argument(
         "--repo-root",
@@ -1776,7 +1776,7 @@ def _add_suite_subparsers(suite_parser: argparse.ArgumentParser) -> None:
     truth = suite_subs.add_parser(
         "pipeline-truth",
         help=(
-            "CAP-1: report upstream (npm/GitHub), recipe, channel, installed, "
+            "CAP-21: report upstream (npm/GitHub), recipe, channel, installed, "
             "and wired-or-not for all 13 bmad-suite packages — drift named "
             "per stage; every probe fail-open"
         ),
@@ -1803,7 +1803,7 @@ def _add_suite_subparsers(suite_parser: argparse.ArgumentParser) -> None:
     advance = suite_subs.add_parser(
         "advance",
         help=(
-            "CAP-2: advance one stale suite package end-to-end "
+            "CAP-22: advance one stale suite package end-to-end "
             "(autotick tag|head → build → test → publish → listing → "
             "reviewable PR; never auto-merged)"
         ),

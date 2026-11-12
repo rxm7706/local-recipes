@@ -309,7 +309,7 @@ def test_next_rehearsal_cap6_cap8_cap7_report_only(tmp_path, monkeypatch):
     assert report.custom_modules_ok is True
 
     text = format_apply(report, as_json=False)
-    assert "## CAP-8 local customizations re-applied" in text
+    assert "## CAP-16 local customizations re-applied" in text
     assert "[conflict_needs_manual_merge]" in text
 
     argv_doc = json.dumps(NEXT_REHEARSAL_ARGV)

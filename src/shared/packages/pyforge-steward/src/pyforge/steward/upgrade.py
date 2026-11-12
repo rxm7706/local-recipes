@@ -2333,10 +2333,10 @@ def reconcile_clobbered_custom_surfaces(
     )
     if all_clear:
         notes.append(
-            "CAP-3 clear: markers present; six layers resolve via BMAD_ACTIVE_PROJECT and .active-project marker"
+            "CAP-11 clear: markers present; six layers resolve via BMAD_ACTIVE_PROJECT and .active-project marker"
         )
     else:
-        notes.append("CAP-3 incomplete: clobber flagged and/or six-layer probes failed")
+        notes.append("CAP-11 incomplete: clobber flagged and/or six-layer probes failed")
     if bak_accounted:
         notes.append("installer .bak accounted: " + ", ".join(sorted(set(bak_accounted))))
     else:
@@ -2588,7 +2588,7 @@ def format_apply(report: ApplyReport, *, as_json: bool) -> str:
         return json.dumps(report.to_dict(), indent=2, sort_keys=True)
 
     lines: list[str] = [
-        "steward upgrade bmad-core — deliberate apply (CAP-2)",
+        "steward upgrade bmad-core — deliberate apply (CAP-10)",
         f"installed: {report.preflight.installed_version}",
         f"target:    {report.preflight.target_version}",
         f"branch:    {report.branch}",
@@ -2620,7 +2620,7 @@ def format_apply(report: ApplyReport, *, as_json: bool) -> str:
         for path in report.custom_differs:
             lines.append(f"- {path}")
 
-    lines.extend(["", "## CAP-3 clobbered custom surfaces"])
+    lines.extend(["", "## CAP-11 clobbered custom surfaces"])
     if report.reconcile is None:
         lines.append("(no reconcile run)")
     else:
@@ -2635,7 +2635,7 @@ def format_apply(report: ApplyReport, *, as_json: bool) -> str:
         if rec.bak_files_accounted:
             lines.append("bak accounted: " + ", ".join(rec.bak_files_accounted))
 
-    lines.extend(["", "## CAP-7 custom modules"])
+    lines.extend(["", "## CAP-15 custom modules"])
     if not report.custom_modules:
         lines.append("(none in catalog)")
     else:
@@ -2673,7 +2673,7 @@ def format_apply(report: ApplyReport, *, as_json: bool) -> str:
         for note in module.notes:
             lines.append(f"  - note: {note}")
 
-    lines.extend(["", "## CAP-8 local customizations re-applied"])
+    lines.extend(["", "## CAP-16 local customizations re-applied"])
     reapply = report.local_customizations_reapply
     if reapply is None or not reapply.findings:
         lines.append("(none flagged)")
@@ -2689,7 +2689,7 @@ def format_apply(report: ApplyReport, *, as_json: bool) -> str:
             lines.append(f"- {note}")
 
     # Include the CAP-1 preflight body for the review checklist.
-    lines.extend(["", "--- CAP-1 preflight consumed by this apply ---", ""])
+    lines.extend(["", "--- CAP-9 preflight consumed by this apply ---", ""])
     lines.append(format_preflight(report.preflight, as_json=False).rstrip())
     return "\n".join(lines) + "\n"
 
@@ -3164,7 +3164,7 @@ def build_pin_fan_out_report(
         raise UpgradeError(f"pin-fan-out versions must be X.Y.Z (from={from_version!r} to={to_version!r})")
 
     notes: list[str] = [
-        "CAP-4 report-only: foreign-station sites are never edited by steward",
+        "CAP-12 report-only: foreign-station sites are never edited by steward",
         f"trap {TRAP_PIN_FANOUT}: pin fan-out (2026-08-21 failure-modes)",
     ]
     sites: list[PinSiteStatus] = []
@@ -3212,7 +3212,7 @@ def format_pin_fan_out(report: PinFanOutReport, *, as_json: bool) -> str:
         return json.dumps(report.to_dict(), indent=2, sort_keys=True)
 
     lines: list[str] = [
-        "steward upgrade pin-fan-out — CAP-4 report-only",
+        "steward upgrade pin-fan-out — CAP-12 report-only",
         f"package: {report.package}",
         f"from:    {report.from_version}",
         f"to:      {report.to_version}",
@@ -3762,7 +3762,7 @@ def build_prove_landed_report(
     """
     home_root = loops_home if loops_home is not None else Path.home() / ".bmad-loops"
     notes: list[str] = [
-        "CAP-5 prove-landed: single verdict over drift integrity + CFE meta + loop homes",
+        "CAP-13 prove-landed: single verdict over drift integrity + CFE meta + loop homes",
         "foreign-tree mutation limited to documented bmad-loop init relay refresh",
         f"trap {TRAP_LOOP_RELAY}: loop-home hook relay stale (2026-08-21 failure-modes)",
     ]
@@ -3820,7 +3820,7 @@ def build_prove_landed_report(
         if fail_n:
             notes.append(
                 f"native path spot-checks: {ok_n}/{total_n} ok, {fail_n} advisory "
-                "fail/warn (do not affect CAP-5 verdict)"
+                "fail/warn (do not affect CAP-13 verdict)"
             )
         else:
             notes.append(f"native path spot-checks: {ok_n}/{total_n} ok (advisory; not a hard gate)")
@@ -3842,7 +3842,7 @@ def format_prove_landed(report: ProveLandedReport, *, as_json: bool) -> str:
         return json.dumps(report.to_dict(), indent=2, sort_keys=True)
 
     lines: list[str] = [
-        "steward upgrade prove-landed — CAP-5 post-apply verification",
+        "steward upgrade prove-landed — CAP-13 post-apply verification",
         f"verdict:  {report.verdict.upper()}",
         f"homes:    {report.homes_ok}/{report.homes_total} clean",
         f"trap:     {report.trap_id}",
@@ -3880,9 +3880,9 @@ class UpgradeDuty:
                 ok=True,
                 summary=(
                     "upgrade: available verbs are bmad-core "
-                    "(report-only pre-flight; pass --apply for CAP-2 deliberate apply), "
-                    "pin-fan-out (CAP-4 report-only pin enumeration), "
-                    "and prove-landed/verify (CAP-5 post-apply single-verdict gate)"
+                    "(report-only pre-flight; pass --apply for CAP-10 deliberate apply), "
+                    "pin-fan-out (CAP-12 report-only pin enumeration), "
+                    "and prove-landed/verify (CAP-13 post-apply single-verdict gate)"
                 ),
             )
         try:

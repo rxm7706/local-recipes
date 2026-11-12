@@ -40,7 +40,7 @@ not a boolean only `--module` targets can satisfy.
    class-correct per this Spec's CAP-2). Template reports N/A in this
    monorepo.
 
-## Fresh-clone class-path (CAP-3) — recorded proof
+## Fresh-clone class-path (CAP-29) — recorded proof
 
 A fresh clone of this repo already carries method core and skill-forge
 skills in git. Follow this page — never a chat transcript that drives npm
