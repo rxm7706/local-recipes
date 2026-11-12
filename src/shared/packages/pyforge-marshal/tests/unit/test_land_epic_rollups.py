@@ -30,6 +30,12 @@ from pyforge.marshal.cli import land as land_module
 from pyforge.marshal.dispatch_land_finalize import __main__ as finalize_module
 from pyforge.marshal.dispatch_land_finalize.__main__ import _FINALIZE_RESYNC_KIND, finalize_dispatch_land
 
+# Story 116.4 (spec-pyforge-marshal:CAP-305): every test here states its oracle in the terms of
+# ``scripts/promote_sprint_status.py``, which the landing loads from the checkout ``checkout_root()`` names. The
+# tree-read guard runs each package-half test off the tree, where every one of them fails, so the module runs in the
+# live-tree half and fails, never skips, when the script is absent.
+pytestmark = pytest.mark.live_tree
+
 _SLUG = "pyforge-marshal"
 _FIXTURES = Path(__file__).resolve().parent.parent / "fixtures"
 

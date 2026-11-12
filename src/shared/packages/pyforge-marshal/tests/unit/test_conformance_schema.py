@@ -13,6 +13,7 @@ from pathlib import Path
 import jsonschema
 import pytest
 
+from pyforge import marshal as marshal_package
 from pyforge.marshal.core.conformance import (
     STATUS_MATRIX_FAIL,
     STATUS_MATRIX_NOT_ATTEMPTED,
@@ -26,7 +27,7 @@ _NOW = datetime(2026, 8, 7, tzinfo=timezone.utc)
 
 
 def _schema() -> dict:
-    path = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "schemas" / "conformance.json"
+    path = Path(marshal_package.__file__).resolve().parent / "schemas" / "conformance.json"
     return json.loads(path.read_text())
 
 

@@ -29,6 +29,7 @@ from pathlib import Path
 import jsonschema
 import pytest
 
+from pyforge import marshal as marshal_package
 from pyforge.marshal.adapters.fs_local import FsError, LocalFs
 from pyforge.marshal.adapters.harness_bmadloop import HarnessError
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
@@ -617,7 +618,7 @@ _MAX_TOKENS_PER_RUN = 40_000_000.0
 _MAX_WALL_CLOCK_MINUTES_PER_STORY = 240.0
 _MAX_WALL_CLOCK_MINUTES_PER_RUN = 600.0
 
-_SCHEMA_PATH = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "schemas" / "journal.json"
+_SCHEMA_PATH = Path(marshal_package.__file__).resolve().parent / "schemas" / "journal.json"
 
 
 def _journal_schema() -> dict[str, object]:

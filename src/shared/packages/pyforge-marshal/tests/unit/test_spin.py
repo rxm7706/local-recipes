@@ -25,6 +25,7 @@ import pytest
 from pyforge.core.process import ProcessError
 from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
 
+from pyforge import marshal as marshal_package
 from pyforge.marshal.adapters import harness_bmadloop as harness_module
 from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.adapters.harness_bmadloop import (
@@ -39,7 +40,7 @@ from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, pre
 from pyforge.marshal.core.verdict import EXIT_OK, EXIT_SIGINT, Verdict, exit_code_for
 from pyforge.marshal.ports.harness import DeferredStory, RunStatusSnapshot, SpinResult
 
-_SCHEMA_PATH = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "schemas" / "envelope.v1.json"
+_SCHEMA_PATH = Path(marshal_package.__file__).resolve().parent / "schemas" / "envelope.v1.json"
 
 
 class FakeFs:
@@ -2356,36 +2357,6 @@ def _declare_wire_layer(monkeypatch, tmp_path: Path, *, enabled: bool) -> None:
         encoding="utf-8",
     )
     monkeypatch.setattr(spin_module, "conventional_project_policy_path", lambda _slug: path)
-
-
-def test_spin_states_the_wire_layer_disposition_on_every_run(home, capsys, monkeypatch):
-    """Story 28.2 (SPEC-marshal-token-economy CAP-2) / Story 46.4: a spin
-    report always says what the wire-compression layer did, exactly as it
-    always says where ``supervisor.log`` is. Undeclared now means the
-    repo-default tri-state ``"auto"`` (Story 46.4), not off -- the packaged
-    ``claude`` profile declares a ``[wrapper]``, so with its binary
-    resolvable the layer genuinely applies. This is the spec's own I/O
-    matrix row 1: fresh loop home, zero station config, Claude profile.
-
-    Resolver patched to a fixed path -- see
-    ``test_spin_applies_wire_layer_via_bmadloop_profile_overlay_when_available``
-    for why real PATH/fallback-dir resolution isn't deterministic across
-    environments."""
-    from pyforge.marshal.adapters import harness_bmadloop as bmadloop_module
-
-    monkeypatch.setattr(bmadloop_module, "_resolve_wrapper_binary", lambda *_a, **_k: "/usr/bin/headroom")
-    fs = FakeFs(dirs={home})
-    harness = FakeHarness()
-    harness.feed_keys = ("1-1-first-story",)
-
-    run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
-
-    envelope = json.loads(capsys.readouterr().out)
-    assert envelope["data"]["wire"]["applied"] is True
-    assert envelope["data"]["wire"]["reason"] is None
-    assert envelope["data"]["wire"]["aggressiveness"] == "medium"
-    assert envelope["data"]["wire"]["store_dir"] is not None
-    assert [f for f in envelope["findings"] if f["code"] == "MRS-SPIN-017"] == []
 
 
 def test_spin_applies_wire_layer_via_bmadloop_profile_overlay_when_available(home, capsys, monkeypatch, tmp_path):

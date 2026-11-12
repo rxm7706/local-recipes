@@ -19,6 +19,7 @@ import jsonschema
 import pytest
 from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
 
+from pyforge import marshal as marshal_package
 from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.adapters.harness_bmadloop import HarnessError
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
@@ -33,7 +34,7 @@ from pyforge.marshal.seed.verbs.kit import INDEX_TIMEOUT_S
 # segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
 # fixture path or a value the code under test names, never a read of the tracked tree.
 
-_SCHEMA_PATH = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "schemas" / "envelope.v1.json"
+_SCHEMA_PATH = Path(marshal_package.__file__).resolve().parent / "schemas" / "envelope.v1.json"
 
 
 def _seed_real_home_scope(

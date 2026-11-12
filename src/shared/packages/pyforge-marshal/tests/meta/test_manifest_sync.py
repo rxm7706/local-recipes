@@ -21,13 +21,17 @@ import re
 import tomllib
 from pathlib import Path
 
+from pyforge import marshal as marshal_package
 from pyforge.marshal.adapters.harness_bmadloop import (
     _HARNESS_MAX_MINOR_EXCLUSIVE,
     _HARNESS_MIN_VERSION,
     HARNESS_VERSION_RANGE_TEXT,
 )
 
-_PACKAGE_ROOT = Path(__file__).resolve().parents[2]
+# Story 116.4: the root of the package under test, found through the import system
+# (src/pyforge/marshal/__init__.py -> the package root), so a copy of these tests outside the repository
+# still reads the manifests of the package it tests.
+_PACKAGE_ROOT = Path(marshal_package.__file__).resolve().parents[3]
 
 # PEP 508-lite: the distribution name, then everything after it is the
 # version-specifier tail. Marshal's declared deps are plain name+specifier

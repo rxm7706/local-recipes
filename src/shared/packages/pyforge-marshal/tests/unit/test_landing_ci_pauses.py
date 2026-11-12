@@ -15,6 +15,7 @@ import pytest
 from pyforge.core.process import ProcessError, ProcessResult
 from pyforge.testing_kit.flags import flag_states
 
+from pyforge import marshal as marshal_package
 from pyforge.marshal.adapters.steward_cli import StewardCiStatusOutcome, StewardCli
 from pyforge.marshal.core import policy
 from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
@@ -654,7 +655,7 @@ def test_101_1_rows_without_an_id_never_raise_out_of_the_record() -> None:
 
 # Review nit 3, AC6's second half as a standing test: marshal's own src/ names neither the master switch nor the
 # registry (steward is the one reader of the pause state). tests/unit -> tests -> pyforge-marshal.
-_MARSHAL_SRC = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal"
+_MARSHAL_SRC = Path(marshal_package.__file__).resolve().parent
 
 
 def test_101_1_ac6_no_marshal_src_module_names_the_master_switch_or_the_registry() -> None:

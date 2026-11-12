@@ -7,8 +7,9 @@ merged). They now resolve the checkout through ``checkout_root()``, the guarded 
 of ``repo_root()``: the ancestor that carries ``src/shared/packages/pyforge-marshal``, or
 ``RepoRootUnresolvedError``.
 
-Every layout here is built under ``tmp_path`` by pointing ``config.__file__`` at it, so this module reads
-nothing in the repository outside the package.
+Every layout here is built under ``tmp_path`` by pointing the module's ``__file__`` anchor at it
+(``anchor_config_at``; ``config.__file__`` itself is never rebound), so this module reads nothing in the
+repository outside the package.
 """
 
 from __future__ import annotations
@@ -18,8 +19,8 @@ import sys
 from pathlib import Path
 
 import pytest
+from _config_anchor_support import anchor_config_at
 
-from pyforge.marshal.cli import config as config_module
 from pyforge.marshal.cli import deploy as deploy_module
 from pyforge.marshal.cli import land as land_module
 from pyforge.marshal.cli.config import RepoRootUnresolvedError, checkout_root, repo_root
@@ -38,6 +39,13 @@ def _clean_git_env(monkeypatch):
         monkeypatch.delenv(name, raising=False)
 
 
+@pytest.fixture
+def off_tree_checkout_anchor() -> bool:
+    """This module moves ``cli/config.py``'s checkout anchor itself (``anchor_config_at``), so the suite's off-tree
+    anchor (``tests/conftest.py``) stays off and the real ``_editable_checkout_root()`` runs."""
+    return False
+
+
 @pytest.fixture(autouse=True)
 def _no_cached_fleet_scan(monkeypatch):
     """``_load_fleet_scan_module`` caches its first load and registers it in ``sys.modules``; every test
@@ -52,7 +60,7 @@ def editable(tmp_path: Path, monkeypatch) -> Path:
     root = tmp_path / "checkout"
     module_file = root / _MODULE_RELPATH
     module_file.parent.mkdir(parents=True)
-    monkeypatch.setattr(config_module, "__file__", str(module_file))
+    anchor_config_at(monkeypatch, module_file)
     return root
 
 
@@ -62,7 +70,7 @@ def installed(tmp_path: Path, monkeypatch) -> Path:
     module_file = (
         tmp_path / "env" / "lib" / "python3.14" / "site-packages" / "pyforge" / "marshal" / "cli" / "config.py"
     )
-    monkeypatch.setattr(config_module, "__file__", str(module_file))
+    anchor_config_at(monkeypatch, module_file)
     return module_file
 
 
@@ -131,7 +139,7 @@ def test_outside_a_checkout_the_helper_raises_the_typed_error(installed: Path) -
 
 
 def test_a_prefix_with_fewer_than_nine_ancestors_raises_the_typed_error_not_an_index_error(monkeypatch) -> None:
-    monkeypatch.setattr(config_module, "__file__", _SHALLOW_PREFIX_FILE)
+    anchor_config_at(monkeypatch, _SHALLOW_PREFIX_FILE)
     assert len(Path(_SHALLOW_PREFIX_FILE).parents) == 8
 
     with pytest.raises(RepoRootUnresolvedError):

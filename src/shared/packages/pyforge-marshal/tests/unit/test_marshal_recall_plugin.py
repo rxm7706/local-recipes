@@ -9,11 +9,15 @@ import pytest
 from bmad_loop.plugins.context import HookContext
 from bmad_loop.plugins.model import PluginManifest
 
+from pyforge import marshal as marshal_package
 from pyforge.marshal.adapters.scribe_cli import ScribeRecallOutcome
 
 _PLUGIN_PY = (
-    Path(__file__).resolve().parents[2]
-    / "src/pyforge/marshal/data/bmad_loop_plugins/marshal-recall/marshal_recall_plugin.py"
+    Path(marshal_package.__file__).resolve().parent
+    / "data"
+    / "bmad_loop_plugins"
+    / "marshal-recall"
+    / "marshal_recall_plugin.py"
 )
 
 

@@ -3,19 +3,49 @@
 Story 116.1 (spec-pyforge-marshal:CAP-305): the one ``test_spin.py`` test that reads the tracked tree moved here,
 marked ``live_tree``; it fails, never skips, when the policy file it reads is absent. Every other spin test stays
 in ``test_spin.py``.
+
+Story 116.4 (spec-pyforge-marshal:CAP-305): ``test_spin_states_the_wire_layer_disposition_on_every_run`` moved here
+too. Its undeclared wire layer reads the repository default from ``_bmad-output/policy-defaults.toml`` through
+``repo_root()``, and it fails off the tree, where the tree-read guard runs every package-half test.
 """
 
 from __future__ import annotations
 
+import json
 import tomllib
 from pathlib import Path
 
 import pytest
+from test_spin import (
+    FakeFs,
+    FakeHarness,
+    _spin_namespace,
+    _StubProcess,
+)
 
 from pyforge.marshal.adapters.harness_bmadloop import render_policy_toml
+from pyforge.marshal.cli import spin as spin_module
+from pyforge.marshal.cli.spin import run_spin
 from pyforge.marshal.core import policy as policy_module
 
 pytestmark = pytest.mark.live_tree
+
+
+# ``test_spin.py``'s fixtures the moved wire-layer test takes, declared here as well: a fixture does not follow an
+# import by name, and an autouse one does not follow it at all.
+@pytest.fixture(autouse=True)
+def _default_supervisor_spawn_succeeds(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(spin_module, "PosixProcess", lambda: _StubProcess())
+
+
+@pytest.fixture(autouse=True)
+def _sandbox_loop_home_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
+
+
+@pytest.fixture
+def home(tmp_path: Path) -> Path:
+    return tmp_path / "loop-homes" / "acme"
 
 
 def test_the_real_pyforge_marshal_policy_declares_a_working_model_tier_map():
@@ -81,3 +111,33 @@ def test_the_real_pyforge_marshal_policy_declares_a_working_model_tier_map():
         assert "dev" not in parsed_easy["adapter"]
     assert parsed_easy["adapter"]["model"] == "sonnet"
     assert parsed_easy["adapter"]["review"]["model"] == "opus"
+
+
+def test_spin_states_the_wire_layer_disposition_on_every_run(home, capsys, monkeypatch):
+    """Story 28.2 (SPEC-marshal-token-economy CAP-2) / Story 46.4: a spin
+    report always says what the wire-compression layer did, exactly as it
+    always says where ``supervisor.log`` is. Undeclared now means the
+    repo-default tri-state ``"auto"`` (Story 46.4), not off -- the packaged
+    ``claude`` profile declares a ``[wrapper]``, so with its binary
+    resolvable the layer genuinely applies. This is the spec's own I/O
+    matrix row 1: fresh loop home, zero station config, Claude profile.
+
+    Resolver patched to a fixed path -- see
+    ``test_spin_applies_wire_layer_via_bmadloop_profile_overlay_when_available``
+    for why real PATH/fallback-dir resolution isn't deterministic across
+    environments."""
+    from pyforge.marshal.adapters import harness_bmadloop as bmadloop_module
+
+    monkeypatch.setattr(bmadloop_module, "_resolve_wrapper_binary", lambda *_a, **_k: "/usr/bin/headroom")
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    envelope = json.loads(capsys.readouterr().out)
+    assert envelope["data"]["wire"]["applied"] is True
+    assert envelope["data"]["wire"]["reason"] is None
+    assert envelope["data"]["wire"]["aggressiveness"] == "medium"
+    assert envelope["data"]["wire"]["store_dir"] is not None
+    assert [f for f in envelope["findings"] if f["code"] == "MRS-SPIN-017"] == []

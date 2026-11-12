@@ -9,6 +9,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from pyforge.marshal.mcp.coverage import (
     DREAM_STATIONS,
     format_coverage_report,
@@ -16,6 +18,13 @@ from pyforge.marshal.mcp.coverage import (
     station_governed_surface,
     tool_surface_coverage_report,
 )
+
+# Story 116.4 (spec-pyforge-marshal:CAP-305): five tests here resolve the repository root from ``mcp/coverage.py``'s
+# own location and probe it (``pixi.toml``, ``.claude/tools/conda_forge_server.py``, each station's ``mcp/``). A probe
+# is an existence check, which raises no audit event, so the tree-read guard cannot see it; Story 116.2's
+# whole-package copy found them, and the package half run from that copy fails all five. The module holds 11 tests,
+# so it is marked whole (Story 116.2's rule) and fails, never skips, when the root cannot be found.
+pytestmark = pytest.mark.live_tree
 
 
 def test_dream_stations_is_the_one_guild_roster():

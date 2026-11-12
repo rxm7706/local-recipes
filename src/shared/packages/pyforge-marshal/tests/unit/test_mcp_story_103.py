@@ -29,6 +29,7 @@ from pathlib import Path
 import pytest
 
 import pyforge.marshal.adapters.mcp_stdio_probe as probe_mod
+from pyforge import marshal as marshal_package
 from pyforge.marshal.adapters.mcp_stdio_probe import (
     StdioMcpProbe,
     _append_tail,
@@ -49,7 +50,7 @@ from pyforge.marshal.core.verdict import EXIT_OK
 from pyforge.marshal.mcp.tools import TOOL_SPECS
 from pyforge.marshal.ports.mcp_probe import McpProbeResult
 
-PACKAGE_SRC = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal"
+PACKAGE_SRC = Path(marshal_package.__file__).resolve().parent
 
 # Story 115.3 (CAP-23 amended 2026-11-10): the registered set is the inventory, read from TOOL_SPECS.
 REGISTERED_TOOLS = frozenset(TOOL_SPECS)
