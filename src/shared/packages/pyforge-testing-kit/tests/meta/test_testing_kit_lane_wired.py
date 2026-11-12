@@ -20,9 +20,10 @@ running a package-half task and ``testing-kit-live-test`` running
 ``pyforge-testing-kit-live-test``, with ``pyforge-testing-kit-test`` kept as the
 ``depends-on`` aggregate of both halves, so it stays the whole suite. Which half
 a task runs is read from its ``-m`` marker expression. The
-``test_detector_fires_when_a_half_is_dropped_*`` tests prove it on a split copy
-of today's input. This module reads ``pixi.toml`` and the workflow, so it is
-itself ``live_tree``.
+``test_detector_fires_when_a_half_is_dropped_*`` tests prove it on the split:
+the real ``pixi.toml`` since steward:S-124.1 landed its half, and a split copy
+of the workflow until steward:S-124.2 lands its own. This module reads
+``pixi.toml`` and the workflow, so it is itself ``live_tree``.
 """
 
 from __future__ import annotations
@@ -82,6 +83,7 @@ _SET = re.compile(r"^\s*TESTING_KIT_CHANGED=true\s*$", re.MULTILINE)
 _NEEDS = re.compile(r"^\s+needs:\s*(.+?)\s*$", re.MULTILINE)
 _ENUMERATED = re.compile(r"tests/(?:meta|unit|integration|conformance)\b")
 _KIT_RUN = re.compile(rf"^pixi run --frozen -e {re.escape(ENV)} ([\w-]+)$")
+_MARKER_ARG = re.compile(r"""-m\s+(?:"[^"]*"|'[^']*'|\S+)""")
 
 
 def _blocks(text: str) -> dict[str, str]:
@@ -398,11 +400,14 @@ def _split_workflow(text: str | None = None) -> str:
 
 
 def _split_pixi(data: dict | None = None) -> dict:
-    """Today's pixi data split the way steward:S-124.1 lands it: two half tasks, and the kit's task
-    kept as their ``depends-on`` aggregate."""
+    """The pixi data split the way steward:S-124.1 lands it: two half tasks, and the kit's task kept
+    as their ``depends-on`` aggregate. The real data once the kit's task is already that aggregate
+    (as pyforge-core's ``_split_pixi_data`` does), else a split copy of a whole-suite task."""
     data = copy.deepcopy(_pixi_data() if data is None else data)
     tasks = _kit_tasks(data)
     whole = tasks[TASK]
+    if not isinstance(whole, str) and whole.get("depends-on"):
+        return data
     assert TESTS in whole["cmd"].split(), "mutation premise: the kit's task runs the whole tests tree"
     tasks[_PACKAGE_TASK] = {"cmd": f'pytest {TESTS} -q -m "not live_tree"'}
     tasks[LIVE_TASK] = {"cmd": f"pytest {TESTS} -q -m live_tree", "env": whole.get("env", {})}
@@ -449,9 +454,19 @@ def test_detector_fires_when_a_half_is_dropped_from_the_aggregate() -> None:
 
 
 def test_detector_fires_when_a_half_is_dropped_from_the_whole_suite_task() -> None:
-    data = copy.deepcopy(_pixi_data())
-    whole = _kit_tasks(data)[TASK]
-    whole["cmd"] = f'{whole["cmd"]} -m "not live_tree"'
+    """Each leg of the whole-suite aggregate narrowed to the package half (its ``-m`` expression
+    rewritten): the task still runs both legs, and drops the live-tree half."""
+    data = _split_pixi()
+    tasks = _kit_tasks(data)
+    legs = [_PACKAGE_TASK, LIVE_TASK]
+    assert {d if isinstance(d, str) else d["task"] for d in tasks[TASK]["depends-on"]} == set(legs), (
+        "mutation premise: the kit's task is the aggregate of its two halves"
+    )
+    for name in legs:
+        leg = tasks[name]
+        assert len(_MARKER_ARG.findall(leg["cmd"])) == 1, f"mutation premise: {name} selects by one -m expression"
+        leg["cmd"] = _MARKER_ARG.sub('-m "not live_tree"', leg["cmd"])
+    assert task_halves(data, LIVE_TASK) == {PACKAGE_HALF}
     assert leg_problems(data) == [f"`{TASK}` does not run the {LIVE_HALF} half -- it must stay the whole suite"]
     assert halves_problems(_workflow_text(), data) == [
         f"no job runs the {LIVE_HALF} half of the kit's suite (the kit's jobs: `{JOB}`)"

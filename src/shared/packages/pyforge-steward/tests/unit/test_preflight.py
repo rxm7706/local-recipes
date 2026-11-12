@@ -80,7 +80,9 @@ def test_real_pixi_lists_every_leaf_once() -> None:
     keys = [(lane.task, lane.environment) for lane in lanes]
     assert len(keys) == len(set(keys))
     assert "pyforge-station-tests" not in {k[0] for k in keys}
-    assert ("pyforge-core-test", "pyforge-core") in keys
+    # steward Story 124.1: pyforge-core-test is the cmd-less aggregate of core's two halves, so its leaves are the lanes
+    assert ("pyforge-core-package-test", "pyforge-core") in keys
+    assert ("pyforge-core-live-test", "pyforge-core") in keys
     assert ("detectors-ci", "pyforge-guild") in keys
     assert ("ruff", "pyforge-guild") in keys
     by_task = _lane_map(pixi)

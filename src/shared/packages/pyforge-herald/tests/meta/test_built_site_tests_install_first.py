@@ -7,7 +7,9 @@ installed it, so on a fresh worktree and on every CI runner the 25 tests skipped
 
 * ``pyforge-herald-test`` stays npm-free, and so do ``pyforge-station-tests`` and the SBOM laptop gate, which run it
   from the SBOM alone (fnd:CAP-13; the operator's ruling on the independent review);
-* ``pyforge-herald-test-built`` runs ``docs-site-install`` in the ``site`` environment and then that suite;
+* ``pyforge-herald-test-built`` runs ``docs-site-install`` in the ``site`` environment and then both halves of that
+  suite, ``pyforge-herald-test`` and ``pyforge-herald-live-test`` (steward Story 124.1 split it; the built-site tests
+  are live-tree modules);
   ``pyforge-herald-test-coverage`` installs first too, and sets ``HERALD_DOCS_SITE_REQUIRED``;
 * the coverage-gate task takes no install dependency (CI's coverage leg runs its driver, not the task, so the
   preflight's reader can select the gate's lane without the install's, and that lane would never start);
@@ -42,6 +44,8 @@ REPO_ROOT = Path(__file__).resolve().parents[6]
 META = Path(__file__).resolve().parent
 INSTALL = {"task": "docs-site-install", "environment": "site"}
 SUITE = {"task": "pyforge-herald-test", "environment": "pyforge-herald"}
+# Steward Story 124.1 (spec-pyforge-steward:CAP-175): the suite's live-tree half, where the built-site tests run.
+LIVE = {"task": "pyforge-herald-live-test", "environment": "pyforge-herald"}
 STATION_TESTS = REPO_ROOT / ".github" / "workflows" / "pyforge-station-tests.yml"
 
 
@@ -96,10 +100,11 @@ def test_the_closure_check_sees_the_site_environment() -> None:
 
 
 def test_the_built_task_installs_then_runs_the_suite() -> None:
-    """Cmd-less, so pixi runs its two dependencies in the order they are declared: the install, then the suite."""
+    """Cmd-less, so pixi runs its three dependencies in the order they are declared: the install, then the suite's
+    package half and its live-tree half, which holds the built-site tests (steward Story 124.1)."""
     task = _herald_tasks()["pyforge-herald-test-built"]
     assert "cmd" not in task
-    assert task["depends-on"] == [INSTALL, SUITE]
+    assert task["depends-on"] == [INSTALL, SUITE, LIVE]
 
 
 def test_the_coverage_report_installs_first_and_requires_the_install() -> None:
@@ -121,13 +126,13 @@ def test_the_install_is_npm_ci_in_docs_site() -> None:
 def test_the_coverage_gate_takes_no_install_dependency() -> None:
     """CI's coverage step runs ``scripts/coverage_gates_ci.py --report`` by command line inside the herald job, after
     the suite wrote its coverage JSON (steward Story 117.2), so CI never runs the install with the gate. The task
-    depends on the plain suite only -- the one that wrote the report, in herald's own environment -- never on
-    ``docs-site-install`` or anything in the ``site`` environment: the gate's CI rule is now the herald job's own, so
-    the suite is always selected with it and the dependency can no longer strand the lane (steward Story 107.1;
-    DW-steward-103-6-1)."""
+    depends on the plain suite's two halves only -- the ones that wrote the reports it merges, in herald's own
+    environment (steward Story 124.1) -- never on ``docs-site-install`` or anything in the ``site`` environment: the
+    gate's CI rule is now the herald job's own, so the suite is always selected with it and the dependency can no
+    longer strand the lane (steward Story 107.1; DW-steward-103-6-1)."""
     pixi = _pixi()
     gate = _herald_tasks()["pyforge-herald-coverage-gate"]
-    assert gate.get("depends-on") == [SUITE]
+    assert gate.get("depends-on") == [SUITE, LIVE]
     assert _closure_touches_site(pixi, "pyforge-herald-coverage-gate") == []
     assert DOCS_SITE_REQUIRED_ENV not in gate.get("env", {})
 
