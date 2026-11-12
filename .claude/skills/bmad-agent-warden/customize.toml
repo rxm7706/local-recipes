@@ -42,4 +42,4 @@ prompt = "Complete the station task by running `pyforge warden scan --doctor` on
 [[agent.menu]]
 code = "MCP"
 description = "Call the warden service face"
-prompt = "POST /stations/warden/mcp only (initialize and tools/call station_face). No other URL or method. No filesystem. Do not publish a second PR-gate verdict."
+prompt = "POST /stations/warden/mcp only (initialize, then tools/call start_audit with a target and get_audit with its handle). No other URL or method. No filesystem. Do not publish a second PR-gate verdict."

@@ -47,8 +47,10 @@ The sidecar, `src/platform/mcp_host/app.py`, serves the same path on its own por
 runs no assertion check: the host verifies the assertion before the hop, so reach a station
 through the host, never the sidecar's port. When Django starts in
 the sidecar (it needs `DJANGO_SECRET_KEY` and `DATABASE_URL`, `mcp_host/settings.py`), marshal
-gets its real tools; every other station, and marshal when Django does not start, answers with
-one identity tool, `station_face`, which returns the station's name.
+gets its real tools; every other station, and marshal when Django does not start, answers from
+the fallback identity server, whose one tool, `station_face`, returns the station's name.
+In-process, the host serves every station's real tools, its `start_` and `get_` tools among them
+(see *Run a station's real work*).
 
 ## Before you start
 
@@ -87,7 +89,7 @@ DATABASE_URL="${DATABASE_URL:-postgres:///platform}" \
 
 `mcp-host-serve` runs `uvicorn mcp_host.app:app` on `127.0.0.1:8090` from `src/platform/`.
 `curl -s http://127.0.0.1:8090/health` prints `{"status":"ok"}` once it is up. Skip
-`DJANGO_SECRET_KEY` and `DATABASE_URL` if you only need the `station_face` identity tool.
+`DJANGO_SECRET_KEY` and `DATABASE_URL` if you only need the fallback identity server (`station_face`).
 
 ## 3. Start the host
 
@@ -165,7 +167,8 @@ JSON-RPC error `-32022`, whose data lists the supported revisions.
 ## Run a station's real work
 
 Seven `start_*` tools each run one station CLI verb from one closed table,
-`django_pyforge/station_cli.py`. A tool takes a `target`, never a verb or a flag.
+`django_pyforge/station_cli.py`. A tool takes a `target`, never a verb or a flag. Through the
+sidecar only marshal's face is real, so reach the other six with the faces in-process (step 3).
 
 | Tool | `target` | Runs |
 |---|---|---|

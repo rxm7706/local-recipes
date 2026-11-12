@@ -46,4 +46,4 @@ prompt = "Complete the station task by running `pyforge marshal watch` (add --pr
 [[agent.menu]]
 code = "MCP"
 description = "Call the marshal service face"
-prompt = "POST /stations/marshal/mcp only (initialize and tools/call station_face). No other URL or method. No filesystem."
+prompt = "POST /stations/marshal/mcp only (initialize, then tools/call start_loop with a <slug>/<story> target, get_loop with its handle, list_loop_story_tasks or marshal_watch). No other URL or method. No filesystem."

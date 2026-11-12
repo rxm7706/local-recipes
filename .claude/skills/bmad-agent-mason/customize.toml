@@ -45,4 +45,4 @@ prompt = "Complete the station task by running `pyforge mason recipe diagnose` w
 [[agent.menu]]
 code = "MCP"
 description = "Call the mason service face"
-prompt = "POST /stations/mason/mcp only (initialize and tools/call station_face). No other URL or method. No filesystem."
+prompt = "POST /stations/mason/mcp only (initialize, then tools/call start_build with a target and get_build with its handle). No other URL or method. No filesystem."

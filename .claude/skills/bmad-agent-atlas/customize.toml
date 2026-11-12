@@ -40,4 +40,4 @@ prompt = "Complete the station task by running `pyforge atlas run --pipelines <n
 [[agent.menu]]
 code = "MCP"
 description = "Call the atlas service face"
-prompt = "POST /stations/atlas/mcp only (initialize and tools/call station_face). No other URL or method. No filesystem."
+prompt = "POST /stations/atlas/mcp only (initialize, then tools/call start_run_pipeline with a pipeline name and get_run with its handle, or one of run_core_pipeline, run_vcs_health_pipeline, run_pypi_intelligence_pipeline, run_vulnerability_pipeline, run_seed_gaps_pipeline, run_universal_sbom_pipeline, run_derived_artifacts_pipeline, run_upstream_discovery_pipeline, read_atlas_dataset, list_atlas_pipelines, list_atlas_datasets, query_vizro_ai or query_trending_candidates). No other URL or method. No filesystem."

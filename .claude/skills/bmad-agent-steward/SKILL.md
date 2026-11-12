@@ -76,7 +76,7 @@ Station tasks use **only** these kinds:
 
 - `consult_content_skill` — load `.claude/skills/pyforge-steward/active/pyforge-steward/SKILL.md` (CAP-15). No other skill or data file.
 - `grammar` — FR-13 unified dispatch: argv must start `pyforge steward`. Example: `pyforge steward provision --list`. Do not call the `steward` binary as a second public grammar. Do not import `pyforge.steward` internals.
-- `mcp` — FR-11 service face: `POST /stations/steward/mcp` only (identity tool `station_face`). No other URL, method, or host.
+- `mcp` — FR-11 service face: `POST /stations/steward/mcp` only: `start_duty` (target `ci-status`, `estate-plan` or `estate-status`) and `get_duty` (its handle). No other URL, method, or host.
 
 ## Forbidden actions
 

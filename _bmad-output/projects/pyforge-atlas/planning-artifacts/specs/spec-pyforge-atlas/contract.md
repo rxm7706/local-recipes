@@ -404,8 +404,16 @@ asset is missing.
 
 Atlas has one HTTP face, `POST /stations/atlas/mcp`, hosted by django-atlas
 (`src/shared/packages/django-atlas/src/django_atlas_portal/mcp_asgi.py`) on the platform host; it serves the MCP tools
-above. How to start the host and send a request: `docs/how-to/reach-a-station-mcp-endpoint.md`. The query plane's
+above and the two supervisor tools below, `start_run_pipeline` and `get_run`. Both are registered by
+`django_pyforge.mcp_start_get.attach_start_get`, which `django_atlas_portal/mcp_asgi.py` wraps around `build_server()`
+(spec-pyforge-unifying-strategy:CAP-4); they are not in `TOOL_SPECS`, so *MCP tools* above does not list them.
+How to start the host and send a request: `docs/how-to/reach-a-station-mcp-endpoint.md`. The query plane's
 `duckdb-server` face (`python -m pyforge.atlas.query_plane_boot`) is a data face, not an agent face.
+
+| Tool | Arguments | What it does |
+|---|---|---|
+| `start_run_pipeline` | `name`, `assertion` | Starts a supervised run of one pipeline and returns `{"handle": …}` at once; the supervisor runs `run_pipeline` (`RUN_PIPELINE_TOOL`, a supervisor runner, not an MCP tool). |
+| `get_run` | `handle`, `assertion` | Reads the supervisor run the handle names. |
 
 ## Hook registration
 

@@ -40,4 +40,4 @@ prompt = "Complete the station task by running `pyforge scribe capture` with the
 [[agent.menu]]
 code = "MCP"
 description = "Call the scribe service face"
-prompt = "POST /stations/scribe/mcp only (initialize and tools/call station_face). No other URL or method. No filesystem."
+prompt = "POST /stations/scribe/mcp only (initialize, then tools/call start_recall with the query as its target and get_recall with its handle). No other URL or method. No filesystem."

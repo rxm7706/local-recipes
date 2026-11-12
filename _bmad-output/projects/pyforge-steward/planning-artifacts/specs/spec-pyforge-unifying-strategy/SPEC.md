@@ -4,7 +4,7 @@ spec: pyforge-unifying-strategy
 status: ready
 chain: pyforge-unifying-strategy
 created: "2026-08-24"
-updated: "2026-11-06"
+updated: "2026-11-11"
 companions:
   - convergence.md
   - resilience-invariants.md
@@ -28,6 +28,14 @@ surface:
   - src/shared/packages/pyforge-scribe/**
   - src/shared/packages/pyforge-atlas/**
   - .claude/skills/pyforge-*/**
+  - .claude/skills/bmad-agent-atlas/**
+  - .claude/skills/bmad-agent-doctor/**
+  - .claude/skills/bmad-agent-herald/**
+  - .claude/skills/bmad-agent-marshal/**
+  - .claude/skills/bmad-agent-mason/**
+  - .claude/skills/bmad-agent-scribe/**
+  - .claude/skills/bmad-agent-steward/**
+  - .claude/skills/bmad-agent-warden/**
   - recipes/openfeature-*/**
   - recipes/liquibase/**
   - pixi.toml
@@ -281,7 +289,11 @@ they are why this is not merely a UI project.
     Amended 2026-11-05 (Story 21.6): that proof installs a test runner on all eight faces, so it
     shows the transport survives, not that a station's work ran. Amended 2026-11-06 (CAP-20): the
     other seven run one station CLI verb where a worker has a checkout, and where it has none
-    they fail the run and say so.
+    they fail the run and say so. Amended 2026-11-10 (Story 124.5): django-warden realizes
+    spec-pyforge-warden:CAP-16, spec-pyforge-warden:CAP-17 and spec-pyforge-warden:CAP-29, the
+    portal half split from spec-pyforge-warden:CAP-26 (A-only on steward Story 121.5);
+    spec-pyforge-warden does not co-govern django-warden, and warden's `contract.md`
+    where-it-lives table records the portal.
   - *(The criterion is deliberately stated as an outcome, not a mechanism. The MCP Tasks extension
     would be the natural vehicle and has no server-side runtime to build on — so binding the
     capability to Tasks would block it on upstream. See the `start`/`get` constraint below.
@@ -406,9 +418,23 @@ they are why this is not merely a UI project.
 - **CAP-14 — Scribe's graph outlives one file.**
   - **intent:** The knowledge graph gains a durable, concurrent-safe backing store behind its
     existing port, keeping a local-development path, and an opt-in recall mode beyond pure
-    lexical token overlap.
+    lexical token overlap. The port is `GraphStore` (`graph_store.py`) and it has three drivers:
+    the flat file (`FlatFileGraphStore`), PostgreSQL with pgvector (`PostgresGraphStore`,
+    `graph_store_pg.py`) and the DuckDB plane (`PlaneGraphStore`, `graph_store_plane.py`,
+    CAP-19). The durable driver's schema is the four governed changesets (CAP-9)
+    `src/platform/db/changelog/changes/pyforge-scribe-1-pgvector-extension.sql`,
+    `src/platform/db/changelog/changes/pyforge-scribe-2-graph-nodes.sql`,
+    `src/platform/db/changelog/changes/pyforge-scribe-3-app-role-grants.sql` and
+    `src/platform/db/changelog/changes/pyforge-scribe-4-graph-nodes-stale-column.sql`, which
+    the driver asserts and never creates: a missing relation raises `GraphSchemaMissing`.
+    pgvector stays at 0.8.1 (the `scribe-pg` feature caps it `>=0.8.1,<0.8.2`, held with
+    PostgreSQL 17: later builds need libpq 18), and pgvector has no win-64 build, so the local
+    server environment `pyforge-scribe-pg` leaves win-64 out. *(Amended 2026-11-10, Story 124.5.)*
   - **success:** The same graph operations pass against both graph-store drivers (flat-file and
-    PostgreSQL/pgvector), and **lexical** token-overlap recall — the default at
+    PostgreSQL/pgvector; `src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_operations.py`),
+    the durable driver asserts its changesets and names the missing one
+    (`src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_pg.py`), and **lexical**
+    token-overlap recall — the default at
     `recall.py:114` and the CLI without `--semantic` — returns a grounded, cited answer for a
     fixture query. The opt-in `semantic` mode (`--semantic` / `mode="semantic"`) is a 32-dim
     SHA-256 bag-of-concepts over a hardcoded 7-entry synonym map (`embeddings.py:24-32`), not
@@ -440,7 +466,13 @@ they are why this is not merely a UI project.
 - **CAP-16 — Every station can be addressed as a persona.**
   - **intent:** Each **03** station capability exposes an autonomous persona that acts through that
     station's own command grammar and service face rather than through ad-hoc tool calls. 01/02
-    work does not mint a persona.
+    work does not mint a persona. A persona names the MCP tools its station's face serves, as
+    that station's `contract.md` lists them: the faces serve `start_` and `get_` tools (CAP-4;
+    seven of them run one verb of CAP-20's closed table), and `station_face` survives only as
+    the fallback identity server, never the face. The eight station persona directories,
+    `.claude/skills/bmad-agent-<station>/` for atlas, doctor, herald, marshal, mason, scribe,
+    steward and warden, sit on this Spec's surface; the installer-owned BMAD personas do not.
+    *(Amended 2026-11-10, Story 124.5.)*
   - **success:** A persona completes a station **03** task end to end using only CAP-5's grammar and
     CAP-4's service face, with no direct filesystem or ad-hoc HTTP access in the transcript.
   - **verified:** CAP-16 persona/skill contract meta-tests live across stations (e.g.
@@ -599,7 +631,7 @@ they are why this is not merely a UI project.
   `sprint-change-proposal-2026-09-11-ad-1-datastores-exception.md`.
 - **Always:** CAP-19 is one analytical engine and one writer (canopy:FR-27 intent). `ATTACH` joins
   sources; it does not mint a second writable `.duckdb`. Consumer paths `LOAD` `postgres`
-  and `vss`; they never `INSTALL` on boot (AD-13). Autonomous SQL is cache-and-view only.
+  and `vss`; they never `INSTALL` on boot (pyforge-atlas:AD-13). Autonomous SQL is cache-and-view only.
   Mode A is declared operational views for humans, not DB-GPT exploring OLTP.
 - **Always:** CAP-19 extract/transform is Kedro on a **named** Atlas pipeline (or an
   explicit reopen of the closed set). Not a silent `01_raw` tree. Not Airflow.
