@@ -22,7 +22,15 @@ surface:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-5-4-free-inheritance-verification.md
   - docs/dreams/pyforge-mason.md
-deferred: []
+deferred:
+  - id: open-mason-deferrals-untriaged
+    summary: "108 open mason deferrals are untriaged against what has shipped since; 72 carry no severity. Counted by the 2026-11-10 audit; the burn-down is a Dream-sized effort of its own, as the 2026-10-01 campaign was."
+    location: _bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md
+    severity: low
+  - id: two-story-specs-carry-a-2-suffix
+    summary: "Two mason story specs carry a `-2` suffix no ledger key has (spec-2-5-mason-recipe-validate-2.md, spec-5-4-free-inheritance-verification-2.md); CHAIN-STANDARD section 5 names a story spec by its key exactly. Both are entries in docs/governance/flag-rule-baseline.json, which only scripts/flag_rule_baseline.py writes, so a rename needs that script's pass."
+    location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-5-4-free-inheritance-verification-2.md
+    severity: low
 ---
 
 > **Blocked 2026-11-10 (forward dependency).** Its Deps name stories in later epics (S-38.1, S-38.2, S-38.3, S-39.1).

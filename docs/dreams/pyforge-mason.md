@@ -824,6 +824,18 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   relays `spec-pyforge-steward:CAP-175`. Owner `spec-pyforge-mason`. → Epics 37 to 39 / Stories 37.1 to 39.2, specced
   2026-11-10.
 
+- **2026-11-12 (cutover readiness, closed)** — Stories 37.1 to 37.4, 38.1 to 38.3 and 39.1 are built and reviewed on
+  branch `cutover-readiness-2026-11-10`; Story 39.2 stays `blocked` until the root of record flips. Each capability of
+  `spec-pyforge-mason` is defined once and marked as it stands: `spec-pyforge-mason:CAP-36` (the native factory-island
+  build) and `spec-pyforge-mason:CAP-37` (the three sockets) are minted and shipped, `spec-pyforge-mason:CAP-5` and
+  `spec-pyforge-mason:CAP-7` shipped 2026-11-11 with the companion `contract.md` and the package and live-tree halves,
+  and the Presenton set, the closed rebuild campaign and the two closed recipe campaigns read retired. The retro is
+  `retros/retro-pyforge-mason-2026-11-12.md`; the memlog's `Surface reconcile 2026-11-12` events name every moved path
+  and every path the widened surface newly governs, for doctor Story 58.4's scoped stamp. The gaps the rulings keep
+  are open ledger rows (`DW-mason-37-1`, `DW-mason-37-2`, `DW-mason-37-4`, `DW-mason-37-4-2`, `DW-mason-38-3`,
+  `DW-mason-39-1` to `DW-mason-39-1-3`); `DW-mason-25-2-3` closed on its commits, and Story 5.4's first spec reads
+  superseded. The ledger keys move to `done` in the change's ledger close. Owner `spec-pyforge-mason`.
+
 ## One-chain fold — 2026-09-17
 
 Station Dream status is `specified` (Spec `spec-pyforge-mason` is `ready`). Mason-owned satellite Dreams archive in place with Consolidated-into banners. Practice Dream `packaging-factory` is archived into this station Dream (CHAIN-STANDARD precedence; no new station Dream minted). Recipe work stays `conda-forge-expert`; this fold is planning-chain only.

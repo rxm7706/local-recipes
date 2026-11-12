@@ -2,14 +2,22 @@
 title: 'Free-inheritance verification (SM-4)'
 type: 'chore'
 created: '2026-08-15'
-status: 'blocked'
-blocking_condition: 'unmet external dependency -- Mason v1 has not shipped'
+status: 'superseded'
+superseded_by: 'spec-5-4-free-inheritance-verification-2.md'
+blocking_condition: 'cleared -- superseded by spec-5-4-free-inheritance-verification-2.md, whose Resolution record 2026-08-27 cleared it (was: unmet external dependency -- Mason v1 has not shipped)'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
   - '{project-root}/_bmad-output/implementation-artifacts/epic-5-context.md'
 warnings: []
 ---
+
+> **SUPERSEDED (2026-11-12, Story 37.4) -- this is the first run's record, not the record of the story.**
+> Story 5.4 was re-checked on 2026-08-20 and closed on 2026-08-27 in
+> [`spec-5-4-free-inheritance-verification-2.md`](spec-5-4-free-inheritance-verification-2.md) (`status: 'done'`,
+> its Resolution record 2026-08-27), and the ledger key `5-4-free-inheritance-verification` reads `done`. This file
+> stays as the 2026-08-15 run that found both preconditions unmet; its `blocked` status contradicted the ledger
+> (cutover readiness audit 2026-11-10, SHOULD: stories), so it reads `superseded`, the key stays `done`.
 
 <intent-contract>
 
