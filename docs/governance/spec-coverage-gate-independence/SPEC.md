@@ -103,7 +103,7 @@ in an AD-3/AD-4 import-linter contract, so the move amends a declared layering r
     station's own CI gate.
   - *success:* reintroducing this shape fails a test rather than waiting for a future audit. This
     defect survived because nothing could see it. *(Ruled: yes.)*
-- **CAP-4 — the gate diffs against the remote-tracking ref, never a name a local ref can wear.** *(minted 2026-09-27 (late); kinships `marshal:CAP-270`, `pyforge-doctor:CAP-85`; doctor Story 32.1)*
+- **CAP-4 — the gate diffs against the remote-tracking ref, never a name a local ref can wear.** *(shipped 2026-09-27; kinships `marshal:CAP-270`, `pyforge-doctor:CAP-85`; doctor Story 32.1)*
   - *intent:* `scripts/coverage_gates_ci.py`'s base normalizer names `refs/remotes/origin/<name>` for a bare
     branch name (what `GITHUB_BASE_REF` holds) and for `origin/<name>` (what the pixi tasks pass) -- an
     `origin/<name>` expression such as `origin/main~1` too -- and leaves a sha, a full ref, any other revision
