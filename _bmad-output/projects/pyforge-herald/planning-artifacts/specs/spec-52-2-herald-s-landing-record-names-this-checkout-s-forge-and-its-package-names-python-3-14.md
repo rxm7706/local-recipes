@@ -148,3 +148,13 @@ because `deferred-work-check` refuses a frontmatter deferral with no tracked twi
 written at build, never at mint.
 
 - **`DW-herald-52-2-1`** (low, open; location `src/shared/packages/pyforge-herald`): Herald names A's package layout or forge slug by literal outside this fix. `src/shared/packages` in docs-site/scripts/verify_claims.py:91 and scripts/deck_facts.py:302 and :616; `../../../../..` in web/package.json:8; PYTHONPATH in pixi.toml:3272; root pixi task shell-outs in deck_pipeline.py and sync_all.py; the forge slug in docs-site/scripts/pages.mts:50, docs-site/src/lib/shelf.mjs:54, docs-site/src/lib/marketplace.ts:24 and web/src/components/TabNav.jsx:4. None of them is a rebuild input: steward Stories 44.4 and 44.5 (the fold to src/packages/) retired on 2026-11-10, so A has one layout and B rebuilds from Spec. The two docs-site slugs are fallbacks behind GITHUB_REPOSITORY, marketplace.ts is steward's capability, and web/ is built by no workflow. Revisit only if A's own layout or forge moves.
+
+## Gate findings (build, BUILD-4)
+
+- 2026-11-11, found by Story 124.1's build (core's whole suite) after the BUILD-4 gate, which did not run
+  pyforge-core's suite: `ForgeSlugError(ValueError)` in `src/pyforge/herald/local_ship.py` was an exception root
+  without `PyforgeError`, so spec-pyforge-core:CAP-5's guard
+  `test_exception_root_sole_ownership.py::test_no_unreparented_exception_root[pyforge-herald/src/pyforge/herald/local_ship.py]`
+  went red. The integrator reparented it as `ForgeSlugError(PyforgeError, ValueError)`; it is still a
+  `ValueError`, so every caller's `except ValueError` holds. Core's guard: 494 passed; herald's local_ship,
+  bridge and public-contract tests: 209 passed. Later wave gates run core's and the kit's suites every wave.

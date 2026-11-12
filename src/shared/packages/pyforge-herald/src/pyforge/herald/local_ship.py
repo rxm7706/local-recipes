@@ -34,6 +34,7 @@ from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
 from pyforge.core import cutover_root, landing_evidence, roster
+from pyforge.core.errors import PyforgeError
 
 _MERGE_SUBJECT_TEMPLATE = "Merge {slug}/{key} into main"
 ROSTER_RELATIVE = Path("docs/governance/guild-roster.json")
@@ -47,7 +48,7 @@ REQUEST_TIMEOUT_SECONDS = 150.0
 ``500`` (DW-13-6-2) reaches the caller instead of racing a client timeout."""
 
 
-class ForgeSlugError(ValueError):
+class ForgeSlugError(PyforgeError, ValueError):
     """Named refusal: this checkout's forge slug cannot be read (no roster above
     the start directory, no ``roots.this`` in it, or a root core has no slug for)."""
 
