@@ -816,6 +816,25 @@ Herald rebases to one Dream, one Spec, one PRD, one spine, one epic chain. Folde
   `docs/dreams/pyforge-unifying-strategy.md` (the four rulings, the single-PR instruction, the addendum and the second
   addendum). Story 50.2 adds the landed line once the other seven stories (50.1, 50.3, 50.4, 51.1, 51.2, 52.1 and
   52.2) are done.
+- **2026-11-12 (cutover readiness, landed) — Landed:** the eight stories of Epics 50, 51 and 52 are built and reviewed
+  on branch `cutover-readiness-2026-11-10`, and land with its single PR. Story 50.1: every capability marker and text
+  says what is true (57 shipped, 3 retired, and spec-pyforge-herald:CAP-46 and spec-pyforge-herald:CAP-62 ready until
+  Story 50.2). Story 50.3: herald's public contract is `contract.md`, held to the code
+  by `tests/meta/test_public_contract.py` (spec-pyforge-herald:CAP-62, FR-14.1). Story 50.4: herald's source cites
+  the folded Spec's ids (seven sites kept, `DW-herald-50-4-1`). Story 51.1: every dossier stats-band figure and the
+  scale table are counted at build, and a typed one fails the build (spec-pyforge-herald:CAP-46, FR-12.5). Story
+  51.2: the dossier's A→B claims, its herald section and its stale prose are true, and a test resolves each claim.
+  Story 52.1: herald's live-tree readers carry the `live_tree` marker. Story 52.2: `local_ship` names this checkout's
+  forge through core's slug table (`roots.this`), and the package floor is Python 3.14. Story 50.2: the Spec has its
+  Constraints, Non-goals and Assumptions again (with the station-level entries, the Guildhall dependency and the
+  design-system home the 2026-09-17 fold dropped), spec-pyforge-herald:CAP-46 and spec-pyforge-herald:CAP-62 read
+  shipped (59 shipped, 3 retired), and the PRD, spine, brief and epics are re-stamped. **Still
+  not met:** a live `sync-all` second run that reports all-unchanged (`DW-FU-23-6-1`), and the inputs behind
+  `/changes/` and `/status/runs/` (`DW-steward-43-6-1`). **Open to the operator:** the dossier artifact's scheduled
+  republish and the CI-surfaces snapshot refresh (`DW-herald-egm-2026-11-01-1`). New open rows of the change:
+  `DW-herald-50-1-3`, `DW-herald-50-1-4` (Story 50.1), `DW-herald-50-2-1`, `DW-herald-50-2-2`, `DW-herald-50-3-2`,
+  `DW-herald-50-4-1`, `DW-herald-52-1-1`, `DW-herald-52-1-2`, `DW-herald-52-2-1`, `DW-herald-cutover-2026-11-10-1`
+  and `DW-herald-cutover-2026-11-10-2`.
 
 ## 2026-10-26 — The deck family stays current — infographics re-derived from the ledgers, not remembered (folded from deck-family-currency)
 

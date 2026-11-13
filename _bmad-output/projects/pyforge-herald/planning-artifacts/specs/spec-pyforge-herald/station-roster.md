@@ -2,6 +2,8 @@
 
 Tier 2 Pitch Expansion covers **9 pyforge stations**. This roster provides the thesis, pain point, solution pillars, visual metaphors, and personas for each station's pitch deck. The six-act framework and artifact structure (Design proto → markdown → PPTX → SVG → video) remain constant; content varies per station.
 
+> **Standing:** a record of 2026-08-02, the nine-station roster the pitch decks were authored from; not re-checked. The live set is the deck directories under `presentations/` and each station's own Dream in `docs/dreams/` (Story 50.2, 2026-11-12).
+
 ---
 
 ## Station Roster (9 Stations)

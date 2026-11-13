@@ -37,7 +37,7 @@ not guessed.
 | Station package version | `src/shared/packages/pyforge-<station>/pyproject.toml` | `version =` |
 | BMAD core / bmad-loop versions | `_bmad/_config/manifest.yaml`; `pixi.lock` | manifest `installation.version`; the single locked `bmad-loop` conda package version (omitted when the lock holds more than one) |
 | conda-forge-expert skill version | `.claude/skills/conda-forge-expert/SKILL.md` frontmatter | `version:` |
-| MCP tool count, atlas phases, pixi envs, schema version, gotcha max | `pixi run -e local-recipes bmad-groundtruth` | JSON keys |
+| MCP tool count, atlas phases, pixi envs, schema version, gotcha max | `pixi run -e local-recipes bmad-groundtruth` (the literal `scripts/deck_facts.py` writes as this row's `source:` in every `facts.yaml`; the task runs under `-e pyforge-guild`, and moving the script's strings is `DW-herald-50-2-1`) | JSON keys |
 | Capability counts and status | `_bmad-output/projects/<slug>/planning-artifacts/specs/spec-<x>/SPEC.md` | capability *definition* lines in the spec's own id scheme (`- **CAP-N**` or `- **HER-N**`), never prose mentions; frontmatter `status` |
 | Dream status | `docs/dreams/<slug>.md` frontmatter | `status:` |
 | CLI verbs | the module named by the station's `[project.scripts]` console entry, or its whole `cli/` sub-package | distinct literal `add_parser("<verb>")` first arguments (static scan) |
@@ -47,7 +47,7 @@ not guessed.
 
 ## Derivation, check and refresh
 
-`pixi run -e local-recipes deck-facts <slug>` re-derives `presentations/<slug>/facts.yaml`
+`pixi run -e pyforge-guild deck-facts <slug>` re-derives `presentations/<slug>/facts.yaml`
 (canonical implementation `scripts/deck_facts.py`, the `deck_export.py` precedent: one script,
 one pixi task, no CFE three-place rule since it is not a conda-forge-expert script).
 

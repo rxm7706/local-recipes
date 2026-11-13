@@ -2,6 +2,8 @@
 
 **Decision**: Moments 2–4 implemented as **one coordinated epic** with 6–7 sub-stories, prioritizing **integration correctness** over velocity-to-first-value.
 
+> **Standing:** a record of 2026-08-02, the epic planned for Moments 2–4 before they were built; not re-checked. Moments 2–4 shipped as Epics 8–10 (47 stories, 2026-08-08) and the live backend as spec-pyforge-herald:CAP-37..CAP-39; `epics.md` is the live story source (Story 50.2, 2026-11-12).
+
 ---
 
 ## Epic: Herald Proclamation Framework (Moments 2–4)

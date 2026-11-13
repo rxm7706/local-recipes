@@ -2,6 +2,8 @@
 
 Authoritative guide for authoring all 21 pitch decks (9 pyforge stations + 12 legacy/extended) using a consistent narrative and visual structure.
 
+> **Standing:** live and re-checked 2026-11-12 for its act structure, which spec-pyforge-herald:CAP-8 names as the canonical structure of every pitch deck. Its counts (21 decks, about 28 slides each) are 2026-08-02 figures; `herald deck status` lists the live deck set (Story 50.2).
+
 ---
 
 ## Overview

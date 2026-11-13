@@ -2,7 +2,7 @@
 id: SPEC-pyforge-herald
 spec: pyforge-herald
 status: ready
-updated: "2026-11-11"   # AMENDED 2026-11-11 (Story 50.1, cutover readiness; Dream entry 2026-11-10 (cutover readiness); the fifteen memlog decisions marked "Story 50.1 renders" and the shipped-date table of the 2026-11-11 change entry): every capability marker and text say what is true -- 36 ready and 5 in-progress markers leave, to shipped with the date of the last citing story's landing, or to retired (CAP-6 2026-11-10; CAP-45 and CAP-49 2026-10-15, carried by CAP-61); CAP-36, CAP-50, CAP-51 and CAP-61 name an unmet clause and its row, CAP-47 and CAP-59 the open operator act; CAP-44, CAP-52, CAP-53 and CAP-56 restated to the live Pages end state; CAP-38 and CAP-39 take the operator-run form; CAP-11's cost-derivation clause struck; deck counts dated; CAP-1, CAP-26, CAP-41 and CAP-57 name their modules; CAP-46 and CAP-62 stay ready until Story 50.2. Prior "2026-11-10"   # AMENDED 2026-11-10 (cutover readiness mint, herald unit; Dream entry 2026-11-10 (cutover readiness)): CAP-62 minted (herald's public contract is one companion, and a test holds the code to it; Story 50.3, FR-14.1) and CAP-46 amended (dossier figures are counted from the tree at build; Story 51.1, FR-12.5 amended), each (ready 2026-11-10) until its story lands and Story 50.2 flips it; the operator rulings of 2026-11-10 for the other capability markers and texts are memlog decisions that Story 50.1's re-derive renders. Prior "2026-11-01"   # AMENDED 2026-11-01 (EGM fleet audit, marshal Story 113.7): CAP-47 amended (an operator-owned scheduled routine republishes the dossier artifact; success names test_one_generator's artifact test), CAP-58 amended (its 2026-10-15 marker; menus from docs/map.yaml sections, Herald flattened to four, mounted or flag-gated sections conditional, the pages.mts menu check, the new-section oracle in success naming test_docs_site_nav.py), CAP-59 amended (one renderer, pages_env, the steward schema path, the operator refresh rule that closes the open question, the "Snapshot captured at" line), CAP-60 amended (the fleet-status.json envelope, /status/ci/ on CAP-59's snapshot and rule, the absolute-only Lane 1 link, PYFORGE_STATUS_PAGES, the flag-absence clause scoped by inclusion) and CAP-61 amended (intent and success restated to the shipped end state: frozen goldens, the URL set's source, built-from exemptions and `local build`, VENDORED and origin_check.py, the measured-on line, the scoped stamp; fifteen block types); glossary.md joins companions; findings HER-M-Z1..Z5, HER-M-D1/D2/D4/D5/D6, HER-M-C1..C6, HER-D-R3/R5, HER-D-C4/C5. Prior '2026-10-15'
+updated: "2026-11-12"   # AMENDED 2026-11-12 (Story 50.2, cutover readiness, the last build-time writer of this Spec in the change; Dream entry 2026-11-10 (cutover readiness); the memlog entries of 2026-11-12 marked "Story 50.2 renders" and its change entry for the two markers): ## Constraints, ## Non-goals and ## Assumptions re-derived from the memlog (11, 7 and 11 bullets; 4 constraint, 2 non-goal and 2 assumption entries retired by change entries, two of them on review round 3 retiring items no entry carried; the two station-level constraints, the two station-level non-goals and the Guildhall dependency of § Residual dependencies, all dropped by the 2026-09-17 fold, restored on review round 2; five more 2026-08-02 items of this Spec's own Constraints and Non-goals that the fold dropped restored, narrowed or retired on review round 3 (Multi-surface readiness narrowed, Replacing Moment 1 and Marketing proclamation restored, No silent shipping and Implementing automation yet retired); six assumptions recorded that day, among them spec-design-sync-loop's design-system home, restored on review round 1); surface: gains scripts/deck_export.py and companions: gains contract.md; Why's current state re-grounded with figures measured 2026-11-12; CAP-46 and CAP-62 flip from ready to (shipped 2026-11-11); one Surface reconcile event per story of Epics 50-52. Prior "2026-11-11"   # AMENDED 2026-11-11 (Story 50.1, cutover readiness; Dream entry 2026-11-10 (cutover readiness); the fifteen memlog decisions marked "Story 50.1 renders" and the shipped-date table of the 2026-11-11 change entry): every capability marker and text say what is true -- 36 ready and 5 in-progress markers leave, to shipped with the date of the last citing story's landing, or to retired (CAP-6 2026-11-10; CAP-45 and CAP-49 2026-10-15, carried by CAP-61); CAP-36, CAP-50, CAP-51 and CAP-61 name an unmet clause and its row, CAP-47 and CAP-59 the open operator act; CAP-44, CAP-52, CAP-53 and CAP-56 restated to the live Pages end state; CAP-38 and CAP-39 take the operator-run form; CAP-11's cost-derivation clause struck; deck counts dated; CAP-1, CAP-26, CAP-41 and CAP-57 name their modules; CAP-46 and CAP-62 stay ready until Story 50.2. Prior "2026-11-10"   # AMENDED 2026-11-10 (cutover readiness mint, herald unit; Dream entry 2026-11-10 (cutover readiness)): CAP-62 minted (herald's public contract is one companion, and a test holds the code to it; Story 50.3, FR-14.1) and CAP-46 amended (dossier figures are counted from the tree at build; Story 51.1, FR-12.5 amended), each (ready 2026-11-10) until its story lands and Story 50.2 flips it; the operator rulings of 2026-11-10 for the other capability markers and texts are memlog decisions that Story 50.1's re-derive renders. Prior "2026-11-01"   # AMENDED 2026-11-01 (EGM fleet audit, marshal Story 113.7): CAP-47 amended (an operator-owned scheduled routine republishes the dossier artifact; success names test_one_generator's artifact test), CAP-58 amended (its 2026-10-15 marker; menus from docs/map.yaml sections, Herald flattened to four, mounted or flag-gated sections conditional, the pages.mts menu check, the new-section oracle in success naming test_docs_site_nav.py), CAP-59 amended (one renderer, pages_env, the steward schema path, the operator refresh rule that closes the open question, the "Snapshot captured at" line), CAP-60 amended (the fleet-status.json envelope, /status/ci/ on CAP-59's snapshot and rule, the absolute-only Lane 1 link, PYFORGE_STATUS_PAGES, the flag-absence clause scoped by inclusion) and CAP-61 amended (intent and success restated to the shipped end state: frozen goldens, the URL set's source, built-from exemptions and `local build`, VENDORED and origin_check.py, the measured-on line, the scoped stamp; fifteen block types); glossary.md joins companions; findings HER-M-Z1..Z5, HER-M-D1/D2/D4/D5/D6, HER-M-C1..C6, HER-D-R3/R5, HER-D-C4/C5. Prior '2026-10-15'
 owner-dream: docs/dreams/pyforge-herald.md
 covers-dreams:
   - archive/docs/dreams/deck-family-currency.md
@@ -28,6 +28,7 @@ surface:
   - presentations/pyforge-*/src/marp/**
   - presentations/pyforge-*/src/pptx/**
   - scripts/deck_trio.py
+  - scripts/deck_export.py   # the Guild deck-export task's script, which `herald deck pull` and `deck sync-all` shell (CAP-9, CAP-22); governed from 2026-11-12, Story 50.2 (audit MUST 3)
   - src/shared/packages/pyforge-herald/src/pyforge/herald/transport/mcp_transport.py
   - src/shared/packages/pyforge-herald/pyproject.toml
   - src/shared/packages/pyforge-herald/
@@ -79,6 +80,7 @@ companions:
   - facts-ledger.md           # live companion carried 2026-10-27 from spec-deck-family-currency (spec-one-chain-per-station:CAP-11)
   - infographic-standard.md   # live companion carried 2026-10-27 from spec-deck-family-currency (spec-one-chain-per-station:CAP-11)
   - glossary.md                 # pointer-only station terms, added 2026-11-01 (EGM audit HER-M-C6; marshal Story 113.7)
+  - contract.md                 # herald's public contract (CAP-62, FR-14.1), written 2026-11-11 by Story 50.3; joined companions 2026-11-12, Story 50.2
 sources:
   - ../../../../../../docs/dreams/pyforge-herald.md
 open_questions: []
@@ -119,17 +121,23 @@ engineering* — Herald exists so nothing the factory does stays invisible. Re-s
 "first to touch a Dream and last to touch a release". Communication runs throughout, not at
 the ends.
 
-**Current state (re-grounded 2026-09-09; the 2026-08-02 text below it was written while the
-station was still mid-build and no longer matched this Spec's own `status: ready`).** The deck
-family (Moment 1
-content) is production-ready. HER-1's CLI mechanization shipped: Epics 1–5 are `done` and
-`seed`/`pull`/`status`/`watch` are wired (`cli.py:226-318`); `cli.py` is 1764 lines wiring 26
-subparsers. Moments 2–4 shipped too — Epics 8–10 landed 47 stories on 2026-08-08 — as the
-CLI-triggered/local-storage v1, not the live-service version (that contract is
-`spec-herald-moments-2-4-live-backend`, `in-progress`). The detailed capability breakdown for
-both Moment 1's deck-family orchestration (HER-4..HER-10) and Moments 2–4's proclamation
-surfaces (HER-11..HER-13) lives inline below, folded in from their own formerly-separate Specs
-on 2026-08-02.
+**Current state (re-grounded 2026-11-12 by Story 50.2, each figure measured that day; first
+re-grounded 2026-09-09, when the 2026-08-02 text below it, written while the station was still
+mid-build, no longer matched this Spec's own `status: ready`).** The deck family (Moment 1
+content) is production-ready. HER-1's CLI mechanization shipped: Epics 1–5 are `done`, and
+`herald deck seed`, `pull`, `status` and `watch` are wired (`cli.py:231-322`), four of the 12
+deck verbs `contract.md` lists (CAP-62). On 2026-11-12 `cli.py` is 1,950 lines wiring 30
+subparsers (`add_parser` calls). Moments 2–4 shipped as the CLI-triggered, local-storage v1
+(Epics 8–10, 47 stories, 2026-08-08). The live-service contract that followed was folded into
+this Spec on 2026-09-17 as CAP-37..CAP-39, and all three shipped: the DB-backed store on
+2026-08-24, the webhook endpoint and the scheduler pass on 2026-10-11, in the operator-run form
+the operator ruled the end state on 2026-11-10. On 2026-11-12 herald's tracked sprint ledger
+reads 152 of 160 stories and 49 of 52 epics done; the eight stories not yet done are those of
+Epics 50–52 (the cutover-readiness change, built on branch `cutover-readiness-2026-11-10`),
+which the change's ledger close promotes. Of the 62 capabilities below, 59 read shipped and 3
+retired. The detailed capability breakdown for both Moment 1's deck-family orchestration
+(HER-4..HER-10) and Moments 2–4's proclamation surfaces (HER-11..HER-13) lives inline below,
+folded in from their own formerly-separate Specs on 2026-08-02.
 
 Herald's Four Moments of Proclamation, in full: **Pitch** (HER-4..HER-10 — a Dream must be
 argued, not merely filed), **Progress** (HER-11 — a build in flight is not self-explaining),
@@ -318,7 +326,7 @@ argued, not merely filed), **Progress** (HER-11 — a build in flight is not sel
   - **intent:** Operators had a local pixi loop — build, check, verify figures, serve — without growing the `build` environment export. The `site`, `site-check`, `site-verify` and `site-serve` tasks that carried it retired with `docsite/` on 2026-10-15 (CAP-61, Story 43.7). In their place `pages-build` and `pages-check` under `[feature.site]` are the local loop, and `pages.yml`'s pull-request build runs `pages-check`.
   - **success:** The tasks `site`, `site-check`, `site-verify` and `site-serve` existed under `[feature.site]` until 2026-10-15, and `pixi project export conda-environment -e build` left `environment.yaml` byte-identical. Since then `pixi run -e site pages-build` and `pixi run -e site pages-check` stand in their place, and CAP-61's `tests/meta/test_one_generator.py::test_ac4_the_site_tasks_are_gone_and_pages_check_is_the_one_build_check` fails if one of the four tasks returns.
 
-- **CAP-46 — dossier figures are counted from the tree at build** ← spec-pyforge-pages CAP-4 (ready 2026-11-10; amended 2026-11-10: Story 51.1, which restates intent and success so that no dossier figure is typed; earlier amended 2026-10-15 by Stories 43.5 and 43.7, when the measurer became `docs-site/scripts/verify_claims.py`, run by the build with `--emit`)
+- **CAP-46 — dossier figures are counted from the tree at build** ← spec-pyforge-pages CAP-4 (shipped 2026-11-11; amended 2026-11-10: Story 51.1, which restates intent and success so that no dossier figure is typed; earlier amended 2026-10-15 by Stories 43.5 and 43.7, when the measurer became `docs-site/scripts/verify_claims.py`, run by the build with `--emit`)
   - **intent:** Every figure in a dossier stats band (the hero's and each station section's) and every row of the scale table is counted at build by `docs-site/scripts/verify_claims.py --emit`, from static reads under its `--root`, and never typed: section keys `src_lines`, `test_lines`, `python_floor` and `stories_epics` (done stories over done epics from the station's tracked sprint ledger, retrospective keys ignored); hero keys `fleet_src_lines`, `fleet_test_lines`, `fleet_stories_epics` and `stations`; a table block carrying `check: src_lines` takes each row's lines and files from the row's `section:` (a station id or `core`). The build refuses a stat with no `check:`, an unknown key, a section with no package or ledger, and a checked table row with no `section:`, each exiting non-zero and naming it. Editorial judgment stays in each section's prose, under its `measured:` date. The CI advisory annotation and the `site-verify` task retired 2026-10-15 (Story 43.7).
   - **success:** `pixi run -e pyforge-herald pytest src/shared/packages/pyforge-herald/tests/unit/test_verify_claims_emit.py -q` exits 0, and fails when `stories_epics` counts a `backlog` or `blocked` story or a retrospective key, when a station section with no ledger does not exit 2 naming the section, or when a checked table row with no `section:` or an unknown key does not exit 2 naming it. `pixi run -e site pages-check` exits 0 on the live dossier, and a fixture dossier carrying one stat with no `check:` fails the build naming its section and label.
 
@@ -367,9 +375,150 @@ argued, not merely filed), **Progress** (HER-11 — a build in flight is not sel
 - **CAP-61 — one generator renders the whole Pages site** ← spec-pyforge-herald CAP-61 (shipped 2026-10-16; supersedes CAP-44's and CAP-52's two-generator shape; extends CAP-35, CAP-53, CAP-55, CAP-58; works with spec-pyforge-doctor:CAP-90; intent and success restated 2026-11-01 to the shipped end state, EGM audit HER-M-Z2 / HER-M-D2 / HER-M-C2 / HER-D-R3 / HER-D-C5 / HER-M-C6; not met: /changes/ and /status/runs/ publish 'input absent', DW-steward-43-6-1)
   - **intent:** Astro renders every prefix of the one Pages artifact: the dossier from `dossier.yml` through a content collection whose fifteen block types (the fourteen of the mint, each with a component under `docs-site/src/components/dossier/`, and CAP-59's `ci_surfaces`) are all drawn by one renderer, `renderBlock` in `docs-site/src/lib/dossier-blocks.ts`; the overview, the infographic gallery and the deck family pages as Astro pages over `presentations/` and each deck's `facts.yaml`; the design twins and the downloaded dashboard exports through `publicDir`; the 44 legacy redirects and `/kedro-viz/` as an `astro.config` redirects map, kept with no sunset; fonts through `@fontsource` packages; Pagefind indexing docs and herald pages alike; `/llms.txt`, `/llms-full.txt` and `/facts.json` for agents; a `/changes/` page and RSS feed over the last 30 days of merges to `main`, from a Guild-step input; `/status/runs/` from `marshal status --format json` and `herald progress --json` inputs (the Guild steps that write those three inputs are steward's, open as `DW-steward-43-6-1`); every dossier stat with `check:` computed at build by the measurer (`docs-site/scripts/verify_claims.py`, CAP-46), every section carrying the date its prose was measured, and every page of the build's own a footer naming the commit, time and run that built it. The nav comes from doctor's `docs/map.yaml` `sections:` and herald's `site.yml` nav list retires. `docsite/build.py`, `docsite/tools/assemble_pages.py`, the Jinja templates, the `dist/` build path and the `docsite/` directory retire, the dossier content moving to `docs-site/src/content/dossier/`, so the `docsite`/`docs-site` name clash ends without a rename. No third-party origin is loaded (herald:AD-21; its rule 5 exempts only the vendored upstream files `pages.mts`'s `VENDORED` names); `docs/` never moves; the five vendored upstream files stay hash-pinned; bespoke Python under `docs-site/` stays under 300 lines; the Jinja path stayed behind `pyforge.herald.pages_one_generator` until Story 43.7 retired both on 2026-10-15. (Operator rulings 2026-10-13, M3 and the placement rule; herald:AD-23.) The page model is `docs-site/src/lib/herald-pages.ts` (the overview, gallery and deck family pages, read as data) and the agent surface is `docs-site/src/lib/agent-surface.ts` (`/llms.txt`, `/llms-full.txt`, `/facts.json`, `/changes/` with its RSS feed, and `/status/runs/`).
   - **success:** `pixi run -e site pages-check` exits 0, and `HERALD_DOCS_SITE_REQUIRED=1 pixi run -e pyforge-herald pyforge-herald-test-built` exits 0 with these tests in it. (1) `tests/meta/test_one_generator.py::test_ac7_the_artifact_holds_every_url_and_passes_pages_check` fails unless the artifact, built with `PYFORGE_STATUS_PAGES=1`, `PYFORGE_CI_SURFACES_TILE=1` and every build input present (the flag states `pages.yml`'s dev overlay hands the build, CAP-60), holds every URL of the set it enumerates: `/`, `/herald/`, `/herald/dossier/`, `/herald/infographics/`, `/herald/decks/` and `/herald/decks/<slug>/` for the ten families (one per gallery infographic in `site.yml`'s `infographics` include list), the 44 paths of `docs-site/redirects.json`'s `legacy` key, `/status/`, `/status/ci/`, `/status/runs/`, `/changes/`, `/changes/rss.xml`, `/llms.txt`, `/llms-full.txt` and `/facts.json`; with atlas's export present the artifact also holds `/dashboard/kedro-viz/` and the `/kedro-viz/` redirect from the file's `kedro-viz` key (`::test_42_2_with_the_exports_present_the_mounts_their_redirect_and_their_sections_appear`). (2) `tests/meta/test_dossier_golden.py` renders each block type through the one renderer and fails when its token stream differs from the frozen `tests/fixtures/dossier-block-goldens-2026-10-15.json`, the stream both generators gave on the day the Jinja path retired. (3) `::test_43_3_ac4_search_holds_a_dossier_page_and_a_family_page` fails unless the Pagefind index holds a dossier page. (4) `::test_43_5_the_dossier_shows_what_the_measurer_counted_and_every_page_its_build` fails unless each stat with `check: src_lines` equals the measurer's value on the built page and every dossier section carries one "Measured on" line (`docs-site/src/components/dossier/DossierBody.astro`), and `::test_43_5_the_build_refuses_a_section_without_a_date_and_an_unknown_check` fails unless the build refuses a section with no `measured:` date. (5) With `GITHUB_SHA` set, every HTML page of the build's own carries exactly one built-from line naming its first seven characters, the build time and `GITHUB_RUN_ID`, and `pages-check` exits 1 on a page carrying none or two, or on pages naming two builds; with no `GITHUB_SHA` the line reads `local build` (`docs-site/src/lib/built-from.ts`). Meta-refresh redirect stubs carry no line, and neither do the trees under `docs-site/src/lib/artifact.ts`'s `NOT_PAGES` prefixes: `herald/twins/`, `herald/artifact/`, `dashboard/`, `pagefind/` and `marketplace/`. (6) `::test_ac8_nothing_loads_a_font_or_a_script_from_a_cdn` fails when `fonts.googleapis` or `cdn.` appears in any file of the artifact outside `pages.mts`'s `VENDORED` exemptions, `dashboard/kedro-viz/` and the one file `dashboard/vizro/assets/plotly.min.js` (herald:AD-21 rule 5; the operator's ruling of 2026-10-15), and `pages-check` exits 1 on a script, stylesheet, font, image or fetch that names another origin outside them (`docs-site/scripts/origin_check.py`, the guard). (7) `docsite/` does not exist, no `site`, `site-check`, `site-verify` or `site-serve` pixi task remains, and the bespoke Python under `docs-site/` is under 300 lines (`::test_ac1_docsite_is_gone`, `::test_ac4_the_site_tasks_are_gone_and_pages_check_is_the_one_build_check`, `::test_ac6_the_bespoke_python_under_docs_site_is_under_300_lines`). `pyforge-herald-test` is green, and `pixi run -e pyforge-guild spec-surface-check` exits 0 after the scoped stamp of this Spec (`python scripts/spec_surface_check.py --write-baseline --spec pyforge-herald/spec-pyforge-herald`).
-- **CAP-62 — herald's public contract is one companion, and a test holds the code to it** ← spec-pyforge-herald CAP-62 (ready 2026-11-10; minted from the station Dream's 2026-11-10 (cutover readiness) entry and the operator rulings of 2026-11-10; Story 50.3)
+- **CAP-62 — herald's public contract is one companion, and a test holds the code to it** ← spec-pyforge-herald CAP-62 (shipped 2026-11-11; minted from the station Dream's 2026-11-10 (cutover readiness) entry and the operator rulings of 2026-11-10; Story 50.3)
   - **intent:** A reader who rebuilds herald from its Spec finds every surface a caller can touch in one companion, `contract.md` beside `SPEC.md`: each CLI verb path with its flags and the capability it realizes, the two MCP tools of `POST /stations/herald/mcp`, each feature-flag key herald reads whatever its prefix (its own `pyforge.herald.*` keys and the keys `docs-site/src/lib/flags.ts` names), each repository key it reads through a core seam (`roots.this` of `docs/governance/guild-roster.json`, through `pyforge.core.cutover_root.forge_slug_for`), each environment variable the package and the docs-site build read, each `HeraldError` class with its exit code, and the closed exit-code set. The companion is written by hand from the code, never generated, and no CLI verb or generator is added for it.
   - **success:** `pixi run -e pyforge-herald pytest src/shared/packages/pyforge-herald/tests/meta/test_public_contract.py -q` exits 0, and fails naming the item when the argparse tree gains a verb or option, `django_herald_portal/mcp_asgi.py` a tool name, the source a flag key (a `*_FLAG` constant or a key documented on an exported function of `docs-site/src/lib/flags.ts`), an environment variable or an import of `pyforge.core.cutover_root` whose row does not name the roster key it resolves, or `errors.py` a `HeraldError` subclass or exit code that `contract.md` does not list; it fails too when `contract.md` lists one the code no longer has.
+
+## Constraints
+
+*Re-derived 2026-11-12 (Story 50.2) from the memlog's constraint entries. The first two are the station-level
+constraints the "Consolidated 2026-08-02" note above calls unchanged; the 2026-09-17 fold dropped them, and review round
+2 restored them by memlog entry. The same fold dropped two 2026-08-02 constraints that no memlog entry carried: review
+round 3 restored "Multi-surface readiness" (the seventh bullet), narrowed to the formats left after CAP-6 retired, and
+retired "No silent shipping", which no gate enforces. Four are retired by change entries of that day: no fabricated
+demos and the narrator voice bible, with CAP-6; the 2026-08-02 automation triggers, by the operator's ruling 4 of
+2026-11-10 (CAP-38, CAP-39); and "No silent shipping".*
+
+- **The Dream is Tier 0 and this Spec is Tier 2** (2026-07-29, station-level; restored 2026-11-12). Where they differ,
+  the Dream (`docs/dreams/pyforge-herald.md`) is the intent and this contract is what was agreed to build from it.
+- **Ownership does not move with the work** (2026-07-29, station-level; restored 2026-11-12). Chains stay filed with
+  the owning station (Charter §5), whatever surface the work touches.
+- **The fallback transport never spawns its nested agent in development or in a test** (2026-07-31, Story 1.3).
+  `AgentSdkTransport` (`transport/agent_sdk_transport.py`) takes its process-launch seam as an injected dependency
+  (`launcher: AgentProcessLauncher | None`), and every test drives it with a stub. A live run against a real nested
+  agent is an operator-run check outside the loop: both dev attempts that spawned one died mid-session with no error
+  text.
+- **One Design prototype per station is the source of truth** (2026-08-02). It is etagged and tracked in git as
+  `.dc.html`. Every code-side artifact derives from it, and a code-side copy is never edited by hand: the edit is made
+  in Design and pulled with `herald deck pull`.
+- **Track the source and the deliverables; gitignore what regenerates** (2026-08-02). Build outputs (`dist/`,
+  `node_modules/`) are gitignored per deck, and no `fragments.json` or `.mp4` is tracked. The 2026-08-02 plan sized
+  the tracked set at about 144 files for nine stations (companion `artifact-tracking-matrix.md`, a record of that
+  day); on 2026-11-12, 915 files are tracked under `presentations/`.
+- **Every Design ↔ Code transfer is etagged** (2026-08-02). A read returns its etag, and a write must match it or
+  fail; a conflict is detected and refused, never a silent overwrite. Design is the cloud editor and the repository
+  pulls; there is no live sync.
+- **Multi-surface readiness** (2026-08-02; restored 2026-11-12, narrowed past CAP-6). Decks ship as interactive HTML
+  (the React/JSX deck's Vite bundle and the standalone Marp HTML, CAP-55), editable PPTX (the Marp export, and the
+  python-pptx fill and the native pptxgenjs-plus kind where they are run, CAP-40..CAP-42 and CAP-57) and static
+  infographics drawn as inline SVG in each deck's standalone poster (CAP-14..CAP-16). Every format is production-ready;
+  nothing ships in a "preview" or "draft" state. The 2026-08-02 text named a fourth format, video scripts, which left
+  with CAP-6 on 2026-11-10; the 27 tracked narration extracts stay as history and no longer ship.
+- **The three proclamation Moments are reached through the herald CLI and one web surface** (2026-08-02,
+  HER-11..HER-13): `herald progress`, `herald success` and `herald notice` (`contract.md`), and the Progress, Success
+  and Operations panels of `src/shared/packages/pyforge-herald/web/`. No Moment gets a platform of its own.
+- **Moment 3 and Moment 4 claims are backed by retrievable evidence** (2026-08-02); no claim stands without a proof
+  link. A success claim publishes only once each of its evidence links validates (`claims.publish`, through
+  `evidence.validate_for_publish`), and a claim's evidence can cite an operations notice.
+- **CAP-50's live proof is opt-in and operator-run.** It is never part of the default gate and never a second PR gate.
+  Its credentials are ones only a person has, so the capability is the recorded act, not an unattended promise.
+- **Herald reads steward's CI-surfaces answer only through `pyforge steward ci status --json`, as a committed
+  snapshot** (2026-10-14, CAP-59). It never imports `pyforge.steward`, never calls `gh`, and writes
+  `docs-site/src/content/ci-status.json` only by running that command; a herald test may read steward's shipped
+  schema file as data, since it is the frozen, externally consumed contract. The verdict is steward's: herald renders
+  it and never re-derives drift, stuck or overdue from the other fields. The flag is read in herald's package through
+  `pyforge.core.flags.read_boolean` and handed to the site build as an environment line (`pages_env.py`), so the site
+  env gains no pyforge dependency. The entry's docsite-era mechanics (`docsite/tools/pages_second_host.py`, the Jinja
+  macro, `dashboard.yml` as the one deploy caller) retired on 2026-10-15 with Story 43.7; one renderer under
+  `docs-site/` serves the site and the artifact build (CAP-61).
+
+## Non-goals
+
+*Re-derived 2026-11-12 (Story 50.2) from the memlog's non-goal entries. The first two are the station-level non-goals
+the "Consolidated 2026-08-02" note above calls unchanged; the 2026-09-17 fold dropped them, and review round 2 restored
+them by memlog entry. The last two are 2026-08-02 non-goals of the proclamation Moments that the same fold dropped and
+no memlog entry carried; review round 3 restored them with today's names. Two are retired by change entries of that
+day: "New export backends" (CAP-40..CAP-42 and CAP-57 built them) and, on round 3, "Implementing automation yet"
+(herald now automates: CAP-11..CAP-13, CAP-38 and CAP-39).*
+
+- **Owning the console** (2026-07-29, station-level; restored 2026-11-12). The Guildhall is Marshal's
+  ([[factory-console]]); Herald supplies its conviction and its look, not its machinery. The referent is pending a
+  Charter amendment (2026-09-09): the substance holds (the hall is not Herald's), but `[[factory-console]]` is no
+  longer a live Spec and the Pages console is retired; see the dependency in § Assumptions. Deliberately left
+  un-reworded until the Charter rules.
+- **Infrastructure** (2026-07-29, station-level; restored 2026-11-12). Moved to Marshal in the 2026-07-23 re-scope: BMAD
+  monorepo and multi-project machinery and cross-agent portability belong to pyforge-marshal (the Dream, § The Dream),
+  and Herald keeps their communication face only.
+- **New deck-authoring infrastructure** (2026-08-02). Decks are authored in Claude Design behind the bridge (CAP-4,
+  proven on 7 decks on 2026-08-02); herald extends the bridge (sync, twins, push-back) and builds no authoring tool of
+  its own.
+- **A video pipeline** (2026-08-02). bmad-manticore is upstream, and herald implements no renderer. Since CAP-6
+  retired on 2026-11-10, herald feeds it nothing; the 27 tracked narration extracts stay as history.
+- **Real-time collaboration** (2026-08-02). Design iterates live in its own cloud; the repository pulls explicitly
+  and conflict-safe through etags, and never syncs live or merge-edits on the code side.
+- **Replacing Moment 1** (2026-08-02; restored 2026-11-12). The deck family (Moment 1, the pitch: `herald deck`,
+  CAP-4..CAP-10, of which CAP-6 retired on 2026-11-10) is complete and separate; the proclamation surfaces (Moments
+  2–4: `herald progress`, `herald success` and `herald notice`, CAP-11..CAP-13) complete the remaining Moments and do
+  not reimplement it.
+- **Marketing proclamation** (2026-08-02; restored 2026-11-12). Moments 2–4 (`herald progress`, `herald success` and
+  `herald notice`, CAP-11..CAP-13) are internal visibility (what shipped, what changed, what is deprecated), not
+  external marketing content; the deck family (Moment 1, the pitch, CAP-4..CAP-10) handles that.
+
+## Assumptions
+
+*Re-derived 2026-11-12 (Story 50.2) from the memlog's assumption entries. Two are retired by change entries of that
+day (bmad-manticore v2.0.0, with CAP-6; the 2026-10-14 snapshot assumption, superseded by the entry of 2026-11-01),
+and six were recorded that day: the Guildhall dependency (the fifth bullet), which this Spec's § Residual dependencies
+carried until the 2026-09-17 fold dropped it, restored on review round 2; the design-system home (the sixth), which
+spec-design-sync-loop held until the same fold dropped it, restored on review round 1; and the last four bullets.*
+
+- **The bridge verbs are available and proven** (2026-08-02: seed, pull, watch, the stale-mirror check and export).
+  On 2026-11-12 they are `herald deck seed`, `pull` and `watch`, the `stale_mirror` field of `herald deck status`,
+  and the Guild `deck-export` task (`scripts/deck_export.py`); `contract.md` lists all 12 deck verbs.
+- **The etagged round-trip protocol is stable and working** (2026-08-02). Seed and pull were proven live in the
+  2026-07-23 pilot (companion `bridge-protocol.md`). The live read-back of a deck's standalone HTML has not passed
+  (`DW-FU-23-6-1`, `DW-herald-50-1-4`), which is why CAP-36, CAP-50 and CAP-51 each carry a `not met` clause.
+- **The Modernist design system is tokenized and bound to the exports** (2026-08-02). The native `.pptx` export reads
+  it as `ModernistDesignTokens` (`pptx_native.py`, CAP-57); its video binding left with CAP-6 on 2026-11-10.
+- **Each station's domain has a visual metaphor** (2026-08-02): warden lattices and gates, marshal policy
+  composition, atlas pipeline stages. The station decks draw on them (companion `station-roster.md`, a record of that
+  day).
+- **The 'Owning the console' non-goal waits on a Charter amendment** (2026-09-09, from the dropped § Residual
+  dependencies; restored 2026-11-12). The Guildhall referent is the Charter's open question
+  (`docs/governance/spec-pyforge-charter/SPEC.md`, `open_questions`, still open on 2026-11-12), with one owner there,
+  so this Spec's `open_questions` stays empty. Until the amendment lands, the non-goal's `[[factory-console]]` citation
+  is known-stale, not a herald decision: on 2026-11-12 factory-console's Dream is archived and its Spec absorbed, and
+  the retired GitHub-Pages console is guarded by `retired-console-check`. When the amendment lands, the referent is
+  replaced in the same pass.
+- **The design-system mirrors live at `presentations/_design-systems/<name>/`** (2026-09-14, from
+  spec-design-sync-loop; restored 2026-11-12). This is the design-system home CAP-30's success names. It is a sibling
+  of the deck twins that no deck glob matches (`scripts/fleet_scan.py` excludes it by name in `_NOT_A_DECK`), so no
+  currency or Pages surface picks the mirrors up; `pptx_native.py` reads `_design-systems/modernist/` by its path
+  (CAP-57). On 2026-11-12 it holds `broadsheet`, `modernist` and `nocturne`, 84 tracked files. Moving the home to a
+  top-level sibling is a one-line surface edit.
+- **The operator refreshes the CI-surfaces snapshot at each CI pause and resume** (the operator's ruling of
+  2026-11-01, carried in CAP-59's intent and by `DW-herald-egm-2026-11-01-1`). It does not hold in fact: on 2026-11-12
+  `docs-site/src/content/ci-status.json` reads `fetched_at` 2026-10-14, while every surface resumed on 2026-10-16
+  (#2247). A stale snapshot is shown with its capture-time line (Story 42.4), never prevented; doctor Story 58.4
+  refreshes it once at this change's head (operator ruling 2026-11-10).
+- **The oracle tests this Spec names for CAP-47 and CAP-58..CAP-61 run only where docs-site's npm install runs
+  first: in `pyforge-herald-test-built`, and in the named-module coverage report `pyforge-herald-test-coverage`.**
+  Their built-site tests need node and docs-site's npm install. `pyforge-herald-test-built` runs `docs-site-install`
+  in the `site` env first, then both halves of herald's suite; in either half alone those tests skip, and CI's herald
+  job runs the task with `HERALD_DOCS_SITE_REQUIRED=1`, under which a missing install fails them.
+  `pyforge-herald-test-coverage`, an operator report, installs first and sets that variable too;
+  `pyforge-herald-coverage-gate`, the PR gate, has no install, on purpose. A green `pyforge-herald-test` is no proof
+  of those five capabilities.
+- **The dossier block goldens cannot be regenerated.** `tests/fixtures/dossier-block-goldens-2026-10-15.json` was
+  frozen from the Jinja generator that Story 43.7 deleted, and `tests/meta/test_dossier_golden.py` holds the one
+  renderer, `docs-site/src/lib/dossier-blocks.ts`, to it. A golden changes only by review, in the pull request that
+  changes the renderer (CAP-61's success names the file).
+- **Two herald surfaces are run by hand.** `scripts/export_notices_snapshot.py` (under
+  `src/shared/packages/pyforge-herald/`) is wired to no pixi task, and the React app under
+  `src/shared/packages/pyforge-herald/web/` is built by no workflow; no build checks either.
+- **`docs-site/src/lib/marketplace.ts` realizes `spec-pyforge-steward:CAP-171`** (the marketplace mount, steward Story
+  109.3) inside herald's surface. The file is under `docs-site/**`, which this Spec governs, so a change to it is
+  reconciled on this Spec's memlog and judged against steward's capability.
 
 ## Fold provenance
 

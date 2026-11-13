@@ -4,6 +4,8 @@ Companion to `SPEC.md` (SPEC-design-code-bridge). This is the HOW-evidence: the 
 tool sequence proven in the 2026-07-23 pilot, which CAP-1/CAP-2 formalize. Tool names
 are the `claude-design` MCP surface's.
 
+> **Standing:** live and re-checked 2026-11-12: every `claude-design` tool it names (`get_claude_design_prompt`, `create_project`, `finalize_plan`, `create_support_js`, `copy_files`, `write_files`, `read_file`) is one herald's transport calls today. Two things moved since: `deck-export` runs under `-e pyforge-guild`, not `-e local-recipes` (spec-pyforge-herald:CAP-51), and the capability ids it names are the bridge's own pre-fold ids, spec-design-code-bridge:CAP-1..CAP-5, folded into spec-pyforge-herald:CAP-1 and spec-pyforge-herald:CAP-4 (Story 50.2).
+
 ## Seed (repo → Design) — CAP-1
 
 1. Prove locally: `npm run extract` (expected slide count, no lost sections) + `npm run build` in `presentations/<slug>/`.
