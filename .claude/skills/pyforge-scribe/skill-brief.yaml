@@ -9,6 +9,9 @@ description: >
   Direct-capture CLI for checked-in team memory. Agents use the scribe CLI
   (capture, graph compile, recall, index, catalog bmad-estate) rather than
   importing pyforge.scribe internals.
+doc_urls:
+  - url: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/contract.md
+    label: scribe public contract (verbs, MCP tools, flag, exit codes)
 forge_tier: Quick
 created: '2026-08-25'
 created_by: skf-create-skill
@@ -22,6 +25,8 @@ scope:
     - src/pyforge/scribe/recall.py
     - src/pyforge/scribe/graph_store_plugins.py
     - src/pyforge/scribe/catalog.py
+    - src/pyforge/scribe/models.py
+    - src/pyforge/scribe/graph_store_plane.py
     - README.md
   exclude:
     - tests/**
@@ -31,6 +36,18 @@ scope:
     Public contract is the scribe CLI (AD-7). Portal django-scribe is out of scope.
     Scope widened 2026-11-01 (steward Story 29.4, EGM audit RUL-CL2): catalog.py
     is the scribe catalog command's module; recompiled in place at 0.1.0.
+    Recompiled in place at 0.1.0 on 2026-11-12 (steward Story 29.5, EGM audit
+    2026-11-05): models.py (GraphNode and its staleness docstring) and
+    graph_store_plane.py (the atlas-owner plane plugin) join the scope, and the
+    station contract (contract.md) is a doc source. Carry: the staleness rule
+    compares against the store's compiled_at, the compile clock (CAP-11), and
+    recall withholds at recall time without setting GraphNode.stale (CAP-26),
+    from the models.py and compile.py docstrings scribe Story 33.2 corrected
+    (SCR-R-F3); the Key API table narrowed to the nine CLI verbs and
+    metadata.json exports equal to that documented set (SCR-R-F1); index build
+    with no --target walks the named list; index move-list retired with CAP-34;
+    the three graph-store owners; what the station MCP runner runs (scribe
+    recall only) and does not run.
   rationale:
     recommended: specific-modules
     chosen: specific-modules

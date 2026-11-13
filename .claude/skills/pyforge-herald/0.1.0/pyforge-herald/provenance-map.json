@@ -3,14 +3,14 @@
   "skill_name": "pyforge-herald",
   "skill_type": "single",
   "source_repo": "src/shared/packages/pyforge-herald",
-  "source_commit": "865b95dc951c8a6de87d05bb10c8395a75da8008",
+  "source_commit": "b69fd81eb812eb0a2de4580c4b04d9af41259ef8",
   "source_ref": "local",
-  "generated_at": "2026-08-25T00:00:00Z",
+  "generated_at": "2026-11-12T00:00:00Z",
   "grounding": {
-    "date": "2026-08-25",
-    "commit_short": "865b95dc951",
+    "date": "2026-11-12",
+    "commit_short": "b69fd81eb8",
     "station": "herald",
-    "spec": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-17-1-skf-skill-and-persona-for-herald.md"
+    "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-29-5-the-station-skills-carry-the-fixes-the-2026-11-05-audit-accepted.md"
   },
   "entries": [
     {
@@ -22,7 +22,7 @@
       ],
       "return_type": "int",
       "source_file": "src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py",
-      "source_line": 719,
+      "source_line": 783,
       "confidence": "T1-low",
       "extraction_method": "skf-extract-public-api",
       "ast_node_type": null,
@@ -38,7 +38,7 @@
       ],
       "return_type": "int",
       "source_file": "src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py",
-      "source_line": 1727,
+      "source_line": 1915,
       "confidence": "T1-low",
       "extraction_method": "skf-extract-public-api",
       "ast_node_type": null,
@@ -53,7 +53,7 @@
       ],
       "return_type": "int",
       "source_file": "src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py",
-      "source_line": 803,
+      "source_line": 874,
       "confidence": "T1-low",
       "extraction_method": "source-reading",
       "ast_node_type": null,
@@ -68,7 +68,7 @@
       ],
       "return_type": "int",
       "source_file": "src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py",
-      "source_line": 855,
+      "source_line": 920,
       "confidence": "T1-low",
       "extraction_method": "source-reading",
       "ast_node_type": null,
@@ -83,11 +83,39 @@
       ],
       "return_type": "int",
       "source_file": "src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py",
-      "source_line": 877,
+      "source_line": 940,
       "confidence": "T1-low",
       "extraction_method": "source-reading",
       "ast_node_type": null,
       "signature_source": "T1-low"
+    },
+    {
+      "export_type": "class",
+      "source_library": "pyforge-herald",
+      "params": [],
+      "return_type": "DeckStatus",
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low",
+      "export_name": "DeckStatus",
+      "source_file": "src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py",
+      "source_line": 1316
+    },
+    {
+      "export_type": "function",
+      "source_library": "pyforge-herald",
+      "params": [
+        "error: HeraldError"
+      ],
+      "return_type": "int",
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low",
+      "export_name": "exit_code_for",
+      "source_file": "src/shared/packages/pyforge-herald/src/pyforge/herald/errors.py",
+      "source_line": 219
     }
   ]
 }

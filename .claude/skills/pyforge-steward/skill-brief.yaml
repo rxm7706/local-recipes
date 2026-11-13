@@ -9,6 +9,9 @@ description: >
   Provisioner's CLI for credential lifecycle, deploy, provision, budget,
   sync, workspace, upgrade, suite, estate, ci and preflight. Agents use
   pyforge steward grammar rather than importing pyforge.steward internals.
+doc_urls:
+  - url: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/contract.md
+    label: steward public contract (verbs, MCP face, flags, exit codes)
 forge_tier: Quick
 created: '2026-08-25'
 created_by: skf-create-skill
@@ -21,6 +24,8 @@ scope:
     - src/pyforge/steward/estate.py
     - src/pyforge/steward/ci.py
     - src/pyforge/steward/preflight_verify.py
+    - src/pyforge/steward/pages_duty.py
+    - src/pyforge/steward/cutover.py
     - README.md
   exclude:
     - tests/**
@@ -31,6 +36,17 @@ scope:
     Scope widened 2026-11-01 (steward Story 29.4, EGM audit RUL-CL2): estate.py,
     ci.py and preflight_verify.py are the duty modules cli.py resolves for
     estate, ci and preflight; recompiled in place at 0.1.0.
+    Recompiled in place at 0.1.0 on 2026-11-12 (steward Story 29.5, EGM audit
+    2026-11-05): pages_duty.py and cutover.py join the scope and the station
+    contract (contract.md, doc_urls) is the source of the MCP tool names, exit
+    codes and flag keys. Carry: exit code 3 with its per-duty meanings and
+    estate plan --due overdue as exit 1 (STW-R-F4); canopy:FR-13 and
+    canopy:FR-11 in Usage (STW-R-F7); each flag's default per environment comes
+    from flags.json composed with flag-overlays.json, and keys exec is off in
+    every environment until flipped (STW-R-F5); cutover is plan|flip, its
+    copy verb retired; what the station MCP runner runs (the three read-only
+    targets) and does not run. STW-R-F2 and STW-R-F3 (the deploy nic --yes
+    gate) stay out until Story 118.3 recompiles them.
   rationale:
     recommended: specific-modules
     chosen: specific-modules

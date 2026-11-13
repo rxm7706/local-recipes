@@ -10,6 +10,9 @@ description: >
   grammar (check / monitor / diagnose / backlog-intake) rather than
   importing pyforge.doctor internals. Findings stay advisory — not a
   second PR gate.
+doc_urls:
+  - url: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/contract.md
+    label: doctor public contract (verbs, sources, MCP tools, exit codes)
 forge_tier: Quick
 created: '2026-08-25'
 created_by: skf-create-skill
@@ -20,6 +23,7 @@ scope:
     - src/pyforge/doctor/__init__.py
     - src/pyforge/doctor/verdict.py
     - src/pyforge/doctor/models.py
+    - src/pyforge/doctor/sources/__main__.py
     - README.md
   exclude:
     - tests/**
@@ -28,6 +32,14 @@ scope:
     CAP-15 compile for doctor. Public contract is the doctor CLI (AD-7).
     Portal django-doctor / Wave B pulse is out of scope. Findings are
     advisory or Warden inputs, never a competing PR verdict.
+    Recompiled in place at 0.1.0 on 2026-11-12 (steward Story 29.5, EGM audit
+    2026-11-05) from the current package: sources/__main__.py (the sources
+    dispatcher) joins the scope, and the station contract (contract.md) is a
+    doc source. Carry: flags kill-switch, Doctor's one actuator; the
+    backlog-intake detail; the sources dispatcher; the exit codes; what the
+    station MCP runner runs (diagnose only) and does not run, which also
+    closes DOC-R-F2's gap (the face's tools, request shape and runner, from
+    contract.md rather than from django-doctor's source).
   rationale:
     recommended: specific-modules
     chosen: specific-modules

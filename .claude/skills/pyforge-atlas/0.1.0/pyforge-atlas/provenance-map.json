@@ -3,14 +3,14 @@
   "skill_name": "pyforge-atlas",
   "skill_type": "single",
   "source_repo": "src/shared/packages/pyforge-atlas",
-  "source_commit": "03a7aff5d911e4c4b9a590fcd00dadc96f8e698c",
+  "source_commit": "b69fd81eb812eb0a2de4580c4b04d9af41259ef8",
   "source_ref": "local",
-  "generated_at": "2026-11-01T00:00:00Z",
+  "generated_at": "2026-11-12T00:00:00Z",
   "grounding": {
-    "date": "2026-11-01",
-    "commit_short": "03a7aff5d9",
+    "date": "2026-11-12",
+    "commit_short": "b69fd81eb8",
     "station": "atlas",
-    "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-29-4-the-station-skills-are-recompiled-to-cover-the-verbs-the-contract-names.md"
+    "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-29-5-the-station-skills-carry-the-fixes-the-2026-11-05-audit-accepted.md"
   },
   "entries": [
     {

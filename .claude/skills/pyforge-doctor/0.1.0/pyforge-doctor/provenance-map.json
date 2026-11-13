@@ -3,14 +3,14 @@
   "skill_name": "pyforge-doctor",
   "skill_type": "single",
   "source_repo": "src/shared/packages/pyforge-doctor",
-  "source_commit": "865b95dc951c8a6de87d05bb10c8395a75da8008",
+  "source_commit": "b69fd81eb812eb0a2de4580c4b04d9af41259ef8",
   "source_ref": "local",
-  "generated_at": "2026-08-25T05:00:00Z",
+  "generated_at": "2026-11-12T00:00:00Z",
   "grounding": {
-    "date": "2026-08-25",
-    "commit_short": "865b95dc951c",
+    "date": "2026-11-12",
+    "commit_short": "b69fd81eb8",
     "station": "doctor",
-    "spec": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-18-1-skf-skill-and-persona-for-doctor.md"
+    "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-29-5-the-station-skills-carry-the-fixes-the-2026-11-05-audit-accepted.md"
   },
   "entries": [
     {
@@ -22,7 +22,7 @@
       ],
       "return_type": "int",
       "source_file": "src/shared/packages/pyforge-doctor/src/pyforge/doctor/__main__.py",
-      "source_line": 502,
+      "source_line": 510,
       "confidence": "T1-low",
       "extraction_method": "skf-extract-public-api",
       "ast_node_type": null,
@@ -42,6 +42,49 @@
       "extraction_method": "source-reading",
       "ast_node_type": null,
       "signature_source": "T1-low"
+    },
+    {
+      "export_type": "constant",
+      "source_library": "pyforge-doctor",
+      "params": [],
+      "return_type": "dict[str, Callable[[Path], tuple[Finding, ...]]]",
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low",
+      "export_name": "DISPATCH",
+      "source_file": "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__main__.py",
+      "source_line": 90
+    },
+    {
+      "export_type": "function",
+      "source_library": "pyforge-doctor",
+      "params": [
+        "args: argparse.Namespace"
+      ],
+      "return_type": "int",
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low",
+      "export_name": "_run_flags",
+      "source_file": "src/shared/packages/pyforge-doctor/src/pyforge/doctor/__main__.py",
+      "source_line": 889
+    },
+    {
+      "export_type": "function",
+      "source_library": "pyforge-doctor",
+      "params": [
+        "args: argparse.Namespace"
+      ],
+      "return_type": "int",
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low",
+      "export_name": "_run_backlog_intake",
+      "source_file": "src/shared/packages/pyforge-doctor/src/pyforge/doctor/__main__.py",
+      "source_line": 922
     }
   ]
 }

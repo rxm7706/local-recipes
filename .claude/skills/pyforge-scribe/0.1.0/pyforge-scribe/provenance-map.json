@@ -1,209 +1,153 @@
 {
- "provenance_version": "2.0",
- "skill_name": "pyforge-scribe",
- "skill_type": "single",
- "source_repo": "src/shared/packages/pyforge-scribe",
- "source_commit": "03a7aff5d911e4c4b9a590fcd00dadc96f8e698c",
- "source_ref": "local",
- "generated_at": "2026-11-01T00:00:00Z",
- "grounding": {
-  "date": "2026-11-01",
-  "commit_short": "03a7aff5d9",
-  "station": "scribe",
-  "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-29-4-the-station-skills-are-recompiled-to-cover-the-verbs-the-contract-names.md"
- },
- "entries": [
-  {
-   "export_name": "capture_cmd",
-   "export_type": "function",
-   "source_library": "pyforge-scribe",
-   "params": [],
-   "return_type": "None",
-   "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
-   "source_line": 111,
-   "confidence": "T1-low",
-   "extraction_method": "skf-extract-public-api",
-   "ast_node_type": null,
-   "signature_source": "T1-low"
+  "provenance_version": "2.0",
+  "skill_name": "pyforge-scribe",
+  "skill_type": "single",
+  "source_repo": "src/shared/packages/pyforge-scribe",
+  "source_commit": "b69fd81eb812eb0a2de4580c4b04d9af41259ef8",
+  "source_ref": "local",
+  "generated_at": "2026-11-12T00:00:00Z",
+  "grounding": {
+    "date": "2026-11-12",
+    "commit_short": "b69fd81eb8",
+    "station": "scribe",
+    "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-29-5-the-station-skills-carry-the-fixes-the-2026-11-05-audit-accepted.md"
   },
-  {
-   "export_name": "graph_compile",
-   "export_type": "function",
-   "source_library": "pyforge-scribe",
-   "params": [
-    "nightly: bool"
-   ],
-   "return_type": "None",
-   "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
-   "source_line": 295,
-   "confidence": "T1-low",
-   "extraction_method": "skf-extract-public-api",
-   "ast_node_type": null,
-   "signature_source": "T1-low"
-  },
-  {
-   "export_name": "recall_cmd",
-   "export_type": "function",
-   "source_library": "pyforge-scribe",
-   "params": [
-    "query: str"
-   ],
-   "return_type": "None",
-   "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
-   "source_line": 325,
-   "confidence": "T1-low",
-   "extraction_method": "skf-extract-public-api",
-   "ast_node_type": null,
-   "signature_source": "T1-low"
-  },
-  {
-   "export_name": "catalog_bmad_estate",
-   "export_type": "function",
-   "source_library": "pyforge-scribe",
-   "params": [
-    "write: bool",
-    "check: bool",
-    "root: Path",
-    "output: Path | None",
-    "pipeline_truth: Path | None"
-   ],
-   "return_type": "None",
-   "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
-   "source_line": 674,
-   "confidence": "T1-low",
-   "extraction_method": "skf-extract-public-api",
-   "ast_node_type": null,
-   "signature_source": "T1-low"
-  },
-  {
-   "export_name": "main",
-   "export_type": "function",
-   "source_library": "pyforge-scribe",
-   "params": [
-    "argv: list[str] | None"
-   ],
-   "return_type": "int | None",
-   "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
-   "source_line": 726,
-   "confidence": "T1-low",
-   "extraction_method": "skf-extract-public-api",
-   "ast_node_type": null,
-   "signature_source": "T1-low"
-  },
-  {
-   "export_name": "capture",
-   "export_type": "function",
-   "source_library": "pyforge-scribe",
-   "params": [
-    "memory_root: Path",
-    "capture_type: CaptureType",
-    "text: str"
-   ],
-   "return_type": "CaptureResult",
-   "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/capture.py",
-   "source_line": 54,
-   "confidence": "T1-low",
-   "extraction_method": "source-reading",
-   "ast_node_type": null,
-   "signature_source": "T1-low"
-  },
-  {
-   "export_name": "compile_graph",
-   "export_type": "function",
-   "source_library": "pyforge-scribe",
-   "params": [
-    "memory_root: Path",
-    "repo_root: Path"
-   ],
-   "return_type": "CompileResult",
-   "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py",
-   "source_line": 194,
-   "confidence": "T1-low",
-   "extraction_method": "source-reading",
-   "ast_node_type": null,
-   "signature_source": "T1-low"
-  },
-  {
-   "export_name": "answer",
-   "export_type": "function",
-   "source_library": "pyforge-scribe",
-   "params": [
-    "query: str",
-    "store: GraphStore",
-    "repo_root: Path"
-   ],
-   "return_type": "RecallAnswer",
-   "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py",
-   "source_line": 199,
-   "confidence": "T1-low",
-   "extraction_method": "source-reading",
-   "ast_node_type": null,
-   "signature_source": "T1-low"
-  },
-  {
-   "export_name": "open_graph_store",
-   "export_type": "function",
-   "source_library": "pyforge-scribe",
-   "params": [
-    "store_path: Path"
-   ],
-   "return_type": "GraphStore",
-   "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_plugins.py",
-   "source_line": 29,
-   "confidence": "T1-low",
-   "extraction_method": "source-reading",
-   "ast_node_type": null,
-   "signature_source": "T1-low"
-  },
-  {
-   "export_name": "derive",
-   "export_type": "function",
-   "source_library": "pyforge-scribe",
-   "params": [
-    "root: Path",
-    "pipeline_truth: Path | None"
-   ],
-   "return_type": "Estate",
-   "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
-   "source_line": 624,
-   "confidence": "T1-low",
-   "extraction_method": "skf-extract-public-api",
-   "ast_node_type": null,
-   "signature_source": "T1-low"
-  },
-  {
-   "export_name": "write",
-   "export_type": "function",
-   "source_library": "pyforge-scribe",
-   "params": [
-    "root: Path",
-    "output: Path | None",
-    "pipeline_truth: Path | None"
-   ],
-   "return_type": "Path",
-   "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
-   "source_line": 872,
-   "confidence": "T1-low",
-   "extraction_method": "skf-extract-public-api",
-   "ast_node_type": null,
-   "signature_source": "T1-low"
-  },
-  {
-   "export_name": "check",
-   "export_type": "function",
-   "source_library": "pyforge-scribe",
-   "params": [
-    "root: Path",
-    "catalog: Path | None",
-    "pipeline_truth: Path | None"
-   ],
-   "return_type": "list[str]",
-   "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
-   "source_line": 899,
-   "confidence": "T1-low",
-   "extraction_method": "skf-extract-public-api",
-   "ast_node_type": null,
-   "signature_source": "T1-low"
-  }
- ]
+  "entries": [
+    {
+      "export_name": "capture_cmd",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
+      "source_line": 111,
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "graph_compile",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "nightly: bool"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
+      "source_line": 295,
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "recall_cmd",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "query: str"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
+      "source_line": 325,
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "catalog_bmad_estate",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "write: bool",
+        "check: bool",
+        "root: Path",
+        "output: Path | None",
+        "pipeline_truth: Path | None"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
+      "source_line": 674,
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "argv: list[str] | None"
+      ],
+      "return_type": "int | None",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
+      "source_line": 726,
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "target: Path | None"
+      ],
+      "return_type": "None",
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low",
+      "export_name": "index_build",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
+      "source_line": 416
+    },
+    {
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "target: Path | None"
+      ],
+      "return_type": "None",
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low",
+      "export_name": "index_report",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
+      "source_line": 435
+    },
+    {
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [],
+      "return_type": "None",
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low",
+      "export_name": "index_move_list",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
+      "source_line": 450
+    },
+    {
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "target: Path | None",
+        "declare: Path | None"
+      ],
+      "return_type": "None",
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low",
+      "export_name": "index_refresh",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
+      "source_line": 494
+    }
+  ]
 }

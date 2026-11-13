@@ -9,6 +9,9 @@ description: >
   Unified dependency-hygiene + vulnerability scanner. Agents use the warden
   CLI (scan / scan --doctor) and FR-13 grammar `pyforge warden …`, never
   importing pyforge.warden internals. The CLI is the sole PR-gate publisher.
+doc_urls:
+  - url: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/contract.md
+    label: warden public contract (CLI, keys, exit codes, rungs, flags, MCP tools)
 forge_tier: Quick
 created: '2026-08-25'
 created_by: skf-create-skill
@@ -27,6 +30,16 @@ scope:
     CAP-15 compile for a station with no skill on origin/main (Story 10.1).
     Public contract is the warden CLI (AD-7). Portal django-warden is out of
     scope. Persona bmad-agent-warden is not SKF-compiled.
+    Recompiled in place at 0.1.0 on 2026-11-12 (steward Story 29.5, EGM audit
+    2026-11-05) from the current package, with the station contract
+    (contract.md) as a doc source. Carry: the two descriptive sentences about
+    verdict.py and importers become agent-facing rules -- agents invoke warden
+    through the CLI or MCP and do not import or call verdict functions
+    (WAR-R-F1); the README's --warn-only caveat (an unprovisioned offline OSV
+    database leaves the vulnerability axis indeterminate, which --warn-only
+    downgrades) and run --doctor first (WAR-R-F2); the exit-code table, the
+    seven rung names, the knobs and how --warn-only changes the exit
+    (WAR-R-F4); what the station MCP runner runs (one scan) and does not run.
   rationale:
     recommended: specific-modules
     chosen: specific-modules

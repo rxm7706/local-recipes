@@ -10,6 +10,9 @@ description: >
   pyforge mason grammar rather than importing pyforge.mason internals. Recipe
   work is consulted from conda-forge-expert; this skill documents grammar
   only, never recipe knowledge.
+doc_urls:
+  - url: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/contract.md
+    label: mason public contract (paths, variables, exit codes, envelope, ship states)
 forge_tier: Quick
 created: '2026-10-05'
 created_by: skf-create-skill
@@ -18,6 +21,10 @@ scope:
   include:
     - src/pyforge/mason/cli.py
     - src/pyforge/mason/__init__.py
+    - src/pyforge/mason/exit_codes.py
+    - src/pyforge/mason/render.py
+    - src/pyforge/mason/models.py
+    - src/pyforge/mason/resolve.py
     - README.md
   exclude:
     - tests/**
@@ -25,6 +32,16 @@ scope:
   notes: >
     Story 19.1 compile for the mason station. Public contract is the mason CLI
     (AD-1 recipe wraps CFE by subprocess). Persona + portal are out of scope.
+    Recompiled in place at 0.1.0 on 2026-11-12 (steward Story 29.5, EGM audit
+    2026-11-05): exit_codes.py, render.py, models.py and resolve.py join the
+    scope, and the station contract (contract.md) is a doc source. Carry: the
+    MCP face is a supervised recipe build that runs no other Mason verb, as the
+    README mason Story 37.3 corrected says (MAS-R-F2); the four ship states,
+    exit 0 does not mean shipped, data.targets[].state (MAS-R-F3); the
+    five-key JSON envelope, its status values, data.returncode, the doctor
+    report fields and the ship payload (MAS-R-F5); every exit code from
+    exit_codes.py, 130 included (MAS-R-F6); the eight MASON_ variables; the
+    factory-island build; recipe update writes by default.
   rationale:
     recommended: specific-modules
     chosen: specific-modules

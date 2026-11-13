@@ -9,6 +9,9 @@ description: >
   Kedro/Dagster/DuckDB factory intelligence station. Agents use the
   pyforge atlas grammar (Kedro CLI via unified dispatch) and station MCP,
   rather than importing pyforge.atlas internals or replacing conda-forge-expert.
+doc_urls:
+  - url: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/contract.md
+    label: atlas public contract (verbs, MCP tools, flags, variables, exit codes)
 forge_tier: Quick
 created: '2026-08-25'
 created_by: skf-create-skill
@@ -20,6 +23,7 @@ scope:
     - src/pyforge/atlas/mcp/__init__.py
     - src/pyforge/atlas/mcp/tools.py
     - src/pyforge/atlas/mcp/server.py
+    - src/pyforge/atlas/provenance.py
     - pyproject.toml
     - README.md
   exclude:
@@ -31,6 +35,14 @@ scope:
     Scope widened 2026-11-01 (steward Story 29.4, EGM audit RUL-CL13):
     mcp/server.py registers the MCP tool names (run_<pipeline>_pipeline,
     read_atlas_dataset, list_atlas_*); recompiled in place at 0.1.0.
+    Recompiled in place at 0.1.0 on 2026-11-12 (steward Story 29.5, EGM audit
+    2026-11-05): provenance.py (the build-provenance envelope and its
+    build_stamp) joins the scope, and the station contract (contract.md) is a
+    doc source. Carry: in MANUAL:additional-notes, read freshness from the
+    envelope's build_stamp, and PYFORGE_ATLAS_CREDENTIALED is the operator's
+    per-run opt-in that an agent never sets (ATL-R-F1); all thirteen MCP tools
+    in context-snippet.md; the exit codes; what the station MCP face runs (the
+    thirteen tools and one supervised pipeline run) and does not run.
   rationale:
     recommended: specific-modules
     chosen: specific-modules

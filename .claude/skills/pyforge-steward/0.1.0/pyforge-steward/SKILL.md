@@ -15,13 +15,14 @@ description: >
 
 Compiles `src/shared/packages/pyforge-steward/` (PyPI `pyforge-steward` 0.1.0) as an
 agentskills.io content skill for the **steward** station. Source: local path
-`src/shared/packages/pyforge-steward` @ commit `03a7aff5d9` (`source_ref: local`).
+`src/shared/packages/pyforge-steward` @ commit `b69fd81eb8` (`source_ref: local`).
 Forge tier: **Quick** (SKF `skf-extract-public-api` + source-reading; T1-low).
 First compiled from `865b95dc951` (Story 33.1); recompiled in place at 0.1.0 on
-2026-11-01 (steward Story 29.4) from the widened scope (`estate.py`, `ci.py`,
-`preflight_verify.py`, the duty modules `cli.py` resolves for `estate`, `ci` and
-`preflight`) and the real `steward --help`, the way Story 29.1 and atlas
-Stories 33.1 and 33.2 did.
+2026-11-01 (steward Story 29.4) and again on 2026-11-12 (steward Story 29.5, the
+fixes the EGM audit of 2026-11-05 accepted: STW-R-F4, STW-R-F7, with STW-R-F5
+carried) from the scope widened with `pages_duty.py` and `cutover.py`, the station
+contract `contract.md` as a doc source, and the real `steward --help`, the way
+Story 29.1 and atlas Stories 33.1 and 33.2 did.
 3 CLI exports documented (`build_parser`, `resolve_duty`, `main`).
 The package `__init__.py` exports only `__version__` — other components integrate
 via the CLI, never by importing internal modules [SRC:src/pyforge/steward/__init__.py:L10-L22].
@@ -30,10 +31,17 @@ via the CLI, never by importing internal modules [SRC:src/pyforge/steward/__init
 
 The Provisioner's CLI — credential lifecycle, deployment, provisioning and budget
 duties for the factory's platform layer [SRC:pyproject.toml:L8]. README names the
-core verbs `steward keys / deploy / provision / budget / sync / workspace`
-[SRC:README.md:L5]; the parser registers 31 duties [SRC:src/pyforge/steward/cli.py:L68-L100].
-`main()` is the sole owner of the process exit code (AD-8)
-[SRC:src/pyforge/steward/cli.py:L1-L7].
+verbs `steward keys / deploy / provision / budget / sync / workspace` and the estate,
+CI pauses, Pages and the preflight [SRC:README.md:L5-L6]; the parser registers 31
+duties [SRC:src/pyforge/steward/cli.py:L68-L100]. `main()` is the sole owner of the
+process exit code (steward's AD-8) [SRC:src/pyforge/steward/cli.py:L1-L7].
+
+**The public contract** is
+`_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/contract.md`
+(spec-pyforge-steward:CAP-179): every verb path and flag, the retired verbs, the MCP
+tools and targets, every feature-flag key, environment variable and exit code
+[SRC:README.md:L10-L13]. The MCP tool names, exit codes and flag keys in this skill
+are rows of that file; where they differ, the contract and the code win.
 
 ## Quick Start
 
@@ -52,44 +60,80 @@ pixi run -e pyforge-guild pyforge steward workspace start <slug>
 pixi run -e pyforge-guild pyforge steward estate plan --due
 pixi run -e pyforge-guild pyforge steward ci status
 pixi run -e pyforge-guild pyforge steward preflight verify-deferred --since YYYY-MM-DD
+pixi run -e pyforge-guild pyforge steward cutover plan --check
 ```
 
-**Keys** (`steward keys`) [SRC:src/pyforge/steward/cli.py:L443]:
+**Keys** (`steward keys`) [SRC:src/pyforge/steward/cli.py:L446]:
 encrypt/decrypt/rotate/list/audit/revoke/exec — credential lifecycle. `exec`
 runs a command with a scoped GitHub Enterprise token in its environment (the
 only delivery path), behind the flag `pyforge.steward.ghe_fleet_credentials`
-[SRC:src/pyforge/steward/cli.py:L433-L440].
+[SRC:src/pyforge/steward/cli.py:L436-L443]. That flag is off in every
+environment, so `keys exec` refuses until the operator flips it.
 
-**Provision** (`steward provision --list`) [SRC:src/pyforge/steward/cli.py:L1126]:
+**Provision** (`steward provision --list`) [SRC:src/pyforge/steward/cli.py:L1156]:
 list pixi environments; `--list-modules` / `--module` / `--env` / `--verify` are
 flags on the duty, not nested verbs.
 
-**Budget** (`steward budget set|show|check`) [SRC:src/pyforge/steward/cli.py:L1200]:
-machine-readable ceiling; `check` may request `EXIT_BUDGET_NOT_CONFIGURED` (3)
-when no metered source exists [SRC:src/pyforge/steward/cli.py:L30-L38].
+**Budget** (`steward budget set|show|check`) [SRC:src/pyforge/steward/cli.py:L1230]:
+machine-readable ceiling; `check` exits 3 (`EXIT_BUDGET_NOT_CONFIGURED`) when no
+metered spend source is configured, the only answer v1 gives
+[SRC:src/pyforge/steward/cli.py:L30-L38].
 
 **Estate** (`steward estate plan|refresh|reconcile|verify|realize|status`)
-[SRC:src/pyforge/steward/cli.py:L1427] [SRC:src/pyforge/steward/estate.py:L1-L6]:
-policy-driven estate pin refresh. `plan` is the dry run (`--due` exits non-zero
-when the last journal is older than 30 days or absent); `refresh` runs the
-upgrade, restores losses, re-locks and journals; `reconcile` regenerates the
-derived surfaces (`environment.yaml` after a `pixi.toml` change) and reconciles
-spec-surface drift; `verify` installs the default tier in a detached worktree
-and runs the CI lanes; `realize` re-applies side-effect installs (agents:
-`--plan` only); `status` prints the last journal. Behind the flag
-`pyforge.steward.estate_refresh` [SRC:src/pyforge/steward/estate.py:L27].
+[SRC:src/pyforge/steward/cli.py:L1457] [SRC:src/pyforge/steward/estate.py:L1-L6]:
+policy-driven estate pin refresh. `plan` is the dry run: with `--due` it exits 1
+when the last journal is older than 30 days or absent (overdue) and 0 within
+cadence, and it exits 3 when its pixi upgrade dry run fails, on every path and
+ahead of `--due` [SRC:src/pyforge/steward/estate.py:L445-L460]; `refresh` runs the
+upgrade, restores losses, re-locks and journals (exit 3 on a dirty tree, on `main`,
+or when a step refuses); `reconcile` regenerates the derived surfaces
+(`environment.yaml` after a `pixi.toml` change) and reconciles spec-surface drift
+(exit 1 when a gating check fails); `verify` installs the default tier in a
+detached worktree and runs the CI lanes; `realize` re-applies side-effect installs
+(agents: `--plan` only); `status` prints the last journal. Behind the flag
+`pyforge.steward.estate_refresh`: every estate verb exits 3 while it is off
+[SRC:src/pyforge/steward/estate.py:L27-L28].
 
-**CI** (`steward ci status|vars|pause|resume`) [SRC:src/pyforge/steward/cli.py:L1323]
+**CI** (`steward ci status|vars|pause|resume`) [SRC:src/pyforge/steward/cli.py:L1353]
 [SRC:src/pyforge/steward/ci.py:L1-L4]: CI pause visibility. `status` (`--json`)
-reports the pause state of every CI surface; `vars` reads or refreshes the
-gitignored ci-vars snapshot; `pause` / `resume` are dry runs unless `--yes`.
-Behind the flag `pyforge.steward.ci_pause_control` [SRC:src/pyforge/steward/ci.py:L21].
+reports the pause state of every CI surface (exit 1 on a partial read, with the
+envelope still printed); `vars` reads or refreshes the gitignored ci-vars snapshot;
+`pause` / `resume` are dry runs unless `--yes` (exit 1 when `gh variable set` or
+`delete` fails). Behind the flag `pyforge.steward.ci_pause_control`: exit 3 while
+it is off, or when gh cannot read [SRC:src/pyforge/steward/ci.py:L22]
+[SRC:src/pyforge/steward/ci.py:L31-L32].
+
+**Pages** (`steward pages build|deploy|status`) [SRC:src/pyforge/steward/cli.py:L1393]
+[SRC:src/pyforge/steward/pages_duty.py:L1-L5]: the one Pages workflow — `build`
+writes the fleet board's input and runs `pages-check`, `deploy` runs `pages.yml`,
+`status` reads the live root and the last run. Behind the flag
+`pyforge.steward.pages_duty`: exit 3 while it is off, refused before any subprocess
+[SRC:src/pyforge/steward/pages_duty.py:L42-L43].
 
 **Preflight** (`steward preflight verify-deferred [--since YYYY-MM-DD]`)
-[SRC:src/pyforge/steward/cli.py:L1409] [SRC:src/pyforge/steward/preflight_verify.py:L1-L13]:
+[SRC:src/pyforge/steward/cli.py:L1439] [SRC:src/pyforge/steward/preflight_verify.py:L1-L13]:
 the pre-push preflight's catch-up. Lists every run that left lanes to CI
 (touched scope) and every push that skipped the preflight, then runs the full
-preflight on HEAD: exit 0 green, 1 red, 3 could not run.
+preflight on HEAD: exit 0 green, 1 red, 3 could not run (no `pixi`, or the
+preflight's configuration error), 130 interrupted
+[SRC:src/pyforge/steward/preflight_verify.py:L33-L34].
+
+**Cutover** (`steward cutover plan|flip`) [SRC:src/pyforge/steward/cli.py:L621-L664]
+[SRC:src/pyforge/steward/cutover.py:L1-L9]: `plan` generates (`--regenerate`,
+`--append`, behind the kill switch `pyforge.steward.cutover_ledger_write`) or
+validates (`--check`, the default: writes nothing, exits 1 on a finding) the
+capability ledger `docs/foundry/capability-ledger.yaml`; `flip --to
+{local-recipes,foundry}` sets `pyforge.cutover_root` and is refused while a Marshal
+loop runs. The operator flips the root by hand; an agent runs `plan --check`. The
+verb that copied trees into foundry is retired (Story 121.2): the parser has only
+`plan` and `flip`, and a retired verb is a usage error (exit 2).
+
+**Feature flags.** Each flag above is read through `pyforge.core.flags` from
+`src/platform/config/flags.json`; its default per environment (dev, staging,
+production) is that tree's `defaultVariant` composed with
+`src/platform/config/flag-overlays.json`. A duty whose flag is off stays listed in
+`--help`, marked `[disabled: flag … is off]`. Each key, its default and its reader
+are rows of `contract.md` § *Feature-flag keys*.
 
 <!-- [MANUAL:additional-notes] -->
 **Track** (`steward track assemble --run-dir DIR --out PATH`) (Story 53.3 / hub:CAP-3):
@@ -102,11 +146,31 @@ Station host: steward's MCP face is `POST /stations/steward/mcp` on the platform
 assertion it accepts and send a request: `docs/how-to/reach-a-station-mcp-endpoint.md`.
 <!-- [/MANUAL:station-mcp] -->
 
+## Station MCP runner
+
+What `POST /stations/steward/mcp` runs, as the code stands (`contract.md` § *MCP
+face*; the closed verb table is django-pyforge's `station_cli.py`, the host code
+django-steward's `mcp_asgi.py`; this package ships no MCP server):
+
+| Name | Kind | Runs |
+|---|---|---|
+| `start_duty` | MCP tool | Takes `target` and `assertion`; starts a supervised run and returns `{"handle": …}` at once. |
+| `get_duty` | MCP tool | Takes `handle` and `assertion`; returns the supervisor's record of that run. |
+| `run_duty` | supervisor runner, not an MCP tool | The closed table's steward row, behind the kill switch `pyforge.steward.start_tool_cli`. |
+| `ci-status` | target | `steward ci status --json` |
+| `estate-plan` | target | `steward estate plan --json` |
+| `estate-status` | target | `steward estate status --json` |
+
+It runs those three read-only targets and nothing else, in `pyforge-guild`, and
+counts exits 0 and 1 as a result. No other duty or verb is reachable through the
+face: no `estate refresh`, `ci pause`, `keys`, `deploy`, `pages` or `cutover`. Any
+other target is refused before anything runs.
+
 ## Common Workflows
 
-**Dispatch:** `main(argv)` [SRC:src/pyforge/steward/cli.py:L1958] parses with
-`build_parser()` [SRC:src/pyforge/steward/cli.py:L328] then
-`resolve_duty(ns.duty).run(ns)` [SRC:src/pyforge/steward/cli.py:L1812]. A duty
+**Dispatch:** `main(argv)` [SRC:src/pyforge/steward/cli.py:L1988] parses with
+`build_parser()` [SRC:src/pyforge/steward/cli.py:L331] then
+`resolve_duty(ns.duty).run(ns)` [SRC:src/pyforge/steward/cli.py:L1842]. A duty
 returns `DutyResult` and never calls `sys.exit()` [SRC:src/pyforge/steward/interfaces.py:L7-L9].
 
 **List environments:** `steward provision --list [--json]`.
@@ -116,17 +180,23 @@ returns `DutyResult` and never calls `sys.exit()` [SRC:src/pyforge/steward/inter
 **Pipeline truth:** `steward suite` (Epic 15).
 
 **Landing worktree:** `pyforge steward workspace start <slug>` / `status` /
-`clean` [SRC:src/pyforge/steward/cli.py:L1250] — preferred over a hand-run
+`clean` [SRC:src/pyforge/steward/cli.py:L1280] — preferred over a hand-run
 `git worktree add`.
 
 **Estate refresh:** `pyforge steward estate plan --due`, then `refresh`, then
-`reconcile` → `EstateDuty` [SRC:src/pyforge/steward/estate.py:L744].
+`reconcile` → `EstateDuty` [SRC:src/pyforge/steward/estate.py:L748].
 
 **CI pause inventory:** `pyforge steward ci status` → `CiDuty`
-[SRC:src/pyforge/steward/ci.py:L1366].
+[SRC:src/pyforge/steward/ci.py:L1367].
 
 **Deferred lanes:** `pyforge steward preflight verify-deferred` → `PreflightDuty`
 [SRC:src/pyforge/steward/preflight_verify.py:L227].
+
+**Pages:** `pyforge steward pages status` → `PagesDuty`
+[SRC:src/pyforge/steward/pages_duty.py:L526].
+
+**Capability ledger:** `pyforge steward cutover plan --check` → `CutoverDuty`
+[SRC:src/pyforge/steward/cutover.py:L212].
 
 ## Key API Summary
 
@@ -139,6 +209,8 @@ returns `DutyResult` and never calls `sys.exit()` [SRC:src/pyforge/steward/inter
 | `EstateDuty` | `estate` duty: plan / refresh / reconcile / verify / realize / status | `ns.estate_verb` |
 | `CiDuty` | `ci` duty: status / vars / pause / resume | `ns.ci_verb` |
 | `PreflightDuty` | `preflight verify-deferred`: list deferred lanes, run the full preflight | `--since` |
+| `PagesDuty` | `pages` duty: build / deploy / status | `ns.pages_verb` |
+| `CutoverDuty` | `cutover` duty: plan / flip | `ns.cutover_verb` |
 
 ## Key Exports
 
@@ -168,7 +240,7 @@ Registered duties [SRC:src/pyforge/steward/cli.py:L68-L100], one line each from
 | `revoke` | stop one runaway subject — revoke its queued Celery tasks, cancel its live supervisor runs (`--sub`) |
 | `track` | assemble one tracked `track.json` per run; not a detector |
 | `guards` | Hub Guard library — catalog, spec lacking, source-ground; never a PR verdict |
-| `cutover` | flag-gated cutover plan / apply / flip; the default root stays local-recipes |
+| `cutover` | the capability ledger's generator and validator (`plan`) and the root-of-record flag (`flip`) |
 | `ledger-query` | estate sprint-ledger query and telemetry reporting (`--ready` / `--running`) |
 | `catalog` | estate BMAD catalog — check / list / render / pointers / ship / publish |
 | `measure` | Build League measure catalog — check / list |
@@ -191,11 +263,24 @@ feature flag is off stays listed, marked `[disabled: flag … is off]`.
 
 Always invoke `steward` (or `pyforge steward`) from repo root. Do not
 `from pyforge.steward import KeysDuty` in other stations. Personas act only
-through FR-13 grammar and FR-11 MCP — this content skill is consulted, not a
-license to import internals (AD-7).
+through canopy:FR-13 grammar (one entry point) and the canopy:FR-11 station MCP
+endpoint — this content skill is consulted, not a license to import internals
+(steward's AD-7, the `Duty` protocol).
 
-Exit codes [SRC:src/pyforge/steward/cli.py:L24-L28]: `0` ok · `1` duty failed ·
-`2` usage · `70` internal · `130` interrupted. A crash is never reported as `1`.
+Exit codes [SRC:src/pyforge/steward/cli.py:L24-L38] [SRC:README.md:L20-L23], the rows
+of `contract.md` § *Exit codes*:
+
+| Code | Meaning |
+|---|---|
+| `0` | the duty ran and reported ok (also `--help`, `--version`) |
+| `1` | a duty ran and reported not ok — the only legitimate 1: `estate plan --due` overdue, `ci status` on a partial read, `cutover plan --check` with a finding, `estate reconcile` with a failed gating check, `ci pause`/`resume --yes` when gh fails |
+| `2` | usage: an argparse error, a retired verb, a kill switch or other flag-gated verb whose flag is off (`ci`, `pages` and `estate` refuse with `3` instead) |
+| `3` | a duty's documented refusal: `budget check` not configured; `ci` with `ci_pause_control` off or gh unable to read; `pages` with `pages_duty` off; `estate` with `estate_refresh` off, a failed `plan` dry run, or a refused `refresh`; `preflight verify-deferred` could not run |
+| `70` | internal error — an exception escaped a duty; a crash is never reported as `1` |
+| `130` | interrupted (128 + SIGINT) |
+
+`steward deploy nic` and `steward keys exec` pass their child's own non-zero exit
+through.
 
 ## Key Types
 
@@ -208,7 +293,7 @@ only `main()` acts on it.
 
 **`NullDuty`** [SRC:src/pyforge/steward/interfaces.py:L39-L51] — seam for an
 unregistered name; registered duties are real implementations
-[SRC:src/pyforge/steward/cli.py:L1955].
+[SRC:src/pyforge/steward/cli.py:L1985].
 
 ## Architecture at a Glance
 
@@ -217,7 +302,7 @@ unregistered name; registered duties are real implementations
 - **Duty** — unit of platform work; returns evidence, never exits
   [SRC:src/pyforge/steward/interfaces.py:L1-L9].
 - **Resolve** — lazy imports so `steward --help` does not load keys/sync
-  checkout guards [SRC:src/pyforge/steward/cli.py:L433-L437].
+  checkout guards [SRC:src/pyforge/steward/cli.py:L436-L440].
 
 ## CLI
 
@@ -239,7 +324,8 @@ steward estate {plan [--json] [--due],refresh,reconcile,verify,realize,status}
 steward ci {status [--json],vars [--refresh],pause,resume}
 steward preflight verify-deferred [--since YYYY-MM-DD]
 steward pages {build,deploy,status}
-steward guards|cutover|ledger-query|catalog|measure|load|passport|glass|quarantine|session|deck-drift …
+steward cutover {plan [--regenerate|--append|--check] [--ledger PATH] [--json],flip --to {local-recipes,foundry} [--flags PATH]}
+steward guards|ledger-query|catalog|measure|load|passport|glass|quarantine|session|deck-drift …
 ```
 
 <!-- [MANUAL:api-notes] -->
