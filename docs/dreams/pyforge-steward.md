@@ -8107,3 +8107,20 @@ at mint and rendered by Story 122.1) and `spec-pyforge-unifying-strategy` (`spec
 oracle map) and `spec-pyforge-steward:CAP-182` (one root-layout module), with FR-53 to FR-56 on the PRD and no
 AD; Epic 122 (Stories 122.1–122.5), Epic 123 (Stories 123.1–123.3) and Epic 124 (Stories 124.1–124.5), each
 with its ledger key and tracked story spec; Story 29.5 amended in place (Surface and Deps).
+
+### Realization log
+
+- **2026-11-13 (cutover readiness, closed)** — Stories 120.1 to 120.5, 121.1 to 121.4, 121.6, 121.7, 122.1 to
+  122.4, 123.1 to 123.3, 124.1 to 124.5 and 29.5 are built and reviewed on branch `cutover-readiness-2026-11-10`;
+  Story 121.5 stays `blocked` as the host anchor, Story 44.1 retired at mint, and Story 122.5 closes the chain.
+  `spec-pyforge-steward:CAP-153`, `spec-pyforge-steward:CAP-166`, `spec-pyforge-steward:CAP-179` and
+  `spec-pyforge-steward:CAP-181` read `(shipped 2026-11-12)`, and `spec-pyforge-steward:CAP-182` reads
+  `(shipped 2026-11-11; not met: every other module derives from it, DW-steward-123-2-2)`;
+  `spec-pyforge-steward:CAP-180` was minted shipped. The steward Spec's memlog and the host Spec's memlog each name,
+  in one `Surface reconcile` event, every path the change moved on their surfaces, for doctor Story 58.4's scoped
+  stamps, and the host's companion `stack.md` now cites `pyforge-atlas:AD-13`. The brief, PRD, spine and `epics.md`
+  are re-stamped 2026-11-13; no readiness report is due before 2026-12-01 (the 2026-09-09 gate's shelf life ends
+  2026-12-08). The gaps the rulings keep are tracked ledger rows: DW-steward-121-1 to DW-steward-121-4,
+  DW-steward-cutover-2026-11-10-1 (resolved by Story 123.3) to DW-steward-cutover-2026-11-10-12, DW-steward-121-6-1,
+  DW-steward-121-6-2, DW-steward-122-4-1 and DW-steward-123-2-2. The ledger keys move to `done` in the change's
+  ledger close. Owner `spec-pyforge-steward`.

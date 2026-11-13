@@ -1283,3 +1283,14 @@ Entries through 2026-08-31: [archive § Realization log (historical)](<https://g
   flag tree (Story 124.4); Epics 122 and 123 bind `spec-pyforge-steward:CAP-179` to
   `spec-pyforge-steward:CAP-182`. This entry mints no capability on this Spec and adds no product
   behaviour.
+- **2026-11-13 (cutover readiness, closed)** — Steward Story 122.5 closes this Spec's part of the change. Story
+  124.5 rendered the 2026-11-10 amendments of `spec-pyforge-unifying-strategy:CAP-4`,
+  `spec-pyforge-unifying-strategy:CAP-14` and `spec-pyforge-unifying-strategy:CAP-16` (the eight station persona
+  directories joined the surface), and a 2026-11-13 correction, rendered the same day, qualifies the companion
+  `stack.md`'s atlas decision as `pyforge-atlas:AD-13`. One `Surface reconcile` event on the Spec's memlog names every
+  path the change moved on its surface (core, scribe, atlas, the station skills, the personas, `pixi.toml`, the
+  package `pixi.toml` floors and the deleted `src/platform/uv.lock`) and the 25 persona files the widened surface newly
+  governs, for doctor Story 58.4's scoped stamp. The Spec's 20 capabilities still carry no dated marker
+  (DW-steward-cutover-2026-11-10-5, with the host contract Story 121.5, which stays `blocked`), and the flip of
+  `pyforge.cutover_root` stays the operator's, by hand, once the Launch slice is proven (ruling 1 of the second
+  addendum).

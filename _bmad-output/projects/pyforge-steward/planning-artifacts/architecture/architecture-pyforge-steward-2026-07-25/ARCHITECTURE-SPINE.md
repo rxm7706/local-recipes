@@ -7,7 +7,7 @@ paradigm: 'hexagonal (ports-and-adapters): CLI as driving adapter, each duty a t
 scope: 'Steward v1 — pyforge-steward CLI (keys, deploy, provision, budget duties; FR-1..FR-18), packaged as a pixi workspace member mirroring pyforge-warden'
 status: final
 created: '2026-07-25'
-updated: '2026-11-11'   # RE-STAMPED 2026-11-11 (steward Story 122.1): prd->arch cascade for the PRD's § Currency reconciliation — 2026-11-11 (Story 122.1): spec-pyforge-steward re-derived and the three cutover Specs re-derived the same day; FR delta FR-53..FR-56 (at mint); no AD added, amended or removed; a pointer on AD-4's v1 Rule line and the 2026-10-27 driver bullet corrected.
+updated: '2026-11-13'   # RE-STAMPED 2026-11-13 (steward Story 122.5, the chain close): prd->arch cascade for the PRD's § Currency reconciliation — 2026-11-13 (Story 122.5): markers only; no AD added, amended or removed. Prior '2026-11-11'   # RE-STAMPED 2026-11-11 (steward Story 122.1): prd->arch cascade for the PRD's § Currency reconciliation — 2026-11-11 (Story 122.1): spec-pyforge-steward re-derived and the three cutover Specs re-derived the same day; FR delta FR-53..FR-56 (at mint); no AD added, amended or removed; a pointer on AD-4's v1 Rule line and the 2026-10-27 driver bullet corrected.
 # 2026-11-06  # RE-STAMPED 2026-11-06 (CAP-20, Epic 119): prd->arch cascade for canopy:FR-51; canopy:AD-24 added.
 # 2026-11-05  # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (PRD -> arch); no CAP, FR or AD is minted. Prior '2026-11-04'   # RE-STAMPED 2026-11-04: chain-currency cascade (prd -> arch) (the PRD's § Currency reconciliation — 2026-11-04); no CAP, FR, AD, epic or story moved. See § Currency reconciliation — 2026-11-04.
 # 2026-11-01  # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): prd->arch cascade for the PRD's § Currency reconciliation — 2026-11-01 (EGM fleet audit): FR-50 and FR-51 amended in place from the re-derived CAP-176 and CAP-177, FR-52 unchanged; no AD added, amended or removed; the 2026-10-31 pap:AD-16 line gains a dated note (kubectl and helm not yet in the pyforge-steward environment, Story 118.7). See § Currency reconciliation — 2026-11-01 (EGM fleet audit). Prior '2026-10-31'
@@ -2624,3 +2624,14 @@ package boundary moves. No AD is added, amended or removed.
 
 **Content changed:** this section added; one pointer on AD-4's v1 **Rule:** line; the 2026-10-27 driver bullet;
 `updated:` bumped.
+
+## Currency reconciliation — 2026-11-13 (Story 122.5)
+
+`prd→arch` edge after the PRD's § Currency reconciliation — 2026-11-13 (Story 122.5): the Spec's markers of CAP-153,
+CAP-166, CAP-179, CAP-181 and CAP-182 read `shipped`, and no FR moved. CAP-179 to CAP-182 land on AD-1 and AD-8 as the
+2026-11-10 entry says. AD-6 still says `steward budget check` returns one of three distinct exit codes while the code
+returns exit 3 only; that wording is held by the deferred row DW-steward-cutover-2026-11-10-6 with the close read of the
+other capability blocks and Constraints, and is left as written here. No port, adapter or package boundary moves. No AD
+is added, amended or removed.
+
+**Content changed:** this section added; `updated:` bumped.

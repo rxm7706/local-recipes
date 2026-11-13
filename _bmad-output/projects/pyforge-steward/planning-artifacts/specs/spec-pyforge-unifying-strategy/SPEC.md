@@ -4,7 +4,7 @@ spec: pyforge-unifying-strategy
 status: ready
 chain: pyforge-unifying-strategy
 created: "2026-08-24"
-updated: "2026-11-11"
+updated: "2026-11-13"   # AMENDED 2026-11-13 (steward Story 122.5): the companion stack.md's python-duckdb row qualifies atlas's decision as pyforge-atlas:AD-13 (the memlog's 2026-11-13 correction); no capability, Constraint or surface moves. Prior "2026-11-11"
 companions:
   - convergence.md
   - resilience-invariants.md

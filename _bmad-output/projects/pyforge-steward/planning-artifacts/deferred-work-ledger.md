@@ -6998,3 +6998,292 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-11-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-steward-121-1: `steward cutover flip` is not refused while a Launch row of the capability ledger is unverified
+
+- source_spec: `planning-artifacts/specs/spec-121-2-steward-cutover-plans-the-ledger-and-no-longer-copies-trees.md`; cutover-readiness plan 2026-11-10 (control-plane deferral row 1)
+  summary: `flip_root` refuses a flip only while a Marshal loop is running; it reads no capability-ledger row, so a flip while a Launch-slice row is not `verified-in-foundry` goes through, though fnd:AD-22 says the flip waits on its dependencies.
+  evidence: `src/shared/packages/pyforge-steward/src/pyforge/steward/cutover.py` `flip_root` raises `CutoverRootError("flip refused: a Marshal loop is running")` and has no other refusal. The operator's ruling 1 of the 2026-11-10 second addendum (`docs/dreams/pyforge-unifying-strategy.md` § Realization log) settles the trigger: the operator flips `pyforge.cutover_root` by hand, with no loop running, once the Launch slice is proven and every Launch row of the case list reads `verified-in-foundry`; nothing flips it automatically. The ruling decides who flips and when, not a guard in the verb; no story of this change builds one.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/cutover.py (flip_root)
+  origin: cutover-readiness plan 2026-11-10, control-plane deferral row 1; written by Story 122.5
+  fix: `flip_root` refuses while any Launch-slice row of `docs/foundry/capability-ledger.yaml` lacks `state: verified-in-foundry`, under its own Story on spec-python-foundry-cutover (fnd:CAP-8), behind a kill switch, before the flip.
+  owner: steward
+  severity: medium
+  promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: a refusal in the verb is new behaviour, and ruling 5 of the second addendum adds none in this change; the operator holds the flip by hand meanwhile (ruling 1).
+  status: open
+  verified: 2026-11-13 — still-open — src/shared/packages/pyforge-steward/src/pyforge/steward/cutover.py:169 is flip_root's one refusal (a running Marshal loop); flip_root reads no ledger row.
+
+### DW-steward-121-2: No kernel row of the capability ledger claims verified-in-foundry, and B still pins A at PR #1344
+
+- source_spec: `planning-artifacts/specs/spec-121-7-the-capability-ledger-is-regenerated-from-the-swept-specs-and-holds.md`; cutover-readiness plan 2026-11-10 (control-plane deferral row 2)
+  summary: Stories 54.2 to 54.4 are done, yet no row of `docs/foundry/capability-ledger.yaml` reads `verified-in-foundry`, and B's kernel leaves are not re-pinned to today's core, steward and marshal contracts.
+  evidence: `docs/foundry/capability-ledger.yaml` declares `verified-in-foundry` among its states and no row carries it on 2026-11-13; spec-python-foundry-cutover's fnd:CAP-2, fnd:CAP-3 and fnd:CAP-4 read `(ready 2026-11-10; not met: green on B against today's core|steward|marshal contract ..., DW-steward-121-2)` (Story 120.2). Ruling 1 of the 2026-11-10 entry holds the re-pin until the core, steward and marshal Specs pass the truth sweep; the python-foundry repository is out of this change's scope.
+  location: docs/foundry/capability-ledger.yaml
+  origin: cutover-readiness plan 2026-11-10, control-plane deferral row 2; written by Story 122.5
+  fix: after the core, steward and marshal truth sweeps land on main, the operator re-pins B's kernel leaves on B and runs B's slice; each passing kernel row then takes `state: verified-in-foundry` through `steward cutover plan`.
+  owner: operator (on B)
+  severity: medium
+  promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: named blocker: the re-pin is an act on the private B repository, held by the operator's ruling until the truth sweeps land.
+  status: open
+  verified: 2026-11-13 — still-open — `grep -c 'state: verified-in-foundry' docs/foundry/capability-ledger.yaml` prints 0 (exit 1).
+
+### DW-steward-121-3: Mason's ship and submit root does not read pyforge.cutover_root
+
+- source_spec: `planning-artifacts/specs/spec-121-4-a-chain-write-off-the-writer-is-refused-in-session.md`; cutover-readiness plan 2026-11-10 (control-plane deferral row 3)
+  summary: mason's ship and submit path resolves its root without `pyforge.core.cutover_root.root_of_record()`, a consumer fnd:CAP-8 names.
+  evidence: ruling 2 of the 2026-11-10 entry names the consumers of the root of record and places mason's with steward Story 44.8, which is `blocked`; no story of this change edits `src/shared/packages/pyforge-mason/src/pyforge/mason` for it.
+  location: src/shared/packages/pyforge-mason/src/pyforge/mason
+  origin: cutover-readiness plan 2026-11-10, control-plane deferral row 3; written by Story 122.5
+  fix: lands with steward Story 44.8: mason's ship and submit read the root through `root_of_record()`.
+  owner: steward (Story 44.8) with mason
+  severity: low
+  promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: named blocker: Story 44.8 is blocked.
+  status: open
+
+### DW-steward-121-4: The Launch-slice oracle gaps and core's wider slice have no case-list row
+
+- source_spec: `planning-artifacts/specs/spec-120-5-the-case-list-counts-itself-and-covers-the-launch-slice.md`; cutover-readiness plan 2026-11-10 (control-plane deferral row 4)
+  summary: the case list covers the kernel and the Launch steps that have an A test; the Launch steps marked `oracle gap` and core-kit's wider core slice (ten modules B lacks) have no row.
+  evidence: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/launch-slice.md` names an A test nodeid or `oracle gap` per step; Story 120.5's count line in `src/shared/packages/pyforge-steward/tests/meta/test_cutover_case_list.py` holds the rows that exist. Growing the oracle is each owning station's work, and the rebuild harness (Story 44.14) is blocked.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/launch-slice.md
+  origin: cutover-readiness plan 2026-11-10, control-plane deferral row 4; written by Story 122.5
+  fix: each owning station adds the missing A test, then the case-list row, one Story each.
+  owner: steward (relay: every station owning a gap)
+  severity: medium
+  promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: Dream-sized: the tests are each station's own work.
+  status: open
+
+### DW-steward-cutover-2026-11-10-1: `steward session check` finding (2) could not fail where pyforge.doctor was importable
+
+- source_spec: `planning-artifacts/specs/spec-123-3-estate-plan-refuses-when-its-pixi-dry-run-fails-and-the-share-tree-tests-say-where-they-run.md`; cutover-readiness plan 2026-11-10 (steward-station deferral row 1)
+  summary: session.py's bmad-method finding failed only on `DoctorStatus.FAIL` where `pyforge.doctor` was importable, and doctor's bmad-method-version-drift source emits only WARN and OK, so the finding could not fail there; where it was not importable it took `bmad-drift-check`'s exit code, a different source.
+  evidence: the cutover-readiness design pass found it at `src/shared/packages/pyforge-steward/src/pyforge/steward/session.py:89-121`; ruling 6 of the 2026-11-10 second addendum says `steward session check` takes `bmad-drift-check`'s verdict for the bmad-method precondition.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/session.py
+  origin: cutover-readiness plan 2026-11-10, steward-station deferral row 1; written by Story 122.5
+  owner: steward
+  severity: medium
+  promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  status: resolved
+  resolution: 2026-11-11 — Story 123.3 (spec-pyforge-steward:CAP-182, operator ruling 6 of the second addendum): finding (2) runs `upgrade._run_bmad_drift_task`, the exact `bmad-drift-check` subprocess, everywhere, and the function-local `pyforge.doctor` import is gone.
+  verified: 2026-11-13 — resolved — src/shared/packages/pyforge-steward/src/pyforge/steward/session.py:126-141 (finding (2) is `bmad-drift-check`'s verdict, everywhere; its remedy names the task); `pixi run --frozen -e pyforge-steward env PYTHONPATH=src/shared/packages/pyforge-steward/src:scripts pytest src/shared/packages/pyforge-steward/tests/meta/test_portability.py -q` exit 0 (37 passed; CROSS_STATION_EXCEPTIONS is empty).
+
+### DW-steward-cutover-2026-11-10-2: `steward restore` and `steward revoke` read no kill switch
+
+- source_spec: `planning-artifacts/specs/spec-122-1-the-steward-spec-s-markers-numbers-and-names-match-the-tree-and-restore-and-revoke-have-a-capability.md`; cutover-readiness plan 2026-11-10 (steward-station deferral row 2)
+  summary: the two duties spec-pyforge-steward:CAP-180 names have no entry in `RETROFIT_KEY_VERBS` and read no flag, so spec-pyforge-steward:CAP-180 is a runtime capability with no kill switch.
+  evidence: `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py` `RETROFIT_KEY_VERBS` lists budget, workspace, deploy perimeter and nic, and setup, and no `restore` or `revoke` key. Ruling 5 of the 2026-11-10 second addendum adds no retrofit kill switch in this change; spec-pyforge-steward:CAP-180's intent records the gap and names this row.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py (RETROFIT_KEY_VERBS)
+  origin: cutover-readiness plan 2026-11-10, steward-station deferral row 2; written by Story 122.5
+  fix: a Story under spec-pyforge-steward:CAP-180 adds `pyforge.steward.restore` and `pyforge.steward.revoke` (or one key) to the flag tree and every shipped-flag table and to `RETROFIT_KEY_VERBS`, then the contract row.
+  owner: steward
+  severity: medium
+  promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: operator ruling 2026-11-10 (second addendum, ruling 5): no retrofit kill switch in this change.
+  status: open
+  verified: 2026-11-13 — still-open — src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py:253-265 (`RETROFIT_KEY_VERBS` holds no restore or revoke key).
+
+### DW-steward-cutover-2026-11-10-3: The host's ingest pipeline imports steward's private `sync._default_transport`
+
+- source_spec: `planning-artifacts/specs/spec-123-2-one-steward-module-names-this-root-s-layout-and-repository-and-prove-landed-reads-doctor-through-its-command.md`; cutover-readiness plan 2026-11-10 (steward-station deferral row 3); under DW-steward-74-1
+  summary: `src/platform/ingest/github_projects/pipeline.py` imports `pyforge.steward.sync._default_transport`; since Story 123.2, `sync.py` names the same function `default_transport`, so closing the row is a one-line import change in the host.
+  evidence: `src/platform/ingest/github_projects/pipeline.py:12` imports `_default_transport`; `src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py:472` binds `default_transport = _default_transport` with a comment naming this row. Any edit to a src/platform file that imports pyforge statically reds the src/platform import guard in every station suite (`test_story_does_not_add_pyforge_under_src_platform`), which has no carve-out list; the carve-out DW-steward-74-1 only shrinks.
+  location: src/platform/ingest/github_projects/pipeline.py:11-12
+  origin: cutover-readiness plan 2026-11-10, steward-station deferral row 3; written by Story 122.5
+  fix: give the guard the four-file carve-out list of steward's `tests/meta/test_object_store_seam_boundaries.py` in every suite that holds a copy, then switch the import to `default_transport` and drop the private alias's comment.
+  owner: steward
+  severity: low
+  promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: named blocker: the guard in eight station suites refuses any edit of that host file, and no story of this change owns them all.
+  status: open
+  verified: 2026-11-13 — still-open — src/platform/ingest/github_projects/pipeline.py:12 still imports `_default_transport`; src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py:472 holds the public name.
+
+### DW-steward-cutover-2026-11-10-4: Host and portal truth for Story 121.5: undeclared imports, by-name loads, A paths and a check that scans nothing
+
+- source_spec: `planning-artifacts/specs/spec-121-5-the-host-platform-and-portals-get-their-foundry-contract.md`; cutover-readiness plan 2026-11-10 (steward-station deferral row 4, core-kit, warden and mason requests)
+  summary: the host and portal findings ruling 4 of the second addendum makes A-only on Story 121.5 (minted blocked): (a) every django-* pyproject declares only django while the code imports pyforge.core, pyforge.<station>, celery, mcp, httpx and others (the portals reach the image by COPY, never by pip); (b) the host loads pyforge modules by name outside the four-file carve-out (src/platform/config/asgi.py:224, src/platform/mcp_host/app.py:48 and :61, src/platform/config/settings/base.py:57), which the static import guard cannot see; (c) django-warden's mcp_asgi.py:16 DEFAULT_AUDIT_TARGET is the A path `src/platform`; (d) POST /stations/warden/api/v1/compliance/check returns `accepted` and scans nothing; (e) django-mason's MCP face and its last_diagnose job have no test in any package; (f) src/platform/utility/requirements-*.apt are template leftovers.
+  evidence: `src/platform/config/station_api.py:102-110` (`warden_compliance_check` returns `{"status": "accepted", ...}` and runs no scan); `git ls-files 'src/platform/utility/requirements-*.apt'` lists 11 files on 2026-11-13. The uv.lock stub the same finding named was removed by Story 124.3 (`src/platform/uv.lock` is deleted on the branch).
+  location: src/platform/config/station_api.py:102
+  origin: cutover-readiness plan 2026-11-10, steward-station deferral row 4; written by Story 122.5
+  fix: Story 121.5 writes the host, platform and portal contract and settles each item: declare the imports, route the by-name loads through the carve-out or `station_port`, read the audit target from the root layout, make the check scan or say it does not, test django-mason's face, and drop the template leftovers.
+  owner: steward (Story 121.5)
+  severity: medium
+  promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: named blocker: Story 121.5 is minted blocked on the operator's ruling on the host after Launch.
+  status: open
+  verified: 2026-11-13 — still-open — src/platform/config/station_api.py:102-110 returns accepted without a scan; src/platform/utility/requirements-noble.apt is still tracked.
+
+### DW-steward-cutover-2026-11-10-5: spec-pyforge-unifying-strategy's 20 capabilities carry no dated marker
+
+- source_spec: `planning-artifacts/specs/spec-124-5-each-persona-names-the-mcp-tools-its-station-s-face-serves-and-the-host-spec-governs-the-personas-and-says-what-scribe-s-graph-store-is.md`; cutover-readiness plan 2026-11-10 (steward-station deferral row 5)
+  summary: none of the host Spec's 20 capability headings carries a `(ready|shipped|retired <date>)` marker, and none of the nine 2026-11-10 audits read the Spec against code.
+  evidence: `pixi run -q -e pyforge-guild pyforge steward cutover plan --check` reports a `no-marker` warning for each of pyforge-unifying-strategy:CAP-1 to pyforge-unifying-strategy:CAP-20 on 2026-11-13. An unaudited sweep would write dates nobody verified.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
+  origin: cutover-readiness plan 2026-11-10, steward-station deferral row 5; written by Story 122.5
+  fix: sweep the markers with the host contract Story (121.5), each read against the code first.
+  owner: steward (Story 121.5)
+  severity: low
+  promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: named blocker: Story 121.5 is blocked, and no audit of this change read the host Spec against code.
+  status: open
+
+### DW-steward-cutover-2026-11-10-6: 148 of spec-pyforge-steward's capability blocks were never read against code
+
+- source_spec: `planning-artifacts/specs/spec-122-1-the-steward-spec-s-markers-numbers-and-names-match-the-tree-and-restore-and-revoke-have-a-capability.md`; cutover-readiness plan 2026-11-10 (steward-station deferral row 6)
+  summary: the 2026-11-10 audit resolved the tokens of 148 of the 178 capability blocks it found (all but spec-pyforge-steward:CAP-1..9, 54..55, 114..123, 139..145 and 175) and never read them against code; this row also holds Story 122.1's two deferrals: the canopy:AD-6 Constraint (and canopy:AD-6 on the steward spine) still says `steward budget check` returns one of three distinct exit codes while the code returns exit 3 only, as spec-pyforge-steward:CAP-4 now says, and 14 `verified:` lines dated 2026-09-11 are left as that day's readings.
+  evidence: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/cutover-readiness-audit-2026-11-10.md:118` ("Close reading covered about 30 of 178 CAP blocks"); Story 122.1's Planned deferral names the canopy:AD-6 Constraint and the 2026-09-11 lines. `oracle-map.md` (Story 123.1) and `contract.md` (Story 122.2) now exist to read each block against.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/research/cutover-readiness-audit-2026-11-10.md:118
+  origin: cutover-readiness plan 2026-11-10, steward-station deferral row 6; written by Story 122.5
+  fix: read each capability block, and the Constraints, against the modules and tests `oracle-map.md` names, a few sessions' work, each amendment a memlog entry and one re-derive; canopy:AD-6's wording and the Spec's canopy:AD-6 Constraint follow spec-pyforge-steward:CAP-4.
+  owner: steward
+  severity: medium
+  promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: Dream-sized: about five sessions of reading; the two meta-tests (test_public_contract.py, test_oracle_map.py) guard verbs, flags, exit codes, modules and tests meanwhile.
+  status: open
+
+### DW-steward-cutover-2026-11-10-7: Steward still needs an A-shaped checkout to run
+
+- source_spec: `planning-artifacts/specs/spec-123-2-one-steward-module-names-this-root-s-layout-and-repository-and-prove-landed-reads-doctor-through-its-command.md`; cutover-readiness plan 2026-11-10 (steward-station deferral row 7)
+  summary: `bootstrap.repo_root()` finds the checkout by walking up to `scripts/bmad-loop-worktree`, and catalog.py, corridor.py and measures.py read data directories (`catalog/`, `corridor/` and `measures/` under `root_layout.STEWARD_PACKAGE_DIR`) the wheel does not carry, so an installed steward without an A-shaped checkout cannot run catalog, load, passport, glass, quarantine or measure.
+  evidence: `src/shared/packages/pyforge-steward/src/pyforge/steward/bootstrap.py:85-95` (`repo_root` walks up to `_BMAD_LOOP_WORKTREE_RELATIVE_PATH`, line 31); Story 123.2 moved the paths into `root_layout.py` and changed no value; Story 122.2 lists both facts in `contract.md` as estate-bound.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/bootstrap.py:85-95
+  origin: cutover-readiness plan 2026-11-10, steward-station deferral row 7; written by Story 122.5
+  fix: B's tree layout and packaging settle where the sentinel and the data directories live (the Launch slice of ruling 3); then `repo_root` and the three readers follow.
+  owner: steward
+  severity: low
+  promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: named blocker: B's layout is not decided on A, and changing where the data lives changes behaviour on A, which this change forbids.
+  status: open
+  verified: 2026-11-13 — still-open — src/shared/packages/pyforge-steward/src/pyforge/steward/bootstrap.py:85-95.
+
+### DW-steward-cutover-2026-11-10-8: The two share-tree tests never run in CI
+
+- source_spec: `planning-artifacts/specs/spec-123-3-estate-plan-refuses-when-its-pixi-dry-run-fails-and-the-share-tree-tests-say-where-they-run.md`; cutover-readiness plan 2026-11-10 (steward-station deferral row 8)
+  summary: `test_live_share_skill_names_are_disjoint_across_installer_modules` and `test_live_utility_skills_share_tree_matches_the_ten_expected_names` read `.pixi/envs/pyforge-guild/share` and skip in the steward live-test job, whose environment carries no bmad share package.
+  evidence: `src/shared/packages/pyforge-steward/tests/unit/test_provision_module_installers.py:263` and `:306`; Story 123.3 corrected the skip reason so it says where they run.
+  location: src/shared/packages/pyforge-steward/tests/unit/test_provision_module_installers.py:254-320
+  origin: cutover-readiness plan 2026-11-10, steward-station deferral row 8; written by Story 122.5
+  fix: add bmad-utility-skills and its siblings to the `pyforge-steward` feature through the estate-refresh lane, or run the two tests in a job on `-e pyforge-guild`.
+  owner: steward
+  severity: low
+  promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: named blocker: adding the share packages to the steward feature is an estate-pin decision for the estate-refresh lane.
+  status: open
+
+### DW-steward-cutover-2026-11-10-9: Story FR/AD lines in steward's epics.md cite absorbed-Spec or bare capability ids
+
+- source_spec: `planning-artifacts/specs/spec-122-3-steward-s-help-and-output-cite-today-s-capability-ids.md`; cutover-readiness plan 2026-11-10 (steward-station deferral row 9)
+  summary: 383 Story FR/AD lines in steward's `epics.md` cite a pre-fold or bare capability id or none (133 bare, 149 qualified to absorbed Specs, 101 with none).
+  evidence: counted by the 2026-11-10 design pass over `_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md`; the re-key reads MODULE_FAMILIES and the provenance map Story 122.3 put under test, and `oracle-map.md` gives capability to test meanwhile.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
+  origin: cutover-readiness plan 2026-11-10, steward-station deferral row 9; written by Story 122.5
+  fix: re-key the lines from the SPEC provenance headings in one planning Story.
+  owner: steward
+  severity: low
+  promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: named blocker: a planning story of its own; this change re-keys code citations only.
+  status: open
+
+### DW-steward-cutover-2026-11-10-10: The eight station personas cite bare FR-13, FR-11, CAP-15 and CAP-16
+
+- source_spec: `planning-artifacts/specs/spec-124-5-each-persona-names-the-mcp-tools-its-station-s-face-serves-and-the-host-spec-governs-the-personas-and-says-what-scribe-s-graph-store-is.md`; cutover-readiness plan 2026-11-10 (steward-station deferral row 10; scribe, warden and mason requests)
+  summary: the eight station personas cite `FR-13`, `FR-11`, `CAP-15` and `CAP-16` unqualified (canopy:FR-13, canopy:FR-11, spec-pyforge-unifying-strategy:CAP-15 and spec-pyforge-unifying-strategy:CAP-16).
+  evidence: `.claude/skills/bmad-agent-scribe/SKILL.md:10` ("through FR-13 grammar and FR-11 MCP only") and `:47` ("Consult the CAP-15 content skill"); the same template wording stands in all eight. Persona contract tests in every station's suite pin the headings (steward's `tests/meta/test_station_persona.py`), and Story 124.5's Never clause forbids qualifying them there.
+  location: .claude/skills/bmad-agent-scribe/SKILL.md:10
+  origin: cutover-readiness plan 2026-11-10, steward-station deferral row 10; written by Story 122.5
+  fix: qualify the ids in the persona template and the eight personas, with the eight persona contract tests, in one fleet-wide change.
+  owner: steward (relay: every station's suite)
+  severity: low
+  promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: named blocker: a fleet-wide change across eight suites' tests, not a line in one unit's story.
+  status: open
+  verified: 2026-11-13 — still-open — .claude/skills/bmad-agent-scribe/SKILL.md:10 and :47 still cite the bare ids.
+
+### DW-steward-cutover-2026-11-10-11: tests/durations/ holds only its README, so every sharded job splits by test count
+
+- source_spec: `planning-artifacts/specs/spec-124-2-each-split-suite-runs-its-live-tree-half-as-its-own-ci-job.md`; cutover-readiness plan 2026-11-10 (steward-station deferral row 11; atlas request)
+  summary: `pyforge-station-tests.yml` names a durations file per sharded task, and `tests/durations/` holds none of them, so pytest-split splits each sharded job by test count.
+  evidence: `ls tests/durations/` lists `README.md` only on 2026-11-13; Story 124.2's Never clause adds no durations file. Each file is written from a full unsharded run of its suite after the live-tree split, which landed in this change.
+  location: tests/durations/README.md
+  origin: cutover-readiness plan 2026-11-10, steward-station deferral row 11; written by Story 122.5
+  fix: write each file with `PYTEST_ADDOPTS="--store-durations --durations-path tests/durations/<task>.json"`, one full run per task, in one change.
+  owner: steward
+  severity: low
+  promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: named blocker: each file needs a full unsharded run after every marking story of this change; nothing is red without them.
+  status: open
+
+### DW-steward-cutover-2026-11-10-12: django-scribe has no test lane, so scribe's portal render test runs nowhere
+
+- source_spec: `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-33-1-the-suite-splits-on-live-tree-and-postgres-and-no-test-skips-the-branch-it-names.md`; cutover-readiness plan 2026-11-10 (scribe's shared request to steward-station)
+  summary: `test_chrome_home_post_renders_cited_recall_results` needs django, skips in `-e pyforge-scribe`, and no lane hosts it; scribe asked steward for a django-scribe lane.
+  evidence: `src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py:212` (the render test, an `importorskip` of django); scribe Story 33.1's live-tree guard lists the skip by name; DW-scribe-cutover-2026-11-10-2 holds scribe's half.
+  location: src/shared/packages/django-scribe
+  origin: cutover-readiness plan 2026-11-10, steward-station shared-request row (scribe); written by Story 122.5
+  fix: a django-scribe suite and CI lane (a new ci-surfaces registry row with its budget, spec-pyforge-steward:CAP-166) that runs the render test.
+  owner: steward with scribe
+  severity: low
+  promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: named blocker: a new lane is a new ci-surfaces row with a budget, a governance act outside this change's no-new-behaviour scope.
+  status: open
+
+### DW-steward-121-6-1: modes.md § Marker tokens and the generator disagree on a provenance parenthetical beside a pinned marker
+
+- source_spec: `planning-artifacts/specs/spec-121-6-the-ledger-check-refuses-a-row-that-contradicts-its-spec-or-the-rules.md` (Review findings, finding 3; Planned deferral)
+  summary: `modes.md` § Marker tokens says any other parenthesised status word on a heading line is `unknown-marker`, while the check reads the generator's `marker()`, where a pinned form anywhere on the line wins, so `(ready 2026-11-10) *(minted 2026-11-10)*` passes as `ready`.
+  evidence: `src/shared/packages/pyforge-steward/src/pyforge/steward/cutover_ledger.py:315-337` (`marker`: a pinned form wins over an unknown one); `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-capability-ledger/modes.md` § Marker tokens; about 26 live headings carry a provenance parenthetical beside a pinned marker (mason Story 37.1 and warden Story 25.1 keep one as provenance).
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-capability-ledger/modes.md
+  origin: steward Story 121.6's Planned deferral (cutover-readiness build, 2026-11-11); written by Story 122.5
+  fix: the owner of spec-foundry-capability-ledger rules through its memlog and a render: either a provenance parenthetical beside a pinned marker is not a marker (modes.md says so), or it is (`_judge_markers` also scans the tail when a pinned form wins, and the headings are swept).
+  owner: steward (spec-foundry-capability-ledger)
+  severity: low
+  promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: a ruling on the written rule, not a code fix; no story of this change carries it.
+  status: open
+
+### DW-steward-121-6-2: A governance capability reading ready with a rebuild row always reads rebuild-never-built
+
+- source_spec: `planning-artifacts/specs/spec-121-6-the-ledger-check-refuses-a-row-that-contradicts-its-spec-or-the-rules.md` (Review findings, finding 4; Planned deferral)
+  summary: a governance Spec's station is `governance` (extract.md § Station rule) and no `_bmad-output/projects/governance/planning-artifacts/epics.md` exists, so a governance capability's citing stories are always none and a `(ready` heading on a `rebuild` row always fires `rebuild-never-built`.
+  evidence: `src/shared/packages/pyforge-steward/src/pyforge/steward/cutover_ledger_check.py` reads citing stories from "that station's epics.md" (`modes.md` rule 7); no live row triggers it on 2026-11-13 (the check's findings name no governance row), but the 30 governance capabilities take rule 10's `rebuild`.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-capability-ledger/modes.md (rule 7)
+  origin: steward Story 121.6's Planned deferral (cutover-readiness build, 2026-11-11); written by Story 122.5
+  fix: the owner of spec-foundry-capability-ledger amends rule 7: a governance row reads every station's `epics.md` (then `_Stations.citing` follows), or a governance capability never takes `ready` with a `rebuild` row.
+  owner: steward (spec-foundry-capability-ledger)
+  severity: low
+  promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: a ruling on the written rule; no live row triggers it today.
+  status: open
+
+### DW-steward-122-4-1: Three steward package-data files still cite an absorbed Spec's capability id
+
+- source_spec: `planning-artifacts/specs/spec-122-4-comments-and-docstrings-in-steward-s-source-and-tests-cite-today-s-capability-ids.md` (Planned deferral)
+  summary: three package files outside Story 122.4's surface cite an absorbed Spec's id in a comment or a description, and `oracle-map.md`'s spec-pyforge-steward:CAP-179 row note still says `test_cap_citations.py` holds the ids in steward's help and output only.
+  evidence: `src/shared/packages/pyforge-steward/src/pyforge/steward/data/sprint-ledger-query.schema.json:5` (`spec-sprint-ledger-query-module CAP-4`, today spec-pyforge-steward:CAP-148), `src/shared/packages/pyforge-steward/measures/measures.yaml:1` (`spec-build-league-scorecard CAP-2`, today spec-pyforge-steward:CAP-45), `src/shared/packages/pyforge-steward/catalog/catalog.yaml:1` (`spec-self-hosted-bmad-marketplace CAP-1`, today spec-pyforge-steward:CAP-117); `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/oracle-map.md:190` (the spec-pyforge-steward:CAP-179 note names help and output only; since Story 122.4 the test also holds every comment and docstring under the package's src and tests).
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/data/sprint-ledger-query.schema.json:5
+  origin: steward Story 122.4's Planned deferral (cutover-readiness build, 2026-11-12); written by Story 122.5
+  fix: re-key the three by the same provenance map and amend the oracle-map note, in one Story under CHAIN-STANDARD section 6.
+  owner: steward
+  severity: low
+  promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: named blocker: the files and the companion are outside every remaining story's files in this change.
+  status: open
+  verified: 2026-11-13 — still-open — src/shared/packages/pyforge-steward/measures/measures.yaml:1 and src/shared/packages/pyforge-steward/catalog/catalog.yaml:1 still carry the absorbed ids; oracle-map.md:190's note is unchanged.
+
+### DW-steward-123-2-2: Two steward modules still spell the station-packages directory segment by segment
+
+- source_spec: `planning-artifacts/specs/spec-123-2-one-steward-module-names-this-root-s-layout-and-repository-and-prove-landed-reads-doctor-through-its-command.md` (Planned deferral)
+  summary: `five_tier.py` and `preflight_suite_reduction.py` join `repo_root / "src" / "shared" / "packages"` instead of deriving it from `root_layout.STATION_PACKAGES_DIR`, so spec-pyforge-steward:CAP-182's "every other module derives from it" is not met; the marker reads `(shipped 2026-11-11; not met: every other module derives from it, DW-steward-123-2-2; ...)`.
+  evidence: `src/shared/packages/pyforge-steward/src/pyforge/steward/five_tier.py:70`, `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_suite_reduction.py:194`; `src/shared/packages/pyforge-steward/tests/meta/test_portability.py:46-49` names both in `LAYOUT_EXCEPTIONS` under this id and fails when either entry no longer applies.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/five_tier.py:70
+  origin: steward Story 123.2's Planned deferral (cutover-readiness build, 2026-11-11); written by Story 122.5
+  fix: derive both from `root_layout.STATION_PACKAGES_DIR` and delete the two `LAYOUT_EXCEPTIONS` entries in the same change; then spec-pyforge-steward:CAP-182's qualifier leaves its marker.
+  owner: steward
+  severity: low
+  promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: named blocker: neither file was in any story's files in this change's parallel waves.
+  status: open
+  verified: 2026-11-13 — still-open — src/shared/packages/pyforge-steward/tests/meta/test_portability.py:46-49 lists both files; `pixi run --frozen -e pyforge-steward env PYTHONPATH=src/shared/packages/pyforge-steward/src:scripts pytest src/shared/packages/pyforge-steward/tests/meta/test_portability.py -q` exit 0 (37 passed).
