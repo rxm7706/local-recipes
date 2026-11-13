@@ -14076,6 +14076,23 @@ entry consumes).
   The rest are `backlog`. Each of the seven amended capabilities reads `ready` while any of its fix
   stories is open and `shipped` once all are done, from Story 114.1's render on; Story 116.5 flips
   those still ready to shipped with CAP-304 and CAP-305 and writes the closing line.
+- **2026-11-13 (cutover readiness, closed)** — This entry and the next (*The shared floor says what it is*) close
+  together on branch `cutover-readiness-2026-11-10`. Stories 114.1 to 116.4 and core-kit's 117.1 to 118.2 are built
+  and reviewed there; Story 116.5 closes marshal's chain. `spec-pyforge-marshal:CAP-304` (the public contract is one
+  companion, Story 114.3) and `spec-pyforge-marshal:CAP-305` (the suite is an oracle off the monorepo, Stories 116.1
+  to 116.4) read `(shipped 2026-11-11)`, and so do the seven amended capabilities (`spec-pyforge-marshal:CAP-13`,
+  `spec-pyforge-marshal:CAP-23`, `spec-pyforge-marshal:CAP-208`, `spec-pyforge-marshal:CAP-227`,
+  `spec-pyforge-marshal:CAP-229`, `spec-pyforge-marshal:CAP-261`, `spec-pyforge-marshal:CAP-287`), through the
+  memlog's status-markers change entry of 2026-11-13 and the anchored render
+  with both self-validate passes logged; no capability of the Spec reads ready. The core and charter markers
+  (`spec-pyforge-core:CAP-7`, `spec-pyforge-core:CAP-8`, `spec-pyforge-core:CAP-12..spec-pyforge-core:CAP-14`)
+  flipped at Story 117.8; `spec-pyforge-testing-charter:CAP-6` and `spec-pyforge-testing-charter:CAP-7` with them.
+  The memlog's `Surface reconcile 2026-11-13` event names all 194 changed paths of the Spec's surface for doctor
+  Story 58.4's scoped stamp. The deferred-work ledger closes `DW-FU-53-2-2` (moot by design, Story 115.2) and
+  `DW-FU-4-4-2` for the constant (Story 115.4, narrowed to `DW-marshal-115-4-3`) and writes the change's 27 open rows
+  (`DW-marshal-114-*` to `DW-marshal-118-*` and `DW-marshal-cutover-2026-11-10-1`). The retro is
+  `retros/retro-pyforge-marshal-2026-11-13.md`. The ledger keys move to `done` in the change's ledger close. Owner
+  `spec-pyforge-marshal`.
 
 ## 2026-11-10 — The shared floor says what it is: core and the testing kit before the cutover
 

@@ -88,7 +88,7 @@ Ledger key: `116-5-the-change-closes-on-a-reconciled-marshal-spec-shipped-marker
 - **AC3 — The deferred rows: DW-FU-53-2-2 closed moot by design, DW-FU-4-4-2 closed for the constant with a narrowed remote-check row, the change's rows and every story spec `deferred:` entry ingested.**
 
   ```bash
-  python scripts/deferred_work_intake.py --fix --project pyforge-marshal && grep -A14 '^### DW-FU-53-2-2' _bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md | grep -c 'status: closed' && grep -A14 '^### DW-FU-4-4-2' _bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md | grep -c 'status: closed' && grep -c '^### DW-marshal-11[4-8]-' _bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md && grep -c '^### DW-marshal-cutover-2026-11-10-1\b' _bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md && pixi run -e pyforge-guild deferred-work-check
+  pixi run --frozen -e pyforge-guild python scripts/deferred_work_intake.py --fix --project marshal && grep -A14 '^### DW-FU-53-2-2' _bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md | grep -c 'status: closed' && grep -A14 '^### DW-FU-4-4-2' _bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md | grep -c 'status: closed' && grep -c '^### DW-marshal-11[4-8]-' _bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md && grep -c '^### DW-marshal-cutover-2026-11-10-1\b' _bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md && pixi run -e pyforge-guild deferred-work-check
   ```
 
   Expected: the counts print 1, 1, 17 or more (marshal 9, core-kit 8) and 1, then exit 0.
@@ -104,7 +104,7 @@ Ledger key: `116-5-the-change-closes-on-a-reconciled-marshal-spec-shipped-marker
 - **AC5 — The test architecture names every story.**
 
   ```bash
-  python _bmad/scripts/bmad_tea_playwright.py --project pyforge-marshal && pixi run -e pyforge-guild tea-playwright-check
+  pixi run --frozen -e pyforge-guild python _bmad/scripts/bmad_tea_playwright.py --project pyforge-marshal && pixi run -e pyforge-guild tea-playwright-check
   ```
 
   Expected: exit 0.
@@ -169,3 +169,20 @@ Parent: `spec-pyforge-marshal` (flips spec-pyforge-marshal:CAP-304, spec-pyforge
 
 - 2026-11-10: minted at `blocked` (forward dependency: until every story its Deps name is done) by the cutover-readiness mint (operator 2026-11-10, "Accept all, run mint"; `docs/dreams/pyforge-unifying-strategy.md`, Realization log, the 2026-11-10 entry and its two addenda). The Dream entry (`docs/dreams/pyforge-marshal.md`, 2026-11-10) and the memlog entries of `spec-pyforge-marshal` came first; `SPEC.md` is rendered by Story 114.1.
 - 2026-11-11: fix pass after the third review of the mint. The cross-station keys left the Deps line here and in `epics.md` (marshal's Deps parser read them as marshal keys); they stay in Notes, held only by the integration branch's wave order.
+
+## Review findings (build, round 1, 2026-11-11)
+
+An independent reviewer failed the first build attempt with one major and two minor findings. Each is listed with its severity, where it was found, the problem and the disposition.
+
+1. **major** — § Acceptance Criteria, AC3 (and plan.json `stories[116.5].acceptance[3]`). **Problem:** the AC as written cannot pass. `python scripts/deferred_work_intake.py --fix --project pyforge-marshal` exits 2 at argument validation (`unknown project(s): pyforge-marshal; known: atlas, doctor, herald, marshal, ...`), because the script keys projects by the short name, and bare `python` is not on `PATH` outside pixi. The first attempt ran a working form but left the AC text unchanged. **Fixed under the oracle rule** (the reviewer named the fault as the oracle's and gave the corrected form):
+   - AC3, old: `python scripts/deferred_work_intake.py --fix --project pyforge-marshal && …`; new: `pixi run --frozen -e pyforge-guild python scripts/deferred_work_intake.py --fix --project marshal && …`. The rest of the command (the four greps and `deferred-work-check`) is unchanged.
+   - AC5, the same prefix, old: `python _bmad/scripts/bmad_tea_playwright.py --project pyforge-marshal && …`; new: `pixi run --frozen -e pyforge-guild python _bmad/scripts/bmad_tea_playwright.py --project pyforge-marshal && …`. The generator takes the long slug, so only the interpreter changes.
+   - Why this is not a weakened oracle: the old AC3 exits before it checks anything. The new one runs the same intake over the same project's ledger, then every grep and the detector after it, so it checks strictly more. No assertion is dropped, no count is loosened and no skip is added. plan.json `acceptance[3]` and `acceptance[5]` carry the same two commands.
+   - The Approach's step (3) prose keeps the command as minted. The Intent is not an oracle, and the AC is the command of record. Letting the script accept the long slug is repo tooling for a Story under the Spec that owns the script (the retro's action item 4), not this story's file.
+2. **minor** — bare ids in text this story wrote: the PRD's § Currency reconciliation — 2026-11-13 (Story 116.5), the Dream's closing line, the retro's findings, and the deferred-work ledger's `DW-marshal-114-3-2` (`marshal's AD-31`). **Fixed:**
+   - the PRD line, the Dream line and retro findings 1 and 5 cite `spec-pyforge-marshal:CAP-n`;
+   - `DW-marshal-114-3-2` cites `pyforge-marshal:AD-31`. Marshal's spine defines AD-31 bare and has no colon namespace of its own, so this follows the station-qualified form the fleet uses for a spine's own ids (`pyforge-atlas:AD-13`, atlas Story 37.13 and steward Story 124.5);
+   - `DW-marshal-118-2-1` cites `spec-coverage-gate-independence:CAP-2`;
+   - retro finding 11 records this oracle correction.
+   - Left as written: `DW-marshal-114-2-3` and retro finding 5 quote `test_spec_names_live_paths.py` verbatim ('open while CAP-305 reads ready'). The `Prior` text inside each frontmatter `updated:` comment was written by earlier stories. Memlog entries are append-only.
+3. **minor** — `DW-marshal-116-4-1`; Story 116.4 § Planned deferral (the off-tree start `_package_half_off_the_tree` is unnamed in `spec-pyforge-marshal:CAP-305`'s guard clause). **No change**, as the reviewer finds. This story's Intent names marker flips only. Whether this PR carries the `spec-pyforge-marshal:CAP-305` amendment (a memlog change entry plus an anchored render) or leaves the open row to marshal's next Spec story is the integrator's decision. The retro records it as its open question and action item 1.

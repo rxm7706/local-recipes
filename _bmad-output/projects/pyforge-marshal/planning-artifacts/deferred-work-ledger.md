@@ -4616,7 +4616,8 @@ status: open
   summary: `cli/deploy.py::_FORGE_REPO` is a hardcoded module constant (`"rxm7706/local-recipes"`) with no runtime verification against the actual git remote of the working repo -- a comment asserts this is safe ("every Marshal station lives inside this ONE physical repo"), but nothing checks it.
   evidence: Code review pass on Story 4.4 (D1). Confirmed by code inspection: `_FORGE_REPO`'s own module-level comment records the reasoning (this repo's own reference note "gh pr create needs --repo rxm7706/local-recipes"), and the Spec Change Log entry 3 records the same deliberate choice not to add a policy field for it -- but no code anywhere in `run_batch_pr` reads `git remote get-url origin` (or equivalent) and compares it against the constant. Low practical risk today: this repo's own git remote genuinely IS that value, and every Marshal station really does live inside this one physical repo by construction (the loop-home worktree convention). Not fixed in this pass: worth naming as a portability gap if this package is ever used against a differently-configured checkout (e.g. a fork-of-the-fork, or a future multi-repo Marshal deployment) -- a real fix would read the actual remote and refuse/warn on mismatch, but no AC in this story asks for that verification.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  resolved: 2026-11-13 (marshal Story 116.5, the cutover-readiness close) — closed for the constant by Story 115.4 (build commit 2a2f4d6557, spec-pyforge-marshal:CAP-208 amended 2026-11-10): `cli/deploy.py` holds no `_FORGE_REPO`; the forge repository `deploy batch-pr`, `marshal land`, the dispatch landing and `marshal watch` address is read at each use from `adapters/forge_root.py::forge_repo`, which answers the root of record's slug from `pyforge.core.cutover_root.root_of_record()` (spec-pyforge-core:CAP-13), and `tests/meta/test_no_hardcoded_forge_repo.py` fails on a repository-slug literal in marshal's source. The remote half (nothing compares that slug with `git remote get-url origin`) is narrowed into DW-marshal-115-4-3.
+  status: closed
   severity: low
   verified: 2026-10-01 — STANDS — `cli/deploy.py:388`: `_FORGE_REPO = "rxm7706/local-recipes"` remains a hardcoded module constant; `grep -n "remote get-url" cli/deploy.py adapters/forge_gh.py` is empty -- no runtime cross-check exists anywhere. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -7354,7 +7355,8 @@ status: open
   origin: spec-deferred ce81bb640e2d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  resolved: 2026-11-13 (marshal Story 116.5, the cutover-readiness close) — moot by design, superseded by Story 115.2 (build commit f1e2c49267, spec-pyforge-marshal:CAP-261 amended 2026-11-10): the landing no longer imports Doctor in process. dispatch_land.py reads the spec-surface verdict through adapters/doctor_cli.py (`read_spec_surface`), which runs `python -m pyforge.doctor.sources spec-surface --json` as a fresh subprocess in the dispatch worktree on the landing's ProcessPort, so no `sys.modules` copy of `pyforge.doctor.sources.chain` outlives a call and the stale-module window this entry names cannot open.
+  status: closed
   verified: 2026-10-01 — STANDS — dispatch_land.py:288-292 inserts <worktree>/src/shared/packages/pyforge-doctor/src into sys.path and imports pyforge.doctor.sources.chain in-process. But every landing runs in its own process: run_dispatch_supervisor (dispatch_supervisor/__main__.py:1357-1371) handles one run_id/worktree and is spawned per dispatch (cli/dispatch.py:2718-2737); the campaign supervisor re-runs published commands as subprocesses (dispatch_fleet_supervisor/__main__.py:18-20); 'factory dispatch land' (cli/dispatch.py:865) is one-shot. Severity medium -> low by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-53-2-3: Doctor's per-path drift collapse keeps only the lowest-rank, alphabetically-first co-governing spec's row, so a second co-governor drifted on the identical path stays invisible to the reconcile.
@@ -9186,4 +9188,301 @@ status: open
   owner: marshal
   severity: medium
   promoted: 2026-11-11 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-114-1-1: Story 55.1 landed with no tracked story spec and no draft survives; its Story block in epics.md is its only contract.
+
+- source_spec: `planning-artifacts/specs/spec-114-1-every-marshal-capability-carries-a-marker-that-matches-the-ledger-and-the-spec-records-this-change-s-two-capabilities-and-seven-amendments.md`
+  summary: Story 55.1 landed with no tracked story spec and no draft survives; its Story block in epics.md is its only contract.
+  evidence: Cutover readiness audit 2026-11-10 (SHOULD). Named blocker: no Tier-3 draft survives, so a spec written now would be a reconstruction, not a record.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: low
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-114-1-2: 140 story lines in epics.md cite capabilities by their pre-fold Spec name, so the capability-to-story join is not exact.
+
+- source_spec: `planning-artifacts/specs/spec-114-1-every-marshal-capability-carries-a-marker-that-matches-the-ledger-and-the-spec-records-this-change-s-two-capabilities-and-seven-amendments.md`
+  summary: 140 story lines cite capabilities by their pre-fold Spec name; a re-key through rekey-2026-09-16.md and the Spec's provenance arrows would make the capability-to-story join exact, and belongs with DW-marshal-110-1-1.
+  evidence: Cutover readiness audit 2026-11-10 (NICE): epics.md carries 140 capability cites into 29 archived specs; 60 unmarked capabilities had no story citing them by their folded number. Named blocker: re-keying the cites is DW-marshal-110-1-1 under operator ruling R7 of 2026-10-26. Story 114.1 joins through provenance (research/cap-marker-truth-2026-11-10.md) without rewriting epics.md.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: low
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-114-2-1: The devin harness profile is unverified and the openai and google cost rows carry no date.
+
+- source_spec: `planning-artifacts/specs/spec-114-2-no-marshal-capability-or-constraint-names-a-file-flag-verb-or-skill-that-is-gone.md`
+  summary: The devin profile is unverified and the openai and google cost rows in core/model_cost.py carry no date; re-verify on an operator-run `marshal adapters models`.
+  evidence: Cutover readiness audit 2026-11-10 (SHOULD): devin.toml `verified = false`; openai and google catalog rows undated; prices not verified. Named blocker: verification needs each vendor's live model list and price page (network; `marshal adapters models` is an operator-run verb, spec-pyforge-marshal:CAP-285).
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/devin.toml
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: low
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-114-2-2: 17 to 45 modules of 400 or more lines are named by no capability or companion.
+
+- source_spec: `planning-artifacts/specs/spec-114-2-no-marshal-capability-or-constraint-names-a-file-flag-verb-or-skill-that-is-gone.md`
+  summary: 17 to 45 modules of 400 or more lines (by how naming is counted) are named by no capability or companion; map each to the capabilities it realizes once the epics re-key of DW-marshal-110-1-1 lands.
+  evidence: Cutover readiness audit 2026-11-10 (MUST 3, part): audit 17 modules, 13.2k lines; strict whole-word scan 45 modules, 37.2k lines (e.g. cli/adapters.py, core/findings.py, adapters/vcs_git.py, dispatch_verify.py). Named blocker: the module-to-capability join runs through the stories that wrote each module, and 140 of those story lines cite capabilities by their pre-fold Spec name (DW-marshal-114-1-2, DW-marshal-110-1-1). The package-half tests carry the behaviour meanwhile.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/adapters.py
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: low
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-114-2-3: Two ALLOW entries of the live-path guard excuse files Story 116.4 has since written, and their reason names a ready marker that is now shipped.
+
+- source_spec: `planning-artifacts/specs/spec-114-2-no-marshal-capability-or-constraint-names-a-file-flag-verb-or-skill-that-is-gone.md`
+  summary: `tests/meta/test_spec_names_live_paths.py` `ALLOW` still carries the two spec-pyforge-marshal:CAP-305 entries `tests/_support/tree_read_guard.py` and `tests/meta/test_tree_read_guard.py`, each with the reason 'written by Story 116.4, open while CAP-305 reads ready'. Story 116.4 wrote both files (b6f53ebcf8) and `git ls-files` lists them, so the names resolve on their own; Story 116.5 flipped spec-pyforge-marshal:CAP-305 to shipped. The entries are dead weight the stale-entry test does not catch, because the capability still carries the tokens.
+  evidence: Planned deferral of Story 114.2 (written at build): open if the two entries are still on ALLOW when the closer runs. Checked 2026-11-13 at branch head 501890d2ab: test_spec_names_live_paths.py:120 and :121 hold them. The test file is Story 114.2's, not the closer's; drop both entries (and their rows) in the next story that edits the guard.
+  location: src/shared/packages/pyforge-marshal/tests/meta/test_spec_names_live_paths.py
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: low
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-114-3-1: About 290 capabilities name no test or command that proves them.
+
+- source_spec: `planning-artifacts/specs/spec-114-3-marshal-s-public-contract-is-one-companion-and-a-meta-test-keeps-it-complete.md`
+  summary: About 290 capabilities name no test or command that proves them (CHAIN-STANDARD section 2); a rebuild cannot tell which test judges which capability.
+  evidence: Cutover readiness audit 2026-11-10 (MUST 3, part): about 290 of 305 capabilities name no proving test or command in their success clause. Dream-sized: a success-clause retrofit of the whole Spec, one capability at a time against its tests; CHAIN-STANDARD section 2's rule is text only and no detector checks it. contract.md (Story 114.3) carries the public surface meanwhile.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: medium
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-114-3-2: Three registered finding codes have no verdict-lattice member, so classify raises on them.
+
+- source_spec: `planning-artifacts/specs/spec-114-3-marshal-s-public-contract-is-one-companion-and-a-meta-test-keeps-it-complete.md`
+  summary: `pyforge.marshal.core.verdict.classify` raises `ValueError` for `MRS-CHAIN-005` (emitted by cli/planning.py), `MRS-PREFLIGHT-016` (cli/init.py) and `MRS-REFRESH-008` (cli/refresh.py), so a verdict computed over any of them raises instead of projecting an exit code; spec-pyforge-marshal:CAP-13 and pyforge-marshal:AD-31 mean classify to be total.
+  evidence: Planned deferral of Story 114.3 (written at build). The fix is a `_CLASSIFY_TABLE` row for each in core/verdict.py, outside Story 114.3's surface; contract.md records the three as `unclassified` (its rows for MRS-CHAIN-005, MRS-PREFLIGHT-016 and MRS-REFRESH-008), so the change that adds the rows also changes their Verdict cell, and tests/meta/test_public_contract.py reds until it does. Checked 2026-11-13: `grep -n 'MRS-CHAIN-005\|MRS-PREFLIGHT-016\|MRS-REFRESH-008' core/verdict.py` prints nothing.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: low
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-115-1-1: adapters/published_plane.py is a seven-line alias that only a Doctor test names.
+
+- source_spec: `planning-artifacts/specs/spec-115-1-marshal-finds-the-checkout-and-the-loop-home-through-its-guarded-roots-and-the-guard-that-says-so-can-fire.md`
+  summary: A seven-line alias of pyforge.core.published_loop.fetch_story_tasks that only a Doctor test names; remove it with that test's reference.
+  evidence: Cutover readiness audit 2026-11-10 (NICE): adapters/published_plane.py is referenced by no marshal module. Named blocker: Doctor's tests/unit/test_sources_marshal_story_status.py names it, so removing it is a two-station change with no ruling behind it.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/published_plane.py
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: low
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-115-4-1: Marshal names the station-package tree src/shared/packages in about ten modules; no seam answers the package tree.
+
+- source_spec: `planning-artifacts/specs/spec-115-4-marshal-s-forge-repository-is-the-root-of-record-s.md`
+  summary: Marshal names `src/shared/packages` in about ten modules (dispatch_verify.py, core/gate.py, core/dispatch_ruff_format.py, ...); the foundry tree is `src/packages`; no seam answers the package tree.
+  evidence: Cutover readiness audit 2026-11-10 (MUST 4, part): the literal sits in dispatch_verify.py, core/dispatch_ruff_format.py, cli/config.py, core/gate.py, core/dispatch_verification.py, cli/adapters.py and five file tables. Named blocker: decision D3's seam answers the root of record and the forge slug, not the package tree; the operator ruling of 2026-11-10 keeps the station-package directory deferred for B to settle.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: low
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-115-4-2: Three shipped capabilities join to runtime code through the 2026-11-10 fix stories and carry no kill switch.
+
+- source_spec: `planning-artifacts/specs/spec-115-4-marshal-s-forge-repository-is-the-root-of-record-s.md`
+  summary: Three shipped capabilities (spec-pyforge-marshal:CAP-23, spec-pyforge-marshal:CAP-208, spec-pyforge-marshal:CAP-227) join to runtime code through the 2026-11-10 fix stories and carry no kill switch; the retrofit rule (spec-feature-flag-governance:CAP-7) has not judged them.
+  evidence: Flag inventory: the three read as runtime capabilities with no flag once Stories 115.1, 115.3 and 115.4 cite them with CLI or MCP Surface lines. The operator ruling of 2026-11-10 (no kill switch for 115.1, 115.3 and 115.4; R4, no retrofit kill switch in this PR) accepts this as debt.
+  location: docs/governance/flag-inventory/pyforge-marshal.md
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: low
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-115-4-3: The forge slug follows pyforge.cutover_root but nothing compares it with the working repository's origin remote.
+
+- source_spec: `planning-artifacts/specs/spec-115-4-marshal-s-forge-repository-is-the-root-of-record-s.md`
+  summary: The forge slug follows `pyforge.cutover_root` (Story 115.4) but nothing compares it with `git remote get-url origin` of the working repository or a loop home; narrowed from DW-FU-4-4-2.
+  evidence: DW-FU-4-4-2 closed for the constant (Story 115.4, adapters/forge_root.py::forge_repo). Named blocker: the check is outward-facing behaviour no ruling asks for (the flag switches the slug); control-plane decides whether spec-python-foundry-cutover:CAP-8 keeps the remote clause (shared request).
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/forge_root.py
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: low
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-116-4-1: spec-pyforge-marshal:CAP-305's guard clause names the audit hook but not the off-tree start that arms it.
+
+- source_spec: `planning-artifacts/specs/spec-116-4-a-package-half-test-that-opens-a-repository-file-outside-the-package-fails-wherever-the-package-half-runs.md`
+  summary: The package-half guard as built has two parts: the audit hook (tests/_support/tree_read_guard.py) and tests/conftest.py's `_package_half_off_the_tree`, which starts every armed test in a working directory outside the repository with cli/config.py's checkout anchor on a bare checkout. spec-pyforge-marshal:CAP-305's guard clause and Story 116.4's Approach name only the first.
+  evidence: Planned deferral of Story 116.4 (written at build; review round 1, finding 2): recording the second part is a contract change to spec-pyforge-marshal:CAP-305. Story 116.5's render flips markers only (its status-markers change entry: no intent or success moves), so it writes this row instead; the amendment is a memlog change entry under spec-pyforge-marshal:CAP-305 and a render, in the next story that touches the Spec.
+  location: src/shared/packages/pyforge-marshal/tests/conftest.py
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: low
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-cutover-2026-11-10-1: marshal check maps Doctor's detectors row word `unmeasured` to the generic MRS-CHECK-001 WARN.
+
+- source_spec: `planning-artifacts/specs/spec-116-5-the-change-closes-on-a-reconciled-marshal-spec-shipped-markers-one-surface-reconcile-the-stamps-the-deferred-rows-and-the-counts.md`
+  summary: marshal check maps the detectors row word `unmeasured` (doctor Stories 56.3 and 56.4: a source that measured nothing is `unmeasured`, a warning) to the generic MRS-CHECK-001 WARN; give it its own code beside MRS-CHECK-004.
+  evidence: Doctor's suggestion to marshal in the cutover-readiness plan (2026-11-10). Optional: check.py already routes any other word to a WARN and no marshal test pins the word set; an exact message is polish, not a defect this change must close. owner: pyforge-marshal.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/check.py
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: low
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-117-2-1: Atlas and warden still hold the repository slug as a literal.
+
+- source_spec: `planning-artifacts/research/cutover-readiness-audit-core-host-2026-11-10.md`
+  summary: After Story 117.2 and the marshal, herald and steward consumer stories, atlas (identity_gist.py, identity_sources.py, vcs_sources.py, observability.py, identity_export_contract.py) and warden (config.py) keep their own copies.
+  evidence: `git grep -n 'rxm7706/local-recipes\|rxm7706/python-foundry' -- 'src/shared/packages/*/src/**/*.py'`. Some are URLs or user-agent strings, not forge targets; each station decides, then a sole-literal meta-test can join the kernel guards. Named blocker: the remaining sites are other units' packages, outside decision D3's mandate (marshal now, Mason later); Story 117.2 guards the leaf itself.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/identity_gist.py; src/shared/packages/pyforge-warden/src
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: low
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-117-5-1: `test_read_boolean_configures_the_flagd_file_provider` always skips in the pyforge-core environment.
+
+- source_spec: `planning-artifacts/research/cutover-readiness-audit-core-host-2026-11-10.md`
+  summary: flags.py evaluates through OpenFeature's flagd FILE provider when it is installed; the one core test of that path is `importorskip`, and the core environment carries only pytest, hatchling and python-build. Story 117.7's planned deferral records the same gap after the test moved to test_flags_reader.py.
+  evidence: pixi.toml `[feature.pyforge-core.dependencies]` (pyforge-core, hatchling, python-build, pytest) and `[feature.pyforge-core.tasks.pyforge-core-test]`; test_flags_reader.py:884 `pytest.importorskip("openfeature.contrib.provider.flagd")`. The path is exercised by the host suite (src/platform/tests/test_openfeature_file_flags.py), which a root without the host does not have. Named blocker: the fix is an environment or task in pixi.toml (unit steward-station's file; only steward Story 124.3 re-locks in this PR). Owner spec-pyforge-core:CAP-14.
+  location: src/shared/packages/pyforge-core/tests/unit/test_flags_reader.py
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: low
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-117-5-2: B's pyforge-core is the PR #1344 prototype; A's leaf has moved on.
+
+- source_spec: `planning-artifacts/research/cutover-readiness-audit-core-host-2026-11-10.md`
+  summary: B lacks flags, preserve_refs, league_measure, roster, assertion, atomic_write, client, landing_evidence, published_loop and report, and its copies of process, dispatch and cutover_root are behind.
+  evidence: After Epic 117 the core Spec, its contract.md and the package half of the suite are the rebuild inputs. Named blocker: operator ruling 1 of 2026-11-10 (the three kernel leaves are a prototype at PR #1344 and are not re-pinned until the core, steward and marshal Specs pass a truth sweep), and python-foundry is out of scope; the re-pin is an outward, operator-owned act on rxm7706/python-foundry.
+  location: docs/foundry/capability-ledger.yaml (control-plane); rxm7706/python-foundry (outward, operator-owned)
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: high
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-117-6-1: Six stations stay outside the kernel's exception-root and subprocess guards; Story 117.6 pins them path by path, it does not migrate them.
+
+- source_spec: `planning-artifacts/research/cutover-readiness-audit-core-host-2026-11-10.md`
+  summary: spec-pyforge-core:CAP-5 and spec-pyforge-core:CAP-6 shipped for the stations Stories 14.3 and 14.4 named. steward and doctor are outside the exception-root guard; doctor, warden, steward, herald, mason and scribe are outside the subprocess guard.
+  evidence: The pinned lists in src/shared/packages/pyforge-core/tests/meta/test_station_exclusions_only_shrink.py, measured on the integration branch by the guards' own detectors. Migrating a station means re-parenting each root with spec-pyforge-core:CAP-5's no-widening test and replacing each call with `pyforge.core.process`, station by station, in that station's chain. Dream-sized.
+  location: src/shared/packages/pyforge-core/tests/meta/test_station_exclusions_only_shrink.py
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: medium
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-117-6-2: The leaf's own exception classes are rooted at builtins, not at PyforgeError.
+
+- source_spec: `planning-artifacts/research/cutover-readiness-audit-core-host-2026-11-10.md`
+  summary: At plan time (f614d6a9b8) HostMintError, StationClientError, CutoverRootError, FlagConfigError, FlagOff, LeagueMeasureError and PreserveRefError did not carry PyforgeError, so `except PyforgeError` does not catch a flag, client or preserve failure. Story 117.6 pins them (test_station_exclusions_only_shrink.py).
+  evidence: `except PyforgeError` sites: marshal adapters/harness_bmadloop.py, cli/dispatch.py, seed/verbs/kit.py; atlas query_plane_boot.py. Each needs a test that the catch is not widened; FlagOff must stay outside PyforgeError or every station main() is re-checked. Named blocker: re-parenting widens those handlers in other units' files, and spec-pyforge-core:CAP-5's success demands a per-site no-widening test.
+  location: src/shared/packages/pyforge-core/src/pyforge/core/flags.py; src/shared/packages/pyforge-core/src/pyforge/core/assertion.py; src/shared/packages/pyforge-core/src/pyforge/core/client.py; src/shared/packages/pyforge-core/src/pyforge/core/cutover_root.py; src/shared/packages/pyforge-core/src/pyforge/core/league_measure.py; src/shared/packages/pyforge-core/src/pyforge/core/preserve_refs.py
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: medium
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-117-6-3: Doctor's frozen_path source raises a module-private _Unevaluable(Exception) outside the exception-root guard.
+
+- source_spec: `planning-artifacts/research/cutover-readiness-audit-core-host-2026-11-10.md`
+  summary: Pin `pyforge-doctor/src/pyforge/doctor/sources/frozen_path.py::_Unevaluable`, added by doctor Story 56.1: a module-private `_Unevaluable(Exception)` sentinel, raised and caught in the module, outside the exception-root guard's scan.
+  evidence: Planned deferral of Story 117.6 (written at build; `## Verification`, Added pins). Closes when the pin is lowered: the class rooted at `pyforge.core.errors.PyforgeError`, in doctor's chain. Story 117.6 re-parents nothing (operator ruling 2026-11-10).
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/frozen_path.py
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: low
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-117-6-4: Doctor's capability_ledger source raises a module-private _Unevaluable(Exception) outside the exception-root guard.
+
+- source_spec: `planning-artifacts/research/cutover-readiness-audit-core-host-2026-11-10.md`
+  summary: Pin `pyforge-doctor/src/pyforge/doctor/sources/capability_ledger.py::_Unevaluable`, added by doctor Story 56.2: the same module-private sentinel shape, caught in the module.
+  evidence: Planned deferral of Story 117.6 (written at build; `## Verification`, Added pins). Closes when the pin is lowered, in doctor's chain.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/capability_ledger.py
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: low
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-117-6-5: Doctor's writer_lock source raises a module-private _Unevaluable(Exception) outside the exception-root guard.
+
+- source_spec: `planning-artifacts/research/cutover-readiness-audit-core-host-2026-11-10.md`
+  summary: Pin `pyforge-doctor/src/pyforge/doctor/sources/writer_lock.py::_Unevaluable`, added by doctor Story 56.5: the same module-private sentinel shape, caught in the module.
+  evidence: Planned deferral of Story 117.6 (written at build; `## Verification`, Added pins). Closes when the pin is lowered, in doctor's chain.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/writer_lock.py
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: low
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-117-6-6: Steward's public CutoverLedgerError(ValueError) sits outside the exception-root guard.
+
+- source_spec: `planning-artifacts/research/cutover-readiness-audit-core-host-2026-11-10.md`
+  summary: Pin `pyforge-steward/src/pyforge/steward/cutover_ledger.py::CutoverLedgerError`, added by steward Story 121.1: a public `CutoverLedgerError(ValueError)` in the module's `__all__`, caught by cutover.py and raised to cutover_ledger_check.py, outside the exception-root guard's scan.
+  evidence: Planned deferral of Story 117.6 (written at build; `## Verification`, Added pins). Closes when the class is rooted at `pyforge.core.errors.PyforgeError` with spec-pyforge-core:CAP-5's no-widening test, in steward's chain.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/cutover_ledger.py
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: medium
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-117-6-7: Steward's cutover_ledger.py launches git through a raw subprocess.run, outside the subprocess guard.
+
+- source_spec: `planning-artifacts/research/cutover-readiness-audit-core-host-2026-11-10.md`
+  summary: File pin `pyforge-steward/src/pyforge/steward/cutover_ledger.py`, added by steward Story 121.1: one raw `subprocess.run(["git", ..., "rev-parse", "HEAD"])` in `_head_sha`, moved there from cutover.py's `_git` (which left the list); outside the subprocess guard's scan.
+  evidence: Planned deferral of Story 117.6 (written at build; `## Verification`, Added pins). Closes when the call is launched through `pyforge.core.process`, in steward's chain.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/cutover_ledger.py
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: medium
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-117-7-1: The core resolver guard compares a path string whose separator depends on the OS.
+
+- source_spec: `planning-artifacts/research/cutover-readiness-audit-core-host-2026-11-10.md`
+  summary: `test_no_second_tree_resolver_exists_in_pyforge_core` (test_flags_reader.py) compares string constants with `str(cutover_root.LOCAL_DEV_RELATIVE)`, which renders with backslashes on Windows, so there the guard would miss a forward-slash literal in a core module. `cutover_root.LOCAL_DEV_RELATIVE.as_posix()` is the portable form.
+  evidence: Planned deferral of Story 117.7 (written at build). Not changed then: Story 117.7's Intent and its `### Story 117.7` block in marshal's epics.md both name `str(...)`, and the core suite runs only on Linux. Change the test, the story spec and epics.md together. Owner spec-pyforge-core:CAP-14.
+  location: src/shared/packages/pyforge-core/tests/unit/test_flags_reader.py
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: low
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-118-1-1: `pyforge.testing_kit.cfe_surface` names this repository's conda-forge-expert layout inside a package routed `rebuild`.
+
+- source_spec: `planning-artifacts/research/cutover-readiness-audit-core-host-2026-11-10.md`
+  summary: cfe_surface.py holds `.claude/skills/conda-forge-expert`, `.claude/scripts/conda-forge-expert` and `.claude/tools/conda_forge_server.py`. On another root the paths mean nothing.
+  evidence: Importers: atlas tests/meta/test_skf_skill_and_persona.py, marshal tests/meta/test_skf_domain_skill.py and tests/unit/test_dispatch_cfe_commit.py, mason tests/meta/test_persona_consults_cfe.py and test_skf_mason_skill.py, steward tests/meta/test_skf_steward_skill.py; marshal core/dispatch_cfe_commit.py mirrors it. Named blocker: conda-forge-expert has no Spec yet (mason Story 39.2 gives it one); ruling 3 gives it explicit A-only rows whose expiry is mason:39.2. Story 118.1 records the module as estate-bound in contract.md.
+  location: src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/cfe_surface.py
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: low
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-118-1-2: The portal and CLI header contract test lives in the testing kit's suite.
+
+- source_spec: `planning-artifacts/research/cutover-readiness-audit-core-host-2026-11-10.md`
+  summary: tests/unit/test_station_api_contract.py checks that `django_pyforge` and `pyforge.core.client` emit the same headers. It needs Django and the host package, which the kit's package half must not.
+  evidence: After Story 118.1 it is marked `live_tree`. Named blocker: its natural home is django-pyforge, which is unit steward-station's, out of Launch, and has no in-package test lane.
+  location: src/shared/packages/pyforge-testing-kit/tests/unit/test_station_api_contract.py
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: low
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
+  status: open
+
+### DW-marshal-118-2-1: The coverage gate judges the eight stations and neither shared package.
+
+- source_spec: `planning-artifacts/research/cutover-readiness-audit-core-host-2026-11-10.md`
+  summary: `pyforge-core-test` and `pyforge-testing-kit-test` run pytest with no `--cov`; scripts/coverage_gates_ci.py evaluates stations only.
+  evidence: pixi.toml `[feature.pyforge-core.tasks.pyforge-core-package-test]` and `[feature.pyforge-testing-kit.tasks.pyforge-testing-kit-package-test]` carry no `--cov`. Core's mypy is strict with no override; its line coverage is unmeasured. Named blocker: a threshold is a governance act (docs/governance/spec-coverage-gate-independence, spec-coverage-gate-independence:CAP-2) and the tasks are in pixi.toml (unit steward-station). Story 118.2 makes the charter say so.
+  location: pixi.toml; scripts/coverage_gates_ci.py
+  origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
+  severity: low
+  promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
   status: open
