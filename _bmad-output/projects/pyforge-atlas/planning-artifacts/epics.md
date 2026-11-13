@@ -3119,7 +3119,7 @@ So that a bare `FR-10` names one live requirement, the 22 atlas `fr-duplicate-id
 **Then** no `## Satellite: ` heading remains, both sections read as record sections, no FR or NFR id is renumbered and no arrow is added, the Spec's note that the satellite numbering stays independent stays true, and `fr-baseline.json` loses exactly the 22 atlas `findings` keys `fr-duplicate-id:FR-1`..`FR-22` while `owners.pyforge-atlas` becomes the one DW-atlas-46-1-9 row
 **And** `fr-without-cap-check` exits 0 with no atlas `fr-duplicate-id`, no atlas `fr-counted-run` and no `fr-baseline-stale`, and doctor's live test `test_live_tree_fr_without_cap_has_no_fail_at_ruling_snapshot` passes; FR-23..FR-60 and NFR-1..NFR-10 stay baselined `projects` ids (a record section suppresses duplicates only, so their first definitions still count; DW-atlas-46-1-9); the PRD says why in a dated section
 **Note 2026-11-05 (EGM audit ATL-D-F5):** when this story is made ready-for-dev, add the map format `<Unity|Wasm> FR-n → FR-m` and list the surfaces to sweep (`epics.md`, the spine, story specs, the Spec and PRD cross-references). *(Moot since the 2026-11-10 re-scope: nothing is renumbered, so no map is written.)*
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+**Status:** done
 
 *History (the 2026-10-26 text, superseded 2026-11-10):* the story was to renumber the satellite series into FR-78..FR-154 (Unity FR-1..FR-60 → FR-78..FR-137, Wasm FR-1..FR-17 → FR-138..FR-154), arrow each heading to CAP-18..CAP-31, commit a re-key map and re-point every reference (ruling (d) of 2026-10-26: minted `backlog`).
 
@@ -3321,7 +3321,7 @@ So that nothing retired is rebuilt and no parity that was never signed is truste
 **When** the story reads each against the tree, takes each shipped date from the citing story specs' Auto Run Results, and renders through the anchored script
 **Then** CAP-18..CAP-31 read exactly `(retired 2026-11-10: never built)`, CAP-44..CAP-47 `(retired 2026-09-09: …; superseded by CAP-50)`, CAP-61..CAP-67 and CAP-69 `(shipped <date>)`, CAP-43 and CAP-68 `(ready …)`; every open half is a `not met: <clause>, DW-<id>` or `operator act open, DW-<id>` qualifier; every satellite subsection opens with the retired lead line; Story 36.3 has a `blocked` story spec; the nine deferred rows are in the ledger
 **And** `chain-completeness`, `memlog-fidelity`, `story-status`, `deferred-work` and `flag-gate` exit 0, and no qualifier falls outside the three ruled forms
-**Status:** backlog
+**Status:** done
 
 ### Story 46.2: The atlas capabilities describe the code that runs
 
@@ -3337,7 +3337,7 @@ So that a rebuild from the Spec builds what runs, not what the 2026-09-17 fold r
 **When** the story renders the Spec memlog's 2026-11-10 entries for these capabilities and the two Constraints
 **Then** CAP-1 counts seven sealed pipelines and five governed additions, CAP-51 and CAP-52 carry their restored intent and success, every archived companion cite is a path that exists, CAP-36 lists the legacy reads, CAP-64 and CAP-65 name `pyforge.atlas.live_public_sources` and hold to the story-close figures in `live-sources.md`, CAP-69 states the four resolvers, CAP-72 names the `SelfExplainML` channel, and AD-3 no longer says the pipeline set is seven
 **And** the AD-3 id and its `Binds:` line do not move; the planning detectors stay green
-**Status:** backlog
+**Status:** done
 
 ## Epic 47: The atlas public contract is written and held to the code (spec-pyforge-atlas CAP-73, FR-78)
 
@@ -3370,7 +3370,7 @@ So that the rebuild knows what the station exposes, and the record cannot fall b
 **When** `contract.md` is written from the code this change leaves (after Stories 48.2 and 48.3) and `test_public_contract.py` derives each family from the code and compares
 **Then** `contract.md` names the 13 MCP tools, the 11 `pyforge.atlas.*` flag keys, the verbs `pyforge atlas run`, `ipython` and `package`, the environment variables, the exit codes `0`, `1`, `2`, `130` and the bring-up tool's `3` and `4` under `## Exit codes`, the outside reads, and nothing of the retired views runtime
 **And** the meta-test exits 0 and has one negative case per family (verbs, options, tools, flag keys, environment variables, exit codes); `contract.md` stays listed in the Spec's `companions:`
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+**Status:** done
 
 ### Story 47.2: The catalog and gate companions name every dataset and gate the code has
 
@@ -3386,7 +3386,7 @@ So that the companions record the 147 datasets and every gate the code has, not 
 **When** the companions are rewritten from `conf/base/catalog.yml`, `tests/unit/catalog/conftest.py::EXPECTED_PIPELINE_COUNTS` and `pixi.toml` as it stands once steward's pixi.toml edit is on the branch (steward Story 124.1, its cross-station dep), and `test_catalog_contract.py` holds them
 **Then** every catalog entry is named once under its pipeline (the seven sealed and the five governed additions), every pixi task that runs pytest over the atlas tests has a row naming the task and its feature, `kedro-test` reads as the alias of `pyforge-atlas-test`, and every test path the four companions cite exists
 **And** the meta-test exits 0 with one negative case per family (a synthetic dataset, a synthetic gate task)
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+**Status:** done
 
 ## Epic 48: The atlas package and its suite stand apart from A's tree and from what the operator retired (relay of spec-pyforge-steward:CAP-175; spec-pyforge-atlas CAP-44..CAP-47 retired; fixes under CAP-48 and CAP-69)
 
@@ -3422,7 +3422,7 @@ So that the package half judges the package alone and an agent reading the guide
 **When** each module that reads outside the package carries `pytestmark = pytest.mark.live_tree`, the marker is registered with doctor's text, and the guide is refreshed
 **Then** the package half passes from an exported copy of the package with the working directory inside it, the two halves sum to the whole suite, and `pyforge-atlas-test` still passes
 **And** the guide names the station Spec, the real gate paths, the fixtures that exist, the official `mcp` SDK and the two suite halves; steward's trigger-map test agrees once steward Story 124.2 lands
-**Status:** backlog
+**Status:** done
 
 ### Story 48.2: Atlas's two root literals resolve from the member
 
@@ -3438,7 +3438,7 @@ So that both point at the same files from any working directory and in any tree.
 **When** both resolve the member the way `dashboard/data.default_data_root` does (`Path(__file__).resolve().parents[3]` when it holds `conf/base/catalog.yml`, else the working directory)
 **Then** the plane default is absolute and ends in `data/plane/atlas.duckdb` from any working directory, `--path` still overrides it, `PYFORGE_ATLAS_DATA_ROOT` still does not move it, and no path in the package source is built from the A-tree literal
 **And** the two touched test modules pass with new cases (two working directories, the installed layout, the fallback); the coverage gate and `lint-types` exit 0
-**Status:** backlog
+**Status:** done
 
 ### Story 48.3: The retired views runtime leaves the package again
 
@@ -3454,7 +3454,7 @@ So that the tree agrees with the ruling and with CAP-44..CAP-47's retired marker
 **When** the 7 modules and 7 test files are deleted, the ASGI fence and the indirect-exception paragraph go with them, and the three run-dependencies declared for it alone leave both member manifests byte for byte in step
 **Then** nothing in the package, `scripts/` or `.github/` names the module, no package code imports `bokeh`, `tornado` or `starlette`, and the station suite, `kedro-catalog-check` and `duckdb-singularity` pass
 **And** root `pixi.toml`'s `httpx`, `feature.mcp-host`'s `starlette` and `feature.local-recipes`'s `bokeh` stay; the widget registry is not resurrected; the lock follows through steward Story 124.3
-**Status:** backlog
+**Status:** done
 
 ### Story 48.4: One memlog event reconciles every atlas path this effort moved
 
@@ -3470,7 +3470,7 @@ So that the surface reads reconciled, no two stories conflict on the memlog's ta
 **When** every other story of the unit is on the branch and the capability ledger is regenerated (steward Story 121.7)
 **Then** CAP-73 reads `(shipped <date>)`, the date the later of Stories 47.1 and 47.2 reached done, through a logged `change` entry and render; one event names every changed path under the package and the deferred-work ledger in full, the memlog keeps one `updated:` key, the Spec and the tree agree that `views/` is gone, the retro and a fresh readiness report exist, and the Dream records the close
 **And** `spec-surface` shows no unreconciled atlas drift row and `chain-currency-sweep-check -- --project pyforge-atlas` exits 0
-**Status:** backlog
+**Status:** done
 
 ## Validation note — 2026-08-26 (chain-currency sweep)
 

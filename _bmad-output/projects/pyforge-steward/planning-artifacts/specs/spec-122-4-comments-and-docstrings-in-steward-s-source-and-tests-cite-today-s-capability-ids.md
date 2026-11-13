@@ -27,6 +27,8 @@ declared_low_risk: false
 > **Blocked 2026-11-10 (forward dependency).** Its Deps name stories in later epics (S-124.2, S-124.3).
 > The key stays `blocked` until those stories are `done` on branch `cutover-readiness-2026-11-10`;
 > the orchestrator of that PR unblocks it only with operator confirmation (AGENTS.md § Policy).
+>
+> **Unblocked 2026-11-13.** Every story its Deps name is `done` on branch `cutover-readiness-2026-11-10`. The operator's "Start build" consent covered the unblock; CLOSE-LEDGERS moved the key to `done`.
 
 <intent-contract>
 

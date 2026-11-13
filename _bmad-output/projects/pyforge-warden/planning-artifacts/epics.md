@@ -1392,7 +1392,7 @@ So that nothing I rebuild is a promise the code never kept, and nothing the code
 **When** the story checks that text against the code and writes the non-capability text through memlog entries and the script render
 **Then** the *Runtime shape* Constraint reads Python ≥ 3.14; *Bundled data carries its own age* claims an age only for the LTS registry (the conda-to-pypi map carries no snapshot, operator ruling 2026-11-10); *Determinism discipline* says `--deterministic` is reserved and the SBOM's `serialNumber` and timestamp are volatile; the schema Constraint names the open `advisory` and `actuation` slots at 1.1.0; *Naming is a contract* names `contract.md`; the Assumptions point at the ledger as the count of record and record the `tests/conformance/` → `tests/integration/` rename; the fleet-run pointers in the Non-goals and *No silent egress* name CAP-29; `verdict-contract.md` loses `review_required`, `axes.md` names `fail-on-kev`, and `glossary.md` points at `contract.md`, `proof-map.md` and CAP-27
 **And** `SPEC.md` holds 29 capability definition lines, CAP-28 alone reads `(ready …)`, all nine flag keys and their per-environment truth are named, the memlog carries a capability entry for CAP-13..CAP-22 and CAP-27..CAP-29 and both self-validate passes, the frontmatter has one `updated:` key whose comment reads "CAP-5..CAP-7 and CAP-9..CAP-26 amended"; `chain-completeness-check`, `status-body-consistency-check` and `ad-citation-check` exit 0
-**Status:** backlog
+**Status:** done
 
 ### Story 25.2: The warden PRD, spine, brief and epics follow the Spec, and the chain closes
 
@@ -1408,7 +1408,7 @@ So that every artifact agrees with the code on the day the change lands.
 **When** the closing story re-stamps the chain
 **Then** NFR-C1, the spine's two floor lines and the epics *Portability* line read Python 3.14; NFR-S9 and the epics S9 item claim an age only for the LTS registry; the bypass journey's climax names `bypassed`; the Epic 9 history line cites `spec-pyforge-unifying-strategy:CAP-18`; the spine names every shipped module; the Dream's *What is real* states no story count and names `archive/docs/specs/pyforge-warden.md`; every capability CAP-1..CAP-29 has an FR or NFR arrow
 **And** the Story Coverage Matrix is regenerated after the last story block and test file; one `Surface reconcile 2026-11-10` memlog event names every package path the branch changed; CAP-28 reads `(shipped 2026-11-…)` and `companions:` lists `contract.md` and `proof-map.md`, both present; the warden retro and readiness report exist; `fr-without-cap-check`, `tea-playwright-check`, `dream-chain-check`, `dreams-hygiene-check`, `governance-currency`, `chain-completeness-check`, `status-body-consistency-check` and `chain-currency-sweep-check -- --project pyforge-warden` exit 0
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+**Status:** done
 
 ### Story 25.3: The warden package points at the live Spec
 
@@ -1424,7 +1424,7 @@ So that no pointer sends me to the legacy intake spec that moved to `archive/` o
 **When** each pointer is re-written to the Spec folder and `contract.md`
 **Then** none of the four surface files (the README, the docstring, the project config and its `PROJECTS.md` row) names `docs/specs/pyforge-warden.md`, the README drops the per-epic status sentence and keeps its hook-book section, every relative link in it resolves, and the docstring no longer says skeleton while `__version__` is untouched
 **And** the project config and its `PROJECTS.md` row move together, so marshal's seed projects-index reads one pair; the package manifest's Python floor is steward Story 124.3's; `pixi run --frozen -e pyforge-warden pyforge-warden-test` and `pixi run -e pyforge-guild lint-types` exit 0
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+**Status:** done
 
 ### Story 25.4: Every open warden deferral is re-verified and carries a severity and an owner
 
@@ -1440,7 +1440,7 @@ So that the ledger tells the truth on the day the cutover reads it.
 **When** each open row is re-read against the tree at the branch head
 **Then** each gets one `verified: 2026-11-<day> - <still-open|done> - <command or path:line>` line, a closed row gets `status: done <date>` with that evidence, and every open row carries a severity and an owner; no row's id, `summary:` or `location:` changes
 **And** this change's eleven rows `DW-warden-cutover-2026-11-10-1` to `-11` are written, rows 1, 2, 3, 8, 9 and 10 closed with the operator's ruling of 2026-11-10 as their resolution; a dated *Curation — 2026-11-10* section heads the ledger; `deferred-work-check`, `ledger-regression-check` and `story-status-check` exit 0
-**Status:** backlog
+**Status:** done
 
 ## Epic 26: Warden's public contract is one companion, held by a test (spec-pyforge-warden CAP-28; decision D1)
 
@@ -1473,7 +1473,7 @@ So that I can rebuild every surface a caller reaches, and a test fails the day t
 **When** `contract.md` sections 1 to 7 are written (CLI, the 13 keys, exit codes and rungs and error kinds, the nine flags as `| key | flags.json | dev | staging | production | reader | flag-off behaviour |`, environment variables read and set, MCP tools, management commands) and `tests/meta/test_public_contract.py` derives each inventory from the code
 **Then** the test passes, and each inventory has a synthetic-drift negative in both directions; the derived kernel read set is exactly the seven variables and the set-for-engine set exactly the four
 **And** an independent re-derivation finds every scan option, every flag row's four values, and every variable, tool, command and key in `contract.md`; `pixi run -e pyforge-guild lint-types` exits 0
-**Status:** backlog
+**Status:** done
 
 ### Story 26.2: Every warden capability names the test modules that prove it
 
@@ -1489,7 +1489,7 @@ So that I know which tests to port with each capability, and a clause no test pr
 **When** `proof-map.md` gets one row per capability (`| CAP-n | lane | test modules | command |`; lanes package, live-tree, slow, platform) and a *Gaps* table, and `tests/meta/test_capability_proof_map.py` holds it
 **Then** every capability `SPEC.md` defines (29) has a row, every cited module exists, each row's lane agrees with the module's marker or path, and every gap names a ledger row from `DW-warden-cutover-2026-11-10-12` up
 **And** no commit of this story touches `SPEC.md`; `deferred-work-check` and `lint-types` exit 0
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+**Status:** done
 
 ### Story 26.3: The contract names what other code imports, where each capability lives, and the open slots
 
@@ -1505,7 +1505,7 @@ So that a caller outside the package is never broken by a rebuild that did not k
 **When** `contract.md` sections 8 to 12 are appended (hook specs, entry points and optional ids; the open slots' key sets; engines and ranges and bundled data; the import surface; *Where each capability lives*) and `tests/meta/test_contract_surface.py` derives them
 **Then** the test passes with synthetic negatives for an unlisted item, a stale row and a stale allowlist entry; every `pyforge.warden` module imported outside the package, the 10 entry points, the three hook specs and the seven optional ids are in `contract.md`
 **And** *Where each capability lives* has one row per CAP-1..CAP-29 and every path it names exists, the lenses cite `spec-pyforge-steward:CAP-32`, and `lint-types` exits 0; the schema stays 1.1.0 (operator ruling 2026-11-10)
-**Status:** backlog
+**Status:** done
 
 ## Epic 27: Warden's live-tree readers run as their own half (relay of spec-pyforge-steward:CAP-175; decision D2)
 
@@ -1533,7 +1533,7 @@ So that the oracle runs where the repository is not, and the live-tree guards fa
 **When** the `live_tree` marker is registered beside `slow`, every outside reader carries it (two modules split so their package-local tests stay in the package half), and `tests/meta/test_live_tree_marker.py` guards the split
 **Then** the two halves together collect exactly what the default suite collected, the live half is not empty, and the package half passes from a `git archive` export outside this repository
 **And** the live-tree half passes in the repository and skips nothing for a missing tree; `pixi run --frozen -e pyforge-warden pyforge-warden-test` and `lint-types` exit 0
-**Status:** backlog
+**Status:** done
 
 ## Currency validation — 2026-08-26
 

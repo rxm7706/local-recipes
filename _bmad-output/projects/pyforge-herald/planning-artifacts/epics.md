@@ -2364,7 +2364,7 @@ So that a shipped capability reads shipped, a retired one says what stands in it
 **When** the story renders the memlog's fifteen "Story 50.1 renders" decisions in one re-derive, each shipped date read from the landing of the last story before Epic 50 whose FR/AD line cites the capability
 **Then** 62 capability lines each open with one dated `ready`, `shipped` or `retired` marker; none reads `in-progress`; `ready` survives on CAP-46 and CAP-62 only; CAP-6 reads retired, CAP-45 and CAP-49 read retired and carried by CAP-61; CAP-44, CAP-52, CAP-53, CAP-56 and CAP-61 read shipped; CAP-36, CAP-50 and CAP-61 name their unmet clause and its row; CAP-47 and CAP-59 name the open operator act; CAP-38 and CAP-39 read the operator-run form and CAP-11 the hand-entered cost
 **And** no retired artifact is a present-tense condition in CAP-44, CAP-45, CAP-46, CAP-49, CAP-52, CAP-53 or CAP-56; every deferred-work id a marker cites has a tracked row; `chain-completeness`, `status-body-consistency` and `deferred-work-check` exit 0
-**Status:** backlog
+**Status:** done
 
 ### Story 50.2: The herald Spec has its Constraints, Non-goals and Assumptions again, and the chain closes on what landed
 
@@ -2381,7 +2381,7 @@ So that the Spec is a whole five-field contract and herald's chain reads current
 **When** the story re-derives the Spec once from the memlog (constraints, non-goals and assumptions, the new assumptions, the frontmatter, the Why, the two marker flips, the reconcile events) and then re-stamps the chain
 **Then** `## Constraints`, `## Non-goals` and `## Assumptions` exist, each rendering every live memlog entry of its type; no capability reads `ready`; CAP-46 names only check keys `verify_claims.py` has; every governed path the change moved has a reconcile line naming its full path
 **And** the PRD's FR-14.1 and FR-12.5 arrows stand, the Dream carries the landed line, the retro and the readiness report exist, and `chain-completeness`, `dream-chain`, `dreams-hygiene`, `status-body-consistency`, `ad-citation`, `deferred-work-check`, `fr-without-cap-check` and `chain-currency-sweep-check -- --project pyforge-herald` exit 0
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+**Status:** done
 
 ### Story 50.3: Herald's public contract is one companion, and a meta-test holds the code to it
 
@@ -2397,7 +2397,7 @@ So that the surface a caller touches is part of the contract, and a drift in eit
 **When** `contract.md` lists them and `test_public_contract.py` compares it with the parser, `mcp_asgi.py`, the flag constants, the flag readers of `flags.ts` (an exported function whose doc comment opens with a backticked `pyforge\.[a-z_]+\.[a-z_]+` key; the generic helper `envFlagOn` exempt by name), the environment reads in every form the tree uses (in the package: a literal read through `os.environ.get`, `os.environ[…]` or `os.getenv`, and every `*_ENV` or `*_ENV_VAR` string constant however it is read; under docs-site: `process.env.X`, `process.env[CONST]` resolved through its constant, `env.X` on an injected env record, and the string argument of `envFlagOn(…)`; `import.meta.env` is not scanned) and `pyforge.herald.errors`
 **Then** the test exits 0 on the tree, and its planted cases (at least 10) fail naming an extra verb, option, MCP tool, `*_FLAG` constant, exported `flags.ts` function other than `envFlagOn` with no documented key, environment variable read as `process.env.X`, environment variable read as `env.X`, or error class, a contract row the code lacks, and a source that imports `pyforge.core.cutover_root` against a contract with no `roots.this` row
 **And** every capability citation in `cli.py` names a capability its verb's contract row names, no pre-fold number pair remains, and `pyforge-herald-test`, `lint-types` and `pyforge-herald-coverage-gate` exit 0
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+**Status:** done
 
 ### Story 50.4: Herald's source comments and docstrings cite the folded Spec's capability ids
 
@@ -2413,7 +2413,7 @@ So that a module's `CAP-n` points at the capability it realizes, not at an id fr
 **When** each is re-keyed to the spec-pyforge-herald id that absorbed it
 **Then** each site's line text at `82a2b18828` is gone from its module, unless the story spec's Planned deferral section names it as `<module>:<line>` with its reason (at least `registry.py:437`, an f-string the push-and-prove ledger writes; `registry.py:447`, the docstring quoting it; and `transport/base.py:117` and `transport/mcp_transport.py:129`, attribute docstrings of `MODERNIST_DESIGN_SYSTEM_ID` and `_FETCH_TIMEOUT_SECONDS`: string statements that are not the first statement of a body, which the fingerprint keeps as code, so re-keying them changes the AST); the check exits 1 on today's tree and on any hollow landing; every edited module has the same syntax tree once docstrings are dropped, so `scripts/coverage_gate.py`'s `ast_fingerprint` reads it as untouched; and every added line carries a citation, judged in Python from a diff file, with no pipe, and an empty diff fails
 **And** herald's package half (`-m 'not slow and not live_tree'`) and `lint-types` exit 0
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+**Status:** done
 
 ## Epic 51: The dossier's figures are counted and its cutover claims are bound to the ledgers (spec-pyforge-herald CAP-46; spec-python-foundry-cutover:CAP-14)
 
@@ -2447,7 +2447,7 @@ So that no stale typed figure reaches the page, and a typed stat fails the build
 **When** the measurer counts the four section keys and four hero keys and the checked scale table, `dossier-loader.ts` applies the rows, `content.config.ts` refuses a stat with no `check:`, and `dossier.yml` carries four counted tiles per band and four in the hero
 **Then** `verify_claims.py --emit` on the live tree emits every new key, eight station sections and nine scale-table rows; every hero and band stat carries `check:` and the one scale table is checked with a `section:` on every row; the stale typed tiles are gone
 **And** the fixture tests cover each key and each refusal, a fixture dossier with one unchecked stat fails the build naming its section and label, bespoke Python under `docs-site/` stays under 300 lines, and `pages-check`, `pyforge-herald-test-built` and `lint-types` exit 0
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+**Status:** done
 
 ### Story 51.2: The dossier's cutover claims, herald section and stale prose are true today, and a test resolves each claim
 
@@ -2464,7 +2464,7 @@ So that the page says what is true today and turns red the day a row it states s
 **When** the story rewrites those lines from the tree and the rulings and gives every A→B.3 row, Operator watch line and § 10 row an `asserts:` list from the closed grammar (`story:`, `epic:`, `flag:`, `ledger:mode:`, `ledger:claim:`, `ledger:claim-field=`)
 **Then** `test_dossier_cutover_claims.py` resolves every assert against the tracked ledgers, the flag tree and the capability ledger, and its planted cases fail on a false, unasserted or unresolvable claim; the herald section's chips equal the deck parser's verbs and its text names `start_notice` and `get_notice`; the `pyforge.cutover_root` row states the ruled flip trigger
 **And** none of the pre-ruling phrases or stale claims remains, no line says B is rebuilt from Frame and Spec, the published `/llms-full.txt` carries no machine key, `test_dossier_structure.py` passes unedited, and `pages-check`, `pyforge-herald-test-built`, `docs-map-hygiene-check` and `docs-currency-check` exit 0
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+**Status:** done
 
 ## Epic 52: Herald's suite and package stand as an oracle a second root can run (relay of spec-pyforge-steward:CAP-175; no herald CAP)
 
@@ -2497,7 +2497,7 @@ So that the package half runs without A's tree and the live half is selected on 
 **When** each reader is marked and the marker is registered
 **Then** the scanner finds no unmarked reader, the live and package halves together collect exactly what the task collected, and the unmarked modules pass on a tree that holds only `pyforge-herald`, `pyforge-core` and `pyforge-testing-kit`
 **And** `pyforge-herald-test` and `lint-types` exit 0
-**Status:** backlog
+**Status:** done
 
 ### Story 52.2: Herald's landing record names this checkout's forge, and its package names Python 3.14
 
@@ -2514,7 +2514,7 @@ So that a second root's landings name its own forge, and the package's floor agr
 **When** the slug is read from `roots.this` through `forge_slug_for` (an explicit `repo=` wins and reads no roster), the floor is set to 3.14 and the README points at the ledger
 **Then** a roster whose `roots.this` is `local-recipes` gives A's slug, `foundry` gives core's foundry slug, and a roster without `roots.this` (or none above the working directory) makes `local_ship.main` print a named error and return 1 before any POST
 **And** no forge slug or `root_of_record` is typed in herald's source, `test_local_ship.py` passes on a tree with no roster and no flag tree, `contract.md` names `roots.this`, and `pyforge-herald-test`, `pyforge-herald-coverage-gate` and `target-version-check` exit 0, each run as `pixi run --frozen`, and `pixi.lock` is unchanged from the story's baseline (steward-station re-locks once after the wave)
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

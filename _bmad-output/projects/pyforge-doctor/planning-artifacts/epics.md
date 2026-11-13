@@ -3690,7 +3690,7 @@ So that a change under a frozen path is a named FAIL and a missing ledger is can
 **When** it reads the v1 ledger, freezes the rows whose `state` is `rebuilding` (the constant `{rebuilding}`), and matches each path changed between `refs/remotes/origin/main` and HEAD equal to or under a row's `frozen_paths`
 **Then** a change under a frozen path is a FAIL naming the row id and the path, a rebuilding row with no `frozen_paths` is a FAIL, zero rebuilding rows is one OK `0 frozen of <N> rows`, and a missing or unparseable ledger, a ledger with no `capabilities` list or an unresolvable origin/main is one WARN with `unevaluable: true`
 **And** the rewritten suite (20 or more tests) builds its ledgers under `tmp_path` and runs in the package half with no `live_tree` mark; the source names no manifest and no `moving` state; `frozen-path-changed-check` exits 0 on this tree with `0 frozen of <N> rows`; `lint-types`, `pyforge-doctor-test` and the flag gate stay green
-**Status:** backlog
+**Status:** done
 
 ### Story 56.2: capability-ledger judges every v1 row by its Spec heading, its mode and its expiry clock
 
@@ -3706,7 +3706,7 @@ So that an untrue row or a lapsed expiry is a named finding and an absent ledger
 **When** it resolves each row against the live Specs of `_bmad-output/projects/*/planning-artifacts/specs/*/SPEC.md` and `docs/governance/spec-*/SPEC.md`, compares the row's heading with the extract's, and judges each `A-only` expiry by its form (a date, the quoted qualified `<station>:<E>.<S>`, `flip`) against an injected clock
 **Then** `orphan-row`, `heading-drift`, `archived-spec-row` and `bad-mode` are FAILs (`pending` one WARN); a date warns 30 days or less ahead and fails once past; a Story expiry fails when its station's key is done or absent; `flip` fails once the root of record reads foundry; an unquoted number fails; a missing ledger is one WARN with `unevaluable: true`
 **And** `test_capability_ledger.py` (35 or more tests) runs in the package half with no `live_tree` mark; the case-list reader moves alone to `test_live_capability_ledger_case_list.py`; the vacuous OK text is gone; `capability-ledger-check` is red on the branch until steward Story 121.3 regenerates the ledger and is judged green at steward Story 121.7
-**Status:** backlog
+**Status:** done
 
 ### Story 56.3: The aggregate reads a source that measured nothing as unmeasured, never pass
 
@@ -3722,7 +3722,7 @@ So that a source that measured nothing is a visible warning instead of a green r
 **When** the aggregate asks the one public predicate, `models.is_gather_failure`, of every Doctor row
 **Then** a row whose findings hold no FAIL and are all gather failures reads `unmeasured` (`○`) and is counted on the summary line; `()` reads `pass`; a WARN about a real subject reads `pass`; a FAIL beside an unevaluable WARN reads `FINDINGS`; the exit codes stay 0, 1 and 2, and `unmeasured` exits 0
 **And** `docs/reference/judgement-vocabulary.md` and `docs/how-to/run-and-understand-detectors.md` name the new word; the generated detector page needs no change; the phantom module name `pyforge.doctor.sources.fleet_scan` leaves the files this story owns
-**Status:** backlog
+**Status:** done
 
 ### Story 56.4: A source that finds no subject says so, in one cannot-evaluate warning
 
@@ -3738,7 +3738,7 @@ So that the aggregate can tell a measurement from an absence on any tree.
 **When** each existing cannot-evaluate WARN gains `unevaluable: true`, and each OK or `()` over an absent subject becomes one `<source>-unevaluable` WARN
 **Then** over an empty `git init` tree every `detectors-ci` name returns at least one finding; `pass` = {dashboard-drift, check-layout}; `FINDINGS` = {spec-surface, docs-map-hygiene}; every other name returns only findings `models.is_gather_failure` accepts
 **And** on this tree only `platform-policy-suite` and `story-status` may read `unmeasured`; the no-feed `story-status` row keeps `audited: 0`; the literal station tuple and the phantom module name leave the package; the modules Stories 58.1 and 58.2 split keep their test count (1109)
-**Status:** backlog
+**Status:** done
 
 ### Story 56.5: A chain write on a checkout that is not the writer is a named finding
 
@@ -3754,7 +3754,7 @@ So that a chain write off the writer is a named finding for every harness, not o
 **When** `writer-lock` reads the root of record at the merge base of HEAD and `refs/remotes/origin/main` (both flag files copied out with `git show`), compares it with the roster's `roots.this`, and matches each changed path against the `chain-write-off-the-writer` denial's globs
 **Then** on the writer it is one OK saying so; off the writer each matching path is a FAIL naming the path, the root of record and this root; a flip branch (local-recipes at the merge base, foundry at HEAD) passes; a roster with no `roots.this` or no entry, a flag tree that raises, a `default` answer or an unresolvable base is one WARN with `unevaluable: true`
 **And** the source is registered (Source.WRITER_LOCK, a REGISTRY row of scope repo owned by doctor, DISPATCH, `_DOCTOR_SOURCE_TASKS`), sits in the empty-tree partition as unmeasured, and `docs/reference/detectors.md` is regenerated to list it; the module runs in the package half
-**Status:** backlog
+**Status:** done
 
 ## Epic 57: The doctor Spec says what the code does, and its public contract is written once (spec-pyforge-doctor CAP-96..CAP-99; decisions D1 and D4)
 
@@ -3778,7 +3778,7 @@ So that a rebuild from Frame + Spec builds the Doctor that runs, not the one the
 **When** one memlog entry per group is appended and the Spec is re-derived once (the anchored script render, both self-validate passes logged)
 **Then** every one of the 100 capabilities carries exactly one dated marker in CHAIN-STANDARD section 4's grammar; only CAP-94..CAP-100 read ready; CAP-33, CAP-50 and CAP-53 read `(retired <date>)` and the twenty closed one-time campaigns read `(retired 2026-11-10: closed one-time campaign)`; the Spec names five verbs and the sources dispatcher, the two sanctioned writes and the scope of AD-2
 **And** the two story specs (24.2, 34.2), the package README and the DW-doctor-egm-2026-11-05-1 row agree with the ledger; Doctor's chain detectors raise no FAIL about the doctor chain; the flag gate passes
-**Status:** backlog
+**Status:** done
 
 ### Story 57.2: Doctor's public contract is one companion file, and a meta-test reds what it lacks
 
@@ -3794,7 +3794,7 @@ So that a rebuild has one list of verbs, flags, MCP tools, environment variables
 **When** `contract.md` lists every section decision D1 names plus inputs and bridges, and `tests/meta/test_public_contract.py` reads the code's parsers, DISPATCH, the Source enum, the check codes, the environment reads, the exit constants and django-doctor's MCP tool constants
 **Then** a code entry the file lacks and a file entry the code lacks each fail the test, on the live tree and on synthetic input (8 or more mutation cases), and the 19 computed `check=` sites and the one computed environment read equal the `## Computed check sites` table
 **And** the meta-test is a live-tree module (it reads the Spec folder and django-doctor); `lint-types`, `pyforge-doctor-test` and the flag gate stay green
-**Status:** backlog
+**Status:** done
 
 ### Story 57.3: Doctor's chain closes: the oracle meta-test, the live ledger proof, the new capabilities shipped
 
@@ -3810,7 +3810,7 @@ So that doctor's chain of this change is closed before Story 58.4 stamps and jud
 **When** the package-local half's coverage is proved by `test_package_half_is_the_oracle.py`, the live proof reads the regenerated ledger and roster, and one memlog entry re-derives the Spec
 **Then** every source module and DISPATCH gather is exercised and every check code named by an unmarked module (or the shrink-only gap list); no CAP of this change reads ready; `contract.md` and `scripts/detectors.py` are on the Spec; the nine DW-doctor-cutover-2026-11-10 rows are written and open
 **And** `frozen-path-changed` reports `0 frozen of N rows` with N the ledger's row count, `capability-ledger` reports no FAIL, `writer-lock` reports this checkout is the writer; the test-architecture page names every story; doctor's chain is current; a fresh readiness report exists
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+**Status:** done
 
 ## Epic 58: The package-local half is the rebuild oracle, and the branch's baselines name only live Specs (spec-pyforge-doctor CAP-97, CAP-59)
 
@@ -3834,7 +3834,7 @@ So that a rebuild that deselects `live_tree` keeps the fixture tests that are it
 **When** each repository reader moves to `test_live_<same name>.py` and the original loses its mark
 **Then** none of the 18 modules carries the mark, every new test_live_ module is marked at module level, the two counts sum to 595 (the live one at most 60), the package-half modules hold no skip, and a moved repository-absence skip became an assert
 **And** steward's package-half rule holds (`package_half_reads_nothing`); `lint-types`, `pyforge-doctor-test`, `pyforge-doctor-live-test` and the flag gate stay green
-**Status:** backlog
+**Status:** done
 
 ### Story 58.2: The docs, factory, method, env-hygiene and Pages tests that build their own tree run in the package half
 
@@ -3850,7 +3850,7 @@ So that a rebuild that deselects `live_tree` keeps the fixture tests that are it
 **When** each repository reader moves to `test_live_<same name>.py` and the original loses its mark
 **Then** none of the 11 modules carries the mark, every new test_live_ module is marked at module level, the two counts sum to 514 (the live one at most 50), and the package-half modules hold exactly the two environment skips
 **And** steward's package-half rule holds; `lint-types`, `pyforge-doctor-test`, `pyforge-doctor-live-test` and the flag gate stay green
-**Status:** backlog
+**Status:** done
 
 ### Story 58.3: spec_surface_check.py prunes the baseline keys of Specs that no longer exist, and touches no live Spec
 
@@ -3866,7 +3866,7 @@ So that the baseline names only live Specs and no stamp accepts drift it did not
 **When** `--prune` reads the baseline under `_baseline_lock()`, asks the same `discover` the stamp uses, and writes atomically
 **Then** each dead key is removed and printed; every live key stays byte-identical; zero discovered Specs over a non-empty baseline exits 1 untouched; a corrupt baseline exits 1 untouched; `--prune` with `--spec`, `--write-baseline` or `--accept` is a usage error (exit 2); a second prune removes nothing
 **And** the real baseline is untouched by this story (Story 58.4 runs the prune); marshal's and CFE's existing tests of the script run unchanged; `scripts/memlog_fidelity_check.py`'s docstring says where currency is checked
-**Status:** backlog
+**Status:** done
 
 ### Story 58.4: The branch's baselines and governance reports are refreshed once, after every unit's last edit
 
@@ -3882,7 +3882,7 @@ So that every stamp is valid for the head that merges and the merge-bar evidence
 **When** the story runs last on the integration branch, after the CLOSE-LEDGERS job, in the order its notes give
 **Then** every baseline key names a live Spec, `spec-surface-check` and `fr-without-cap-check` are green with no `fr-baseline-stale` left (the prune removes only what is still stale at the end), the FR baseline's atlas `owners` row is still the one `DW-atlas-46-1-9` row atlas Story 41.2 wrote (no `owners` row is edited here), the flag-inventory pages are current and idempotent, the allowlist drops exactly the three claimed entries and the cfe comment by content, and `ci-status.json` is refreshed at the final head after a fetch
 **And** doctor's 30 rows (29 sources and writer-lock) read none unknown or failing and only `platform-policy-suite` and `story-status` may read `unmeasured`; every lane the final diff triggers is green, each read from its exit code; this story's own key is the last ledger write
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

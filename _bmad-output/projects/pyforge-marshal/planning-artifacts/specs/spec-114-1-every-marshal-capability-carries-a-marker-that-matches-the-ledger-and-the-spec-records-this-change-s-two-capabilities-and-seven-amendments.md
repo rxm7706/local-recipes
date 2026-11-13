@@ -37,6 +37,8 @@ deferred: []
 > **Blocked 2026-11-10 (forward dependency).** Its Deps name stories in later epics (S-117.5, S-118.2); their renders define spec-pyforge-core:CAP-12..spec-pyforge-core:CAP-14 and spec-pyforge-testing-charter:CAP-6..spec-pyforge-testing-charter:CAP-7, which this story's FR-250..FR-254 cite, CHAIN-STANDARD section 12.
 > The key stays `blocked` until those stories are `done` on branch `cutover-readiness-2026-11-10`;
 > the orchestrator of that PR unblocks it only with operator confirmation (AGENTS.md § Policy).
+>
+> **Unblocked 2026-11-13.** Every story its Deps name is `done` on branch `cutover-readiness-2026-11-10`. The operator's "Start build" consent covered the unblock; CLOSE-LEDGERS moved the key to `done`.
 
 <intent-contract>
 

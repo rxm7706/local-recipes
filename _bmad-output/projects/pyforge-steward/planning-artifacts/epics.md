@@ -2131,7 +2131,7 @@ So that a skill tells me the exit codes, prerequisites and side effects its stat
 **When** the source text is corrected first, then each brief or MANUAL region takes its fix and the skills recompile through `skf-update-skill`
 **Then** no `SKILL.md` is hand-edited outside a MANUAL region, marshal's skill says what `--audit` reads with its switches, block, pin, cost and exit codes, steward's lists exit code 3, mason's gives its JSON contract and ship states, warden's and herald's give their exit codes, and each skill says what its station's MCP runner does and does not run, as the code stands, whether or not the operator has ruled on `DW-steward-egm-2026-11-05-1`
 **And** STW-R-F2 and STW-R-F3 stay out: the `--yes` gate is not in the parser until Story 118.3, which recompiles them; `pyforge-steward-test` (the SKF meta-tests), `pyforge-herald-test`, `pyforge-scribe-test`, `governance-currency` and the instruction-surface parity test exit 0, the `spec-pyforge-unifying-strategy` surface is stamped `--spec pyforge-steward/spec-pyforge-unifying-strategy`, and the owning Specs' memlogs name the recompiled paths (amended 2026-11-10 in place: in the cutover-readiness PR no build story writes a Surface reconcile line or runs a stamp; closer Story 122.5 writes the host Spec's reconcile event and doctor Story 58.4 runs the scoped stamp)
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+**Status:** done
 
 ## Epic 30: The old console is gone
 
@@ -2804,7 +2804,7 @@ So that station envs solve and the host boots in foundry from workspace members.
 **And** distribution and import names are byte-identical to before the fold (package fold only — nothing from Story 44.5 rides along)
 **And** the fold is `steward cutover apply --phase 1a`, re-runnable into foundry after every `--regenerate` or `--append` until the flag flips (`fnd:AD-18`)
 **Parked 2026-09-13 (regenerate-not-fold):** do **not** dispatch. File-move story superseded by Epic 54 / `fnd:CAP-11`. Ledger stays `backlog`. Never `apply --phase 1a` as how packages appear.
-**Status:** backlog
+**Status:** blocked (retired 2026-11-10, never dispatched)
 
 ### Story 44.5: Move the estate
 
@@ -2824,7 +2824,7 @@ So that agents and loops resolve everything from the lasting root.
 **And** the open question `planning-history-scope` is answered before dispatch
 **And** this story refuses to run while `cutover-readiness.md` P11 or P12 reads anything but green (fnd:AD-10's own worked example) — after marshal 30.5 and 30.2 and steward 14.9, all confirmed `done` as of 2026-09-07; the check itself, not this prose, is what 44.5 runs against P11/P12's live state at execution time
 **Parked 2026-09-13 (regenerate-not-fold):** do **not** dispatch as a tree copy. Suite/skills appear by re-provision from the register (Epic 54 + later). Ledger stays `backlog`. Flag flip remains attended and after the kernel is verified, not after this file-move.
-**Status:** backlog
+**Status:** blocked (retired 2026-11-10, never dispatched)
 
 ### Story 44.6: CFE comes home
 
@@ -2843,7 +2843,7 @@ So that no `MASON_CFE_ROOT` resolves to `local-recipes` and retros land in the l
 **And** the story invokes `conda-forge-expert` and closes with a Rule-2 CFE retro
 **And** — reciprocal note, not a `Deps:` token: **mason Story 15.1 (close the CFE rebuild campaign; delete-on-cutover) must land BEFORE this story moves the CFE cell to `skills/domain/`.** The rebuild Spec's surface and slice map are written against `.claude/skills/conda-forge-expert/**`; moving the cell first leaves that Spec pointing at a path that no longer exists and makes this story intractable (fleet readiness 2026-09-09, mason-E2 / § 2.3 C2)
 **Parked 2026-09-13 (regenerate-not-fold):** do **not** dispatch as a cell move. Foundry CFE is rebuilt from Specs; local-recipes is the oracle. Ledger stays `backlog`.
-**Status:** backlog
+**Status:** blocked (retired 2026-11-10, never dispatched)
 
 ### Story 44.7: The factory island
 
@@ -8370,7 +8370,7 @@ So that every build story, and B at its pin, read the contract the rulings made,
 **Then** SPEC.md, `cutover.md` and `launch-slice.md` name no `move`, `moved` or `moving` and no `apply --phase`; all 15 CAP headings carry a dated marker; SPEC.md (once), `cutover.md` (twice) and the satellite (fnd:AD-17 and fnd:AD-22) state the flip rule, by hand, with no loop running, once the Launch slice is proven, and none calls the trigger open or names `after 44.5 today`
 **And** fnd:AD-24 (the writer lock: the merge-base rule, and `source == 'default'` is not proven), fnd:AD-25 (the ledger is generated) and fnd:AD-26 (the Launch proof) exist; fnd:AD-6, fnd:AD-7, fnd:AD-12, fnd:AD-13 and fnd:AD-15 read `RETIRED 2026-11-10`; fnd:AD-16 keeps the epoch sentence (`docs/foundry/EPOCH.md`)
 **And** `dream-chain-check`, `chain-sprawl-check` and `ad-citation-check` exit 0
-**Status:** backlog
+**Status:** done
 
 ### Story 120.2: The regenerate and ledger Specs follow the rulings, and the ledger schema is written once
 
@@ -8387,7 +8387,7 @@ So that the generator, the check and doctor's detectors read one definition, and
 **Then** `ab-sync.md` reads `| Dream, Frame, Spec and the capability ledger | **Writer** until the flip |`; neither Spec nor `ab-sync.md` names B the writer or says `Frame + Spec`; fnr CAP-3 lists no frames duty; all eight CAP headings carry dated markers; neither Spec keeps the flag at `local-recipes` until a kernel list is green
 **And** the schema block parses (header keys, `frozen_states: [rebuilding]`, `pending` among the modes, a quoted expiry in `<station>:<E>.<S>`, `YYYY-MM-DD` or `flip`, `cells:`); the rule table applies the 2026-11-10 rulings: a never-built capability is `B-only` when a live `blocked` or `backlog` Story carries it and `retire` when none does, a closed one-time campaign retires, doctor's included; `extract.md` states the scope, the heading forms and normalisation, the id rule and the station rule
 **And** `dream-chain-check` and `chain-sprawl-check` exit 0
-**Status:** backlog
+**Status:** done
 
 ### Story 120.3: Epic 44, the epic bindings and the chain standard say what is true
 
@@ -8404,7 +8404,7 @@ So that INV-A can fire again for those Specs and no reader takes B for the write
 **Then** only the two true fold-window citations remain, every restored line equals its pre-fold range, Epic 44 no longer archives A, Story 44.8 and its spec carry ruling 2's third consumer through `root_of_record()`, Story 44.12's note names no herald consumer, and § 4 has no `(unbuilt)` token
 **And** no status and no ledger key moves (Story 44.1 was retired at mint); `ledger-regression-check`, `story-status-check`, `chain-completeness-check` and `governance-currency` exit 0
 **And** spec-one-chain-per-station and spec-coverage-gate-independence are re-derived through the anchored script render, each SPEC.md no older than its memlog
-**Status:** backlog
+**Status:** done
 
 ### Story 120.4: The nine Frames point at the seed and agree with the rulings
 
@@ -8421,7 +8421,7 @@ So that a Frame is a pointer, never a second seed, and no Frame contradicts the 
 **Then** `frame-preflight` and `frame-upstream-check` exit 0 (exit 2 means it did not run: the story is not done), the pin equals the heads, the two Mason contradictions are gone, and `pyforge steward catalog render` leaves `frame-index.yaml` and `browse.yaml` unchanged
 **And** the two head SHAs pass to Story 122.1 for spec-pyforge-steward CAP-6's memlog line; a needed `frames.py` change stops this story and becomes a request to the steward-station stories
 **And** the Derived-path check runs on the integration branch once every station's `contract.md` exists
-**Status:** backlog
+**Status:** done
 
 ### Story 120.5: The case list counts itself and covers the Launch slice
 
@@ -8437,7 +8437,7 @@ So that the Launch slice has a counted oracle and the count can never drift agai
 **When** the count line is corrected, herald's seven rows (`k-herald-version`, `-usage-2`, `-deck-help`, `-conflict-3`, `-transport-4`, `-unmapped-1`, `-determinism`) and one row per `launch-slice.md` step whose A test exists are added (`k-no-host` expires on "steward:121.5", `k-no-root-recipes` on "steward:44.8"), and a `live_tree` meta-test resolves each nodeid statically and holds the count
 **Then** the meta-test exits 0, its planted-count case (a `tmp_path` copy) reports a wrong count, its launch-slice case passes, and seven `k-herald-` rows exist
 **And** doctor's `parse_case_list_ids` reads as many rows as the count line states, 47 or more; an oracle gap is listed in `launch-slice.md`, never filled here
-**Status:** backlog
+**Status:** done
 
 ## Epic 121: The cutover control plane tells the truth: one generated ledger, one writer lock (spec-python-foundry-cutover fnd:CAP-8 fnd:CAP-9 / spec-foundry-capability-ledger fcl:CAP-1 fcl:CAP-2)
 
@@ -8457,7 +8457,7 @@ So that the ledger's headings and ids never rot by hand, and a new capability ar
 **When** `cutover_ledger.py` reads `_bmad-output/projects/*/planning-artifacts/specs/*/SPEC.md` and `docs/governance/spec-*/SPEC.md` (YAML frontmatter, status ready or in-progress, never under `archive/`), extracts headings and ids by `extract.md`, reads each heading's marker, and `regenerate` and `append` write deterministic YAML over schema v1
 **Then** `regenerate` rewrites the derived fields, keeps the decided ones, re-modes a retired marker to `retire`, drops an orphan row, adds a missing row as `rebuild`, `planned`, `defaulted: <today>`, keeps `cells:` untouched and leaves the file byte-identical when nothing changed; `append` only adds; each returns a report (`changed`, `added`, `dropped`, `remoded`)
 **And** the unit tests (idempotent, defaulted, prefixed heading, unifying id, commented status, quoted expiry, retired marker, archive ignored, orphan dropped) exit 0; the module imports no other station; steward's package half, its coverage gate and `lint-types` exit 0
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+**Status:** done
 
 ### Story 121.2: steward cutover plans the ledger and no longer copies trees
 
@@ -8473,7 +8473,7 @@ So that the verb does what fnd:CAP-9 promises and no code can copy a tree into f
 **When** `plan` takes a mutually exclusive `--regenerate | --append | --check` (bare `plan` is `--check`), `--ledger PATH` and `--json`; `CutoverDuty.run` calls the generator and the check (findings make it exit 1); the manifest and apply code and constants are deleted; `loops_running`, `flip_root` and the flip branch stay byte for byte
 **Then** `pyforge steward cutover apply --phase 1a` exits 2 (argparse: invalid choice), the module names no `shutil`, `_PHASE_RULES`, `manifest`, `CUTOVER_FOUNDRY_ROOT`, `apply_phase` or `src/shared/packages`, no test pins the fold, and `test_flip_refused_while_loop_running` keeps its nodeid
 **And** with the switch off `--regenerate` refuses and the file is unchanged while `--check` still runs; `_HELP['cutover']` cites fnd:CAP-8 and fnd:CAP-9 and names no `apply`; the duty count stays 31; steward's halves, its coverage gate and `lint-types` exit 0
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+**Status:** done
 
 ### Story 121.3: The capability ledger takes the rulings: archived rows leave, modes and expiries are decided
 
@@ -8490,7 +8490,7 @@ So that the generator starts from decided data and no row waits on a question th
 **Then** every change is a `| id | was | is | rule |` row in `remode-2026-11-10.md`, the 162 removed ids are listed under `## Removed` by Spec, every rebuild row reads `state: planned`, every expiry is a quoted `<station>:<E>.<S>`, date or `flip`, no row reads `pending`, and none claims `verified-in-foundry`
 **And** the ruled modes hold: spec-pyforge-testing-charter:CAP-4 rebuild and spec-pyforge-testing-charter:CAP-1, spec-pyforge-testing-charter:CAP-2 and spec-pyforge-testing-charter:CAP-5 A-only "steward:44.14" (the anchor's reason is the 2026-11-11 decision on the `spec-foundry-capability-ledger` memlog); spec-pyforge-warden:CAP-13 to spec-pyforge-warden:CAP-15 A-only "steward:44.8"; steward's restore and revoke A-only "steward:121.5"; doctor's closed one-time campaigns, spec-pyforge-herald:CAP-6 and spec-pyforge-scribe:CAP-34 retire; spec-pyforge-atlas:CAP-68 B-only and spec-pyforge-atlas:CAP-7 A-only "mason:39.2"
 **And** `remode-2026-11-10.md` carries `## Never built` and `## Station field`, and ends with the brief's proposed groups set against what was applied
-**Status:** backlog
+**Status:** done
 
 ### Story 121.4: A chain write off the writer is refused in session
 
@@ -8506,7 +8506,7 @@ So that before and after the flip only the writer writes Dreams, Frames, Specs a
 **When** the roster gains `roots: {this: local-recipes}` and one `session_denials` entry `chain-write-off-the-writer` (applies_to `edit_write`; the chain paths `docs/dreams/**`, `docs/foundry/frames/**`, `docs/foundry/capability-ledger.yaml`, Spec folders `_bmad-output/projects/*/planning-artifacts/specs/spec-*/**` and `docs/governance/spec-*/**`), which ruling 2 authorises (the second addendum's ruling 3), and the hook loads `pyforge.core.cutover_root` and calls `root_of_record()`
 **Then** the denial fires off the writer and is silent on it: a flipped fixture denies on Claude and warns on Cursor, the writer is allowed, a non-chain path is allowed under either flag, a `default` source denies with its own reason, an unreadable tree exits 2, and removing the matcher makes the roster load raise
 **And** the hook holds no `rxm7706/` literal (the slug comes from core's `FORGE_SLUGS[roots.this]`), the roster has 20 session denials, and the hook tests, `pyforge-doctor-scripts-test` and `scripts-lib-test` exit 0
-**Status:** backlog
+**Status:** done
 
 ### Story 121.5: The host, platform and portals get their foundry contract
 
@@ -8538,7 +8538,7 @@ So that a marker the generator does not recognise, a never-built rebuild row or 
 **When** `check(root, ledger)` writes nothing and returns `.findings` and `.warnings` as `(code, id, message)`
 **Then** each finding code (`rebuild-never-built`, `unclassified`, `orphan-row`, `archived-spec-row`, `heading-drift`, `duplicate-cap-id`, `bad-header`, `bad-mode`, `bad-state`, `a-only-without-expiry`, `bad-expiry-form`, `flip-expiry-lapsed`, `rebuild-without-state`, `verified-without-case`, `unknown-case`, `rebuilding-without-frozen-paths`, `unresolved-dependency`, `dependency-cycle`, `launch-not-rebuild`, `pending-without-question`, `retire-without-marker`, `marker-contradicts-mode`, `unknown-marker`, `cell-without-expiry`) and each warning code (`mode-pending`, `defaulted-row`, `no-marker`) is named by a test, 27 or more in all
 **And** `flip-expiry-lapsed` fires only when `root_of_record().root == 'foundry'`; an unrecognised marker is a finding and a missing one a warning; a `(ready` row whose only citing story is blocked fires `rebuild-never-built` and the same row with one done story is silent; steward's package half, its coverage gate and `lint-types` exit 0
-**Status:** backlog
+**Status:** done
 
 ### Story 121.7: The capability ledger is regenerated from the swept Specs and holds
 
@@ -8554,7 +8554,7 @@ So that every capability minted, amended or retired in this change has a decided
 **When** `pyforge steward cutover plan --regenerate` runs, each `defaulted` row takes `modes.md`'s rules (new station CAPs and the 30 governance CAPs rebuild; steward's restore and revoke A-only "steward:121.5"; warden's portal capability A-only "steward:121.5"; any row `rebuild-never-built` names B-only when a live blocked or backlog Story carries it, else retire, except `pyforge-steward:CAP-181`, which stays `rebuild`: Story 123.1 builds it on A in this PR and depends on this story, so no citing story is `done` yet and the rule's B-only would survive regeneration to the merge), and the rows named in `launch-slice.md` take `launch: true`
 **Then** `cutover_ledger_check.check` returns no finding except one exemption by name, `rebuild-never-built` on `pyforge-steward:CAP-181` (the reason above, held only while Story 123.1's ledger key is not `done`), and no `defaulted-row` warning; `plan --check` exits 0, or 1 on that exemption alone; and `plan --regenerate` leaves the committed file unchanged
 **And** the live-tree test passes with the same exemption, by name and reason, lapsing when Story 123.1 reads `done`; doctor's `capability-ledger-check`, `frozen-path-changed-check` (reading the real ledger, never a pre-cutover manifest) and `writer-lock` source exit 0; Story 122.5 proves the check clean with no exemption
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+**Status:** done
 
 ## Epic 122: The steward Spec says what the code does (spec-pyforge-steward CAP-179, CAP-180; the markers and text of existing capabilities)
 
@@ -8574,7 +8574,7 @@ So that the Spec a second root reads is the contract the code keeps, not a recor
 **When** the memlog `change` entry of each amended capability, written in the mint's fix pass, is verified against the tree and corrected by a later entry where the tree differs (each marker re-checked against the ledger and the merge of the last citing story; CAP-2 `(retired 2026-10-15; superseded by CAP-168)`; CAP-46's validator kept `shipped` and its never-built consumer half marked `(retired 2026-11-10: never built)`; control-plane's CAP-53 and CAP-6 entries, CAP-6 naming the frame-spec heads Story 120.4 read) and the Spec is re-derived once, followed by one cascade re-stamp of the brief, PRD, spine and epics
 **Then** every capability heading leads its parenthesis with a marker (182 headings), only the capabilities with an open story read `ready` (CAP-153 and CAP-166 among them while Stories 124.3 and 124.2 of this PR are open; Story 122.5 flips them), no capability id is defined twice, no Spec, PRD or spine line names the gone verb or the never-written script without saying so, and CAP-46, CAP-53 and CAP-180 read as ruled
 **And** `chain-completeness-check`, `fr-without-cap-check`, `ad-citation-check`, `governance-currency` and `story-status-check` exit 0; the Spec's Surface reconcile and scoped stamp are Story 122.5's and doctor Story 58.4's
-**Status:** backlog
+**Status:** done
 
 ### Story 122.2: Steward's public contract is one companion and a test fails when the code has more
 
@@ -8590,7 +8590,7 @@ So that the public contract is read from the Spec, not reverse-engineered from s
 **When** `contract.md` is written as hand-made tables (verbs and flags, retired verbs, the MCP face, flag keys, environment variables, exit codes, entry points, imported names, tree dependencies, estate-bound constants), each row naming its capability, and `test_public_contract.py` reads the parser, the source by AST, the MCP face by AST and the companion
 **Then** the contract test exits 0, and each family's check fires on a planted extra (at least seven `fires` tests); all 30 steward flag keys are rows; the MCP tools and targets and the three retired verbs are named; `estate plan`'s exit 3 and `root_layout`'s constants are rows; the README points at the contract and lists exit 3
 **And** steward's package half (without the trigger-map module until Story 124.2), the live-tree half and `lint-types` exit 0
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+**Status:** done
 
 ### Story 122.3: Steward's help and output cite today's capability ids
 
@@ -8606,7 +8606,7 @@ So that `CAP-4` in steward's output means the budget duty it means in the Spec, 
 **When** each string constant is re-keyed through the provenance map the SPEC headings carry (`<- spec-<absorbed> CAP-old`), the eight test lines and the companion heading that assert them move with them, and `test_cap_citations.py` holds every non-docstring string constant to ids SPEC.md defines and its module's oracle-map row allows
 **Then** the citation test exits 0 and fires on an undefined id, an id outside the module's set, a help string citing a capability its duty lacks and a re-key pair the map does not hold; no pre-fold phrase is left in a string constant; `steward --help` cites CAP-9..CAP-13, CAP-21, CAP-22, CAP-54, CAP-55 and CAP-116 where it names them; no line is added or removed in an existing source or test file
 **And** the station cheat sheet is regenerated once here, after every story of this PR that changes a station's `--help`; the duty-count tests, the package half, the live-tree half and `lint-types` exit 0
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+**Status:** done
 
 ### Story 122.4: Comments and docstrings in steward's source and tests cite today's capability ids
 
@@ -8622,7 +8622,7 @@ So that a reader can tell which capability a module or a test serves.
 **When** the same provenance map re-keys every comment, docstring and data-description citation, and `test_cap_citations.py` switches on its comment (tokenize) and docstring (ast) domain
 **Then** the citation test exits 0 over every `.py` under the package's src and tests and fires on a planted comment and docstring; the `rekey_pairs` guard passes; every modified file's syntax tree, docstrings blanked, equals its tree at `$BASE`; no line is added or removed; no pre-fold phrase is left under steward's source or data; each changed data file parses to the same value with every `description` blanked
 **And** `pyforge-steward-test`, `pyforge-steward-live-test` and `lint-types` exit 0
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+**Status:** done
 
 ### Story 122.5: The steward and host Specs close on what landed: shipped markers and one Surface reconcile each
 
@@ -8638,7 +8638,7 @@ So that the steward chain reads what landed, and doctor Story 58.4's scoped stam
 **When** one `(event) Surface reconcile 2026-11-10` line per Spec names in full every path `git diff --name-only origin/main...HEAD` lists under that Spec's surface (and every tracked path the host Spec's widened surface newly governs), one `change` entry per capability flips CAP-153, CAP-166, CAP-179, CAP-181 and CAP-182 to `(shipped <date>)` (ruling 6: markers of capabilities this PR builds flip at the station's closing Story), the steward Spec is re-derived once, the deferred rows are written and the chain is re-stamped
 **Then** CAP-153, CAP-166 and CAP-179..CAP-182 read `shipped`; `cutover_ledger_check.check` returns no finding with no exemption (Story 121.7's `pyforge-steward:CAP-181` exemption has lapsed), that row stays `rebuild` and `plan --check` exits 0; no Spec is behind its memlog; no unreconciled drift row names either Spec; both Dreams record the close; `chain-currency-sweep-check -- --project pyforge-steward` exits 0; DW-steward-121-1..4 and DW-steward-cutover-2026-11-10-1..12 are tracked
 **And** no stamp is run here: doctor Story 58.4 runs `--spec pyforge-steward/spec-pyforge-steward` and `--spec pyforge-steward/spec-pyforge-unifying-strategy` once, after this story
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+**Status:** done
 
 ## Epic 123: The steward suite is an oracle a second root can run (spec-pyforge-steward CAP-181, CAP-182)
 
@@ -8658,7 +8658,7 @@ So that I can tell which tests judge a rebuilt capability and which capabilities
 **When** `oracle-map.md` gives one row per capability or contiguous range (source modules, proof value, test files or globs), the `cutover` duty's capabilities sit under a *Capabilities of other Specs this package realizes* heading, and `test_oracle_map.py` (`live_tree`) checks the map is total and true to the tree
 **Then** the map test exits 0 and fires on a capability with no row, a glob matching nothing, a proof value against the marker and an unnamed test module; every capability has a proof value; control-plane's four test modules are on the cutover rows
 **And** the package half (without the trigger-map module until Story 124.2), the live-tree half and `lint-types` exit 0
-**Status:** backlog
+**Status:** done
 
 ### Story 123.2: One steward module names this root's layout and repository, and prove-landed reads doctor through its command
 
@@ -8674,7 +8674,7 @@ So that a move changes one module, and a test reds when a second module hard-cod
 **When** the values move to `root_layout.py` (assignments only), the flag-tree path imports `pyforge.core.cutover_root.LOCAL_DEV_RELATIVE`, `sync.py` gains the public name the host's import needs, `run_bmad_drift_integrity` always runs `bmad-drift-check` through the existing command runner, and `test_portability.py` scans the package source
 **Then** the portability test exits 0 and fires on a planted path constant, slug, cross-station import and stale exception; no path constant or slug is left outside `root_layout.py`; no `from pyforge.<another station>` import is left anywhere in steward's source; the values are unchanged; prove-landed keeps its verdict
 **And** no new subprocess call site and no builtin-rooted exception; `src/platform` is not touched; the coverage floor, the package half, the live-tree half and `lint-types` exit 0
-**Status:** backlog
+**Status:** done
 
 ### Story 123.3: Estate plan refuses when its pixi dry run fails, and the share-tree tests say where they run
 
@@ -8690,7 +8690,7 @@ So that a broken estate never reads as 'no moves' and a session precondition can
 **When** a non-zero dry run returns `DutyResult.ok` False with `EXIT_ESTATE_REFUSAL` (3) on the plain path, `--json` and `--due`, the skip reason names the environment read, and finding (2) always runs `bmad-drift-check` through `run_bmad_drift_integrity`
 **Then** the refusal tests select at least three cases; `--due` keeps exit 1 for overdue only, and a failed pixi with an overdue refresh is the refusal; a green dry run is unchanged; the two share-tree tests pass where the Guild env exists; session.py imports no `pyforge.doctor` module and finding (2) fails when the drift command exits 1; DW-steward-119-2 reads `status: resolved` naming Story 123.3
 **And** the package half (without the trigger-map module until Story 124.2), the live-tree half and `lint-types` exit 0
-**Status:** backlog
+**Status:** done
 
 ## Epic 124: The shared surfaces carry what every station's cutover-readiness work needs (spec-pyforge-steward CAP-153, CAP-175; spec-pyforge-unifying-strategy CAP-4, CAP-14, CAP-16)
 
@@ -8710,7 +8710,7 @@ So that each package half runs on its package alone and every live-tree reader s
 **When** each station whose marking story landed gets `pyforge-<s>-test` (`-m "not slow and not live_tree"`, `<s>-unit.json`), `pyforge-<s>-live-test` (`-m "live_tree and not slow"`, `<s>-live.json`) and a coverage gate reading both, every new task joins `pyforge-station-tests`, the `writer-lock-check` task joins `[feature.guild-tasks.tasks]` (`cmd = "python -m pyforge.doctor.sources writer-lock"`, a description citing spec-pyforge-doctor:CAP-100 and doctor Story 56.5, the shape of `capability-ledger-check` and `frozen-path-changed-check`; doctor Story 56.5 hands it here), and the comments and descriptions are corrected
 **Then** each landed station has both halves selecting by the marker, no half is empty and both pass, the aggregate names every new task, the kit's package half runs without django-pyforge on its path, the three wrong comments and the two stale detector descriptions are gone, and `writer-lock-check` runs doctor's `writer-lock` source, so doctor's registry test (every `_DOCTOR_SOURCE_TASKS` row has its pixi task) passes again
 **And** the generated pages follow, `environment.yaml` is in sync, `llms-full-check` exits 0, `pixi.lock` does not move (Story 124.3 re-locks), and doctor's `writer-lock-check` names this checkout the writer
-**Status:** backlog
+**Status:** done
 
 ### Story 124.2: Each split suite runs its live-tree half as its own CI job
 
@@ -8726,7 +8726,7 @@ So that Story 124.1's split drops no `live_tree` test from CI, and a planning ed
 **When** each split suite gets a `<s>-live-test` job on steward-live-test's shape (its own pixi env, a coverage upload; scribe's with the pgvector pg17 service; warden's checkout holding pixi.lock, pixi.toml, .claude/skills/** and src/**), the package jobs fire on their package and the shared surface, the path arrays are derived, ROOT_HANDOFF_INPUTS declares every root handoff (doctor's `test_live_<x>.py` renames included), and `docs/foundry/capability-ledger.yaml` joins doctor's and steward's live paths
 **Then** a live job exists for every split suite; every read fires a job and no package half reads outside its package; the registry matches the workflow; path filters agree; budgets name the new lanes and the budget report runs
 **And** the aggregate `pyforge-station-tests`, the coverage gates and steward's live half exit 0 (the full preflight runs once, in doctor Story 58.4)
-**Status:** backlog
+**Status:** done
 
 ### Story 124.3: Core's, the kit's and steward's manifests state Python 3.14, a check holds every package floor, and the lock follows
 
@@ -8742,7 +8742,7 @@ So that no manifest claims a floor the code cannot run on, and the check that cl
 **When** this story changes the five manifests it holds, the check reads `[package.host-dependencies] python` and `[package.run-dependencies] python` of every `src/shared/packages/pyforge-*/pixi.toml`, the stub is removed, and the lock moves once through `pixi lock` on an empty cache in a `git clone --shared` scratch clone
 **Then** no package manifest keeps a 3.12 floor; the check passes, reads the manifests and fires on a fixture at `>=3.12`; the stub is gone; the lock installs with `--locked` in a fresh clone; every suite passes on the new lock
 **And** no PostgreSQL, libpq, psycopg or pgvector pin moves; only the named lines move in the lock's path records; Platform CI's test job passes on the new lock
-**Status:** backlog
+**Status:** done
 
 ### Story 124.4: The cutover-ledger write kill switch joins the flag tree and every shipped-flag table
 
@@ -8758,7 +8758,7 @@ So that `flag-gate-check` and the shipped-flag tests stay green when Stories 121
 **When** the key is registered with the declared values (boolean on/off, `defaultVariant` on in production, staging and dev; owner steward; story the 121.2 ledger key; created 2026-11-10; on_everywhere 2026-11-10; cleanup_by 2027-02-08; read in cutover.py) and joins `_LATER_KILL_SWITCHES`
 **Then** the key reads `on` in the tree, core's shipped tables and the platform table name it, core's flag tests pass and `flag-gate-check` is green for the two stories that declare the key
 **And** Platform CI's `test` job, replayed locally with `platform-ci-local -- --test`, reads the new key in `_SHIPPED_BOOLEANS`
-**Status:** backlog
+**Status:** done
 
 ### Story 124.5: Each persona names the MCP tools its station's face serves, and the host Spec governs the personas and says what Scribe's graph store is
 
@@ -8774,4 +8774,4 @@ So that a persona never sends me to `station_face` as the face, and a persona th
 **When** each persona's tool lines name the tools its station's `contract.md` MCP section lists, the how-to names real tools, and `spec-pyforge-unifying-strategy` is re-derived once from its memlog (the three `change` entries written at mint for CAP-16 with its surface, CAP-4 and CAP-14, and the 2026-11-06 CAP-20 correction)
 **Then** no persona names `station_face` as the face; each persona names tools its station's contract lists; warden's persona allows what shipped; the eight pinned `## Allowed actions (CAP-16)` headings are unchanged; the host surface lists the eight `.claude/skills/bmad-agent-<station>/**` lines and no `bmad-agent-*` glob; CAP-14 names `pyforge-scribe-4-graph-nodes-stale-column`; the host Spec is not behind its memlog
 **And** every station's persona tests, `governance-currency` and `ad-citation-check` exit 0; herald's pinned 'Lane 1 CMS stays steward' sentence stays and no django-herald path moves
-**Status:** backlog
+**Status:** done

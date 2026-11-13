@@ -31,6 +31,8 @@ declared_low_risk: false
 > **Blocked 2026-11-10 (forward dependency).** Its Deps name stories in later epics (S-124.4).
 > The key stays `blocked` until those stories are `done` on branch `cutover-readiness-2026-11-10`;
 > the orchestrator of that PR unblocks it only with operator confirmation (AGENTS.md § Policy).
+>
+> **Unblocked 2026-11-13.** Every story its Deps name is `done` on branch `cutover-readiness-2026-11-10`. The operator's "Start build" consent covered the unblock; CLOSE-LEDGERS moved the key to `done`.
 
 <intent-contract>
 
@@ -102,6 +104,7 @@ Parent: `spec-python-foundry-cutover` fnd:CAP-9; `spec-foundry-capability-ledger
 
 **Commands:**
 - `pixi run --frozen -e pyforge-steward pytest src/shared/packages/pyforge-steward/tests/unit/test_cutover_ledger.py -q -p no:cacheprovider` — expected: exit 0.
+- `pixi run --frozen -e pyforge-steward pytest src/shared/packages/pyforge-steward/tests/unit/test_cutover.py -q -p no:cacheprovider` — expected: exit 0. This module runs `pyforge.steward.cutover_ledger_write` in both states through the testing kit's `flag_states` (Story 121.2's verb is the one flag reader; integrator addition 2026-11-13, after the flag gate went red when CLOSE-LEDGERS moved this spec to `done`).
 
 ## Notes
 

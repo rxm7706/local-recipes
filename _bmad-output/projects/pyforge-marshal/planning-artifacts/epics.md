@@ -11359,7 +11359,7 @@ So that `ready` means a story is open, `shipped` carries the day it landed, a de
 **When** `research/cap-marker-truth-2026-11-10.md` joins each capability to its stories, their ledger values, the paths they name and the ledger history, one memlog `correction` entry carries the markers by reference to it, and the memlog entries of 2026-11-10 are rendered by the anchored script
 **Then** every capability heading carries `(shipped <date>)`, `(ready <date>[; <qualifier>])` only while a citing story is open, or `(retired <date>[: <reason>])`, and no other marker word; CAP-82 and CAP-93..CAP-96 read `(retired 2026-08-25: ...)` while CAP-80, CAP-81, CAP-84..CAP-86 and CAP-121 stay shipped; spec-pyforge-marshal:CAP-304 and spec-pyforge-marshal:CAP-305 read `(ready 2026-11-10)`, and so do the seven capabilities this change amends with a fix (CAP-13, CAP-23, CAP-208, CAP-227, CAP-229, CAP-261 and CAP-287) while any of their fix stories is open, each reading `(shipped <date>)`, dated the day the last of them reached done, once all are done (memlog 2026-11-10, Marker of an amended capability, and its addendum); `companions:` names `contract.md`
 **And** the PRD carries FR-246..FR-254 with their arrows and the four body sentences (the FR space reads FR-1..FR-254), the spine carries AD-7's sentence, the two drifted story specs (74.2, 46.2) read `done`, and `chain-completeness`, `story-status`, `status-body-consistency`, `fr-without-cap` and `ad-citation` exit 0
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps S-117.5 and S-118.2 are done)
+**Status:** done
 
 ### Story 114.2: No marshal capability or Constraint names a file, flag, verb or skill that is gone
 
@@ -11371,11 +11371,11 @@ So that every name the Spec gives can be found in the tree, and a name that is r
 **Flag:** none (`spec-feature-flag-governance` Q1, a fix)
 **Surface:** `specs/spec-pyforge-marshal/SPEC.md` (re-derived, never by hand), `specs/spec-pyforge-marshal/.memlog.md`, `specs/spec-pyforge-marshal/integration-layers.md`, `specs/spec-pyforge-marshal/glossary.md`, `.claude/skills/marshal-run-watch/SKILL.md`, `scripts/promote_sprint_status.py`, `src/shared/packages/pyforge-marshal/tests/meta/test_spec_names_live_paths.py` (new)
 **Spec:** `planning-artifacts/specs/spec-114-2-no-marshal-capability-or-constraint-names-a-file-flag-verb-or-skill-that-is-gone.md`
-**Given** at `82a2b18828` 41 capabilities name a backticked path, file or `<x>_check` that does not resolve in `git ls-files`: 14 hold a dead name (the console's `data.js` and `generate.py`, deleted 2026-08-25; `scripts/forward_dependency_check.py` and `scripts/dashboard_drift_check.py`, deleted 2026-08-10) and 27 a name that is runtime, upstream or historical by design; the packaging Constraint says Python `>=3.12` and a `genesis` entry point; CAP-57, CAP-84 and CAP-159 name `bmad-dev-auto` as the invoked skill
+**Given** at `82a2b18828` 41 capabilities name a backticked path, file or `<x>_check` that does not resolve in `git ls-files`: 14 hold a dead name (the console's `data.js` and `generate.py`, deleted 2026-08-25; `scripts/forward_dependency_check.py` and `scripts/dashboard_drift_check.py`, deleted 2026-08-10) and 27 a name that is runtime, upstream or historical by design; the packaging Constraint says Python `>=3.12` and a `genesis` entry point; CAP-57, CAP-84 and CAP-159 name `bmad-dev-auto` (the retired 6.x name of `bmad-build-auto`) as the invoked skill
 **When** each dead name is replaced, in a memlog `change` entry, by what holds the behaviour today, and the Spec is re-rendered after Story 114.1's render
-**Then** a `live_tree` meta-test passes on the tree and fails on its own fixture (a capability naming `scripts/no_such_check.py`), every by-design name sits on its `ALLOW` table with a reason, the Constraint states `>=3.14` and the `marshal` and `marshal-mcp` entry points, only CAP-44 names `bmad-dev-auto` (the permanent `DevPolicy.skill` discriminator), and the Spec states the harness range `bmad-loop >=0.11.0,<0.13`
+**Then** a `live_tree` meta-test passes on the tree and fails on its own fixture (a capability naming `scripts/no_such_check.py`), every by-design name sits on its `ALLOW` table with a reason, the Constraint states `>=3.14` and the `marshal` and `marshal-mcp` entry points, only CAP-44 names `bmad-dev-auto` (the permanent `DevPolicy.skill` discriminator, the retired 6.x skill name), and the Spec states the harness range `bmad-loop >=0.11.0,<0.13`
 **And** `integration-layers.md` no longer names caveman 2.4.0, the watch skill and the ledger header name `-e pyforge-guild`, and the planning detectors exit 0
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic dep S-116.1 is done, with S-114.1 of this epic)
+**Status:** done
 
 ### Story 114.3: Marshal's public contract is one companion, and a meta-test keeps it complete
 
@@ -11391,7 +11391,7 @@ So that the Spec folder alone names marshal's public contract, and the suite fai
 **When** `contract.md` is written from an inventory the test derives from the code: the argparse tree, `TOOL_SPECS` and the names `build_server()` registers, `REGISTERED_CODES`, the seed finding types, `GUARDED_EXIT_CODES` with the seed error leaves, the flag-key constants and the environment reads (a module that imports `root_of_record` contributes `pyforge.cutover_root`)
 **Then** `contract.md` has six sections (CLI verbs and flags; MCP tools; Feature-flag keys; Environment variables; Diagnostic codes; Exit codes), the station face's tools are a sub-table read by AST from `django_marshal_portal/mcp_asgi.py`, and `test_public_contract.py` passes on the tree under `-m live_tree`
 **And** each family has a mutation test in both directions (a name the code gains that `contract.md` lacks; a row the code no longer has), the README points at `contract.md`, and `lint-types` exits 0
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps S-115.3, S-115.4 and S-116.1 are done)
+**Status:** done
 
 ## Epic 115: Marshal's roots, forge and station reach come from their seams, and its guards can fire (fixes under CAP-13, CAP-23, CAP-208, CAP-227, CAP-229 and CAP-261)
 
@@ -11421,7 +11421,7 @@ So that a landing never reads an environment prefix or raises `IndexError` after
 **When** `cli/config.py` gains `checkout_root()` (the `__file__`-anchored half of `repo_root()`, raising `RepoRootUnresolvedError` outside a source checkout), the guard reads real docstring positions, and `watch` reuses `cli/init.py`'s `_loop_home_root()`
 **Then** no bare parent index remains in the two landing modules; outside a checkout the land loaders are absent (MRS-LAND-011) and the deploy loader's error folds into MRS-DEPLOY-027; the guard rejects its untagged fixture and passes the tagged, docstring and `help=` forms; `watch` honours the override
 **And** each remaining loop-home read carries its `CAP-4: loop-home FILE read` tag with a reason or a `deferred:` entry in the story spec, the Doctor-file test moves to its own `live_tree` module, the existing landing and root tests pass unchanged, and `lint-types` exits 0
-**Status:** backlog
+**Status:** done
 
 ### Story 115.2: A landing reaches the spec-surface verdict through Doctor's command, never an import
 
@@ -11437,7 +11437,7 @@ So that marshal reaches Doctor through its CLI grammar, as every station reaches
 **When** `adapters/doctor_cli.py` runs `python -m pyforge.doctor.sources spec-surface --json` through a bootstrap that puts the worktree's Doctor source first, with the worktree as cwd, through the landing's `ProcessPort`
 **Then** stdout that parses as a JSON list is the verdict whether Doctor exits 0 or 2; a launch failure, a timeout, another exit code or stdout that is not a JSON list is unavailable: MRS-DISP-047 (warn, no refusal) on the first read and MRS-DISP-048 (refuse) on a re-read
 **And** no marshal module imports `pyforge.doctor` (a meta-test names a synthetic offender), the landing's other test files pass unchanged, and the import contracts, lint and types hold
-**Status:** backlog
+**Status:** done
 
 ### Story 115.3: marshal-mcp registers every tool it lists, and a seed failure exits with the code its taxonomy documents
 
@@ -11453,7 +11453,7 @@ So that the MCP face carries the preserve verbs Story 87.15 recorded, and a sche
 **When** `build_server()` registers the three preserve tools (operator ruling of 2026-11-10) and `main` admits seed's closed set, derived from `SeedError`'s subclasses, only when the dispatched command is `seed`
 **Then** the registered names equal `TOOL_SPECS` and the test's two mutations fail it, push and retire refuse with the flag off, a schema-breaking state file exits 5 and a broken packaged manifest exits 10 through `main`, and a non-seed handler that returns 5 still exits 2
 **And** `GUARDED_EXIT_CODES` does not move, the counts in the server, tool and parity tests derive from `TOOL_SPECS`, and `lint-types` exits 0
-**Status:** backlog
+**Status:** done
 
 ### Story 115.4: Marshal's forge repository is the root of record's
 
@@ -11469,7 +11469,7 @@ So that a landing, a batch PR and `marshal watch` address the root of record's r
 **When** `adapters/forge_root.py` returns `root_of_record(flags_path).forge_slug` (Story 117.2) and turns `CutoverRootError` into the forge port's `ForgeCommandError`, read inside each site's existing forge handling
 **Then** no repository slug remains in marshal source; `local-recipes` gives the local-recipes slug, `foundry` gives the seam's foundry slug, and no flag tree gives the default; a malformed tree reports MRS-DISP-018 (dispatch land), MRS-DEPLOY-014 (land, `deploy batch-pr`) or MRS-WATCH-004 (watch), and `core/findings.py` does not move
 **And** a guard test fails on a planted slug literal, the existing landing, deploy, watch and forge tests pass unchanged, and `lint-types` exits 0
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic dep S-117.2 is done, with S-115.1 and S-115.2 of this epic)
+**Status:** done
 
 ## Epic 116: Marshal's suite is an oracle off the monorepo, and the change closes on a reconciled Spec (spec-pyforge-marshal:CAP-305; relay of spec-pyforge-steward:CAP-175)
 
@@ -11498,7 +11498,7 @@ So that the suite cannot report green on a tree that is not this one.
 **When** the marker is registered once (steward's text), the tree-reading tests of the large unit modules move to `*_live_tree.py` siblings marked at module level with an assertion in place of each skip, and bmad-loop becomes a plain import (a declared dependency)
 **Then** no test skips on a missing live-tree file or a missing Doctor or bmad-loop import, and the Doctor ledger-regression test runs Doctor's own command in the marshal env and passes
 **And** no test is lost against `origin/main`, and `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` exits 0
-**Status:** backlog
+**Status:** done
 
 ### Story 116.2: Marshal's suite runs as a package-local half and a live-tree half
 
@@ -11514,7 +11514,7 @@ So that the package half is what a repository without the monorepo can run.
 **When** a candidate with 20 tests or fewer is marked whole and a larger one moves only its reading tests to a `*_live_tree.py` sibling (`test_promote_sprint_status_regressions.py`, `test_landing_ci_pauses.py`, `test_repo_root.py`), the four largest left to Story 116.3
 **Then** the halves partition the suite, the live half is not empty, the package half keeps at least 90% of the collected tests, and no module of more than 20 tests is marked whole except the three whose every test reads the tree
 **And** no test is lost, both halves pass selected by marker, and the modules that hand the repository root to code under test are recorded in the story spec for steward's `ROOT_HANDOFF_INPUTS`
-**Status:** backlog
+**Status:** done
 
 ### Story 116.3: The four largest landing and challenge test modules keep their package-local tests in the package half
 
@@ -11530,7 +11530,7 @@ So that about 420 package-local tests stay in the package half for the few that 
 **When** each moves its reading tests to a `*_live_tree.py` sibling and rewrites a fixture literal that only names a fixture as a path join or a made-up name
 **Then** none of the four is marked `live_tree`, each sibling is, and steward's `package_half_reads_nothing` passes with the `[marshal]` case
 **And** the partition and the 90% floor hold, no test is lost, and both halves pass
-**Status:** backlog
+**Status:** done
 
 ### Story 116.4: A package-half test that opens a repository file outside the package fails, wherever the package half runs
 
@@ -11546,7 +11546,7 @@ So that a runtime read the static derivation misses cannot hide in the package h
 **When** `tests/_support/tree_read_guard.py` installs one `sys.addaudithook` per process and `tests/conftest.py` arms it around each package-half test's setup, call and teardown
 **Then** a package-half `open`, `os.listdir`, `os.scandir` or `glob.glob` of a repository path outside the package fails the test naming each path; reads under the package, a tmp dir, `.pixi/`, `.steward/coverage/` or the installed pyforge-core and pyforge-testing-kit sources do not; a `live_tree` test is never armed; with no repository around the package the guard is inert
 **And** `pyforge-marshal-test` passes with the guard armed (its header names `tree-read guard: armed`), CI `marshal-test` and the pr-preflight marshal lane run it, and the off-tree copy run is recorded once in the story spec
-**Status:** backlog
+**Status:** done
 
 ### Story 116.5: The change closes on a reconciled marshal Spec: shipped markers, one surface reconcile, the stamps, the deferred rows and the counts
 
@@ -11562,7 +11562,7 @@ So that the change lands on a Spec whose markers say what shipped, whose memlog 
 **When** the closer runs last, from a clean tree
 **Then** spec-pyforge-marshal:CAP-304, spec-pyforge-marshal:CAP-305 and CAP-13, CAP-23, CAP-208, CAP-227, CAP-229, CAP-261 and CAP-287 read shipped with the day their stories reached done, one Surface reconcile event names every changed path on the Spec's surface, DW-FU-53-2-2 closes moot by design, DW-FU-4-4-2 closes for the constant with DW-marshal-115-4-3 for the remote check, and every marshal and core-kit deferred row of the change and every story-spec `deferred:` entry is ingested
 **And** `epicCount` and `storyCount` equal the headings, `test-architecture.md` names every story, a retro lands, the Dream's Realization log records the close, and `chain-completeness`, `story-status`, `status-body-consistency`, `fr-without-cap`, `ad-citation` and `chain-currency-sweep` exit 0; the scoped stamps are doctor Story 58.4's
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps S-117.1 to S-117.4 and S-117.6 to S-117.8 are done, with Stories 114.1 to 116.4 of its own and earlier epics; its cross-station closers are named in its story spec's notes and ordered by the integration branch's wave order)
+**Status:** done
 
 ## Epic 117: The shared floor says what it is: the leaf's surface, its root seam and its guards (spec-pyforge-core:CAP-12..spec-pyforge-core:CAP-14)
 
@@ -11598,7 +11598,7 @@ So that the unmarked rest is an oracle I can run from the package alone.
 **When** the marker is registered (doctor's text), the ten meta modules and the meta conftest carry `pytestmark = pytest.mark.live_tree`, and the roster and league-measure tests that read the tree move, names unchanged, to two new `live_tree` modules under `tests/unit`
 **Then** the package half (`-m "not live_tree" --strict-markers`) and the live half each pass, both are non-empty and they add up to the whole collection; steward's derivation finds an outside read only in `tests/unit/test_flags.py`, which Story 117.7 splits
 **And** the lane-wired meta-test accepts today's whole-suite job or the two halves and reds a dropped half (at least two `test_detector_fires_when_a_half_is_dropped_*` pass), the pip-install lane's file list and the 17 `k-core` case-list nodeids still resolve, and `pyforge-core-test` and `lint-types` exit 0
-**Status:** backlog
+**Status:** done
 
 ### Story 117.2: One function answers the root of record and the forge slug
 
@@ -11614,7 +11614,7 @@ So that no station holds a repository slug and the operator's hand flip of `pyfo
 **When** `cutover_root.py` gains `FORGE_SLUGS` (a read-only constant mapping), the frozen `RootOfRecord(root, forge_slug, source)`, the pure `forge_slug_for(root)` and `root_of_record(path=None)`
 **Then** the checked-in tree answers `('local-recipes', 'rxm7706/local-recipes', 'flag-tree')`, `forge_slug_for('foundry')` answers the foundry slug, an explicit path that is not a file, a malformed tree and an unknown variant each raise `CutoverRootError`, and with no tree in reach the function answers the default root with `source='default'` (ruling 5 of the second addendum)
 **And** at least eight `root_of_record` / `forge_slug` tests pass, the four case-list tests are unchanged, `git grep` finds the slug in `cutover_root.py` alone within the leaf, and the leaf constraint, `pyforge-core-test` and `lint-types` exit 0
-**Status:** backlog
+**Status:** done
 
 ### Story 117.3: A missing purge list keeps a preserve tag local instead of crashing the push
 
@@ -11630,7 +11630,7 @@ So that the path that preserves work never dies with `FileNotFoundError` on a ro
 **When** `push_preserve_ref` wraps only its `load_purge_list` call, catching `OSError` and `json.JSONDecodeError`, and returns `pushed=False` with a finding under a new `ContentGateReason` member before any network call
 **Then** a missing and an unparsable purge list each leave the tag local with a finding whose reason names the purge list, and nothing reaches the bare origin; the new tests fail on the module as it was (`rc=1`, recorded in the story spec)
 **And** `load_purge_list` keeps raising for its direct callers, no exception class, default path or environment variable is added, and marshal's and steward's preserve tests, the sole-grammar meta-test, `pyforge-core-test` and `lint-types` exit 0
-**Status:** backlog
+**Status:** done
 
 ### Story 117.4: The leaf's public surface is written down, and the suite reds what it lacks
 
@@ -11646,7 +11646,7 @@ So that the Spec folder alone says what stations import, and the core suite fail
 **When** `contract.md` is written with `## Modules` (one `### pyforge.core.<module>` heading each, with its governor, public names and estate-bound constants), `## Environment variables`, `## Feature-flag keys`, `## Exit codes`, `## Entry points`, `## Python floor` and `## Not part of the contract`, and `test_public_contract.py` (marked `live_tree`) derives the same sets from the source
 **Then** the module passes on the tree and its two synthetic-input tests prove both directions; the module headings equal the source's modules; the six environment variables and the two flag keys the leaf reads are listed
 **And** the README names every module and points at `contract.md`, the `__init__` docstring stops naming stories, and `pyforge-core-test` and `lint-types` exit 0
-**Status:** backlog
+**Status:** done
 
 ### Story 117.5: The core Spec says what the leaf is, and carries Epic 117's capabilities
 
@@ -11662,7 +11662,7 @@ So that every capability carries a dated marker, no question the code answered s
 **When** the story appends one change entry carrying each shipped date (derived with `git log` from the realizing ledger key), the question, non-goal, constraint and frontmatter entries, and renders once through the anchored script, logging both self-validate passes as `self-validate 2026-11-10 (Story 117.5)`
 **Then** the Spec holds fourteen capabilities, each with a dated marker, the five with open stories (spec-pyforge-core:CAP-7, spec-pyforge-core:CAP-8, spec-pyforge-core:CAP-12, spec-pyforge-core:CAP-13, spec-pyforge-core:CAP-14) at `(ready 2026-11-10)`; `open_questions: []`, `companions` names `contract.md`, `updated: 2026-11-10`, `owner-dream` points at `docs/dreams/pyforge-marshal.md`; the stale strings are gone and the Non-goals point at `contract.md` with no count
 **And** the `surface:` paths are not narrowed (operator ruling of 2026-11-10), and `chain-completeness`, `fr-without-cap` and `dream-chain` exit 0
-**Status:** backlog
+**Status:** done
 
 ### Story 117.6: A station left out of a kernel guard is left out path by path, and the list only shrinks
 
@@ -11678,7 +11678,7 @@ So that a new builtin-rooted exception class or a new raw subprocess call in an 
 **When** two frozensets of relative paths, `_UNREPARENTED_ROOTS` (`path::Class`) and `_SUBPROCESS_FILES`, are measured with the guards' own detectors on the integration branch, after every story of this PR that edits a station's `src/`
 **Then** a new entry fails with the guard's remedy (`root it at pyforge.core.errors.PyforgeError` or `launch it through pyforge.core.process`) and a pin with no measured entry fails with `lower the pin`; the pinned stations equal each guard's `_OUT_OF_SCOPE_STATIONS`, plus `pyforge-core` for roots, and `PyforgeError` is excluded by name
 **And** the module is `live_tree`, at least four `fires` and two `scope` tests pass, the story spec lists every pin not in the plan-time measurement at `f614d6a9b8` with the story that added it (or says `none`), and `pyforge-core-test` and `lint-types` exit 0
-**Status:** backlog
+**Status:** done
 
 ### Story 117.7: The flag reader's tests run from the package alone
 
@@ -11694,7 +11694,7 @@ So that the package half cannot skip into a false green on a root without the pl
 **When** the hermetic tests move to `test_flags_reader.py`, and `test_flags.py` keeps the shipped-flag tables and gains `pytestmark = pytest.mark.live_tree`; the one changed line compares with `str(cutover_root.LOCAL_DEV_RELATIVE)`
 **Then** every test function keeps its body (that one literal excepted), the tables stay at the path marshal's heal binds to, and marshal's heal, landing and verify-fix tests pass
 **And** steward's derivation finds no unmarked core module reading outside the package, the package half passes from a copy of the package alone with no skip naming an outside path, the halves add up to the whole suite, and `pyforge-core-test` and `lint-types` exit 0
-**Status:** backlog
+**Status:** done
 
 ### Story 117.8: The kernel Specs are reconciled and stamped once, after the last edit on the branch
 
@@ -11710,7 +11710,7 @@ So that the change lands on kernel Specs whose markers say what shipped and whos
 **When** the closer runs last, from a clean tree, appends one `Surface reconcile 2026-11-10 (marshal Story 117.8, cutover-readiness integration)` event per Spec naming every changed path (from `git diff --name-only origin/main...HEAD`) no earlier line of this PR names, then one change entry per Spec flipping the markers to `(shipped <integration date>)`, and renders each Spec once with both self-validate passes logged naming Story 117.8
 **Then** each of the two memlogs carries exactly one such reconcile line and one `updated:` key; core's and the kit's package halves read nothing outside the package (steward's trigger-map test with `core` and `testing_kit` parametrized); no unreconciled drift row names either Spec
 **And** it writes no `scripts/.spec-surface-baseline.json` (doctor Story 58.4 stamps once, after the last edit) and no reconcile line on `spec-pyforge-marshal` or `spec-pyforge-unifying-strategy` (Stories 116.5 and 122.5), and `chain-completeness`, `fr-without-cap`, `capability-ledger`, `story-status` and `deferred-work` exit 0
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps S-118.1 and S-118.2 are done, with the Epic 115 and 117 stories its Deps name; its cross-station deps are named in its story spec's notes and ordered by the integration branch's wave order)
+**Status:** done
 
 ## Epic 118: The testing kit is a floor a second root can rebuild (spec-pyforge-testing-charter:CAP-6..spec-pyforge-testing-charter:CAP-7)
 
@@ -11743,7 +11743,7 @@ So that the kit eight stations import can be rebuilt and judged from the package
 **When** the conftest loses the path insertion and the Django bootstrap, the portal-and-CLI contract test configures Django in a module-scoped fixture and carries `live_tree`, the flag fixture's comparison with the platform tree moves to a new `live_tree` meta module, and `contract.md` is written with one heading per kit module, fixtures and markers, run-dependencies, estate-bound members and the Python floor
 **Then** the package half passes with no host on the path and from a copy of the package alone with no skip naming an outside path, the live half passes with django-pyforge on the path, the halves add up to the whole suite, and only `live_tree` modules name `django`
 **And** the contract test passes and its module headings equal the kit's modules, the README names every module, the lane-wired test accepts the whole-suite job or the two halves and reds a dropped half, and `pyforge-testing-kit-test` and `lint-types` exit 0
-**Status:** backlog
+**Status:** done
 
 ### Story 118.2: The testing charter says what was built, and carries Epic 118's capabilities
 
@@ -11759,7 +11759,7 @@ So that every charter capability carries a dated marker and no line names a file
 **When** the story appends one change entry carrying each shipped date (derived with git) and renders once through the anchored script, logging both self-validate passes as `self-validate 2026-11-10 (Story 118.2)`
 **Then** the Spec holds seven capabilities, each with a dated marker, spec-pyforge-testing-charter:CAP-3, spec-pyforge-testing-charter:CAP-6 and spec-pyforge-testing-charter:CAP-7 at `(ready 2026-11-10)`; `companions` names `contract.md`, `updated: 2026-11-10`, no open question; `generate.py` and `not yet created` are gone; `station-tea-status.md` keeps its table under `## Snapshot at Spec authoring (2026-08-02)` and gains `## Live signal` with the two measuring commands and no number
 **And** `chain-completeness` and `fr-without-cap` exit 0
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

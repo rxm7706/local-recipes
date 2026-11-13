@@ -1153,7 +1153,7 @@ So that the contract a rebuild re-derives is the one the code serves, and a new 
 **When** this story lands
 **Then** `contract.md` has one table per family: the CLI verbs and flags (a row per verb path, starting `` | `scribe <path>` | ``; `index move-list` marked retired with CAP-34), the MCP tools, the flag key `pyforge.scribe.bmad_estate_catalog`, the environment variables (the package's, the surface scripts', and those inherited through `pyforge.core`) and the exit codes; `test_public_contract.py` derives the code side (the click tree, an AST scan of `typer.Exit(code=)` and of `os.environ` reads, flag-key literals, the `*_TOOL` constants of django-scribe's `mcp_asgi.py` read as text) and exits 1 naming each item present in the code and absent from `contract.md`
 **And** a planted contract missing one item of each family is reported by name (`-k test_checker_names_a_missing`: 6 passed); the test imports no host or portal code; `pixi run --frozen -e pyforge-guild lint-types` exits 0
-**Status:** backlog
+**Status:** done
 
 ### Story 31.2: The scribe Spec says what the code does
 
@@ -1169,7 +1169,7 @@ So that a rebuild from Dream plus memlog reproduces scribe and not a stale readi
 **When** each amendment is a memlog entry and `bmad-spec` re-derives the Spec once, after the six stories it depends on are built
 **Then** CAP-1 states the nested schema and `--source`; CAP-2 the compile surfaces, Story 8.1's trigger and supersession's one writer, `capture(supersedes=)`, with no CLI flag (operator ruling 2026-11-10); CAP-3 recency ties and the store's identity rule; CAP-6, CAP-9, CAP-21..23, CAP-31 and CAP-32 their named corrections; CAP-17 and CAP-18 are re-authored in full; every capability heading carries one dated marker, `(shipped <date>)` from the merge of the last story citing it, `(ready <date>)` while a story is open, and CAP-34's `(retired 2026-11-10: ...)`, and the not-met-until-Story qualifiers the mint fix pass wrote on the CAP-1, CAP-4 and CAP-33 headings are gone; the Non-goal *Not CAP-14* points at `spec-pyforge-unifying-strategy:CAP-14` and the four changesets `src/platform/db/changelog/changes/pyforge-scribe-1..4*.sql`; `surface:` gains the four contract files and `companions:` gains `contract.md`
 **And** both self-validate passes are logged under the `Story 31.2 re-derive` marker; `grep -c 'See absorbed memlog'` prints 0; the tests the amended capabilities name pass; no capability entry is backfilled, since the seed includes `archive/**/.memlog.md` (operator ruling 2026-11-10)
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+**Status:** done
 
 ### Story 31.3: The scribe planning chain follows the Spec
 
@@ -1185,7 +1185,7 @@ So that `chain-currency` reads scribe current and no planning artifact repeats a
 **When** the chain is re-stamped in order, brief, PRD, spine, epics, after Story 31.2's re-derive
 **Then** the four read on or after 2026-11-10, in that order, none older than the package manifest's last commit; FR-14 names five command groups; the spine's Stack row reads `python >=3.14`; both of Epic 4's requirement cites read `canopy:FR-45`; `inputDocuments` names `archive/docs/specs/claude-team-memory.md`; a retro covers Epics 31 to 33; the deferred-work ledger gains the seven rows the rulings leave open and closes DW-scribe-egm-2026-11-05-3 citing Story 32.1; DW-8-1-2 gains an evidence line; the Dream's Realization log closes the entry
 **And** `ad-citation-check` exits 0, the planning detectors name no scribe finding, and `chain-currency-sweep-check -- --project pyforge-scribe` exits 0
-**Status:** backlog
+**Status:** done
 
 ### Story 31.4: Scribe's part of the cutover-readiness change closes at the integration head
 
@@ -1201,7 +1201,7 @@ So that the PR lands with no scribe-owned artifact behind the tree it ships.
 **When** this story runs at the integration head
 **Then** `scribe catalog bmad-estate --check` and `llms-full-check` exit 0; the known-rows file is re-measured with full history and no row is scribe's; one `Surface reconcile` event names every scribe-governed path the change moved; one `scribe capture --type project` records the close, after Story 32.2's `MEMORY.md` edit; `AGENTS.md` names the chain-write denial and no stale rule count
 **And** the station suite passes in both halves with the server up; `test_instruction_surface_parity.py`, `test_team_memory_index.py`, `test_spec_not_behind_memlog.py` and `governance-currency` exit 0; `marshal context advisory` runs; the keys are promoted by the CLOSE-LEDGERS job, not here
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+**Status:** done
 
 ## Epic 32: The instruction surface, team memory and the seed state the ruled cutover (spec-pyforge-scribe CAP-1, CAP-27, CAP-35)
 
@@ -1227,7 +1227,7 @@ So that no session writes a chain artifact on B, or seeds a rebuild from a Frame
 **When** `bmad-project-context` refreshes the block headless with the 2026-11-10 rulings as the approved input (per-PR approval b), the whole proposed block shown in the PR
 **Then** the block names the seed as Dream plus memlog, archived memlogs (`archive/**/.memlog.md`) included with no backfill, and a Frame as a pointer, says A writes every Dream, Frame, Spec and capability-ledger row until `pyforge.cutover_root` flips and B reads A at a pinned SHA, names `docs/foundry/capability-ledger.yaml` as the mode table, carries the accepted RUL-A-F3 text, and its provenance line carries the refresh date and SHA; the recipe count outside the block is re-measured with its command or dropped; the notes file quotes the superseded sentences under 2026-11-10
 **And** `test_cutover_wording.py` removes each required clause (the seed's archived memlogs among them) and plants each superseded clause in a copy, and asserts that exactly that clause is named; the parity suite and `governance-currency` exit 0
-**Status:** backlog
+**Status:** done
 
 ### Story 32.2: A test holds the team-memory index
 
@@ -1243,7 +1243,7 @@ So that every index line names a live record and the index stays a short, curren
 **When** this story lands
 **Then** the test holds the index and the files equal, every link resolving, every record parsing with nested `metadata.type`, and the 200-line bound; the story spec carries the manifest, one row per record with its reason and the record that supersedes it; the operator-approved records (second addendum, item 7) move with `git mv` to `archive/.claude/memory/project/` and their index lines leave `MEMORY.md`
 **And** the guard fires on four planted fixture trees (4 passed); no record is deleted; `pixi run --frozen -e pyforge-guild lint-types` exits 0
-**Status:** backlog
+**Status:** done
 
 ### Story 32.3: A Spec that is behind its memlog reds scribe's live-tree suite
 
@@ -1259,7 +1259,7 @@ So that the seed's two halves cannot drift apart unnoticed.
 **When** this story lands
 **Then** for every live Spec folder the test compares the working-tree memlog with the memlog at the commit that last changed `SPEC.md`, and an added entry that is not bookkeeping (as `scripts/fleet_scan.py` classifies it, imported, never redefined) fails the suite naming the folder and the entry, unless a known row with its owner holds it; the known-rows file only shrinks, judged with full history; a shallow clone judges the change under test only
 **And** fixture repositories plant each case and its clean twin (8 passed); scribe's own Spec is judged with no known row; `pixi run --frozen -e pyforge-guild lint-types` exits 0
-**Status:** backlog
+**Status:** done
 
 ## Epic 33: Scribe's suite is an oracle a second root can run (spec-pyforge-scribe CAP-28, CAP-31; relay of spec-pyforge-steward:CAP-175)
 
@@ -1285,7 +1285,7 @@ So that the package half proves scribe alone and no green hides a skipped branch
 **When** this story lands
 **Then** `live_tree` and `postgres` are registered markers; every module that reads outside the package carries `live_tree`; every test that needs the server carries `postgres` and fails, never skips, when nothing answers on `SCRIBE_GRAPH_DSN`; one walk-up finder replaces the parent counting; the seven tests simulate the extra's absence and run; `test_live_tree_split.py` holds a closed list of the skip sites that remain, each with its reason
 **And** the package half passes with the package copied alone and the working directory outside the repository; a missing server fails the pg tests without a skip; the whole suite passes with the server up; `pixi run --frozen -e pyforge-guild lint-types` exits 0
-**Status:** backlog
+**Status:** done
 
 ### Story 33.2: The package's metadata and docs agree with the estate
 
@@ -1301,7 +1301,7 @@ So that a rebuild does not ask for a psycopg the estate forbids or teach a stale
 **When** this story lands
 **Then** each extra's floor equals the pin the root `pixi.toml` carries in `[feature.pyforge-scribe.dependencies]`, cap included; the package `pixi.toml` floor is `>=3.14`; the docstrings name `compiled_at` and the recall-time withhold; recall.py cites station ids; the README points at the ledger; the runbook routes guild tasks through `-e pyforge-guild`
 **And** `test_package_metadata_matches_estate.py` exits 0 and fires on a planted drift; the touched modules hold the coverage floor; `pixi run --frozen -e pyforge-guild lint-types` exits 0
-**Status:** backlog
+**Status:** done
 
 ## Platform floor addendum — 2026-09-07
 

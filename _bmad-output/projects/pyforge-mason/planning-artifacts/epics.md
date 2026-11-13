@@ -4022,7 +4022,7 @@ So that a reader and a detector see the same 37 capabilities, and none reads shi
 **When** `SPEC.md` is re-derived through the anchor-asserting script render
 **Then** CAP-1..CAP-37 are each defined once as a `- **CAP-n — <title>**` bullet inside `## Capabilities`, with one dated marker each: the Presenton set, CAP-14..CAP-17, CAP-31 and CAP-35 retired, CAP-32 ready, every other shipped
 **And** no intent or success sentence of CAP-18..CAP-27 is lost, the stale sentences leave the contract text, a `### Correction — 2026-11-1x` subsection records the status words, `surface:` claims Mason's hand-authored skills and the rebuild guard, and both self-validate passes are logged
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+**Status:** done
 
 ### Story 37.2: The mason brief, PRD and spine are reviewed against the Spec they derive from
 
@@ -4038,7 +4038,7 @@ So that the chain's requirements, decisions and floor agree with the contract, a
 **When** each document is reviewed and stamped in feed order: brief, PRD, spine, epics
 **Then** FR-58 to FR-64 each trace their capability, NFR-11 and the spine's stack row read 3.14, FR-48 names the six global knobs and the two factory-island variables, and the spine records the factory-island resolution and the contract companion
 **And** each document carries a `currency_review:` line, the brief's source paths resolve, a readiness report dated this change passes, and the epics frontmatter counts equal its headings
-**Status:** backlog
+**Status:** done
 
 ### Story 37.3: Mason's package states what it does: update's help, the Python floor and the README
 
@@ -4054,7 +4054,7 @@ So that nothing promises a plan the default path never shows, a floor decision D
 **When** the help string, the floor and the README are corrected
 **Then** a new unit test asserts the help names the default write and `--dry-run` as the plan-only path, both manifest tables read `>=3.14`, and no source comment calls 3.12 the floor
 **And** the README is in the present tense, says the `POST /stations/mason/mcp` face serves a supervised build stub that runs no Mason verb and points at the Spec's `contract.md`; `recipe.py::update()` does not change, and the lock regeneration is steward's
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+**Status:** done
 
 ### Story 37.4: Mason's change closes: retro, surface reconcile, deferrals and ledger
 
@@ -4070,7 +4070,7 @@ So that the chain is current by the sweep's own rules and every gap the stories 
 **When** the retro runs over Epics 37 to 39, the memlog names every moved path, the deferral intake runs and the Tier-3 feed moves
 **Then** a mason retro dated within two days of the package `pyproject.toml` change exists, the chain-currency sweep exits 0 for mason, and the story specs' `deferred:` rows carry DW-mason ids
 **And** Story 5.4's first spec reads `superseded`, `DW-mason-25-2-3` is judged on its evidence, the Dream carries one closing line, and story-status, ledger-regression and chain-completeness exit 0
-**Status:** blocked (forward dependency, 2026-11-10: unblocked only with operator confirmation once its later-epic deps are done)
+**Status:** done
 
 ## Epic 38: Mason's oracle travels: a written public contract and a suite split by what it reads (spec-pyforge-mason CAP-5, CAP-7; relay of spec-pyforge-steward:CAP-175)
 
@@ -4101,7 +4101,7 @@ So that the contract a second repository rebuilds is the one the code has, and t
 **When** `contract.md` lists each family as a table and `test_public_contract.py` extracts the same families from the code by AST
 **Then** the meta-test passes on the tree, and a planted item on either side of each of the seven families fails it (14 planted cases)
 **And** `contract.md` states the JSON envelope, the four ship states with `exit 0 does not mean shipped` and the exit-code numbers as prose, Mason reads no feature flag, and the module carries `pytestmark = pytest.mark.live_tree`
-**Status:** backlog
+**Status:** done
 
 ### Story 38.2: Mason's suite runs as a package half and a live-tree half
 
@@ -4117,7 +4117,7 @@ So that the package half travels with the package and nothing silently depends o
 **When** the marker is registered with steward's text and every outside reader carries it
 **Then** the package half passes in the tree and from a copy outside any repository, the live-tree half passes in the tree, and the two together collect what the `not slow` suite collects
 **And** `test_live_tree_split.py` fails on a planted unmarked module that derives the repository root, the cli mypy override names only codes that still fire, and no test is deleted, skipped or re-marked to make a half pass
-**Status:** backlog
+**Status:** done
 
 ### Story 38.3: Mason's adapters pass only what the wrapped scripts declare
 
@@ -4133,7 +4133,7 @@ So that a renamed script or a dropped option in conda-forge-expert reds Mason's 
 **When** the check reads the script table from `cfe._CFE_SCRIPTS` and the adapter options by AST, follows each wrapper to its canonical script and reads that script's `add_argument` calls as text
 **Then** it passes on the tree with no skip from the repository root, and fails on a planted missing script and a planted undeclared option
 **And** it carries `pytestmark = pytest.mark.live_tree`, runs nothing and needs no network, no CFE file changes, and the live-run fidelity gap for the other nine scripts is a `deferred:` row; it is the station's lowest priority, dropped first if the PR is over budget
-**Status:** backlog
+**Status:** done
 
 ## Epic 39: Mason's cutover seam: the native factory-island build is a capability, and conda-forge-expert waits for its own Spec (spec-pyforge-mason CAP-36)
 
@@ -4162,7 +4162,7 @@ So that the error never sends me to a `--foundry-root` flag that does not exist,
 **When** the message names `MASON_FOUNDRY_ROOT` and the walk marker only, and the normalizer strips one leading `./`
 **Then** only `factory/recipes/<r>` and `./factory/recipes/<r>` are island paths, and 12 or more tests cover every native branch, including exit 1 through `main()` with a fake CFE root
 **And** `cfe.py` does not change, the coverage gate passes, and the Docker gap, the ship and submit root and the kill switch are `deferred:` rows on the story spec
-**Status:** backlog
+**Status:** done
 
 ### Story 39.2: conda-forge-expert gets its own Spec after the root of record flips
 
