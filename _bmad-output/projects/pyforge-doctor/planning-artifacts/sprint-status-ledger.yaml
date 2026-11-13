@@ -169,7 +169,7 @@ development_status:
   58-1-the-chain-ledger-board-and-one-chain-tests-that-build-their-own-tree-run-in-the-package-half: done
   58-2-the-docs-factory-method-env-hygiene-and-pages-tests-that-build-their-own-tree-run-in-the-package-half: done
   58-3-spec_surface_check-py-prunes-the-baseline-keys-of-specs-that-no-longer-exist-and-touches-no-live-spec: done
-  58-4-the-branch-s-baselines-and-governance-reports-are-refreshed-once-after-every-unit-s-last-edit: backlog
+  58-4-the-branch-s-baselines-and-governance-reports-are-refreshed-once-after-every-unit-s-last-edit: done
   6-1-profile-doctor-check-and-bring-it-inside-its-budget: done
   6-10-independence-is-structural-for-every-source: done
   6-11-the-classifier-recognizes-a-spike-report: done
@@ -302,7 +302,7 @@ development_status:
   epic-56-retrospective: optional
   epic-57: done
   epic-57-retrospective: optional
-  epic-58: in-progress
+  epic-58: done
   epic-58-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional

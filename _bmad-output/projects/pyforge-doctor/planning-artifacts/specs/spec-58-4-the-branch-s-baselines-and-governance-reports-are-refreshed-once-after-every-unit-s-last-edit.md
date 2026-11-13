@@ -2,7 +2,7 @@
 title: '58.4: The branch''s baselines and governance reports are refreshed once, after every unit''s last edit'
 type: 'chore'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 story: 58-4-the-branch-s-baselines-and-governance-reports-are-refreshed-once-after-every-unit-s-last-edit
 spec: spec-pyforge-doctor
 difficulty: 'heavy'
@@ -166,3 +166,51 @@ Type / Effort / Deps: chore / L / S-56.1, S-56.2, S-56.3, S-56.4, S-56.5, S-57.1
 - 2026-11-10: minted from the station Dream's 2026-11-10 entry (the cutover readiness audit) and the operator's rulings of 2026-11-10.
 - 2026-11-10: step (4) gains the hand edit of fr-baseline.json's atlas `owners` rows (one DW-atlas-46-1-9 row after the prune; atlas's request, routed by the branch orchestrator), the Intent and Always lines name it as the one hand edit, and AC12 checks it.
 - 2026-11-11 (orchestrator decision: the story that makes baseline keys stale prunes them): the atlas prune and the atlas `owners` row move to atlas Story 41.2, the earlier writer of fr-baseline.json (BUILD-3), because 22 stale keys left for this story would keep doctor's live fr-without-cap test red from BUILD-3 to BUILD-18 and break Stories 56.4, 58.1, 58.2 and 57.3's AC13. Step (4) now prunes only what is still stale at the end and edits no `owners` row; the doctor-memlog event about that row is dropped (41.2's PRD reconciliation section records it); the Intent and Always lines say there is no hand edit; AC3 also checks that no `fr-baseline-stale` remains; AC12 re-checks the row 41.2 wrote.
+
+## Review findings (build, round 1, 2026-11-13)
+
+The independent review of the first attempt failed the story on four findings. Each is stated as the reviewer wrote it, then what round 1 did about it.
+
+1. **Blocker. Where: AC6, the PR bar on the final head (head 940ccc6941 plus the staged 58.4 diff).** AC6 is red, and the spec names no later story that owns it. `detectors-ci` exits 1: `flag_gate_check` reports `flag-test-not-two-state` on steward's `spec-121-1-a-generator-derives-the-capability-ledger-from-the-live-specs.md`. Doctor's `test_live_tree_every_doctor_epics_status_matches_the_ledger` fails because 12 epics.md `**Status:**` lines for 56.1 to 58.4 read `backlog` or `blocked` while the ledger reads `done`. 58.4's own line is one of them since AC10's promotion. `test-ci-meta`'s `test_live_tree_has_no_bare_retired_skill_ids` fails on marshal epics.md lines 11374 and 11376, minted in 66a1d3ce24. The full pr-preflight also showed atlas's `test_epics_per_story_status_matches_sprint_ledger` red, and doctor's and atlas's coverage gates did not run.
+   - Round 1 confirmed all four on head 940ccc6941, each run alone with exit 1. `flag-gate-check --spec` on the 121.1 spec gives verdict `red`. Its last writer is the CLOSE-LEDGERS commit db952dbbff, which made the spec `done`, and that is when the gate starts asking for the two-state test. The doctor module fails 1 and passes 3. The CFE meta module fails 1 and passes 8. Atlas `-k test_epics_per_story_status_matches_sprint_ledger` fails 1.
+   - Every cause sits in a file outside this story's files_owned: the 121.1 story spec, each station's epics.md and marshal's epics.md. This round does not edit them. As the reviewer's fix says, they belong to the integrator:
+     - (a) Name `src/shared/packages/pyforge-steward/tests/unit/test_cutover.py` in the 121.1 story spec's `## Verification`. That module carries `@flag_states("pyforge.steward.cutover_ledger_write")`.
+     - (b) After CLOSE-LEDGERS, align every station's epics.md `**Status:**` lines with its ledger. The reviewer's counts: atlas 9, doctor 12 (58.4 included), herald 8, marshal 22, mason 8, scribe 9, steward 25 plus 44.4 to 44.6, warden 8.
+     - (c) Give the two bare `bmad-dev-auto` mentions in marshal's epics.md a same-line gloss.
+     - (d) Write a memlog line before any of these edits moves a governed path, then re-stamp scoped.
+   - AC6 stays red until (a) to (d) land. Its PR does not merge before every AC6 leg re-runs green on the final head. The round 1 re-run of each leg is recorded below.
+2. **Major. Where: `scripts/.spec-surface-baseline.json`, the scoped stamps of `pyforge-mason/spec-pyforge-mason`, `pyforge-doctor/spec-pyforge-doctor` and `pyforge-herald/spec-pyforge-herald`.** The stamps accept steward Story 124.2's edits (84fa9d8c13, 2026-11-12) to governed test files. No memlog line written after those edits names them, so each stamp is a stamp without a reconcile (AGENTS.md pre-PR item 5).
+   - Mason: `tests/meta/test_adapter_sole_caller.py` and `tests/unit/test_errors.py`. The first attempt's own check listed both (`not-named-on-branch=2`) and stamped anyway.
+   - Doctor: `tests/unit/test_sources_writer_lock.py`.
+   - Herald: `tests/meta/test_preflight_pages_lane.py`.
+   - The stamp gate did not refuse, because it matches a path anywhere in a memlog that moved.
+   - **Round 1 verdict.** The reviewer is right, and one more path has the same gap: herald's `tests/meta/test_built_site_tests_install_first.py`. 124.2 rewrote its CI test to read the `herald-live-test` job. The Story 52.1 event that names that path narrates Story 124.1's edit, and the integrator's 2026-11-13 event names it only as a test run. Round 1 checked every path this story's stamps moved: for each, does a memlog line added at or after the path's last branch commit name it (full path)? The check also read the 124.2 lines on spec-pyforge-core, spec-pyforge-marshal, spec-pyforge-testing-charter, spec-pyforge-scribe and spec-pyforge-unifying-strategy. It found no other gap.
+   - **Doctor (fixed).** Round 1 appended a `Surface reconcile` event to spec-pyforge-doctor's memlog with `uv run _bmad/scripts/memlog.py append`. It names 124.2's edit of `test_sources_writer_lock.py`: tracked-path literals spelled as joins, each equal to the literal it replaces. That module: 20 passed. The scoped stamp `--write-baseline --spec pyforge-doctor/spec-pyforge-doctor` then exited 0.
+   - **Herald (fixed).** Round 1 appended one event to spec-pyforge-herald's memlog. It names 124.2's edits of `test_preflight_pages_lane.py` and `test_built_site_tests_install_first.py`. Both modules: 22 passed. The scoped stamp `--spec pyforge-herald/spec-pyforge-herald` then exited 0. That memlog is on this story spec's `surface:`. plan.json's files_owned routes only the ci-status reconcile there.
+   - Both stamps moved only the Spec's memlog hash, no file hash.
+   - **Mason (not fixed here).** spec-pyforge-mason's memlog is on neither this story's files_owned nor its `surface:`, so round 1 does not write it. The integrator, or 124.2's unit, appends the event and then re-stamps `pyforge-mason/spec-pyforge-mason` scoped. Until then, mason's stamp still accepts the two paths without a reconcile line. Both modules pass now: 282 passed in `-e pyforge-mason`. Suggested event text: "Surface reconcile 2026-11-13: src/shared/packages/pyforge-mason/tests/meta/test_adapter_sole_caller.py and src/shared/packages/pyforge-mason/tests/unit/test_errors.py were last edited by steward Story 124.2 (build commit 84fa9d8c13, 2026-11-12). The edit spells `_CFE_PATH_SUBSTRING` and one assertion's `.claude/scripts/conda-forge-expert` literal as `"/".join((".claude", "scripts", "conda-forge-expert"))`, with a comment saying why: steward's trigger-map scan counts a bare tracked-path literal as a read of the live tree, and these modules read none. Each joined string equals the literal it replaces, so no assertion changes meaning and no mason source moves."
+3. **Minor. Where: `scripts/spec_surface_allowlist.txt`, the section header `# --- pixi-version enforcement trio + verdict applier + rebuild guard (2026-08-21)`.** The rebuild-guard entry and its comment are gone, but the header still names the guard, so the line is stale.
+   - Round 1 does not fix it. files_owned limits this story's allowlist edits, by content, to the three named entries and the three-line cfe comment block, and the reviewer agrees that leaving the header was right.
+   - Dropping ` + rebuild guard` needs an integrator ruling that widens that content scope.
+4. **Minor. Where: doctor's ledger (`58-4` done, `epic-58` done) and this spec's frontmatter `status: 'done'`.** The spec runs AC10's promotion before the PR bar, so the story and epic read done while AC6, the merge-bar evidence, is red. The done state is not yet earned.
+   - Round 1 keeps the promotion, as the reviewer's fix says. Status is not this round's to change.
+   - The PR lands only after AC6 re-runs green on the final head. If a red this story owns remains then, the key rolls back through doctor's Tier-3 feed and `sprint-ledger-sync`, never by hand.
+   - None of the reds round 1 found is in this story's files (finding 1).
+
+Where the reviewer is wrong: on substance, nowhere. One correction: the herald gap is two paths, not one (finding 2).
+
+## Integrator ruling (2026-11-13, before the chunk-10 retry)
+
+The integrator stopped the chunk-9 run during fix round 1 and did the items round 1 named as the integrator's. The retry starts from that state.
+
+1. **Finding 1 (a) to (d): done in commit df2a292e18.**
+   - (a) The 121.1 story spec's `## Verification` now names `src/shared/packages/pyforge-steward/tests/unit/test_cutover.py`. `flag-gate-check --spec` on it gives verdict `pass`, and the whole-tree `flag-gate-check` exits 0.
+   - (b) Every station's epics.md `**Status:**` lines now match its tracked ledger: 104 lines. That is the 100 CLOSE-LEDGERS stories plus 58.4 set to `done`, and steward 44.4 to 44.6 set to `blocked (retired 2026-11-10, never dispatched)`. A rescan with doctor's join finds 0 mismatches on all eight stations. Doctor's `test_epics_status_tracks_the_ledger.py` passes (4) and atlas's `test_planning_record.py` passes (9).
+   - (c) The two bare `bmad-dev-auto` mentions on marshal epics.md lines 11374 and 11376 carry a same-line gloss. `test_no_retired_bmad_skill_ids.py` passes (9).
+   - (d) No path a Spec's surface hashes moved: epics.md and story specs are on no hashed surface. `spec-surface-check` exits 0.
+   - The commit also adds a dated unblock note under each of the 31 forward-dependency banners, whose story specs now read `done`.
+2. **Finding 2, mason: done.** Commit df2a292e18 appends a `Surface reconcile` event to spec-pyforge-mason's memlog naming both mason test paths and 124.2's edit. The scoped re-stamp `--write-baseline --spec pyforge-mason/spec-pyforge-mason` then moved only that Spec's memlog hash. The re-stamp sits uncommitted in `scripts/.spec-surface-baseline.json` and rides this story's gate commit with the rest of that file.
+3. **Finding 3: done, uncommitted.** The allowlist header now reads `# --- pixi-version enforcement trio + verdict applier (2026-08-21)`. This ruling widens the story's allowlist scope by that one header line. It rides this story's gate commit.
+4. **Finding 4: unchanged.** The promotion stays. AC6 on the final head decides whether the done state holds. A red this story owns rolls the key back through doctor's Tier-3 feed and `sprint-ledger-sync`.
+5. **After the integrator's work:** `detectors-ci` exits 0 on the working tree (head df2a292e18 plus this story's staged diff).
+6. **What the retry does.** Keep the work on disk; it is right. Re-run every AC on the current head. AC1 to AC5 and AC7 to AC12 should be no-ops or idempotent re-runs. Run AC6's full pr-preflight once, alone, after the last edit, with TMPDIR off tmpfs. Read every verdict from its exit code. If a lane is red for a cause outside this story's files, name the failing test and the file, and stop; do not edit outside the files this story owns.
