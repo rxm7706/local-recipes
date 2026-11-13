@@ -2,7 +2,7 @@
 title: "48.4: One memlog event reconciles every atlas path this effort moved"
 type: 'chore'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

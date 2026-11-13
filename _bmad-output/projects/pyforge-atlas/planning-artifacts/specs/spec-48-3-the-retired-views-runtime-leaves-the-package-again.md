@@ -2,7 +2,7 @@
 title: "48.3: The retired views runtime leaves the package again"
 type: 'refactor'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

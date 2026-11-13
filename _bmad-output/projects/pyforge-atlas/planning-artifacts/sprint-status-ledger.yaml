@@ -1,5 +1,5 @@
 # GENERATED — do not hand-edit. Regenerate with:
-#     pixi run -e local-recipes sprint-ledger-sync
+#     pixi run -e pyforge-guild sprint-ledger-sync
 #
 # TRACKED twin of _bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml
 # which is gitignored Tier-3 (.gitignore:736) and therefore invisible to CI and
@@ -150,7 +150,7 @@ development_status:
   4-2-integrate-kedro-viz-expose-a-pixi-task: done
   40-1-fr-15-fr-61-and-fr-63-name-what-realizes-them: done
   41-1-fr-15-names-the-capability-minted-from-its-constraint-and-the-spec-s-cut-text-is-restored: done
-  41-2-the-satellite-prds-fr-ids-leave-the-kernel-s-id-space: blocked
+  41-2-the-satellite-prds-fr-ids-leave-the-kernel-s-id-space: done
   41-3-every-atlas-nfr-names-the-capabilities-it-bounds: blocked
   42-1-agents-trigger-and-read-the-pipeline-natively-sits-behind-a-kill-switch: done
   42-2-any-manifest-becomes-one-comparable-inventory-behind-one-exit-code-sits-behind-a-kill-switch: done
@@ -158,14 +158,14 @@ development_status:
   42-4-the-retrofit-kill-switches-retire-on-their-cleanup-date: backlog
   44-1-atlas-s-twelve-archived-dreams-leave-the-live-tree: done
   45-1-atlas-s-absorbed-spec-folders-and-spec-archive-move-to-the-archive-home: done
-  46-1-each-atlas-capability-s-marker-says-what-is-built-open-or-retired: backlog
-  46-2-the-atlas-capabilities-describe-the-code-that-runs: backlog
-  47-1-atlas-s-public-contract-is-written-beside-the-spec-and-a-meta-test-holds-the-code-to-it: blocked
-  47-2-the-catalog-and-gate-companions-name-every-dataset-and-gate-the-code-has: blocked
-  48-1-atlas-s-live-tree-readers-carry-the-marker-and-the-subtree-guide-matches-the-package: backlog
-  48-2-atlas-s-two-root-literals-resolve-from-the-member: backlog
-  48-3-the-retired-views-runtime-leaves-the-package-again: backlog
-  48-4-one-memlog-event-reconciles-every-atlas-path-this-effort-moved: backlog
+  46-1-each-atlas-capability-s-marker-says-what-is-built-open-or-retired: done
+  46-2-the-atlas-capabilities-describe-the-code-that-runs: done
+  47-1-atlas-s-public-contract-is-written-beside-the-spec-and-a-meta-test-holds-the-code-to-it: done
+  47-2-the-catalog-and-gate-companions-name-every-dataset-and-gate-the-code-has: done
+  48-1-atlas-s-live-tree-readers-carry-the-marker-and-the-subtree-guide-matches-the-package: done
+  48-2-atlas-s-two-root-literals-resolve-from-the-member: done
+  48-3-the-retired-views-runtime-leaves-the-package-again: done
+  48-4-one-memlog-event-reconciles-every-atlas-path-this-effort-moved: done
   5-1-define-the-boring-semantic-layer-bsl-models: done
   5-2-build-the-vizro-dashboard-port-the-28-clis-to-pages: done
   5-3-integrate-vizro-ai-expose-the-nl-interface-as-an-mcp-tool: done
@@ -260,11 +260,11 @@ development_status:
   epic-44-retrospective: optional
   epic-45: done
   epic-45-retrospective: optional
-  epic-46: backlog
+  epic-46: done
   epic-46-retrospective: optional
-  epic-47: backlog
+  epic-47: done
   epic-47-retrospective: optional
-  epic-48: backlog
+  epic-48: done
   epic-48-retrospective: optional
   epic-5: done
   epic-5-retrospective: done

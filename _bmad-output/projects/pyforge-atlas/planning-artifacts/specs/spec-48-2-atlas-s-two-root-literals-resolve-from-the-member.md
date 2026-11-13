@@ -2,7 +2,7 @@
 title: "48.2: Atlas's two root literals resolve from the member"
 type: 'fix'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

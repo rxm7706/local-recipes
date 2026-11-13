@@ -2,7 +2,7 @@
 title: "48.1: Atlas's live-tree readers carry the marker and the subtree guide matches the package"
 type: 'feature'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

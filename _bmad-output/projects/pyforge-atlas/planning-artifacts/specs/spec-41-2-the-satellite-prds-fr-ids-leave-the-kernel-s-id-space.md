@@ -2,7 +2,7 @@
 title: "41.2: The satellite PRDs' FR ids leave the kernel's id space"
 type: 'chore'
 created: '2026-10-26'
-status: 'blocked'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
