@@ -22,11 +22,13 @@ const CI_STATUS = path.join(REPO_ROOT, 'docs-site/src/content', CI_STATUS_SNAPSH
 const MEASURER = path.join(REPO_ROOT, 'docs-site/scripts/verify_claims.py');
 
 type Stat = { value: string; label: string; check?: string };
+type Row = { cells: string[]; section?: string };
 type Measured = Record<string, Record<string, { value: string; files?: number }>>;
 
 /**
  * `verify_claims.py --emit` over `DATA_ROOT` with `HERALD_PYTHON`, else the `python` on `PATH` (it needs PyYAML, as the
- * `site` env provides): a failure (an unknown `check:` key, a missing package) fails the build.
+ * `site` env provides): a failure (an unknown `check:` key, a missing package or sprint ledger, a checked table row
+ * with no `section:`) fails the build.
  */
 function measure(): Measured {
   const python = process.env.HERALD_PYTHON || 'python';
@@ -44,7 +46,8 @@ function measure(): Measured {
 
 /**
  * Story 43.5 (CAP-61): every stat carrying `check:` shows the measured value (its typed value ignored), and a
- * `src_lines` stat's label names the measured file count; a stat without `check:` keeps its typed value.
+ * `src_lines` stat's label names the measured file count. A stat without `check:` is passed on untouched for the
+ * content schema to refuse (Story 51.1, CAP-46: no dossier figure is typed).
  */
 function applyMeasured(doc: Record<string, unknown>, measured: Measured): void {
   const show = (stat: Stat, where: string) => {
@@ -67,6 +70,33 @@ function applyMeasured(doc: Record<string, unknown>, measured: Measured): void {
     for (const block of (section.blocks as Array<Record<string, unknown>> | undefined) ?? []) {
       for (const stat of block.type === 'stats' ? ((block.stats as Stat[] | undefined) ?? []) : []) {
         show(stat, String(section.id));
+      }
+    }
+  }
+}
+
+/**
+ * Story 51.1 (CAP-46): a table block carrying `check: src_lines` (the scale table) shows, in each row, the measured
+ * source lines and files of the row's `section:` (a station id, or `core`) in its "Source lines" and "Files" columns.
+ */
+function applyMeasuredRows(doc: Record<string, unknown>, measured: Measured): void {
+  for (const section of (doc.sections as Array<Record<string, unknown>> | undefined) ?? []) {
+    for (const block of (section.blocks as Array<Record<string, unknown>> | undefined) ?? []) {
+      if (block.type !== 'table' || block.check === undefined) {
+        continue;
+      }
+      const headers = (block.headers as string[] | undefined) ?? [];
+      const [lines, files] = ['Source lines', 'Files'].map((header) => headers.indexOf(header));
+      if (lines < 0 || files < 0) {
+        throw new Error(`dossier: the checked table in ${String(section.id)} has no Source lines or Files column`);
+      }
+      for (const row of (block.rows as Row[] | undefined) ?? []) {
+        const value = measured.rows?.[String(row.section)];
+        if (!value || value.files === undefined) {
+          throw new Error(`dossier: no measured row for ${String(row.section)} in ${String(section.id)}`);
+        }
+        row.cells[lines] = value.value;
+        row.cells[files] = String(value.files);
       }
     }
   }
@@ -96,7 +126,9 @@ export function dossierLoader(): Loader {
     load: async ({ store, parseData }) => {
       const raw = await fs.readFile(DOSSIER_YML, 'utf8');
       const doc = parseYaml(raw) as Record<string, unknown>;
-      applyMeasured(doc, measure());
+      const measured = measure();
+      applyMeasured(doc, measured);
+      applyMeasuredRows(doc, measured);
       applyCiSurfaces(doc);
       // An object loader validates through parseData (Story 43.5): the schema's refusals reach the build.
       const data = await parseData({ id: 'dossier', data: doc });

@@ -136,8 +136,7 @@
   },
   "owners": {
     "pyforge-atlas": [
-      "41.2 (fr-duplicate-id: the Unity and Wasm satellite sections re-define FR-1..FR-22)",
-      "41.3 (arrowless NFR lines and the satellites' first-defined FR-23..FR-60)"
+      "DW-atlas-46-1-9 (the retired Unity satellite's first-defined FR-23..FR-60 and NFR-1..NFR-10, held as history)"
     ],
     "pyforge-marshal": [
       "108.2 (arrowless NFR lines)"
@@ -148,30 +147,7 @@
   },
   "findings_sha": "c4292d3501f7c6200db214a7d1d635d23218a980",
   "findings": {
-    "pyforge-atlas": [
-      "fr-duplicate-id:FR-1",
-      "fr-duplicate-id:FR-10",
-      "fr-duplicate-id:FR-11",
-      "fr-duplicate-id:FR-12",
-      "fr-duplicate-id:FR-13",
-      "fr-duplicate-id:FR-14",
-      "fr-duplicate-id:FR-15",
-      "fr-duplicate-id:FR-16",
-      "fr-duplicate-id:FR-17",
-      "fr-duplicate-id:FR-18",
-      "fr-duplicate-id:FR-19",
-      "fr-duplicate-id:FR-2",
-      "fr-duplicate-id:FR-20",
-      "fr-duplicate-id:FR-21",
-      "fr-duplicate-id:FR-22",
-      "fr-duplicate-id:FR-3",
-      "fr-duplicate-id:FR-4",
-      "fr-duplicate-id:FR-5",
-      "fr-duplicate-id:FR-6",
-      "fr-duplicate-id:FR-7",
-      "fr-duplicate-id:FR-8",
-      "fr-duplicate-id:FR-9"
-    ],
+    "pyforge-atlas": [],
     "pyforge-doctor": [],
     "pyforge-herald": [],
     "pyforge-marshal": [],

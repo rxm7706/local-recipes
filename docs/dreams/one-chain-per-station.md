@@ -571,3 +571,8 @@ the diff found four gaps. They are fixed in the same PR.
   - Two closed atlas deferred-work entries had `verified:` citations of
     `catalog-sources.md:39`. They now name the carried file, because
     atlas's planning-record test resolves every cited line.
+- **2026-11-10** — Pointer: the operator's rulings of 2026-11-10 (`docs/dreams/pyforge-unifying-strategy.md`,
+  Realization log, the three 2026-11-10 entries) amend this chain. `CHAIN-STANDARD.md` § 4 gains a third
+  capability marker, `(retired <date>[: <reason>])`, with its semicolon qualifiers, and § 0's Frame row
+  says the ruled seed (Dream plus memlog). Steward Story 120.3 lands both and re-derives
+  `spec-one-chain-per-station` and `spec-coverage-gate-independence`.

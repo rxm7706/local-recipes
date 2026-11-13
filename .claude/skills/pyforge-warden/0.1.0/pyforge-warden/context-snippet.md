@@ -2,5 +2,5 @@
 |IMPORTANT: pyforge-warden v0.1.0 — read SKILL.md before warden work. Use `warden scan` / `pyforge warden scan`. Do NOT import pyforge.warden. Do NOT invent a second PR-gate verdict.
 |quick-start:{SKILL.md#quick-start}
 |api: main(), compose(), exit_code_for(), match_level_rung()
-|key-types:{SKILL.md#key-types} — Status (seven-rung lattice), ComplianceReport
-|gotchas: CLI is the sole gate; --doctor never exits 1; do not replace conda-forge-expert
+|key-types:{SKILL.md#key-types} — Status (seven-rung lattice), ComplianceReport; exits 0/1/2/130
+|gotchas: CLI is the sole gate; run --doctor first, --warn-only can hide an unassessed vulnerability axis; --doctor never exits 1; MCP face runs scan --format json only; do not replace conda-forge-expert

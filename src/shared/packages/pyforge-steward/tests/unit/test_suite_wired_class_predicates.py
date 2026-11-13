@@ -1,4 +1,4 @@
-"""Story 31.2 — pipeline-truth wired-or-not is class-correct (CAP-2)."""
+"""Story 31.2 — pipeline-truth wired-or-not is class-correct (CAP-28)."""
 
 from __future__ import annotations
 

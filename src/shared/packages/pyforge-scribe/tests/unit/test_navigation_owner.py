@@ -8,8 +8,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parents[6]
-_AGENTS = _REPO_ROOT / "AGENTS.md"
+import pytest
+
+# Story 33.1 (spec-pyforge-scribe CAP-31): AGENTS.md is the live tree outside this package.
+pytestmark = pytest.mark.live_tree
+
 _GRAPHIFY = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "scribe" / "extras" / "graphify.py"
 
 _NAV_OWNER = "Marshal `codegraph`"
@@ -18,23 +21,23 @@ _NAV_OWNS = "owns symbol navigation"
 _FORBID_MODE_CODE = "Do not use `scribe recall --mode code` for symbols"
 
 
-def _session_path_text() -> str:
-    text = _AGENTS.read_text(encoding="utf-8")
+def _session_path_text(live_repo_root: Path) -> str:
+    text = (live_repo_root / "AGENTS.md").read_text(encoding="utf-8")
     close = "<!-- /bmad:context -->"
     idx = text.find(close)
     assert idx != -1, "AGENTS.md missing /bmad:context closer"
     return text[idx + len(close) :]
 
 
-def test_agents_outside_bmad_context_names_codegraph_nav_owner() -> None:
-    outside = _session_path_text()
+def test_agents_outside_bmad_context_names_codegraph_nav_owner(live_repo_root: Path) -> None:
+    outside = _session_path_text(live_repo_root)
     assert _NAV_OWNER in outside
     assert _NAV_DB in outside
     assert _NAV_OWNS in outside
 
 
-def test_agents_outside_bmad_context_forbids_mode_code_for_symbols() -> None:
-    outside = _session_path_text()
+def test_agents_outside_bmad_context_forbids_mode_code_for_symbols(live_repo_root: Path) -> None:
+    outside = _session_path_text(live_repo_root)
     assert _FORBID_MODE_CODE in outside
 
 

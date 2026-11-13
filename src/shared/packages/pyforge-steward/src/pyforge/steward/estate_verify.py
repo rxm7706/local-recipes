@@ -407,7 +407,7 @@ def run_verify(
         size_delta: int | None = None
         if env_name == "pyforge-guild":
             # The env, not .pixi: .pixi/bld holds pixi-build's cache for the path-dependency
-            # packages (about 1 GB), which is not the install footprint CAP-5 bounds.
+            # packages (about 1 GB), which is not the install footprint spec-pyforge-steward CAP-5 bounds.
             guild_mb = _du_sm_mb(deps.runner, wt / ".pixi" / "envs" / "pyforge-guild", wt)
             if guild_mb is not None:
                 if prev_guild_mb is not None:

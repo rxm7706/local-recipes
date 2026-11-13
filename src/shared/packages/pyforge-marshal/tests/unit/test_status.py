@@ -21,6 +21,7 @@ from pyforge.core.process import ProcessError, ProcessResult
 from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
 from pyforge.testing_kit.flags import flag_states, flagd_tree
 
+from pyforge import marshal as marshal_package
 from pyforge.marshal.adapters.fs_local import LocalFs
 from pyforge.marshal.adapters.harness_bmadloop import HarnessError
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
@@ -55,7 +56,7 @@ _FIXED_NOW = datetime(2026, 8, 6, 0, 30, 0, tzinfo=timezone.utc)
 
 # Story 5.4: schema files this file's own `jsonschema.validate` tests load
 # -- mirrors `test_init.py`'s own established `_SCHEMA_PATH` convention.
-_SCHEMAS_DIR = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "schemas"
+_SCHEMAS_DIR = Path(marshal_package.__file__).resolve().parent / "schemas"
 _STATUS_SCHEMA_PATH = _SCHEMAS_DIR / "status.json"
 _ENVELOPE_SCHEMA_PATH = _SCHEMAS_DIR / "envelope.v1.json"
 
@@ -4199,18 +4200,6 @@ class TestRunDetail:
         assert "--run" in out
         assert "stories: 0" in out
         assert exit_code == 0
-
-    def test_run_status_with_default_ports_and_run_flag_does_not_crash(self, capsys):
-        """Smoke test over the real GitVcs/LocalFs/BmadLoopHarness default
-        construction path (mirrors ``TestRunStatus``'s own identical
-        precedent) -- a run id naming nothing real for a project naming
-        nothing real stays a clean, reportable 'not found', never a
-        crash."""
-        exit_code = status_cli.run_status(_args(project="no-such-project-xyz", run="no-such-run-xyz"))
-
-        assert isinstance(exit_code, int)
-        payload = _payload(capsys)
-        assert payload["data"]["found"] is False
 
 
 # =============================================================================

@@ -74,3 +74,9 @@ Scribe’s extract surfaces (13.1 / 14.1).
 
 - **2026-09-13** — Dreamt and specified the same day. Operator: mint
   Dream + Spec; trunc-based extract is the inventory flow. Epic 55.
+- **2026-11-10** — Pointer: the operator's rulings of 2026-11-10 (`docs/dreams/pyforge-unifying-strategy.md`,
+  Realization log, the three 2026-11-10 entries) amend this chain. `steward cutover plan` generates the
+  ledger from the live Specs (steward Story 121.1); the rows take the written re-mode rules and the
+  never-built rule; A-only expiries are judged, a warning 30 days ahead and a finding after; the rows
+  on archived Specs leave. `fcl:CAP-1` and `fcl:CAP-2` are amended through this Spec's memlog; steward
+  Epics 120 and 121 and doctor Story 56.2 carry it.

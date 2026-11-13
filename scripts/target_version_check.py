@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Every lint/type target and ``requires-python`` floor matches the interpreter
 ``pixi.toml`` pins -- the registry shape of ``pixi-version-check`` applied to
-ruff / mypy targets and project floors (steward Story 66.1 / 93.1 / 95.1,
+ruff / mypy targets and project floors (steward Story 66.1 / 93.1 / 95.1 / 124.3,
 ``spec-pyforge-steward`` CAP-153).
 
 Reads ``pixi.toml``'s ``[feature.python.dependencies] python`` floor once, then:
@@ -12,7 +12,11 @@ Reads ``pixi.toml``'s ``[feature.python.dependencies] python`` floor once, then:
 - nine ``src/shared/packages/django-*/pyproject.toml``: ``[tool.ruff]
   target-version`` and ``requires-python`` lower bound (no mypy required);
 - ``src/platform/pyproject.toml``: ``[tool.ruff] target-version`` and
-  ``[tool.mypy] python_version`` (no ``[project]`` table).
+  ``[tool.mypy] python_version`` (no ``[project]`` table);
+- every ``src/shared/packages/pyforge-*/pixi.toml``: the ``python`` lower bound
+  of ``[package.host-dependencies]`` and of ``[package.run-dependencies]`` (the
+  floor ``pixi-build-python`` builds and installs each package against; Story
+  124.3, decision D6). A drift names the file.
 
 Expected values are derived from the pin, never hard-coded here.
 
@@ -97,6 +101,35 @@ def findings_for_django(pyproject: Path, minor: tuple[int, int]) -> list[str]:
     return out
 
 
+def _python_spec(table: object) -> str | None:
+    """The ``python`` entry of a pixi dependency table, as a spec string (``None`` when absent)."""
+    if not isinstance(table, dict) or "python" not in table:
+        return None
+    entry = table["python"]
+    if isinstance(entry, dict):
+        entry = entry.get("version")
+    return None if entry is None else str(entry)
+
+
+def findings_for_package_manifest(pixi_toml: Path, minor: tuple[int, int]) -> list[str]:
+    """A package ``pixi.toml``'s host and run ``python`` floors against the interpreter (Story 124.3)."""
+    data = tomllib.loads(pixi_toml.read_text(encoding="utf-8"))
+    package = data.get("package", {})
+    want_floor = f">={minor[0]}.{minor[1]}"
+    out: list[str] = []
+    for table in ("host-dependencies", "run-dependencies"):
+        spec = _python_spec(package.get(table) if isinstance(package, dict) else None)
+        if spec is None:
+            out.append(f"[package.{table}] has no python")
+            continue
+        m = _REQ_RE.search(spec)
+        if not m:
+            out.append(f"[package.{table}] python = {spec!r} has no parseable lower bound")
+        elif (int(m.group(1)), int(m.group(2))) != minor:
+            out.append(f"[package.{table}] python = {spec!r}, interpreter floor is {want_floor}")
+    return out
+
+
 def findings_for_platform(pyproject: Path, minor: tuple[int, int]) -> list[str]:
     data = tomllib.loads(pyproject.read_text(encoding="utf-8"))
     tool = data.get("tool", {})
@@ -135,6 +168,13 @@ def main() -> int:
     if not PLATFORM_PYPROJECT.is_file():
         print("[target-version] could-not-run -- src/platform/pyproject.toml is missing")
         return 2
+    pyforge_manifests = sorted(PACKAGES_DIR.glob("pyforge-*/pixi.toml"))
+    if len(pyforge_manifests) < 10:
+        print(
+            f"[target-version] could-not-run -- expected ten pyforge-* package pixi.toml files, "
+            f"found {len(pyforge_manifests)}"
+        )
+        return 2
 
     total = 0
     for pkg in pyforge_pkgs:
@@ -148,17 +188,22 @@ def main() -> int:
     for f in findings_for_platform(PLATFORM_PYPROJECT, minor):
         print(f"[target-version] drift -- src/platform: {f}")
         total += 1
+    for manifest in pyforge_manifests:
+        for f in findings_for_package_manifest(manifest, minor):
+            print(f"[target-version] drift -- {manifest.relative_to(ROOT).as_posix()}: {f}")
+            total += 1
 
     if total:
         print(
             f"[target-version] {total} finding(s) across "
-            f"{len(pyforge_pkgs)} pyforge-*, {len(django_pkgs)} django-*, and src/platform; "
-            f"interpreter {minor[0]}.{minor[1]}"
+            f"{len(pyforge_pkgs)} pyforge-*, {len(django_pkgs)} django-*, src/platform and "
+            f"{len(pyforge_manifests)} package pixi.toml files; interpreter {minor[0]}.{minor[1]}"
         )
         return 1
     print(
         f"[target-version] ok -- {len(pyforge_pkgs)} pyforge-*, {len(django_pkgs)} django-*, "
-        f"and src/platform target py{minor[0]}{minor[1]} / {minor[0]}.{minor[1]}, matching pixi.toml"
+        f"and src/platform target py{minor[0]}{minor[1]} / {minor[0]}.{minor[1]}, and "
+        f"{len(pyforge_manifests)} package pixi.toml files hold python >={minor[0]}.{minor[1]}, matching pixi.toml"
     )
     return 0
 

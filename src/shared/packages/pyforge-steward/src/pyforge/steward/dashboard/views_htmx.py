@@ -1,7 +1,7 @@
 """HTMX view handlers for the pyforge-steward sprint backlog dashboard (Story
 65.1) and the as-of glass (Story 61.3).
 
-Reads through the same `SprintLedgerQueryEngine` as the CLI duty (CAP-5), and
+Reads through the same `SprintLedgerQueryEngine` as the CLI duty (CAP-149), and
 `glass.compute_glass_reading` for `standup_htmx_view`/`shipped_htmx_view`.
 Imports `django` lazily, inside each view, so the module itself loads without
 the `[dashboard]` extra; calling a view needs it. `glass.py` is a base-package
@@ -42,7 +42,7 @@ def _engine_root() -> Optional[Path]:
 
 
 def _record_load(request: Any, row_count: int) -> None:
-    """CAP-4: one `load` audit row per render. The actor is the identity
+    """spec-pyforge-steward CAP-112: one `load` audit row per render. The actor is the identity
     `DashboardIdentityMiddleware` placed on `request.scope`, else the
     authenticated user, else the literal `anonymous` (never blank)."""
     from pyforge.steward.dashboard.audit import record_audit_entry
@@ -190,7 +190,7 @@ def quarantine_htmx_view(request: Any) -> Any:
     """Render the quarantine shelf — inbound rows waiting for a human link.
 
     There is no title-match query parameter: ``title`` is display-only on
-    each row (Story 61.5 / CAP-5).
+    each row (Story 61.5 / CAP-143).
     """
     from django.http import HttpResponse
 

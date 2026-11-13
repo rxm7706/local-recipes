@@ -207,6 +207,7 @@ def default_artifact_path(project_root: Path, project_slug: str) -> Path:
 
 def _prompt_cache_hit_rate_for_story(home: Path, run_id: str, story_key: str) -> float | None:
     """Read story task token counts from bmad-loop state and compute cache-hit rate."""
+    # CAP-4: loop-home FILE read -- a recorded benchmark leg's per-story token counts, which the published plane does not carry
     state_path = home / ".bmad-loop" / "runs" / run_id / "state.json"
     try:
         payload = json.loads(state_path.read_text(encoding="utf-8"))
@@ -282,6 +283,7 @@ def _task_facts(home: Path, run_id: str, snapshot: RunStatusSnapshot, story_key:
 
 
 def _review_cycle_from_state(home: Path, run_id: str, story_key: str) -> int:
+    # CAP-4: loop-home FILE read -- a recorded benchmark leg's per-story review cycles, which the published plane does not carry
     state_path = home / ".bmad-loop" / "runs" / run_id / "state.json"
     try:
         payload = json.loads(state_path.read_text(encoding="utf-8"))

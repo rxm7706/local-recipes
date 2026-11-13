@@ -64,7 +64,7 @@ from pyforge.core.landing_evidence import (
 
 from ..bare_merge import DiffCache, attribute_bare_merge, known_story_keys
 from ..cli_bridge import CliBridgeError, run_git
-from ..models import DoctorStatus, Finding, Source
+from ..models import UNEVALUABLE_EVIDENCE_KEY, DoctorStatus, Finding, Source
 from ..refs import MAIN
 from ..rekey import load_rekey_maps, reverse_map
 from .feed_status import TERMINAL, is_epic_aggregate_key, parse_development_statuses
@@ -704,8 +704,12 @@ def gather_story_status(target: Path, *, loop_root: Path | None = None) -> tuple
     visible" instead. Tier-3 feeds
     (``_bmad-output/projects/pyforge-*/implementation-artifacts/
     sprint-status.yaml``) are gitignored, so in a bare CI checkout this glob
-    finds nothing and the gather degrades to a vacuous ``audited=0`` OK
-    Finding rather than crashing.
+    finds nothing and the gather returns one cannot-evaluate WARN
+    (``story-status-unevaluable``, evidence ``{"audited": 0, "unevaluable":
+    True}``) rather than crashing -- never an OK over nothing
+    (spec-pyforge-doctor:CAP-93, spec-pyforge-doctor:AD-15). That WARN
+    supersedes the ``{"audited": 0}`` OK an earlier story spec's I/O matrix
+    pinned for the no-feeds row (Story 56.4); the exit code stays 0.
 
     Feeds present but git unusable is the one case that must NOT fall through:
     two of the three evidence routes are git queries, so an ungathered answer
@@ -727,6 +731,21 @@ def gather_story_status(target: Path, *, loop_root: Path | None = None) -> tuple
             loop_root = None  # no resolvable home -- no harness records to read
 
     feeds = sorted(target.glob(SPRINT_STATUS_GLOB))
+    if not feeds:
+        # Story 56.4 (spec-pyforge-doctor:CAP-93): no Tier-3 feed means no
+        # subject -- one cannot-evaluate WARN, never a vacuous `audited=0` OK.
+        return (
+            Finding(
+                source=Source.STORY_STATUS,
+                check="story-status-unevaluable",
+                status=DoctorStatus.WARN,
+                message=(
+                    "no Tier-3 sprint feed here (implementation-artifacts/sprint-status.yaml is "
+                    "gitignored) — landing evidence cannot be evaluated"
+                ),
+                evidence={"audited": 0, UNEVALUABLE_EVIDENCE_KEY: True},
+            ),
+        )
     # Story 25.3 (spec-one-chain-per-station CAP-3(g)): a station fold
     # renumbers every story key and ships planning-artifacts/rekey-<date>.md.
     # Landing evidence (harness record, merge subject, main commit) was
@@ -741,9 +760,9 @@ def gather_story_status(target: Path, *, loop_root: Path | None = None) -> tuple
     # green on the strength of evidence that was never actually gathered. That
     # is the one outcome this detector must never produce, so "cannot evaluate"
     # is reported as WARN instead, mirroring the probe `gather()` above already
-    # runs for exactly the same reason. Probed only when feeds exist, so the
-    # no-feeds case still degrades to the vacuous audited=0 OK.
-    if feeds and _git(target, "rev-parse", "--git-dir") is None:
+    # runs for exactly the same reason. Feeds exist here: the no-feeds case
+    # already returned its one cannot-evaluate WARN above.
+    if _git(target, "rev-parse", "--git-dir") is None:
         return (
             Finding(
                 source=Source.STORY_STATUS,
@@ -999,10 +1018,11 @@ def gather_story_status(target: Path, *, loop_root: Path | None = None) -> tuple
     # was previously only reachable via --verbose folded into the message.
     #
     # The breakdown lives in the message rather than in `evidence` on purpose:
-    # the spec's I/O matrix pins this Finding's evidence to exactly
-    # `{"audited": 0}` for the no-feeds row, so widening the shape here would
-    # be a spec deviation. Enriching it stays recorded in `deferred-work.md`
-    # for the story that owns the contract.
+    # the spec's I/O matrix pinned this Finding's evidence to exactly
+    # `{"audited": <n>}` (its no-feeds row is now the cannot-evaluate WARN
+    # above, Story 56.4), so widening the shape here would be a spec
+    # deviation. Enriching it stays recorded in `deferred-work.md` for the
+    # story that owns the contract.
     # Every clause names a population the audit did NOT verify, and each is
     # counted exactly once against `audited` (or, for the two input-level
     # clauses, reported as inputs rather than as stories) -- an earlier form

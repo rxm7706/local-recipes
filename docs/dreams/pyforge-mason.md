@@ -803,6 +803,39 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   feedstock or upstream PR. Under `spec-pyforge-mason` CAP-35, no new CAP, no flag. Owner `spec-pyforge-mason`.
   → Epic 25 / Story 25.23, specced 2026-11-05.
 
+- **2026-11-10 (the cutover readiness audit) — Found: the CLI kernel matches its code, and the rest of the Spec does not
+  yet tell a second repository the truth.** The audit ran at main `82a2b18828` and read CAP-1 to CAP-7 as accurate.
+  Elsewhere, fourteen capability ids are defined twice, and the never-built Presenton set and the closed rebuild
+  campaign read shipped. The native factory-island build and three sockets (the build-engine hook, the air-gap
+  distribution contract and the boot re-index) sit in no capability. An error advertises a `--foundry-root` flag that
+  does not exist, `recipe update`'s help promises a plan its default path never shows, and six test modules read the
+  tree outside the package with no marker.
+  **What it looks like when real:** each capability is defined once, in the one form every detector reads, and marked
+  as it stands: shipped, ready, or retired with the reason. The public contract (every verb path and option, MCP name,
+  environment variable, exit code and error identifier) is a companion `contract.md` that a meta-test holds the code
+  to. The suite runs as a package half that passes from a copy outside this repository, and a live-tree half. The
+  factory-island build is a capability of its own, native-only and honest about Docker.
+  **Constraints:** the operator's rulings of 2026-11-10 (`docs/dreams/pyforge-unifying-strategy.md`, Realization log:
+  "Accept all", "Retire both", "Accept all, run mint"). conda-forge-expert stays `A-only` until its own Spec Story
+  after the flip, Story 39.2, minted `blocked`; Mason's ship and submit root waits for steward Story 44.8; the
+  Presenton set retires as never built. `--docker` on a factory path and `scripts/cfe_rebuild_guard_check.py` stay as
+  they are, and no kill switch is added: each gap is a deferred row. No new behaviour and no new flag. Binds
+  `spec-pyforge-mason` (CAP-2, CAP-5, CAP-7 and CAP-8..CAP-35 amended or re-marked; CAP-36 and CAP-37 minted) and
+  relays `spec-pyforge-steward:CAP-175`. Owner `spec-pyforge-mason`. → Epics 37 to 39 / Stories 37.1 to 39.2, specced
+  2026-11-10.
+
+- **2026-11-12 (cutover readiness, closed)** — Stories 37.1 to 37.4, 38.1 to 38.3 and 39.1 are built and reviewed on
+  branch `cutover-readiness-2026-11-10`; Story 39.2 stays `blocked` until the root of record flips. Each capability of
+  `spec-pyforge-mason` is defined once and marked as it stands: `spec-pyforge-mason:CAP-36` (the native factory-island
+  build) and `spec-pyforge-mason:CAP-37` (the three sockets) are minted and shipped, `spec-pyforge-mason:CAP-5` and
+  `spec-pyforge-mason:CAP-7` shipped 2026-11-11 with the companion `contract.md` and the package and live-tree halves,
+  and the Presenton set, the closed rebuild campaign and the two closed recipe campaigns read retired. The retro is
+  `retros/retro-pyforge-mason-2026-11-12.md`; the memlog's `Surface reconcile 2026-11-12` events name every moved path
+  and every path the widened surface newly governs, for doctor Story 58.4's scoped stamp. The gaps the rulings keep
+  are open ledger rows (`DW-mason-37-1`, `DW-mason-37-2`, `DW-mason-37-4`, `DW-mason-37-4-2`, `DW-mason-38-3`,
+  `DW-mason-39-1` to `DW-mason-39-1-3`); `DW-mason-25-2-3` closed on its commits, and Story 5.4's first spec reads
+  superseded. The ledger keys move to `done` in the change's ledger close. Owner `spec-pyforge-mason`.
+
 ## One-chain fold — 2026-09-17
 
 Station Dream status is `specified` (Spec `spec-pyforge-mason` is `ready`). Mason-owned satellite Dreams archive in place with Consolidated-into banners. Practice Dream `packaging-factory` is archived into this station Dream (CHAIN-STANDARD precedence; no new station Dream minted). Recipe work stays `conda-forge-expert`; this fold is planning-chain only.

@@ -15,6 +15,13 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
+import pytest
+
+# Story 116.2 (spec-pyforge-marshal:CAP-305): this module reads the repository outside this package, so it runs in
+# the live-tree half; it finds the repository root when a test runs, never at import, so the module imports off
+# the tree (the package half collects it before the marker deselects it).
+pytestmark = pytest.mark.live_tree
+
 
 def _repo_root() -> Path:
     current = Path(__file__).resolve()

@@ -3,14 +3,15 @@
 Companion to `SPEC.md` (spec: marshal-token-economy). One row per layer; each attacks a
 different sink and they compose because they operate at different points of the pipeline.
 
-Per-harness availability and binding currency: see `multi-harness-matrix.md`
-(CAP-197 / Story 46.10).
+Per-harness availability and binding currency: see
+`archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/multi-harness-matrix.md`
+(spec-pyforge-marshal:CAP-197 / Story 46.10).
 
 ## Layer matrix
 
 | Layer | Instrument (recipe) | Version / license | Sink attacked | Mechanism | Availability gate |
 |---|---|---|---|---|---|
-| 0 — output compression | `recipes/caveman/` | 2.4.0, MIT (installer only) | Agent's own output (weighted heaviest) | **Multi-harness:** caveman ships 21 agent targets (Claude hooks, Copilot/Cursor/Gemini/Devin install paths, …); Genesis deploys the skill into each loop home; ~65% output cut; upstream input proxy (`@caveman-ai/cli`) is BSL-1.1 and excluded | **Active in pixi since 2026-08-30** (patched SelfExplainML build 2, host nodejs held at 24.* to coexist with codegraph), **linux-64 only** — degrade gracefully elsewhere |
+| 0 — output compression | `caveman-installer` from conda-forge (local recipe `recipes/caveman-installer/`; `recipes/caveman/` retired 2026-09-24) | 4.0.0 as locked (`pixi.toml` floor `>=4.0.0`), MIT (installer only) | Agent's own output (weighted heaviest) | **Multi-harness:** caveman ships 21 agent targets (Claude hooks, Copilot/Cursor/Gemini/Devin install paths, …); Genesis deploys the skill into each loop home; ~65% output cut; upstream input proxy (`@caveman-ai/cli`) is BSL-1.1 and excluded | **Active in pixi** (the `pyforge-guild` and `local-recipes` features), from conda-forge since 2026-09-25 (build 2's nodejs-24 variant coexists with codegraph; no channel pin), **linux-64 only** — degrade gracefully elsewhere |
 | 1 — wire compression | `recipes/headroom-ai/` | 0.37.0 via conda-forge (recipe 0.32.1), Apache-2.0 | Tool outputs, logs, file reads, diffs (40–95%) | `headroom wrap <cli>` / transparent proxy at the harness seam; reversible CCR store scoped to the loop home; live-zone-only so the provider cache hot zone stays byte-identical | **Active in pixi since 2026-08-30, all platforms** (the `conda-recipe-manager==8.2.1` click-pin chain fell when crm+feedrattler moved to the grayskull-only `crm` feature) |
 | 2 — structure graph | `recipes/codegraph/` | 1.6.0, MIT | Codebase re-exploration per session | Pre-indexed local code knowledge graph, synced on change, agent integrations wired at loop-home provisioning | Active in pixi, **linux-64 only** — policy must degrade gracefully |
 | 3 — incremental derived context | `recipes/cocoindex/` | 1.0.20, Apache-2.0 (on conda-forge) | Epic-context / continuity recompute churn and staleness | Derived artifacts recomputed only when planning sources change | Active in pixi |

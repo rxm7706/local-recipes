@@ -25,28 +25,30 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
+# Story 116.2 (spec-pyforge-marshal:CAP-305): this module reads the repository outside this package, so it runs in
+# the live-tree half; it finds the repository root when a test runs, never at import, so the module imports off
+# the tree (the package half collects it before the marker deselects it).
+pytestmark = pytest.mark.live_tree
+
+
 # coverage_gate.py moved outside every pyforge.<station> package 2026-09-20
 # (doctor Story 24.1, spec-coverage-gate-independence CAP-1), so this
 # marshal-owned test loads its sibling scripts/coverage_gate.py the same way
 # other package tests reach a top-level scripts/ module (e.g.
 # tests/meta/test_fleet_picture_attention_dispatch_refused.py), rather than
 # importing a package that no longer ships it.
-_REPO_ROOT = Path(__file__).resolve().parents[6]
-_COVERAGE_GATE_PATH = _REPO_ROOT / "scripts" / "coverage_gate.py"
-
-
 def _load_coverage_gate():
-    spec = importlib.util.spec_from_file_location("coverage_gate_under_test", _COVERAGE_GATE_PATH)
+    # tests/meta -> tests -> pyforge-marshal -> packages -> shared -> src -> repo root, loaded when the test runs
+    path = Path(__file__).resolve().parents[6] / "scripts" / "coverage_gate.py"
+    spec = importlib.util.spec_from_file_location("coverage_gate_under_test", path)
     assert spec and spec.loader
     mod = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = mod
     spec.loader.exec_module(mod)
     return mod
 
-
-_coverage_gate = _load_coverage_gate()
-load_module_floors = _coverage_gate.load_module_floors
-thresholds_for = _coverage_gate.thresholds_for
 
 _MODULE = "pyforge.marshal.dispatch_supervisor.__main__"
 _STATION = "marshal"
@@ -105,7 +107,8 @@ def test_the_supervisor_entrypoint_measures_at_or_above_its_floor(tmp_path: Path
 
     # The floor the gate itself would apply: a per-module exception if one is
     # ever held again (none is today -- Story 53.3), else the station floor.
-    floor = load_module_floors().get(_MODULE)
+    gate = _load_coverage_gate()
+    floor = gate.load_module_floors().get(_MODULE)
     if floor is None:
-        floor = thresholds_for(_STATION).for_suite("unit")
+        floor = gate.thresholds_for(_STATION).for_suite("unit")
     assert percent >= floor, f"{_MODULE} measured {percent:.1f}%, floor {floor:.1f}%"

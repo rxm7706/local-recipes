@@ -74,6 +74,7 @@ from . import (
     platform_policy,
     sibling_dreams,
     status_body_consistency,
+    writer_lock,
 )
 
 __all__ = ("main", "DISPATCH")
@@ -182,6 +183,10 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     # Story 42.1 (CAP-81 / CAP-86) -- duplicate frontmatter keys in tracked
     # story specs; same shape as DOCS_MAP_HYGIENE above.
     Source.FRONTMATTER_DUPLICATE_KEYS.value: frontmatter_duplicate_keys.gather,
+    # Story 56.5 (spec-pyforge-doctor CAP-100) -- the branch half of the
+    # chain-write guard: a chain path changed off the writer; same shape as
+    # FROZEN_PATH_CHANGED above, repo-scope, offline.
+    Source.WRITER_LOCK.value: writer_lock.gather,
 }
 
 # `--groundtruth` is bmad-drift-only -- it prints `factory.ground_truth`'s six
@@ -237,7 +242,7 @@ def _build_parser() -> argparse.ArgumentParser:
             f"valid only for source {_LAYERS_AUDIT_SOURCE!r}: run the "
             "per-project CAP-3 chain audit (layer presence + coherence + "
             "staleness + orphan-freedom checkpoints), seeded from "
-            "pyforge.doctor.sources.fleet_scan. Requires --project. "
+            "scripts/fleet_scan.py. Requires --project. "
             "Stories 17-3 + 21-1 / FR-150 + FR-192 CAP-3."
         ),
     )

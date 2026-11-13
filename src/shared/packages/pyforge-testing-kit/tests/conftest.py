@@ -1,33 +1,8 @@
-"""Minimal Django settings for cross-package contract tests (Story 43.2)."""
+"""The kit's own suite needs no session-wide setup.
 
-from __future__ import annotations
-
-import sys
-from pathlib import Path
-
-import django
-from django.conf import settings
-
-_REPO_ROOT = Path(__file__).resolve().parents[5]
-for rel in (
-    "src/shared/packages/pyforge-core/src",
-    "src/shared/packages/django-pyforge/src",
-):
-    path = str(_REPO_ROOT / rel)
-    if path not in sys.path:
-        sys.path.insert(0, path)
-
-
-def pytest_configure() -> None:
-    if settings.configured:
-        return
-    from django_pyforge.assertion.golden import GOLDEN_PRIVATE_PEM, GOLDEN_PUBLIC_PEM
-
-    settings.configure(
-        SECRET_KEY="testing-kit-contract-test",
-        USE_TZ=True,
-        INSTALLED_APPS=[],
-        PYFORGE_ASSERTION_PRIVATE_KEY=GOLDEN_PRIVATE_PEM,
-        PYFORGE_ASSERTION_PUBLIC_KEY=GOLDEN_PUBLIC_PEM,
-    )
-    django.setup()
+Until Story 118.1 (spec-pyforge-testing-charter:CAP-7) this file put the host's portal package on ``sys.path``
+and configured its web framework at session start, so no kit test collected on a root without the host. The one
+module that needs the host, ``tests/unit/test_station_api_contract.py``, now does that setup in a module-scoped
+fixture and is marked ``live_tree``; ``pyforge-core`` is a run-dependency of the kit, so it imports from the
+environment with no path insertion.
+"""

@@ -14,7 +14,7 @@ replan:
   story: "0.1"
   note: "Story-0.1 replan executed: Epic 6 (multi-axis expansion) added from the spec's v1 tier; the spec (docs/specs/pyforge-warden.md) is upstream and wins conflicts."
   rebaseline: "2026-07-16 (D12 + reviewer gates): v1 absorbs the axis gates (flag-activated), EPSS, baseline & grandfathering, fix-PR actuator — Epic 6 = stories 6.1-6.10 (FR32-FR40); story 2.6 split from 2.1; 31 stories total."
-updated: '2026-11-05'   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (arch -> epics); no CAP, FR or AD is minted. Prior '2026-11-01'   # AMENDED 2026-11-01 (EGM fleet audit, marshal Story 113.7): Stories 13.2, 14.4, 15.2 and 16.6-16.10 minted (fixes, no CAP, no flag; in-PR: 13.2, 14.4, 15.2, 16.6, 16.7, 16.8, 16.9, 16.10; backlog: none) under spec-pyforge-warden CAP-23..CAP-26, each at the end of its done epic, which reopens; append-only notes on Stories 13.1, 14.1, 14.2, 14.3, 15.1, 16.1, 16.2, 16.3, 16.4 and 16.5 (Surface lines name the code that landed, in full paths; Spec: lines link the story specs; EGM audit WAR-D-C3, WAR-D-R2, WAR-D-R5); keys through the Tier-3 feed and sprint-ledger-sync; no other epic or story moved. RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): arch->epics after the spine's 2026-11-01 re-stamp; Epics 13-16 validated against it (the eight fix stories land on the 2026-09-28 Decisions 1 and 2, now all done: 76/76 stories and 23/23 epics in the ledger); the Epic 16 heading's text follows CAP-26's re-derived title (number and key kept; EGM audit cluster WAR-CL-3). See § Currency reconciliation — 2026-11-01. Prior '2026-10-27'   # AMENDED 2026-10-27 (absorbed Spec folders to the archive home): Epic 24 / Story 24.1 minted in-progress under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 3 absorbed Spec folders move to archive/<original path>; keys 24-1, epic-24 (in-progress) and epic-24-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync. Prior '2026-10-26'   # AMENDED 2026-10-26 (one archive home): Epic 23 / Story 23.1 minted done under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 4 archived satellite Dreams left docs/dreams/ for archive/docs/dreams/, their bodies verbatim in the station Dream; keys 23-1, epic-23 (done) and epic-23-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync. Prior '2026-10-26'   # AMENDED 2026-10-26 (Story 20.2 built): Story 20.2 and Epic 20 promoted to done in the story's PR (Status lines, story spec and ledger keys through the Tier-3 feed and sprint-ledger-sync); by the operator's ruling of 2026-10-26 (option A) the live story text spells NFR-R3.1/NFR-R3.2, NFR-P2/P3/P4, FR-30, FR-33 and FR-35 (the Epic 19 record keeps the spellings it describes); prd->epics cascade for the PRD's § Currency reconciliation — 2026-10-26 (Story 20.2); no other epic or story moved. Prior '2026-10-26'   # AMENDED 2026-10-26 (every requirement derives from a capability): Epic 20 / Story 20.1 (in-progress), Story 20.2 (backlog) minted under spec-one-chain-per-station CAP-5 as amended and CAP-3 (no CAP, no flag); keys 20-1, 20-2, epic-20 (in-progress) and epic-20-retrospective (optional) added; no other epic or story moved. Prior '2026-10-25'   # AMENDED 2026-10-25 (latest): Story 19.1 and Epic 19 promoted to done in the five-station FR-arrow chain PR after its independent review (Status lines, story spec and ledger keys through the Tier-3 feed and sprint-ledger-sync); no other epic or story moved. Earlier 2026-10-25: RE-STAMPED 2026-10-25 (the PRD's FR arrows were mapped by subsection, not traced): Epic 19 / Story 19.1 added (a chore under spec-one-chain-per-station CAP-5 and CAP-3, no CAP, no flag; operator ruling "Do rows 1-5 in one PR"): six warden PRD FR arrows (four, then FR-34 and FR-36 on the independent review) are written to the Spec capabilities that realize them; keys 19-1 (backlog), epic-19 (backlog) and epic-19-retrospective (optional) added; arch->epics cascade for the spine's re-stamp of the same date; no other epic or story moved. Prior '2026-10-11'   # AMENDED 2026-10-11 (leak guard terms): Epic 18 / Story 18.1 minted (fix under CAP-26, no CAP, no flag, Deps S-16.5; ledger backlog): the leak guard forbids the listed terms everywhere and the organisation's name only in warden's own files, by the operator's ruling "Drop org from terms (Recommended)"; § Currency reconciliation — 2026-10-11 extended. Prior: AMENDED 2026-10-11 (operator rulings): Story 16.1 re-scoped to an operator-designated github.com organisation read through the operator's gh login (key kept, title changed, steward 75.1 no longer a dep; the target is never named in a tracked file) and Story 16.5 minted (the items of the operator-designated GitHub Projects, CAP-26 / FR-43, Deps S-16.1); arch->epics validation after the spine's 2026-10-11 re-stamp; § Currency reconciliation — 2026-10-11 appended. Prior: RE-STAMPED 2026-10-10: arch->epics cascade after the spine's 2026-10-10 re-stamp (Stories 15.1 and 16.1's gates cleared, their keys flipped blocked -> backlog by operator ruling); no epic or story added or changed; § Currency reconciliation — 2026-10-10 appended. Prior: AMENDED 2026-10-07 (subprocess seam): Story 11.3 minted (fix, no CAP, no flag), reopening Epic 11: the TEA advisory spawns through engines.py. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (arch->epics edge) after the spine's 2026-10-07 re-stamp (Story 17.1 landing, Stories 14.1-14.2); validation note appended (§ Currency reconciliation — 2026-10-07); no epic or story restructured, no status changed. Prior: AMENDED 2026-10-03 (Phase 4+5 landing): Story 17.1's seven follow-up-review rows withdrawn by operator ruling (they run as review batches); it closes 4 rows. Prior: RE-STAMPED 2026-10-03 (Phase 4+5): Epic 17 / Story 17.1 minted (fix, no CAP): warden's 11 open medium and low deferrals, operator rulings of 2026-10-03. Prior: RE-STAMPED 2026-09-28: Epics 14-16 / Stories 14.1-14.3, 15.1, 16.1-16.4 minted (spec-pyforge-warden CAP-24..26, FR-41..FR-43); § Currency reconciliation — 2026-09-28 appended; Epic 9's canopy FR citations qualified. Prior 2026-09-27 (night): Epic 13 / Story 13.1 minted (spec-pyforge-warden CAP-23). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (py-rattler test-oracle floor 0.26.0 → 0.25.0 for the pyforge-foundry-full union solve; surface reconcile); no requirement/AD/story delta. Prior 2026-09-17   # 2026-09-14 chain-currency sweep cascade (arch->epics edge); validation note appended, no epic or story restructured · AMENDED 2026-10-26 (one-chain shape): Epic 21 / Story 21.1 minted and done in the same PR (chore under spec-one-chain-per-station CAP-11: the archived compliance-gates Spec folder moves to the archive home); no requirement, decision or AD moved
+updated: '2026-11-12'   # RE-STAMPED 2026-11-12 (the cutover readiness close, warden Story 25.2): arch->epics cascade; the Portability line reads C1 Python 3.14 (decision D6) and pixi 0.80.0, S9 claims an age only for the LTS registry, Epic 9's opening line qualifies spec-pyforge-unifying-strategy:CAP-18, and Story 21.1 gains its Status line (done in the ledger). No story minted, renumbered or re-statused. See § Currency reconciliation — 2026-11-10 (Story 25.2). Prior '2026-11-10'   # AMENDED 2026-11-10 (the cutover readiness mint; the station Dream's entry and the operator's rulings of that date): Epics 25-27 / Stories 25.1-25.4, 26.1-26.3 and 27.1 minted (25.1, 25.4, 26.1, 26.3 and 27.1 backlog; 25.2, 25.3 and 26.2 blocked: their Deps name stories of a later epic, forward dependency 2026-11-10, unblocked only with operator confirmation) under spec-pyforge-warden CAP-27..CAP-29 (CAP-27 and CAP-29 minted shipped, CAP-28 ready; CAP-5..CAP-7 and CAP-9..CAP-26 amended) and spec-pyforge-steward:CAP-175 (Epic 27, a relay); Deps lines name warden keys only, the cross-station deps sit in each story spec's notes; keys epic-25..epic-27 and the eight story keys (five backlog, three blocked) with epic-25..27-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync; no other epic or story moved. Prior '2026-11-05'   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (arch -> epics); no CAP, FR or AD is minted. Prior '2026-11-01'   # AMENDED 2026-11-01 (EGM fleet audit, marshal Story 113.7): Stories 13.2, 14.4, 15.2 and 16.6-16.10 minted (fixes, no CAP, no flag; in-PR: 13.2, 14.4, 15.2, 16.6, 16.7, 16.8, 16.9, 16.10; backlog: none) under spec-pyforge-warden CAP-23..CAP-26, each at the end of its done epic, which reopens; append-only notes on Stories 13.1, 14.1, 14.2, 14.3, 15.1, 16.1, 16.2, 16.3, 16.4 and 16.5 (Surface lines name the code that landed, in full paths; Spec: lines link the story specs; EGM audit WAR-D-C3, WAR-D-R2, WAR-D-R5); keys through the Tier-3 feed and sprint-ledger-sync; no other epic or story moved. RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): arch->epics after the spine's 2026-11-01 re-stamp; Epics 13-16 validated against it (the eight fix stories land on the 2026-09-28 Decisions 1 and 2, now all done: 76/76 stories and 23/23 epics in the ledger); the Epic 16 heading's text follows CAP-26's re-derived title (number and key kept; EGM audit cluster WAR-CL-3). See § Currency reconciliation — 2026-11-01. Prior '2026-10-27'   # AMENDED 2026-10-27 (absorbed Spec folders to the archive home): Epic 24 / Story 24.1 minted in-progress under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 3 absorbed Spec folders move to archive/<original path>; keys 24-1, epic-24 (in-progress) and epic-24-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync. Prior '2026-10-26'   # AMENDED 2026-10-26 (one archive home): Epic 23 / Story 23.1 minted done under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 4 archived satellite Dreams left docs/dreams/ for archive/docs/dreams/, their bodies verbatim in the station Dream; keys 23-1, epic-23 (done) and epic-23-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync. Prior '2026-10-26'   # AMENDED 2026-10-26 (Story 20.2 built): Story 20.2 and Epic 20 promoted to done in the story's PR (Status lines, story spec and ledger keys through the Tier-3 feed and sprint-ledger-sync); by the operator's ruling of 2026-10-26 (option A) the live story text spells NFR-R3.1/NFR-R3.2, NFR-P2/P3/P4, FR-30, FR-33 and FR-35 (the Epic 19 record keeps the spellings it describes); prd->epics cascade for the PRD's § Currency reconciliation — 2026-10-26 (Story 20.2); no other epic or story moved. Prior '2026-10-26'   # AMENDED 2026-10-26 (every requirement derives from a capability): Epic 20 / Story 20.1 (in-progress), Story 20.2 (backlog) minted under spec-one-chain-per-station CAP-5 as amended and CAP-3 (no CAP, no flag); keys 20-1, 20-2, epic-20 (in-progress) and epic-20-retrospective (optional) added; no other epic or story moved. Prior '2026-10-25'   # AMENDED 2026-10-25 (latest): Story 19.1 and Epic 19 promoted to done in the five-station FR-arrow chain PR after its independent review (Status lines, story spec and ledger keys through the Tier-3 feed and sprint-ledger-sync); no other epic or story moved. Earlier 2026-10-25: RE-STAMPED 2026-10-25 (the PRD's FR arrows were mapped by subsection, not traced): Epic 19 / Story 19.1 added (a chore under spec-one-chain-per-station CAP-5 and CAP-3, no CAP, no flag; operator ruling "Do rows 1-5 in one PR"): six warden PRD FR arrows (four, then FR-34 and FR-36 on the independent review) are written to the Spec capabilities that realize them; keys 19-1 (backlog), epic-19 (backlog) and epic-19-retrospective (optional) added; arch->epics cascade for the spine's re-stamp of the same date; no other epic or story moved. Prior '2026-10-11'   # AMENDED 2026-10-11 (leak guard terms): Epic 18 / Story 18.1 minted (fix under CAP-26, no CAP, no flag, Deps S-16.5; ledger backlog): the leak guard forbids the listed terms everywhere and the organisation's name only in warden's own files, by the operator's ruling "Drop org from terms (Recommended)"; § Currency reconciliation — 2026-10-11 extended. Prior: AMENDED 2026-10-11 (operator rulings): Story 16.1 re-scoped to an operator-designated github.com organisation read through the operator's gh login (key kept, title changed, steward 75.1 no longer a dep; the target is never named in a tracked file) and Story 16.5 minted (the items of the operator-designated GitHub Projects, CAP-26 / FR-43, Deps S-16.1); arch->epics validation after the spine's 2026-10-11 re-stamp; § Currency reconciliation — 2026-10-11 appended. Prior: RE-STAMPED 2026-10-10: arch->epics cascade after the spine's 2026-10-10 re-stamp (Stories 15.1 and 16.1's gates cleared, their keys flipped blocked -> backlog by operator ruling); no epic or story added or changed; § Currency reconciliation — 2026-10-10 appended. Prior: AMENDED 2026-10-07 (subprocess seam): Story 11.3 minted (fix, no CAP, no flag), reopening Epic 11: the TEA advisory spawns through engines.py. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (arch->epics edge) after the spine's 2026-10-07 re-stamp (Story 17.1 landing, Stories 14.1-14.2); validation note appended (§ Currency reconciliation — 2026-10-07); no epic or story restructured, no status changed. Prior: AMENDED 2026-10-03 (Phase 4+5 landing): Story 17.1's seven follow-up-review rows withdrawn by operator ruling (they run as review batches); it closes 4 rows. Prior: RE-STAMPED 2026-10-03 (Phase 4+5): Epic 17 / Story 17.1 minted (fix, no CAP): warden's 11 open medium and low deferrals, operator rulings of 2026-10-03. Prior: RE-STAMPED 2026-09-28: Epics 14-16 / Stories 14.1-14.3, 15.1, 16.1-16.4 minted (spec-pyforge-warden CAP-24..26, FR-41..FR-43); § Currency reconciliation — 2026-09-28 appended; Epic 9's canopy FR citations qualified. Prior 2026-09-27 (night): Epic 13 / Story 13.1 minted (spec-pyforge-warden CAP-23). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (py-rattler test-oracle floor 0.26.0 → 0.25.0 for the pyforge-foundry-full union solve; surface reconcile); no requirement/AD/story delta. Prior 2026-09-17   # 2026-09-14 chain-currency sweep cascade (arch->epics edge); validation note appended, no epic or story restructured · AMENDED 2026-10-26 (one-chain shape): Epic 21 / Story 21.1 minted and done in the same PR (chore under spec-one-chain-per-station CAP-11: the archived compliance-gates Spec folder moves to the archive home); no requirement, decision or AD moved
 currency_review: "Reviewed 2026-09-14 (chain-currency sweep cascade, arch->epics edge, fired by the spine's 2026-09-14 re-stamp) — validation note appended at end of file (§ Currency validation — 2026-09-14): ledger re-measured with the real parser at 49/49 stories done across 12/12 epics, which supersedes the Spec's own dated 43-key/11-epic snapshot; the PRD's newly recorded `review_required` gap is deliberately NOT minted as a story here because it is a schema/behaviour change owing a Dream/Spec; the station's coherence checkpoint stays red on three operator-owned open questions. No epic or story restructured. Prior: Reviewed 2026-09-09 (Epic 12 added: spec-golden-path-conda-blind-spot CAP-1..5 decomposed after the operator answered its five open questions in the fleet readiness decision batch, plus Story 12.1 minted FIRST as the missing regression guard on the deploy verifier's clean-only refusal; gate verdict invariant unchanged — Warden stays the sole verdict). Reviewed 2026-09-06 (Epic 11 added: spec-bmad-suite-lifecycle warden relays — two advisory lenses, Stories 11.1–11.2; gate verdict invariant unchanged). Reviewed 2026-08-26 — validated against the architecture's 2026-08-26 reconciliation (post-v1 surfaces + as-built divergences). Epics 1-10 / 41 stories confirmed 1:1 with sprint-status-ledger.yaml, all done; Canopy/operating-model obligation sections re-verified as landed. Validation note appended; no story headings or statuses changed."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -72,11 +72,11 @@ Complete epic and story breakdown for **pyforge-warden** — a non-interactive C
 
 - **C0 — Gate-Integrity invariant (cross-cutting acceptance property):** never false-green; N adversarial fixtures → 0 exit-0.
 - **Reliability:** NFR-R1 corpus 0 uncaught exceptions (~1,950 files) · R2 ratcheted unparseable-rate baseline · R3a no repo/host mutation · R3b two-tier determinism (decision-deterministic default; byte-identical `--deterministic`) · R5 bounded engine timeout.
-- **Security:** S1 no execution of untrusted input (AST-denylist, no jinja-render, safe_load only) · S2 no silent egress (socket guard) · S3 waiver untrusted + least-privilege · S4 no repo writes + secure temp · S5 ReDoS/resource bound · S6 engine-input purity (no requirements/argv injection) · S7 output neutralization (schema-aware encoder) · S8 trusted-input integrity (fresh+authentic DB) · **S9 bundled-data max-age (added 2026-07-15: `snapshot_at`+`max_age_ok` on LTS-registry/map-derived verdicts; stale bundled data never silently `supported`)**.
+- **Security:** S1 no execution of untrusted input (AST-denylist, no jinja-render, safe_load only) · S2 no silent egress (socket guard) · S3 waiver untrusted + least-privilege · S4 no repo writes + secure temp · S5 ReDoS/resource bound · S6 engine-input purity (no requirements/argv injection) · S7 output neutralization (schema-aware encoder) · S8 trusted-input integrity (fresh+authentic DB) · **S9 bundled-data max-age (added 2026-07-15; narrowed 2026-11-10 to the LTS registry: `snapshot_at`+`max_age_ok` on the report's `currency_data` slot, a fixed 180-day maximum age; a stale LTS registry never silently `supported`; the conda→pypi map carries no snapshot, DW-warden-cutover-2026-11-10-1)**.
 - **Performance:** NFR-P2 (warm overhead ≤ ~2s p95, engines-stubbed) · NFR-P3 (cold: cacheable first-run DB) · NFR-P4 (concurrency: engines parallel, no shared state, O(project)).
 - **Interoperability:** I1 schema conformance (report JSON schema, CycloneDX 1.6, purl) · I2 schema-version field + frozen exit enum `{0,1,2,130}` · I3 machine-output purity (stdout = one doc or empty).
 - **Usability:** U1 actionable diagnostics (fail-with-a-fix) · U2 safe-by-default + warn-only on-ramp.
-- **Portability:** C1 Python ≥ 3.12; engines on PATH in a tested version range; pixi ≥ 0.72.2.
+- **Portability:** C1 Python ≥ 3.14 (the package's `requires-python`, decision D6); engines on PATH in a tested version range; pixi ≥ 0.80.0 (the workspace's `requires-pixi`).
 
 ### Additional Requirements
 
@@ -688,7 +688,7 @@ steward `sprint-change-proposal-2026-08-24-hook-specs.md`; `DW-OM-2026-08-24`;
 
 ## Epic 9: PR-gate hook specs; scanners are plugins
 
-First concrete CAP-18 retrofit. **Depends on steward S-32.1** (`pyforge-core` registration).
+First concrete spec-pyforge-unifying-strategy:CAP-18 retrofit. **Depends on steward S-32.1** (`pyforge-core` registration).
 Does not reopen Epics 1–8 engines as a rewrite — wrap them as default plugins. **canopy:FR-44.**
 
 ### Story 9.1: Warden publishes the PR-gate hook book
@@ -697,7 +697,7 @@ As a scanner author,
 I want named PR-gate hook points on the shared registration API,
 So that I implement a plugin instead of forking Warden.
 
-**Type:** feature • **Effort:** L • **Deps:** steward S-32.1 • **FR/AD:** canopy:FR-44 • canopy:AD-21
+**Type:** feature • **Effort:** L • **Deps:** steward:S-32.1 • **FR/AD:** canopy:FR-44 • canopy:AD-21
 **Given** the canopy:FR-43 contract **When** this story completes **Then** Warden documents hook specs for scan / aggregate / verdict (or equivalent named points)
 **And** plugins register through `pyforge-core`, not a Warden-only second loader
 **And** the Warden verdict remains the only PR quality-gate pass/fail
@@ -1253,7 +1253,7 @@ As a reader who asks which capability a warden NFR bounds,
 I want each of the 23 lettered NFR lines to cite the capability or capabilities whose success it bounds,
 So that the NFR tier derives from capabilities the way the FR tier does, and the baseline's arrowless population for this station reaches zero.
 
-**Type:** chore • **Effort:** S • **Deps:** 20.1 • **FR/AD:** spec-one-chain-per-station CAP-5 (amended 2026-10-26: an NFR cites the CAP(s) it bounds; the lettered family is sanctioned); CHAIN-STANDARD § 6 and § 12; the warden capabilities each NFR bounds, traced
+**Type:** chore • **Effort:** S • **Deps:** S-20.1 • **FR/AD:** spec-one-chain-per-station CAP-5 (amended 2026-10-26: an NFR cites the CAP(s) it bounds; the lettered family is sanctioned); CHAIN-STANDARD § 6 and § 12; the warden capabilities each NFR bounds, traced
 **Flag:** none (`type: chore`)
 **Surface:** `_bmad-output/projects/pyforge-warden/planning-artifacts/prds/prd-pyforge-warden-2026-07-14/prd.md` (the 23 lettered NFR lines gain `← CAP-m` traced from each capability's success); `docs/governance/fr-baseline.json` (`projects.pyforge-warden`, `findings.pyforge-warden` and the `owners` row leave through `scripts/fr_baseline.py --prune`); by the operator's ruling of 2026-10-26 (option A) the eight ids outside the grammar are re-spelled in the PRD, the spine, this file's live text and the 27 code comment, docstring and help-string lines of `src/shared/packages/pyforge-warden/` (dated records, memlogs, the Dream log and CHAIN-STANDARD's quoted examples keep the old spellings)
 **Spec:** `planning-artifacts/specs/spec-20-2-every-warden-nfr-names-the-capabilities-it-bounds.md`
@@ -1287,6 +1287,8 @@ So that the directory shows the one-chain shape and the retirement record is fou
 **When** it is moved by `git mv` to `archive/<original path>` with its memlog, and the chain-sprawl baseline is pruned
 **Then** `git` reports two renames and no deletion, the station `specs/` directory holds no `status: archived` folder, `chain-sprawl-check` lists one fewer baseline folder, and `spec-surface-check`, `governance-currency`, `fold-complete-check`, `bmad-drift-check` and `detectors-ci` exit 0
 **And** the Spec's `owner-dream:` path still resolves
+**Status:** done
+
 ## Epic 23: The archived warden Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 
 Minted 2026-10-26 from `docs/governance/spec-one-chain-per-station/SPEC.md`, capability spec-one-chain-per-station:CAP-11 (owner Dream
@@ -1349,6 +1351,188 @@ So that `specs/` holds the station Spec, its declared seams and its story specs 
 **When** each live companion is carried into `specs/spec-pyforge-warden/` and every absorbed folder moves to `archive/<original path>`
 **Then** no folder under `_bmad-output/projects/pyforge-warden/planning-artifacts/specs/` reads `status: absorbed`, each moved folder keeps its files, and every live pointer names the file's new path
 **And** `chain-sprawl` (its baseline pruned), `dream-chain`, `governance-currency`, `spec-surface`, `ad-citation`, `chain-completeness`, `chain-currency` and `detectors-ci` stay green, and the station suite passes
+**Status:** done
+
+## Epic 25: The warden chain says what the code does (cutover readiness 2026-11-10; spec-pyforge-warden CAP-27, CAP-29; decisions D4 and D6)
+
+Minted 2026-11-10 from the station Dream's entry of the same date (the cutover readiness audit) and the operator's
+rulings of 2026-11-10 ("Accept all, run mint"; `docs/dreams/pyforge-unifying-strategy.md`, Realization log, second
+addendum). The read-only audit at main `82a2b18828` found `spec-pyforge-warden` resolving against the tree but not
+ready for a rebuild from Frame + Spec: it named none of the nine feature flags, four capabilities read `ready` after
+their stories landed, it stated what the code lacks and left out what the code does. The mint re-derived the
+capability text: CAP-27 minted for the PR-gate hook book (shipped 2026-08-24), CAP-29 split from CAP-26 as its portal
+half by the operator's ruling (`A-only`, expiry steward Story 121.5; CAP-26 keeps the kernel half, `rebuild`),
+CAP-5..CAP-7 and CAP-9..CAP-26 amended, CAP-23..CAP-26 moved to shipped, both self-validate passes logged. This epic verifies that text
+and writes the rest of the chain: the Constraints, Assumptions and companions (25.1), the package's pointers (25.3),
+the deferred-work ledger (25.4), and the PRD, spine, brief and epics with the chain's close (25.2, last). Decisions D4
+(a marker moves with its landing) and D6 (the Python floor is 3.14) of the 2026-11-10 cutover readiness plan. The
+rulings answer the station's six questions: the schema stays 1.1.0; the bundled-data age Constraint narrows to the LTS
+registry; `--deterministic` stays reserved and the SBOM stays volatile; CAP-13..CAP-15 are `A-only`, expiry steward
+Story 44.8; `spec-pyforge-warden` does not co-govern `django-warden`.
+**HARD boundaries:**
+- No product code changes and no flag is added (the operator's ruling, item 5); each piece left unbuilt is a
+  deferred-work row.
+- `SPEC.md` is never hand-edited: memlog entry, then the anchor-asserting script render, both self-validate passes
+  logged.
+- No story appends a `Surface reconcile` line to another Spec's memlog or runs `spec_surface_check.py
+  --write-baseline`: Story 25.2 writes warden's reconcile event, and doctor Story 58.4 runs every scoped stamp once,
+  after the last edit.
+
+### Story 25.1: The warden Spec's capabilities, constraints and companions say what the code does
+
+As a second root that rebuilds warden from its Spec,
+I want every capability, Constraint and companion of `spec-pyforge-warden` to state what the shipped code does,
+So that nothing I rebuild is a promise the code never kept, and nothing the code does is missing from the contract.
+
+**Type:** docs • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-warden CAP-27 (FR-44; minted for the hook book Stories 9.1–9.3 shipped) and CAP-29 (FR-43 re-traced; the portal half of CAP-26, split by the operator's ruling of 2026-11-10), and the text of the capabilities it corrects, CAP-5..CAP-7 and CAP-9..CAP-26 (no other CAP minted); decisions D4 and D6; the operator ruling of 2026-09-14 (`review_required` is not built)
+**Flag:** none (`type: docs`, spec-feature-flag-governance Q1)
+**Surface:** `_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/` (`SPEC.md`, `.memlog.md`, `verdict-contract.md`, `axes.md`, `glossary.md`); `src/shared/packages/pyforge-warden/src/pyforge/warden/hooks.py` and `src/shared/packages/pyforge-warden/src/pyforge/warden/scanner_plugins.py` named as CAP-27's code, unchanged here
+**Spec:** `planning-artifacts/specs/spec-25-1-the-warden-spec-s-capabilities-constraints-and-companions-say-what-the-code-does.md`
+**Given** the mint's render of 2026-11-10 (CAP-27, CAP-28 and CAP-29 minted; CAP-5..CAP-7 and CAP-9..CAP-26 amended; CAP-23..CAP-26 read shipped)
+**When** the story checks that text against the code and writes the non-capability text through memlog entries and the script render
+**Then** the *Runtime shape* Constraint reads Python ≥ 3.14; *Bundled data carries its own age* claims an age only for the LTS registry (the conda-to-pypi map carries no snapshot, operator ruling 2026-11-10); *Determinism discipline* says `--deterministic` is reserved and the SBOM's `serialNumber` and timestamp are volatile; the schema Constraint names the open `advisory` and `actuation` slots at 1.1.0; *Naming is a contract* names `contract.md`; the Assumptions point at the ledger as the count of record and record the `tests/conformance/` → `tests/integration/` rename; the fleet-run pointers in the Non-goals and *No silent egress* name CAP-29; `verdict-contract.md` loses `review_required`, `axes.md` names `fail-on-kev`, and `glossary.md` points at `contract.md`, `proof-map.md` and CAP-27
+**And** `SPEC.md` holds 29 capability definition lines, CAP-28 alone reads `(ready …)`, all nine flag keys and their per-environment truth are named, the memlog carries a capability entry for CAP-13..CAP-22 and CAP-27..CAP-29 and both self-validate passes, the frontmatter has one `updated:` key whose comment reads "CAP-5..CAP-7 and CAP-9..CAP-26 amended"; `chain-completeness-check`, `status-body-consistency-check` and `ad-citation-check` exit 0
+**Status:** done
+
+### Story 25.2: The warden PRD, spine, brief and epics follow the Spec, and the chain closes
+
+As the operator who reads warden's chain to learn what the station does,
+I want the PRD, spine, brief and epics to follow the corrected Spec, and the chain to close current,
+So that every artifact agrees with the code on the day the change lands.
+
+**Type:** docs • **Effort:** M • **Deps:** S-25.1, S-25.3, S-25.4, S-26.1, S-26.2, S-26.3, S-27.1 • **FR/AD:** spec-one-chain-per-station:CAP-5 (a requirement cites defined CAPs; CHAIN-STANDARD § 12); spec-pyforge-warden CAP-28 (its marker moves to shipped, decision D4) and the capabilities FR-43..FR-50 realize, traced (registered at the mint; no CAP minted); decisions D4 and D6
+**Flag:** none (`type: docs`, spec-feature-flag-governance Q1)
+**Surface:** `_bmad-output/projects/pyforge-warden/planning-artifacts/prds/prd-pyforge-warden-2026-07-14/prd.md`, `_bmad-output/projects/pyforge-warden/planning-artifacts/architecture/architecture-pyforge-warden-2026-07-14/ARCHITECTURE-SPINE.md`, `_bmad-output/projects/pyforge-warden/planning-artifacts/briefs/brief-pyforge-warden-2026-07-25/brief.md`, `_bmad-output/projects/pyforge-warden/planning-artifacts/epics.md`, `docs/dreams/pyforge-warden.md`, `_bmad-output/projects/pyforge-warden/planning-artifacts/test-architecture.md`, the Spec's `.memlog.md` and `SPEC.md` (CAP-28's marker and the `companions:` line), a new `retros/retro-pyforge-warden-2026-11-*.md` and a new `implementation-readiness-report-2026-11-*.md`
+**Spec:** `planning-artifacts/specs/spec-25-2-the-warden-prd-spine-brief-and-epics-follow-the-spec-and-the-chain-closes.md`
+**Given** Stories 25.1, 25.3, 25.4, 26.1, 26.2, 26.3 and 27.1 done on the branch, and the PRD's FR-44..FR-50 and FR-43's re-trace registered at the mint
+**When** the closing story re-stamps the chain
+**Then** NFR-C1, the spine's two floor lines and the epics *Portability* line read Python 3.14; NFR-S9 and the epics S9 item claim an age only for the LTS registry; the bypass journey's climax names `bypassed`; the Epic 9 history line cites `spec-pyforge-unifying-strategy:CAP-18`; the spine names every shipped module; the Dream's *What is real* states no story count and names `archive/docs/specs/pyforge-warden.md`; every capability CAP-1..CAP-29 has an FR or NFR arrow
+**And** the Story Coverage Matrix is regenerated after the last story block and test file; one `Surface reconcile 2026-11-10` memlog event names every package path the branch changed; CAP-28 reads `(shipped 2026-11-…)` and `companions:` lists `contract.md` and `proof-map.md`, both present; the warden retro and readiness report exist; `fr-without-cap-check`, `tea-playwright-check`, `dream-chain-check`, `dreams-hygiene-check`, `governance-currency`, `chain-completeness-check`, `status-body-consistency-check` and `chain-currency-sweep-check -- --project pyforge-warden` exit 0
+**Status:** done
+
+### Story 25.3: The warden package points at the live Spec
+
+As a reader who opens warden's package to find its contract,
+I want the README, the package docstring and the project config to point at the live Spec folder and `contract.md`,
+So that no pointer sends me to the legacy intake spec that moved to `archive/` on 2026-09-18.
+
+**Type:** fix • **Effort:** S • **Deps:** S-26.1 • **FR/AD:** spec-one-chain-per-station:CAP-11 (readers follow a moved file; CHAIN-STANDARD § 11); no warden CAP or FR
+**Flag:** none (a fix, spec-feature-flag-governance Q1)
+**Surface:** `src/shared/packages/pyforge-warden/README.md`, `src/shared/packages/pyforge-warden/src/pyforge/warden/__init__.py` (the docstring only), `_bmad-output/projects/pyforge-warden/.bmad-config.toml` (line 11 only), `_bmad-output/PROJECTS.md` (the `pyforge-warden` row only)
+**Spec:** `planning-artifacts/specs/spec-25-3-the-warden-package-points-at-the-live-spec.md`
+**Given** a README that says "Epics 1–8 shipped" and links `docs/specs/pyforge-warden.md`, a package docstring that calls the package a build-wiring skeleton against the same path, and a project config and `PROJECTS.md` row that name it as the intake spec
+**When** each pointer is re-written to the Spec folder and `contract.md`
+**Then** none of the four surface files (the README, the docstring, the project config and its `PROJECTS.md` row) names `docs/specs/pyforge-warden.md`, the README drops the per-epic status sentence and keeps its hook-book section, every relative link in it resolves, and the docstring no longer says skeleton while `__version__` is untouched
+**And** the project config and its `PROJECTS.md` row move together, so marshal's seed projects-index reads one pair; the package manifest's Python floor is steward Story 124.3's; `pixi run --frozen -e pyforge-warden pyforge-warden-test` and `pixi run -e pyforge-guild lint-types` exit 0
+**Status:** done
+
+### Story 25.4: Every open warden deferral is re-verified and carries a severity and an owner
+
+As the operator who reads warden's deferred-work ledger to learn what is still owed,
+I want every open row re-read against the code, closed with its evidence when the defect is gone, and given a severity and an owner,
+So that the ledger tells the truth on the day the cutover reads it.
+
+**Type:** chore • **Effort:** M • **Deps:** — • **FR/AD:** the capabilities that shipped each behaviour (the stories each row names); no CAP minted or cited by number, no FR
+**Flag:** none (`type: chore`, spec-feature-flag-governance Q1)
+**Surface:** `_bmad-output/projects/pyforge-warden/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-25-4-every-open-warden-deferral-is-re-verified-and-carries-a-severity-and-an-owner.md`
+**Given** 55 of the ledger's 70 rows read open, 40 of them legacy rows with no severity, none re-verified since 2026-09-02
+**When** each open row is re-read against the tree at the branch head
+**Then** each gets one `verified: 2026-11-<day> - <still-open|done> - <command or path:line>` line, a closed row gets `status: done <date>` with that evidence, and every open row carries a severity and an owner; no row's id, `summary:` or `location:` changes
+**And** this change's eleven rows `DW-warden-cutover-2026-11-10-1` to `-11` are written, rows 1, 2, 3, 8, 9 and 10 closed with the operator's ruling of 2026-11-10 as their resolution; a dated *Curation — 2026-11-10* section heads the ledger; `deferred-work-check`, `ledger-regression-check` and `story-status-check` exit 0
+**Status:** done
+
+## Epic 26: Warden's public contract is one companion, held by a test (spec-pyforge-warden CAP-28; decision D1)
+
+Minted 2026-11-10 from the station Dream's entry of the same date (the cutover readiness audit). Decision D1 of the
+2026-11-10 cutover readiness plan: a second root rebuilds what a caller of warden can reach from the Spec folder
+alone, so every CLI flag, config key, exit code, status rung, error kind, feature-flag key, environment variable, MCP
+tool, management command, hook spec, plugin entry point, open report slot, engine range, imported symbol and the home
+of each capability is written in one companion, `contract.md`, beside `SPEC.md`, and `proof-map.md` names the tests
+that prove each capability. `spec-pyforge-warden` CAP-28 was minted `ready` at the mint; Story 25.2 moves it to
+shipped when 26.1, 26.2 and 26.3 are done. The where-each-capability-lives table is the answer to the audit's question
+whether `spec-pyforge-warden` co-governs `django-warden`: it does not (operator ruling 2026-11-10).
+**HARD boundaries:**
+- No product code, CLI verb or generator changes; each test derives its inventory from the code and compares it both
+  ways with the companion.
+- Each new test module reads the planning tree and carries the `live_tree` marker; negative tests use synthetic
+  inventories and source text, never a mutated tracked file.
+- A clause no test proves becomes a deferred-work row, never a `SPEC.md` re-word.
+
+### Story 26.1: Warden's public contract is one companion, and a test holds the code to it
+
+As a second root that rebuilds warden,
+I want one companion that lists the CLI, the config keys, the exit and error vocabulary, the nine feature flags per environment, the environment variables, the MCP tools and the management commands,
+So that I can rebuild every surface a caller reaches, and a test fails the day the code and the list part.
+
+**Type:** chore • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-warden CAP-28 (FR-45); decision D1
+**Flag:** none (`flag-exempt: detector-or-gate`)
+**Surface:** `_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/contract.md`, `src/shared/packages/pyforge-warden/tests/meta/test_public_contract.py`
+**Spec:** `planning-artifacts/specs/spec-26-1-warden-s-public-contract-is-one-companion-and-a-test-holds-the-code-to-it.md`
+**Given** the audit's finding at `82a2b18828` (the Spec named none of the nine flags, six of the scan flags, the forge and feed environment variables, the MCP tools or the management commands), and a mint render of 2026-11-10 that wrote those names into the capabilities that own them while no companion lists the whole surface and no test fails when the code and the list part
+**When** `contract.md` sections 1 to 7 are written (CLI, the 13 keys, exit codes and rungs and error kinds, the nine flags as `| key | flags.json | dev | staging | production | reader | flag-off behaviour |`, environment variables read and set, MCP tools, management commands) and `tests/meta/test_public_contract.py` derives each inventory from the code
+**Then** the test passes, and each inventory has a synthetic-drift negative in both directions; the derived kernel read set is exactly the seven variables and the set-for-engine set exactly the four
+**And** an independent re-derivation finds every scan option, every flag row's four values, and every variable, tool, command and key in `contract.md`; `pixi run -e pyforge-guild lint-types` exits 0
+**Status:** done
+
+### Story 26.2: Every warden capability names the test modules that prove it
+
+As a second root that uses this repository's tests as its oracle,
+I want a proof map that names, per capability, the test modules that prove it, their lane and the command that runs them,
+So that I know which tests to port with each capability, and a clause no test proves is written down as a gap.
+
+**Type:** chore • **Effort:** M • **Deps:** S-25.4, S-26.1, S-26.3, S-27.1 • **FR/AD:** spec-pyforge-warden CAP-28 (FR-45); CHAIN-STANDARD § 2 (a success clause names its proof)
+**Flag:** none (`flag-exempt: detector-or-gate`)
+**Surface:** `_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/proof-map.md`, `src/shared/packages/pyforge-warden/tests/meta/test_capability_proof_map.py`, `_bmad-output/projects/pyforge-warden/planning-artifacts/deferred-work-ledger.md` (its own gap rows only)
+**Spec:** `planning-artifacts/specs/spec-26-2-every-warden-capability-names-the-test-modules-that-prove-it.md`
+**Given** CAP-1..CAP-22's success clauses name no test or command
+**When** `proof-map.md` gets one row per capability (`| CAP-n | lane | test modules | command |`; lanes package, live-tree, slow, platform) and a *Gaps* table, and `tests/meta/test_capability_proof_map.py` holds it
+**Then** every capability `SPEC.md` defines (29) has a row, every cited module exists, each row's lane agrees with the module's marker or path, and every gap names a ledger row from `DW-warden-cutover-2026-11-10-12` up
+**And** no commit of this story touches `SPEC.md`; `deferred-work-check` and `lint-types` exit 0
+**Status:** done
+
+### Story 26.3: The contract names what other code imports, where each capability lives, and the open slots
+
+As a second root that rebuilds warden and the packages that call it,
+I want the companion to name the hook book, the report's open slots, the engines, the Python symbols other packages import and where each capability's code lives,
+So that a caller outside the package is never broken by a rebuild that did not know it existed.
+
+**Type:** chore • **Effort:** M • **Deps:** S-26.1 • **FR/AD:** spec-pyforge-warden CAP-28 (FR-45); decision D1
+**Flag:** none (`flag-exempt: detector-or-gate`)
+**Surface:** `_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/contract.md` (sections 8 to 12), `src/shared/packages/pyforge-warden/tests/meta/test_contract_surface.py`
+**Spec:** `planning-artifacts/specs/spec-26-3-the-contract-names-what-other-code-imports-where-each-capability-lives-and-the-open-slots.md`
+**Given** atlas, doctor, `django-warden` and three platform tests importing `pyforge.warden` names no Spec text names, `django-warden` realizing CAP-16, CAP-17 and CAP-29 under another Spec's surface, and untyped `advisory` and `actuation` slots
+**When** `contract.md` sections 8 to 12 are appended (hook specs, entry points and optional ids; the open slots' key sets; engines and ranges and bundled data; the import surface; *Where each capability lives*) and `tests/meta/test_contract_surface.py` derives them
+**Then** the test passes with synthetic negatives for an unlisted item, a stale row and a stale allowlist entry; every `pyforge.warden` module imported outside the package, the 10 entry points, the three hook specs and the seven optional ids are in `contract.md`
+**And** *Where each capability lives* has one row per CAP-1..CAP-29 and every path it names exists, the lenses cite `spec-pyforge-steward:CAP-32`, and `lint-types` exits 0; the schema stays 1.1.0 (operator ruling 2026-11-10)
+**Status:** done
+
+## Epic 27: Warden's live-tree readers run as their own half (relay of spec-pyforge-steward:CAP-175; decision D2)
+
+Minted 2026-11-10 from the station Dream's entry of the same date (the cutover readiness audit). Decision D2 of the
+2026-11-10 cutover readiness plan relays steward's capability that each station suite runs as its package-local and
+live-tree halves. Seven warden test modules read this repository outside the package, so the suite cannot serve a
+second root as an oracle as it stands, and two of them skip when the tree is absent, so their guard cannot fire. Warden
+mints no CAP and registers no FR for this epic: the capability is steward's, in the relay shape of doctor Story 55.4.
+**HARD boundaries:**
+- Test-only: no product behaviour changes.
+- The pixi task halves, the workflow job, the trigger map and the coverage merge are steward Stories 124.1 and 124.2's.
+- In the live-tree half a missing tree is a failure, not a skip.
+
+### Story 27.1: Warden's live-tree readers run as their own half
+
+As a second root that runs warden's package tests as its oracle,
+I want every warden test that reads outside the package marked `live_tree`, and the package half to pass from an export outside this repository,
+So that the oracle runs where the repository is not, and the live-tree guards fail instead of skipping.
+
+**Type:** chore • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward:CAP-175 (relay: each station suite runs as its package-local and live-tree halves); no warden CAP or FR
+**Flag:** none (`flag-exempt: detector-or-gate`)
+**Surface:** `src/shared/packages/pyforge-warden/pyproject.toml`; `src/shared/packages/pyforge-warden/tests/meta/test_station_persona.py`, `test_skf_domain_skill.py`, `test_portal_audit_start_get.py`, `test_engine_version_range_sync.py`, `test_pixi_range_floor_matches_workspace.py` (new), `test_live_tree_marker.py` (new); `src/shared/packages/pyforge-warden/tests/integration/test_pixi_lock_environment_scope.py`, `test_fix_solver_real_pixi.py`; `src/shared/packages/pyforge-warden/tests/unit/test_currency.py`, `test_currency_cfe_parity.py` (new)
+**Spec:** `planning-artifacts/specs/spec-27-1-warden-s-live-tree-readers-run-as-their-own-half.md`
+**Given** seven warden test modules that read this repository outside the package, two of which skip when the tree is absent
+**When** the `live_tree` marker is registered beside `slow`, every outside reader carries it (two modules split so their package-local tests stay in the package half), and `tests/meta/test_live_tree_marker.py` guards the split
+**Then** the two halves together collect exactly what the default suite collected, the live half is not empty, and the package half passes from a `git archive` export outside this repository
+**And** the live-tree half passes in the repository and skips nothing for a missing tree; `pixi run --frozen -e pyforge-warden pyforge-warden-test` and `lint-types` exit 0
 **Status:** done
 
 ## Currency validation — 2026-08-26
@@ -1515,3 +1699,22 @@ and the frontmatter note are the whole edit.
 *Chain-currency cascade (arch -> epics), EGM audit, marshal Story 113.18.*
 
 No story is minted. Dated notes land on Stories 16.2 and 16.4. No epic is added, and no story is renumbered.
+
+## Currency reconciliation — 2026-11-10 (Story 25.2)
+
+The `arch→epics` edge after the spine's re-stamp of the same pass (§ Currency reconciliation — 2026-11-10 there: the
+module tree re-drawn as built, the two Python floor lines at 3.14; no AD added, amended or removed).
+
+- **Inventory lines corrected in place.** *Portability* reads C1 Python ≥ 3.14 (decision D6) and pixi ≥ 0.80.0, the
+  workspace's `requires-pixi` (NFR-C1's floor since 2026-11-01; this line still read 0.72.2). *Security*'s S9 claims
+  an age only for the LTS registry, as NFR-S9 does (operator ruling 2026-11-10; row DW-warden-cutover-2026-11-10-1).
+- **Epic 9's opening line** qualifies its foreign capability as `spec-pyforge-unifying-strategy:CAP-18`. Warden's own
+  CAP-18 is environment-scoped lockfile extraction (FR-48, Epic 12).
+- **Story 21.1** gains its missing `**Status:** done` line; its ledger key has read `done` since it landed. No other
+  status line moves: the stories of Epics 25–27 are built on branch `cutover-readiness-2026-11-10`, and the change's
+  ledger close promotes their keys.
+- **Ledger agreement.** 84 `### Story` headings and 26 `## Epic` headings map 1:1 to the ledger's 84
+  story keys and 26 `epic-<n>` keys.
+
+No story is minted, renumbered or restructured. This section, the two inventory lines, Epic 9's opening line, Story
+21.1's status line and the frontmatter note are the whole edit.

@@ -1,4 +1,4 @@
-"""Steward's ``suite`` duty — bmad-suite channel pipeline truth (Epic 15 / CAP-1).
+"""Steward's ``suite`` duty — bmad-suite channel pipeline truth (Epic 15 / CAP-21).
 
 Story 15.1: one command reports, for each of the 13 suite packages, upstream
 latest (npm and/or GitHub per package class), recipe version, SelfExplainML
@@ -10,7 +10,7 @@ releases/tags, ``recipe.yaml`` parse, ``api.anaconda.org``, conda-meta /
 installed-version scan, ``.claude/skills`` + ``_bmad`` census) without
 importing ``pyforge.doctor`` (steward stays free of a doctor run-dependency).
 
-Verb: ``steward suite pipeline-truth``. Never implements Epic 15 CAP-2
+Verb: ``steward suite pipeline-truth``. Never implements Epic 15 CAP-22
 autotick advance (Story 15.2). Story 31.2 extends the wired-or-not column
 with per-class predicates for the six non-module pieces.
 """
@@ -64,7 +64,7 @@ def repo_root() -> Path:
     raise SuiteError("cannot locate repo root (scripts/bmad-loop-worktree not found walking up)")
 
 
-# Story 31.2 / install-class CAP-2 — not a boolean only --module targets satisfy.
+# Story 31.2 / CAP-28 — not a boolean only --module targets satisfy.
 INSTALL_CLASS_MODULE = "module"
 INSTALL_CLASS_SKIP = "skip"
 INSTALL_CLASS_INSTALLER_TREE = "installer-tree"
@@ -528,7 +528,7 @@ def _plugin_path_documented(repo: Path) -> bool:
 
 
 def _module_census_hit(repo: Path, pkg: SuitePackageDef) -> str | None:
-    """CAP-3 ``--module`` census only. Returns a detail string on hit.
+    """spec-pyforge-steward CAP-23 ``--module`` census only. Returns a detail string on hit.
 
     Story 46.9 review finding (HIGH, reproduced live against this repo's own
     `_bmad/config.yaml`): ``wire_skill_names_all``, when declared, is the
@@ -729,7 +729,7 @@ def probe_wired(repo: Path, pkg: SuitePackageDef) -> StageProbe:
                 ok=True,
                 detail=f"AD-9 roster: modules.{pkg.module_code} not installed",
             )
-        # CAP-3 five: module census boolean.
+        # spec-pyforge-steward CAP-23 five: module census boolean.
         hit = _module_census_hit(repo, pkg)
         if hit:
             return StageProbe(value="wired", ok=True, detail=hit)
@@ -779,7 +779,7 @@ def _behind(left: str | None, right: str | None) -> bool:
 
 
 def name_drifts(pkg: PackageTruth) -> tuple[str, ...]:
-    """Name per-stage drifts (CAP-1: drift named per stage)."""
+    """Name per-stage drifts (CAP-21: drift named per stage)."""
     drifts: list[str] = []
     npm_v = pkg.upstream_npm.value
     gh_v = pkg.upstream_github.value
@@ -1123,7 +1123,7 @@ def format_pipeline_truth(report: PipelineTruthReport, *, as_json: bool) -> str:
         return json.dumps(report.to_dict(), indent=2, sort_keys=True)
 
     lines: list[str] = [
-        "steward suite pipeline-truth — CAP-1 whole-pipeline report",
+        "steward suite pipeline-truth — CAP-21 whole-pipeline report",
         f"packages: {len(report.packages)}",
     ]
     if report.baseline_id:
@@ -1168,7 +1168,7 @@ def _fmt_stage(stage: StageProbe) -> str:
 
 
 class SuiteDuty:
-    """``steward suite …`` — Epic 15 CAP-1 pipeline-truth + CAP-2 advance."""
+    """``steward suite …`` — Epic 15 CAP-21 pipeline-truth + CAP-22 advance."""
 
     name = "suite"
 
@@ -1179,8 +1179,8 @@ class SuiteDuty:
                 ok=True,
                 summary=(
                     "suite: available verbs are pipeline-truth "
-                    "(CAP-1 report-only whole-pipeline truth) and advance "
-                    "(CAP-2 one-command stale-package advance → reviewable PR, "
+                    "(CAP-21 report-only whole-pipeline truth) and advance "
+                    "(CAP-22 one-command stale-package advance → reviewable PR, "
                     "never auto-merged)"
                 ),
             )

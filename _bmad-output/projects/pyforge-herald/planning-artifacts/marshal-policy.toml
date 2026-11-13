@@ -666,6 +666,45 @@ verify_commands = [
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 
+"50" = [  # the herald Spec says what is true (Stories 50.1-50.4: CAP-62 minted, FR-14.1; markers and text of CAP-1..CAP-61;
+  # the source citations re-keyed; the chain close), added 2026-11-10 with the cutover readiness mint. The default surface,
+  # restated because a declared entry replaces it outright, plus the planning files Stories 50.1 and 50.2 write (the
+  # deferred-work ledger, the PRD, spine, brief and epics re-stamps, the retro and readiness report) and the station Dream.
+  "src/shared/packages/pyforge-herald/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-herald/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/prds/prd-pyforge-herald-2026-08-01/prd.md",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/architecture/architecture-pyforge-herald-2026-08-01/ARCHITECTURE-SPINE.md",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/briefs/brief-pyforge-herald-2026-08-01/brief.md",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/epics.md",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/retros/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/implementation-readiness-report-2026-11-*.md",
+  "docs/dreams/pyforge-herald.md",
+]
+"51" = [  # the dossier's figures are counted and its cutover claims are bound to the ledgers (Stories 51.1 and 51.2: CAP-46
+  # amended, FR-12.5 amended; spec-python-foundry-cutover:CAP-14), added 2026-11-10 with the cutover readiness mint. The
+  # default surface, restated, plus docs-site/ (the measurer, the loader, the schema, dossier.yml, agent-surface.ts) and
+  # the docs registry rows another unit may request.
+  "src/shared/packages/pyforge-herald/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-herald/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "docs-site/**",
+  "docs/map.yaml",
+  "docs/MAP.md",
+]
+"52" = [  # herald's suite and package stand as an oracle a second root can run (Stories 52.1 and 52.2: a relay of
+  # spec-pyforge-steward:CAP-175, and a fix under CAP-38), added 2026-11-10 with the cutover readiness mint. The default
+  # surface, restated: the test markers, pyproject.toml, local_ship.py, the package pixi.toml and README, and contract.md
+  # all sit under it; pixi.lock is re-locked by steward-station, not here.
+  "src/shared/packages/pyforge-herald/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-herald/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+]
+
 # dispatch (Story 102.1 / spec-pyforge-marshal CAP-161), added 2026-10-15: a re-landing reuses this station's own
 # verified verdict when only merges of main and planning-only commits moved the branch since the head it judged,
 # after a narrow re-check, and still waits for CI (operator rulings 2026-10-15; the Pages stations' speed ask). The

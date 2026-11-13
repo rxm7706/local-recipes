@@ -12,6 +12,10 @@ from pyforge.testing_kit.flags import flagd_tree
 from pyforge.herald.cli import main
 from pyforge.herald.pptx_native import DECK_EXPORT_NATIVE_FLAG, MODERNIST_DESIGN_SYSTEM_REL
 
+# Story 52.1 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 
 def _repo_root() -> Path:
     return Path(__file__).resolve().parents[6]

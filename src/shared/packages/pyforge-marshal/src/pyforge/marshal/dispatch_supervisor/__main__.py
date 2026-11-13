@@ -139,6 +139,7 @@ from ..ports.fs import FsPort
 from ..ports.publisher import RunPublisherPort
 from ..ports.vcs import VcsPort
 
+# CAP-4: loop-home FILE read -- marshal's own file: the journal marshal writes in its own run dir, not bmad-loop run state
 _JOURNAL_FILENAME = "journal.jsonl"
 #: Story 68.1 (CAP-277): the observation a failed blocked-twin publish is journaled under.
 _BLOCKED_TWIN_PUBLISH_KIND = "dispatch-blocked-twin-publish"

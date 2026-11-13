@@ -2,6 +2,8 @@
 
 Complete workflow pipeline for Herald Pitch Expansion from Design authoring to multi-format export and delivery.
 
+> **Standing:** a record of 2026-08-02, the seven-stage workflow planned for the pitch expansion; not re-checked line by line. The live deck workflow is `docs/how-to/presentation-deck.md` with the deck verbs `contract.md` lists, its run commands use `-e pyforge-guild`, and Stages 4b and 6 (narration and the manticore render) retired with spec-pyforge-herald:CAP-6 on 2026-11-10 (Story 50.2, 2026-11-12).
+
 ---
 
 ## Stage 1: Spec & Content Generation

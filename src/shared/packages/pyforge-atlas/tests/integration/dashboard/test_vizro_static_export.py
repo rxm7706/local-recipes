@@ -37,6 +37,11 @@ if str(TOOLS) not in sys.path:
     sys.path.insert(0, str(TOOLS))
 import vizro_static_export as cli  # noqa: E402
 
+# Story 48.1 (a relay of spec-pyforge-steward:CAP-175): this module reads the live tree outside its package (atlas's
+# epics.md and sprint status, and the repository's git HEAD), so it runs in atlas's live-tree half and fires on what
+# it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 FIXTURE_ROOT = "/nonexistent-data-root"  # the dashboard-dryrun gate's root
 NOW = 1_700_000_000
 SHA = "a" * 40

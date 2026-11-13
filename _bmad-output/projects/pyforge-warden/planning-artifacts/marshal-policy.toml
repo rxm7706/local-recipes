@@ -276,6 +276,44 @@ verify_commands = [
   "src/shared/packages/django-warden/**",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"25" = [  # The warden chain says what the code does (cutover readiness 2026-11-10; spec-pyforge-warden CAP-27, CAP-29),
+  # added 2026-11-10. The default surface, restated because a declared entry replaces it outright, plus the planning
+  # files Stories 25.1-25.4 own: the Spec folder, PRD, spine, brief, epics, Dream, Story Coverage Matrix, deferred-work
+  # ledger, retro and readiness report; Story 25.3's README, docstring, project config and PROJECTS.md row.
+  "src/shared/packages/pyforge-warden/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-warden/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/prds/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/architecture/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/briefs/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/epics.md",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/test-architecture.md",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/retros/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/implementation-readiness-report-*.md",
+  "_bmad-output/projects/pyforge-warden/.bmad-config.toml",
+  "_bmad-output/PROJECTS.md",
+  "docs/dreams/pyforge-warden.md",
+  "scripts/.spec-surface-baseline.json",
+]
+"26" = [  # Warden's public contract is one companion, held by a test (spec-pyforge-warden CAP-28), added 2026-11-10:
+  # contract.md and proof-map.md in the Spec folder, their three meta-tests, and Story 26.2's own deferred-work rows.
+  "src/shared/packages/pyforge-warden/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-warden/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/deferred-work-ledger.md",
+  "scripts/.spec-surface-baseline.json",
+]
+"27" = [  # Warden's live-tree readers run as their own half (relay of spec-pyforge-steward:CAP-175), added 2026-11-10:
+  # the package pyproject.toml's live_tree marker and the marked or split test modules (all under the package).
+  "src/shared/packages/pyforge-warden/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-warden/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml",
+  "scripts/.spec-surface-baseline.json",
+]
 
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).

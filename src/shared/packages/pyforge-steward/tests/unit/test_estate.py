@@ -34,6 +34,7 @@ from pyforge.steward.estate import (
     run_refresh,
     run_status,
 )
+from pyforge.steward.interfaces import DutyResult
 
 # Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
 # station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
@@ -368,6 +369,52 @@ def test_plan_prints_text_rows(tmp_path: Path) -> None:
     assert result.ok
     assert "cron-descriptor" in result.summary
     assert "--- bmad ---" in result.summary
+
+
+def _pixi_fails_runner(returncode: int = 1) -> RecordingRunner:
+    """The upgrade dry run exits non-zero with no JSON, as a pixi that cannot solve does."""
+    return RecordingRunner(responses={"--dry-run": FakeProc([], returncode, "", "pixi: could not solve\n")})
+
+
+def _assert_pixi_refusal(result: DutyResult, returncode: int = 1) -> None:
+    assert result.ok is False
+    assert result.details["exit_code"] == EXIT_ESTATE_REFUSAL == 3
+    assert f"pixi upgrade dry run failed (exit {returncode})" in result.summary
+
+
+def test_plan_refuses_when_pixi_fails_on_the_plain_path(tmp_path: Path) -> None:
+    """DW-steward-119-2: a failed dry run used to read as 'no moves', exit 0."""
+    root = _fixture_root(tmp_path)
+    result = run_plan(_deps(root, _pixi_fails_runner(101)), json_out=False, due_only=False)
+    _assert_pixi_refusal(result, 101)
+    assert "plan" not in result.details
+
+
+def test_plan_refuses_when_pixi_fails_on_json(tmp_path: Path) -> None:
+    root = _fixture_root(tmp_path)
+    result = run_plan(_deps(root, _pixi_fails_runner()), json_out=True, due_only=False)
+    _assert_pixi_refusal(result)
+    assert "plan" not in result.details
+
+
+def test_plan_due_refuses_when_pixi_fails_and_the_refresh_is_overdue(tmp_path: Path) -> None:
+    """Exit 1 on --due means 'overdue' only: a failed dry run is the refusal (3), even when overdue."""
+    root = _fixture_root(tmp_path)  # no journal yet: the refresh is overdue
+    overdue = run_plan(_deps(root, RecordingRunner()), json_out=False, due_only=True)
+    assert overdue.ok is False
+    assert overdue.details == {"due": True}
+    result = run_plan(_deps(root, _pixi_fails_runner()), json_out=False, due_only=True)
+    _assert_pixi_refusal(result)
+    assert "due" not in result.details
+
+
+def test_plan_due_refuses_when_pixi_fails_within_cadence(tmp_path: Path) -> None:
+    root = _fixture_root(tmp_path)
+    (root / ".steward" / "estate-refresh" / "2026-10-12.json").write_text("{}", encoding="utf-8")
+    within = run_plan(_deps(root, RecordingRunner()), json_out=False, due_only=True)
+    assert within.ok is True
+    result = run_plan(_deps(root, _pixi_fails_runner()), json_out=False, due_only=True)
+    _assert_pixi_refusal(result)
 
 
 def test_status_no_journals(tmp_path: Path) -> None:

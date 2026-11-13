@@ -25,8 +25,8 @@ name = "pixi-build-python"
 version = "0.*"
 
 [package.host-dependencies]
-python = ">=3.12"          # matches every sibling station's floor
+python = ">=3.14"          # decision D6: the floor is 3.14, matching pyproject.toml's requires-python (core uses 3.14-only syntax)
 hatchling = "*"
 
 [package.run-dependencies]
-python = ">=3.12"
+python = ">=3.14"

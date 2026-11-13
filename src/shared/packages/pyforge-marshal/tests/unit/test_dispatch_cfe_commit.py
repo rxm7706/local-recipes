@@ -4,6 +4,9 @@ Real git repositories throughout (the spec's "test with a real git repository").
 station guards' own ``branch_diff_guard.unsanctioned_commits`` is imported here, at test
 time only, to check marshal's runtime mirror against it: marshal never imports the testing
 kit from ``src/``.
+
+Story 116.2 (spec-pyforge-marshal:CAP-305): the tests that read this checkout's
+conda-forge-expert skill version moved to ``test_dispatch_cfe_commit_live_tree.py``.
 """
 
 from __future__ import annotations
@@ -17,49 +20,31 @@ from pyforge.testing_kit import branch_diff_guard, cfe_surface
 
 from pyforge.marshal.adapters.vcs_git import GitVcs
 from pyforge.marshal.core import dispatch_cfe_commit as cfe
-from pyforge.marshal.core import policy
 from pyforge.marshal.core.dispatch_cfe_commit import (
     CFE_BRANCH_COMMIT_GATE_CODE,
     CFE_CHANGELOG_PATH,
     CFE_COMMIT_GATE_CODE,
-    commit_pending_cfe_retro,
     findings_for_unsanctioned_cfe_entries,
     is_cfe_surface_path,
     paths_excluding_cfe,
     pending_cfe_paths_from_status,
-    read_cfe_skill_version,
-    retro_cfe_commit_subject,
     unsanctioned_cfe_entries,
 )
 from pyforge.marshal.core.dispatch_ruff_format import apply_dispatch_ruff_format_before_verify
-from pyforge.marshal.core.dispatch_verification import (
-    DispatchVerificationInput,
-    DispatchVerificationVerdict,
-    judge_dispatch_verification,
-)
-from pyforge.marshal.core.identity import normalize
 from pyforge.marshal.core.refs import ORIGIN_MAIN
 from pyforge.marshal.core.worktree_checkpoint import auto_checkpoint_message, commit_worktree_checkpoint
-from pyforge.marshal.dispatch_verify import check_unsanctioned_cfe_commits, evaluate_dispatch_verification
+from pyforge.marshal.dispatch_verify import check_unsanctioned_cfe_commits
 
-_REPO_ROOT = next(
-    parent for parent in Path(__file__).resolve().parents if (parent / "scripts" / "commit_msg_hook.py").is_file()
-)
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
 
 _CFE_TEST = ".claude/skills/conda-forge-expert/tests/meta/test_example.py"
-_CFE_SCRIPT = ".claude/scripts/conda-forge-expert/native-build.sh"
-_CFE_TOOL = ".claude/tools/conda_forge_server.py"
+_CFE_SCRIPT = "/".join((".claude", "scripts", "conda-forge-expert", "native-build.sh"))
+_CFE_TOOL = "/".join((".claude", "tools", "conda_forge_server.py"))
 _STORY_FILE = "src/story.py"
-_STORY_KEY = normalize("83-19-dispatch-never-commits-the-cfe-surface-outside-a-sanctioned-retro")
 _CFE_RENAME_SRC = ".claude/skills/conda-forge-expert/helper.py"
 _CFE_RENAME_DST = "src/helper.py"
-
-
-def _retro_subject(story_key: str) -> str:
-    return retro_cfe_commit_subject(
-        story_key=story_key,
-        cfe_version=read_cfe_skill_version(_REPO_ROOT),
-    )
 
 
 def _git(repo: Path, *args: str) -> str:
@@ -80,8 +65,7 @@ def _commit_all(repo: Path, subject: str) -> str:
     return _git(repo, "rev-parse", "HEAD").strip()
 
 
-@pytest.fixture
-def repo(tmp_path: Path) -> Path:
+def _story_repo(tmp_path: Path) -> Path:
     """A story branch forked from ``refs/remotes/origin/main``, with the CFE surface seeded on main."""
     repo = tmp_path / "repo"
     repo.mkdir()
@@ -98,6 +82,11 @@ def repo(tmp_path: Path) -> Path:
     _git(repo, "update-ref", ORIGIN_MAIN, "HEAD")
     _git(repo, "checkout", "-q", "-b", "story")
     return repo
+
+
+@pytest.fixture
+def repo(tmp_path: Path) -> Path:
+    return _story_repo(tmp_path)
 
 
 @pytest.fixture
@@ -130,40 +119,6 @@ def _marshal_verdict(repo: Path) -> list[str]:
     assert isinstance(entries, list)
     assert bool(findings) is bool(entries)
     return entries
-
-
-class _GitThenGreen:
-    """Real git for the repository reads; every verify command reads green."""
-
-    def __init__(self) -> None:
-        self._git = PosixProcess()
-
-    def run(self, tokens, *, cwd: Path) -> ProcessResult:
-        tokens = list(tokens)
-        if tokens and tokens[0] == "git":
-            return self._git.run(tokens, cwd=cwd)
-        return ProcessResult(returncode=0, stdout="ok", stderr="")
-
-
-def _verify(repo: Path, vcs: GitVcs):
-    effective, _ = policy.compose(project_slug="pyforge-marshal", project={"verify_commands": ["true"]}, flags={})
-    return evaluate_dispatch_verification(
-        project_slug="pyforge-marshal",
-        story_key=_STORY_KEY,
-        worktree=repo,
-        repo_root=_REPO_ROOT,
-        effective=effective,
-        spec_text=None,
-        process=_GitThenGreen(),
-        vcs=vcs,
-        committing_vcs=vcs,
-    )
-
-
-def _cfe_findings(envelope) -> list:
-    return [
-        finding for finding in envelope.findings if finding.code in (CFE_COMMIT_GATE_CODE, CFE_BRANCH_COMMIT_GATE_CODE)
-    ]
 
 
 # --- one owner: marshal's runtime mirror equals the testing kit's definition -------------------
@@ -349,89 +304,13 @@ def test_ruff_format_commit_never_carries_the_cfe_surface(vcs: GitVcs, repo: Pat
 # --- AC2: the CFE edit plus its CHANGELOG lands in exactly one retro(cfe): commit ----------------
 
 
-def test_verify_commits_the_cfe_surface_once_as_retro_cfe(vcs: GitVcs, repo: Path) -> None:
-    _write(repo, _STORY_FILE, "x = 2\n")
-    _write(repo, _CFE_TEST, "def test_ok():\n    assert False\n")
-    _write(repo, CFE_CHANGELOG_PATH, "# Changelog\n\n## 9.1.0\n")
-    commit_worktree_checkpoint(vcs, repo_root=repo, worktree=repo, story_key="83.19")
-
-    envelope = _verify(repo, vcs)
-
-    expected_subject = _retro_subject("83.19")
-    cfe_commits = [(s, f) for s, f in _branch_commits(repo) if any(is_cfe_surface_path(p) for p in f)]
-    assert cfe_commits == [(expected_subject, sorted([CFE_CHANGELOG_PATH, _CFE_TEST]))]
-    assert expected_subject.startswith("retro(cfe): v")
-    assert _kit_verdict(repo) == []
-    assert _cfe_findings(envelope) == []
-    assert envelope.data["cfe_retro_commit"] == {
-        "checked": True,
-        "committed": True,
-        "paths": sorted([CFE_CHANGELOG_PATH, _CFE_TEST]),
-    }
-    assert envelope.data["cfe_unsanctioned_commits_check"]["unsanctioned"] == []
-
-
 # --- AC3: a CFE edit without a CHANGELOG change refuses, naming Rule 2, and commits nothing ----
-
-
-def test_verify_refuses_a_cfe_edit_without_a_changelog_naming_rule_2(vcs: GitVcs, repo: Path) -> None:
-    _write(repo, _STORY_FILE, "x = 2\n")
-    _write(repo, _CFE_TEST, "def test_ok():\n    assert False\n")
-    commit_worktree_checkpoint(vcs, repo_root=repo, worktree=repo, story_key="83.19")
-
-    envelope = _verify(repo, vcs)
-
-    assert judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings)) == (
-        DispatchVerificationVerdict.REFUSED
-    )
-    rule2 = [finding for finding in _cfe_findings(envelope) if "pending CFE paths" in finding.message]
-    assert len(rule2) == 1
-    assert "Rule 2" in rule2[0].message and CFE_CHANGELOG_PATH in rule2[0].message
-    assert _CFE_TEST in rule2[0].message
-    # Nothing CFE was committed, so nothing CFE can be pushed; the edit is still in the worktree.
-    assert all(not is_cfe_surface_path(path) for _subject, files in _branch_commits(repo) for path in files)
-    assert envelope.data["cfe_retro_commit"]["committed"] is False
-    assert _CFE_TEST in vcs.changed_files(repo, repo, base="HEAD")
 
 
 # --- AC4: a branch already carrying an unsanctioned CFE commit refuses, naming it ---------------
 
 
-def test_verify_refuses_naming_a_commit_that_already_touched_the_cfe_surface(vcs: GitVcs, repo: Path) -> None:
-    _write(repo, _CFE_TEST, "def test_ok():\n    assert False\n")
-    sha = _commit_all(repo, auto_checkpoint_message("41.1"))
-
-    envelope = _verify(repo, vcs)
-
-    findings = _cfe_findings(envelope)
-    assert len(findings) == 1
-    assert findings[0].code == CFE_BRANCH_COMMIT_GATE_CODE
-    assert f"{sha[:10]} wip: 41.1 (auto-checkpoint)" in findings[0].message
-    assert "Rule 2" in findings[0].message
-    assert judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings)) == (
-        DispatchVerificationVerdict.REFUSED
-    )
-
-
 # --- AC5: a story touching no CFE path commits exactly as before --------------------------------
-
-
-def test_a_story_with_no_cfe_path_commits_exactly_as_before(vcs: GitVcs, repo: Path) -> None:
-    _write(repo, "src/b.py", "b = 1\n")
-    _write(repo, _STORY_FILE, "x = 2\n")
-    changed = vcs.changed_files(repo, repo, base="HEAD")
-
-    assert paths_excluding_cfe(changed) == tuple(Path(path) for path in changed)
-    result = commit_worktree_checkpoint(vcs, repo_root=repo, worktree=repo, story_key="83.19")
-    assert result.committed is True
-    assert _branch_commits(repo) == [("wip: 83.19 (auto-checkpoint)", sorted(["src/b.py", _STORY_FILE]))]
-
-    envelope = _verify(repo, vcs)
-
-    assert _cfe_findings(envelope) == []
-    assert envelope.data["cfe_retro_commit"] == {"checked": True, "committed": False, "paths": []}
-    assert envelope.data["cfe_unsanctioned_commits_check"]["commits_scanned"] == 0
-    assert len(_branch_commits(repo)) == 1
 
 
 # --- AC6: removing the exclusion or the verification check fails these tests (mutation) ---------
@@ -456,60 +335,12 @@ def test_mutation_the_checkpoint_without_the_exclusion_commits_the_cfe_surface(
     assert _kit_verdict(repo) != []
 
 
-def test_mutation_verify_without_the_branch_check_lets_an_unsanctioned_commit_through(
-    vcs: GitVcs, repo: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    _write(repo, _CFE_TEST, "def test_ok():\n    assert False\n")
-    _commit_all(repo, auto_checkpoint_message("41.1"))
-    monkeypatch.setattr(
-        "pyforge.marshal.dispatch_verify.check_unsanctioned_cfe_commits",
-        lambda **_kwargs: ((), {"checked": False, "reason": "mutation: check removed"}),
-    )
-
-    without = _verify(repo, vcs)
-    monkeypatch.undo()
-    with_check = _verify(repo, vcs)
-
-    assert _cfe_findings(without) == []
-    assert len(_cfe_findings(with_check)) == 1
-
-
 # --- the pure halves and the failure paths -------------------------------------------------------
 
 
 def test_paths_excluding_cfe_keeps_the_callers_order() -> None:
     paths = ("src/z.py", _CFE_TEST, "docs/a.md", _CFE_TOOL)
     assert paths_excluding_cfe(paths) == (Path("src/z.py"), Path("docs/a.md"))
-
-
-def test_commit_pending_cfe_retro_is_a_no_op_without_cfe_paths(vcs: GitVcs, repo: Path) -> None:
-    _write(repo, _STORY_FILE, "x = 2\n")
-
-    outcome = commit_pending_cfe_retro(
-        vcs, worktree=repo, changed_paths=(_STORY_FILE,), story_key="83.19", repo_root=_REPO_ROOT
-    )
-
-    assert outcome == cfe.CfeRetroCommitResult(committed=False)
-    assert _branch_commits(repo) == []
-
-
-def test_commit_pending_cfe_retro_reports_a_failed_commit() -> None:
-    class _FailingCommit:
-        def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message) -> str:
-            raise RuntimeError("index.lock exists")
-
-    outcome = commit_pending_cfe_retro(
-        _FailingCommit(),
-        worktree=Path("/nonexistent"),
-        changed_paths=(_CFE_TEST, CFE_CHANGELOG_PATH),
-        story_key="83.19",
-        repo_root=_REPO_ROOT,
-    )
-
-    assert outcome.committed is False
-    assert outcome.paths == tuple(sorted((_CFE_TEST, CFE_CHANGELOG_PATH)))
-    assert outcome.finding is not None and outcome.finding.code == CFE_COMMIT_GATE_CODE
-    assert "index.lock exists" in outcome.finding.message
 
 
 def test_unsanctioned_cfe_entries_needs_both_the_retro_subject_and_the_changelog() -> None:
@@ -602,38 +433,6 @@ def test_the_branch_check_reads_the_whole_surface_through_the_process_seam(tmp_p
     assert diff_call[diff_call.index("--") + 1 :] == list(cfe.CFE_GIT_PATHSPECS)
 
 
-def test_verify_refuses_when_the_dirty_paths_cannot_be_read(repo: Path) -> None:
-    class _UnreadableDirt(GitVcs):
-        def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str) -> tuple[str, ...]:
-            if base == "HEAD":
-                raise RuntimeError("git status failed")
-            return super().changed_files(repo_root, worktree_path, base=base)
-
-    envelope = _verify(repo, _UnreadableDirt())
-
-    unreadable = [f for f in envelope.findings if f.code == "MRS-GATE-009" and "dirty paths" in f.message]
-    assert len(unreadable) == 1 and "git status failed" in unreadable[0].message
-    assert envelope.data["cfe_retro_commit"] == {"checked": False, "reason": "git status failed"}
-
-
-def test_the_retro_commit_subject_passes_the_guards_own_rule(vcs: GitVcs, repo: Path) -> None:
-    _write(repo, _CFE_TOOL, "SERVER = 3\n")
-    _write(repo, CFE_CHANGELOG_PATH, "# Changelog\n\n## 9.2.0\n")
-
-    outcome = commit_pending_cfe_retro(
-        vcs,
-        worktree=repo,
-        changed_paths=(_CFE_TOOL, CFE_CHANGELOG_PATH),
-        story_key="83.24",
-        repo_root=_REPO_ROOT,
-    )
-
-    assert outcome.committed is True
-    expected = _retro_subject("83.24")
-    assert _branch_commits(repo) == [(expected, sorted([CFE_CHANGELOG_PATH, _CFE_TOOL]))]
-    assert _kit_verdict(repo) == [] == _marshal_verdict(repo)
-
-
 def test_auto_checkpoint_leaves_a_cfe_rename_out_of_the_wip_commit(vcs: GitVcs, repo: Path) -> None:
     _write(repo, _CFE_RENAME_SRC, "helper = 1\n")
     _write(repo, _STORY_FILE, "x = 2\n")
@@ -648,23 +447,3 @@ def test_auto_checkpoint_leaves_a_cfe_rename_out_of_the_wip_commit(vcs: GitVcs, 
     assert subject == "wip: 83.24 (auto-checkpoint)"
     assert files == [_STORY_FILE]
     assert set(pending_cfe_paths_from_status(vcs, worktree=repo)) == {_CFE_RENAME_DST, _CFE_RENAME_SRC}
-
-
-def test_verify_retro_commit_carries_both_sides_of_a_cfe_rename(vcs: GitVcs, repo: Path) -> None:
-    _write(repo, _STORY_FILE, "x = 2\n")
-    _commit_all(repo, "story progress outside the CFE surface")
-    _write(repo, _CFE_RENAME_SRC, "helper = 1\n")
-    _git(repo, "add", _CFE_RENAME_SRC)
-    _git(repo, "mv", _CFE_RENAME_SRC, _CFE_RENAME_DST)
-    _write(repo, CFE_CHANGELOG_PATH, "# Changelog\n\n## 9.2.2\n")
-
-    envelope = _verify(repo, vcs)
-
-    expected = _retro_subject("83.19")
-    cfe_commits = [(s, f) for s, f in _branch_commits(repo) if s.startswith("retro(cfe):")]
-    assert len(cfe_commits) == 1 and cfe_commits[0][0] == expected
-    assert CFE_CHANGELOG_PATH in cfe_commits[0][1]
-    assert not (repo / _CFE_RENAME_SRC).exists()
-    assert (repo / _CFE_RENAME_DST).is_file()
-    assert _kit_verdict(repo) == []
-    assert _cfe_findings(envelope) == []

@@ -21,6 +21,10 @@ if str(_STEWARD_SRC) not in sys.path:
 
 from pyforge.steward import preflight, preflight_ci  # noqa: E402
 
+# Story 52.1 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 INVOKING_ENV = "pyforge-guild"
 _STEWARD_PLACEHOLDER = "src/shared/packages/pyforge-steward/placeholder.txt"
 
@@ -140,11 +144,12 @@ def test_docs_how_to_diff_selects_pages_check(tmp_path: Path) -> None:
 
 
 def test_a_herald_only_diff_runs_the_install_before_herald_s_suite(tmp_path: Path) -> None:
-    """Story 45.1: a diff touching only herald's tests fires herald's job and not pages.yml, and the preflight still
-    runs docs-site-install before herald's suite. The job's step runs pyforge-herald-test-built (the install, then the
-    suite), so the reader selects both lanes; pyforge-herald-test itself has no edge to the install (it stays npm-free
-    for the SBOM laptop gate), so pr-preflight-lanes declares the install before the station suites, where it takes the
-    docs-site lanes' first turn, and a touched run keeps it beside herald's lane."""
+    """Story 45.1: a diff touching only herald's tests fires herald's jobs and not pages.yml, and the preflight still
+    runs docs-site-install before herald's suite. Since steward Story 124.2 herald-live-test runs the install's step,
+    then the live-tree half, so the reader selects the install with herald's lanes; pyforge-herald-test itself has no
+    edge to the install (it stays npm-free for the SBOM laptop gate), so pr-preflight-lanes declares the install before
+    the station suites, where it takes the docs-site lanes' first turn, and a touched run keeps it beside herald's
+    lane."""
     repo = _make_repo(tmp_path, {"src/shared/packages/pyforge-herald/tests/unit/probe.py": "# probe\n"})
     pixi = tomllib.loads((repo / "pixi.toml").read_text(encoding="utf-8"))
     lanes = preflight.list_preflight_lanes(pixi, invoking_env=INVOKING_ENV)

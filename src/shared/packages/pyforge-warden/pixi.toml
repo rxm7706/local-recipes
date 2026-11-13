@@ -8,8 +8,9 @@
 # this into a conda package.
 #
 # The E1–E4 implementation (extractor, deptry/osv-scanner runners,
-# schema-validated ComplianceReport, argparse CLI + exit gate) is delivered by
-# bmad-quick-dev against docs/specs/pyforge-warden.md.
+# schema-validated ComplianceReport, argparse CLI + exit gate) is held to the
+# station Spec, _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/
+# (its contract.md lists every surface a caller reaches).
 
 [package]
 name = "pyforge-warden"
@@ -20,7 +21,7 @@ name = "pixi-build-python"
 version = "0.*"
 
 [package.host-dependencies]
-python = ">=3.12"          # explicit build-time interpreter for pixi-build-python (Gemini PR#49)
+python = ">=3.14"          # explicit build-time interpreter for pixi-build-python (Gemini PR#49); matches pyproject.toml requires-python (decision D6)
 hatchling = "*"
 
 # Runtime engines are provisioned as conda packages (NFR1/NFR2) — never
@@ -39,7 +40,7 @@ hatchling = "*"
 # OSV_SCANNER_VERSION_RANGE constants must stay in sync with these two
 # lines — enforced by tests/meta/test_engine_version_range_sync.py.
 [package.run-dependencies]
-python = ">=3.12"
+python = ">=3.14"
 deptry = ">=0.25.1,<0.26"
 osv-scanner = ">=2.4.0,<2.5"
 pyyaml = "*"

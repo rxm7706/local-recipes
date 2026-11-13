@@ -22,7 +22,12 @@ DOCS_SITE = REPO_ROOT / "docs-site"
 GOLDENS = json.loads(
     (Path(__file__).resolve().parents[1] / "fixtures" / "dossier-block-goldens-2026-10-15.json").read_text("utf-8")
 )
-pytestmark = pytest.mark.skipif(shutil.which("node") is None, reason="node is not on PATH")
+# Story 52.1 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = [
+    pytest.mark.live_tree,
+    pytest.mark.skipif(shutil.which("node") is None, reason="node is not on PATH"),
+]
 
 
 class _TokenParser(HTMLParser):

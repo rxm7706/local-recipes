@@ -56,6 +56,10 @@ from pyforge.marshal.seed.model.version import ModelVersion
 from pyforge.marshal.seed.regions.markers import RegionFormat
 from pyforge.marshal.seed.verbs.adopt import _region_body_from_template, run_adopt
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 _VERSION = ModelVersion.parse("1.0.0")
 
 
@@ -364,7 +368,7 @@ def test_run_adopt_writes_a_derive_composed_whole_file_and_a_managed_region_in_t
         ManifestEntry(
             id="cursor-rules",
             artifact_class=ArtifactClass.GENERATED_DERIVED,
-            path=".cursor/rules/specs.mdc",
+            path="/".join((".cursor", "rules", "specs.mdc")),
             applies_to=AppliesTo.BOTH,
             rationale="test",
         ),

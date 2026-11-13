@@ -2,6 +2,8 @@
 
 Comprehensive tracking decisions for all artifact types produced by Herald Pitch Expansion.
 
+> **Standing:** a record of 2026-08-02, the tracking plan for the nine-station pitch expansion; not re-checked line by line. On 2026-11-12, 915 files are tracked under `presentations/`, build outputs (`dist/`, `node_modules/`) are gitignored per deck, and the video rows retired with spec-pyforge-herald:CAP-6 on 2026-11-10. The live rule is the Spec's § Constraints (Story 50.2, 2026-11-12).
+
 ---
 
 ## Design Prototypes (.dc.html)

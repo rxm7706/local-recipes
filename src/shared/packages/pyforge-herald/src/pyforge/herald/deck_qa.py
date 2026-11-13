@@ -386,7 +386,7 @@ change this story makes to ``DEFAULT_GATES``'s contents; its shape, and
 #
 # Scans each manifest-listed slide's generated fragment
 # (`presentations/<slug>/src/slides/fragments/<id>.html`) for an unfilled
-# image-slot placeholder -- the CAP-2 half of "renders but doesn't prove it
+# image-slot placeholder -- the CAP-27 half of "renders but doesn't prove it
 # looks right" (this story's spec: Intent). Pure file scanning: no browser,
 # no build, and (unlike `render_gate`) no `artifacts` of its own.
 #

@@ -75,7 +75,7 @@ Station tasks use **only** these kinds:
 
 - `consult_content_skill` — load `.claude/skills/pyforge-warden/active/pyforge-warden/SKILL.md` (CAP-15). No other skill or data file.
 - `grammar` — FR-13 unified dispatch: argv must start `pyforge warden`. Example: `pyforge warden scan . --warn-only`. Do not call the `warden` binary as a second public grammar. Do not import `pyforge.warden` internals. Do not call `compose` or `exit_code_for`.
-- `mcp` — FR-11 service face: `POST /stations/warden/mcp` only (identity tool `station_face`). No other URL, method, or host.
+- `mcp` — FR-11 service face: `POST /stations/warden/mcp` only: `start_audit` (a target) and `get_audit` (its handle). No other URL, method, or host.
 
 Relay the CLI or MCP report bytes and exit code unchanged.
 
@@ -85,6 +85,5 @@ Relay the CLI or MCP report bytes and exit code unchanged.
 - **No ad-hoc HTTP.** Do not use curl, requests, httpx, urllib, WebFetch, or WebSearch. Do not GET/PUT/PATCH arbitrary URLs. The only HTTP allowed is `POST /stations/warden/mcp`.
 - **No second PR-gate.** You do not publish a second PR-gate verdict. Do not invent `Status`, do not project exit codes `{1, 2, 130}`, do not declare PASS/FAIL independently of `pyforge warden scan` / MCP. Only the warden CLI (`verdict.py` via that scan) publishes the gate.
 - **No CFE replace.** Do not replace `conda-forge-expert`.
-- **No Wave B.** Do not start or get portal audits (`start`/`get` through PortalClient). That is Story 10.2.
 
 A transcript of a completed station task must show only FR-13 grammar and FR-11 MCP (plus the CAP-15 consult above). Direct filesystem, ad-hoc HTTP, or a second PR-gate verdict in the transcript is a failing contract.

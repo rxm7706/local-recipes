@@ -82,6 +82,16 @@ Doctor's subset of warden's domain is deliberate and documented (`doctor/verdict
 omits warden's policy rung `1` because Doctor reports operability, not policy). The collision
 with the aggregator's `2` is **not** deliberate and is tracked as `DW-VOCAB-2026-09-14-8`.
 
+**The aggregator's four row words.** `scripts/detectors.py` reads each row as `pass`,
+`FINDINGS` (exit `1`), `unknown` (could not run, exit `2`) or **`unmeasured`**. A Doctor row is
+`unmeasured` when the source ran but measured nothing: its findings hold no `fail` and every one
+is a gather failure (`is_gather_failure` in Doctor's `models.py`: a cannot-evaluate `warn` with
+evidence `unevaluable: true`, a `degrade_on_exception` `warn`, the atlas sentinel). `unmeasured`
+is never `pass`: the text table marks it `○` and the summary line counts it. It is a warning the
+merge bar does not fail on, so it exits `0` (spec-pyforge-doctor AD-15, operator ruling of
+2026-11-10). An empty result still reads `pass`, because a source returns nothing only after it
+measured.
+
 **Never read a detector's result through a pipe.** `cmd | grep x | head -5` then `echo $?`
 reports *`head`'s* status, not the detector's, and `head` truncates findings out of view.
 Redirect to a file, check the exit code directly, then read the whole list.

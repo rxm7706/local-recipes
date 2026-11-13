@@ -1,4 +1,4 @@
-"""Story 102.3 (CAP-168 / feature-flag-governance CAP-4): the pages duty in both flag states."""
+"""Story 102.3 (CAP-168 / spec-feature-flag-governance CAP-4): the pages duty in both flag states."""
 
 from __future__ import annotations
 

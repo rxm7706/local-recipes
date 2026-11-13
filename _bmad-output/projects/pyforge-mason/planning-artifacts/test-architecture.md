@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: 7e6df3106a5e5a98
-story_count: 129
+source_fingerprint: 68895a8bdc0d8eef
+story_count: 138
 test_file_count: 43
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 129
-- **Epics parsed:** 36
+- **Stories parsed:** 138
+- **Epics parsed:** 39
 - **Test files inventoried:** 43 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `7e6df3106a5e5a98`
+- **Source fingerprint:** `68895a8bdc0d8eef`
 
 ## Risk Assessment
 
@@ -69,10 +69,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 34: The atlas's dependency graph and bot health read the conda-forge bot's split repos (fix under spec-pyforge-mason CAP-24)
 - Epic 35: The archived mason Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 - Epic 36: The absorbed mason Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
+- Epic 38: Mason's oracle travels: a written public contract and a suite split by what it reads (spec-pyforge-mason CAP-5, CAP-7; relay of spec-pyforge-steward:CAP-175)
+- Epic 39: Mason's cutover seam: the native factory-island build is a capability, and conda-forge-expert waits for its own Spec (spec-pyforge-mason CAP-36)
 
 ### Low-risk epics
 
-- none observed
+- Epic 37: The mason Spec, PRD and package say what is built (spec-pyforge-mason CAP-2, spec-pyforge-mason:CAP-8..CAP-35, CAP-37)
 
 ## Test Inventory
 
@@ -255,6 +257,15 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 34.1 | The atlas reads the conda-forge bot's split graph repos | none observed |
 | 35.1 | Mason's twelve archived Dreams leave the live tree | none observed |
 | 36.1 | Mason's absorbed Spec folders move to the archive home | none observed |
+| 37.1 | The mason Spec defines each capability once and marks it as it stands | none observed |
+| 37.2 | The mason brief, PRD and spine are reviewed against the Spec they derive from | none observed |
+| 37.3 | Mason's package states what it does: update's help, the Python floor and the ... | none observed |
+| 37.4 | Mason's change closes: retro, surface reconcile, deferrals and ledger | none observed |
+| 38.1 | Mason's public contract is written down, and a meta-test holds the code to it | none observed |
+| 38.2 | Mason's suite runs as a package half and a live-tree half | none observed |
+| 38.3 | Mason's adapters pass only what the wrapped scripts declare | none observed |
+| 39.1 | The factory-island build is a mason capability, and its error names only what... | none observed |
+| 39.2 | conda-forge-expert gets its own Spec after the root of record flips | none observed |
 
 ## Quality Gates
 

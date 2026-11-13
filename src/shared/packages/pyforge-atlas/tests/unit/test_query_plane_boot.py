@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import socket
 import subprocess
@@ -198,6 +199,66 @@ def test_second_boot_invocation_is_refused(tmp_path: Path) -> None:
             boot_query_plane(path, stack_up=False)
     finally:
         first.library.close()
+
+
+# --- Story 48.2: the plane default resolves from the member -------------------
+
+_PRINT_DEFAULT = "from pyforge.atlas.query_plane_boot import DEFAULT_PLANE_PATH; print(DEFAULT_PLANE_PATH)"
+
+
+def _default_from(cwd: Path, **env: str) -> str:
+    # The package under test, not whatever else the interpreter could find: its own src/ goes first.
+    src = Path(query_plane_boot.__file__).resolve().parents[2]
+    paths = [str(src), *(p for p in os.environ.get("PYTHONPATH", "").split(os.pathsep) if p)]
+    probe = subprocess.run(  # noqa: S603 — fixed argv, no shell
+        [sys.executable, "-c", _PRINT_DEFAULT],
+        cwd=cwd,
+        env={**os.environ, "PYTHONPATH": os.pathsep.join(paths), **env},
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+    )
+    assert probe.returncode == 0, probe.stderr
+    return probe.stdout.strip()
+
+
+def test_plane_default_is_the_members_file_from_any_working_directory(tmp_path: Path) -> None:
+    default = query_plane_boot.DEFAULT_PLANE_PATH
+    assert default.is_absolute()
+    assert default.parts[-3:] == ("data", "plane", ATLAS_DUCKDB_NAME)
+    assert default.parents[2] == query_plane_boot._MEMBER_ROOT
+    assert (query_plane_boot._MEMBER_ROOT / "conf" / "base" / "catalog.yml").is_file()
+    first, second = tmp_path / "first", tmp_path / "second"
+    first.mkdir()
+    second.mkdir()
+    # Two working directories, and PYFORGE_ATLAS_DATA_ROOT set in one: the default never moves.
+    assert _default_from(first) == str(default)
+    assert _default_from(second, PYFORGE_ATLAS_DATA_ROOT=str(tmp_path / "elsewhere")) == str(default)
+
+
+def test_plane_default_member_is_the_project_beside_the_package(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    member = tmp_path / "member"
+    (member / "conf" / "base").mkdir(parents=True)
+    (member / "conf" / "base" / "catalog.yml").write_text("{}\n", encoding="utf-8")
+    monkeypatch.setattr(query_plane_boot, "_MEMBER_ROOT", member)
+    monkeypatch.chdir(tmp_path)
+    assert query_plane_boot._member_root() == member
+
+
+def test_plane_default_installed_layout_falls_back_to_the_working_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Installed from the built artifact, parents[3] is site-packages: no conf/base/catalog.yml beside it.
+    site_packages = tmp_path / "lib" / "site-packages"
+    site_packages.mkdir(parents=True)
+    monkeypatch.setattr(query_plane_boot, "_MEMBER_ROOT", site_packages)
+    cwd = tmp_path / "cwd"
+    cwd.mkdir()
+    monkeypatch.chdir(cwd)
+    assert query_plane_boot._member_root() == cwd
 
 
 # --- env-signal parsing -----------------------------------------------------

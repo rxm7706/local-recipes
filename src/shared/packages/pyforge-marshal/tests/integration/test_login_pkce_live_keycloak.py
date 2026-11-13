@@ -15,23 +15,31 @@ from pathlib import Path
 
 import pytest
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): this module reads the repository outside this package, so it runs in
+# the live-tree half; it finds the repository root when a test runs, never at import, so the module imports off
+# the tree (the package half collects it before the marker deselects it).
+pytestmark = pytest.mark.live_tree
+
 pytest.importorskip("jwt")
 import jwt
 from jwt import PyJWKClient
 
 from pyforge.marshal.adapters.oidc_pkce import PkceLogin, PkceLoginError
 
-REPO_ROOT = Path(__file__).resolve().parents[6]
-COMPOSE_FILE = REPO_ROOT / "src/platform/compose/compose.yml"
 ISSUER = "http://127.0.0.1:8080/realms/platform"
 CLIENT_ID = "pyforge-cli"
 USERNAME = "marshal-operator"
 PASSWORD = "marshal-operator"
 
 
+def _repo_root() -> Path:
+    # tests/integration -> tests -> pyforge-marshal -> packages -> shared -> src -> repo root
+    return Path(__file__).resolve().parents[6]
+
+
 def _compose_cmd() -> list[str]:
     engine = os.environ.get("PLATFORM_CI_LOCAL_ENGINE", "docker")
-    return [engine, "compose", "-f", str(COMPOSE_FILE)]
+    return [engine, "compose", "-f", str(_repo_root() / "src/platform/compose/compose.yml")]
 
 
 def _compose_env() -> dict[str, str]:
@@ -71,7 +79,7 @@ def keycloak_stack():
         pytest.skip("docker/podman not available")
     up = subprocess.run(
         [*_compose_cmd(), "up", "-d", "keycloak"],
-        cwd=REPO_ROOT,
+        cwd=_repo_root(),
         env=_compose_env(),
         check=False,
         capture_output=True,
@@ -82,7 +90,7 @@ def keycloak_stack():
     if not _keycloak_ready():
         subprocess.run(
             [*_compose_cmd(), "down", "keycloak"],
-            cwd=REPO_ROOT,
+            cwd=_repo_root(),
             env=_compose_env(),
             check=False,
         )
@@ -90,7 +98,7 @@ def keycloak_stack():
     yield
     subprocess.run(
         [*_compose_cmd(), "down", "keycloak"],
-        cwd=REPO_ROOT,
+        cwd=_repo_root(),
         env=_compose_env(),
         check=False,
     )

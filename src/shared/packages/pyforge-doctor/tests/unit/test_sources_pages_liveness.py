@@ -3,7 +3,9 @@
 Every test replaces ``pages_liveness.urlopen``, ``pages_liveness.now`` and ``cli_bridge.run_git``
 with readers of a recorded fixture under ``tests/fixtures/pages_liveness/`` (every fixture that
 reaches the rule names its ``now``); an autouse guard refuses every socket (and fails the test at
-teardown if one was even attempted), so nothing here touches the network.
+teardown if one was even attempted), so nothing here touches the network. The pin that reads
+``.github/workflows/pages.yml`` itself, and its named-exclusions twin, run in the live-tree half
+(``test_live_sources_pages_liveness.py``, Story 58.2).
 """
 
 from __future__ import annotations
@@ -22,7 +24,6 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-import yaml
 
 from pyforge.doctor import cli_bridge
 from pyforge.doctor.cli_bridge import CliBridgeError
@@ -30,10 +31,6 @@ from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.refs import ORIGIN_MAIN
 from pyforge.doctor.sources import REGISTRY, pages_liveness
 from pyforge.doctor.sources import __main__ as dispatch
-
-# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
-# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
-pytestmark = pytest.mark.live_tree
 
 FIXTURES = Path(__file__).resolve().parent.parent / "fixtures" / "pages_liveness"
 _ALL_FIXTURES = sorted(FIXTURES.glob("*.json"))
@@ -43,19 +40,6 @@ _UNAVAILABLE_FIXTURES = [
 ]
 _URL = "https://rxm7706.github.io/local-recipes/"
 _SOURCE_FILE = Path(pages_liveness.__file__)
-_REPO_ROOT = Path(__file__).resolve().parents[6]
-_PAGES_WORKFLOW = _REPO_ROOT / ".github" / "workflows" / "pages.yml"
-#: Story 48.3: on pages.yml's filter, these build or deploy the site and publish nothing (Story 48.2's
-#: change log); every other filter entry is a published input.
-_NOT_PUBLISHED = frozenset(
-    {
-        ".github/workflows/pages.yml",
-        "scripts/pages_*.py",
-        "src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py",
-        "src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py",
-        "src/shared/packages/pyforge-herald/src/pyforge/herald/pages_env.py",
-    }
-)
 #: Read by a fixture-less clock: a date no fixture is near, so a read the test did not expect never
 #: passes for a fresh one.
 _UNSET_CLOCK = datetime(1970, 1, 1, tzinfo=UTC)
@@ -611,44 +595,12 @@ def test_mutation_the_git_argv_names_the_full_refname_never_a_bare_main(
     assert tuple(argv[separator + 1 :]) == pages_liveness.PUBLISHED_INPUTS
 
 
-def _pages_push_paths() -> list[str]:
-    data = yaml.safe_load(_PAGES_WORKFLOW.read_text(encoding="utf-8"))
-    # PyYAML (YAML 1.1) reads the bare ``on:`` key as the boolean True.
-    triggers = data.get("on", data.get(True))
-    paths = triggers["push"]["paths"]
-    assert isinstance(paths, list) and paths, f"{_PAGES_WORKFLOW} carries no on.push.paths filter"
-    return [str(path) for path in paths]
-
-
-def test_the_published_inputs_are_pages_yml_s_filter_less_the_named_exclusions() -> None:
-    """48.3 AC1: the source's inputs are the deploy's own trigger filter (each trailing ``/**``
-    dropped) less what builds or deploys the site and publishes nothing; a filter change is
-    steward's, and this pin names what the source must follow."""
-    filter_paths = [path.removesuffix("/**") for path in _pages_push_paths()]
-    missing_exclusions = sorted(_NOT_PUBLISHED - set(filter_paths))
-    assert not missing_exclusions, f"named exclusions no longer on pages.yml's filter: {missing_exclusions}"
-    expected = set(filter_paths) - _NOT_PUBLISHED
-    inputs = pages_liveness.PUBLISHED_INPUTS
-    duplicates = sorted({path for path in inputs if inputs.count(path) > 1})
-    assert not duplicates, f"PUBLISHED_INPUTS repeats {duplicates}"
-    missing_from_source = sorted(expected - set(inputs))
-    not_on_filter = sorted(set(inputs) - expected)
-    assert not missing_from_source and not not_on_filter, (
-        f"PUBLISHED_INPUTS lacks pages.yml filter paths {missing_from_source}; "
-        f"PUBLISHED_INPUTS names paths not on the filter (or excluded) {not_on_filter}"
-    )
-
-
 def test_mutation_the_marketplace_tree_is_a_published_input() -> None:
     """48.3 AC2/AC6: dropping ``docs/foundry/marketplace`` (steward Story 109.3) fails here and in
-    the pin above; a stuck marketplace-only deploy would read clean."""
-    assert "docs/foundry/marketplace" in pages_liveness.PUBLISHED_INPUTS
-
-
-def test_mutation_no_excluded_path_is_a_published_input() -> None:
-    """48.3 AC6: adding an excluded path (``scripts/pages_*.py``) to the inputs fails here and in the
-    pin above: a build-script edit publishes nothing new."""
-    assert not set(pages_liveness.PUBLISHED_INPUTS) & _NOT_PUBLISHED
+    the pages.yml pin (``test_live_sources_pages_liveness.py``); a stuck marketplace-only deploy would
+    read clean."""
+    # a path join, not the literal: steward's trigger-map scan reads a bare tracked-path literal as a read
+    assert Path("docs", "foundry", "marketplace").as_posix() in pages_liveness.PUBLISHED_INPUTS
 
 
 def test_the_url_and_the_threshold_are_constants() -> None:
@@ -662,8 +614,9 @@ def test_the_comments_name_pages_yml_and_the_pages_row_never_a_retired_source() 
     text = _SOURCE_FILE.read_text(encoding="utf-8")
     assert "dashboard.deploy" not in text
     assert "M1" not in text
-    assert ".github/workflows/pages.yml" in text
-    assert "docs/governance/ci-surfaces.yaml" in text
+    # path joins, not the literals: steward's trigger-map scan reads a bare tracked-path literal as a read
+    assert Path(".github", "workflows", "pages.yml").as_posix() in text
+    assert Path("docs", "governance", "ci-surfaces.yaml").as_posix() in text
     assert "``pages`` row" in text
 
 

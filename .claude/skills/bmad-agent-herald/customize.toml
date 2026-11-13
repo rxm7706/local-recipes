@@ -41,4 +41,4 @@ prompt = "Complete the station task by running `pyforge herald deck seed <slug>`
 [[agent.menu]]
 code = "MCP"
 description = "Call the herald service face"
-prompt = "POST /stations/herald/mcp only (initialize and tools/call station_face). No other URL or method. No filesystem."
+prompt = "POST /stations/herald/mcp only (initialize, then tools/call start_notice with a target and get_notice with its handle). No other URL or method. No filesystem."

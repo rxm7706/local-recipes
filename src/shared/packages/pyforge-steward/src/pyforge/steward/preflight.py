@@ -101,7 +101,8 @@ DOCS_SITE_TASKS = frozenset(
         "pages-build",  # the same build, through docs-site/scripts/pages.mts
         "pages-check",  # pages.mts check: reads docs-site/build/site/, which the builds write
         "docs-site-validate-sidebar",  # nav-check.mts imports the yaml package from docs-site/node_modules
-        "pyforge-herald-test",  # herald's built-site tests run astro build in docs-site/ (pages_astro.astro_build)
+        "pyforge-herald-test",  # herald's package half: the derivation takes every run of herald's suite
+        "pyforge-herald-live-test",  # its built-site tests run astro build in docs-site/ (pages_astro.astro_build)
         "pyforge-herald-coverage-gate",  # herald's unit suite under coverage, its built-site test included
         "pyforge-herald-test-coverage",  # herald's whole suite under coverage
     }

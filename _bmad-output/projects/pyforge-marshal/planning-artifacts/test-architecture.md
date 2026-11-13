@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: d1b26f47f39b5a35
-story_count: 528
-test_file_count: 274
+source_fingerprint: b3d01055bc62e714
+story_count: 550
+test_file_count: 306
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 528
-- **Epics parsed:** 111
-- **Test files inventoried:** 274 under `src/shared/packages/pyforge-marshal/tests/`
+- **Stories parsed:** 550
+- **Epics parsed:** 116
+- **Test files inventoried:** 306 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `d1b26f47f39b5a35`
+- **Source fingerprint:** `b3d01055bc62e714`
 
 ## Risk Assessment
 
@@ -133,6 +133,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 111: The archived marshal Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 - Epic 112: The absorbed marshal Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
 - Epic 113: The chain has a challenger — EGM goldfish reviewers behind six kill switches (CAP-298..CAP-303)
+- Epic 114: The marshal Spec says what is built: dated markers, live names and the public contract (spec-pyforge-marshal:CAP-304; Spec-truth chores under spec-one-chain-per-station:CAP-6)
+- Epic 116: Marshal's suite is an oracle off the monorepo, and the change closes on a reconciled Spec (spec-pyforge-marshal:CAP-305; relay of spec-pyforge-steward:CAP-175)
+- Epic 117: The shared floor says what it is: the leaf's surface, its root seam and its guards (spec-pyforge-core:CAP-12..spec-pyforge-core:CAP-14)
+- Epic 118: The testing kit is a floor a second root can rebuild (spec-pyforge-testing-charter:CAP-6..spec-pyforge-testing-charter:CAP-7)
 
 ### Low-risk epics
 
@@ -147,6 +151,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 46: The session path — one substrate, silent saves, every harness (spec-marshal-token-economy CAP-19..24)
 - Epic 69: The switch script runs where it is documented to run (spec-pyforge-marshal CAP-278)
 - Epic 86: Phase 3 of the deferral burn-down: marshal's ruled fixes
+- Epic 115: Marshal's roots, forge and station reach come from their seams, and its guards can fire (fixes under CAP-13, CAP-23, CAP-208, CAP-227, CAP-229 and CAP-261)
 
 ## Test Inventory
 
@@ -195,8 +200,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/meta/test_kit_artifacts_ignored_not_the_tracked_skills.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_local_branch_refs_are_full_refnames.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_manifest_sync.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_mcp_server_registers_every_tool_spec.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_no_doctor_internals_import.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_no_engine_or_scribe_internals_import.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_no_hardcoded_forge_repo.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_no_loop_home_run_state_read.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_no_loop_home_run_state_read_doctor_live_tree.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_no_steward_internals_import.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_p01_write_primitives_only_in_fs.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_p02_copier_sole_ownership.py` | meta | none observed |
@@ -204,6 +213,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/meta/test_p07_no_hash_comparison_in_apply.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_planning_graph_skill_contract.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_probe_json_contract.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_public_contract.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_publisher_single_importer.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_regions_no_manifest_import.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_remote_refs_are_full_refnames.py` | meta | none observed |
@@ -215,19 +225,23 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/meta/test_seed_no_bare_exception.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_skf_domain_skill.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_skill_projection_manifest_untracked.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_spec_names_live_paths.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_spec_surface_stamp.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_station_persona.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_supervisor_run_path_agreement.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_tea_architecture_drift.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_tea_architecture_generator.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_tool_surface_coverage.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_tree_read_guard.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_wire_store_ignored_not_the_seed_namespace.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_adapters_cli.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_bmad_loop_status_vocabulary.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_chain_regen.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_chain_regen_live_tree.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_challenge_core.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_challenge_harness.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_check.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_checkout_root.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_checkpoint_cli.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_cli.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_cli_benchmark.py` | unit | none observed |
@@ -242,11 +256,13 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_cursor_launch_config.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_deferred_work.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_deploy.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_deploy_live_tree.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_deploy_renderers.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_derived_context.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_cap4_verification_reporting.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_cfe_commit.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_cfe_commit_live_tree.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_completion.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_environment_yaml.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_flag_gate.py` | unit | none observed |
@@ -254,9 +270,13 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_harness_done.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_hotfix.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_finalize.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_finalize_live_tree.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_heal.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_heal_live_tree.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_only_spec_gate_89_1.py` | unit | 89.1 |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_landing.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_landing_live_tree.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_live_tree.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_output_layer.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_prelaunch.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_preserve_tag.py` | unit | none observed |
@@ -282,18 +302,23 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_verify_fix.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_survival.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification_live_tree.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_commands.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_fix.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_fix_live_tree.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_merge_tree.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_wave_status.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_doctor_cli_adapter.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_drain_plan.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_durability.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_egress.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_engine_preserve.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_factory_challenge.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_factory_challenge_live_tree.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_findings.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_fold.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_forge_gh.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_forge_root.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_fs_local.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_gate.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_gate_record.py` | unit | none observed |
@@ -310,6 +335,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadloop_usage_snapshot.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadloop_wire.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_harness_policy_render.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_harness_policy_render_live_tree.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_harness_profile.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_identity.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_index_freshness.py` | unit | none observed |
@@ -319,9 +345,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_journal.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_land.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_land_epic_rollups.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_land_epic_rollups_live_tree.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_land_live_tree.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_landing.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_landing_checks.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_landing_ci_pauses.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_landing_ci_pauses_live_tree.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_landing_evidence_conformance.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_layer_savings_sources.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_local_branch_refs.py` | unit | none observed |
@@ -333,6 +362,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_mcp_tools.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_model.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_model_cost.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_model_cost_live_tree.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_model_list_cli_transport.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_model_list_http.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_model_list_live_adapter.py` | unit | none observed |
@@ -343,8 +373,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_pkce.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_planning_graph.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_policy.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_policy_live_tree.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_preserve_cli.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_promote_sprint_status_regressions.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_promote_sprint_status_regressions_live_tree.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_promotion.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_protected_refs.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_published_plane.py` | unit | none observed |
@@ -353,6 +385,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_refresh.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_refs.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_repo_root.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_repo_root_live_tree.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_retire.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_savings_telemetry.py` | unit | none observed |
@@ -372,6 +405,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_seed_detect_referenced_deps.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_seed_engine_copier.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_seed_errors.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_exit_codes_at_main.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_seed_fs.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_seed_integration_adopt_prd_j2.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_seed_kit.py` | unit | none observed |
@@ -406,8 +440,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_spec_low_risk.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_spec_surface.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_spin.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_spin_live_tree.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_status.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_status_landing_superseded.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_status_live_tree.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_structure_graph_dispatch_benchmark.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_substrate.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_substrate_store.py` | unit | none observed |
@@ -419,6 +455,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_token_economy_benchmark.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_upstream.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_upstream_cli.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_upstream_cli_live_tree.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_vcs_git.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_vcs_git_merged_check_objects.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_verdict.py` | unit | none observed |
@@ -959,6 +996,28 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 113.17 | drift refuses a model a spin session can run on | none observed |
 | 113.18 | The first automated audit lands its residue | none observed |
 | 113.19 | An audit run reads the Dream entry its slice cites | none observed |
+| 114.1 | Every marshal capability carries a marker that matches the ledger, and the Sp... | none observed |
+| 114.2 | No marshal capability or Constraint names a file, flag, verb or skill that is... | none observed |
+| 114.3 | Marshal's public contract is one companion, and a meta-test keeps it complete | none observed |
+| 115.1 | Marshal finds the checkout and the loop home through its guarded roots, and t... | none observed |
+| 115.2 | A landing reaches the spec-surface verdict through Doctor's command, never an... | none observed |
+| 115.3 | marshal-mcp registers every tool it lists, and a seed failure exits with the ... | none observed |
+| 115.4 | Marshal's forge repository is the root of record's | none observed |
+| 116.1 | A marshal test fails, never skips, when the tree it reads is absent | none observed |
+| 116.2 | Marshal's suite runs as a package-local half and a live-tree half | none observed |
+| 116.3 | The four largest landing and challenge test modules keep their package-local ... | none observed |
+| 116.4 | A package-half test that opens a repository file outside the package fails, w... | none observed |
+| 116.5 | The change closes on a reconciled marshal Spec: shipped markers, one surface ... | none observed |
+| 117.1 | Every core test module that reads the repository carries the live_tree marker | none observed |
+| 117.2 | One function answers the root of record and the forge slug | none observed |
+| 117.3 | A missing purge list keeps a preserve tag local instead of crashing the push | none observed |
+| 117.4 | The leaf's public surface is written down, and the suite reds what it lacks | none observed |
+| 117.5 | The core Spec says what the leaf is, and carries Epic 117's capabilities | none observed |
+| 117.6 | A station left out of a kernel guard is left out path by path, and the list o... | none observed |
+| 117.7 | The flag reader's tests run from the package alone | none observed |
+| 117.8 | The kernel Specs are reconciled and stamped once, after the last edit on the ... | none observed |
+| 118.1 | The testing kit's suite runs without the host, and its public surface is writ... | none observed |
+| 118.2 | The testing charter says what was built, and carries Epic 118's capabilities | none observed |
 
 ## Quality Gates
 

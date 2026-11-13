@@ -2,15 +2,17 @@
 title: "Product Brief: Mason (pyforge-mason)"
 status: draft
 created: 2026-07-25
-updated: "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior 2026-11-01
+updated: "2026-11-11"   # REVIEWED 2026-11-11 (mason Story 37.2, the cutover readiness review in feed order): research -> brief edge for research/cutover-readiness-audit-2026-11-10.md; dream:, adopted_kernel: and the crew-charter input re-pointed to the paths that exist; OQ-5's floor and the Presenton satellite's status corrected by dated notes; no problem, user, pitch or success criterion moves. See § Currency reconciliation — 2026-11-11 (Story 37.2). Prior "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior 2026-11-01
 project: pyforge-mason
-dream: docs/dreams/packaging-factory.md
-adopted_kernel: _bmad-output/projects/local-recipes/planning-artifacts/specs/spec-packaging-factory/SPEC.md
+currency_review: "Reviewed 2026-11-11 — against the cutover readiness audit of 2026-11-10 (research/cutover-readiness-audit-2026-11-10.md) and spec-pyforge-mason as Story 37.1 re-derived it on 2026-11-11. The problem stands: a proven packaging capability trapped in one repository, and no tool that ships one library to both PyPI and conda-forge. The users stand: the individual maintainer or small team already on pixi (A-3). The audit read CAP-1..CAP-7, the CLI this brief pitched, as matching their code. Three facts had moved and are corrected by dated notes, not rewritten: the Dream, the adopted kernel and the crew charter live at new paths; OQ-5's floor is >=3.14 (decision D6 of the cutover readiness plan); the Presenton satellite is retired, never built (operator ruling 'Retire both', 2026-11-10). See § Currency reconciliation — 2026-11-11 (Story 37.2)."
+dream: archive/docs/dreams/packaging-factory.md
+adopted_kernel: archive/_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-packaging-factory/SPEC.md
 inputs:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/research/domain-packaging-automation-tooling-research-2026-07-25.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/research/technical-mason-cli-seam-research-2026-07-25.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/research/market-mason-packaging-automation-2026-08-08.md
-  - docs/dreams/ecosystem-crew.md (§ 5 Mason)
+  - _bmad-output/projects/pyforge-mason/planning-artifacts/research/cutover-readiness-audit-2026-11-10.md
+  - docs/dreams/pyforge-charter.md (§ 5 Mason; renamed from ecosystem-crew.md)
 ---
 
 # Product Brief: Mason
@@ -192,7 +194,8 @@ invented in.
 ## assumptions[]
 
 1. **A-1** — The crew-charter verbs (`recipe build`, `package --ship`, `environment lock`) are
-   binding product scope, taken verbatim from `docs/dreams/ecosystem-crew.md` § 5.
+   binding product scope, taken verbatim from `docs/dreams/ecosystem-crew.md` § 5. *(Path note
+   2026-11-11: that Dream is now `docs/dreams/pyforge-charter.md`, § 5 Mason.)*
 2. **A-2** — "Dual-ecosystem" means conda-forge + PyPI. npm/CRAN/CPAN/LuaRocks are *source*
    ecosystems for recipe generation, not `--ship` targets.
 3. **A-3** — The target operator is the individual maintainer or small team already using pixi, not
@@ -223,7 +226,9 @@ invented in.
 4. **OQ-4** — Credential model for `--ship pypi`: *RESOLVED (PRD D-5): API token, read at point
    of use, validated pre-build; OIDC/trusted publishing deferred past v1 (the 2026-08-08
    research flags it as the market's golden path — a live v2 candidate).*
-5. **OQ-5** — Python floor: *RESOLVED (PRD D-6): `>=3.12`, matching warden.*
+5. **OQ-5** — Python floor: *RESOLVED (PRD D-6): `>=3.12`, matching warden.* *(Superseded
+   2026-11-11: the floor is `>=3.14`, decision D6 of the cutover readiness plan; the package has
+   declared it since 2026-09-07, and PRD D-6 and NFR-11 now say so.)*
 6. **OQ-6** — Does Mason own multi-ecosystem autotick, or is that Marshal/Steward territory? The
    dream places it in the packaging factory; the crew charter omits it from Mason's cadence.
    *(Still open at crew level — carried through PRD OQ-3 to v2 scoping.)*
@@ -318,6 +323,11 @@ claim, success criterion or open question here moves, and no architecture decisi
 
 ## Satellite: Presenton (air-gapped conda-native repackaging)
 
+**Retired 2026-11-10, never built** (operator ruling "Retire both", `docs/dreams/pyforge-unifying-strategy.md`
+§ Realization log). `spec-pyforge-mason` CAP-8..CAP-13 read `(retired 2026-11-10: never built)`; B does not rebuild
+them, and a later want re-enters as a new Dream entry. The text below stays as history; its "BLOCKED" status is the
+record of the 2026-08-02 consolidation. *(Note added 2026-11-11, Story 37.2.)*
+
 **Status: BLOCKED.** This satellite brief was finalized 2026-07-25 and describes a genuinely
 different product from `mason` itself: an air-gapped, conda-forge-native repackaging of the
 third-party Presenton AI deck-generation app for Red Hat OpenShift, registered to the same station
@@ -405,3 +415,35 @@ Two to three years out, if this works: the OCP image is a reference deployment p
 *Chain-currency cascade (research -> brief), EGM audit, marshal Story 113.18.*
 
 The station's audit record joins this brief's inputs: `research/egm-audit-2026-11-05.md` (marshal Story 113.18, `spec-pyforge-marshal:CAP-302`): 17 high findings, 10 accepted, 7 rejected, 0 deferred; the medium and low findings are not triaged. The product scope does not change.
+
+## Currency reconciliation — 2026-11-11 (Story 37.2)
+
+*Trigger: the chain-currency `research→brief` edge. `research/cutover-readiness-audit-2026-11-10.md` landed on
+2026-11-10: the read-only cutover readiness audit of Mason and conda-forge-expert, and the operator's rulings of
+2026-11-10 (`docs/dreams/pyforge-unifying-strategy.md`, Realization log). This is a review, not a re-stamp: the brief
+was read against the audit and against `spec-pyforge-mason` as Story 37.1 re-derived it on 2026-11-11.*
+
+**What the research carries.** The audit found the Mason CLI kernel, `spec-pyforge-mason` CAP-1..CAP-7, matching its
+code, and the rest of the chain saying less than the truth: conda-forge-expert has no Spec of its own, the Presenton
+set and the closed rebuild campaign were marked shipped, the factory-island build and three socket modules sat in no
+capability, the package manifest and the Spec stated a 3.12 floor, and the PRD and spine had last been reviewed before
+CAP-28..CAP-35. The rulings that followed retire the never-built Presenton set (CAP-8..CAP-13), keep conda-forge-expert
+`A-only` until its own Spec Story (mason Story 39.2), and set the floor at 3.14 (decision D6).
+
+**What this brief keeps.** The problem stands: the capability is real and still trapped in one repository, and no tool
+ships one library to PyPI and conda-forge in one motion. The users stand: the individual maintainer or small team
+already on pixi (A-3), not conda-forge's core infrastructure. The pitch's three verb families, the asymmetric ship
+receipt and the rule that every recipe judgement is delegated to conda-forge-expert are what CAP-1..CAP-7 still say.
+No success criterion moves. Capabilities minted since (CAP-36, the native factory-island build; CAP-37, the three
+sockets) extend the station under the Spec, as the scope growth recorded in § Currency reconciliation — 2026-08-26 did.
+
+**What was corrected.** Three facts, each by a dated note beside the original text:
+- `dream:` and `adopted_kernel:` name `archive/docs/dreams/packaging-factory.md` and
+  `archive/_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-packaging-factory/SPEC.md`, where both
+  moved with the one archive home (`spec-one-chain-per-station:CAP-11`); the crew-charter input and A-1 name
+  `docs/dreams/pyforge-charter.md`, the Dream `ecosystem-crew.md` was renamed to.
+- OQ-5's floor is `>=3.14`; PRD D-6 and NFR-11 are amended in the same story.
+- The Presenton satellite is retired, never built; its text stays as history.
+
+**Content changed:** this section, the frontmatter (`updated:`, `currency_review:`, `dream:`, `adopted_kernel:`,
+`inputs:`), and the three dated notes on A-1, OQ-5 and the Presenton satellite.

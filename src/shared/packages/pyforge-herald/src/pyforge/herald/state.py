@@ -1,6 +1,6 @@
 """Per-deck bridge state persistence (Story 1.4, AD-5).
 
-``.herald/bridge-state.json`` is the operational source of truth CAP-3
+``.herald/bridge-state.json`` is the operational source of truth CAP-4
 (status) and CAP-4 (watch) read from, keyed by deck slug. Each slug's entry
 holds the ``DeckState`` this module round-trips: the linked Design project
 id, one last-seen etag per tracked artifact, and the last-pull timestamp.

@@ -62,7 +62,9 @@ on:
       - '_bmad-output/PROJECTS.md'
       - '_bmad-output/harness-profiles/*.toml'
       - '_bmad-output/harness-profiles/cursor.toml'
+      - '_bmad-output/policy-defaults.toml'
       - '_bmad-output/projects/*/README.md'
+      - '_bmad-output/projects/**'
       - '_bmad-output/projects/*/planning-artifacts/**'
       - '_bmad-output/projects/pyforge-doctor/README.md'
       - '_bmad-output/projects/pyforge-marshal/**'
@@ -71,6 +73,7 @@ on:
       - 'archive/**'
       - 'docs-site/**'
       - 'docs/**'
+      - 'docs/foundry/capability-ledger.yaml'
       - 'presentations/**'
       - 'recipes/**'
       - 'scripts/**'
@@ -114,7 +117,9 @@ on:
       - '_bmad-output/PROJECTS.md'
       - '_bmad-output/harness-profiles/*.toml'
       - '_bmad-output/harness-profiles/cursor.toml'
+      - '_bmad-output/policy-defaults.toml'
       - '_bmad-output/projects/*/README.md'
+      - '_bmad-output/projects/**'
       - '_bmad-output/projects/*/planning-artifacts/**'
       - '_bmad-output/projects/pyforge-doctor/README.md'
       - '_bmad-output/projects/pyforge-marshal/**'
@@ -123,6 +128,7 @@ on:
       - 'archive/**'
       - 'docs-site/**'
       - 'docs/**'
+      - 'docs/foundry/capability-ledger.yaml'
       - 'presentations/**'
       - 'recipes/**'
       - 'scripts/**'
@@ -160,19 +166,32 @@ jobs:
     # render: python scripts/ci_surface_gates.py --render
     if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true') }}
     runs-on: ubuntu-latest
+    # Story 124.2 (spec-pyforge-steward:CAP-175): every suite runs as two jobs, its package half and its live-tree half
+    # (the modules marked pytest.mark.live_tree). A station's package half fires on `<s>` (its package and the shared
+    # surface), its live-tree half on `<s>_live` (that, plus what its live_tree modules read). pyforge-core's live-tree
+    # half keeps the `core` output, which every station's change fires (spec-pyforge-core:CAP-8); its package half fires
+    # on `core_package`, the shared surface. The kit's halves fire on `testing_kit` and `testing_kit_live`.
     outputs:
       core: ${{ steps.filter.outputs.core }}
+      core_package: ${{ steps.filter.outputs.core_package }}
       testing_kit: ${{ steps.filter.outputs.testing_kit }}
+      testing_kit_live: ${{ steps.filter.outputs.testing_kit_live }}
       atlas: ${{ steps.filter.outputs.atlas }}
+      atlas_live: ${{ steps.filter.outputs.atlas_live }}
       doctor: ${{ steps.filter.outputs.doctor }}
+      doctor_live: ${{ steps.filter.outputs.doctor_live }}
       herald: ${{ steps.filter.outputs.herald }}
+      herald_live: ${{ steps.filter.outputs.herald_live }}
       marshal: ${{ steps.filter.outputs.marshal }}
+      marshal_live: ${{ steps.filter.outputs.marshal_live }}
       mason: ${{ steps.filter.outputs.mason }}
+      mason_live: ${{ steps.filter.outputs.mason_live }}
       scribe: ${{ steps.filter.outputs.scribe }}
+      scribe_live: ${{ steps.filter.outputs.scribe_live }}
       steward: ${{ steps.filter.outputs.steward }}
       steward_live: ${{ steps.filter.outputs.steward_live }}
-      doctor_live: ${{ steps.filter.outputs.doctor_live }}
       warden: ${{ steps.filter.outputs.warden }}
+      warden_live: ${{ steps.filter.outputs.warden_live }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -220,7 +239,15 @@ jobs:
           # and steward's tests/meta/test_station_tests_trigger_map.py derives them from the tests
           # themselves and proves every one fires its job. The shared surface above stays: it runs
           # every job.
+          # Story 124.2 (spec-pyforge-steward:CAP-175): every station's suite is split as Story 117.4 split doctor's
+          # and steward's. `<s>_paths` is the package half's (its own package: it reads nothing outside it);
+          # `<s>_live_paths` is the live-tree half's, the paths its pytest.mark.live_tree modules read (the array the
+          # whole suite carried before, renamed, and what the derivation added since), derived by steward's
+          # tests/meta/test_station_tests_trigger_map.py.
           atlas_paths=(
+            src/shared/packages/pyforge-atlas
+          )
+          atlas_live_paths=(
             .claude/skills
             .github/workflows
             .gitignore
@@ -257,12 +284,14 @@ jobs:
             '_bmad-output/projects/*/README.md'
             '_bmad-output/projects/*/planning-artifacts/*'
             _bmad-output/projects/pyforge-doctor/README.md
+            _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-capability-ledger/extract.md
             archive
             docs/404.md
             docs/MAP.md
             docs/dashboard
             docs/dreams
             docs/explanation
+            docs/foundry/capability-ledger.yaml
             docs/foundry/frames/pyforge.frame.md
             docs/foundry/marketplace
             docs/governance
@@ -278,11 +307,16 @@ jobs:
           )
           herald_paths=(
             src/shared/packages/pyforge-herald
+          )
+          herald_live_paths=(
+            src/shared/packages/pyforge-herald
             .claude/skills
             .github/workflows
             .gitignore
             AGENTS.md
             CLAUDE.md
+            '_bmad-output/projects/*/planning-artifacts/sprint-status-ledger.yaml'
+            _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/contract.md
             _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/adoption-register.md
             _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-regenerate-not-fold/case-list.md
             _bmad/scripts/resolve_customization.py
@@ -297,6 +331,9 @@ jobs:
           )
           marshal_paths=(
             src/shared/packages/pyforge-marshal
+          )
+          marshal_live_paths=(
+            src/shared/packages/pyforge-marshal
             .claude
             .cursor
             .gemini
@@ -310,14 +347,19 @@ jobs:
             _bmad-output/PROJECTS.md
             '_bmad-output/harness-profiles/*.toml'
             _bmad-output/harness-profiles/cursor.toml
+            _bmad-output/policy-defaults.toml
+            _bmad-output/projects
             '_bmad-output/projects/*/README.md'
             '_bmad-output/projects/*/planning-artifacts/*'
             _bmad-output/projects/pyforge-marshal
+            archive
+            docs
             docs/dreams
             docs/governance/preserve-purge-list.json
             docs/governance/spec-one-chain-per-station
             docs/how-to/troubleshoot-bmad-agent-loops.md
             docs/reference/story-spec-flag-block.md
+            scripts
             scripts/.spec-surface-baseline.json
             scripts/bmad-loop-worktree
             scripts/bmad-switch
@@ -332,6 +374,7 @@ jobs:
             scripts/promote_sprint_status.py
             scripts/spec_surface_check.py
             scripts/spec_surface_reconcile.py
+            src
             src/platform
             src/shared/packages/django-marshal
             src/shared/packages/django-pyforge/src
@@ -343,10 +386,14 @@ jobs:
           )
           mason_paths=(
             src/shared/packages/pyforge-mason
+          )
+          mason_live_paths=(
+            src/shared/packages/pyforge-mason
             .claude/scripts/conda-forge-expert
             .claude/skills
             AGENTS.md
             CLAUDE.md
+            _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/contract.md
             _bmad/scripts/resolve_customization.py
             _bmad/skf
             archive/docs/specs/feedstock-failure-remediation.md
@@ -358,9 +405,13 @@ jobs:
             scripts/cfe_rebuild_guard_check.py
             src/platform
             src/shared/packages/django-mason
+            src/shared/packages/django-pyforge/src/django_pyforge/assertion/client.py
             src/shared/packages/django-pyforge/src/django_pyforge/templates/django_pyforge/base.html
           )
           scribe_paths=(
+            src/shared/packages/pyforge-scribe
+          )
+          scribe_live_paths=(
             .claude/memory/MEMORY.md
             .claude/memory/feedback
             .claude/settings.json
@@ -379,10 +430,12 @@ jobs:
             AGENTS.md
             CLAUDE.md
             GEMINI.md
+            '_bmad-output/projects/*/planning-artifacts/specs/*'
             _bmad-output/projects/pyforge-warden
             _bmad/scripts/resolve_customization.py
             _bmad/skf/config.yaml
             docs/dreams/README.md
+            docs/governance
             docs/how-to/README.md
             docs/how-to/one-chain-station-ops.md
             docs/how-to/pixi-tasks.md
@@ -390,7 +443,10 @@ jobs:
             docs/tutorials/getting-started.md
             presentations/pyforge-scribe/facts.yaml
             presentations/pyforge-warden/facts.yaml
+            scripts/bmad_estate_check.py
             scripts/claude_instruction_mode_check.py
+            scripts/fleet_scan.py
+            'scripts/scribe_*.py'
             src/platform
             src/shared/packages
           )
@@ -402,6 +458,16 @@ jobs:
           )
           steward_live_paths=(
             src/shared/packages/pyforge-steward
+            recipes/bmad-eval-quality/recipe.yaml
+            recipes/nebari-infrastructure-core/recipe.yaml
+            recipes/silo/recipe.yaml
+            scripts/pre_push_preflight.sh
+            src/shared/packages/pyforge-atlas
+            src/shared/packages/pyforge-doctor
+            src/shared/packages/pyforge-herald
+            src/shared/packages/pyforge-marshal
+            src/shared/packages/pyforge-scribe
+            src/shared/packages/pyforge-warden
             src/shared/packages/pyforge-warden/pixi.toml
             .claude/hooks/pre-shell.py
             .claude/hooks/session-start.sh
@@ -424,6 +490,7 @@ jobs:
             docs/404.md
             docs/dreams
             docs/foundry
+            docs/foundry/capability-ledger.yaml
             docs/governance
             docs/index.md
             docs/map.yaml
@@ -456,11 +523,21 @@ jobs:
           )
           warden_paths=(
             src/shared/packages/pyforge-warden
+          )
+          warden_live_paths=(
+            src/shared/packages/pyforge-warden
             .claude/skills
             AGENTS.md
             CLAUDE.md
+            '_bmad-output/projects/*/planning-artifacts/specs/spec-*/SPEC.md'
+            _bmad-output/projects/pyforge-warden/planning-artifacts/deferred-work-ledger.md
+            _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+            _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/contract.md
+            _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/proof-map.md
             _bmad/scripts/resolve_customization.py
             _bmad/skf
+            scripts
+            src
             src/platform
             src/shared/packages/django-pyforge/src/django_pyforge/assertion/client.py
             src/shared/packages/django-warden
@@ -469,9 +546,15 @@ jobs:
           # surface OR any single station moved -- its sole-ownership meta-tests scan every sibling
           # station's src tree. Story 98.1: it also scans all of src/ and scripts/ (the
           # preserve-refs grammar test), the django-* portal packages included, so core_paths names
-          # those roots; the atlas quartet's test file stays a core input as it was.
+          # those roots; the atlas quartet's test file stays a core input as it was. Story 124.2: those
+          # readers are core's live-tree half, which keeps the `core` output (core-live-test); the
+          # package half (core-test) reads nothing outside pyforge-core, which is shared surface, so
+          # `core_package` is the shared surface alone.
           core_paths=(
+            '_bmad-output/projects/*/planning-artifacts/specs/*/SPEC.md'
+            _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/contract.md
             _bmad-output/projects/pyforge-steward/planning-artifacts/specs
+            'docs/governance/*/SPEC.md'
             docs/governance/guild-roster.json
             scripts
             src
@@ -490,8 +573,8 @@ jobs:
             if ! git diff --quiet "$BASE"...HEAD -- "$station_path" 2>/dev/null; then
               CORE_CHANGED=true
             fi
-            # Story 117.4: a station with a live-tree half fires it on the package, the shared surface and what its
-            # live_tree modules read (today's full array); the package half above fires on the package alone.
+            # Story 117.4 / Story 124.2: the live-tree half fires on the package, the shared surface and what its
+            # live_tree modules read (`<s>_live_paths`); the package half above fires on the package alone.
             live_name="${s}_live_paths"
             if declare -p "$live_name" >/dev/null 2>&1; then
               unset -n live_paths 2>/dev/null || true
@@ -507,9 +590,12 @@ jobs:
             CORE_CHANGED=true
           fi
           echo "core=$CORE_CHANGED" >> "$GITHUB_OUTPUT"
+          echo "core_package=$SHARED_CHANGED" >> "$GITHUB_OUTPUT"
           # Story 19.5: the testing kit's own suite reads two inputs outside the
           # shared surface -- django-pyforge (its station API contract test) and
-          # the platform flag tree (test_flags.py's shape check).
+          # the platform flag tree (test_flags.py's shape check). Story 124.2: the
+          # kit's lane guard (tests/meta/test_testing_kit_lane_wired.py) pins this
+          # rule on `testing_kit`, the package half's output.
           TESTING_KIT_CHANGED="$SHARED_CHANGED"
           if ! git diff --quiet "$BASE"...HEAD -- \
               src/shared/packages/django-pyforge \
@@ -517,6 +603,19 @@ jobs:
             TESTING_KIT_CHANGED=true
           fi
           echo "testing_kit=$TESTING_KIT_CHANGED" >> "$GITHUB_OUTPUT"
+          # Story 124.2 (spec-pyforge-steward:CAP-175): the kit's live-tree half fires on the kit's rule above and
+          # on what its live_tree modules read (django-pyforge, the flag tree, the testing charter's contract),
+          # derived by steward's tests/meta/test_station_tests_trigger_map.py.
+          testing_kit_live_paths=(
+            '_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter/contract.md'
+            src/platform/config/flags.json
+            src/shared/packages/django-pyforge
+          )
+          TESTING_KIT_LIVE_CHANGED="$TESTING_KIT_CHANGED"
+          if ! git diff --quiet "$BASE"...HEAD -- "${testing_kit_live_paths[@]}" 2>/dev/null; then
+            TESTING_KIT_LIVE_CHANGED=true
+          fi
+          echo "testing_kit_live=$TESTING_KIT_LIVE_CHANGED" >> "$GITHUB_OUTPUT"
 
   # Story 52.2 (spec-pyforge-core CAP-8): until this job, NO workflow invoked
   # the `pyforge-core-test` pixi task -- `pyforge-core/**` appeared above only
@@ -536,8 +635,28 @@ jobs:
   # `django-*` packages "deliberately not `core` inputs"; that was wrong.
   # (django-pyforge is also a path trigger for testing-kit-test.)
   # Pinned by pyforge-core's `tests/meta/test_conformance_lane_wired.py`.
+  # Story 124.2 (spec-pyforge-steward:CAP-175; spec-pyforge-core:CAP-8 as amended for Story 117.1): the suite runs
+  # as two jobs. core-test runs the package half, which reads nothing outside pyforge-core, on `core_package`
+  # (the shared surface); core-live-test runs the live-tree half -- the scans of every station's tree and of
+  # src/ and scripts/ -- on `core`, which any single station's change fires.
   core-test:
     # ci-surfaces: pyforge-station-tests.core-test
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.core_package == 'true')) }}
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: prefix-dev/setup-pixi@v0.11.2
+        with:
+          environments: pyforge-core
+          cache: true
+      - run: pixi run --frozen -e pyforge-core pyforge-core-package-test
+
+  # Story 124.2: pyforge-core's live-tree half keeps the `core` gate (shared surface OR any station OR core_paths).
+  core-live-test:
+    # ci-surfaces: pyforge-station-tests.core-live-test
     # render: python scripts/ci_surface_gates.py --render
     if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.core == 'true')) }}
     needs: changes
@@ -549,7 +668,7 @@ jobs:
         with:
           environments: pyforge-core
           cache: true
-      - run: pixi run --frozen -e pyforge-core pyforge-core-test
+      - run: pixi run --frozen -e pyforge-core pyforge-core-live-test
 
   testing-kit-test:
     # Story 19.5 (spec-pyforge-testing-charter CAP-3): until this job, NO
@@ -560,7 +679,10 @@ jobs:
     # src/platform/config/flags.json flagd `metadata`. A peer of core-test,
     # gated on `testing_kit`: the shared surface OR one of the two other inputs
     # its tests read (django-pyforge and the platform flag tree). Pinned by the
-    # kit's `tests/meta/test_testing_kit_lane_wired.py`.
+    # kit's `tests/meta/test_testing_kit_lane_wired.py`. Story 124.2 (spec-pyforge-steward:CAP-175;
+    # spec-pyforge-testing-charter:CAP-3, spec-pyforge-testing-charter:CAP-7): this job runs the package
+    # half, which runs with no host package on its path; testing-kit-live-test runs the
+    # live-tree half.
     # ci-surfaces: pyforge-station-tests.testing-kit-test
     # render: python scripts/ci_surface_gates.py --render
     if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.testing_kit == 'true')) }}
@@ -573,7 +695,24 @@ jobs:
         with:
           environments: pyforge-testing-kit
           cache: true
-      - run: pixi run --frozen -e pyforge-testing-kit pyforge-testing-kit-test
+      - run: pixi run --frozen -e pyforge-testing-kit pyforge-testing-kit-package-test
+
+  # Story 124.2 (spec-pyforge-steward:CAP-175): the live-tree half of the kit's suite -- the modules marked
+  # pytest.mark.live_tree, with django-pyforge on the path -- fires on `testing_kit_live`, the kit's own rule.
+  testing-kit-live-test:
+    # ci-surfaces: pyforge-station-tests.testing-kit-live-test
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.testing_kit_live == 'true')) }}
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: prefix-dev/setup-pixi@v0.11.2
+        with:
+          environments: pyforge-testing-kit
+          cache: true
+      - run: pixi run --frozen -e pyforge-testing-kit pyforge-testing-kit-live-test
 
   atlas-test:
     # ci-surfaces: pyforge-station-tests.atlas-test
@@ -643,7 +782,8 @@ jobs:
           node-version: '22'
       - name: Build the WASM smoke-test artifact
         run: pixi run --frozen -e pyforge-atlas python src/shared/packages/pyforge-atlas/wasm/build.py
-      - run: pixi run --frozen -e pyforge-atlas kedro-test
+      # Story 124.2: the package half (kedro-test, its alias, now runs both halves; atlas-live-test runs the other).
+      - run: pixi run --frozen -e pyforge-atlas pyforge-atlas-test
       - run: pixi run --frozen -e pyforge-atlas kedro-catalog-check
       # Story 117.10: this shard's report; the atlas-gate job merges every shard's and judges the floor.
       - name: Name this shard's coverage report
@@ -655,13 +795,43 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
+  # Story 124.2 (spec-pyforge-steward:CAP-175): the live-tree half of the atlas suite -- the modules marked
+  # pytest.mark.live_tree -- fires on the package, the shared surface and what those modules read; the package
+  # half (atlas-test) fires on the package and the shared surface only. Story 117.4's shape, applied here.
+  # Its modules launch no browser and build no WASM artifact: Chromium, the DuckDB httpfs extension and the WASM
+  # build stay with the package half, whose integration tests use them.
+  atlas-live-test:
+    # ci-surfaces: pyforge-station-tests.atlas-live-test
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.atlas_live == 'true')) }}
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
+      - uses: prefix-dev/setup-pixi@v0.11.2
+        with:
+          environments: pyforge-atlas
+          cache: true
+      - run: pixi run --frozen -e pyforge-atlas pyforge-atlas-live-test
+      # The live-tree half's report, merged with the package half's by the gate job.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: coverage-atlas-live
+          path: .steward/coverage/atlas-live.json
+          if-no-files-found: error
+          retention-days: 3
+
   # Story 117.10 (spec-pyforge-steward CAP-175): the atlas suite runs as shards, so the floor is judged here from
-  # every shard's coverage report merged (coverage_gates_ci.py --report, repeatable); it rides the suite's rule.
+  # every shard's coverage report merged (coverage_gates_ci.py --report, repeatable); it rides the package half's
+  # rule. Story 124.2: it reads the live-tree half's report too.
   atlas-gate:
     # ci-surfaces: pyforge-station-tests.atlas-gate
     # render: python scripts/ci_surface_gates.py --render
     if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.atlas == 'true')) }}
-    needs: [changes, atlas-test]
+    needs: [changes, atlas-test, atlas-live-test]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -677,7 +847,7 @@ jobs:
           pattern: coverage-atlas-*
           path: .steward/coverage
           merge-multiple: true
-      - name: Coverage gate for atlas (every shard's report)
+      - name: Coverage gate for atlas (both halves' reports)
         env:
           GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
           COVERAGE_GATES_STATIONS: atlas
@@ -694,7 +864,7 @@ jobs:
           else
             BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
           fi
-          pixi run --frozen -e pyforge-atlas python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report ".steward/coverage/atlas-unit*.json"
+          pixi run --frozen -e pyforge-atlas python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report ".steward/coverage/atlas-unit*.json" --report ".steward/coverage/atlas-live*.json"
 
   doctor-test:
     # ci-surfaces: pyforge-station-tests.doctor-test
@@ -747,6 +917,16 @@ jobs:
         with:
           environments: pyforge-doctor
           cache: true
+      # Story 57.3: the live writer-lock proof reads `git merge-base refs/remotes/origin/main HEAD`
+      # (spec-pyforge-doctor CAP-100). A pull request's two-commit checkout has no remote ref, so the merge commit's
+      # first parent (the base tip, the base Story 117.11's gates take) is named as it; a push checkout already has it.
+      - name: Name the base tip as origin/main
+        if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
+        run: |
+          set -euo pipefail
+          if ! git rev-parse -q --verify refs/remotes/origin/main >/dev/null; then
+            git update-ref refs/remotes/origin/main "$(git rev-parse HEAD^1)"
+          fi
       - run: pixi run --frozen -e pyforge-doctor pyforge-doctor-live-test
       # Story 117.4: the live-tree half's report, merged with the package half's by the doctor-gate job.
       - name: Name this shard's coverage report
@@ -819,12 +999,11 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
-      # Herald Story 45.1: the last step runs pyforge-herald-test-built, docs-site-install (npm ci in the site env)
-      # then herald's suite, so its built-site tests build Astro here instead of skipping; setting up `site` beside
-      # herald caches that env. pyforge-herald-test itself stays npm-free for the SBOM laptop gate (fnd:CAP-13).
+      # Story 124.2: the package half; its render gate (tests/unit/test_deck_qa.py) launches Chromium. The built-site
+      # tests are live-tree modules and run in herald-live-test, with the docs-site install.
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
-          environments: pyforge-herald site
+          environments: pyforge-herald
           cache: true
       # DW-14-2-1: the render gate's real-browser tests need Chromium. Steward Story 112.1 / CAP-174's shape
       # (the Platform CI test job, the atlas job): install Playwright's own chromium, launch it once, and pull its
@@ -852,17 +1031,7 @@ jobs:
               exit 1
             fi
           fi
-      # test_skf_validators_pass invokes `uv run` directly (not a pixi
-      # dependency -- this station's own skf-frontmatter validator script
-      # is meant to be runnable standalone via uv).
-      - uses: astral-sh/setup-uv@v7
-      # HERALD_DOCS_SITE_REQUIRED: a built-site test whose install is missing fails here, never skips.
-      - run: pixi run --frozen -e pyforge-herald pyforge-herald-test-built
-        env:
-          HERALD_DOCS_SITE_REQUIRED: "1"
-          # Story 117.13: Astro renames docs-site/.astro/ into pytest's temp dir, which fails with EXDEV when /tmp is
-          # another filesystem, as on runner image 20261101.64.1. runner.temp sits beside the checkout.
-          TMPDIR: ${{ runner.temp }}
+      - run: pixi run --frozen -e pyforge-herald pyforge-herald-test
       # Story 117.10: this shard's report; the herald-gate job merges every shard's and judges the floor.
       - name: Name this shard's coverage report
         run: mv .steward/coverage/herald-unit.json .steward/coverage/herald-unit-${{ matrix.group }}.json
@@ -873,13 +1042,56 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
+  # Story 124.2 (spec-pyforge-steward:CAP-175): the live-tree half of the herald suite -- the modules marked
+  # pytest.mark.live_tree -- fires on the package, the shared surface and what those modules read; the package
+  # half (herald-test) fires on the package and the shared surface only. Story 117.4's shape, applied here.
+  # Herald Story 45.1, carried to the live half: its built-site tests (pages_astro.needs_astro) build Astro from
+  # docs-site/node_modules, so the job sets up the `site` environment beside herald's, runs docs-site-install
+  # first (npm ci in the site env) and sets HERALD_DOCS_SITE_REQUIRED, under which a built-site test whose install
+  # is missing fails, never skips. pyforge-herald-live-test itself stays npm-free for the SBOM laptop gate
+  # (fnd:CAP-13).
+  herald-live-test:
+    # ci-surfaces: pyforge-station-tests.herald-live-test
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.herald_live == 'true')) }}
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
+      - uses: prefix-dev/setup-pixi@v0.11.2
+        with:
+          environments: pyforge-herald site
+          cache: true
+      # test_skf_validators_pass invokes `uv run` directly (not a pixi
+      # dependency -- this station's own skf-frontmatter validator script
+      # is meant to be runnable standalone via uv).
+      - uses: astral-sh/setup-uv@v7
+      - run: pixi run --frozen -e site docs-site-install
+      - run: pixi run --frozen -e pyforge-herald pyforge-herald-live-test
+        env:
+          HERALD_DOCS_SITE_REQUIRED: "1"
+          # Story 117.13: Astro renames docs-site/.astro/ into pytest's temp dir, which fails with EXDEV when /tmp is
+          # another filesystem, as on runner image 20261101.64.1. runner.temp sits beside the checkout.
+          TMPDIR: ${{ runner.temp }}
+      # The live-tree half's report, merged with the package half's by the gate job.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: coverage-herald-live
+          path: .steward/coverage/herald-live.json
+          if-no-files-found: error
+          retention-days: 3
+
   # Story 117.10 (spec-pyforge-steward CAP-175): the herald suite runs as shards, so the floor is judged here from
-  # every shard's coverage report merged (coverage_gates_ci.py --report, repeatable); it rides the suite's rule.
+  # every shard's coverage report merged (coverage_gates_ci.py --report, repeatable); it rides the package half's
+  # rule. Story 124.2: it reads the live-tree half's report too.
   herald-gate:
     # ci-surfaces: pyforge-station-tests.herald-gate
     # render: python scripts/ci_surface_gates.py --render
     if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.herald == 'true')) }}
-    needs: [changes, herald-test]
+    needs: [changes, herald-test, herald-live-test]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -895,7 +1107,7 @@ jobs:
           pattern: coverage-herald-*
           path: .steward/coverage
           merge-multiple: true
-      - name: Coverage gate for herald (every shard's report)
+      - name: Coverage gate for herald (both halves' reports)
         env:
           GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
           COVERAGE_GATES_STATIONS: herald
@@ -912,7 +1124,7 @@ jobs:
           else
             BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
           fi
-          pixi run --frozen -e pyforge-herald python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report ".steward/coverage/herald-unit*.json"
+          pixi run --frozen -e pyforge-herald python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report ".steward/coverage/herald-unit*.json" --report ".steward/coverage/herald-live*.json"
 
   marshal-test:
     # ci-surfaces: pyforge-station-tests.marshal-test
@@ -954,13 +1166,46 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
+  # Story 124.2 (spec-pyforge-steward:CAP-175): the live-tree half of the marshal suite -- the modules marked
+  # pytest.mark.live_tree -- fires on the package, the shared surface and what those modules read; the package
+  # half (marshal-test) fires on the package and the shared surface only. Story 117.4's shape, applied here.
+  marshal-live-test:
+    # ci-surfaces: pyforge-station-tests.marshal-live-test
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.marshal_live == 'true')) }}
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
+      - uses: prefix-dev/setup-pixi@v0.11.2
+        with:
+          environments: pyforge-marshal
+          cache: true
+      # Seed verbs + integration harnesses create real commits; GHA runners
+      # have no git identity by default (same precedent as coverage-gates.yml).
+      - run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+      - run: pixi run --frozen -e pyforge-marshal pyforge-marshal-live-test
+      # The live-tree half's report, merged with the package half's by the gate job.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: coverage-marshal-live
+          path: .steward/coverage/marshal-live.json
+          if-no-files-found: error
+          retention-days: 3
+
   # Story 117.10 (spec-pyforge-steward CAP-175): the marshal suite runs as shards, so the floor is judged here from
-  # every shard's coverage report merged (coverage_gates_ci.py --report, repeatable); it rides the suite's rule.
+  # every shard's coverage report merged (coverage_gates_ci.py --report, repeatable); it rides the package half's
+  # rule. Story 124.2: it reads the live-tree half's report too.
   marshal-gate:
     # ci-surfaces: pyforge-station-tests.marshal-gate
     # render: python scripts/ci_surface_gates.py --render
     if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.marshal == 'true')) }}
-    needs: [changes, marshal-test]
+    needs: [changes, marshal-test, marshal-live-test]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -976,7 +1221,7 @@ jobs:
           pattern: coverage-marshal-*
           path: .steward/coverage
           merge-multiple: true
-      - name: Coverage gate for marshal (every shard's report)
+      - name: Coverage gate for marshal (both halves' reports)
         env:
           GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
           COVERAGE_GATES_STATIONS: marshal
@@ -993,7 +1238,7 @@ jobs:
           else
             BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
           fi
-          pixi run --frozen -e pyforge-marshal python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report ".steward/coverage/marshal-unit*.json"
+          pixi run --frozen -e pyforge-marshal python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report ".steward/coverage/marshal-unit*.json" --report ".steward/coverage/marshal-live*.json"
 
   mason-test:
     # ci-surfaces: pyforge-station-tests.mason-test
@@ -1011,9 +1256,74 @@ jobs:
           environments: pyforge-mason
           cache: true
       - run: pixi run --frozen -e pyforge-mason pyforge-mason-test
-      # Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the floor is judged from the JSON the suite step
-      # above wrote (.steward/coverage/mason-unit.json); the gate never re-runs the suite. coverage-gates.yml retired.
-      - name: Coverage gate for mason (reads the suite's own report)
+      # Story 124.2: the package half's report, merged with the live-tree half's by the mason-gate job (Story
+      # 117.2's gate, which read this job's report in place, moved there with the split).
+      - uses: actions/upload-artifact@v7
+        with:
+          name: coverage-mason-unit
+          path: .steward/coverage/mason-unit.json
+          if-no-files-found: error
+          retention-days: 3
+
+  # Story 124.2 (spec-pyforge-steward:CAP-175): the live-tree half of the mason suite -- the modules marked
+  # pytest.mark.live_tree -- fires on the package, the shared surface and what those modules read; the package
+  # half (mason-test) fires on the package and the shared surface only. Story 117.4's shape, applied here.
+  mason-live-test:
+    # ci-surfaces: pyforge-station-tests.mason-live-test
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.mason_live == 'true')) }}
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
+      - uses: prefix-dev/setup-pixi@v0.11.2
+        with:
+          environments: pyforge-mason
+          cache: true
+      - run: pixi run --frozen -e pyforge-mason pyforge-mason-live-test
+      # The live-tree half's report, merged with the package half's by the gate job.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: coverage-mason-live
+          path: .steward/coverage/mason-live.json
+          if-no-files-found: error
+          retention-days: 3
+      # Story 16.2: the first real estate caller of `mason recipe build` --
+      # runs on every execution of this already-existing lane (not only on
+      # demand), against mason's own env, so `mason doctor`'s post-16.1
+      # "recipe verb available" claim is actually exercised here, not just
+      # decomposed and merged. Does not replace the local-recipes
+      # recipe-build route as the estate's primary path. Story 124.2: it
+      # builds recipes/click-help-colors, a read outside mason's package, so
+      # it moved from mason-test to the live-tree half's job.
+      - run: pixi run --frozen -e pyforge-mason pyforge-mason-recipe-build-smoke
+
+  # Story 124.2 (spec-pyforge-steward:CAP-175): the coverage floor is judged from the union of both halves' reports
+  # (Story 117.2's --report, repeatable); it rides the package half's rule and needs both halves' artifacts.
+  mason-gate:
+    # ci-surfaces: pyforge-station-tests.mason-gate
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.mason == 'true')) }}
+    needs: [changes, mason-test, mason-live-test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
+      - uses: prefix-dev/setup-pixi@v0.11.2
+        with:
+          environments: pyforge-mason
+          cache: true
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: coverage-mason-*
+          path: .steward/coverage
+          merge-multiple: true
+      - name: Coverage gate for mason (both halves' reports)
         env:
           GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
           COVERAGE_GATES_STATIONS: mason
@@ -1030,14 +1340,7 @@ jobs:
           else
             BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
           fi
-          pixi run --frozen -e pyforge-mason python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report .steward/coverage/mason-unit.json
-      # Story 16.2: the first real estate caller of `mason recipe build` --
-      # runs on every execution of this already-existing lane (not only on
-      # demand), against mason's own env, so `mason doctor`'s post-16.1
-      # "recipe verb available" claim is actually exercised here, not just
-      # decomposed and merged. Does not replace the local-recipes
-      # recipe-build route as the estate's primary path.
-      - run: pixi run --frozen -e pyforge-mason pyforge-mason-recipe-build-smoke
+          pixi run --frozen -e pyforge-mason python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report .steward/coverage/mason-unit.json --report ".steward/coverage/mason-live*.json"
 
   scribe-test:
     # ci-surfaces: pyforge-station-tests.scribe-test
@@ -1046,7 +1349,37 @@ jobs:
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
+      - uses: prefix-dev/setup-pixi@v0.11.2
+        with:
+          environments: pyforge-scribe
+          cache: true
+      - run: pixi run --frozen -e pyforge-scribe pyforge-scribe-test
+      # Story 124.2: the package half's report, merged with the live-tree half's by the scribe-gate job (Story
+      # 117.2's gate, which read this job's report in place, moved there with the split).
+      - uses: actions/upload-artifact@v7
+        with:
+          name: coverage-scribe-unit
+          path: .steward/coverage/scribe-unit.json
+          if-no-files-found: error
+          retention-days: 3
+
+  # Story 124.2 (spec-pyforge-steward:CAP-175): the live-tree half of the scribe suite -- the modules marked
+  # pytest.mark.live_tree -- fires on the package, the shared surface and what those modules read; the package
+  # half (scribe-test) fires on the package and the shared surface only. Story 117.4's shape, applied here.
+  scribe-live-test:
+    # ci-surfaces: pyforge-station-tests.scribe-live-test
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.scribe_live == 'true')) }}
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     services:
+      # Story 124.2: only the live-tree half needs the server (scribe's tests/meta/test_live_tree_split.py holds
+      # every `postgres` test `live_tree` too), so the service rides this job and not scribe-test.
       # pyforge-scribe's durable GraphStore (Story 28.1) needs a real
       # PostgreSQL + pgvector; the test suite's own conftest.py fails loudly
       # (does not silently skip) when it can't reach one. Port/user/password/
@@ -1077,10 +1410,38 @@ jobs:
         env:
           PGPASSWORD: scribe
         run: psql -h 127.0.0.1 -p 5433 -U postgres -d scribe_graph -c "CREATE EXTENSION IF NOT EXISTS vector;"
-      - run: pixi run --frozen -e pyforge-scribe pyforge-scribe-test
-      # Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the floor is judged from the JSON the suite step
-      # above wrote (.steward/coverage/scribe-unit.json); the gate never re-runs the suite. coverage-gates.yml retired.
-      - name: Coverage gate for scribe (reads the suite's own report)
+      - run: pixi run --frozen -e pyforge-scribe pyforge-scribe-live-test
+      # The live-tree half's report, merged with the package half's by the gate job.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: coverage-scribe-live
+          path: .steward/coverage/scribe-live.json
+          if-no-files-found: error
+          retention-days: 3
+
+  # Story 124.2 (spec-pyforge-steward:CAP-175): the coverage floor is judged from the union of both halves' reports
+  # (Story 117.2's --report, repeatable); it rides the package half's rule and needs both halves' artifacts.
+  scribe-gate:
+    # ci-surfaces: pyforge-station-tests.scribe-gate
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.scribe == 'true')) }}
+    needs: [changes, scribe-test, scribe-live-test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
+      - uses: prefix-dev/setup-pixi@v0.11.2
+        with:
+          environments: pyforge-scribe
+          cache: true
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: coverage-scribe-*
+          path: .steward/coverage
+          merge-multiple: true
+      - name: Coverage gate for scribe (both halves' reports)
         env:
           GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
           COVERAGE_GATES_STATIONS: scribe
@@ -1097,7 +1458,7 @@ jobs:
           else
             BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
           fi
-          pixi run --frozen -e pyforge-scribe python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report .steward/coverage/scribe-unit.json
+          pixi run --frozen -e pyforge-scribe python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report .steward/coverage/scribe-unit.json --report ".steward/coverage/scribe-live*.json"
 
   steward-test:
     # ci-surfaces: pyforge-station-tests.steward-test
@@ -1229,9 +1590,67 @@ jobs:
           environments: pyforge-warden
           cache: true
       - run: pixi run --frozen -e pyforge-warden pyforge-warden-test
-      # Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the floor is judged from the JSON the suite step
-      # above wrote (.steward/coverage/warden-unit.json); the gate never re-runs the suite. coverage-gates.yml retired.
-      - name: Coverage gate for warden (reads the suite's own report)
+      # Story 124.2: the package half's report, merged with the live-tree half's by the warden-gate job (Story
+      # 117.2's gate, which read this job's report in place, moved there with the split).
+      - uses: actions/upload-artifact@v7
+        with:
+          name: coverage-warden-unit
+          path: .steward/coverage/warden-unit.json
+          if-no-files-found: error
+          retention-days: 3
+
+  # Story 124.2 (spec-pyforge-steward:CAP-175): the live-tree half of the warden suite -- the modules marked
+  # pytest.mark.live_tree -- fires on the package, the shared surface and what those modules read; the package
+  # half (warden-test) fires on the package and the shared surface only. Story 117.4's shape, applied here.
+  # Its checkout is the whole tree (pixi.lock, pixi.toml, .claude/skills/** and src/** among it): warden's live
+  # modules read them, and a missing tree is a failure, never a skip.
+  warden-live-test:
+    # ci-surfaces: pyforge-station-tests.warden-live-test
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.warden_live == 'true')) }}
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
+      - uses: prefix-dev/setup-pixi@v0.11.2
+        with:
+          environments: pyforge-warden
+          cache: true
+      - run: pixi run --frozen -e pyforge-warden pyforge-warden-live-test
+      # The live-tree half's report, merged with the package half's by the gate job.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: coverage-warden-live
+          path: .steward/coverage/warden-live.json
+          if-no-files-found: error
+          retention-days: 3
+
+  # Story 124.2 (spec-pyforge-steward:CAP-175): the coverage floor is judged from the union of both halves' reports
+  # (Story 117.2's --report, repeatable); it rides the package half's rule and needs both halves' artifacts.
+  warden-gate:
+    # ci-surfaces: pyforge-station-tests.warden-gate
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.warden == 'true')) }}
+    needs: [changes, warden-test, warden-live-test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
+      - uses: prefix-dev/setup-pixi@v0.11.2
+        with:
+          environments: pyforge-warden
+          cache: true
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: coverage-warden-*
+          path: .steward/coverage
+          merge-multiple: true
+      - name: Coverage gate for warden (both halves' reports)
         env:
           GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
           COVERAGE_GATES_STATIONS: warden
@@ -1248,7 +1667,7 @@ jobs:
           else
             BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
           fi
-          pixi run --frozen -e pyforge-warden python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report .steward/coverage/warden-unit.json
+          pixi run --frozen -e pyforge-warden python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report .steward/coverage/warden-unit.json --report ".steward/coverage/warden-live*.json"
 
   # Story 48.10: CAP-5 needs a build time — the root Containerfile was
   # referenced by no workflow until this job. Mirrors platform-ci.yml's

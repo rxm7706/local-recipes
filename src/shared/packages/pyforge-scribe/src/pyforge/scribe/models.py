@@ -142,14 +142,19 @@ class GraphNode(BaseModel):
     (AD-8, Story 3.2). Other kinds still require a live path check even when
     the citation string ends in ``.jsonl:L<n>``.
 
-    `stale` (Story 6.3, CAP-13) is a git-timestamp-only signal, orthogonal to
-    `is_current`: `compile_graph()` sets it on a CURRENT node (Story 2.3's
-    supersession already handles the non-current case) whose citation's
-    source file has a git commit postdating this node's own `valid_from`,
-    with no `supersedes:` edge naming it. It is never set by an LLM call or
-    any judgment beyond that comparison. `recall.py` treats a stale node the
-    same as an unresolvable citation -- excluded from candidacy, so a
-    consumer never sees it served as if it were current.
+    `stale` (Story 6.3, token-economy:CAP-13; CAP-11) is a git-timestamp-only
+    signal, orthogonal to `is_current`: `compile_graph()` sets it on a
+    CURRENT node (Story 2.3's supersession already handles the non-current
+    case) whose citation's source file has a git commit authored after
+    `compiled_at`, the moment this compile started, with no `supersedes:`
+    edge naming it. It is never set by an LLM call or any judgment beyond
+    that comparison. `recall.py` treats a stale node the same as an
+    unresolvable citation -- excluded from candidacy, so a consumer never
+    sees it served as if it were current -- and at recall time it also
+    withholds a current node whose source has a commit authored after the
+    store's `compiled_at`, where the store keeps one (the flat-file store
+    does; CAP-26), so a commit landed between nightlies is never served
+    before the next compile flags it.
     """
 
     id: str

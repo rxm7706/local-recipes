@@ -1,4 +1,4 @@
-"""Story 31.3 — fresh clone class-path is proven (install-class CAP-3)."""
+"""Story 31.3 — fresh clone class-path is proven (install-class CAP-29)."""
 
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ def _matrix() -> Path:
 def _section() -> str:
     text = _playbook().read_text(encoding="utf-8")
     idx = text.find(FRESH_CLONE_HEADING)
-    assert idx >= 0, "playbook missing CAP-3 fresh-clone heading"
+    assert idx >= 0, "playbook missing CAP-29 fresh-clone heading"
     rest = text[idx:]
     nxt = rest.find("\n## ", 1)
     return rest if nxt < 0 else rest[:nxt]
@@ -72,7 +72,7 @@ def test_fresh_clone_native_commands_are_cited_from_matrix():
     matrix = _matrix().read_text(encoding="utf-8")
     section = _section()
     fragments = native_fragments_in_section(section)
-    assert fragments, "CAP-3 section must cite native commands"
+    assert fragments, "CAP-29 section must cite native commands"
     for fragment in fragments:
         assert fragment in matrix, f"invented native fragment {fragment!r}"
     assert "npx bmad-method install" in section
@@ -197,10 +197,10 @@ def test_prove_fails_when_playbook_improvises_installer(tmp_path: Path):
         / "_bmad-output/projects/pyforge-steward/planning-artifacts/specs"
         / "spec-pyforge-steward/install-matrix.md"
     )
-    matrix.parent.mkdir(parents=True, exist_ok=True)  # same folder as the playbook since CAP-11
+    matrix.parent.mkdir(parents=True, exist_ok=True)  # the playbook's folder since spec-one-chain-per-station CAP-11
     matrix.write_text("npx bmad-method install\n", encoding="utf-8")
     playbook.write_text(
-        "## Fresh-clone class-path (CAP-3)\n\nDrive `new Installer()` from the transcript.\n",
+        "## Fresh-clone class-path (CAP-29)\n\nDrive `new Installer()` from the transcript.\n",
         encoding="utf-8",
     )
     (tmp_path / "pixi.toml").write_text("[workspace]\n", encoding="utf-8")

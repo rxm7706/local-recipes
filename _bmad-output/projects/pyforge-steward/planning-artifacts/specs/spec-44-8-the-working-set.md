@@ -17,6 +17,15 @@ deferred: []
 declared_low_risk: false
 ---
 
+> **Amended 2026-11-10 (Story 120.3) — a working-set list replaces the move-list manifest, and Mason's root follows the
+> root of record.** Operator rulings of 2026-11-10 (`docs/dreams/pyforge-unifying-strategy.md` § Realization log,
+> the entry's ruling 2 and its second addendum): the move-list manifest retires with `steward cutover apply`, so
+> the working set is a list and every other recipe stays on `local-recipes`, which is never archived. Ruling 2's
+> third consumer of the root of record lands with this story: Mason's ship and submit root resolves through
+> `pyforge.core.cutover_root.root_of_record()` (`fnd:CAP-8`, consumer 3; the seam is marshal Story 117.2). The
+> matrix, the binding and the epic excerpt below follow the amended story body in `epics.md`. The ledger key stays
+> `blocked`.
+
 <intent-contract>
 
 ## Intent
@@ -42,15 +51,16 @@ declared_low_risk: false
 
 | Scenario | Input / State | Expected Output / Behavior | Error Handling |
 |---|---|---|---|
-| manifest rows with `reason ∈ {in-flight, sole-maintainer, referenced-by-spec}` **When** the recipes move **Then** `factory/recipes/` is exactly that set and is… | the recipes move **Then** `factory/recipes/` is exactly that set and island CI asserts `count <= manifest rows` | `factory/recipes/` is exactly that set and island CI asserts `count <= manifest rows` | fail loud; never silent skip |
-| And-clause from epics.md | when the story lands | every other `recipes/**` row reads `stays` (archived with `local-recipes`) | n/a |
+| a working-set list with `reason ∈ {in-flight, sole-maintainer, referenced-by-spec}` | the working set is carried into `factory/recipes/` | `factory/recipes/` is exactly that set and island CI asserts its directory count is at most the list's length | fail loud; never silent skip |
+| And-clause from epics.md | when the story lands | every other recipe stays on `local-recipes`, which is never archived | n/a |
+| And-clause from epics.md (amended 2026-11-10) | Mason ships or submits a recipe | Mason's ship and submit root resolves through `pyforge.core.cutover_root.root_of_record()` (`fnd:CAP-8`, consumer 3) | never a hard-coded root |
 | And-clause from epics.md | when the story lands | — reciprocal note, not a `Deps:` token: **`spec-fleet-stewardship` CAP-1's `recipes/**` surface is mostly archived after this story**; its Dream and Spec carry a dated dormancy note (mason, 2026-09-0… | n/a |
 
 </intent-contract>
 
 ## Binding
 
-Parent Spec capability: `fnd:CAP-5`.
+Parent Spec capability: `fnd:CAP-5`; `fnd:CAP-8` (consumer 3, amended 2026-11-10).
 Surface: named on the story in epics.md
 Ledger key: `44-8-the-working-set`.
 Ledger status at mint (unchanged): `blocked`.
@@ -62,8 +72,9 @@ As a platform operator,
 I want only in-flight and sole-maintainer recipes in `factory/recipes/`,
 So that the 7,855-directory universe is never copied.
 
-**Type:** feature • **Effort:** M • **Deps:** S-44.7 • **FR/AD:** fnd:CAP-5 • fnd:AD-2, fnd:AD-10
-**Given** manifest rows with `reason ∈ {in-flight, sole-maintainer, referenced-by-spec}` **When** the recipes move **Then** `factory/recipes/` is exactly that set and island CI asserts `count <= manifest rows`
-**And** every other `recipes/**` row reads `stays` (archived with `local-recipes`)
+**Type:** feature • **Effort:** M • **Deps:** S-44.7 • **FR/AD:** fnd:CAP-5, fnd:CAP-8 • fnd:AD-2, fnd:AD-10
+**Given** a working-set list with `reason ∈ {in-flight, sole-maintainer, referenced-by-spec}` **When** the working set is carried into `factory/recipes/` **Then** `factory/recipes/` is exactly that set and island CI asserts its directory count is at most the list's length
+**And** every other recipe stays on `local-recipes`, which is never archived
+**And** Mason's ship and submit root resolves through `pyforge.core.cutover_root.root_of_record()` (`fnd:CAP-8`, consumer 3), never a hard-coded root
 **And** — reciprocal note, not a `Deps:` token: **`spec-fleet-stewardship` CAP-1's `recipes/**` surface is mostly archived after this story**; its Dream and Spec carry a dated dormancy note (mason, 2026-09-09) so the surface is not read later as live (fleet readiness 2026-09-09, mason-E4 / Class D D11)
 

@@ -19,6 +19,7 @@ import jsonschema
 import pytest
 from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
 
+from pyforge import marshal as marshal_package
 from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.adapters.harness_bmadloop import HarnessError
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
@@ -29,7 +30,11 @@ from pyforge.marshal.core.verdict import EXIT_OK
 from pyforge.marshal.ports.vcs import WorktreeEntry
 from pyforge.marshal.seed.verbs.kit import INDEX_TIMEOUT_S
 
-_SCHEMA_PATH = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "schemas" / "envelope.v1.json"
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
+_SCHEMA_PATH = Path(marshal_package.__file__).resolve().parent / "schemas" / "envelope.v1.json"
 
 
 def _seed_real_home_scope(
@@ -2346,7 +2351,7 @@ def test_preflight_seed_file_copy_failure_reports_finding_and_halts(repo_root, t
     fs = FakeFs(project_dirs={home})
     vcs = FakeVcs(repo_root=repo_root)
     harness = _converged_harness()
-    harness.adapter_seed_files_map["claude"] = (".mcp.json", ".claude/settings.json")
+    harness.adapter_seed_files_map["claude"] = (".mcp.json", "/".join((".claude", "settings.json")))
     fs.files.add(repo_root / ".mcp.json")
     fs.files.add(repo_root / ".claude" / "settings.json")
     fs.fail_copy_file = FsError("disk full")

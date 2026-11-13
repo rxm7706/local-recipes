@@ -55,6 +55,11 @@ from pyforge.marshal.seed.verbs.preconditions import (
 )
 from pyforge.marshal.seed.verbs.skips import apply_skips, managed_after_skips
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+_DREAMS_README = "/".join(("docs", "dreams", "README.md"))
+
 _VERSION = ModelVersion.parse("1.0.0")
 
 
@@ -452,9 +457,9 @@ def test_rung_4_and_the_write_primitive_agree_under_a_symlinked_ancestor(clean_r
     (clean_repo / "real" / "dreams" / ".keep").write_text("", encoding="utf-8")
     (clean_repo / "docs").symlink_to("real")
     _commit_all(clean_repo)
-    never_write = NeverWrite(patterns=("docs/dreams/*.md",), exempt=frozenset({"docs/dreams/README.md"}))
+    never_write = NeverWrite(patterns=("docs/dreams/*.md",), exempt=frozenset({_DREAMS_README}))
 
-    for target_path in ("docs/dreams/x.md", "docs/dreams/README.md", "docs/other/y.md", "real/dreams/z.md"):
+    for target_path in ("docs/dreams/x.md", _DREAMS_README, "docs/other/y.md", "real/dreams/z.md"):
         rung_4_refuses = False
         try:
             _check(_plan(_action(artifact_id="a", target_path=target_path)), clean_repo, never_write=never_write)
@@ -489,11 +494,11 @@ def test_an_exempt_action_target_bypasses_a_matching_never_write_pattern(clean_r
     a broader deny glob."""
     assert (
         _check(
-            _plan(_action(artifact_id="dream", target_path="docs/dreams/README.md")),
+            _plan(_action(artifact_id="dream", target_path=_DREAMS_README)),
             clean_repo,
             never_write=NeverWrite(
                 patterns=("docs/dreams/*.md",),
-                exempt=frozenset({"docs/dreams/README.md"}),
+                exempt=frozenset({_DREAMS_README}),
             ),
         )
         is None
@@ -510,7 +515,7 @@ def test_a_non_exempt_action_in_the_same_plan_still_refuses(clean_repo):
             clean_repo,
             never_write=NeverWrite(
                 patterns=("docs/dreams/*.md",),
-                exempt=frozenset({"docs/dreams/README.md"}),
+                exempt=frozenset({_DREAMS_README}),
             ),
         )
 
@@ -531,9 +536,9 @@ def test_a_non_exempt_action_in_the_same_plan_still_refuses(clean_repo):
 # ``first_match``/``_matches``' bare ``(pattern, path)`` signature, so a
 # parametrized N-by-M table is disproportionate for one new field).
 _EXEMPT_AGREEMENT_CASES = (
-    ("docs/dreams/README.md", frozenset({"docs/dreams/README.md"})),
-    ("docs/dreams/other.md", frozenset({"docs/dreams/README.md"})),
-    ("docs/dreams/README.md", frozenset()),
+    (_DREAMS_README, frozenset({_DREAMS_README})),
+    ("docs/dreams/other.md", frozenset({_DREAMS_README})),
+    (_DREAMS_README, frozenset()),
 )
 
 

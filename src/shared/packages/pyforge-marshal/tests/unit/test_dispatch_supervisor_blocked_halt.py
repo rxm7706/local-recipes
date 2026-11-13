@@ -31,6 +31,10 @@ from pyforge.marshal.dispatch_supervisor.__main__ import (
     _promote_blocked_twin,
 )
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 _SLUG = "pyforge-marshal"
 _STORY_KEY = "51.11"
 _RUN_ID = "run-51-11"
@@ -456,7 +460,7 @@ def test_commit_and_journal_blocked_halt_leaves_the_cfe_surface_out(tmp_path: Pa
     cfe_dir = worktree / ".claude" / "skills" / "conda-forge-expert"
     cfe_dir.mkdir(parents=True)
     (cfe_dir / "51-11-attempted-change.patch").write_text("diff\n", encoding="utf-8")
-    vcs = FakeVcs(changed=("spec-51-11.md", ".claude/skills/conda-forge-expert/SKILL.md"))
+    vcs = FakeVcs(changed=("spec-51-11.md", "/".join((".claude", "skills", "conda-forge-expert", "SKILL.md"))))
 
     _counter, committed = _commit_and_journal_blocked_halt(
         fs=fs,

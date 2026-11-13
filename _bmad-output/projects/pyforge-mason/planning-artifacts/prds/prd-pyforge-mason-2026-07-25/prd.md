@@ -3,9 +3,9 @@ fr-derivation-from: "2026-09-17"
 title: Mason (pyforge-mason)
 status: final
 created: 2026-07-25
-updated: "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief -> PRD and spec -> PRD); no CAP, FR or AD is minted. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): chain-currency cascade (spec -> PRD, and research -> brief -> PRD) for the spec memlog's 2026-11-01 entries (CAP-29 and CAP-35 re-derived, no CAP added or dropped; Open Question 14 added; fix Stories 4.5 and 19.6 done, 25.17 and 25.18 at backlog) and research/egm-audit-2026-11-01.md (30 findings, 23 accepted); FR-51 and FR-57 amended in place, no FR registered or renumbered. See § Currency reconciliation — 2026-11-01. Prior "2026-10-31"   # RE-STAMPED 2026-10-31: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-31 entry (the CFE v8.102.2 Rule-2 retro of the nebari-infrastructure-core 0.14.0 -> 0.17.0 recipe refresh; recipe-factory work, no mason story, no CAP added or moved); no FR registered. See § Currency reconciliation — 2026-10-31. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 33.1): chain-currency cascade (spec -> PRD) after the Spec's capability text was restored from the pre-fold source (no CAP added or moved); no FR, NFR or arrow changes; the NFR lines (no arrows) are Story 33.2's. See § Currency reconciliation — 2026-10-26 (Story 33.1). Prior "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 32.1): three section 4.7 FR arrows the 2026-09-17 fold mapped to CAP-7 by section are re-pointed at the capabilities that realize them (FR-48 to CAP-5, CAP-1; FR-49 to CAP-5, CAP-2; FR-50 to CAP-3); no FR text, number or NFR moves. See § Currency reconciliation — 2026-10-25 (Story 32.1). Prior "2026-10-22"   # RE-STAMPED 2026-10-22: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-13..22 entries (Stories 30.1 and 31.1 surface reconciles; Story 26.2 minted under CAP-34, a fix with no new CAP); no FR registered. See § Currency reconciliation — 2026-10-22. Prior "2026-10-12"   # RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10..12 entries (Track B and CFE-retro surface reconciles; Story 29.1 minted under CAP-18 and CAP-23, a fix with no new CAP); no FR registered. See § Currency reconciliation — 2026-10-12. Prior "2026-10-09"   # RE-STAMPED 2026-10-09: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-09 entries (Story 25.3 minted under CAP-35 / FR-57, CAP-20 and CAP-23, then given a repair mode; Story 25.2 gains Wave 0; no new CAP); no FR registered. See § Currency reconciliation — 2026-10-09 (later). Prior "2026-10-09"   # RE-STAMPED 2026-10-09: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-08..09 entries (Stories 19.2-19.4, 21.1, 21.3-21.5 and 22.2 landed; the operator's two Story 22.1 splits and Stories 22.3 and 22.4, fixes under CAP-32 / FR-54); no FR registered. See § Currency reconciliation — 2026-10-09. Prior 2026-10-05   # RE-STAMPED 2026-10-05: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-03..05 entries (Epic 27 fix stories, Story 27.1 landing, Story 83.24 guard, Story 19.1 station skill); no FR registered. See § Currency reconciliation — 2026-10-05. Prior 2026-10-02   # RE-STAMPED 2026-10-02: chain-currency cascade (spec -> PRD) for Story 26.1 (Epic 26), a fix under CAP-34 / FR-56; no FR registered. See § Currency reconciliation — 2026-10-02. Prior 2026-09-29 (evening)   # RE-STAMPED 2026-09-29 (evening): chain-currency cascade (spec -> PRD) for CAP-35 (Epic 25); FR-57 registered. See § Currency reconciliation — 2026-09-29 (evening). Prior 2026-09-29 (later)   # RE-STAMPED 2026-09-29 (later): chain-currency cascade (spec -> PRD) for CAP-34 (Epic 24); FR-56 registered. See § Currency reconciliation — 2026-09-29 (later). Prior 2026-09-29   # RE-STAMPED 2026-09-29: chain-currency cascade (spec -> PRD) for CAP-33 (Epic 23); FR-55 registered. See § Currency reconciliation — 2026-09-29. Prior 2026-09-28 (night, later)   # RE-STAMPED 2026-09-28 (night, later): chain-currency cascade (spec -> PRD) for CAP-32 (Epic 22); FR-54 registered. See § Currency reconciliation — 2026-09-28 (night, later). Prior 2026-09-28 (night)   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-31 (Epic 21); FR-53 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28 (later)   # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-30 (Epic 20); FR-52 registered. See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-29 (Epic 19); FR-51 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-28 (the recipe CI diffs the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
+updated: "2026-11-11"   # REVIEWED 2026-11-11 (mason Story 37.2, the cutover readiness review in feed order): spec -> PRD and brief -> PRD edges; FR-58 to FR-64 traced against their capabilities as Story 37.1 words them (FR-58 to FR-62 amended where the capability says more, FR-63 and FR-64 read true); FR-48 names the six global knobs and the two environment-only factory-island variables and cites CAP-36; FR-35 names the sixth flag; NFR-11 and D-6 read 3.14 (decision D6); frCount restated to 64; the Presenton satellite carries a dated retirement note. See § Currency reconciliation — 2026-11-11 (Story 37.2). Prior "2026-11-10"   # AMENDED 2026-11-10 (cutover readiness mint, operator rulings 2026-11-10): FR-58 to FR-64 registered, each traced from its capability (CAP-36, CAP-37, CAP-5, CAP-7, CAP-7, CAP-27, CAP-28); see § Currency reconciliation — 2026-11-10. Prior "2026-11-05": RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief -> PRD and spec -> PRD); no CAP, FR or AD is minted. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): chain-currency cascade (spec -> PRD, and research -> brief -> PRD) for the spec memlog's 2026-11-01 entries (CAP-29 and CAP-35 re-derived, no CAP added or dropped; Open Question 14 added; fix Stories 4.5 and 19.6 done, 25.17 and 25.18 at backlog) and research/egm-audit-2026-11-01.md (30 findings, 23 accepted); FR-51 and FR-57 amended in place, no FR registered or renumbered. See § Currency reconciliation — 2026-11-01. Prior "2026-10-31"   # RE-STAMPED 2026-10-31: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-31 entry (the CFE v8.102.2 Rule-2 retro of the nebari-infrastructure-core 0.14.0 -> 0.17.0 recipe refresh; recipe-factory work, no mason story, no CAP added or moved); no FR registered. See § Currency reconciliation — 2026-10-31. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 33.1): chain-currency cascade (spec -> PRD) after the Spec's capability text was restored from the pre-fold source (no CAP added or moved); no FR, NFR or arrow changes; the NFR lines (no arrows) are Story 33.2's. See § Currency reconciliation — 2026-10-26 (Story 33.1). Prior "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 32.1): three section 4.7 FR arrows the 2026-09-17 fold mapped to CAP-7 by section are re-pointed at the capabilities that realize them (FR-48 to CAP-5, CAP-1; FR-49 to CAP-5, CAP-2; FR-50 to CAP-3); no FR text, number or NFR moves. See § Currency reconciliation — 2026-10-25 (Story 32.1). Prior "2026-10-22"   # RE-STAMPED 2026-10-22: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-13..22 entries (Stories 30.1 and 31.1 surface reconciles; Story 26.2 minted under CAP-34, a fix with no new CAP); no FR registered. See § Currency reconciliation — 2026-10-22. Prior "2026-10-12"   # RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10..12 entries (Track B and CFE-retro surface reconciles; Story 29.1 minted under CAP-18 and CAP-23, a fix with no new CAP); no FR registered. See § Currency reconciliation — 2026-10-12. Prior "2026-10-09"   # RE-STAMPED 2026-10-09: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-09 entries (Story 25.3 minted under CAP-35 / FR-57, CAP-20 and CAP-23, then given a repair mode; Story 25.2 gains Wave 0; no new CAP); no FR registered. See § Currency reconciliation — 2026-10-09 (later). Prior "2026-10-09"   # RE-STAMPED 2026-10-09: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-08..09 entries (Stories 19.2-19.4, 21.1, 21.3-21.5 and 22.2 landed; the operator's two Story 22.1 splits and Stories 22.3 and 22.4, fixes under CAP-32 / FR-54); no FR registered. See § Currency reconciliation — 2026-10-09. Prior 2026-10-05   # RE-STAMPED 2026-10-05: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-03..05 entries (Epic 27 fix stories, Story 27.1 landing, Story 83.24 guard, Story 19.1 station skill); no FR registered. See § Currency reconciliation — 2026-10-05. Prior 2026-10-02   # RE-STAMPED 2026-10-02: chain-currency cascade (spec -> PRD) for Story 26.1 (Epic 26), a fix under CAP-34 / FR-56; no FR registered. See § Currency reconciliation — 2026-10-02. Prior 2026-09-29 (evening)   # RE-STAMPED 2026-09-29 (evening): chain-currency cascade (spec -> PRD) for CAP-35 (Epic 25); FR-57 registered. See § Currency reconciliation — 2026-09-29 (evening). Prior 2026-09-29 (later)   # RE-STAMPED 2026-09-29 (later): chain-currency cascade (spec -> PRD) for CAP-34 (Epic 24); FR-56 registered. See § Currency reconciliation — 2026-09-29 (later). Prior 2026-09-29   # RE-STAMPED 2026-09-29: chain-currency cascade (spec -> PRD) for CAP-33 (Epic 23); FR-55 registered. See § Currency reconciliation — 2026-09-29. Prior 2026-09-28 (night, later)   # RE-STAMPED 2026-09-28 (night, later): chain-currency cascade (spec -> PRD) for CAP-32 (Epic 22); FR-54 registered. See § Currency reconciliation — 2026-09-28 (night, later). Prior 2026-09-28 (night)   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-31 (Epic 21); FR-53 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28 (later)   # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-30 (Epic 20); FR-52 registered. See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-29 (Epic 19); FR-51 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-28 (the recipe CI diffs the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
 project: pyforge-mason
-currency_review: "Reviewed 2026-09-14 — chain-currency sweep. spec-pyforge-mason moved to 2026-09-11 (status: shipped added; seven dated verified: CAP lines, two of them PARTIAL with real findings; the realization-gate re-read and its 2026-09-11 resolution) and its memlog to 2026-09-13T23:57 (Story 44.7 foundry-island wiring; PR #1354's AD-14 credential-isolation closure) while this PRD sat at 2026-09-07. Reconciled in § Currency reconciliation — 2026-09-14. ONE REAL DIVERGENCE RECORDED, independently re-verified against live code this pass: FR-14's diff-before-apply consequence and NFR-9's defaults-to-dry-run claim do NOT hold for `mason recipe update` — `--dry-run` is opt-in (`cli.py:711-715`, help text: 'default: writes the field-scoped update for real') and `recipe.py::update()` appends it only when set. Recorded as a divergence, NOT repaired: the repair is a behaviour change and needs its own Dream/Spec. Prior review 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after the station completed (fleet ledger 2026-08-21) plus post-completion stories 10.1/11.1/11.2; OQ-4/OQ-6/OQ-8 stamped RESOLVED in place; divergences named in § Currency reconciliation. Prior review 2026-08-04 (structural timestamp bump, no drift)."
+currency_review: "Reviewed 2026-11-11 — mason Story 37.2, against spec-pyforge-mason as Story 37.1 re-derived it on 2026-11-11 and the cutover readiness audit of 2026-11-10. Every requirement was read against the capability it cites: FR-58 to FR-62 gained the clauses their capabilities state and they did not (the artifact directory, the empty slug and no cutover-root read on FR-58; the entry points and the never-spawned conda-build on FR-59; positionals and feature-flag keys on FR-60; the live_tree marker and its meta-test on FR-61; the test of record on FR-62); FR-63 and FR-64 read true. FR-48 had five of six knob variables and no factory-island variable; NFR-11 and D-6 still said 3.12. The retired capabilities (CAP-8..CAP-17) and the A-only CAP-18..CAP-26 carry no requirement by rule. Reconciled in § Currency reconciliation — 2026-11-11 (Story 37.2). Prior review 2026-09-14 — chain-currency sweep. spec-pyforge-mason moved to 2026-09-11 (status: shipped added; seven dated verified: CAP lines, two of them PARTIAL with real findings; the realization-gate re-read and its 2026-09-11 resolution) and its memlog to 2026-09-13T23:57 (Story 44.7 foundry-island wiring; PR #1354's AD-14 credential-isolation closure) while this PRD sat at 2026-09-07. Reconciled in § Currency reconciliation — 2026-09-14. ONE REAL DIVERGENCE RECORDED, independently re-verified against live code this pass: FR-14's diff-before-apply consequence and NFR-9's defaults-to-dry-run claim do NOT hold for `mason recipe update` — `--dry-run` is opt-in (`cli.py:711-715`, help text: 'default: writes the field-scoped update for real') and `recipe.py::update()` appends it only when set. Recorded as a divergence, NOT repaired: the repair is a behaviour change and needs its own Dream/Spec. Prior review 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after the station completed (fleet ledger 2026-08-21) plus post-completion stories 10.1/11.1/11.2; OQ-4/OQ-6/OQ-8 stamped RESOLVED in place; divergences named in § Currency reconciliation. Prior review 2026-08-04 (structural timestamp bump, no drift)."
 dream: archive/docs/dreams/packaging-factory.md
 adopted_kernel: archive/_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-packaging-factory/SPEC.md
 inputs:
@@ -13,7 +13,7 @@ inputs:
   - ../../briefs/brief-pyforge-mason-2026-07-25/addendum.md
   - ../../research/domain-packaging-automation-tooling-research-2026-07-25.md
   - ../../research/technical-mason-cli-seam-research-2026-07-25.md
-frCount: 50
+frCount: 64   # restated 2026-11-11 (Story 37.2): FR-1..FR-64, one FR space; FR-65 is the next free id. Was 50 (revision 2).
 nfrCount: 16
 decisionCount: 13
 revision: 2
@@ -33,7 +33,8 @@ revisionNote: "r2 applied the adversarial-review findings — see review-adversa
 
 This PRD is for the architect and the epic/story authors who will build Mason, and for any
 reviewer auditing why Mason is shaped the way it is. It is structured Glossary-first, with
-features grouped and functional requirements nested and globally numbered (FR-1 … FR-46).
+features grouped and functional requirements nested and globally numbered (FR-1 … FR-46 at revision 1;
+FR-1 … FR-64 since 2026-11-10, the later ones registered in the dated Currency reconciliation sections).
 
 It builds on, and does not duplicate: the product brief and its addendum
 (`../../briefs/brief-pyforge-mason-2026-07-25/`), the two research reports
@@ -600,8 +601,11 @@ A user diagnoses their own installation. Realizes UJ-3.
 #### FR-35: Global flags ← CAP-5
 
 **Consequences (testable):**
-- `--cfe-root`, `--cfe-python`, `--format`, `--verbose`, `--quiet` accepted on every command.
+- `--cfe-root`, `--cfe-python`, `--cfe-timeout`, `--format`, `--verbose`, `--quiet` accepted on every command.
 - No global flag is required for any command to run.
+
+*(Amended 2026-11-11, Story 37.2: `--cfe-timeout`, the sixth of FR-48's knobs, joins the list; the parser has
+accepted it on every command since Story 1.10 (2026-08-10), and `contract.md` names all six. The arrow stays `← CAP-5`.)*
 
 ---
 
@@ -748,17 +752,26 @@ The effort closes with a retrospective that improves the skill it wraps.
   this effort.
 - The effort is not done until this lands. Not optional, not deferrable.
 
-#### FR-48: Configuration surface ← CAP-5, CAP-1
+#### FR-48: Configuration surface ← CAP-5, CAP-1, CAP-36
 
 Every runtime knob is reachable without a configuration file.
 
 **Consequences (testable):**
 - Each knob is exposed as both a flag and an environment variable, resolved
   flag → environment → default (D-13).
-- The v1 knob set is enumerated: `--cfe-root`/`MASON_CFE_ROOT`, `--cfe-python`/`MASON_CFE_PYTHON`,
-  `--cfe-timeout`/`MASON_CFE_TIMEOUT`, `--format`, `--verbose`, `--quiet`.
+- The knob set is closed at six global knobs, each a flag with its variable: `--cfe-root`/`MASON_CFE_ROOT`,
+  `--cfe-python`/`MASON_CFE_PYTHON`, `--cfe-timeout`/`MASON_CFE_TIMEOUT`, `--format`/`MASON_FORMAT`,
+  `--verbose`/`MASON_VERBOSE`, `--quiet`/`MASON_QUIET`.
+- Two further variables belong to the factory-island build (CAP-36, FR-58) and are not knobs: `MASON_FOUNDRY_ROOT`,
+  which `mason recipe build factory/recipes/<r>` reads, and `MASON_FACTORY_ROOT`; the resolved values of both are set
+  for the CFE build child only. Neither has a flag form, so the six-knob set stays closed.
 - A test asserts every knob has both forms and that no code path reads a Mason-specific key from a
-  file.
+  file; `tests/meta/test_public_contract.py` holds every variable Mason reads or sets to the list in `contract.md`
+  (FR-60).
+
+*(Amended 2026-11-11, Story 37.2: the knob list named three of the six variables and none of the factory-island
+variables steward Story 44.7 wired on 2026-09-13; it now follows the Spec's "No configuration file in v1" Constraint
+and CAP-36, and the arrow adds `CAP-36`.)*
 
 #### FR-49: Logging and child-output handling ← CAP-5, CAP-2
 
@@ -898,7 +911,9 @@ A user can rehearse a PyPI publish before performing the one-way one.
   wording would have failed against shipped code the moment anyone checked.)*
 - **NFR-10 (Lean deps).** A new runtime dependency requires justification against the workspace's
   lean-dependency doctrine.
-- **NFR-11 (Python floor).** `requires-python >= 3.12`, matching `pyforge-warden` (D-6).
+- **NFR-11 (Python floor).** `requires-python >= 3.14` (D-6). *(Amended 2026-11-11, Story 37.2: was `>= 3.12`,
+  matching `pyforge-warden`; decision D6 of the cutover readiness plan sets 3.14, which the package has declared
+  since 2026-09-07, § Platform floor — reconciled 2026-09-07.)*
 - **NFR-12 (Platform parity).** Mason's own logic works on linux-64, osx-arm64, win-64. Platform
   limits belong to the engines, not to Mason, and are reported as such.
 - **NFR-13 (Test coverage of the seam).** Every adapter code path has a test using a fake CFE root.
@@ -1011,12 +1026,17 @@ Mason earns the surface by being better, then migration is proposed as its own e
 **Rationale.** Trusted publishing is CI-context-specific and would constrain v1's runtime model for
 a security improvement that matters most in a CI setup Mason does not yet have.
 
-### D-6 — Python floor 3.12
+### D-6 — Python floor 3.14
 
-**Decision.** `requires-python >= 3.12`, matching `pyforge-warden`.
-**Rationale.** Mason shells out, so its floor is genuinely free. 3.12 maximises co-installability
-with the sibling most likely to share an environment. Atlas's 3.14 is documented as intentional for
-atlas and does not generalise.
+**Decision.** `requires-python >= 3.14`.
+**Rationale.** Python 3.14 is the only interpreter the workspace installs: every environment pins `3.14.*`, so no
+environment ever built or ran this package on 3.12, and a wider floor asserts a compatibility nothing verifies
+(§ Platform floor — reconciled 2026-09-07). Decision D6 of the cutover readiness plan (2026-11-10) sets 3.14 for every
+station package.
+
+*(Amended 2026-11-11, Story 37.2. The 2026-07-25 decision read: `requires-python >= 3.12`, matching `pyforge-warden`,
+because Mason shells out, so its floor is genuinely free, and 3.12 maximised co-installability with the sibling most
+likely to share an environment. Marshal Story 32.2 raised the declared floor to 3.14 on 2026-09-07.)*
 
 ### D-7 — Interpreter selection is explicit
 
@@ -1219,6 +1239,12 @@ landing 2026-08-25/26. Reconciled against `src/shared/packages/pyforge-mason/`:
   for shape arguments only and no requirement depends on them.
 
 ## Satellite: Presenton (air-gapped conda-native repackaging)
+
+**Retired 2026-11-10, never built** (operator ruling "Retire both", `docs/dreams/pyforge-unifying-strategy.md`
+§ Realization log). `spec-pyforge-mason` CAP-8..CAP-13 read `(retired 2026-11-10: never built)`, their ledger rows
+take mode `retire`, and B does not rebuild them; a later want re-enters as a new Dream entry. The satellite's text
+below stays as history and binds no requirement of this PRD: its "BLOCKED" status and Phase-0 criteria are the record
+of 2026-07-25 and 2026-08-02. *(Note added 2026-11-11, Story 37.2.)*
 
 **Status: BLOCKED.** This satellite PRD was finalized 2026-07-25 (`status: final`) and describes a
 genuinely different product from `mason` itself: an air-gapped, conda-forge-native repackaging of
@@ -2351,3 +2377,206 @@ FR-51 and FR-57 were amended in place on 2026-11-01 (their dated notes above) to
 *Chain-currency cascade (research -> brief -> PRD and spec -> PRD), EGM audit, marshal Story 113.18.*
 
 `research/egm-audit-2026-11-05.md` (marshal Story 113.18, `spec-pyforge-marshal:CAP-302`): 17 high findings, 10 accepted, 7 rejected, 0 deferred; the medium and low findings are not triaged. CAP-35 is re-derived: the story's count must match the atlas query, and met means met at the recorded atlas snapshot. No FR is added, renumbered or re-scoped.
+
+
+## Currency reconciliation — 2026-11-10 (cutover readiness mint)
+
+*Trigger: the chain-currency `spec→prd` edge. On 2026-11-10 `spec-pyforge-mason` minted CAP-36 and CAP-37 and amended
+CAP-5 and CAP-7 (the cutover readiness audit; the operator's rulings of 2026-11-10 in
+`docs/dreams/pyforge-unifying-strategy.md`). Each FR below is traced from its capability's intent and success
+(`one-chain-per-station`, CHAIN-STANDARD § 12), never numbered in sequence.*
+
+### The FR space: FR-58 to FR-64 registered
+
+FR-58 to FR-62 realize the two new capabilities and the two amended ones. FR-63 and FR-64 backfill the two rebuild
+capabilities no requirement cited, CAP-27 and CAP-28. They decompose into Epics 37 to 39: Story 39.1 (FR-58), Story
+37.1 (FR-59), Story 38.1 (FR-60), Story 38.2 (FR-61), Story 38.3 (FR-62) and Story 37.2 (FR-63, FR-64). Story 37.2
+reviews every arrow against its capability as Story 37.1 finally words it, and restates `frCount`.
+
+#### FR-58: `mason recipe build` builds a factory-island recipe natively ← CAP-36
+
+`mason recipe build factory/recipes/<r>` builds a factory-island recipe with the native build.
+
+**Consequences (testable):**
+- The foundry root resolves from `MASON_FOUNDRY_ROOT` or an upward walk to a directory that holds `factory/pixi.toml`
+  and `factory/pixi.lock`; the native build gets the absolute recipe path and the two factory variables in its
+  environment only, and the caller's mapping is unchanged.
+- A missing root, lock or recipe is the typed error `factory:missing-island` (exit 1), whose message names only knobs
+  that exist; an unresolved CFE root still exits 3.
+- Only `factory/recipes/<r>` and `./factory/recipes/<r>` count as island paths; `../factory/recipes/x`,
+  `/factory/recipes/x` and `..factory/recipes/x` do not.
+- The Docker build is not part of this requirement (a recorded deferral, A-only on conda-forge-expert's side).
+- The reported artifact directory is `<factory root>/build_artifacts/<config>`, where the native build script writes.
+- An empty recipe slug is `factory:missing-island` too, and the unresolved-root message names `MASON_FOUNDRY_ROOT` and
+  the walk marker and no flag.
+- The two variables are environment-only (FR-48): they are not global flags, and the six-knob set stays closed.
+- Mason reads no `pyforge.cutover_root`: until steward Story 44.8 moves its ship and submit root, a conda-forge ship
+  resolves `<cfe-root>/recipes/<name>` only.
+- `pytest tests/unit/test_factory_island.py` exits 0 in the `pyforge-mason` environment.
+
+*(Amended 2026-11-11, Story 37.2: traced against CAP-36 as Story 37.1 words it, native-only; the artifact directory,
+the empty slug, the message's exact names, the environment-only variables, the unread cutover root and the test of
+record are CAP-36 clauses this requirement did not state. The arrow stays `← CAP-36`.)*
+
+#### FR-59: Mason's three sockets hold their contracts ← CAP-37
+
+Mason's three sockets hold their contracts.
+
+**Consequences (testable):**
+- The build-engine hook selects one plugin by name, with `rattler-build` the default, and refuses an unknown name.
+- The air-gap distribution registry starts empty and refuses a backend with an empty contract field or a duplicate
+  name.
+- The boot re-index applies each artifact once across a killed boot and a restart.
+- `conda-build` is registered and never spawned; `pyproject.toml` declares both plugins as `pyforge.core.hooks`
+  entry points; no module of the three spawns a build engine or builds a distributable.
+- The portal and its MCP face (`start_build`, `get_build`, `run_build`, the `last_diagnose` job) are `django-mason`
+  code under `spec-pyforge-unifying-strategy`, not this requirement; `contract.md` names them (FR-60).
+- `pytest tests/unit/test_build_hooks.py tests/unit/test_airgap_contract.py tests/unit/test_boot_reconcile.py` exits 0
+  in the `pyforge-mason` environment.
+
+*(Amended 2026-11-11, Story 37.2: traced against CAP-37's intent and success; the entry points, the never-spawned
+`conda-build`, the portal's owner and the test of record are CAP-37 clauses this requirement did not state. The arrow
+stays `← CAP-37`.)*
+
+#### FR-60: Mason's public contract is written down and held to the code ← CAP-5
+
+Mason's public contract is recorded beside the Spec, in `contract.md`.
+
+**Consequences (testable):**
+- The suite fails when the CLI parser paths and options, the environment variables, the exit codes, the error
+  identifiers or the MCP and portal names in the code and in `contract.md` differ, in either direction.
+- `contract.md` also states, as prose, the JSON envelope, the four ship-target states with `exit 0 does not mean
+  shipped`, the doctor report fields and the directory layout Mason assumes.
+- The judged families include each parser path's positionals, every environment variable Mason reads or sets beyond
+  the six knob variables, and the feature-flag keys Mason reads (none); the prose names the envelope's five keys and
+  its status values, and the layout at the CFE root and at the factory island.
+- The check is `tests/meta/test_public_contract.py`, which exits 0 in the `pyforge-mason` environment and exits 1 when
+  either side has a judged item the other lacks.
+
+*(Amended 2026-11-11, Story 37.2: traced against CAP-5's success as Story 37.1 words it; positionals, the feature-flag
+family, the envelope's keys, the factory-island layout and the test of record are CAP-5 clauses this requirement did
+not state. The arrow stays `← CAP-5`.)*
+
+#### FR-61: Mason's suite runs as a package half and a live-tree half ← CAP-7, spec-pyforge-steward:CAP-175
+
+The Mason suite runs as a package half that reads nothing outside the package and a live-tree half that holds every
+module reading the repository.
+
+**Consequences (testable):**
+- The package half passes from a copy of the package outside the repository.
+- Together the two halves collect what the suite collected before, and an unmarked module that derives the
+  repository root fails the suite.
+- The split is the `live_tree` pytest marker: a module that reads the repository outside
+  `src/shared/packages/pyforge-mason/` carries `pytestmark = pytest.mark.live_tree`; the package half is
+  `-m "not slow and not live_tree"`, and the two halves together collect what the `not slow` suite collects.
+- `tests/meta/test_live_tree_split.py` exits 1 on an unmarked module that derives the repository root.
+
+*(Amended 2026-11-11, Story 37.2: traced against CAP-7's suite clauses and the relay of
+spec-pyforge-steward:CAP-175; the marker, the half's selection, the `not slow` baseline and the meta-test are clauses
+this requirement did not name. The arrow stays `← CAP-7, spec-pyforge-steward:CAP-175`.)*
+
+#### FR-62: Mason's adapters pass only what the wrapped scripts declare ← CAP-7
+
+Every script the adapter table names exists at the resolved CFE root, and every option a Mason adapter can pass to a
+wrapped Python script is declared by that script.
+
+**Consequences (testable):**
+- The check is static: it reads source text, runs nothing and needs no network.
+- A mismatch on conda-forge-expert's side is recorded, never patched in CFE by this requirement's story.
+- The check is `tests/meta/test_cfe_adapter_argv_live.py`, in the live-tree half (FR-61): it exits 1 on a script the
+  adapter's table names that the real CFE root lacks, or on an option an adapter can pass that the wrapped script's
+  own argument parser does not declare.
+
+*(Amended 2026-11-11, Story 37.2: traced against CAP-7's adapter clause; the test of record and its half are the one
+clause this requirement did not name. The arrow stays `← CAP-7`.)*
+
+#### FR-63: Every Containerfile follows the one pixi base-layer convention ← CAP-27
+
+Every git-tracked Containerfile follows the estate's one pixi base-layer convention
+(`docs/reference/container-base-layer-convention.md`).
+
+**Consequences (testable):**
+- Each `FROM` carries a pinned, non-floating tag, and no `ENV` key is credential-shaped.
+- `tests/packaging/test_containerfile_base_layer_convention.py` fails on a Containerfile that departs from it.
+
+#### FR-64: The recipe workflows pick changed recipes from the full remote-tracking ref ← CAP-28
+
+The four recipe build workflows (`.github/workflows/test-{all,linux,macos,windows}.yml`) diff the changed-recipe set
+from the full remote-tracking ref `refs/remotes/origin/<base>`.
+
+**Consequences (testable):**
+- No workflow names the short `origin/<base>`, which a pushed tag can shadow;
+  `tests/scripts/test_workflow_diff_bases_name_full_refs.py` fails when one does.
+- The manual `recipes` input path is unchanged.
+
+**ONE FR space now FR-1..FR-64** (FR-65 = next free id).
+
+**Content changed:** this section added (FR-58 to FR-64 registered). No FR renumbered or removed; no NFR changes.
+`updated:` bumped.
+
+## Currency reconciliation — 2026-11-11 (Story 37.2)
+
+*Trigger: the chain-currency `spec→prd` and `brief→prd` edges. On 2026-11-11 Story 37.1 re-derived `spec-pyforge-mason`
+through the anchored script render: CAP-1..CAP-37 are each defined once, with one dated marker each, and CAP-5 and
+CAP-7 carry their amended success. The brief was reviewed the same day (its § Currency reconciliation — 2026-11-11).
+This is a review, not a re-stamp: every arrow below was read against its capability's intent and success as Story
+37.1 words them (CHAIN-STANDARD § 2 and § 12), never numbered in sequence.*
+
+### The FR space: FR-58 to FR-64 reviewed
+
+FR-58 to FR-64 are this change's requirements, allocated from the PRD's next free id, FR-58, and registered in
+§ Currency reconciliation — 2026-11-10 (cutover readiness mint). **The next free id is FR-65.** The "FR-58 = next free
+id" lines in the dated sections from 2026-09-29 (evening) to 2026-11-05 are the record of their own day; this
+statement supersedes them. `frCount` is restated to 64.
+
+| FR | Cites | Read against | Verdict |
+|---|---|---|---|
+| FR-58 | CAP-36 | the native factory-island build, native-only | amended: the artifact directory, the empty slug, the message's exact names, the environment-only variables, the unread `pyforge.cutover_root` and `tests/unit/test_factory_island.py` added |
+| FR-59 | CAP-37 | the three sockets | amended: the entry points, the never-spawned `conda-build`, the portal's owner and the three test modules added |
+| FR-60 | CAP-5 | the public contract in `contract.md` | amended: positionals, the feature-flag family (none), the envelope's keys, the factory-island layout and `tests/meta/test_public_contract.py` added |
+| FR-61 | CAP-7, spec-pyforge-steward:CAP-175 | the two suite halves | amended: the `live_tree` marker, the package half's selection, the `not slow` baseline and `tests/meta/test_live_tree_split.py` added |
+| FR-62 | CAP-7 | the adapter argv check | amended: `tests/meta/test_cfe_adapter_argv_live.py` and its live-tree half named |
+| FR-63 | CAP-27 | one pixi base-layer convention, guarded | reads true: the convention is `docs/reference/container-base-layer-convention.md` and its guard is the test CAP-27 names |
+| FR-64 | CAP-28 | the full remote-tracking diff base | reads true: the four workflows, the short-form refusal and the unchanged manual `recipes` input are CAP-28's success |
+
+FR-63 and FR-64 are the backfill for the two rebuild capabilities no requirement cited before this change. Each
+amended FR keeps its 2026-11-10 words and carries a dated note naming the clauses it gained.
+
+### Requirements amended to match the Spec
+
+- **FR-48** names the closed set of six global knobs, each a flag with its variable (`MASON_FORMAT`, `MASON_VERBOSE`
+  and `MASON_QUIET` were missing), and the two factory-island variables, `MASON_FOUNDRY_ROOT` and
+  `MASON_FACTORY_ROOT`, which have no flag form and are not knobs; its arrow adds CAP-36 (the Spec's "No configuration
+  file in v1" Constraint states the same set).
+- **FR-35** lists `--cfe-timeout`, the sixth global flag.
+- **NFR-11** and **D-6** read `requires-python >= 3.14`, decision D6 of the cutover readiness plan. The package has
+  declared 3.14 since 2026-09-07 (§ Platform floor — reconciled 2026-09-07), and Story 37.3 brought the package's
+  `pixi.toml` and comments level. D-6's 2026-07-25 rationale is kept in its dated note.
+- **The Presenton satellite** carries a dated retirement note: CAP-8..CAP-13 are retired, never built (operator
+  ruling "Retire both", 2026-11-10), and the satellite's text binds no requirement.
+
+### Capabilities that carry no requirement
+
+The retired capabilities CAP-8..CAP-17 (the Presenton set, never built, and the closed conda-forge-expert rebuild
+campaign) and the A-only CAP-18..CAP-26 carry no requirement, because a retired capability is never rebuilt and an
+A-only capability's FR is written when it is rebuilt (CAP-19 and CAP-21..CAP-26 by mason Story 39.2, after the flip).
+FR-53 and FR-57 stand as the record of CAP-31 and CAP-35, the two closed one-time campaigns retired on 2026-11-10.
+Every other capability is cited: CAP-1..CAP-7 by FR-1..FR-50 and FR-60..FR-62, CAP-27..CAP-35 by FR-63, FR-64 and
+FR-51..FR-57, CAP-36 by FR-58 and FR-48, CAP-37 by FR-59.
+
+### What does not change
+
+- **D-13** holds: the two factory-island variables are not knobs, so "every knob is flag plus environment variable"
+  stays true and the set stays closed.
+- **D-8** holds for the package: the MCP face and portal named in FR-59 and FR-60 are `django-mason` code under
+  `spec-pyforge-unifying-strategy`, and `pyforge.mason` ships no MCP server.
+- **D-10** holds: a conda-forge ship still needs `<cfe-root>/recipes/<name>`; CAP-36 leaves the ship and submit root
+  to steward Story 44.8.
+- The sixteen NFR arrows stay with Story 33.2, which edits this file and is never built beside this story; NFR-11's
+  text is the one NFR change here. `docs/governance/fr-baseline.json` is not touched.
+- No FR is added, renumbered or removed.
+
+**ONE FR space FR-1..FR-64** (FR-65 = next free id).
+
+**Content changed:** this section; FR-35, FR-48 and FR-58..FR-62 amended in place with dated notes; NFR-11 and D-6;
+the Presenton satellite's dated note; § 0's FR range; `updated:`, `currency_review:` and `frCount:`.

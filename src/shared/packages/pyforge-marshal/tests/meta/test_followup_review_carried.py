@@ -5,9 +5,20 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from pyforge.marshal.core.deferred_work import followup_review_orphans
 
-REPO_ROOT = Path(__file__).resolve().parents[6]
+# Story 116.2 (spec-pyforge-marshal:CAP-305): this module reads the repository outside this package, so it runs in
+# the live-tree half; it finds the repository root when a test runs, never at import, so the module imports off
+# the tree (the package half collects it before the marker deselects it).
+pytestmark = pytest.mark.live_tree
+
+
+def _repo_root() -> Path:
+    # tests/meta -> tests -> pyforge-marshal -> packages -> shared -> src -> repo root
+    return Path(__file__).resolve().parents[6]
+
 
 _STATIONS = (
     "pyforge-atlas",
@@ -21,8 +32,10 @@ _STATIONS = (
 )
 
 
-def list_followup_review_orphans(repo_root: Path = REPO_ROOT) -> list[tuple[str, str]]:
+def list_followup_review_orphans(repo_root: Path | None = None) -> list[tuple[str, str]]:
     """Every (project slug, spec basename) that is ``done``+flagged and not carried."""
+    if repo_root is None:
+        repo_root = _repo_root()
     orphans: list[tuple[str, str]] = []
     for slug in _STATIONS:
         planning = repo_root / "_bmad-output" / "projects" / slug / "planning-artifacts"

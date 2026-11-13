@@ -465,7 +465,7 @@ Station APIs live at ``/stations/<name>/api/v<N>/`` (not bare ``/api/v1``). Exam
 
 ## Pixi environment matrix (measured)
 
-<!-- pixi-env-matrix:begin lock-sha256=eef52758526eb75e -->
+<!-- pixi-env-matrix:begin lock-sha256=0f2f0c2e54ae169f -->
 
 Measured from ``pixi.lock`` (not a cross-minor solver benchmark). Regenerate with ``python scripts/pixi_env_matrix.py --update --dream docs/dreams/pyforge-unifying-strategy.md`` after lock changes.
 
@@ -487,20 +487,20 @@ Measured from ``pixi.lock`` (not a cross-minor solver benchmark). Regenerate wit
 | ``platform-ci-test`` | ``3.14.*`` | 373 | ``linux-64`` |
 | ``platform-dev`` | ``3.14.*`` | 608 | ``linux-64``, ``osx-arm64-min`` |
 | ``platform-object-storage`` | ``3.14.*`` | 27 | ``linux-64`` |
-| ``pyforge-atlas`` | ``3.14.*`` | 472 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-atlas`` | ``3.14.*`` | 464 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-ci`` | ``3.14.*`` | 106 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-container`` | ``3.14.*`` | 651 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-container`` | ``3.14.*`` | 649 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-core`` | ``3.14.*`` | 42 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-doctor`` | ``3.14.*`` | 102 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-foundry-full`` | ``3.14.*`` | 728 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-foundry-full-stack`` | ``3.14.*`` | 738 | ``linux-64`` |
+| ``pyforge-foundry-full`` | ``3.14.*`` | 727 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-foundry-full-stack`` | ``3.14.*`` | 735 | ``linux-64`` |
 | ``pyforge-guild`` | ``3.14.*`` | 296 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-herald`` | ``3.14.*`` | 193 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-marshal`` | ``3.15.*`` | 137 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-mason`` | ``3.14.*`` | 140 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-scribe`` | ``3.14.*`` | 118 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-scribe-pg`` | ``3.14.*`` | 126 | ``linux-64``, ``osx-arm64-min`` |
-| ``pyforge-steward`` | ``3.14.*`` | 116 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-steward`` | ``3.14.*`` | 118 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-testing-kit`` | ``3.14.*`` | 53 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-warden`` | ``3.14.*`` | 170 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``python-agent-platform`` | ``3.14.*`` | 583 | ``linux-64``, ``osx-arm64-min`` |
@@ -1139,3 +1139,158 @@ Entries through 2026-08-31: [archive § Realization log (historical)](<https://g
   canopy:FR-51, canopy:AD-24, steward Epic 119). `marshal factory dispatch` spends money and opens
   PRs, so it runs only for a `pyforge:admin` caller with `pyforge.steward.start_loop_dispatch` on,
   and that flag ships off. The worker image that would run these in a cluster is a later Story.
+- **2026-11-10** — Operator rulings after a fleet audit of cutover readiness. Nine read-only audits
+  ran at main `82a2b18828` (the eight stations and the core / testing-kit / host slice); every one
+  returned "not ready" for a rebuild from Frame + Spec. What the audit measured: B's `main` has not
+  moved since 2026-09-14 (`a762a14`, 84 files, pinned to A's PR #1344), and A's core has 17 modules
+  against B's 7; `pyforge.cutover_root` has no consumer beyond its own reader and the summary line
+  `flip` prints; `steward cutover plan|apply` still writes a move manifest and copies
+  `src/shared/packages/` to `src/packages/`; the capability ledger carries no state or claim field,
+  and 162 of its 1,021 rows sit on archived Specs (157 of them duplicate a folded station row);
+  `frozen-path-changed` reads `docs/foundry/manifest.*`, which does not exist, and reports ok; no
+  station imports `pyforge.core.station_port`; the `live_tree` test split exists for steward and
+  doctor only. The operator accepted the four recommended rulings in full ("Accept all"):
+  1. **Writer and seed.** A writes every Dream, Frame, Spec and the capability ledger until the
+     flip; B reads A at a pinned SHA; the flip moves the writer lock. The seed is Dream plus memlog,
+     as `spec-python-foundry-cutover` already says; a Frame is a pointer, not a seed. B keeps its
+     repository, epoch and CI. Its three kernel leaves are a prototype at PR #1344 and are not
+     re-pinned until the core, steward and marshal Specs pass a truth sweep.
+  2. **Fold code and the flag.** `steward cutover apply` and the move-manifest form of `plan`
+     retire; `plan` becomes the ledger generator `fnd:CAP-9` promises; `flip` stays. Stories 44.4,
+     44.5 and 44.6 retire as 44.10 did: their ledger keys move to `blocked` and are never
+     dispatched (they sat at `backlog` with every dependency `done`). `pyforge.cutover_root` means
+     the writer lock and the root of record, with three consumers: a guard on chain writes,
+     marshal's default forge remote, and later, with Story 44.8, Mason's ship and submit root.
+     Routing per capability stays in the ledger row, not in the flag. Story 44.12 stays `done`; the
+     gap takes a new Story.
+  3. **Scope and modes.** Launch is a self-hosting slice, not three whole stations: B lands one
+     story on itself through its own dispatch, gated by its own detectors, and the ledger rows
+     Launch needs derive from that proof. The re-mode rules: a capability whose artifact is deleted
+     on A is `retire`; a closed one-time recipe campaign is `retire`; host, platform and portal
+     capabilities are `A-only` with a Story as their expiry; the rows on archived Specs leave the
+     ledger and the folded station row is the single record; the testing kit is `rebuild`;
+     conda-forge-expert takes explicit `A-only` rows whose expiry is its own Spec Story, after the
+     flip; a capability that was never built is not `rebuild`.
+  4. **Expiries.** The 87 rows dated 2026-12-31 get no blanket extension. They are decided by group
+     (55 sit on archived Specs, and 47 of those contradict the mode of their folded twin), and the
+     expiry gains a detector: a warning 30 days ahead and a finding after.
+
+  A fifth instruction the same day: the whole effort lands as one PR, with the parallel work inside
+  one integration branch (`cutover-readiness-2026-11-10`). Two questions stay with the operator:
+  whether the never-built capabilities (atlas's Unity and Wasm satellites, Mason's Presenton set)
+  are `B-only` or `retire`, and what event triggers the flip. This entry mints no capability.
+  `bmad-spec` re-derives `spec-python-foundry-cutover`, `spec-foundry-regenerate-not-fold` and
+  `spec-foundry-capability-ledger` from it, and each station whose code changes (steward, marshal,
+  doctor, mason) takes its own dated Dream entry first.
+- **2026-11-10 (addendum)** — Operator ruling on the first of the two open questions: "Retire both".
+  The never-built capabilities are `retire`, not `B-only`: atlas's Unity and Wasm satellites
+  (`spec-pyforge-atlas:CAP-18` to `CAP-31`, marked shipped 2026-09-09 while the Spec itself says
+  neither has epics, stories or code) and Mason's Presenton set (`spec-pyforge-mason:CAP-8` to
+  `CAP-13`, marked shipped while its own section says blocked). Their ledger rows take mode
+  `retire`, their Spec text says they were never built, and B does not rebuild them. The planning
+  text that describes them stays on A as history; a later want re-enters as a new Dream entry. The
+  flip trigger is still the operator's to name.
+- **2026-11-10 (second addendum)** — A design pass turned the audit into one plan for the single PR
+  (104 Stories across the eight BMAD projects) and returned 22 questions. The operator accepted every
+  recommendation ("Accept all, run mint"):
+  1. **The flip trigger.** The operator flips `pyforge.cutover_root` by hand, with no loop running,
+     once the Launch slice is proven: B lands one story on itself through its own dispatch and its
+     own detectors, and every Launch row of the case list reads `verified-in-foundry`. Nothing flips
+     it automatically. This closes the last open question of the 2026-11-10 entry.
+  2. **Markers.** CHAIN-STANDARD § 4 gains a third capability marker, `(retired <date>[: <reason>])`,
+     and allows a qualifier after a semicolon: `not met: <clause>, DW-<id>`, `operator act open,
+     DW-<id>`, `superseded by CAP-n`. There is no separate `(unbuilt)` marker.
+  3. **Control plane.** A Story minted `blocked` (steward 121.5) is the expiry of the host, platform
+     and portal rows. The session denial for a chain write off the writer joins
+     `docs/governance/guild-roster.json` under ruling 2. Story 44.1 retires like 44.4 to 44.6.
+     `fnd:CAP-9`'s four scored signals retire in favour of the written rules in `modes.md`.
+  4. **Disputed modes.** `spec-pyforge-testing-charter:CAP-4` (the coverage gate) is `rebuild`;
+     its CAP-1, CAP-2 and CAP-5 are `A-only` with a Story as expiry. `spec-pyforge-warden:CAP-13` to
+     `CAP-15` are `A-only`, expiry steward Story 44.8. Steward's restore and revoke duties are
+     `A-only` on Story 121.5. Doctor's closed one-time campaigns retire. `spec-pyforge-herald:CAP-6`
+     retires; CAP-11's cost-derivation clause is struck; CAP-38 and CAP-39 are restated to the
+     operator-run form. `spec-pyforge-scribe:CAP-34` (`index move-list`) retires. A capability never
+     built is `B-only` when a live `blocked` or `backlog` Story carries it (so
+     `spec-pyforge-atlas:CAP-68` is `B-only`) and `retire` when none does. `spec-pyforge-atlas:CAP-7`
+     is `A-only` on mason Story 39.2; atlas CAP-64 and CAP-65 hold to the story-close figures
+     recorded in `live-sources.md`.
+  5. **No new behaviour in this PR.** No retrofit kill switch is added; each gap is a deferred-work
+     row. Only ruling 2's three consumers follow the root of record; the forge slug table is a
+     constant in `pyforge.core.cutover_root`; the station-package directory is B's to settle; with no
+     flag tree `root_of_record()` answers the default with `source='default'`. The `league_measure`
+     validator stays shipped and its consumer half is marked retired, never built.
+  6. **Station answers.** Marshal registers its two preserve tools on the MCP face behind
+     `pyforge.marshal.preserve_refs` (off), lets seed verbs keep their own exit codes, and retires
+     its deleted console capabilities while the six that still run stay shipped. Markers of
+     capabilities this PR builds flip to shipped at each station's closing Story; re-parenting the
+     exception classes stays out. Doctor reads a source that measured nothing as `unmeasured`
+     (warn), and `doctor flags kill-switch` stays in Doctor. `steward session check` takes
+     `bmad-drift-check`'s verdict for the bmad-method precondition. Mason Story 39.2 is the one
+     conda-forge-expert Spec Story, minted `blocked`; Mason CAP-32 is `A-only` on it; `--docker`
+     and the rebuild guard script stay as they are. Atlas Story 41.3 retires, and Story 48.3
+     deletes `pyforge/atlas/views/` again (its 2026-09-18 return was a mistake). Warden CAP-26 splits
+     into a kernel capability (`rebuild`) and a portal capability (`A-only`); its schema stays
+     1.1.0, and the map-snapshot Constraint and the SBOM text are narrowed to what the code does.
+  7. **Seed, memory and chores.** The seed includes `archive/**/.memlog.md`, with no backfill. `scribe
+     capture --supersedes` stays library-only. The 45 superseded team-memory records move with `git
+     mv` to `archive/.claude/memory/`. Story 120.3 also re-derives `spec-coverage-gate-independence`.
+     Two per-PR approvals are given: SPEC.md renders run through the anchored script render with both
+     self-validate passes logged, and scribe Story 32.1 refreshes the `bmad:context` block of
+     `AGENTS.md` from these rulings with the whole block shown in the PR. The session refreshes
+     `docs-site/src/content/ci-status.json` at the end of the branch; `DW-21-7-1` stays open.
+
+  This entry mints no capability. The mint that follows writes each station's Dream entry, Spec
+  amendments, Stories, ledger keys and story specs.
+- **2026-11-10 (mint: the cutover control plane)** — The mint after the second addendum makes the
+  cutover control plane tell the truth, as steward Epics 120 and 121 under
+  `spec-python-foundry-cutover`, `spec-foundry-regenerate-not-fold` and
+  `spec-foundry-capability-ledger`. The root-of-record flag is the writer lock (`fnd:CAP-8` amended):
+  its consumers are the three ruling 2 names, read through `pyforge.core.cutover_root.root_of_record()`
+  (`spec-pyforge-core:CAP-13`, marshal Story 117.2), and a chain write off the writer is refused in
+  session by the hook (steward Story 121.4) and on every branch by doctor's `writer-lock` source, which
+  reads the flag at the merge base (`spec-pyforge-doctor:CAP-100`, doctor Story 56.5). The operator
+  flips the flag by hand, with no loop running, once the Launch slice is proven; nothing flips it
+  automatically. `steward cutover plan` becomes the generator and validator of the capability ledger,
+  `apply` and the manifest retire, and the generator's two write modes sit behind the kill switch
+  `pyforge.steward.cutover_ledger_write` (`fnd:CAP-9` amended; a switch on a new verb mode, not the
+  retrofit ruling 5 forbids). Launch is one story B lands on itself, written down step by step in
+  `launch-slice.md` (`fnd:CAP-2` amended). Modes follow the written rules of `modes.md`: a never-built
+  capability is `B-only` when a live `blocked` or `backlog` Story carries it and `retire` when none
+  does, and A-only expiries are judged (`spec-foundry-capability-ledger:CAP-1` and
+  `spec-foundry-capability-ledger:CAP-2` amended). A writes Dreams, Frames, Specs and the ledger until
+  the flip; the seed is Dream plus memlog, `archive/**/.memlog.md` included, and a Frame is a pointer to
+  it (`spec-foundry-regenerate-not-fold:CAP-5`, `spec-pyforge-steward:CAP-53`). Story 121.5 is minted
+  `blocked` as the expiry anchor `"steward:121.5"` of the host, platform and portal rows;
+  conda-forge-expert's anchor is mason Story 39.2. Story 44.1 retires like 44.4 to 44.6: its move-list
+  half is gone, and its ledger half lands in Stories 121.1 to 121.7. This entry mints no capability: the
+  three Specs take memlog entries and one re-derive each, and no requirement (the Epic 44, 54 and 67
+  precedent).
+- **2026-11-10 (mint: steward's Spec, suite and shared surfaces)** — The same mint makes steward's own
+  chain tell the truth and lands, on the shared surfaces steward owns, what every station's
+  cutover-readiness work needs, as steward Epics 122 to 124. On this Spec: a station persona names the
+  MCP tools its station's face serves, as that station's `contract.md` lists them, and the eight station
+  persona directories (`.claude/skills/bmad-agent-<station>/**`) join the surface
+  (`spec-pyforge-unifying-strategy:CAP-16` amended); `django-warden` realizes
+  `spec-pyforge-warden:CAP-16`, `spec-pyforge-warden:CAP-17` and `spec-pyforge-warden:CAP-29`, the
+  portal half the operator's ruling split from `spec-pyforge-warden:CAP-26`
+  (`spec-pyforge-unifying-strategy:CAP-4` amended); and Scribe's graph store is the GraphStore port with
+  three drivers, the durable one asserting four governed changesets it never creates
+  (`spec-pyforge-unifying-strategy:CAP-14` amended). The three amendments are memlog entries at mint and
+  one re-derive in steward Story 124.5, which also renders the 2026-11-06
+  `spec-pyforge-unifying-strategy:CAP-20` correction. Epic 124 also gives every split suite its
+  live-tree half as a task (Story 124.1) and a CI job (Story 124.2), states Python 3.14 in the package
+  manifests with one re-lock (Story 124.3) and registers `pyforge.steward.cutover_ledger_write` in the
+  flag tree (Story 124.4); Epics 122 and 123 bind `spec-pyforge-steward:CAP-179` to
+  `spec-pyforge-steward:CAP-182`. This entry mints no capability on this Spec and adds no product
+  behaviour.
+- **2026-11-13 (cutover readiness, closed)** — Steward Story 122.5 closes this Spec's part of the change. Story
+  124.5 rendered the 2026-11-10 amendments of `spec-pyforge-unifying-strategy:CAP-4`,
+  `spec-pyforge-unifying-strategy:CAP-14` and `spec-pyforge-unifying-strategy:CAP-16` (the eight station persona
+  directories joined the surface), and a 2026-11-13 correction, rendered the same day, qualifies the companion
+  `stack.md`'s atlas decision as `pyforge-atlas:AD-13`. One `Surface reconcile` event on the Spec's memlog names every
+  path the change moved on its surface (core, scribe, atlas, the station skills, the personas, `pixi.toml`, the
+  package `pixi.toml` floors and the deleted `src/platform/uv.lock`) and the 25 persona files the widened surface newly
+  governs, for doctor Story 58.4's scoped stamp. The Spec's 20 capabilities still carry no dated marker
+  (DW-steward-cutover-2026-11-10-5, with the host contract Story 121.5, which stays `blocked`), and the flip of
+  `pyforge.cutover_root` stays the operator's, by hand, once the Launch slice is proven (ruling 1 of the second
+  addendum).

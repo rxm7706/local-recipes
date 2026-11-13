@@ -2,10 +2,19 @@
 
 ``mcp`` is imported LAZILY inside :func:`build_server` so this module
 -- and ``pyforge.marshal.mcp.tools`` -- import with the SDK absent.
-Registration is the only SDK-touching step (atlas pattern). The eight
+Registration is the only SDK-touching step (atlas pattern). The
 registered tools keep their names, arguments, docstrings and 1:1 delegation
 to ``tools.py``; only the SDK class changed (mcp 2.x renamed ``FastMCP`` to
 ``MCPServer``, and the third-party ``fastmcp`` package is gone).
+
+Story 115.3 (CAP-23 amended 2026-11-10): the server registers exactly the
+tools ``tools.TOOL_SPECS`` lists -- ``list_marshal_tools`` reports them all,
+so a listed tool with no registration was unreachable. The three preserve
+tools are registered by the operator's ruling of 2026-11-10; their bodies
+run the CLI, which reads ``pyforge.marshal.preserve_refs`` (off in every
+environment), so push and retire refuse with the CLI's usage code while it
+is off. ``tests/meta/test_mcp_server_registers_every_tool_spec.py`` fails on
+a spec with no registration and on a registration with no spec.
 """
 
 from __future__ import annotations
@@ -67,6 +76,26 @@ def build_server(name: str = SERVER_NAME):
     ) -> dict:
         """Watch a pinned run, a station, or the fleet (structured JSON)."""
         return tools.marshal_watch(project=project, run=run, fleet=fleet)
+
+    @mcp.tool()
+    def marshal_preserve_list(
+        station: str | None = None,
+        story: str | None = None,
+        producer: str | None = None,
+        state: str | None = None,
+    ) -> dict:
+        """List local preserve tags (structured JSON from marshal preserve list)."""
+        return tools.marshal_preserve_list(station=station, story=story, producer=producer, state=state)
+
+    @mcp.tool()
+    def marshal_preserve_push(pending: bool = False) -> dict:
+        """Push preserve/archive tags through the content gate (marshal preserve push; behind its flag)."""
+        return tools.marshal_preserve_push(pending=pending)
+
+    @mcp.tool()
+    def marshal_preserve_retire(tag: str, evidence: str) -> dict:
+        """Retire a preserve tag in the ledger (marshal preserve retire --evidence; behind its flag)."""
+        return tools.marshal_preserve_retire(tag=tag, evidence=evidence)
 
     return mcp
 

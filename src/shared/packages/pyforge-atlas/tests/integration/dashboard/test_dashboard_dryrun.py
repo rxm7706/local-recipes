@@ -31,6 +31,11 @@ from pyforge.atlas.dashboard import factory_status as fs
 from pyforge.atlas.semantic import models
 from pyforge.atlas.semantic.query_helpers import bsl_query
 
+# Story 48.1 (a relay of spec-pyforge-steward:CAP-175): this module reads the live tree outside its package (atlas's
+# epics.md and sprint status, through the factory-status board's default repository root), so it runs in atlas's
+# live-tree half and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 NOW = 1_700_000_000
 STAMP = "2026-07-18T12:00:00Z"
 

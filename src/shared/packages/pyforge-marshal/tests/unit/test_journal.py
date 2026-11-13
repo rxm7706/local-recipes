@@ -17,6 +17,7 @@ from pathlib import Path
 import jsonschema
 import pytest
 
+from pyforge import marshal as marshal_package
 from pyforge.marshal.core.identity import StoryKey
 from pyforge.marshal.core.journal import (
     KIND_FREEZE_DECLARED,
@@ -38,7 +39,7 @@ from pyforge.marshal.core.journal import (
     resolve_scope_violation_advisories_from_payload,
 )
 
-_SCHEMA_PATH = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "schemas" / "journal.json"
+_SCHEMA_PATH = Path(marshal_package.__file__).resolve().parent / "schemas" / "journal.json"
 
 
 def _schema() -> dict[str, object]:

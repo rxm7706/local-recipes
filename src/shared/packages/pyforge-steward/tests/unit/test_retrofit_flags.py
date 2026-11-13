@@ -1,4 +1,4 @@
-"""Two-state tests for steward's CAP-7 retrofit kill switches (Epic 114; ``spec-feature-flag-governance`` CAP-7).
+"""Two-state tests for steward's retrofit kill switches (Epic 114; spec-feature-flag-governance CAP-7).
 
 One test per key, each run ON and OFF through ``pyforge.testing_kit.flags.flag_states`` and a flagd FILE tree in
 the same state (``test_pages_duty_flag_states.py`` precedent). A duty switch (``cli.RETROFIT_KEY_VERBS``): ON
@@ -120,7 +120,7 @@ def test_pyforge_steward_deploy_perimeter(
 def test_pyforge_steward_nkp_deploy(
     flag_provider: dict[str, bool], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """NKP deploy nic (CAP-176, Story 118.1): `steward deploy nic` is listed disabled and refuses with usage code 2."""
+    """NKP deploy nic (spec-pyforge-steward CAP-176, Story 118.1): `steward deploy nic` is listed disabled and refuses with usage code 2."""
     _assert_duty_switch(
         "pyforge.steward.nkp_deploy", flag_provider["pyforge.steward.nkp_deploy"], tmp_path, monkeypatch
     )

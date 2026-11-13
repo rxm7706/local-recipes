@@ -15,7 +15,19 @@ _DOCTOR_SRC = Path(__file__).resolve().parents[3] / "pyforge-doctor" / "src"
 if str(_DOCTOR_SRC) not in sys.path:
     sys.path.insert(0, str(_DOCTOR_SRC))
 
-from pyforge.doctor.sources.chain import verified_line_cites  # noqa: E402
+
+def verified_line_cites(raw: str) -> bool:
+    """pyforge-doctor's own reader, imported where it is used (Story 48.1): the package half imports this module only
+    to deselect it, and an exported copy of the package has no pyforge-doctor src to import at module level."""
+    from pyforge.doctor.sources.chain import verified_line_cites as doctor_verified_line_cites
+
+    return doctor_verified_line_cites(raw)
+
+
+# Story 48.1 (a relay of spec-pyforge-steward:CAP-175): this module reads the live tree outside its package (atlas's
+# planning artifacts, scripts/, the workflows, .claude/skills, _bmad and pyforge-doctor's src), so it runs in atlas's
+# live-tree half and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
 
 _PLANNING = Path("_bmad-output/projects/pyforge-atlas/planning-artifacts")
 _DESIGN = _PLANNING / "DESIGN.md"

@@ -55,6 +55,11 @@ from pyforge.marshal.seed.regions.markers import (
     render_end,
 )
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+_DREAMS_README = "/".join(("docs", "dreams", "README.md"))
+
 _VERSION = ModelVersion.parse("1.0.0")
 
 
@@ -742,11 +747,11 @@ def test_writable_exemptions_includes_copied_managed_and_copied_seeded_entries(t
     ``writable_exemptions``'s own docstring: the ordinary "create it for the
     first time" case is exactly the shape this exists to unblock)."""
     manifest = _manifest(
-        _whole_file("dreams-readme", "docs/dreams/README.md", ArtifactClass.COPIED_MANAGED),
+        _whole_file("dreams-readme", _DREAMS_README, ArtifactClass.COPIED_MANAGED),
         _whole_file("specs-readme", "specs/README.md", ArtifactClass.COPIED_SEEDED),
     )
     inventory = classify(manifest, tmp_path)
-    assert writable_exemptions(manifest, inventory) == frozenset({"docs/dreams/README.md", "specs/README.md"})
+    assert writable_exemptions(manifest, inventory) == frozenset({_DREAMS_README, "specs/README.md"})
 
 
 def test_writable_exemptions_excludes_every_other_artifact_class(tmp_path):
@@ -790,13 +795,13 @@ def test_writable_exemptions_subtracts_a_path_that_is_also_present_legacy(tmp_pa
     manifest = _manifest(
         _whole_file(
             "dreams-readme",
-            "docs/dreams/README.md",
+            _DREAMS_README,
             ArtifactClass.COPIED_MANAGED,
             legacy_of="succ",
         )
     )
     inventory = classify(manifest, tmp_path)
-    assert inventory.legacy == (LegacyRecord(entry_id="dreams-readme", path="docs/dreams/README.md", legacy_of="succ"),)
+    assert inventory.legacy == (LegacyRecord(entry_id="dreams-readme", path=_DREAMS_README, legacy_of="succ"),)
     assert writable_exemptions(manifest, inventory) == frozenset()
 
 

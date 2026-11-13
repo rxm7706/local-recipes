@@ -1,4 +1,10 @@
-"""Story 62.3 — consumers cite on rows only (spec-build-league-scorecard CAP-3)."""
+"""Story 62.3 — consumers cite on rows only (spec-build-league-scorecard CAP-3).
+
+The hermetic tests: each builds its catalog under ``tmp_path`` or stubs the
+loader. The two that read the tracked catalog moved, names unchanged, to
+``test_league_measure_reads_the_tracked_catalog.py`` in the live-tree half
+(Story 117.1, spec-pyforge-core:CAP-14).
+"""
 
 from __future__ import annotations
 
@@ -8,8 +14,6 @@ import pytest
 
 from pyforge.core.league_measure import (
     MEASURE_CATALOG_RELATIVE,
-    MeasureCiteVerdict,
-    load_measure_states,
     parse_measure_catalog,
     validate_measure_cite,
 )
@@ -34,11 +38,6 @@ def test_parse_measure_catalog_reads_state_column() -> None:
         "ghost-metric": "off",
         "retired-metric": "archived",
     }
-
-
-def test_cite_on_allowed() -> None:
-    verdict = validate_measure_cite("warden-verdict", repo_root=Path.cwd())
-    assert verdict == MeasureCiteVerdict(allowed=True, measure_id="warden-verdict", state="on", reason=None)
 
 
 def test_cite_off_refused(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -77,9 +76,3 @@ def test_cite_unknown_refused(monkeypatch: pytest.MonkeyPatch) -> None:
     assert verdict.allowed is False
     assert verdict.state is None
     assert verdict.reason == "unknown measure id"
-
-
-def test_live_repo_catalog_has_eight_on_rows() -> None:
-    states = load_measure_states(Path.cwd())
-    assert len(states) == 8  # noqa: PLR2004
-    assert all(state == "on" for state in states.values())

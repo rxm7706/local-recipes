@@ -70,7 +70,7 @@ Station tasks use **only** these kinds:
 
 - `consult_content_skill` — load `.claude/skills/pyforge-atlas/active/pyforge-atlas/SKILL.md` (CAP-15). No other skill or data file.
 - `grammar` — FR-13 unified dispatch: argv must start `pyforge atlas`. Example: `pyforge atlas --version`. Do not call the `pyforge-atlas` binary as a second public grammar. Do not import `pyforge.atlas` internals.
-- `mcp` — FR-11 service face: `POST /stations/atlas/mcp` only (identity tool `station_face`). No other URL, method, or host.
+- `mcp` — FR-11 service face: `POST /stations/atlas/mcp` only: `start_run_pipeline` (a pipeline name) and `get_run` (its handle), and the pipeline tools `run_core_pipeline`, `run_vcs_health_pipeline`, `run_pypi_intelligence_pipeline`, `run_vulnerability_pipeline`, `run_seed_gaps_pipeline`, `run_universal_sbom_pipeline`, `run_derived_artifacts_pipeline`, `run_upstream_discovery_pipeline`, `read_atlas_dataset`, `list_atlas_pipelines`, `list_atlas_datasets`, `query_vizro_ai` and `query_trending_candidates`. No other URL, method, or host.
 
 ## Forbidden actions
 

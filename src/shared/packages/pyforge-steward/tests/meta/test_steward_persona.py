@@ -1,4 +1,4 @@
-"""Story 33.1: steward CAP-16 persona acts only through grammar and MCP."""
+"""Story 33.1: steward spec-pyforge-unifying-strategy CAP-16 persona acts only through grammar and MCP."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ GOLDEN = "steward-provision-list-e2e.json"
 
 
 class PersonaContractError(AssertionError):
-    """Transcript or skill violates CAP-16."""
+    """Transcript or skill violates spec-pyforge-unifying-strategy CAP-16."""
 
 
 def _repo_root() -> Path:

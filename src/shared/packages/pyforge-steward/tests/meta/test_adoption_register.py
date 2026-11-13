@@ -32,7 +32,7 @@ the same story; `mcp-builder` has since been routed by atlas 24.1
 (`bmad-agent-marshal`) -- all three siblings now routed, none remaining in
 `_ROUTING_STORY_NOT_YET_LANDED` below;
 `test_no_labs_skill_outside_the_consent_list_is_present` guards the
-separate CAP-6 invariant that only the operator's four-name 2026-09-06
+separate CAP-35 invariant that only the operator's four-name 2026-09-06
 consent list ever lands under `.claude/skills/`.
 """
 
@@ -478,7 +478,7 @@ def test_single_station_branch_is_not_dead_code(tmp_path):
     assert not _skill_dir_exists(skills_dir, "bmad-os-never-provisioned")
 
 
-# ── § 2 labs consent boundary (Story 46.5, CAP-6) ───────────────────────────
+# ── § 2 labs consent boundary (Story 46.5, CAP-35) ──────────────────────────
 
 
 def _labs_share_skill_names(root: Path) -> set[str] | None:
@@ -494,7 +494,7 @@ def _labs_share_skill_names(root: Path) -> set[str] | None:
 
 def _labs_consent_violations(skills_dir: Path, share_skill_names: set[str], consent: tuple[str, ...]) -> list[str]:
     """Non-consented labs skill names that exist under `.claude/skills/` --
-    the CAP-6 consent-boundary invariant (Story 46.5). Only names the SHARE
+    the CAP-35 consent-boundary invariant (Story 46.5). Only names the SHARE
     TREE actually ships are checked -- a name absent from the share tree
     could never have been copied by `provision_plugin_skill` in the first
     place, so it can never be a labs-consent violation."""
@@ -503,7 +503,7 @@ def _labs_consent_violations(skills_dir: Path, share_skill_names: set[str], cons
 
 
 def test_no_labs_skill_outside_the_consent_list_is_present():
-    """Story 46.5 CAP-6: only the operator's four-name 2026-09-06 consent
+    """Story 46.5 CAP-35: only the operator's four-name 2026-09-06 consent
     list (read from `provision.py`'s own `_LABS_CONSENT_SKILLS` -- never
     re-declared here, avoiding a second, divergent copy of the same list)
     may ever land under `.claude/skills/` from `bmad-labs-skills`'s

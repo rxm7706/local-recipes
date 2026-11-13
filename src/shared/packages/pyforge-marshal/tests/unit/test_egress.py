@@ -14,6 +14,7 @@ from pathlib import Path
 import jsonschema
 import pytest
 
+from pyforge import marshal as marshal_package
 from pyforge.marshal.adapters.fs_local import LocalFs
 from pyforge.marshal.core.egress import (
     _TIMESTAMP_PATTERN,
@@ -28,7 +29,7 @@ from pyforge.marshal.core.identity import MalformedStoryKeyError
 from pyforge.marshal.core.model import Verdict
 from pyforge.marshal.core.policy import REDACTED_SENTINEL
 
-_SCHEMA_PATH = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "schemas" / "gate-record.json"
+_SCHEMA_PATH = Path(marshal_package.__file__).resolve().parent / "schemas" / "gate-record.json"
 
 
 def _schema() -> dict[str, object]:

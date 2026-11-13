@@ -19,11 +19,17 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
+import pytest
 from pages_astro import DOCS_SITE, REPO_ROOT, fixture_tree, font_vendoring_only, needs_node, site_yml, ts
 
 HERALD_PAGES_TS = DOCS_SITE / "src" / "lib" / "herald-pages.ts"
 
-pytestmark = needs_node
+# Story 52.1 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = [
+    pytest.mark.live_tree,
+    needs_node,
+]
 
 _MODEL = """
 try {

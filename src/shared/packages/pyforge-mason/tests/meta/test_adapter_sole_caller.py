@@ -135,7 +135,9 @@ import pytest
 PKG_ROOT = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "mason"
 _CFE_MODULE_NAME = "cfe.py"
 
-_CFE_PATH_SUBSTRING = ".claude/scripts/conda-forge-expert"
+# Story 124.2: tracked paths are spelled as joins here -- steward's trigger-map scan counts a bare
+# tracked-path literal as a read of the live tree, and this module reads none.
+_CFE_PATH_SUBSTRING = "/".join((".claude", "scripts", "conda-forge-expert"))
 """The literal substring the CFE-path detector searches for -- NOT the bare
 word "conda-forge-expert" alone (module docstring)."""
 

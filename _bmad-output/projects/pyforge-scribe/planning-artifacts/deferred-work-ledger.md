@@ -234,6 +234,7 @@ sibling ledgers and the detector both use.
   severity: low (unverified — no severity recorded in the original Tier-3 entry)
   reason: Per this dispatch's own instructions, this becomes an operator_actions item at HALT (status: awaiting-operator) rather than a code defect. Only real elapsed time on an operator's own machine, running the installed trigger across four consecutive scheduled firings, can close it.
   promoted: 2026-09-12 — hand-promoted from Tier-3, renamed per operator-directed fleet hygiene sweep
+  seen-again: 2026-11-10 — evidence from the cutover-readiness audit (`research/cutover-readiness-audit-2026-11-10.md` § SHOULD RECHECK, S3): the primary checkout's `.claude/data/pyforge-scribe/graph.json` was dated 2026-11-06 02:47 at the audit, four days old, so the graph there had not been rebuilt for four nights and four consecutive scheduled runs are not on record. Recorded by Story 31.3; the row stays open for the operator.
   status: open
 
 ### DW-FU-19-1: The per-tool pointer files (`GEMINI.md`, `.github/copilot-instructions.md`, `.cursor/rules/*.mdc`) are not in `governance-currency`'s `DOCUMENTS`, so a skill, script or path named there can rot unnoticed; only `AGENTS.md` and `CLAUDE.md` are checked. Extending `DOCUMENTS` is a marshal change (`spec-fleet-consistency-standard` CAP-6 owns the script) — Dream item (8).
@@ -484,4 +485,104 @@ sibling ledgers and the detector both use.
   severity: low
   promoted: 2026-11-05 — EGM audit landing (marshal Story 113.18)
   reason: a full refresh is its own reviewed pass, and the line misleads nobody into a wrong write today.
+  status: done
+  resolution: Story 32.1 (32-1-agents-md-states-the-writer-lock-and-the-seed-as-the-operator-ruled-them), built 2026-11-11 on branch `cutover-readiness-2026-11-10`; closed by Story 31.3
+  verified: AGENTS.md:31 — the Policy line reads "never mint a lasting `src/shared/packages/` package (a new package directory; files in an existing station package are not new paths)"; the `bmad:context` block was refreshed by `bmad-project-context` and stamped `Verified 2026-11-11 against 72f3e3158f` (AGENTS.md:6); Story 32.1's AC5 (`grep -c 'files in an existing station package are not new paths' AGENTS.md`) prints 1
+
+### DW-scribe-cutover-2026-11-10-1: `scribe capture` has no `--supersedes` flag, so supersession stays library-only
+
+- source_spec: `planning-artifacts/specs/spec-31-2-the-scribe-spec-says-what-the-code-does.md`; cutover-readiness audit 2026-11-10 (MUST 5)
+  summary: `scribe capture` has no `--supersedes` flag, so spec-pyforge-scribe:CAP-2's supersession is reachable only through the library call `capture(supersedes=)`; no record under `.claude/memory/` carries a `supersedes:` line.
+  evidence: `src/shared/packages/pyforge-scribe/src/pyforge/scribe/capture.py:54` (`capture`) takes `supersedes`; `cli.py` has no flag for it (`grep -n supersedes cli.py` finds nothing); 0 of the 83 records under `.claude/memory/{feedback,project,reference}/` carry the field (measured 2026-11-11, after Story 32.2 moved 40 superseded receipts to the archive; the audit counted 0 of 119 at `82a2b18828`). The operator ruled on 2026-11-10 (`docs/dreams/pyforge-unifying-strategy.md` § Realization log, the second addendum) that the flag stays library-only in this change and a deferred row holds the ask; Story 31.2 made CAP-2 say the CLI door is not built.
+  location: src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py (capture_cmd)
+  origin: cutover-readiness plan 2026-11-10, deferral row 1 (operator question 3); written by Story 31.3
+  fix: a later dated entry on `docs/dreams/pyforge-scribe.md` asks for the CLI door and `bmad-spec` amends spec-pyforge-scribe:CAP-2; a Story then adds the flag (exclusive with `--promote` and `--transcripts`; exit 2 when the named record does not exist) behind its kill switch, records it in `contract.md`, and relinks the superseded records.
+  owner: scribe
+  severity: medium
+  promoted: 2026-11-11 — Story 31.3 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: operator ruling 2026-11-10: library-only for now; a new flag is new public surface, and this change adds no product behaviour (ruling R4).
+  status: open
+
+### DW-scribe-cutover-2026-11-10-2: Five scribe tests skip in `-e pyforge-scribe` and run in no CI job
+
+- source_spec: `planning-artifacts/specs/spec-33-1-the-suite-splits-on-live-tree-and-postgres-and-no-test-skips-the-branch-it-names.md`; cutover-readiness audit 2026-11-10 (SHOULD S2)
+  summary: the plane GraphStore's four live round trips and the portal's cited-recall render skip in the only environment scribe's suite runs in, and no CI job runs them elsewhere.
+  evidence: `src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plane.py:48`, `:79`, `:107` and `:127` `importorskip` duckdb and `pyforge.atlas.duckdb_writer`; `tests/meta/test_first_portal_slice.py:213` `importorskip`s django. Story 33.1's guard (`tests/meta/test_live_tree_split.py`) lists these skip sites by name, each with its reason, so a sixth cannot join silently. No CI environment carries scribe's suite together with atlas's DuckDB writer or with django.
+  location: src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plane.py; src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py:213
+  origin: cutover-readiness plan 2026-11-10, deferral row 2; written by Story 31.3
+  fix: run the round trips in a task whose environment holds scribe with duckdb and pyforge-atlas (`pyforge-foundry-full` does), or move them into atlas's suite; host the portal render in django-scribe's suite (a shared request to steward).
+  owner: scribe (relay: steward, atlas)
+  severity: low
+  promoted: 2026-11-11 — Story 31.3 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: named blocker: environment composition and django-scribe's suite are steward's, the plane driver's writer is atlas's, and no environment carries the packages together in CI.
+  status: open
+
+### DW-scribe-cutover-2026-11-10-3: The scribe PRD traces requirements to 9 of the Spec's 35 capabilities
+
+- source_spec: `planning-artifacts/specs/spec-31-3-the-scribe-planning-chain-follows-the-spec.md`; cutover-readiness audit 2026-11-10 (SHOULD S5)
+  summary: the PRD's requirement arrows reach spec-pyforge-scribe:CAP-1 to CAP-4, CAP-27, CAP-28 and CAP-33 to CAP-35; CAP-5 to CAP-26 and CAP-29 to CAP-32 have no requirement, and stories cite them directly.
+  evidence: `prds/prd-pyforge-scribe-2026-07-25/prd.md` § 4: FR-1 to FR-17 and FR-51 to FR-54, each with one `← CAP-n` arrow (re-checked 2026-11-11 in Story 31.3's re-stamp). CHAIN-STANDARD § 2 asks that every requirement cite a defined capability; no rule or detector asks the reverse, and `fr-without-cap` is green.
+  location: _bmad-output/projects/pyforge-scribe/planning-artifacts/prds/prd-pyforge-scribe-2026-07-25/prd.md
+  origin: cutover-readiness plan 2026-11-10, deferral row 3; written by Story 31.3
+  fix: re-derive the PRD through `bmad-prd` so each capability a user can see has a traced requirement.
+  owner: scribe
+  severity: low
+  promoted: 2026-11-11 — Story 31.3 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: no rule requires it, and a PRD re-derive is a planning effort of its own.
+  status: open
+
+### DW-scribe-cutover-2026-11-10-4: No scheduled pass re-derives each Spec from its memlog and compares it with the rendered file
+
+- source_spec: `planning-artifacts/specs/spec-32-3-a-spec-that-is-behind-its-memlog-reds-scribe-s-live-tree-suite.md`; cutover-readiness audit 2026-11-10 (SHOULD S6)
+  summary: the seed is Dream plus memlog, but nothing re-derives each live `SPEC.md` from its `.memlog.md` into scratch on a schedule and compares the result with the rendered file; `memlog-fidelity-check --compare` runs only by hand.
+  evidence: `scripts/memlog_fidelity_check.py` (steward Story 44.13) checks that a memlog exists and offers `--compare` as a manual run; Story 32.3's `tests/meta/test_spec_not_behind_memlog.py` holds the deterministic half (a non-bookkeeping entry with no later render reds the suite) and cannot judge whether a render followed its entries faithfully.
+  location: scripts/memlog_fidelity_check.py; src/shared/packages/pyforge-scribe/tests/meta/test_spec_not_behind_memlog.py
+  origin: cutover-readiness plan 2026-11-10, deferral row 4; written by Story 31.3
+  fix: one operator-run comparison pass per release of the seed, its result recorded per Spec folder.
+  owner: scribe (relay: steward Story 44.13)
+  severity: medium
+  promoted: 2026-11-11 — Story 31.3 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: the re-derive is an LLM session per Spec folder and is not deterministic, so it cannot run as a test.
+  status: open
+
+### DW-scribe-cutover-2026-11-10-5: `scribe index move-list` and its half of `scribe index refresh` stay in the code after spec-pyforge-scribe:CAP-34 retired
+
+- source_spec: `planning-artifacts/specs/spec-31-2-the-scribe-spec-says-what-the-code-does.md`; operator ruling 2026-11-10 (second addendum)
+  summary: CAP-34 is retired (`(retired 2026-11-10: ...)`): the package fold `scribe index move-list` was built for is retired by operator ruling 2 of 2026-11-10, no caller remains, and B does not rebuild it. The verb, its module and its test, and the move-list half of `scribe index refresh`, stay until a Story removes them.
+  evidence: `src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/move_list.py`; `tests/unit/test_extras_move_list.py`; the `scribe index move-list` row of `specs/spec-pyforge-scribe/contract.md`, marked retired with CAP-34; spec-pyforge-scribe:CAP-33's off-mode runs `index build` then `index move-list`. No story of the cutover-readiness change plans the removal, so the ruling sends it here.
+  location: src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/move_list.py
+  origin: cutover-readiness plan 2026-11-10, deferral row 5 (operator question 4), as ruled in the second addendum; written by Story 31.3
+  fix: a Story removes the verb, `extras/move_list.py`, its test and contract row, and the move-list half of `scribe index refresh` (CAP-33's text follows), then drops CAP-34's success clause.
+  owner: scribe
+  severity: low
+  promoted: 2026-11-11 — Story 31.3 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: this change adds or removes no product behaviour (ruling R4); the removal is its own Story.
+  status: open
+
+### DW-scribe-cutover-2026-11-10-7: A contract change recorded as a bookkeeping memlog event passes the behind-memlog test
+
+- source_spec: `planning-artifacts/specs/spec-32-3-a-spec-that-is-behind-its-memlog-reds-scribe-s-live-tree-suite.md`; cutover-readiness audit 2026-11-10 (SHOULD S6)
+  summary: `tests/meta/test_spec_not_behind_memlog.py` treats `Surface reconcile` and `Story N.M landed` events as bookkeeping, as `scripts/fleet_scan.py` classifies them, so a reconcile that says "no capability moves" while changing a capability's behaviour passes.
+  evidence: the audit's own scribe case: the 2026-11-06 event that changed the portal recall argv of spec-pyforge-scribe:CAP-21 (`--` and an optional `--mode`) was recorded as a reconcile. The candidate rule (a reconcile naming a path a success clause names) fires on 268 of 2,356 reconcile events fleet-wide and still misses that case (measured at the 2026-11-10 plan).
+  location: src/shared/packages/pyforge-scribe/tests/meta/test_spec_not_behind_memlog.py
+  origin: cutover-readiness plan 2026-11-10, deferral row 7; written by Story 31.3
+  fix: the periodic re-derive comparison (DW-scribe-cutover-2026-11-10-4), or a memlog convention that a reconcile touching a capability's proof names the capability id.
+  owner: scribe
+  severity: low
+  promoted: 2026-11-11 — Story 31.3 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: no deterministic rule separates such an event from a routine reconcile.
+  status: open
+
+### DW-scribe-cutover-2026-11-10-10: spec-pyforge-unifying-strategy:CAP-14 does not name the durable GraphStore's schema or the plane driver
+
+- source_spec: `planning-artifacts/specs/spec-31-2-the-scribe-spec-says-what-the-code-does.md`; cutover-readiness audit 2026-11-10 (MUST 4, SHOULD S3)
+  summary: no Spec names the four governed changesets that define `scribe_schema` or the DuckDB plane driver, so a rebuild cannot derive the durable store from any Spec; the capability is steward's, and scribe's Spec carries a decided Non-goal against a parallel one.
+  evidence: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md:406` (`CAP-14 — Scribe's graph outlives one file.`) names no driver and no schema (0 matches for `pyforge-scribe-1` on 2026-11-11); the changesets exist: `src/platform/db/changelog/changes/pyforge-scribe-{1-pgvector-extension,2-graph-nodes,3-app-role-grants,4-graph-nodes-stale-column}.sql`. Story 31.2 pointed scribe's Non-goal *Not CAP-14* at the steward capability and the changesets. Steward accepted the shared request as Story 124.5 (wave BUILD-7), which re-derives that Spec.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md (CAP-14)
+  origin: cutover-readiness plan 2026-11-10, deferral row 10; written by Story 31.3
+  fix: steward:S-124.5 amends spec-pyforge-unifying-strategy:CAP-14 to name the GraphStore port, its three drivers, the four changesets and the two driver tests; scribe closes this row when it lands.
+  owner: scribe (relay: steward)
+  severity: medium
+  promoted: 2026-11-11 — Story 31.3 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
+  reason: another station's Spec and files.
   status: open

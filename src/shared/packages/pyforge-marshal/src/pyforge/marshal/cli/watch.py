@@ -25,6 +25,7 @@ from typing import Any
 from pyforge.core.errors import PyforgeError
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
+from ..adapters.forge_root import forge_repo
 from ..core import challenge as challenge_core
 from ..core.context import MarshalContext
 from ..core.dispatch import DispatchJournalFacts
@@ -32,7 +33,9 @@ from ..core.dispatch_completion import DispatchSessionVerdict
 from ..core.model import Finding, Severity, build_envelope
 from ..core.refs import remote_tracking_ref
 from ..core.verdict import compute_verdict, exit_code_for
+from ..ports.forge import ForgeCommandError
 from .config import _suppress_downstream_pipe_close, repo_root
+from .init import _loop_home_root
 
 _MRS_WATCH_001 = "MRS-WATCH-001"
 _MRS_WATCH_002 = "MRS-WATCH-002"
@@ -582,8 +585,10 @@ def _default_ports(process: ProcessPort, root: Path) -> WatchPorts:
             raise LoopCliError(command, "JSON was not an object")
         return payload
 
+    # Story 115.1 (CAP-227): every loop home resolves through `marshal init`'s
+    # own root, so BMAD_LOOP_HOME_ROOT moves `watch` exactly as it moves `init`.
     def list_runs(slug: str) -> Mapping[str, Any]:
-        home = Path.home() / ".bmad-loops" / slug
+        home = _loop_home_root() / slug
         if not home.is_dir():
             return {"runs": []}
         return _run_json(
@@ -593,7 +598,7 @@ def _default_ports(process: ProcessPort, root: Path) -> WatchPorts:
         )
 
     def run_status(slug: str, run_id: str) -> Mapping[str, Any]:
-        home = Path.home() / ".bmad-loops" / slug
+        home = _loop_home_root() / slug
         return _run_json(
             ["pixi", "run", "-e", "pyforge-guild", "bmad-loop", "status", run_id, "--json"],
             home if home.is_dir() else root,
@@ -651,6 +656,12 @@ def _default_ports(process: ProcessPort, root: Path) -> WatchPorts:
 
     def list_prs(slug: str) -> list[Mapping[str, Any]]:
         del slug
+        # Story 115.4 (CAP-208): the root of record's repository, read at this use; a malformed
+        # flag tree is a failed probe (MRS-WATCH-004), never a fabricated PR list.
+        try:
+            repo = forge_repo()
+        except ForgeCommandError as exc:
+            raise ProbeError("gh pr list", str(exc)) from exc
         try:
             result = process.run(
                 [
@@ -658,7 +669,7 @@ def _default_ports(process: ProcessPort, root: Path) -> WatchPorts:
                     "pr",
                     "list",
                     "--repo",
-                    "rxm7706/local-recipes",
+                    repo,
                     "--state",
                     "all",
                     "--json",
@@ -691,7 +702,10 @@ def _default_ports(process: ProcessPort, root: Path) -> WatchPorts:
     def loop_last_fact(slug: str, run_id: str) -> datetime | None:
         # Story 51.6: bmad-loop's own journal, same home layout as
         # list_runs/run_status above (<home>/.bmad-loop/runs/<run_id>/).
-        journal_path = Path.home() / ".bmad-loops" / slug / ".bmad-loop" / "runs" / run_id / "journal.jsonl"
+        # Run-state debt (CAP-227): a loop run's timing belongs to the published plane; Story 115.1's
+        # spec carries this read as a `deferred:` entry until it moves there.
+        # CAP-4: loop-home FILE read -- run-state debt, deferred by Story 115.1 (a loop run's last-fact time)
+        journal_path = _loop_home_root() / slug / ".bmad-loop" / "runs" / run_id / "journal.jsonl"
         try:
             text = journal_path.read_text(encoding="utf-8")
         except OSError:

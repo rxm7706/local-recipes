@@ -30,6 +30,12 @@ from pyforge.marshal.cli import land as land_module
 from pyforge.marshal.dispatch_land_finalize import __main__ as finalize_module
 from pyforge.marshal.dispatch_land_finalize.__main__ import _FINALIZE_RESYNC_KIND, finalize_dispatch_land
 
+# Story 116.4 (spec-pyforge-marshal:CAP-305): every test here states its oracle in the terms of
+# ``scripts/promote_sprint_status.py``, which the landing loads from the checkout ``checkout_root()`` names. The
+# tree-read guard runs each package-half test off the tree, where every one of them fails, so the module runs in the
+# live-tree half and fails, never skips, when the script is absent.
+pytestmark = pytest.mark.live_tree
+
 _SLUG = "pyforge-marshal"
 _FIXTURES = Path(__file__).resolve().parent.parent / "fixtures"
 
@@ -289,21 +295,6 @@ def test_a_done_epic_keeps_done_over_a_stale_feed_row_and_the_promotion_commit_r
     assert _sync().regressions(before, after) == []
 
 
-def test_ledger_regression_reports_ok_over_the_ac3_promotion_commit(tmp_path: Path, monkeypatch) -> None:
-    """AC 3, through the ``ledger-regression`` detector itself (doctor's ``sources.ledger.gather``) over the
-    promotion commit's own range. Runs where ``pyforge-doctor`` is installed (the guild env); the
-    rule-level twin above runs everywhere."""
-    ledger_source = pytest.importorskip("pyforge.doctor.sources.ledger")
-    models = pytest.importorskip("pyforge.doctor.models")
-    _origin, primary, parent, commit = _ac3_finalize(tmp_path, monkeypatch)
-    _git(primary, "fetch", "origin", "main")
-
-    [finding] = ledger_source.gather(primary, base=parent, head=commit)
-
-    assert finding.status == models.DoctorStatus.OK, finding.message
-    assert finding.evidence["ledgers_compared"] == 1
-
-
 # -- AC 4: the promotion module cannot be loaded ---------------------------------------------------------------
 
 
@@ -388,6 +379,9 @@ _DOCTOR_BEFORE = (_FIXTURES / "doctor_ledger_before_b9869e5c6d.yaml").read_text(
 _DOCTOR_BEFORE_BLOB = "99d425d8ed51144f8c19748a6913d29c483827a6"
 #: The tracked twin ``b9869e5c6d`` wrote: 41-5 ``done`` and ``epic-41`` dropped to ``backlog``.
 _DOCTOR_B9869E5C6D_BLOB = "430d290a42be37a46b18940717d25d4a549a09b6"
+#: The sync's header line then and now (marshal 114.2 renamed the environment).
+_HEADER_THEN = "#     pixi run -e local-recipes sprint-ledger-sync\n"
+_HEADER_NOW = "#     pixi run -e pyforge-guild sprint-ledger-sync\n"
 
 
 def _doctor_feed_statuses() -> dict[str, str]:
@@ -407,7 +401,8 @@ def test_the_replayed_inputs_reproduce_b9869e5c6d_without_the_roll_up() -> None:
         _plain_render(_DOCTOR, _doctor_feed_statuses()), frozenset({_DOCTOR_41_5})
     )
     assert matched == {_DOCTOR_41_5}
-    assert _blob_sha(unfixed) == _DOCTOR_B9869E5C6D_BLOB
+    assert _HEADER_NOW in unfixed
+    assert _blob_sha(unfixed.replace(_HEADER_NOW, _HEADER_THEN)) == _DOCTOR_B9869E5C6D_BLOB
 
 
 def test_the_doctor_41_5_replay_publishes_epic_41_in_progress(tmp_path: Path, monkeypatch) -> None:
@@ -422,7 +417,9 @@ def test_the_doctor_41_5_replay_publishes_epic_41_in_progress(tmp_path: Path, mo
     _assert_promotion_commit(origin, parent)
     published = _origin_text(origin, _DOCTOR)
     assert _statuses(published)["epic-41"] == "in-progress"
-    assert published == _DOCTOR_BEFORE.replace(f"  {_DOCTOR_41_5}: backlog\n", f"  {_DOCTOR_41_5}: done\n")
+    assert published == _DOCTOR_BEFORE.replace(_HEADER_THEN, _HEADER_NOW).replace(
+        f"  {_DOCTOR_41_5}: backlog\n", f"  {_DOCTOR_41_5}: done\n"
+    )
 
 
 # -- Story 107.1: a stale-slug feed key never reaches the twin through a landing -------------------------------

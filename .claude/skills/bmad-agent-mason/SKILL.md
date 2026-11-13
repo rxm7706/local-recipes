@@ -66,7 +66,7 @@ Station tasks use **only** these kinds:
 
 - `consult_content_skill` — load `.claude/skills/pyforge-mason/active/pyforge-mason/SKILL.md` and `.claude/skills/conda-forge-expert/SKILL.md` only. No other skill or data file.
 - `grammar` — unified dispatch: argv must start `pyforge mason`. Example: `pyforge mason doctor`. Do not call the `mason` binary as a second public grammar. Do not import `pyforge.mason` internals.
-- `mcp` — service face: `POST /stations/mason/mcp` only. No other URL, method, or host.
+- `mcp` — service face: `POST /stations/mason/mcp` only: `start_build` (a target) and `get_build` (its handle). No other URL, method, or host.
 
 ## Forbidden actions
 

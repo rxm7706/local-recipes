@@ -19,11 +19,12 @@ import jsonschema
 import pytest
 from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
 
+from pyforge import marshal as marshal_package
 from pyforge.marshal.cli.main import __version__, main
 from pyforge.marshal.core.verdict import EXIT_SIGINT, EXIT_USAGE
 
 _PYPROJECT = Path(__file__).resolve().parents[2] / "pyproject.toml"
-_SCHEMA_PATH = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "schemas" / "policy.json"
+_SCHEMA_PATH = Path(marshal_package.__file__).resolve().parent / "schemas" / "policy.json"
 
 
 @pytest.fixture(autouse=True)

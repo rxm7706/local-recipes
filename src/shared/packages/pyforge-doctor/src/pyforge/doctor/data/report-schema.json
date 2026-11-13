@@ -98,7 +98,8 @@
             "docs-shelf-occupancy",
             "live-proof-surface",
             "docs-currency",
-            "frontmatter-duplicate-keys"
+            "frontmatter-duplicate-keys",
+            "writer-lock"
           ]
         },
         "check": { "type": "string" },

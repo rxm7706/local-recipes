@@ -1,5 +1,5 @@
 """`DeploymentTopology` + `check_shareable_state` + `render_daphne_unit`/
-`render_edge_config` + `steward deploy perimeter` — Story 9.5 (CAP-6, AD-5).
+`render_edge_config` + `steward deploy perimeter` — Story 9.5 (CAP-114, AD-5).
 
 Covers every row of the story spec's I/O & Edge-Case Matrix, plus CLI verb
 dispatch through `DeployDuty.run` -- the conformance-tier shape (direct

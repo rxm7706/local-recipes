@@ -1,7 +1,7 @@
 # The signal catalog — 23 ported phases, 3 additive riders
 
 Companion to `SPEC.md`. The kernel's Capabilities declare that the 23 legacy phases run as
-DAG-resolved nodes across seven typed pipelines, and that new signals ride in additively with
+DAG-resolved nodes across the seven sealed domain pipelines, and that new signals ride in additively with
 their failure modes fixture-pinned. This file is the per-signal catalog: which legacy phase
 became which node, what it reads and writes, and which behavioral contract binds the port.
 
@@ -40,7 +40,7 @@ that nobody declared is exactly the thing an agent cannot safely extend.
 
 | Phase | Pipeline | Node | Reads | Writes | Binding contract | Legacy |
 |---|---|---|---|---|---|---|
-| **C** | `pypi_intelligence` | `map_pypi_conda` | `pypi_parselmouth_mapping_raw`, `core_packages_enumerated` | `pypi_conda_mapping` | `g10_spelling` provenance tier survives as a valid `match_source`; no-clobber rule | `phase_c_parselmouth_join` 1744 |
+| **C** | `pypi_intelligence` | `map_pypi_conda` | `pypi_parselmouth_mapping_raw`, `core_packages_enumerated` | `pypi_conda_mapping_base` (in memory; C.5 completes `pypi_conda_mapping`) | `g10_spelling` provenance tier survives as a valid `match_source`; no-clobber rule | `phase_c_parselmouth_join` 1744 |
 | **C.5** | `pypi_intelligence` | `match_source_urls` | source-url data | `pypi_conda_mapping` (extend) | Same no-clobber discipline | `phase_c5_source_url_match` 1802 |
 | **D** | `pypi_intelligence` | `enumerate_pypi_universe` | `pypi_simple_index_raw` | `pypi_universe` | Universe upsert TTL-gated; skippable under the consumer profile | `phase_d_pypi_enumeration` 1947 |
 | **H** | `pypi_intelligence` | `fetch_pypi_current_versions` | `pypi_json_raw`, `pypi_universe` | `pypi_current_versions` | **Serial gate**: never-fetched OR serial-moved OR 30 d. Denominator excludes pypi-only. Retains `upload_time_iso_8601` — B9 depends on it. | `phase_h_pypi_versions` 4517 |
@@ -75,8 +75,8 @@ spec prose said otherwise and the spec prose was wrong; follow the code. `PHASE_
 admin-only and never a default schedule. Guarded by `test_no_thirty_gb_lie`.
 
 **Single-write-path (R, S).** Enrichment and scoring share exactly one write path with the
-add-handoff surface. Two writers to one dataset is the failure the seven-pipeline rule exists
-to prevent, and R/S are where it was historically tempting.
+add-handoff surface. Two writers to one dataset is the failure the one-producer rule of the
+sealed seven exists to prevent, and R/S are where it was historically tempting.
 
 ## Additive riders — the three new signals
 

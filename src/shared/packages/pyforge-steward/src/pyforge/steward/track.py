@@ -1,4 +1,4 @@
-"""Assemble one tracked ``track.json`` per run (Story 53.3 / hub:CAP-3).
+"""Assemble one tracked ``track.json`` per run (Story 53.3 / spec-pyforge-steward CAP-54).
 
 Marshal relays the field enumeration (Ops/Gates evidence shapes:
 ``journal.jsonl``, ``gate-record.json``, ``state.json``). This module
@@ -21,7 +21,7 @@ from pyforge.core.atomic_write import atomic_write_text
 
 from .interfaces import DutyResult
 
-# Marshal-relayed frozen field list (hub:CAP-3 / B8). Documented in
+# Marshal-relayed frozen field list (spec-pyforge-steward CAP-54 / B8). Documented in
 # docs/foundry/tracks/FIELDS.md. Additive schema growth only.
 TRACK_FIELDS: tuple[str, ...] = (
     "run_id",

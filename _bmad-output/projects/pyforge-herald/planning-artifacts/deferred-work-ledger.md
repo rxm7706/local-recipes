@@ -1004,6 +1004,7 @@ deployment.
   origin: found live during Story 21.7's push+read-back task, 2026-09-17
   severity: high — a real (if non-recipe) content-authoring defect now live in a shared external system, not just the repo
   promoted: 2026-09-17
+  note: 2026-11-10 — Repo copy re-read clean in the 2026-11-10 audit; Design-side read-back pending the operator.
   status: open
 
   Follow-up needed (not done here — the fix is content-authoring work, out of a push-only story's scope, and per repo convention needs its own Dream/Spec/Story, not a freelance fix): (1) regenerate the standalone's corrupted sections from `facts.yaml` without the duplication-and-space-injection bug; (2) re-push the corrected file to Design to overwrite the contaminated copy at project `45c841c6-e807-4fee-a92a-f8e89cb890b4`; (3) check `deckcraft` (21.8) and `unity-data-stack` (21.6) standalone posters for the same root-commit damage before their own push stories complete; (4) consider whether `deck-facts --check` needs a prose-sanity/repeated-block detector so this class of defect cannot recur silently.
@@ -1588,4 +1589,141 @@ deployment.
   severity: low
   promoted: 2026-11-01 — EGM fleet audit (marshal Story 113.7), operator ruling 2026-11-01
   reason: outward and credential-bound acts (a scheduled routine on the operator's claude.ai account; a snapshot that needs a token that reads repository variables); an agent never does either.
+  note: 2026-11-10 — Re-measured 2026-11-10: snapshot 63 rows (3 stuck, 2 paused-manually) against 75 registry rows (59 live, 9 retired, 7 opt-in-off); doctor Story 58.4 refreshes it once at the head of the cutover-readiness branch (operator ruling 2026-11-10).
+  status: open
+
+### DW-herald-50-1-3: 48 open rows of herald's deferred-work ledger carry no severity, so a sweep cannot rank them.
+
+- source_spec: `planning-artifacts/specs/spec-50-1-every-herald-capability-s-marker-and-text-say-what-is-true.md`
+  summary: 48 open rows of herald's deferred-work ledger carry no severity, so a sweep cannot rank them.
+  evidence: The 2026-11-10 cutover readiness audit (`planning-artifacts/research/cutover-readiness-audit-2026-11-10.md`) counted 68 open rows of 113 (1 high, 3 medium, 16 low, 48 unlabelled); Story 50.1's build re-counted the same figures on 2026-11-11 (each `###`/`##` `DW-` row's last `status:` and first `severity:` field).
+  location: _bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md
+  origin: spec-deferred 2ea5c4a063ba — written by hand at build by herald Story 50.1 (its planned deferral), with its story spec's `deferred:` entry
+  fix: one `bmad-loop sweep` over herald's ledger, which labels each open row or closes it.
+  severity: low
+  promoted: 2026-11-11 — herald Story 50.1 (cutover readiness)
+  status: open
+
+### DW-herald-50-1-4: CAP-51's success clause that `deck-sync-proof`'s opt-in live run still passes is unproven
+
+- source_spec: `planning-artifacts/specs/spec-50-1-every-herald-capability-s-marker-and-text-say-what-is-true.md`
+  summary: CAP-51's success clause that `deck-sync-proof`'s opt-in live run still passes is unproven: Story 25.1 did not re-run the live proof after the Guild-env move, and the only live runs, on 2026-09-19, refused the standalone HTML read-back (DW-FU-23-6-1).
+  evidence: Story 25.1's spec (`planning-artifacts/specs/spec-25-1-the-deck-pipeline-runs-from-the-guild-env.md`) records the residual risk that the opt-in live run was not re-run there. The two live runs of 2026-09-19 (`planning-artifacts/specs/spec-pyforge-herald/sync-proof-2026-09-19.md`) both ended `failed` on the standalone HTML read-back. Found by Story 50.1's build, which marks spec-pyforge-herald CAP-51 `(shipped 2026-09-20; not met: …, DW-herald-50-1-4)` under the memlog decision of 2026-11-10 for an unproven success clause.
+  location: src/shared/packages/pyforge-herald/src/pyforge/herald/sync_all.py
+  origin: spec-deferred cd08b963c8a3 — written by hand at build by herald Story 50.1 (an unproven success clause found while marking CAP-51 shipped), with its story spec's `deferred:` entry
+  fix: once DW-FU-23-6-1 is fixed, the operator runs `HERALD_LIVE_SYNC_PROOF=1 pixi run -e pyforge-herald deck-sync-proof -- --slug pyforge-warden` twice and records both reports; close this row citing them. Live Design credentials make it operator-owned.
+  severity: low
+  promoted: 2026-11-11 — herald Story 50.1 (cutover readiness)
+  status: open
+
+### DW-herald-50-2-1: scripts/deck_facts.py names `-e local-recipes` though deck-facts and bmad-groundtruth are Guild tasks
+
+- source_spec: `planning-artifacts/specs/spec-50-2-the-herald-spec-has-its-constraints-non-goals-and-assumptions-again-and-the-chain-closes-on-what-landed.md`
+  summary: scripts/deck_facts.py names `-e local-recipes` at :81, :124, :687 and :1177, though deck-facts and bmad-groundtruth are Guild tasks; two of the four strings are written into every deck's facts.yaml (a `source:` value and the header).
+  evidence: `grep -n 'local-recipes' scripts/deck_facts.py` lists lines 81 (the usage line), 124 (`GROUNDTRUTH_SOURCE`), 687 (the header written into each facts.yaml) and 1177 on 2026-11-12; `pixi.toml` declares both tasks under `[feature.guild-tasks.tasks]`. The 14 tracked `presentations/*/facts.yaml` carry the two written strings. The companion `planning-artifacts/specs/spec-pyforge-herald/facts-ledger.md` names `-e pyforge-guild` for its run command since Story 50.2 and keeps quoting the `source:` literal the script writes, with a note naming this row.
+  location: scripts/deck_facts.py
+  origin: spec-deferred cd650b27e723 — written by hand at build by herald Story 50.2 (its own planned deferral); its story spec's `deferred:` frontmatter is not written at build (the build rules forbid it), and the fingerprint is the intake's over this summary and location, so a later frontmatter row dedupes against this one
+  fix: with the next deck-family refresh that pushes to Design: change the four strings to `-e pyforge-guild`, re-derive the 14 facts ledgers and their posters with `deck-facts`, then push the posters so the Design mirror stays byte-equal (spec-pyforge-herald:CAP-17), and drop the note in facts-ledger.md. The push is credential-bound, so the refresh is the operator's.
+  severity: low
+  promoted: 2026-11-12 — herald Story 50.2 (cutover readiness)
+  status: open
+
+### DW-herald-50-2-2: 58 typed entries of the Specs folded into herald never entered its memlog
+
+- source_spec: `planning-artifacts/specs/spec-50-2-the-herald-spec-has-its-constraints-non-goals-and-assumptions-again-and-the-chain-closes-on-what-landed.md`
+  summary: 58 constraint, non-goal and assumption entries in the archived memlogs of the Specs folded into spec-pyforge-herald never entered its memlog, so its re-derived Constraints, Non-goals and Assumptions cannot render them: 25 from the nine Specs the 2026-09-17 fold absorbed and 33 from spec-deckcraft and spec-design-code-bridge.
+  evidence: Counted 2026-11-12 in two parts. (1) Typed entries: `grep -cE '^- \((constraint|non-goal|assumption)( by \w+)?\)'` over `archive/_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-*/.memlog.md` finds 60 outside spec-herald-pitch and spec-herald-moments-2-4, whose entries the 2026-08-02 consolidation replayed into herald's memlog. 26 are in the nine Specs the 2026-09-17 fold absorbed (21 constraints in spec-deck-family-currency, spec-deck-family-lockstep, spec-design-sync-loop, spec-herald-moments-2-4-live-backend and spec-pyforge-pages; 5 assumptions in spec-deck-family-currency and spec-design-sync-loop), and 34 in spec-deckcraft (9 constraints, 9 non-goals, 3 assumptions) and spec-design-code-bridge (10 constraints, 3 assumptions). Two of the 60 are in herald's memlog: spec-design-code-bridge's Story 1.3 transport constraint, and spec-design-sync-loop's design-system home, restored by Story 50.2's review round 1. (2) SPEC text (added on Story 50.2's review round 3, by the integrator ruling of 2026-11-12): the fold stubbed the nine absorbed Specs' SPEC.md (each archived copy is 12 to 18 lines with no Constraints, Non-goals or Assumptions heading), so their SPEC-text items were lost with them. At `4251c42229^` (`git show 4251c42229^:<spec folder>/SPEC.md`, top-level `- ` bullets under `## Constraints`, `## Non-goals` and `## Assumptions`) the nine carried 89 bullets against those 26 typed entries; a bullet counts as deduplicated when a typed entry of the same Spec and type states its rule, whole or as one clause of a bundled entry. Per Spec, bullets (constraints/non-goals/assumptions), typed entries, and bullets no typed entry carries: spec-deck-family-currency 16 (9/5/2), 11, 5 (its 5 non-goals); spec-deck-family-lockstep 14 (8/6/0), 4, 7 (the constraint 'Design polish ends with a pull' and 6 non-goals; one typed entry bundles four constraints); spec-deck-visual-qa 11 (6/5/0), 0, 11 (among them 'report-only — the QA step never mutates deck sources and never rebuilds'); spec-design-sync-loop 14 (6/5/3), 8, 6 (the constraint 'Excluded projects are excluded by name, with a reason, in the registry' and 5 non-goals); spec-herald-moments-2-4-live-backend 15 (8/5/2), 2, 12 (5 constraints, 5 non-goals, 2 assumptions); spec-herald-moments-2-4-missing-surface 3 (0/3/0), 0, 3; spec-pptx-custom-shapes 1 (0/0/1), 0, 1; spec-pptx-deck-generation 0, 0, 0; spec-pyforge-pages 15 (8/5/2), 1, 9 ('New pixi feature only' and 'Foundry rebuilds, it does not copy comments', 5 non-goals and 2 assumptions; its one typed entry bundles six constraints). In all, 54 SPEC-text bullets no typed entry carries. The two pptx Specs also wrote their Constraints and Non-goals as prose, not bullets: 6 paragraphs no typed entry carries (spec-pptx-custom-shapes 2, spec-pptx-deck-generation 4). Herald's own SPEC.md at 4251c42229^ is accounted for and is not part of this row: Story 50.2's review rounds 2 and 3 render or retire, by dated change entries, each of its 12 Constraints and 10 Non-goals bullets (one was already struck in that text), and its § Residual dependencies renders as an Assumptions bullet. The archived SPEC.md of spec-deckcraft and spec-design-code-bridge still carry their three sections (the 2026-09-17 fold did not stub them), so only their typed entries are counted here.
+  location: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/.memlog.md
+  origin: spec-deferred 612d0732d695 — written by herald's station closer, Story 50.2, from its own § Planned deferral (review round 2, 2026-11-12); the build wrote no frontmatter row, and the fingerprint is the intake's over this summary and location, so a later frontmatter row dedupes against this one
+  fix: a herald story recovers both parts, each item with its provenance: (a) the nine absorbed Specs' SPEC-text items at 4251c42229^ that no typed entry carries (54 bullets and 6 prose paragraphs, listed per Spec in the evidence), each written into herald's memlog as a typed entry citing `git show 4251c42229^:<spec folder>/SPEC.md` and its line, and (b) the 58 archived typed entries, each replayed with its archived memlog path and line. Each item is restored, retired with a dated `(change) retires <type>:` entry where a shipped capability or a later ruling overtook it, or ruled outside herald (spec-deckcraft's entries govern the standalone deckcraft product, `apps/deckcraft/**`, of which spec-pyforge-herald:CAP-5 carries only the markdown-to-PPTX slice); then the three sections are re-derived once. A replay of the typed entries alone does not close this row. The retro's actions 3 (doctor) and 6 (herald) carry the prevention and this pass.
+  severity: medium
+  promoted: 2026-11-12 — herald Story 50.2 (cutover readiness)
+  status: open
+
+### DW-herald-50-3-2: docs/how-to/presentation-deck.md documents 8 of herald's 12 deck verbs
+
+- source_spec: `planning-artifacts/specs/spec-50-3-herald-s-public-contract-is-one-companion-and-a-meta-test-holds-the-code-to-it.md`
+  summary: docs/how-to/presentation-deck.md documents 8 of herald's 12 deck verbs; the four missing verbs (watch, exports, pptx-spec and pptx-native) are listed in spec-pyforge-herald/contract.md.
+  evidence: Story 50.3's Planned deferral; `planning-artifacts/specs/spec-pyforge-herald/contract.md` § CLI verbs lists all 12 deck verbs (Story 50.3, 2026-11-11), and the how-to names no `herald deck watch`, `exports`, `pptx-spec` or `pptx-native` (re-read 2026-11-12).
+  location: docs/how-to/presentation-deck.md
+  origin: spec-deferred 1c5d9df5633d — written by herald's station closer, Story 50.2, from this spec's § Planned deferral (written at build); the build wrote no frontmatter row, and the fingerprint is the intake's over this summary and location, so a later frontmatter row dedupes against this one
+  fix: add the four verbs from contract.md to the how-to, with a Surface reconcile line on spec-pyforge-doctor's memlog, which governs docs/how-to/**.
+  severity: low
+  promoted: 2026-11-12 — herald Story 50.2 (cutover readiness)
+  status: open
+
+### DW-herald-50-4-1: Seven pre-fold capability citations stay in herald's source after Story 50.4's re-key
+
+- source_spec: `planning-artifacts/specs/spec-50-4-herald-s-source-comments-and-docstrings-cite-the-folded-spec-s-capability-ids.md`
+  summary: Seven pre-fold capability citations stay in herald's source after Story 50.4's re-key: registry.py:437 and :447, transport/base.py:117, transport/mcp_transport.py:129, state.py:4, watch.py:1 and watch.py:210.
+  evidence: Story 50.4's Planned deferral gives each site's reason (60 of 67 sites re-keyed, build commit 2bde9641e9). `registry.py:437` is code, not a comment: its f-string heading `(spec-design-sync-loop CAP-6)` is what the push-and-prove ledger writes into a deck README (`presentations/pyforge-warden/README.md` carries it, and herald's unit tests assert it), and `registry.py:447`'s docstring quotes that heading. `transport/base.py:117` and `transport/mcp_transport.py:129` are attribute docstrings that `scripts/coverage_gate.py` `ast_fingerprint` keeps as code, so re-keying them changes the syntax tree. `state.py:4`, `watch.py:1` and `watch.py:210` cite the bridge's `CAP-4`, which is already the folded Spec's id (spec-pyforge-herald:CAP-4, Design-Code-Bridge Framework).
+  location: src/shared/packages/pyforge-herald/src/pyforge/herald/
+  origin: spec-deferred a614f21e32cd — written by herald's station closer, Story 50.2, from this spec's § Planned deferral (written at build); the build wrote no frontmatter row, and the fingerprint is the intake's over this summary and location, so a later frontmatter row dedupes against this one
+  fix: a feature story re-keys `registry.py:437`'s heading to spec-pyforge-herald:CAP-34 and migrates the README sections that carry it, moving `:447` with it; `base.py:117` and `mcp_transport.py:129` re-key when their module is next touched for code (CHAIN-STANDARD section 6); the three spec-pyforge-herald:CAP-4 sites close on review, since they already name the folded id.
+  severity: low
+  promoted: 2026-11-12 — herald Story 50.2 (cutover readiness)
+  status: open
+
+### DW-herald-52-1-1: Herald has no oracle on B: no src/packages/pyforge-herald and no herald row in the case list
+
+- source_spec: `planning-artifacts/specs/spec-52-1-herald-s-live-tree-readers-carry-the-live-tree-marker.md`
+  summary: Herald has no oracle on B: there is no src/packages/pyforge-herald there and no herald row in the case list. A side: seven package-half case rows are requested of control-plane (case-list.md). B side: it waits on the re-pin, because B is not re-pinned until the core, steward and marshal Specs pass a truth sweep (ruling 1 of 2026-11-10).
+  evidence: Story 52.1's Planned deferral; the cutover readiness audit of 2026-11-10 (`planning-artifacts/research/cutover-readiness-audit-2026-11-10.md`, MUST 4). The python-foundry repository is out of scope for every unit of this change.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-regenerate-not-fold/case-list.md
+  origin: spec-deferred 243733f12a6d — written by herald's station closer, Story 50.2, from this spec's § Planned deferral (written at build); the build wrote no frontmatter row, and the fingerprint is the intake's over this summary and location, so a later frontmatter row dedupes against this one
+  fix: A side: control-plane adds herald's seven package-half case rows to case-list.md. B side: after the re-pin that follows the truth sweep, B rebuilds `src/packages/pyforge-herald` and its case rows.
+  owner: pyforge-herald with pyforge-steward
+  severity: medium
+  promoted: 2026-11-12 — herald Story 50.2 (cutover readiness)
+  status: open
+
+### DW-herald-52-1-2: Two herald test modules sit in the live-tree half because of two tests
+
+- source_spec: `planning-artifacts/specs/spec-52-1-herald-s-live-tree-readers-carry-the-live-tree-marker.md`
+  summary: Two whole modules sit in the live-tree half because of two tests: 31 of the 32 tests in test_cli_epic6.py and 8 of the 9 in test_cli_watch.py are pure CLI-dispatcher tests that B's package half loses.
+  evidence: Story 52.1's Planned deferral (added 2026-11-11 by the round 2 build review). The two tests that need the tree are `test_cli_epic6::test_json_flag_renders_error_as_json_on_stderr` and `test_cli_watch::test_deck_watch_success_returns_0_and_prints_nothing_to_stderr`: off the tree they fail on the 'no flag tree' WARN that `pyforge.core.flags` writes to stderr, because the flag tree is found by climbing to `src/platform/config/flags.json`.
+  location: src/shared/packages/pyforge-herald/tests/unit/test_cli_epic6.py
+  origin: spec-deferred 590e63ff44bb — written by herald's station closer, Story 50.2, from this spec's § Planned deferral (written at build); the build wrote no frontmatter row, and the fingerprint is the intake's over this summary and location, so a later frontmatter row dedupes against this one
+  fix: pin a fixture flag tree for those two tests (`pyforge.testing_kit.flags.flagd_tree` or `PYFORGE_FLAGS_PATH`), then drop both modules' `live_tree` marker so they return to the package half; a herald story owns it, because it is a test-logic change and Story 52.1 forbade those.
+  note: `src/shared/packages/pyforge-herald/tests/unit/test_cli_watch.py` sits beside it, with the same fix
+  severity: low
+  promoted: 2026-11-12 — herald Story 50.2 (cutover readiness)
+  status: open
+
+### DW-herald-52-2-1: Herald names A's package layout or forge slug by literal outside Story 52.2's fix
+
+- source_spec: `planning-artifacts/specs/spec-52-2-herald-s-landing-record-names-this-checkout-s-forge-and-its-package-names-python-3-14.md`
+  summary: Herald names A's package layout or forge slug by literal outside Story 52.2's fix; none of them is a rebuild input.
+  evidence: Story 52.2's Planned deferral: `src/shared/packages` in docs-site/scripts/verify_claims.py:91 and scripts/deck_facts.py:302 and :616; `../../../../..` in web/package.json:8; PYTHONPATH in pixi.toml:3272; root pixi task shell-outs in deck_pipeline.py and sync_all.py; the forge slug in docs-site/scripts/pages.mts:50, docs-site/src/lib/shelf.mjs:54, docs-site/src/lib/marketplace.ts:24 and web/src/components/TabNav.jsx:4 (line numbers as of 2026-11-11). Steward Stories 44.4 and 44.5 (the fold to src/packages/) retired on 2026-11-10, so A has one layout and B rebuilds from Spec; the two docs-site slugs are fallbacks behind GITHUB_REPOSITORY, marketplace.ts is steward's capability (spec-pyforge-steward:CAP-171), and web/ is built by no workflow.
+  location: src/shared/packages/pyforge-herald
+  origin: spec-deferred 2f527a8446f8 — written by herald's station closer, Story 50.2, from this spec's § Planned deferral (written at build); the build wrote no frontmatter row, and the fingerprint is the intake's over this summary and location, so a later frontmatter row dedupes against this one
+  fix: revisit only if A's own layout or forge moves.
+  severity: low
+  promoted: 2026-11-12 — herald Story 50.2 (cutover readiness)
+  status: open
+
+### DW-herald-cutover-2026-11-10-1: Two undated warden deck sources and three dated ones name the archived path docs/specs/pyforge-warden.md
+
+- source_spec: `planning-artifacts/specs/spec-50-2-the-herald-spec-has-its-constraints-non-goals-and-assumptions-again-and-the-chain-closes-on-what-landed.md`
+  summary: Two undated warden deck sources and three dated ones name docs/specs/pyforge-warden.md, which moved to archive/docs/specs/ on 2026-09-18.
+  evidence: `git grep -n 'docs/specs/pyforge-warden.md' -- presentations/pyforge-warden` lists `project/Warden Deck.dc.html:584` and `src/slides/fragments/27-never-false-green.html:8` (undated), and `src/marp/pyforge-warden-deck-2026-09-15.md:407`, `src/marp/pyforge-warden-infographic-2026-09-15.md:366` and `src/marp/pyforge-warden-infographic-standalone-2026-09-15.html:1502` (dated records), on 2026-11-12. Requested of herald by the warden unit of the cutover-readiness plan (2026-11-10). Not hand-edited: deck sources mirror a Claude Design project, and an edit must be pushed there with credentials to stay byte-equal (the blocker of DW-herald-50-2-1).
+  location: presentations/pyforge-warden/
+  origin: the warden unit's shared request to herald in the cutover-readiness plan (2026-11-10), an integration row written by herald Story 50.2
+  fix: with the next credentialed deck-family refresh, repoint the two undated sources at `_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/` in Design, pull, and re-derive; the three dated sources are records, kept or fixed in the same refresh.
+  owner: pyforge-herald
+  severity: low
+  promoted: 2026-11-12 — herald Story 50.2 (cutover readiness)
+  status: open
+
+### DW-herald-cutover-2026-11-10-2: presentations/pyforge-mason/facts.yaml and the posters citing it predate mason's 2026-11-10 mint
+
+- source_spec: `planning-artifacts/specs/spec-50-2-the-herald-spec-has-its-constraints-non-goals-and-assumptions-again-and-the-chain-closes-on-what-landed.md`
+  summary: presentations/pyforge-mason/facts.yaml and the posters citing it predate mason's 2026-11-10 mint: spec_capabilities reads 35 and the epic and story totals predate Epics 37 to 39.
+  evidence: `presentations/pyforge-mason/facts.yaml` was derived 2026-10-14 (`derived_at`); it shows `spec_capabilities` 35, `epics_done_total` 29/30 and `stories_done_total` 110/112, while `spec-pyforge-mason/SPEC.md` defines 37 capability lines on 2026-11-12 (spec-pyforge-mason:CAP-36 and spec-pyforge-mason:CAP-37 minted, spec-pyforge-mason:CAP-8..CAP-17 retired) and mason's ledger gained Epics 37 to 39. Requested of herald by the mason unit of the cutover-readiness plan (2026-11-10). Not regenerated here: re-deriving a deck's facts ledger re-derives its posters, and keeping the Design mirror byte-equal needs a credentialed push (DW-herald-50-2-1).
+  location: presentations/pyforge-mason/facts.yaml
+  origin: the mason unit's shared request to herald in the cutover-readiness plan (2026-11-10), an integration row written by herald Story 50.2
+  fix: at the next credentialed deck-family refresh, re-derive the ledger with `pixi run -e pyforge-guild deck-facts pyforge-mason`, refresh the marked literals of the posters that cite it with `--refresh`, and push them to Design.
+  owner: pyforge-herald
+  severity: low
+  promoted: 2026-11-12 — herald Story 50.2 (cutover readiness)
   status: open

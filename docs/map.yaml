@@ -96,8 +96,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-11-01T14:40:02-06:00'
-      tree: f7429083213b03bd1cb0ff33a9d2b6a0392a9905-dirty
+      derived_at: '2026-11-13T04:36:16-06:00'
+      tree: f6776ea2fb7e8bee45e74a91f58e7253faefe33b
   - path: how-to/pause-ci.md
     quadrant: how-to
     owner: pyforge-steward
@@ -191,8 +191,8 @@ pages:
       - scripts/detectors.py
       - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
     stamp:
-      derived_at: '2026-10-13T09:52:52-05:00'
-      tree: 5e78c565cc8175b73ef0742b76ab4665360a1d9a
+      derived_at: '2026-11-11T14:58:14-06:00'
+      tree: 1c9cb4ade3ba259ca99923df295303f2afadde45-dirty
   - path: reference/developer-guide.md
     quadrant: reference
     owner: fleet
@@ -240,8 +240,8 @@ pages:
     sources:
       - .claude/skills
     stamp:
-      derived_at: '2026-10-15T12:24:19-05:00'
-      tree: 627c751b19ddd42dfa8048d13a8688982b8250be
+      derived_at: '2026-11-12T22:43:21-06:00'
+      tree: b69fd81eb812eb0a2de4580c4b04d9af41259ef8-dirty
   - path: reference/station-cheat-sheet.md
     quadrant: reference
     owner: fleet
@@ -251,8 +251,8 @@ pages:
       - pixi.toml
       - src/shared/packages
     stamp:
-      derived_at: '2026-11-01T15:57:49-06:00'
-      tree: 5c8bfc387743d46c1fa0c3bba5a14d2c7c8f47cd-dirty
+      derived_at: '2026-11-12T03:07:29-06:00'
+      tree: 7b6286bd7b506960e6cdc0a477ef2c32e2acf96c-dirty
   - path: reference/station-verify-commands.md
     quadrant: reference
     owner: fleet

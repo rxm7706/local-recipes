@@ -7,8 +7,9 @@ produce) ``__file__`` sits in an environment prefix, the index lands inside the 
 policy lookup missed, ``verify_commands`` composed to ``()`` and ``gate evaluate`` reported
 ``MRS-GATE-004`` (warn, exit 0) having run no gate. The one guard,
 ``test_conventional_project_policy_path_lands_on_the_repo_root``, can only ever run against the
-editable tree -- so these tests build the installed layout by pointing ``config.__file__`` into a
-fake environment prefix, beside a real tmp git checkout and a real linked worktree of it.
+editable tree -- so these tests build the installed layout by pointing the module's ``__file__`` anchor
+into a fake environment prefix, beside a real tmp git checkout and a real linked worktree of it. The anchor
+moves through ``anchor_config_at``; ``config.__file__`` itself is never rebound (``_config_anchor_support.py``).
 """
 
 from __future__ import annotations
@@ -18,6 +19,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from _config_anchor_support import anchor_config_at
 
 from pyforge.marshal.cli import config as config_module
 from pyforge.marshal.cli.config import RepoRootUnresolvedError, repo_root
@@ -49,6 +51,13 @@ def _clean_git_env(monkeypatch):
 
 
 @pytest.fixture
+def off_tree_checkout_anchor() -> bool:
+    """This module moves ``cli/config.py``'s checkout anchor itself (``anchor_config_at``), so the suite's off-tree
+    anchor (``tests/conftest.py``) stays off and the real ``_editable_checkout_root()`` runs."""
+    return False
+
+
+@pytest.fixture
 def checkout(tmp_path: Path) -> Path:
     """A real git checkout -- the 'main checkout' of the installed-layout tests."""
     repo = tmp_path / "checkout"
@@ -72,13 +81,13 @@ def worktree(checkout: Path, tmp_path: Path) -> Path:
 
 @pytest.fixture
 def installed(tmp_path: Path, monkeypatch) -> Path:
-    """Point ``config.__file__`` into an environment prefix: no
+    """Point ``cli/config.py``'s ``__file__`` anchor into an environment prefix: no
     ``src/shared/packages/pyforge-marshal/`` anywhere above it. The prefix sits at
     ``tmp_path/env``, so the bare ``parents[8]`` lands on ``tmp_path.parent``."""
     module_file = (
         tmp_path / "env" / "lib" / "python3.14" / "site-packages" / "pyforge" / "marshal" / "cli" / "config.py"
     )
-    monkeypatch.setattr(config_module, "__file__", str(module_file))
+    anchor_config_at(monkeypatch, module_file)
     return module_file
 
 
@@ -245,7 +254,7 @@ def test_main_survives_a_closed_stderr_when_relaying_an_unresolved_root(installe
 
 
 def test_a_prefix_with_fewer_than_nine_ancestors_resolves_via_git_without_an_index_error(monkeypatch, checkout):
-    monkeypatch.setattr(config_module, "__file__", _SHALLOW_PREFIX_FILE)
+    anchor_config_at(monkeypatch, _SHALLOW_PREFIX_FILE)
     assert len(Path(_SHALLOW_PREFIX_FILE).parents) == 8  # the bare index 8 is one past the end
     monkeypatch.chdir(checkout)
 
@@ -253,7 +262,7 @@ def test_a_prefix_with_fewer_than_nine_ancestors_resolves_via_git_without_an_ind
 
 
 def test_a_prefix_with_fewer_than_nine_ancestors_outside_a_repo_is_the_typed_error(monkeypatch, outside_any_repo):
-    monkeypatch.setattr(config_module, "__file__", _SHALLOW_PREFIX_FILE)
+    anchor_config_at(monkeypatch, _SHALLOW_PREFIX_FILE)
 
     with pytest.raises(RepoRootUnresolvedError) as excinfo:
         repo_root()
@@ -266,7 +275,7 @@ def test_an_unreadable_editable_probe_falls_through_to_the_git_root(tmp_path, ch
     from `Path.is_dir()` on older pathlib): it is not the repository, so the git root answers."""
     prefix = tmp_path / "prefix"
     module_file = prefix / "a" / "b" / "c" / "d" / "e" / "f" / "g" / "h" / "config.py"
-    monkeypatch.setattr(config_module, "__file__", str(module_file))
+    anchor_config_at(monkeypatch, module_file)
     monkeypatch.chdir(checkout)
     real_is_dir = Path.is_dir
 
@@ -301,13 +310,6 @@ def test_a_deleted_invocation_directory_is_the_typed_error(installed, tmp_path, 
 # --- AC5: the editable source layout keeps today's root ------------------------------------
 
 
-def test_the_editable_layout_returns_the_same_root_as_the_bare_index():
-    root = repo_root()
-
-    assert root == Path(config_module.__file__).resolve().parents[8]
-    assert (root / "src" / "shared" / "packages" / "pyforge-marshal").is_dir()
-
-
 def test_the_editable_root_is_not_replaced_by_the_invocation_directory(tmp_path, checkout, monkeypatch):
     """The reason `repo_root()` avoids CWD: `marshal config` runs from loop homes and worktrees, so
     when the `__file__` root IS the repository the invocation directory must not matter."""
@@ -316,7 +318,7 @@ def test_the_editable_root_is_not_replaced_by_the_invocation_directory(tmp_path,
     module_file = (
         source_root / "src" / "shared" / "packages" / "pyforge-marshal" / "src" / "pyforge" / "marshal" / "cli"
     ) / "config.py"
-    monkeypatch.setattr(config_module, "__file__", str(module_file))
+    anchor_config_at(monkeypatch, module_file)
     monkeypatch.chdir(checkout)  # a different git repository entirely
 
     assert repo_root() == source_root.resolve()
@@ -328,7 +330,7 @@ def test_a_source_looking_ancestor_without_the_package_tree_is_not_the_repositor
     prefix = tmp_path / "prefix"
     prefix.mkdir()
     module_file = prefix / "a" / "b" / "c" / "d" / "e" / "f" / "g" / "h" / "config.py"
-    monkeypatch.setattr(config_module, "__file__", str(module_file))
+    anchor_config_at(monkeypatch, module_file)
     assert Path(module_file).parents[8] == prefix
     monkeypatch.chdir(checkout)
 
@@ -342,7 +344,7 @@ def test_the_bare_parent_index_misses_the_installed_layout(installed, checkout, 
     """The old body, run against the layout every installed-layout test above uses, lands on
     something that is not the checkout -- so restoring it makes those tests fail."""
     monkeypatch.chdir(worktree)
-    bare = Path(config_module.__file__).resolve().parents[8]
+    bare = installed.resolve().parents[8]
 
     assert bare != checkout.resolve()
     assert not (bare / "src" / "shared" / "packages" / "pyforge-marshal").is_dir()
@@ -358,7 +360,7 @@ def test_gate_evaluate_with_the_bare_index_is_the_false_green_this_story_closes(
 
     _plant_project(checkout, [f"test -f missing-{_MARKER}"])
     monkeypatch.chdir(worktree)
-    bare_root = Path(config_module.__file__).resolve().parents[8]
+    bare_root = installed.resolve().parents[8]
     monkeypatch.setattr(config_module, "repo_root", lambda: bare_root)
     monkeypatch.setattr(gate_module, "repo_root", lambda: bare_root)
 

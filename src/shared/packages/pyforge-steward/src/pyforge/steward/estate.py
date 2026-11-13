@@ -442,7 +442,11 @@ def run_plan(deps: EstateDeps, *, json_out: bool, due_only: bool) -> DutyResult:
         return refused
     policy = _load_policy(deps.root)
     command, command_argv = _render_upgrade_command(deps)
-    raw_moves, _proc = _run_pixi_upgrade_json(deps, command_argv, dry_run=True)
+    raw_moves, proc = _run_pixi_upgrade_json(deps, command_argv, dry_run=True)
+    if proc.returncode != 0:
+        # A failed dry run is no plan: refuse with 3 on every path, ahead of --due, whose exit 1
+        # means 'overdue' and nothing else (DW-steward-119-2, Story 123.3).
+        return _refusal(f"estate plan: refused — pixi upgrade dry run failed (exit {proc.returncode})")
     moves = []
     for move in raw_moves:
         held = _held_by(policy, move["package"], move["feature"])

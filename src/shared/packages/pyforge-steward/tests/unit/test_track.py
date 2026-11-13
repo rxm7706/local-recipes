@@ -1,4 +1,4 @@
-"""Story 53.3 — one tracked track.json per run (hub:CAP-3)."""
+"""Story 53.3 — one tracked track.json per run (spec-pyforge-steward CAP-54)."""
 
 from __future__ import annotations
 

@@ -24,6 +24,11 @@ from .test_vizro_static_export import (  # noqa: E402
     cli,
 )
 
+# Story 48.1 (a relay of spec-pyforge-steward:CAP-175): this module reads the live tree outside its package (atlas's
+# epics.md and sprint status, through the factory-status board's default repository root), so it runs in atlas's
+# live-tree half and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 _FLAG = "pyforge.atlas.vizro_static_boards"
 
 

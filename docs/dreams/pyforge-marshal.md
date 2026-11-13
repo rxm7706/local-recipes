@@ -13955,3 +13955,257 @@ row; the `steward setup` read rules) · [[pyforge-scribe]] (the
 - **2026-11-05** — An audit run reads the Dream entry its slice cites (Story 113.19). The reader now takes every citation form a
   live Spec writes, a dated bullet can serve as the Dream context wherever it sits, and a CAP that cites nothing finds the bullet
   whose `→` names it. Each report names every run's `dream_choice`. The live plan moves from 12 runs on `newest` to none.
+
+## 2026-11-10 — The Spec says what marshal is, and its roots come from one place
+
+### The Dream
+
+A second root rebuilds marshal from its Dream, its memlog and its Spec, and judges the rebuild with
+this repository's tests. That works only if the Spec says what marshal is as built and the tests can
+run where the rebuild lives. Today neither holds. The Spec reads like a history of what was asked: a
+third of its capabilities carry no marker, a sixth read `ready` although every story that cites them
+is done, some still describe a console and two detector scripts deleted months ago, and the public
+contract a stranger would call (the verbs and flags, the MCP tools, the flag keys, the diagnostic and
+exit codes) is mostly unwritten. The suite reads the monorepo wherever it likes and skips quietly
+when the tree is not this one.
+
+The Dream is a marshal a stranger can rebuild. One Spec whose markers and text match the tree, with
+the public contract written once in a `contract.md` beside `SPEC.md` and a test that fails when the
+code and the file disagree. Roots and reach that come from their seams: the checkout and the loop
+home through marshal's guarded roots, Doctor's verdict through Doctor's command, the forge repository
+through core's one root-of-record function. Guards that can fire, each proven by the fixture it must
+reject. And a suite in two halves, package-local and live-tree, where a live-tree test fails rather
+than skips and a package-half test that opens a repository file fails.
+
+> A contract a stranger cannot read is a memory, not a contract.
+
+### Why now
+
+The operator ruled on 2026-11-10 (`docs/dreams/pyforge-unifying-strategy.md`, Realization log: the
+2026-11-10 entry, its addendum and its second addendum). `pyforge.cutover_root` means the writer
+lock and the root of record, and marshal's default forge remote is one of its three consumers
+(ruling 2). The operator flips it by hand, with no loop running, once the Launch slice is proven.
+A capability's marker is `(ready <date>)`, `(shipped <date>)` or `(retired <date>[: <reason>])`,
+with an optional qualifier after a semicolon, and there is no separate never-built marker. This
+change adds no behaviour and no kill switch. Marshal registers its three preserve tools on the MCP
+face (push and retire behind `pyforge.marshal.preserve_refs`, off everywhere), lets seed verbs keep
+their own exit codes, and retires its deleted console capabilities while the six that still run
+stay shipped. The "Retire both" addendum names no marshal capability.
+
+The cutover readiness audit of the same day, at `main` `82a2b18828`, returned "not ready":
+
+| Finding | Where it is visible |
+|---|---|
+| 104 of 303 capabilities carry no marker; 49 (CAP-244..CAP-292) read `ready` with every citing story done; CAP-293..CAP-297 read `shipped` with no date | `SPEC.md` joined to `epics.md` and the ledger: only Stories 108.2, 110.38 and 33.11 are open |
+| CAP-82 and CAP-93..CAP-96 describe the Guildhall console's `data.js` and `generate.py`, and other capabilities name two deleted detector scripts | deleted in `e07834580d` (2026-08-25, steward Story 30.2) and `c698d4b1ad` (2026-08-10) |
+| The packaging Constraint says Python `>=3.12` and a `genesis` entry point | `pyproject.toml`: `marshal`, `marshal-mcp`, `requires-python >=3.14` |
+| The public contract is mostly absent: 66 verb paths (33 never named), 64 of 103 flags, 11 MCP tools named nowhere, 38 of 46 flag keys, 32 of 333 `MRS-*` codes | the `--help` tree, `mcp/tools.py`, `core/findings.py` |
+| Three landing loaders index `Path(__file__).resolve().parents[8]`; the loop-home guard exempts every line holding a string, so it cannot fire; `marshal watch` reads `~/.bmad-loops` and ignores `BMAD_LOOP_HOME_ROOT` | `cli/land.py`, `cli/deploy.py`, `tests/meta/test_no_loop_home_run_state_read.py`, `cli/watch.py` |
+| The dispatch landing imports `pyforge.doctor.sources.chain` from the worktree | `dispatch_land.py` |
+| `marshal-mcp` lists 11 tools and registers 8; seed's exit codes 5 and 10 reach the shell as 2 | `mcp/tools.py` against `mcp/server.py`; `cli/main.py` |
+| The forge slug is a literal in four modules, and marshal never reads the root of record | `dispatch_land.py`, `cli/deploy.py`, `cli/land.py`, `cli/watch.py` |
+| No `live_tree` split: 13 `pytest.skip` and 13 `importorskip` sites false-green off the monorepo | the package's `pyproject.toml`; steward's trigger map keeps marshal unsplit |
+
+### What it looks like when real
+
+- **The Spec reads true.** Every capability carries one marker. `ready` means a story citing it is
+  open; `shipped` carries the day its last story reached done; a capability whose artifact was
+  deleted reads `retired` with the deleting commit's date. A fix under a shipped capability returns
+  it to `ready` until the fix lands; a correction of its words alone moves no marker. A capability
+  no story built reads `(retired 2026-11-10: never built)` unless a live `blocked` or `backlog`
+  story carries it. No capability or Constraint names a path, flag, verb or skill that is gone,
+  and a live-tree test with an allow-list for runtime, upstream and historical names keeps it so.
+- **One contract companion.** `contract.md` beside `SPEC.md` lists every CLI verb path and flag,
+  every `marshal-mcp` tool and every tool of the station face, every feature-flag key and
+  environment variable marshal reads, every `MRS-*` code and seed finding type, and both exit-code
+  domains. A meta-test derives the same sets from the code and fails in either direction.
+- **Roots from their seams.** The landing loaders find the checkout through marshal's guarded root
+  and report a finding outside one, never an `IndexError`; `marshal watch` takes the loop-home root
+  from the override `marshal init` reads; the dispatch landing reads the spec-surface verdict from
+  Doctor's command in the worktree it lands; the forge repository is read at each use from
+  `pyforge.core.cutover_root.root_of_record()` (spec-pyforge-core:CAP-13), and no marshal module
+  holds a repository slug.
+- **Guards that fire.** The loop-home guard rejects its untagged fixture; the MCP server's
+  registered tools equal its tool inventory; a seed failure exits with the code its taxonomy
+  documents; a Doctor import fails a meta-test.
+- **A suite that is an oracle.** The package half reads nothing in the repository outside the
+  package and keeps at least nine tenths of the tests; the live-tree half is marked `live_tree`;
+  a live-tree test fails when what it reads is absent; an audit hook fails a package-half test that
+  opens a repository file, in the lanes that already run the package half.
+
+### Constraints / Non-goals
+
+- **No new behaviour, verb or kill switch** (ruling 5 of the second addendum): each gap the change
+  leaves is a deferred-work row, written by the closing story.
+- **No bmad-loop pin moves.** The harness range is stated as measured, `>=0.11.0,<0.13`.
+- **Nothing never built is built here.** The rule above routes it. The flip trigger is decided:
+  the operator flips `pyforge.cutover_root` by hand, with no loop running, once the Launch slice is
+  proven; this entry does not move it.
+- **Nothing is written on python-foundry.** The loop homes' git remotes are not switched
+  (spec-python-foundry-cutover:CAP-8's clause stays with the control plane).
+- **`SPEC.md` is never hand-edited.** Memlog entry first, then the anchored script render with both
+  self-validate passes logged as memlog events (the per-PR approval of 2026-11-10).
+- **Station reach stays on the CLI grammar.** Marshal never imports `pyforge.doctor`; core's
+  root-of-record function is the one reader of `pyforge.cutover_root` it calls.
+- **Never delete, skip or re-mark a test to make a half pass**, and no test is lost.
+
+### Kinships
+
+[[pyforge-unifying-strategy]] (the 2026-11-10 rulings this entry takes as given) ·
+[[pyforge-steward]] (spec-pyforge-steward:CAP-175, the two-halves mechanism; the capability ledger
+regenerated from the swept Spec; the trigger map and task halves) · [[pyforge-doctor]] (the
+spec-surface verdict by command; the scoped stamps after the last edit) · [[one-chain-per-station]]
+(CHAIN-STANDARD § 4's markers) · the shared-floor section of the same date in this file (core and
+the testing kit, Epics 117 and 118; spec-pyforge-core:CAP-13 is the root-of-record function this
+entry consumes).
+
+### Realization log
+
+- **2026-11-10** — Seeded from the operator's rulings of the same day and the cutover readiness
+  audit. Owner **marshal**. `bmad-spec` under `pyforge-marshal`: the memlog of
+  `spec-pyforge-marshal` carries this entry, the rulings, the two capabilities it mints (CAP-304,
+  the public contract is one companion and a meta-test keeps it complete; CAP-305, the suite is an
+  oracle off the monorepo) and the amendments of CAP-13, CAP-23, CAP-208, CAP-227, CAP-229 and
+  CAP-261. Story 114.1 renders them into `SPEC.md` with the marker sweep and writes the PRD
+  requirements (FR-246..FR-249) and AD-7's sentence. Decomposed into Epic 114 (the Spec says what is
+  built), Epic 115 (roots, forge and station reach from their seams) and Epic 116 (the suite as an
+  oracle, and the close), Stories 114.1 to 116.5. Stories 114.1, 114.2, 114.3, 115.4 and 116.5 are
+  minted `blocked` because their Deps name a later epic (114.1 waits on core-kit's Stories 117.5 and
+  118.2, whose renders define what FR-250..FR-254 cite), the one forward-dependency policy of this
+  PR's mints; the orchestrator unblocks each only with operator confirmation once those are done.
+  The rest are `backlog`. Each of the seven amended capabilities reads `ready` while any of its fix
+  stories is open and `shipped` once all are done, from Story 114.1's render on; Story 116.5 flips
+  those still ready to shipped with CAP-304 and CAP-305 and writes the closing line.
+- **2026-11-13 (cutover readiness, closed)** — This entry and the next (*The shared floor says what it is*) close
+  together on branch `cutover-readiness-2026-11-10`. Stories 114.1 to 116.4 and core-kit's 117.1 to 118.2 are built
+  and reviewed there; Story 116.5 closes marshal's chain. `spec-pyforge-marshal:CAP-304` (the public contract is one
+  companion, Story 114.3) and `spec-pyforge-marshal:CAP-305` (the suite is an oracle off the monorepo, Stories 116.1
+  to 116.4) read `(shipped 2026-11-11)`, and so do the seven amended capabilities (`spec-pyforge-marshal:CAP-13`,
+  `spec-pyforge-marshal:CAP-23`, `spec-pyforge-marshal:CAP-208`, `spec-pyforge-marshal:CAP-227`,
+  `spec-pyforge-marshal:CAP-229`, `spec-pyforge-marshal:CAP-261`, `spec-pyforge-marshal:CAP-287`), through the
+  memlog's status-markers change entry of 2026-11-13 and the anchored render
+  with both self-validate passes logged; no capability of the Spec reads ready. The core and charter markers
+  (`spec-pyforge-core:CAP-7`, `spec-pyforge-core:CAP-8`, `spec-pyforge-core:CAP-12..spec-pyforge-core:CAP-14`)
+  flipped at Story 117.8; `spec-pyforge-testing-charter:CAP-6` and `spec-pyforge-testing-charter:CAP-7` with them.
+  The memlog's `Surface reconcile 2026-11-13` event names all 194 changed paths of the Spec's surface for doctor
+  Story 58.4's scoped stamp. The deferred-work ledger closes `DW-FU-53-2-2` (moot by design, Story 115.2) and
+  `DW-FU-4-4-2` for the constant (Story 115.4, narrowed to `DW-marshal-115-4-3`) and writes the change's 27 open rows
+  (`DW-marshal-114-*` to `DW-marshal-118-*` and `DW-marshal-cutover-2026-11-10-1`). The retro is
+  `retros/retro-pyforge-marshal-2026-11-13.md`. The ledger keys move to `done` in the change's ledger close. Owner
+  `spec-pyforge-marshal`.
+
+## 2026-11-10 — The shared floor says what it is: core and the testing kit before the cutover
+
+### The Dream
+
+A second root rebuilds the shared floor, `pyforge-core` and `pyforge-testing-kit`, from its Dream,
+its memlog and its Spec, and judges the rebuild with this repository's tests. Both packages are
+hosted here: the core and testing-charter Dreams were folded into this file on 2026-10-26, and
+Epics 14, 19, 52, 63 and 71 are this station's epics for them. Today neither package can be rebuilt
+that way. The core Spec describes six primitives while the leaf holds seventeen modules that every
+Launch station imports; no capability carries a status marker; three open questions stand that the
+code answered long ago. The testing kit is imported by eight stations' tests, yet its own suite
+cannot collect without the host package, and no list of what either package exports exists outside
+the source.
+
+The Dream is a floor a stranger can rebuild. Each public surface is written once, in a
+`contract.md` beside its Spec, and the package's own suite fails when the source and the file
+disagree. Each suite marks the modules that read the repository `live_tree`, and the rest passes
+from a copy of the package alone. One function answers the root of record and its forge
+repository, so no station holds a slug. And a station left out of a kernel guard is left out path
+by path, on a list that only shrinks.
+
+> A floor nobody can list is a floor nobody can rebuild.
+
+### Why now
+
+The operator ruled on 2026-11-10 (`docs/dreams/pyforge-unifying-strategy.md`, Realization log: the
+2026-11-10 entry, its addendum and its second addendum). `pyforge.cutover_root` means the writer
+lock and the root of record, read through one function in the leaf; the forge slug table is a
+constant in `pyforge.core.cutover_root`, and with no flag tree in reach the function answers the
+default root with `source='default'` (ruling 2, and ruling 5 of the second addendum). The testing
+kit is `rebuild` (ruling 3); the charter's coverage gate (`spec-pyforge-testing-charter:CAP-4`) is
+`rebuild`, and `spec-pyforge-testing-charter:CAP-1`, `spec-pyforge-testing-charter:CAP-2` and
+`spec-pyforge-testing-charter:CAP-5` are `A-only` with a Story as expiry (ruling 4 of the second
+addendum). The markers of the capabilities this change builds flip to shipped inside the PR, at the
+closing story; `spec-pyforge-core` keeps its surface; re-parenting the exception classes stays out.
+No new behaviour and no new kill switch: each gap is a deferred-work row. The "Retire both" addendum
+names no core or kit capability.
+
+The cutover readiness audit of the same day, at `main` `82a2b18828`, returned "not ready":
+
+| Finding | Where it is visible |
+|---|---|
+| The core Spec covers six of seventeen modules; README and package docstring omit ten | `spec-pyforge-core/SPEC.md`, `pyforge-core/README.md`, `pyforge/core/__init__.py` |
+| No core or charter capability carries a status marker; three core open questions are answered in code | both `SPEC.md` files against the ledger (Stories 14.1..14.4, 19.1..19.5, 52.1, 63.1, 71.1 done) |
+| `pyforge.cutover_root` has no consumer beyond its reader; the slug is a literal in marshal, herald, steward and atlas | `cutover_root.py`; four marshal modules, herald's landing record, steward and atlas |
+| A missing purge list crashes the push that preserves work | `preserve_refs.py` reads `docs/governance/preserve-purge-list.json` unguarded |
+| No `live_tree` split in core; `test_flags.py` mixes hermetic reader tests with platform-tree reads | `pyforge-core/pyproject.toml`; steward's trigger-map derivation |
+| The exception-root guard leaves out steward and doctor, the subprocess guard six stations, and neither scans the leaf | `tests/meta/test_exception_root_sole_ownership.py`, `test_process_sole_ownership.py` |
+| The kit's conftest imports `django_pyforge` at session start, so its suite needs the host | `pyforge-testing-kit/tests/conftest.py` |
+
+### What it looks like when real
+
+- **The core Spec reads true.** Every capability carries a dated marker; the open questions are
+  closed; `contract.md` lists every module with its governing capability, every public name, the
+  environment variables, flag keys, exit codes, entry points and Python floor
+  (`spec-pyforge-core:CAP-12`).
+- **One root-of-record function.** `root_of_record()` returns the root, its forge slug and the
+  source of the answer; `forge_slug_for()` maps a root with no I/O; the slug lives in that module
+  alone (`spec-pyforge-core:CAP-13`).
+- **A package half.** Every core test module that reads the repository is `live_tree`; the rest
+  passes from a copy of the package with the working directory outside the repository
+  (`spec-pyforge-core:CAP-14`); the lane runs both halves (`spec-pyforge-core:CAP-8`, mechanism
+  `spec-pyforge-steward:CAP-175`).
+- **Guards that can fire.** A station outside a sole-ownership scan is outside by a pinned set of
+  paths, the leaf's own source included; a new entry and a stale pin both fail
+  (`spec-pyforge-core:CAP-7`). A missing purge list keeps a preserve tag local with a finding
+  (`spec-pyforge-marshal:CAP-287`).
+- **A kit a second root can rebuild.** The kit's `contract.md` lists its modules, public names,
+  fixtures, markers and run-dependencies (`spec-pyforge-testing-charter:CAP-6`); its package half
+  imports no Django and reads nothing outside the kit (`spec-pyforge-testing-charter:CAP-7`).
+
+### Constraints / Non-goals
+
+- **No new primitive, no host or portal change, no re-parenting** of any station's exception
+  classes; the excluded paths are pinned, never migrated here.
+- **No move of the conda-forge-expert surface:** the kit's `cfe_surface` stays A-only with it.
+- **Nothing written on python-foundry;** B's kernel leaves stay the PR #1344 prototype (ruling 1).
+- **Nothing built for the never-built capabilities** the 2026-11-10 addendum retired; none is core's
+  or the kit's.
+- **`SPEC.md` is never hand-edited:** memlog first, then the anchored script render with both
+  self-validate passes logged (the per-PR approval of 2026-11-10).
+- **The leaf reads no repository file,** so the slug table is a constant, not a governance read.
+
+### Kinships
+
+[[pyforge-unifying-strategy]] (the 2026-11-10 rulings) · [[pyforge-steward]] (the cutover Specs
+of the control plane, `fnd:CAP-8` the flag's own capability; spec-pyforge-steward:CAP-175, the
+two-halves mechanism; the trigger map and task halves) · the marshal section of the same date in
+this file (Story 115.4 consumes `root_of_record()`) · [[one-chain-per-station]] (CHAIN-STANDARD § 4's
+markers).
+
+### Realization log
+
+- **2026-11-10** — Seeded from the operator's rulings of the same day and the cutover readiness
+  audit's core and host slice. Owner **marshal** (the host station of both Specs). `bmad-spec`
+  under `pyforge-marshal`: the memlog of `spec-pyforge-core` carries this entry, the rulings, the
+  three capabilities it mints (spec-pyforge-core:CAP-12, the leaf's public surface is written down
+  and the suite reds what it lacks; spec-pyforge-core:CAP-13, one function answers the root of
+  record and the forge slug; spec-pyforge-core:CAP-14, the core suite has a package half a second
+  root runs from the package alone) and the amendments of spec-pyforge-core:CAP-1 and
+  spec-pyforge-core:CAP-5..spec-pyforge-core:CAP-10 with the marker sweep; the memlog of
+  `spec-pyforge-testing-charter` carries spec-pyforge-testing-charter:CAP-6 (the kit's public
+  surface is written down) and spec-pyforge-testing-charter:CAP-7 (the kit's own suite runs without
+  the host) and the amendments of spec-pyforge-testing-charter:CAP-1, spec-pyforge-testing-charter:CAP-3
+  and spec-pyforge-testing-charter:CAP-4; the memlog of `spec-pyforge-marshal` carries the
+  spec-pyforge-marshal:CAP-287 clause. Story 117.5 renders the core Spec and Story 118.2 the
+  charter; Story 114.1 writes FR-250..FR-254 after those renders. Decomposed into Epic 117 (the
+  shared floor says what it is) and Epic 118 (the testing kit is a floor a second root can
+  rebuild), Stories 117.1 to 118.2. Story 117.8 is minted `blocked` because its Deps name Stories
+  118.1 and 118.2 of a later epic (the one forward-dependency policy of this PR's mints), and the
+  orchestrator unblocks it only with operator confirmation once those are done; the rest are
+  `backlog`, their in-epic Deps held by the integration branch's wave order and marshal's
+  Deps-aware drain. Their cross-station deps are written in each story spec's notes, never in an
+  `epics.md` Deps line (marshal's Deps parser drops a station prefix), and only the integration
+  branch's wave order holds them. Story 117.8 flips the markers and writes the closing reconcile.

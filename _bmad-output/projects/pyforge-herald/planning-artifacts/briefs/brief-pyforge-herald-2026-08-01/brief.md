@@ -3,7 +3,7 @@ title: "Herald Pitch Expansion — Moment 1 Orchestration"
 slug: brief-herald-pitch-2026-08-01
 status: ready
 created: 2026-08-01
-updated: "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior "2026-11-01"
+updated: "2026-11-12"   # RE-STAMPED 2026-11-12 (cutover readiness, landed; herald Story 50.2): the chain closes on what landed; vision, problem, scope and success criteria unchanged. See § Currency reconciliation — 2026-11-12 (cutover readiness, landed). Prior "2026-11-10"   # RE-STAMPED 2026-11-10 (cutover readiness mint, herald unit): chain-currency cascade (research -> brief) for research/cutover-readiness-audit-2026-11-10.md; the product scope does not change. See § Currency reconciliation — 2026-11-10 (cutover readiness). Prior "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior "2026-11-01"
 context: pyforge-herald
 ---
 
@@ -240,3 +240,22 @@ deferred-work row `DW-herald-egm-2026-11-01-1`. **Content changed:** this sectio
 *Chain-currency cascade (research -> brief), EGM audit, marshal Story 113.18.*
 
 The station's audit record joins this brief's inputs: `research/egm-audit-2026-11-05.md` (marshal Story 113.18, `spec-pyforge-marshal:CAP-302`): 14 high findings, 4 accepted, 7 rejected, 3 deferred; the medium and low findings are not triaged. The product scope does not change.
+
+## Currency reconciliation — 2026-11-10 (cutover readiness)
+
+*Chain-currency cascade (research -> brief), cutover readiness mint, herald unit.*
+
+The station's audit record joins this brief's inputs: `research/cutover-readiness-audit-2026-11-10.md`, one of nine
+read-only audits at `82a2b18828`, which ruled herald not ready as a rebuild input. Its findings are about the Spec, the
+tests and the dossier, not about this brief's vision, problem, scope or success criteria. They are carried downstream:
+`spec-pyforge-herald` minted CAP-62 and amended CAP-46, the PRD registered FR-14.1 and amended FR-12.5, and Epics 50,
+51 and 52 hold the work (the station Dream's 2026-11-10 (cutover readiness) entry). **Content changed:** this section
+and `updated:`.
+
+## Currency reconciliation — 2026-11-12 (cutover readiness, landed)
+
+*Chain-currency cascade, herald Story 50.2.* 2026-11-12: the eight stories of Epics 50, 51 and 52 are built and reviewed
+on branch `cutover-readiness-2026-11-10` (the Spec's markers and text true, its public contract written, every
+dossier figure counted at build, the live-tree readers marked, the landing record naming this checkout's forge); the
+audit's findings stay downstream of this brief, whose vision, problem, scope and success criteria do not change.
+**Content changed:** this section and `updated:`.

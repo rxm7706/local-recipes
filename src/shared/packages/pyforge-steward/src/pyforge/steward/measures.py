@@ -1,4 +1,4 @@
-"""Build League measure catalog config (Story 62.2, spec-build-league-scorecard CAP-2).
+"""Build League measure catalog config (Story 62.2, spec-pyforge-steward CAP-45).
 
 ``measures/measures.yaml`` names every published measure with ``on`` / ``off`` /
 ``archived`` state. A new source is a new row starting ``off``; archive keeps
@@ -20,8 +20,9 @@ import yaml
 
 from .bootstrap import repo_root
 from .interfaces import DutyResult
+from .root_layout import STEWARD_PACKAGE_DIR
 
-MEASURES_RELATIVE = Path("src/shared/packages/pyforge-steward/measures")
+MEASURES_RELATIVE = STEWARD_PACKAGE_DIR / "measures"
 CONFIG_FILENAME = "measures.yaml"
 
 STATES: tuple[str, ...] = ("on", "off", "archived")

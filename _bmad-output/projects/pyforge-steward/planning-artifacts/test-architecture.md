@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: f84021b5035b7bf0
-story_count: 446
+source_fingerprint: 2e410cc9a51574c7
+story_count: 471
 test_file_count: 158
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 446
-- **Epics parsed:** 119
+- **Stories parsed:** 471
+- **Epics parsed:** 124
 - **Test files inventoried:** 158 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `f84021b5035b7bf0`
+- **Source fingerprint:** `2e410cc9a51574c7`
 
 ## Risk Assessment
 
@@ -145,6 +145,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 117: The preflight and a PR's CI answer within a measured budget, and a station suite runs once (spec-pyforge-steward CAP-175 / FR-49)
 - Epic 118: An NKP cluster with the data-science pack runs from one tracked config (spec-pyforge-steward CAP-176..CAP-178 / FR-50..FR-52)
 - Epic 119: A start tool does the work it names (spec-pyforge-unifying-strategy CAP-20 / canopy:FR-51)
+- Epic 120: The cutover contract says what the operator ruled on 2026-11-10 (spec-python-foundry-cutover fnd:CAP-2..5 fnd:CAP-8 fnd:CAP-9 fnd:CAP-11 fnd:CAP-14 / spec-foundry-regenerate-not-fold fnr:CAP-1..5 / spec-foundry-capability-ledger fcl:CAP-1..3)
+- Epic 121: The cutover control plane tells the truth: one generated ledger, one writer lock (spec-python-foundry-cutover fnd:CAP-8 fnd:CAP-9 / spec-foundry-capability-ledger fcl:CAP-1 fcl:CAP-2)
+- Epic 124: The shared surfaces carry what every station's cutover-readiness work needs (spec-pyforge-steward CAP-153, CAP-175; spec-pyforge-unifying-strategy CAP-4, CAP-14, CAP-16)
 
 ### Low-risk epics
 
@@ -155,6 +158,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 64: Frame draft re-grounding at frame-spec#28 `d7213c1` / #29 `4596579` (spec-pyforge-steward CAP-6)
 - Epic 99: Every CI surface the operator can pause is declared once, switched by one convention, visible in one place and judged (spec-pyforge-steward CAP-166)
 - Epic 105: The preflight never runs two docs-site lanes at once (fix under spec-pyforge-steward CAP-159; no CAP)
+- Epic 122: The steward Spec says what the code does (spec-pyforge-steward CAP-179, CAP-180; the markers and text of existing capabilities)
+- Epic 123: The steward suite is an oracle a second root can run (spec-pyforge-steward CAP-181, CAP-182)
 
 ## Test Inventory
 
@@ -769,6 +774,31 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 119.2 | Five read faces run their verb | none observed |
 | 119.3 | start_build builds a tracked recipe on the builds pool | none observed |
 | 119.4 | start_loop dispatches only for an admin with the flag on | none observed |
+| 120.1 | The cutover Spec and its decisions name one writer, no fold and a self-hosted... | none observed |
+| 120.2 | The regenerate and ledger Specs follow the rulings, and the ledger schema is ... | none observed |
+| 120.3 | Epic 44, the epic bindings and the chain standard say what is true | none observed |
+| 120.4 | The nine Frames point at the seed and agree with the rulings | none observed |
+| 120.5 | The case list counts itself and covers the Launch slice | none observed |
+| 121.1 | A generator derives the capability ledger from the live Specs | none observed |
+| 121.2 | steward cutover plans the ledger and no longer copies trees | none observed |
+| 121.3 | The capability ledger takes the rulings: archived rows leave, modes and expir... | none observed |
+| 121.4 | A chain write off the writer is refused in session | none observed |
+| 121.5 | The host, platform and portals get their foundry contract | none observed |
+| 121.6 | The ledger check refuses a row that contradicts its Spec or the rules | none observed |
+| 121.7 | The capability ledger is regenerated from the swept Specs and holds | none observed |
+| 122.1 | The steward Spec's markers, numbers and names match the tree, and restore and... | none observed |
+| 122.2 | Steward's public contract is one companion and a test fails when the code has... | none observed |
+| 122.3 | Steward's help and output cite today's capability ids | none observed |
+| 122.4 | Comments and docstrings in steward's source and tests cite today's capability... | none observed |
+| 122.5 | The steward and host Specs close on what landed: shipped markers and one Surf... | none observed |
+| 123.1 | Every steward capability names the modules that realize it and the tests that... | none observed |
+| 123.2 | One steward module names this root's layout and repository, and prove-landed ... | none observed |
+| 123.3 | Estate plan refuses when its pixi dry run fails, and the share-tree tests say... | none observed |
+| 124.1 | Every suite that marked its live-tree readers has its two task halves | none observed |
+| 124.2 | Each split suite runs its live-tree half as its own CI job | none observed |
+| 124.3 | Core's, the kit's and steward's manifests state Python 3.14, a check holds ev... | none observed |
+| 124.4 | The cutover-ledger write kill switch joins the flag tree and every shipped-fl... | none observed |
+| 124.5 | Each persona names the MCP tools its station's face serves, and the host Spec... | none observed |
 
 ## Quality Gates
 

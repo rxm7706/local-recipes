@@ -10,10 +10,16 @@ from collections import Counter
 from pathlib import Path
 
 import pandas as pd
+import pytest
 import vizro.models as vm
 
 from pyforge.atlas.dashboard import app
 from pyforge.atlas.dashboard import data as dash_data
+
+# Story 48.1 (a relay of spec-pyforge-steward:CAP-175): this module reads the live tree outside its package (the
+# inventory quartet's scripts under scripts/), so it runs in atlas's live-tree half and fires on what it reads, not on
+# every edit of the package.
+pytestmark = pytest.mark.live_tree
 
 # Shared GIST-schema fixture corpus — single source for canvas writers and Vizro loaders.
 SHARED_GIST_CORPUS: tuple[dict[str, str | int], ...] = (

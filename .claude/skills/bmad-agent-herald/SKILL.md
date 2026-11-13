@@ -96,7 +96,7 @@ Station tasks use **only** these kinds:
 
 - `consult_content_skill` — load `.claude/skills/pyforge-herald/active/pyforge-herald/SKILL.md` (CAP-15). No other skill or data file.
 - `grammar` — FR-13 unified dispatch: argv must start `pyforge herald`. Example: `pyforge herald deck status pyforge-warden`. Do not call the `herald` binary as a second public grammar. Do not import `pyforge.herald` internals.
-- `mcp` — FR-11 service face: `POST /stations/herald/mcp` only (identity tool `station_face`). No other URL, method, or host.
+- `mcp` — FR-11 service face: `POST /stations/herald/mcp` only: `start_notice` (a target) and `get_notice` (its handle). No other URL, method, or host.
 
 ## Manticore studio hand-off
 

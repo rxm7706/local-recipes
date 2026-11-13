@@ -42,11 +42,15 @@ source's `pyforge-warden` dependency is a fleet-wide first-class extra;
 a machine (developer or a future CI job) that has provisioned that env --
 recorded honestly here rather than silently claimed.
 
-Never raises: absent platform surface -> no findings (this repo's `src/
-platform` may not exist in every checkout this package runs against);
-absent interpreter -> one WARN; a `CliBridgeError` (timeout, launch
-failure, an exit code outside {0, 1}) -> one WARN naming it; an actual
+Never raises: absent platform surface -> one cannot-evaluate WARN
+(``platform-policy-suite-unevaluable``; this repo's `src/platform` may not
+exist in every checkout this package runs against); absent interpreter ->
+one cannot-evaluate WARN; a `CliBridgeError` (timeout, launch failure, an
+exit code outside {0, 1}) -> one cannot-evaluate WARN naming it; an actual
 policy-suite failure -> one FAIL carrying the tail of pytest's own output.
+Every cannot-evaluate WARN carries ``evidence["unevaluable"] is True``, so
+the row reads ``unmeasured``, never ``pass`` (spec-pyforge-doctor:CAP-93,
+spec-pyforge-doctor:AD-15); a suite that ran and passed returns nothing.
 """
 
 from __future__ import annotations
@@ -55,7 +59,7 @@ from pathlib import Path
 
 from .. import cli_bridge
 from ..cli_bridge import CliBridgeError
-from ..models import DoctorStatus, Finding, Source
+from ..models import UNEVALUABLE_EVIDENCE_KEY, DoctorStatus, Finding, Source
 
 _PLATFORM_REL = Path("src") / "platform"
 _INTERPRETER_REL = Path(".pixi") / "envs" / "platform-ci-test" / "bin" / "python"
@@ -76,7 +80,17 @@ def gather(target: Path) -> tuple[Finding, ...]:
     target = target.resolve()
     platform_root = target / _PLATFORM_REL
     if not platform_root.is_dir():
-        return ()  # no src/platform in this checkout -- nothing to judge
+        # No src/platform in this checkout: no subject, so one cannot-evaluate
+        # WARN, never an empty result that reads as a pass (Story 56.4).
+        return (
+            Finding(
+                source=Source.PLATFORM_POLICY_SUITE,
+                check="platform-policy-suite-unevaluable",
+                status=DoctorStatus.WARN,
+                message=f"no {_PLATFORM_REL.as_posix()} in this checkout — its tests/policy cannot be run here",
+                evidence={"platform_root": str(platform_root), UNEVALUABLE_EVIDENCE_KEY: True},
+            ),
+        )
 
     interpreter = target / _INTERPRETER_REL
     if not interpreter.is_file():
@@ -86,7 +100,7 @@ def gather(target: Path) -> tuple[Finding, ...]:
                 check="platform-ci-test-env",
                 status=DoctorStatus.WARN,
                 message=_INSTALL_HINT,
-                evidence={"interpreter": str(interpreter)},
+                evidence={"interpreter": str(interpreter), UNEVALUABLE_EVIDENCE_KEY: True},
             ),
         )
 
@@ -104,7 +118,7 @@ def gather(target: Path) -> tuple[Finding, ...]:
                 check="tests-policy",
                 status=DoctorStatus.WARN,
                 message=f"could not run src/platform's tests/policy: {exc}",
-                evidence={},
+                evidence={UNEVALUABLE_EVIDENCE_KEY: True},
             ),
         )
 

@@ -80,7 +80,22 @@ MATRIX_WORKFLOW_FIXTURE = (
 )
 
 
-LIVE_SPLIT = ("doctor", "steward")  # Story 117.4: stations whose suite runs as a package half and a live-tree half
+# Story 117.4: stations whose suite runs as a package half and a live-tree half; Story 124.2 split every one.
+LIVE_SPLIT = STATIONS
+# Story 124.2 (spec-pyforge-steward:CAP-175): pyforge-core's and the kit's halves, each its own CI job. The lane is the
+# half: the whole-suite tasks are cmd-less aggregates the preflight expands to these leaves (Story 124.1).
+CORE_PACKAGE = "pyforge-core-package-test"
+CORE_LIVE = "pyforge-core-live-test"
+KIT_PACKAGE = "pyforge-testing-kit-package-test"
+KIT_LIVE = "pyforge-testing-kit-live-test"
+# The `changes` output that fires each of those halves' jobs; core's live-tree half keeps `core`
+# (spec-pyforge-core:CAP-8: every station's change fires it).
+KERNEL_HALVES = (
+    ("core_package", CORE_PACKAGE),
+    ("core", CORE_LIVE),
+    ("testing_kit", KIT_PACKAGE),
+    ("testing_kit_live", KIT_LIVE),
+)
 
 
 def live(station: str) -> str:
@@ -92,9 +107,8 @@ def gates_of(chosen: set[str]) -> set[str]:
 
 
 NO_CI_COUNTERPART = {"docs-map-render-test", "docs-gen-test"}
-# Herald Story 45.1: herald's job runs pyforge-herald-test-built, whose depends-on runs docs-site-install and then
-# pyforge-herald-test, so a herald job that fires runs the install too (the reader selects every lane in the closure
-# of the task a step runs).
+# Herald Story 45.1, carried to the live half by Story 124.2: herald-live-test runs docs-site-install, then herald's
+# live-tree half (its built-site tests build Astro), so a herald live job that fires runs the install too.
 HERALD_JOB_INSTALL = {"docs-site-install"}
 ALWAYS_ON = SPEC_ALWAYS_ON | ALWAYS_ON_SINCE_SPEC
 
@@ -311,14 +325,18 @@ def test_marshal_only_branch_selects_marshal_core_and_always_on_lanes(tmp_path: 
     repo = make_repo(tmp_path, {"src/shared/packages/pyforge-marshal/src/x.py": "x = 1\n"})
     selection = select(repo)
     chosen = selected_tasks(selection)
+    # Core's live-tree half: every station's change fires it (spec-pyforge-core:CAP-8).
     assert chosen >= LINT | SPEC_ALWAYS_ON | ALWAYS_ON_SINCE_SPEC | {
-        "pyforge-core-test",
+        CORE_LIVE,
         suite("marshal"),
+        live("marshal"),
         gate("marshal"),
-        suite("atlas"),
+        live("atlas"),  # Story 124.2: the `src/shared/packages` readers are each station's live-tree half
         live("doctor"),  # Story 117.4: doctor's `src` readers are its live-tree half
-        suite("scribe"),
+        live("scribe"),
     }
+    # Story 124.2: no other package half runs on a marshal-only diff.
+    assert not chosen & ({suite(s) for s in STATIONS if s != "marshal"} | {CORE_PACKAGE, KIT_PACKAGE})
     assert selection.all_reason is None
 
 
@@ -337,7 +355,7 @@ def test_marshal_selection_journals_the_workflow_and_rule_that_skipped_each_lane
     )  # Story 117.2: the gate rides its suite's job
     assert skipped["test-ci-meta"]["workflow"] == "cfe-regression-net.yml"
     assert "on.pull_request.paths" in skipped["test-ci-meta"]["rule"]
-    assert skipped["pyforge-testing-kit-test"]["workflow"] == "pyforge-station-tests.yml"
+    assert skipped[KIT_PACKAGE]["workflow"] == "pyforge-station-tests.yml"
     assert {e["lane"] for e in journal["selected"]} >= {"docs-map-render-test", "docs-gen-test"}
     assert "no CI counterpart" in next(e for e in journal["selected"] if e["lane"] == "docs-gen-test")["reason"]
 
@@ -362,14 +380,15 @@ def test_cfe_only_branch_selects_the_lanes_station_tests_reads(tmp_path: Path) -
     assert ALWAYS_ON <= chosen
     assert chosen & GATES == gates_of(chosen)
     assert {
-        suite("atlas"),
-        live("doctor"),  # Story 117.4: the .claude/skills readers are the live-tree halves
-        suite("herald"),
-        suite("marshal"),
-        suite("mason"),
+        live("atlas"),  # Story 117.4 / 124.2: the .claude/skills readers are the live-tree halves
+        live("doctor"),
+        live("herald"),
+        live("marshal"),
+        live("mason"),
         live("steward"),
-        suite("warden"),
+        live("warden"),
     } <= chosen
+    assert not chosen & {suite(s) for s in STATIONS}  # no package half reads .claude/
 
 
 def test_dream_only_branch_selects_the_always_on_lanes(tmp_path: Path) -> None:
@@ -379,8 +398,7 @@ def test_dream_only_branch_selects_the_always_on_lanes(tmp_path: Path) -> None:
     # ``docs/dreams/**`` is outside ``pages.yml``'s twelve published-input paths (Story 102.2).
     assert chosen == (
         ALWAYS_ON
-        | {live("doctor"), suite("herald"), suite("marshal"), live("steward")}  # Story 117.4: docs/dreams readers
-        | {gate("herald"), gate("marshal")}  # Story 117.2: a gate rides its package suite
+        | {live("doctor"), live("herald"), live("marshal"), live("steward")}  # Story 117.4 / 124.2: docs/dreams readers
         | HERALD_JOB_INSTALL
         | _spurious_lint_tasks_from_station_tests_changes(repo)
     )
@@ -405,7 +423,7 @@ def test_docs_site_branch_selects_the_docs_site_validators_and_the_always_on_lan
         ALWAYS_ON
         | DOCS_SITE_VALIDATE
         | PAGES_CHECK_LEAVES
-        | {suite("herald"), gate("herald")}  # Story 117.2: the gate rides its suite's job
+        | {live("herald")}  # Story 124.2: the docs-site readers are herald's live-tree half; no gate rides it
         | _spurious_lint_tasks_from_station_tests_changes(repo)
     )
 
@@ -415,11 +433,12 @@ def test_django_pyforge_branch_selects_kit_steward_doctor_marshal_and_core(tmp_p
     selection = select(repo)
     chosen = selected_tasks(selection)
     assert {
-        "pyforge-testing-kit-test",
-        live("steward"),  # Story 117.4: the django-pyforge readers are the live-tree halves
+        KIT_PACKAGE,  # the kit's lane guard pins its rule, django-pyforge included, on both halves
+        KIT_LIVE,
+        live("steward"),  # Story 117.4 / 124.2: the django-pyforge readers are the live-tree halves
         live("doctor"),
-        "pyforge-marshal-test",
-        "pyforge-core-test",
+        live("marshal"),
+        CORE_LIVE,
     } <= chosen
     assert chosen - NO_CI_COUNTERPART == oracle_selection(repo, tmp_path)
 
@@ -427,7 +446,7 @@ def test_django_pyforge_branch_selects_kit_steward_doctor_marshal_and_core(tmp_p
 def test_django_herald_branch_selects_steward_and_herald(tmp_path: Path) -> None:
     repo = make_repo(tmp_path, {"src/shared/packages/django-herald/src/x.py": "x = 1\n"})
     chosen = selected_tasks(select(repo))
-    assert {live("steward"), suite("herald")} <= chosen  # Story 117.4
+    assert {live("steward"), live("herald")} <= chosen  # Story 117.4 / 124.2
 
 
 def test_lint_types_only_branch_selects_steward(tmp_path: Path) -> None:
@@ -537,13 +556,11 @@ def oracle_selection(repo: Path, tmp_path: Path) -> set[str]:
         chosen |= DOCS_SITE_VALIDATE | PAGES_CHECK_LEAVES
     if _oracle_fires(repo, "pyforge-station-tests.yml", changed):
         out = _oracle_outputs(repo, "pyforge-station-tests.yml", tmp_path)
-        for key, lane in [("core", "pyforge-core-test"), ("testing_kit", "pyforge-testing-kit-test")] + [
-            (s, suite(s)) for s in STATIONS
-        ]:
+        for key, lane in [*KERNEL_HALVES, *((s, suite(s)) for s in STATIONS)]:
             if out.get(key) == "true":
                 chosen.add(lane)
-        if out.get("herald") == "true":
-            chosen |= HERALD_JOB_INSTALL  # the job runs pyforge-herald-test-built: the install, then the suite (45.1)
+        if out.get("herald_live") == "true":
+            chosen |= HERALD_JOB_INSTALL  # herald-live-test runs the install, then the live half (45.1, 124.2)
         for s in LIVE_SPLIT:  # Story 117.4: the live-tree half fires on what its modules read
             if out.get(f"{s}_live") == "true":
                 chosen.add(live(s))
@@ -670,7 +687,7 @@ def test_a_failing_changes_step_runs_its_workflow_s_lanes(tmp_path: Path) -> Non
         edits=[("pyforge-station-tests.yml", "set -euo pipefail", "exit 3")],
     )
     selection = select(repo)
-    station_lanes = {"pyforge-core-test", "pyforge-testing-kit-test"} | {suite(s) for s in STATIONS}
+    station_lanes = {lane for _, lane in KERNEL_HALVES} | {suite(s) for s in STATIONS} | {live(s) for s in STATIONS}
     assert station_lanes <= selected_tasks(selection)
     assert "exited 3" in verdict(selection, suite("atlas")).reason
     # Another workflow's lanes are still decided by their own rules.
@@ -749,7 +766,7 @@ def test_dirty_steward_file_adds_the_steward_lanes(tmp_path: Path, dirty: Callab
     assert clean <= chosen
     assert STEWARD_LANES <= chosen
     if dirty is not _dirty_unstaged:
-        assert suite("herald") in chosen
+        assert live("herald") in chosen  # Story 124.2: herald's steward/src readers are its live-tree half
     assert selection.dirty_paths and "src/shared/packages/pyforge-steward" in selection.dirty_paths[0]
 
 

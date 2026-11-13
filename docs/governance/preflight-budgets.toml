@@ -4,6 +4,19 @@
 # preflight-budget warns when a lane's median of the last five green runs
 # exceeds 1.5× its budget. Missing lanes inherit [defaults] by run mode.
 #
+# Story 124.2 (spec-pyforge-steward:CAP-175) added the lanes its split made:
+# the live-tree halves of atlas, herald, marshal, mason, scribe and warden, and
+# pyforge-core's and the testing kit's two halves, which replace their
+# whole-suite lanes (`pyforge-core-test` and `pyforge-testing-kit-test` are
+# cmd-less aggregates since steward Story 124.1, so the preflight runs their
+# halves). Their values are the first measured medians: three standalone runs
+# of `pixi run --frozen -e <env> <task>` each on 2026-11-12 (16 cores, one lane
+# at a time; herald's with TMPDIR off tmpfs, as the preflight's lane scratch
+# sets it), rounded to the second. Scribe's live half had one red test in each
+# run (test_spec_not_behind_memlog, behind until steward Story 122.5 re-derives
+# spec-pyforge-steward); its time stands. The preflight runs lanes side by
+# side, so its journal medians run higher; the next re-measure reads the journal.
+#
 # CHANGING THIS FILE IS A GOVERNANCE ACT — same convention as
 # coverage-thresholds.toml beside it.
 
@@ -26,14 +39,22 @@ full = 240
 "target-version-check@pyforge-guild" = 5
 "precommit-config-check@pyforge-guild" = 4
 "test-ci-meta@pyforge-guild" = 120
-"pyforge-core-test@pyforge-core" = 90
-"pyforge-testing-kit-test@pyforge-testing-kit" = 35
+"pyforge-core-package-test@pyforge-core" = 5
+"pyforge-core-live-test@pyforge-core" = 16
+"pyforge-testing-kit-package-test@pyforge-testing-kit" = 1
+"pyforge-testing-kit-live-test@pyforge-testing-kit" = 1
 "pyforge-atlas-test@pyforge-atlas" = 257
+"pyforge-atlas-live-test@pyforge-atlas" = 45
 "pyforge-herald-test@pyforge-herald" = 341
+"pyforge-herald-live-test@pyforge-herald" = 166
 "pyforge-marshal-test@pyforge-marshal" = 276
+"pyforge-marshal-live-test@pyforge-marshal" = 46
 "pyforge-mason-test@pyforge-mason" = 579
+"pyforge-mason-live-test@pyforge-mason" = 5
 "pyforge-scribe-test@pyforge-scribe" = 180
+"pyforge-scribe-live-test@pyforge-scribe" = 4
 "pyforge-warden-test@pyforge-warden" = 120
+"pyforge-warden-live-test@pyforge-warden" = 11
 "pyforge-atlas-coverage-gate@pyforge-atlas" = 15
 "pyforge-doctor-coverage-gate@pyforge-doctor" = 15
 "pyforge-herald-coverage-gate@pyforge-herald" = 15

@@ -1,4 +1,4 @@
-"""Story 14.4 — CAP-4: pin fan-out enumerated, not discovered by red tests."""
+"""Story 14.4 — CAP-12: pin fan-out enumerated, not discovered by red tests."""
 
 from __future__ import annotations
 
@@ -256,6 +256,6 @@ def test_format_mentions_foreign(tmp_path: Path):
         loops_home=tmp_path / "loops",
     )
     text = format_pin_fan_out(report, as_json=False)
-    assert "CAP-4 report-only" in text
+    assert "CAP-12 report-only" in text
     assert "foreign" in text
     assert "root-pixi-floor:bmad-loop" in text

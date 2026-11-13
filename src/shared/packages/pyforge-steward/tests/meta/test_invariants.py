@@ -635,7 +635,7 @@ def test_the_dashboard_module_split_is_pinned_not_merely_documented():
     django-FREE half, so the drift recurs on the next dashboard module: adding
     a `views.py` with `from django.db import models` left the whole suite green
     with the docstring silently wrong (mutation-proved at the time) -- exactly
-    what Story 9.2's own `views.py` (a Django view factory backing CAP-3's
+    what Story 9.2's own `views.py` (a Django view factory backing spec-pyforge-steward CAP-111's
     "absent, not hidden" claim) then did for real, adding it to the set below.
 
     Deliberately an equality assert against a named set rather than a derived

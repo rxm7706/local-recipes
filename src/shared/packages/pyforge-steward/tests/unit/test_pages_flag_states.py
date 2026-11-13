@@ -1,4 +1,4 @@
-"""Story 102.2: pages_duty flag gates deploy-when-changed (CAP-168 / CAP-4)."""
+"""Story 102.2: pages_duty flag gates deploy-when-changed (CAP-168 / spec-feature-flag-governance CAP-4)."""
 
 from __future__ import annotations
 

@@ -127,7 +127,7 @@ def test_ls_is_cheap_bookkeeping_only(repo: Path, tmp_path: Path, monkeypatch):
     assert [r["slug"] for r in payload] == ["owned"]
     assert "loop/pyforge-marshal" not in text
     assert str(foreign) not in text
-    # CAP-2: ls must not spawn any git subprocess (bookkeeping only).
+    # CAP-105: ls must not spawn any git subprocess (bookkeeping only).
     assert calls == []
 
 
@@ -513,7 +513,7 @@ def test_start_after_clean_reuses_slug(repo: Path, tmp_path: Path):
     assert dest2.is_dir()
 
 
-# --- Story 13.2 / CAP-3: status ---
+# --- Story 13.2 / CAP-106: status ---
 
 
 def test_status_reports_clean_ahead_behind_merged(repo: Path, tmp_path: Path):
@@ -851,7 +851,7 @@ def test_a_detached_head_on_main_does_not_prove_the_branch_and_the_branch_is_kep
 
 
 def test_a_local_ref_shadowing_the_source_does_not_hide_an_unlanded_commit(repo: Path, tmp_path: Path):
-    """Story 69.1 read a shadowed source as no proof at all; since Story 70.1 (CAP-158) the proof reads
+    """Story 69.1 read a shadowed source as no proof at all; since Story 70.1 (spec-pyforge-steward CAP-158) the proof reads
     `refs/remotes/origin/main` itself, so the shadow at the unlanded tip is simply not consulted -- the
     unlanded commit still archives and the branch is kept (a landed worktree past a shadow now leaves a
     note: test_workspace_full_refs.py)."""

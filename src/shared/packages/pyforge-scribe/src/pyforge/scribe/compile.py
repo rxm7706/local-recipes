@@ -58,13 +58,18 @@ corrupted double-write and never red cron mail.
 Zero required network calls (AD-6): the only subprocess invoked is
 `git log` (local, read-only -- never `fetch`/`pull`/`clone`/`ls-remote`).
 
-**Staleness flag (Story 6.3, CAP-13).** After supersession runs, every
-still-CURRENT node whose citation resolves to a git-tracked repo file gets
-one more git-timestamp comparison: if that file's latest commit postdates
-the node's own `valid_from`, the node is re-upserted with `stale=True`
-(`models.GraphNode.stale`). A node Story 2.3 already invalidated (a
-declared `supersedes:` edge points at it) is skipped -- it is not current,
-so it was never a staleness candidate in the first place. This is the same
+**Staleness flag (Story 6.3, token-economy:CAP-13; CAP-11).** After
+supersession runs, every still-CURRENT node whose citation resolves to a
+git-tracked repo file gets one more git-timestamp comparison: if that
+file's latest commit is authored after `compiled_at`, the moment this
+compile started (never the node's `valid_from`), the node is re-upserted
+with `stale=True` (`models.GraphNode.stale`). The flat-file store keeps
+`compiled_at`, and `recall.py` withholds at recall time a current node
+whose source gained a commit after it (CAP-26), so a commit landed between
+nightlies is never served before the next compile flags it. A node Story
+2.3 already invalidated (a declared `supersedes:` edge points at it) is
+skipped -- it is not current, so it was never a staleness candidate in the
+first place. This is the same
 git-timestamp-only mechanism epic-wide (memlog/changelog/retro/memory/code
 nodes alike) -- no LLM call, no new dependency, and `_apply_supersession()`
 is untouched. `commit:`/`transcript:` citations have no git-trackable
@@ -1077,7 +1082,7 @@ def _apply_supersession(
     return invalidated
 
 
-# --- staleness flag (Story 6.3, CAP-13) ---------------------------------------
+# --- staleness flag (Story 6.3, token-economy:CAP-13; CAP-11) -----------------
 
 #: A `code` node's citation (Story 6.1's graphify extra) carries a
 #: `:L<line>` suffix the underlying source file's own path does not --

@@ -9,7 +9,7 @@ from pyforge.steward.dashboard.models import AuditEntry, CorridorLoad, Quarantin
 
 @admin.register(AuditEntry)
 class AuditEntryAdmin(admin.ModelAdmin):
-    """Read-only: the audit trail (CAP-4) is written by `audit.record_audit_entry`
+    """Read-only: the audit trail (CAP-112) is written by `audit.record_audit_entry`
     alone and never edited, added to, or deleted through the admin."""
 
     list_display = ("actor", "role", "action", "target", "row_count", "occurred_at")

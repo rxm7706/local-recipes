@@ -14,6 +14,7 @@ import sys
 import time
 from pathlib import Path
 
+import pytest
 from pyforge.core.process import ProcessResult
 
 import pyforge.marshal
@@ -22,19 +23,30 @@ from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.core.verdict import Verdict, classify, compute_verdict, exit_code_for
 from pyforge.marshal.seed.model.kit import CODEGRAPH_INDEX_RELPATH
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): this module reads the repository outside this package, so it runs in
+# the live-tree half; it finds the repository root when a test runs, never at import, so the module imports off
+# the tree (the package half collects it before the marker deselects it).
+pytestmark = pytest.mark.live_tree
+
 _PACKAGE_FILE = pyforge.marshal.__file__
 if _PACKAGE_FILE is None:
     raise ValueError("installed package has no __file__")
-REPO_ROOT = Path(_PACKAGE_FILE).resolve().parents[7]
-CHECKER = REPO_ROOT / "scripts" / "index_freshness_check.py"
-DETECTORS = REPO_ROOT / "scripts" / "detectors.py"
+
+
+def _repo_root() -> Path:
+    # src/pyforge/marshal/__init__.py -> ... -> repo root, found when a test runs
+    return Path(_PACKAGE_FILE).resolve().parents[7]
 
 
 def _load_checker(monkeypatch, loop_root: Path):
     """Import index_freshness_check with LOOP_ROOT bound to ``loop_root``."""
-    src = CHECKER.read_text(encoding="utf-8").replace(
-        'LOOP_ROOT = Path.home() / ".bmad-loops"',
-        f"LOOP_ROOT = Path({str(loop_root)!r})",
+    src = (
+        (_repo_root() / "scripts" / "index_freshness_check.py")
+        .read_text(encoding="utf-8")
+        .replace(
+            'LOOP_ROOT = Path.home() / ".bmad-loops"',
+            f"LOOP_ROOT = Path({str(loop_root)!r})",
+        )
     )
     mod_path = loop_root / "_index_freshness_under_test.py"
     mod_path.parent.mkdir(parents=True, exist_ok=True)
@@ -69,7 +81,7 @@ def _loop_home(tmp_path: Path, name: str, *, policy_toml: str) -> Path:
 
 def test_detector_uses_kit_and_scribe_canonical_index_paths():
     """Index paths must match Story 28.3 kit + Scribe cocoindex seam."""
-    src = CHECKER.read_text(encoding="utf-8")
+    src = (_repo_root() / "scripts" / "index_freshness_check.py").read_text(encoding="utf-8")
     assert CODEGRAPH_INDEX_RELPATH in src
     assert ".claude/data/pyforge-scribe/cocoindex-index.json" in src
     assert ".codegraph/index" not in src
@@ -343,7 +355,7 @@ def test_marshal_check_surfaces_structured_idxf_not_check_002(capsys):
 
 
 def test_detectors_parse_structured_findings_from_json_output():
-    spec = importlib.util.spec_from_file_location("detectors_under_test", DETECTORS)
+    spec = importlib.util.spec_from_file_location("detectors_under_test", _repo_root() / "scripts" / "detectors.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
 
@@ -387,7 +399,7 @@ def test_run_one_index_freshness_check_wires_json_and_structured_findings(tmp_pa
         policy_toml="[context.structure-graph]\nenabled = true\n",
     )
 
-    spec = importlib.util.spec_from_file_location("detectors_under_test", DETECTORS)
+    spec = importlib.util.spec_from_file_location("detectors_under_test", _repo_root() / "scripts" / "detectors.py")
     det_mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(det_mod)
 

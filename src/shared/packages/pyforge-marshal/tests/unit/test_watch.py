@@ -830,6 +830,8 @@ def _fake_home(monkeypatch, tmp_path: Path, *slugs: str) -> Path:
     for slug in slugs:
         (home / ".bmad-loops" / slug).mkdir(parents=True)
     monkeypatch.setattr("pathlib.Path.home", classmethod(lambda cls: home))
+    # The default root: an operator's own BMAD_LOOP_HOME_ROOT must not move these fixtures.
+    monkeypatch.delenv("BMAD_LOOP_HOME_ROOT", raising=False)
     return home
 
 
@@ -1276,6 +1278,46 @@ def test_default_ports_loop_last_fact_reads_the_real_journal(tmp_path: Path, mon
     assert ports.loop_last_fact("acme", "r1") == datetime.fromtimestamp(1755500100.5, tz=timezone.utc)
     # No journal at all for this run -- honest None, not an exception.
     assert ports.loop_last_fact("acme", "no-such-run") is None
+
+
+def test_default_ports_honour_the_loop_home_root_override(tmp_path: Path, monkeypatch):
+    """Story 115.1 (CAP-227): `watch` resolves every loop home through `marshal init`'s own root, so
+    BMAD_LOOP_HOME_ROOT moves it exactly as it moves `init` -- the home directory is never read."""
+    home = _fake_home(monkeypatch, tmp_path)
+    override = tmp_path / "loop-homes"
+    (override / "acme").mkdir(parents=True)
+    run_dir = override / "acme" / ".bmad-loop" / "runs" / "r1"
+    run_dir.mkdir(parents=True)
+    (run_dir / "journal.jsonl").write_text('{"ts": 1755500100.5, "kind": "story-done"}\n', encoding="utf-8")
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(override))
+    process = _RecordingProcess(
+        {
+            "list": _ok({"runs": [{"id": "r1", "status": "running"}]}),
+            "status": _ok({"run_id": "r1", "finished": False}),
+        }
+    )
+    ports = watch_mod._default_ports(process, tmp_path)
+
+    assert ports.list_runs("acme") == {"runs": [{"id": "r1", "status": "running"}]}
+    ports.run_status("acme", "r1")
+    assert [cwd for _argv, cwd, _timeout in process.calls] == [override / "acme", override / "acme"]
+    assert ports.loop_last_fact is not None
+    assert ports.loop_last_fact("acme", "r1") == datetime.fromtimestamp(1755500100.5, tz=timezone.utc)
+    # Nothing under the home directory's own `.bmad-loops` exists, and nothing was read from it.
+    assert not (home / ".bmad-loops").exists()
+
+
+def test_default_ports_anchor_a_relative_loop_home_root_once(tmp_path: Path, monkeypatch):
+    """A relative override is anchored at the invocation directory, the way `marshal init` anchors it."""
+    _fake_home(monkeypatch, tmp_path)
+    (tmp_path / "rel-homes" / "acme").mkdir(parents=True)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", "rel-homes")
+    process = _RecordingProcess({"list": _ok({"runs": []})})
+
+    watch_mod._default_ports(process, tmp_path).list_runs("acme")
+
+    assert process.calls[0][1] == tmp_path / "rel-homes" / "acme"
 
 
 def test_default_ports_dispatch_last_fact_reads_the_real_journal(tmp_path: Path):

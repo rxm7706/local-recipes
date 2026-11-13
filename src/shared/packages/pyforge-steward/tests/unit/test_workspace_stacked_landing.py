@@ -1056,7 +1056,7 @@ def test_a_pruned_present_workspace_in_a_non_utf8_repository_never_crashes(tmp_p
 
 @pytest.mark.skipif(os.geteuid() == 0, reason="root can enter a mode-000 directory")
 def test_a_workspace_the_user_cannot_enter_is_an_error_row_and_the_sweep_goes_on(repo: Path, tmp_path: Path) -> None:
-    """Review 13 (CAP-155): a present, unregistered workspace the user cannot enter is reported and kept, and the
+    """Review 13 (spec-pyforge-steward CAP-155): a present, unregistered workspace the user cannot enter is reported and kept, and the
     sweep still decides the next record."""
     bookkeeping = repo / ".steward" / "workspaces.yaml"
     locked_out = tmp_path / "w-wt"

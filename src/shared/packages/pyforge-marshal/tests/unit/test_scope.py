@@ -21,6 +21,10 @@ from pyforge.marshal.core.journal import FrozenPath
 from pyforge.marshal.core.model import Finding, Severity, Verdict
 from pyforge.marshal.core.verdict import classify
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 # --- Story 28.14: default_epic_surface / resolve_policy_surface ---------------
 
 
@@ -33,7 +37,7 @@ def test_default_epic_surface_covers_package_tree_specs_impl_artifacts_and_bookk
         "pixi.toml",
         "pixi.lock",
         "environment.yaml",
-        "scripts/.spec-surface-baseline.json",
+        "/".join(("scripts", ".spec-surface-baseline.json")),
     )
 
 

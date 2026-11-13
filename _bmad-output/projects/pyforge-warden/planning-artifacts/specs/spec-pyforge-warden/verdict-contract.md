@@ -101,7 +101,7 @@ name-level flagging — never by assuming a version.
 
 | Waiver state | Effect |
 |---|---|
-| valid + matches | suppress the finding; status carries `bypassed` + `review_required`; residual exit 0 |
+| valid + matches | suppress the finding; the rung's status becomes `bypassed` and the applied entry is echoed in the report's `suppressions`; residual exit 0 |
 | valid + matches nothing | `stale-waiver` warn; no verdict change |
 | expired + matches | finding **un-waived** — counts toward exit 1 — plus a `waiver-expired` warn |
 | expired + matches nothing | `stale-waiver` warn |

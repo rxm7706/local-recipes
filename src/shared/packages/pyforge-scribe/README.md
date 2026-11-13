@@ -9,10 +9,10 @@ teammate and every agent session from then on (fixing the duplicated
 -rediscovery pain that motivated this project; see
 `d43899c1cb`).
 
-**Status:** all 9 stories shipped (2 epics) — capture, `scribe graph
-compile`, and `scribe recall` are fully implemented (Epic 2 done). See
-[`_bmad-output/projects/pyforge-scribe/planning-artifacts/`](../../../../_bmad-output/projects/pyforge-scribe/planning-artifacts/)
-for the full spec.
+**Status:** capture, `scribe graph compile` and `scribe recall` are
+implemented; each story's state is the ledger,
+[`sprint-status-ledger.yaml`](../../../../_bmad-output/projects/pyforge-scribe/planning-artifacts/sprint-status-ledger.yaml),
+and the contract is the Spec `spec-pyforge-scribe` beside it.
 
 ## Develop
 

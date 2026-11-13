@@ -1,4 +1,4 @@
-"""Guard library (Story 53.4 / hub:CAP-4).
+"""Guard library (Story 53.4 / spec-pyforge-steward CAP-55).
 
 The paper's seven categories, mapped to live PyForge surfaces. Source-Grounding
 is the first category added *as a library check* (copy of scribe recall AD-8).

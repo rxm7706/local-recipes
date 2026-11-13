@@ -1,5 +1,5 @@
 # GENERATED — do not hand-edit. Regenerate with:
-#     pixi run -e local-recipes sprint-ledger-sync
+#     pixi run -e pyforge-guild sprint-ledger-sync
 #
 # TRACKED twin of _bmad-output/projects/pyforge-steward/implementation-artifacts/sprint-status.yaml
 # which is gitignored Tier-3 (.gitignore:736) and therefore invisible to CI and
@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 684
+# stories: 719
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -112,6 +112,31 @@ development_status:
   12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster: done
   12-8-github-projects-v2-lands-in-github-metrics-via-dlt: done
   12-9-ocp-as-a-portability-profile: done
+  120-1-the-cutover-spec-and-its-decisions-name-one-writer-no-fold-and-a-self-hosted-launch: done
+  120-2-the-regenerate-and-ledger-specs-follow-the-rulings-and-the-ledger-schema-is-written-once: done
+  120-3-epic-44-the-epic-bindings-and-the-chain-standard-say-what-is-true: done
+  120-4-the-nine-frames-point-at-the-seed-and-agree-with-the-rulings: done
+  120-5-the-case-list-counts-itself-and-covers-the-launch-slice: done
+  121-1-a-generator-derives-the-capability-ledger-from-the-live-specs: done
+  121-2-steward-cutover-plans-the-ledger-and-no-longer-copies-trees: done
+  121-3-the-capability-ledger-takes-the-rulings-archived-rows-leave-modes-and-expiries-are-decided: done
+  121-4-a-chain-write-off-the-writer-is-refused-in-session: done
+  121-5-the-host-platform-and-portals-get-their-foundry-contract: blocked
+  121-6-the-ledger-check-refuses-a-row-that-contradicts-its-spec-or-the-rules: done
+  121-7-the-capability-ledger-is-regenerated-from-the-swept-specs-and-holds: done
+  122-1-the-steward-spec-s-markers-numbers-and-names-match-the-tree-and-restore-and-revoke-have-a-capability: done
+  122-2-steward-s-public-contract-is-one-companion-and-a-test-fails-when-the-code-has-more: done
+  122-3-steward-s-help-and-output-cite-today-s-capability-ids: done
+  122-4-comments-and-docstrings-in-steward-s-source-and-tests-cite-today-s-capability-ids: done
+  122-5-the-steward-and-host-specs-close-on-what-landed-shipped-markers-and-one-surface-reconcile-each: done
+  123-1-every-steward-capability-names-the-modules-that-realize-it-and-the-tests-that-prove-it: done
+  123-2-one-steward-module-names-this-root-s-layout-and-repository-and-prove-landed-reads-doctor-through-its-command: done
+  123-3-estate-plan-refuses-when-its-pixi-dry-run-fails-and-the-share-tree-tests-say-where-they-run: done
+  124-1-every-suite-that-marked-its-live-tree-readers-has-its-two-task-halves: done
+  124-2-each-split-suite-runs-its-live-tree-half-as-its-own-ci-job: done
+  124-3-core-s-the-kit-s-and-steward-s-manifests-state-python-3-14-a-check-holds-every-package-floor-and-the-lock-follows: done
+  124-4-the-cutover-ledger-write-kill-switch-joins-the-flag-tree-and-every-shipped-flag-table: done
+  124-5-each-persona-names-the-mcp-tools-its-station-s-face-serves-and-the-host-spec-governs-the-personas-and-says-what-scribe-s-graph-store-is: done
   13-1-workspace-verbs-over-git-worktree: done
   13-2-status-and-the-feed-mirror-decision: done
   13-3-a-repo-set-opens-as-one-workspace: done
@@ -182,7 +207,7 @@ development_status:
   29-2-personas-act-only-through-grammar-and-mcp: done
   29-3-five-tier-check: done
   29-4-the-station-skills-are-recompiled-to-cover-the-verbs-the-contract-names: done
-  29-5-the-station-skills-carry-the-fixes-the-2026-11-05-audit-accepted: backlog
+  29-5-the-station-skills-carry-the-fixes-the-2026-11-05-audit-accepted: done
   3-1-any-named-pixi-environment-materializes-with-one-command: done
   3-2-a-bmad-loop-runner-and-its-environment-materialize-together: done
   3-3-the-operator-can-see-every-environment-that-exists-before-picking-one: done
@@ -241,9 +266,9 @@ development_status:
   44-15-actions-minutes-metering: blocked
   44-2-the-red-team-document-fixes: blocked
   44-3-open-the-foundry: done
-  44-4-fold-the-packages: backlog
-  44-5-move-the-estate: backlog
-  44-6-cfe-comes-home: backlog
+  44-4-fold-the-packages: blocked
+  44-5-move-the-estate: blocked
+  44-6-cfe-comes-home: blocked
   44-7-the-factory-island: done
   44-8-the-working-set: blocked
   44-9-mason-submits-to-conda-forge: blocked
@@ -508,6 +533,16 @@ development_status:
   epic-119-retrospective: optional
   epic-12: done
   epic-12-retrospective: optional
+  epic-120: done
+  epic-120-retrospective: optional
+  epic-121: in-progress
+  epic-121-retrospective: optional
+  epic-122: done
+  epic-122-retrospective: optional
+  epic-123: done
+  epic-123-retrospective: optional
+  epic-124: done
+  epic-124-retrospective: optional
   epic-13: done
   epic-13-retrospective: optional
   epic-14: done
@@ -542,7 +577,7 @@ development_status:
   epic-27-retrospective: optional
   epic-28: done
   epic-28-retrospective: optional
-  epic-29: in-progress
+  epic-29: done
   epic-29-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional

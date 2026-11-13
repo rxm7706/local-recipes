@@ -1,13 +1,13 @@
 """Steward's `workspace` duty — scratch worktrees (Stories 13.1–13.4).
 
-Wraps ``git worktree`` plus a bookkeeping file. CAP-5's own-worktrees-only
+Wraps ``git worktree`` plus a bookkeeping file. CAP-108's own-worktrees-only
 rule is HARD: ``ls`` / ``status`` / ``clean`` operate only on entries this
 tool recorded — Marshal loop homes and hand-made worktrees are invisible by
 construction. Story 13.4 extends that HARD rule set-wide across repo-set
 members.
 
-CAP-1 ``start`` (single-repo or repo-set), CAP-2 ``ls``, CAP-3 ``status``
-(pays per-worktree git cost), CAP-4 ``clean`` (archive-not-delete).
+CAP-104 ``start`` (single-repo or repo-set), CAP-105 ``ls``, CAP-106 ``status``
+(pays per-worktree git cost), CAP-107 ``clean`` (archive-not-delete).
 Story 13.3 adds declarative ``[projects.<slug>]`` repo sets and coordinated
 multi-repo ``start`` with ``.code-workspace`` generation.
 Story 13.4 adds set-level ``status`` / ``clean`` (dirty refusal naming the
@@ -31,6 +31,7 @@ from pathlib import Path
 
 import yaml
 from pyforge.core.atomic_write import atomic_write
+from pyforge.core.cutover_root import LOCAL_DEV_RELATIVE
 from pyforge.core.flags import read_boolean
 from pyforge.core.preserve_refs import (
     PreserveGitError,
@@ -86,7 +87,7 @@ class WorkspaceRecord:
 
 @dataclass(frozen=True)
 class WorkspaceStatus:
-    """CAP-3 live git health for one owned worktree.
+    """CAP-106 live git health for one owned worktree.
 
     When the path is missing or per-worktree git fails, ``error`` is set and
     the health fields are ``None`` (JSON null) so consumers cannot confuse an
@@ -181,7 +182,7 @@ class RepoSetMemberOpen:
 
 @dataclass(frozen=True)
 class RepoSetMemberStatus:
-    """CAP-2 (multi-repo): live status for one open set member."""
+    """CAP-77 (multi-repo): live status for one open set member."""
 
     member: str
     status: WorkspaceStatus
@@ -559,7 +560,7 @@ def start_workspace(
     bookkeeping: Path | None = None,
     path: Path | None = None,
 ) -> WorkspaceRecord:
-    """CAP-1: create a scratch worktree and record it."""
+    """CAP-104: create a scratch worktree and record it."""
     _validate_slug(slug)
     root = root if root is not None else repo_root()
     bookkeeping = bookkeeping if bookkeeping is not None else default_bookkeeping_path()
@@ -587,7 +588,7 @@ def start_workspace(
     try:
         save_bookkeeping(bookkeeping, existing + (record,))
     except Exception:
-        # CAP-1: never leave an orphan worktree outside bookkeeping.
+        # CAP-104: never leave an orphan worktree outside bookkeeping.
         _git_ok("worktree", "remove", "--force", str(dest), cwd=root)
         raise
     return record
@@ -597,7 +598,7 @@ def list_workspaces(
     *,
     bookkeeping: Path | None = None,
 ) -> tuple[WorkspaceRecord, ...]:
-    """CAP-2: cheap enumeration — bookkeeping only, no per-worktree git."""
+    """CAP-105: cheap enumeration — bookkeeping only, no per-worktree git."""
     bookkeeping = bookkeeping if bookkeeping is not None else default_bookkeeping_path()
     return load_bookkeeping(bookkeeping)
 
@@ -670,7 +671,7 @@ def _unreachable_status(record: WorkspaceRecord, message: str) -> WorkspaceStatu
 
 
 def status_of(record: WorkspaceRecord, *, root: Path) -> WorkspaceStatus:
-    """CAP-3: live dirty / ahead / behind / merged for one owned record.
+    """CAP-106: live dirty / ahead / behind / merged for one owned record.
 
     Missing path / git failure → ``error`` set (never raises) so a multi-row
     ``status`` can still report reachable siblings.
@@ -709,7 +710,7 @@ def status_workspaces(
     root: Path | None = None,
     bookkeeping: Path | None = None,
 ) -> tuple[WorkspaceStatus, ...]:
-    """CAP-3: pay per-worktree git cost for owned worktrees (optional slug filter)."""
+    """CAP-106: pay per-worktree git cost for owned worktrees (optional slug filter)."""
     root = root if root is not None else repo_root()
     bookkeeping = bookkeeping if bookkeeping is not None else default_bookkeeping_path()
     records = list_workspaces(bookkeeping=bookkeeping)
@@ -1082,7 +1083,8 @@ def _remote_tracking_name(source: str, *, root: Path) -> str | None:
 
 
 def default_flags_path() -> Path:
-    return repo_root() / "src/platform/config/flags.json"
+    """The flag tree under this checkout's root: ``pyforge.core.cutover_root.LOCAL_DEV_RELATIVE`` (Story 123.2)."""
+    return repo_root() / LOCAL_DEV_RELATIVE
 
 
 def workspace_preserve_tag_enabled(*, flags_path: Path | None = None) -> bool:
@@ -1708,7 +1710,7 @@ def clean_workspaces(
     archive_dir: Path | None = None,
     confirm=None,
 ) -> dict[str, list[dict[str, str]]]:
-    """CAP-4: archive-not-delete owned worktrees; optional ``--merged-only`` / ``--delete`` / slug."""
+    """CAP-107: archive-not-delete owned worktrees; optional ``--merged-only`` / ``--delete`` / slug."""
     root = root if root is not None else repo_root()
     bookkeeping = bookkeeping if bookkeeping is not None else default_bookkeeping_path()
     archive_dir = archive_dir if archive_dir is not None else default_archive_dir()

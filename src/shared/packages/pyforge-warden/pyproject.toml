@@ -54,7 +54,13 @@ packages = ["src/pyforge"]
 # (pixi.toml passes -m "not slow" there) to stay a sub-minute loop. They
 # still run, just via the separate pyforge-warden-test-corpus-oracle task
 # (-m slow).
-markers = ["slow: corpus-scale test dominated by real renders/subprocesses (pyforge-warden-test-corpus-oracle task, not the default suite)"]
+# Story 27.1 (relay of spec-pyforge-steward:CAP-175): a module that reads the live tree outside this package carries
+# `pytestmark = pytest.mark.live_tree`; the package half collects the rest, the live-tree half these
+# (tests/meta/test_live_tree_marker.py holds every outside reader to the marker).
+markers = [
+    "slow: corpus-scale test dominated by real renders/subprocesses (pyforge-warden-test-corpus-oracle task, not the default suite)",
+    "live_tree: the module reads the repository outside its own package (planning artifacts, docs, pixi.toml, the workflows, other stations); it runs in the station's live-tree half and fires on what it reads",
+]
 
 # Story 66.1 (spec-pyforge-steward CAP-153, 2026-09-20): the lint gate `pixi run -e pyforge-guild ruff`
 # / `ruff-format` reads THIS block (run from inside the package). Line width is ruff format's job;

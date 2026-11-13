@@ -8,12 +8,13 @@ Google's [`osv-scanner`](https://github.com/google/osv-scanner) (known CVEs)
 over Python / Conda / Pixi manifests, emitting one schema-validated
 `ComplianceReport` and acting as a strict CI/CD exit-code gate.
 
-**Status:** Epics 1–8 shipped. Epic 9 Story 9.2 wraps those engines as the
-default plugin bundle on `pyforge.core.hooks` and registers optional
-commercial scanners as stubs. Story 9.3 pins that a default `warden scan`
-stays green when Checkmarx (and the other named commercial plugins) are
-absent. Specified in
-[`docs/specs/pyforge-warden.md`](../../../../docs/specs/pyforge-warden.md).
+**Contract:** the station Spec is the
+[`spec-pyforge-warden/`](../../../../_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/)
+folder (`SPEC.md` and its companions). Every surface a caller reaches — the
+CLI verb and its flags, the `[tool.pyforge-warden]` keys, the exit codes and
+status rungs, the feature flags, the environment variables and the MCP tools —
+is listed in its public-contract companion,
+[`contract.md`](../../../../_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/contract.md).
 
 ## Develop
 

@@ -28,6 +28,10 @@ from pyforge.marshal.core import policy
 from pyforge.marshal.core.model import Severity
 from pyforge.marshal.dispatch_verify import run_verify_commands_only
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 MARSHAL_COVERAGE_GATE = "pixi run --frozen -e pyforge-marshal pyforge-marshal-coverage-gate"
 DOCTOR_CROSS_STATION_META = (
     "pixi run --frozen -e pyforge-doctor python -m pytest -q "
@@ -119,7 +123,7 @@ def test_run_verify_commands_only_empty_commands_still_runs_the_derived_commands
     assert findings == ()
     assert preview_findings == ()
     assert process.calls == [
-        ([sys.executable, "scripts/spec_surface_reconcile.py"], worktree),
+        ([sys.executable, "/".join(("scripts", "spec_surface_reconcile.py"))], worktree),
         (LINT_TYPES.split(), worktree),
         (PYFORGE_CORE_TEST.split(), worktree),
         (DEFERRED_WORK_CHECK.split(), worktree),

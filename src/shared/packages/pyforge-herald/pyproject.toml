@@ -99,9 +99,14 @@ packages = ["src/pyforge"]
 # reusing `live` so each marker's docstring stays literally true. Its own
 # skipif on HERALD_LIVE_WEBHOOK is what keeps it out of the default
 # pyforge-herald-test gate.
+#
+# Story 52.1 (spec-pyforge-steward:CAP-175, the convention of steward Story 117.4): a module that reads the live
+# tree outside this package carries `pytestmark = pytest.mark.live_tree`; once steward's task halves land,
+# pyforge-herald-test collects the rest and pyforge-herald-live-test these.
 markers = [
     "live: reaches the real claude-design MCP endpoint (opt in with HERALD_LIVE_DESIGN=1)",
     "live_webhook: starts a real daphne subprocess and connects to it over a real loopback socket (opt in with HERALD_LIVE_WEBHOOK=1)",
+    "live_tree: the module reads the repository outside its own package (planning artifacts, docs, pixi.toml, the workflows, other stations); it runs in the station's live-tree half and fires on what it reads",
 ]
 
 # Story 66.1 (spec-pyforge-steward CAP-153, 2026-09-20): the lint gate `pixi run -e pyforge-guild ruff`

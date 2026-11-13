@@ -7,7 +7,7 @@ paradigm: 'event-sourced capture with a derived, rebuildable read-model (CQRS-li
 scope: 'Scribe capture/promotion (Wave 1, FR-1..FR-8) + graph compile/recall (Wave 2, FR-9..FR-13) + package/CLI surface (FR-14/FR-15)'
 status: final
 created: '2026-07-25'
-updated: "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (PRD -> arch); no CAP, FR or AD is minted. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): prd->arch cascade for the PRD's § Currency reconciliation — 2026-11-01 (EGM fleet audit) (CAP-27 and CAP-29..32 re-derived; fix stories 19.4, 22.2, 23.2, 25.2); checked against every AD, no AD moves. See § Currency reconciliation — 2026-11-01 (EGM fleet audit). Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (CAP-7 retrofit, Epic 29): prd->arch cascade; no decision changes. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 27.1): prd->arch cascade for the PRD's § Currency reconciliation — 2026-10-26 (Story 27.1) (the instruction surface; no requirement moves); no AD moves. See § Currency reconciliation — 2026-10-26 (Story 27.1). Prior "2026-10-15"   # RE-STAMPED 2026-10-15: prd->arch cascade after the 2026-10-15 PRD re-stamp (a stale surface glob re-pointed); no AD amended. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 26, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28: chain-currency cascade (prd -> spine) after the 2026-09-28 PRD re-stamp; no AD change. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (prd -> spine) after the 2026-09-25 PRD re-stamp; no AD change. Prior 2026-09-20
+updated: "2026-11-11"   # RE-STAMPED 2026-11-11 (cutover readiness, Story 31.3): prd->arch cascade for the PRD's § Currency reconciliation — 2026-11-11 (cutover readiness); AD-3's rule and AD-9's input contract state the nested metadata.type schema as the Spec's AD-3 and AD-9 do; the Stack row reads python >=3.14; the Naming convention names the five command groups; sources re-point the legacy spec to archive/; no AD added, removed or renumbered. See § Currency reconciliation — 2026-11-11 (cutover readiness). Prior "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (PRD -> arch); no CAP, FR or AD is minted. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): prd->arch cascade for the PRD's § Currency reconciliation — 2026-11-01 (EGM fleet audit) (CAP-27 and CAP-29..32 re-derived; fix stories 19.4, 22.2, 23.2, 25.2); checked against every AD, no AD moves. See § Currency reconciliation — 2026-11-01 (EGM fleet audit). Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (CAP-7 retrofit, Epic 29): prd->arch cascade; no decision changes. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 27.1): prd->arch cascade for the PRD's § Currency reconciliation — 2026-10-26 (Story 27.1) (the instruction surface; no requirement moves); no AD moves. See § Currency reconciliation — 2026-10-26 (Story 27.1). Prior "2026-10-15"   # RE-STAMPED 2026-10-15: prd->arch cascade after the 2026-10-15 PRD re-stamp (a stale surface glob re-pointed); no AD amended. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 26, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28: chain-currency cascade (prd -> spine) after the 2026-09-28 PRD re-stamp; no AD change. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (prd -> spine) after the 2026-09-25 PRD re-stamp; no AD change. Prior 2026-09-20
 currency_review: "Reviewed 2026-09-17 — one-chain scribe fold remint; no AD added or changed."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15]
 sources:
@@ -15,7 +15,7 @@ sources:
   - '_bmad-output/projects/pyforge-scribe/planning-artifacts/briefs/brief-pyforge-scribe-2026-07-25/brief.md'
   - '_bmad-output/projects/pyforge-scribe/planning-artifacts/research/market-agent-team-memory-research-2026-07-25.md'
   - '_bmad-output/projects/pyforge-scribe/planning-artifacts/research/domain-team-knowledge-graph-domain-research-2026-07-25.md'
-  - 'docs/specs/claude-team-memory.md (legacy — adopted as Wave 1 scope)'
+  - 'archive/docs/specs/claude-team-memory.md (legacy — adopted as Wave 1 scope)'
   - 'src/shared/packages/pyforge-warden/ (shipped sibling package — packaging precedent)'
 companions: []
 ---
@@ -90,7 +90,7 @@ graph TD
 
 - **Binds:** FR-1, FR-8
 - **Prevents:** a translation layer that could silently drop or corrupt fields during promotion, or diverge from Claude Code's own auto-memory schema
-- **Rule:** `.claude/memory/<type>/*.md` frontmatter (`name`, `description`, `type`) is identical in shape to Claude Code's auto-memory schema; `type` ∈ `{feedback, project, reference}` exactly, no additional required fields in Wave 1.
+- **Rule:** `.claude/memory/<type>/*.md` frontmatter is `name`, `description` and a nested `metadata.type`, identical in shape to Claude Code's user-local auto-memory schema (`CaptureRecord.to_frontmatter` writes it); `metadata.type` ∈ `{feedback, project, reference}` exactly; no other key is required, and `supersedes` is optional, written only when set (AD-9). *(Wording amended 2026-11-11, Story 31.3, to follow the Spec's AD-3: the 2026-07-25 text placed `type` at the top level, which no record or writer uses. The decision is unchanged.)*
 
 ### AD-4 — Fact supersession, never deletion (storage-engine-agnostic)
 
@@ -126,13 +126,13 @@ graph TD
 
 - **Binds:** FR-9 (compile reading `.claude/memory/` as one of its inputs)
 - **Prevents:** Wave 2's graph-compile work forcing a reformat of Wave 1's already-shipped `.claude/memory/` entries
-- **Rule:** `.claude/memory/` frontmatter (AD-3) is a stable input contract for `compile.py`. Wave 2 development must read that format as-is; if Wave 2 needs additional metadata, it is additive (new optional fields), never a breaking rewrite of Wave 1's schema.
+- **Rule:** `.claude/memory/` frontmatter (`name`, `description`, nested `metadata.type`; AD-3) is a stable input contract for `compile.py`. Wave 2 development must read that format as-is; if Wave 2 needs additional metadata, it is additive (new optional fields, such as the `supersedes` line of Story 2.3), never a breaking rewrite of Wave 1's schema.
 
 ## Consistency Conventions
 
 | Concern | Convention |
 |---|---|
-| Naming (entities, files, modules) | CLI commands: `scribe capture`, `scribe graph compile`, `scribe recall` (verb-first, matching the Dream's CLI Cadence exactly). Python modules: `pyforge/scribe/{cli,capture,promote,compile,recall,graph_store,models}.py`. Captured record files: same convention as `.claude/memory/<type>/<slug>.md` (Wave 1, AD-3); graph-store-internal naming is engine-specific and owned by the concrete adapter (Deferred). |
+| Naming (entities, files, modules) | CLI commands: `scribe capture`, `scribe graph compile`, `scribe recall` (verb-first, matching the Dream's CLI Cadence exactly); five command groups since Epics 6 and 24 (`capture`, `recall`, `graph`, `index`, `catalog`; FR-14, recorded in the Spec's `contract.md`). Python modules: `pyforge/scribe/{cli,capture,promote,compile,recall,graph_store,models}.py`. Captured record files: same convention as `.claude/memory/<type>/<slug>.md` (Wave 1, AD-3); graph-store-internal naming is engine-specific and owned by the concrete adapter (Deferred). |
 | Data & formats | Captured records are Pydantic models internally (id, type, text, supersedes: id \| None, captured_at UTC, source), serialized to the `.claude/memory/` frontmatter+body shape at the promotion boundary (AD-2/AD-3) — matching this repo's `deckcraft` precedent of one Pydantic model family as the inter-module contract. Timestamps: UTC, ISO 8601, matching the legacy spec's pointer-stub `YYYY-MM-DD` convention for human-facing dates and full `datetime` for internal record ordering. |
 | State & cross-cutting | No component mutates the graph store except `compile.py` (AD-1). No component writes outside its FR-7/AD-2 boundary. All network-touching code paths consult an offline gate before any call (AD-6). Structured logging over `print()`, matching the `deckcraft` precedent (`P-10`), for compile-step audit trails. |
 | CLI exit codes | `0` success, non-zero on capture/compile/recall failure; `scribe recall` returning "no grounded answer found" is exit `0` (a valid, non-error result) — only a hard failure (unreadable graph store, malformed input) is non-zero. |
@@ -145,7 +145,7 @@ shipped `pyforge-warden` sibling package's `pyproject.toml`/`pixi.toml`
 
 | Name | Version |
 |---|---|
-| Python (member-package floor) | `>=3.12` (matches `pyforge-warden`'s floor; distinct by design from the repo-wide `pyforge-atlas` 3.14 floor — namespace-package sharing needs no floor parity, per atlas's AD-16 precedent) |
+| Python (member-package floor) | `>=3.14` (the only supported runtime: `pyproject.toml` `requires-python = ">=3.14"`, the root `pixi.toml` `python = ">=3.14.7,3.14.*"`, and the package `pixi.toml` since Story 33.2; raised from the 2026-07-25 `>=3.12` on 2026-09-07, § Runtime floor) |
 | `typer` | `>=0.27.0` (already in-env; CLI framework, matches `deckcraft`'s precedent) |
 | `gitpython` | `>=3.1.53` (already in-env; git-history reader for the compile step's FR-9 input) |
 | `pydantic` | version deliberately unbound here — present but commented-out in a couple of the repo's `pixi.toml` feature blocks at intake time; confirm the exact floor when Wave 1 implementation starts, do not assume a specific pin from this spine |
@@ -397,3 +397,34 @@ scribe.
 *Chain-currency cascade (PRD -> arch), EGM audit, marshal Story 113.18.*
 
 The audit record `research/egm-audit-2026-11-05.md` and the Spec memlog moved on 2026-11-05. No AD moves.
+
+## Currency reconciliation — 2026-11-11 (cutover readiness)
+
+*`prd→arch` cascade for the PRD's § Currency reconciliation — 2026-11-11 (cutover readiness), Story 31.3: the
+Spec was re-derived by Story 31.2 from the 2026-11-10 cutover-readiness entries, and the PRD followed it.*
+
+Each change upstream was checked against every AD:
+- *The memory schema.* The Spec states the record frontmatter as `name`, `description` and a nested
+  `metadata.type`, with an optional `supersedes` line; the code (`CaptureRecord.to_frontmatter`) and every record
+  have always nested it. AD-3's rule and AD-9's input contract now say so. This corrects the wording, not the
+  decision: parity with user-local auto-memory is still the rule, and it still closes `--type` at three values.
+- *The command surface (FR-14, FR-54).* Five command groups, `capture`, `recall`, `graph`, `index` and `catalog`,
+  and a written public contract held by `tests/meta/test_public_contract.py` (Story 31.1). This is AD-7 as
+  written: the CLI, the MCP face and a documented, versioned API are the contract, and `contract.md` records it.
+  The Naming convention row lists the groups; the dependency diagram and the Structural Seed stay the 2026-07-25
+  plan, as § Currency reconciliation — 2026-08-26 already says of the module inventory.
+- *FR-51 and FR-52 (CAP-33, CAP-34).* `scribe index refresh` and `scribe index move-list` live in `cli.py` and
+  `extras/` behind the compile-surface extras' ports (AD-5, AD-6: the cocoindex switch is off by default, and the
+  move list needs no graphifyy). CAP-34 is retired; its verb stays until a Story removes it
+  (DW-scribe-cutover-2026-11-10-5), and no AD depends on it.
+- *FR-53 (CAP-35).* `tests/meta/test_spec_not_behind_memlog.py` is a meta-test inside the package boundary that
+  reads planning files and git history; it imports `scripts/fleet_scan.py`'s bookkeeping rule and adds no runtime
+  component.
+- *The runtime floor.* The Stack row read `>=3.12` while § Runtime floor — reconciled 2026-09-07 already said 3.14
+  is the only supported runtime; the row now says `>=3.14`, and Story 33.2 made the package `pixi.toml` agree.
+- *The suite split (Story 33.1).* The `live_tree` and `postgres` markers split the tests; the `PostgresGraphStore`
+  driver stays behind the port (AD-5), and its tests fail, never skip, without the server.
+
+No port, adapter, store or package boundary moves, and no scribe module imports `src/platform/`. **Content
+changed:** AD-3's rule and AD-9's rule (wording), the Naming row, the Stack row, `sources:` (the legacy spec
+re-pointed to `archive/docs/specs/claude-team-memory.md`) and this section. No AD added, removed or renumbered.

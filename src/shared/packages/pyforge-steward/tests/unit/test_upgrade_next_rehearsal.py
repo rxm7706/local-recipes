@@ -1,6 +1,6 @@
 """Story 14.10 — `@next` rehearsal (report-only, fixture-based).
 
-Exercises CAP-6 pixi-bin PATH fallback, CAP-8 single-conflict path, and CAP-7 skf
+Exercises CAP-14 pixi-bin PATH fallback, CAP-16 single-conflict path, and CAP-15 skf
 restore together in the invocation shape documented in
 ``spec-pyforge-steward/release-cadence.md`` § The ``@next`` rehearsal.
 
@@ -309,7 +309,7 @@ def test_next_rehearsal_cap6_cap8_cap7_report_only(tmp_path, monkeypatch):
     assert report.custom_modules_ok is True
 
     text = format_apply(report, as_json=False)
-    assert "## CAP-8 local customizations re-applied" in text
+    assert "## CAP-16 local customizations re-applied" in text
     assert "[conflict_needs_manual_merge]" in text
 
     argv_doc = json.dumps(NEXT_REHEARSAL_ARGV)

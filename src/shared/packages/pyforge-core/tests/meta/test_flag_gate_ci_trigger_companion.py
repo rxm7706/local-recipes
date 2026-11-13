@@ -8,8 +8,9 @@ for the reason ``test_coverage_gate_ci_trigger_companion.py`` beside it exists: 
 job in ``.github/workflows/pyforge-station-tests.yml`` runs only when
 ``src/shared/packages/pyforge-doctor/**`` (or the shared surface) changed, so a PR touching exactly
 one OTHER station never runs the canonical copy, and a station reintroducing the gate would pass CI
-unnoticed. ``pyforge-core-test`` already runs on ANY single-station change (Story 52.2), so hosting
-a narrower copy here is the one placement guaranteed to fire whichever station a PR touches.
+unnoticed. The core suite's live-tree half (``-m live_tree``, where this module runs since Story 117.1,
+CAP-14) runs on ANY single-station change (Story 52.2), so hosting a narrower copy here is the one
+placement guaranteed to fire whichever station a PR touches.
 
 The violation-detection predicates below are DELIBERATELY DUPLICATED, not imported, from doctor's
 copy: ``pyforge-core`` does not and must not depend on ``pyforge-doctor``. Keep both copies'
@@ -22,7 +23,13 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
+import pytest
 from conftest import PACKAGES_ROOT, parse_module, station_source_files
+
+# Story 117.1 (spec-pyforge-core:CAP-14): this module reads every sibling station's src/ (through conftest) outside
+# pyforge-core, so it runs in the core suite's live-tree half (`-m live_tree`), never in the package half a second
+# root runs from the package alone.
+pytestmark = pytest.mark.live_tree
 
 _EXCLUDE = frozenset({"pyforge-testing-kit"})
 

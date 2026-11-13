@@ -1,4 +1,4 @@
-"""FR-38 / canopy AD-17: CAP-16 personas act only through grammar and MCP."""
+"""FR-38 / canopy AD-17: spec-pyforge-unifying-strategy CAP-16 personas act only through grammar and MCP."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ MCP_PATH = f"/stations/{PROOF_STATION}/mcp"
 
 
 class PersonaContractError(AssertionError):
-    """Transcript or skill violates CAP-16."""
+    """Transcript or skill violates spec-pyforge-unifying-strategy CAP-16."""
 
 
 def _repo_root() -> Path:

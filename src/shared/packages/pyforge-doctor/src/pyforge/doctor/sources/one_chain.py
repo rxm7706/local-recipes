@@ -60,8 +60,10 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from pyforge.core.roster import STATIONS as _ROSTER_STATIONS
+
 from ..cli_bridge import CliBridgeError, run_git
-from ..models import DoctorStatus, Finding, Source
+from ..models import UNEVALUABLE_EVIDENCE_KEY, DoctorStatus, Finding, Source
 from ..refs import ORIGIN_MAIN, display_ref
 from . import degrade_on_exception
 from .chain import _dream_body_after_frontmatter, _frontmatter_parse
@@ -126,7 +128,8 @@ def _stations(target: Path) -> tuple[str, ...]:
     values = _roster(target).get("stations")
     if isinstance(values, list):
         return tuple(str(v) for v in values)
-    return ("herald", "marshal", "atlas", "warden", "mason", "doctor", "scribe", "steward")
+    # The one declared roster, never a second literal copy of it (Story 56.4).
+    return _ROSTER_STATIONS
 
 
 # --------------------------------------------------------------------------
@@ -226,7 +229,7 @@ def _gather_chain_sprawl(target: Path) -> tuple[Finding, ...]:
                     f"{CHAIN_SPRAWL_BASELINE_REL.as_posix()} is missing or unreadable — "
                     "sprawl cannot be measured against the ruling snapshot"
                 ),
-                evidence={"baseline": CHAIN_SPRAWL_BASELINE_REL.as_posix()},
+                evidence={"baseline": CHAIN_SPRAWL_BASELINE_REL.as_posix(), UNEVALUABLE_EVIDENCE_KEY: True},
             ),
         )
     exemptions = _fold_exemptions(target)
@@ -1144,7 +1147,7 @@ def _gather_fr_without_cap(target: Path) -> tuple[Finding, ...]:
                     f"{FR_BASELINE_REL.as_posix()} is missing or unreadable — new FRs "
                     "cannot be told from the pre-rule population"
                 ),
-                evidence={"baseline": FR_BASELINE_REL.as_posix()},
+                evidence={"baseline": FR_BASELINE_REL.as_posix(), UNEVALUABLE_EVIDENCE_KEY: True},
             ),
         )
     known: dict[str, set[str]] = {k: set(v) for k, v in baseline["projects"].items() if isinstance(v, list)}
@@ -1356,7 +1359,7 @@ def _gather_fold_complete(target: Path) -> tuple[Finding, ...]:
                     "the files under archive/docs/dreams/ that are not folds cannot be told "
                     "from the folds"
                 ),
-                evidence={"baseline": FOLD_COMPLETE_BASELINE_REL.as_posix()},
+                evidence={"baseline": FOLD_COMPLETE_BASELINE_REL.as_posix(), UNEVALUABLE_EVIDENCE_KEY: True},
             ),
         )
     baselined = {p for p in baseline["paths"] if isinstance(p, str)}

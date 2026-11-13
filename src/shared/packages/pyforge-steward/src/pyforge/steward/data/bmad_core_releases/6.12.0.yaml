@@ -1,4 +1,4 @@
-# Target-release catalog for CAP-1 pre-flight (Story 14.1 shape).
+# Target-release catalog for CAP-9 pre-flight (Story 14.1 shape).
 # Grounded in the unpacked conda package `bmad-method 6.12.0`
 # (.pixi/envs/pyforge-guild/lib/node_modules/bmad-method, package.json 6.12.0,
 # CHANGELOG "v6.12.0 - 2026-09-03") diffed against the installed 6.11.0 tree on
@@ -24,7 +24,7 @@ removals: []
 # still ships as a lifecycle:shim under src/bmm-skills/plan/ — not orphaned).
 skill_adds: []
 
-# CAP-9 (Story 14.9): the 21 deprecation shims this installed core still ships
+# CAP-17 (Story 14.9): the 21 deprecation shims this installed core still ships
 # (installShims: true) — 20 skill-manifest.csv `v6-shims` paths (core + bmm)
 # plus `bmad-generate-project-context`, which ships as `lifecycle: shim` under
 # `src/bmm-skills/plan/bmad-generate-project-context/SKILL.md` rather than
@@ -54,7 +54,7 @@ shims_to_retire:
 
 # Upstream installer rewrites these; repo-local edits are conflict surfaces (trap 1).
 # resolve_config.py: package 82 lines (four-layer) vs installed 168 (multi-project
-#   layers 5/6 via BMAD_ACTIVE_PROJECT / .active-project) -> CAP-3 re-applies.
+#   layers 5/6 via BMAD_ACTIVE_PROJECT / .active-project) -> CAP-11 re-applies.
 # resolve_customization.py: package 164 lines vs installed 99; git history shows
 #   only installer commits touched it (no repo-custom edits) -> take upstream.
 #   Listed so the reviewer sees the rewrite; it carries no repo_custom_markers.
@@ -130,7 +130,7 @@ config_migration:
     generateConfigFiles), which the planning-artifacts symlink pattern depends
     on. The cutover release must still be flagged loudly.
 
-# Custom modules (CAP-7, Story 14.7; failure-modes.md traps 13/14). SELECTION
+# Custom modules (CAP-15, Story 14.7; failure-modes.md traps 13/14). SELECTION
 # still comes from the installed manifest (Story 14.6 puts every `modules:`
 # entry on `--modules`); this list only annotates each `source: custom` module:
 # - own_installer: argv steward runs from the repo root AFTER the core apply
@@ -145,7 +145,7 @@ config_migration:
 #   .claude/skills/<name>-* dir equals the packaged copy afterwards (a finding,
 #   never a gate — a missing pixi env or a deliberately patched skill must not
 #   turn a coherent apply red).
-# The pre-flight (CAP-1) lists each entry against the installed manifest; a
+# The pre-flight (CAP-9) lists each entry against the installed manifest; a
 # catalog/manifest mismatch either way is a trap-13 finding.
 custom_modules:
   - name: skf
@@ -172,16 +172,16 @@ custom_modules:
 # ---------------------------------------------------------------------------
 # Apply-time findings (live 2026-09-06, branch steward/bmad-core-upgrade-6.12.0;
 # failure-modes.md traps 12-14; trap 15 was already closed separately by
-# CAP-5, `ca005c9c57`, unrelated to 14.6/14.7). Modelled since Stories 14.6/14.7:
+# CAP-13, `ca005c9c57`, unrelated to 14.6/14.7). Modelled since Stories 14.6/14.7:
 # - `-y` does not skip the directory prompt; a closed stdin makes the installer
 #   exit 0 with NO changes. The apply passes `--directory <repo>` natively and
-#   refuses an exit-0 zero-diff run (CAP-6).
+#   refuses an exit-0 zero-diff run (CAP-14).
 # - `--action update -y` DELETES an unselected cached custom module; the apply
-#   selects every manifest module (CAP-6), which structurally guarantees every
-#   `source: custom` module already sits on `--modules` (CAP-7's own
+#   selects every manifest module (CAP-14), which structurally guarantees every
+#   `source: custom` module already sits on `--modules` (CAP-15's own
 #   selected-module assertion is defense-in-depth, not a live catch), and
 #   `custom_modules:` above carries the config restore + own installer that
-#   make the tree coherent (CAP-7).
+#   make the tree coherent (CAP-15).
 # - resolve_customization.py is rewritten upstream (no local edits: accept).
 # ---------------------------------------------------------------------------
 # - Seven installer-owned skill files carried in-repo edits at 6.11 (marshal

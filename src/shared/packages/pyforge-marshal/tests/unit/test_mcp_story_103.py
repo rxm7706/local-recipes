@@ -1,7 +1,8 @@
 """Story 103.1: ``marshal-mcp`` on the official SDK, and preflight proves it with a stdio handshake.
 
-AC1 (the real console script answers ``initialize`` and ``tools/list``), AC2 (the eight tools are registered in
-process and delegate to ``tools.py``), AC3 (no ``fastmcp``; the server module imports with the SDK blocked),
+AC1 (the real console script answers ``initialize`` and ``tools/list``), AC2 (every ``TOOL_SPECS`` tool is registered
+in process and delegates to ``tools.py``; Story 115.3 derives the count from ``TOOL_SPECS``, never typed), AC3 (no
+``fastmcp``; the server module imports with the SDK blocked),
 AC4 (``--help`` / ``--version`` / an unknown argument never build the server), AC5 (every probe outcome through
 ``_probe_mcp_servers``), AC6 (the adapter against scripted servers, no process of the child's group left
 running), AC7 (preflight end to end through the real adapter) and AC8 (the three mutations each fail a named
@@ -28,6 +29,7 @@ from pathlib import Path
 import pytest
 
 import pyforge.marshal.adapters.mcp_stdio_probe as probe_mod
+from pyforge import marshal as marshal_package
 from pyforge.marshal.adapters.mcp_stdio_probe import (
     StdioMcpProbe,
     _append_tail,
@@ -45,20 +47,13 @@ from pyforge.marshal.cli import init as init_module
 from pyforge.marshal.cli.init import run_preflight
 from pyforge.marshal.core.mcp_probe import evaluate_mcp_probe
 from pyforge.marshal.core.verdict import EXIT_OK
+from pyforge.marshal.mcp.tools import TOOL_SPECS
 from pyforge.marshal.ports.mcp_probe import McpProbeResult
 
-PACKAGE_SRC = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal"
+PACKAGE_SRC = Path(marshal_package.__file__).resolve().parent
 
-EIGHT_TOOLS = {
-    "list_marshal_tools",
-    "marshal_status",
-    "marshal_check",
-    "marshal_homes",
-    "marshal_preflight",
-    "marshal_upstream",
-    "marshal_refresh",
-    "marshal_watch",
-}
+# Story 115.3 (CAP-23 amended 2026-11-10): the registered set is the inventory, read from TOOL_SPECS.
+REGISTERED_TOOLS = frozenset(TOOL_SPECS)
 
 # A GitHub-token-shaped string: ``core.egress.redact_raw_text`` must replace it before it reaches a finding.
 _TOKEN = "ghp_" + "A1b2C3d4" * 6
@@ -1306,7 +1301,7 @@ def test_mutation_dropping_stop_process_group_leaves_a_grandchild(tmp_path: Path
 # --- AC7: preflight end to end through the real adapter --------------------------------------------------------
 
 
-def test_preflight_json_through_the_real_adapter_shows_marshal_mcp_startable_with_eight_tools(
+def test_preflight_json_through_the_real_adapter_shows_marshal_mcp_startable_with_every_listed_tool(
     repo_root, tmp_path, monkeypatch, capsys
 ):
     if shutil.which("marshal-mcp") is None:
@@ -1333,7 +1328,7 @@ def test_preflight_json_through_the_real_adapter_shows_marshal_mcp_startable_wit
     assert exit_code == EXIT_OK
     (entry,) = envelope["data"]["mcp_servers"]
     assert entry["startable"] is True
-    assert entry["tool_count"] == 8
+    assert entry["tool_count"] == len(TOOL_SPECS)
     assert _preflight_012(envelope) == []
 
 
@@ -1375,15 +1370,15 @@ def test_preflight_json_through_the_real_adapter_reports_a_fastmcp_style_crash(
 # --- AC1: the real console script through the adapter ----------------------------------------------------------
 
 
-def test_real_marshal_mcp_answers_initialize_and_lists_exactly_the_eight_tools(tmp_path: Path):
+def test_real_marshal_mcp_answers_initialize_and_lists_exactly_the_tool_specs(tmp_path: Path):
     command, *args = _marshal_mcp_argv()
     result = StdioMcpProbe().probe_server(
         server_name="marshal", command=command, args=tuple(args), env={}, cwd=str(tmp_path), timeout_s=20.0
     )
     assert result.outcome == "started", result
     assert result.reported_server_name == "pyforge-marshal"
-    assert result.tool_count == 8
-    assert set(result.tool_names) == EIGHT_TOOLS
+    assert result.tool_count == len(TOOL_SPECS)
+    assert set(result.tool_names) == REGISTERED_TOOLS
 
 
 def test_marshal_mcp_console_script_is_declared_on_server_main():
@@ -1395,29 +1390,46 @@ def test_marshal_mcp_console_script_is_declared_on_server_main():
 # --- AC2: the tools are registered, in process ------------------------------------------------------------------
 
 
-def test_build_server_registers_exactly_the_eight_tools():
+def test_build_server_registers_exactly_the_tool_specs():
     import asyncio
 
     from pyforge.marshal.mcp import server as server_mod
 
     server = server_mod.build_server()
     tools = asyncio.run(server.list_tools())
-    assert {t.name for t in tools} == EIGHT_TOOLS
+    assert {t.name for t in tools} == REGISTERED_TOOLS
 
 
-@pytest.mark.parametrize(
-    "tool_name, arguments, forwarded",
-    [
-        ("list_marshal_tools", {}, {}),
-        ("marshal_status", {"project": "acme"}, {"project": "acme"}),
-        ("marshal_check", {"scope": "all", "project": None}, {"scope": "all", "project": None}),
-        ("marshal_homes", {}, {}),
-        ("marshal_preflight", {"slug": "pyforge-marshal"}, {"slug": "pyforge-marshal"}),
-        ("marshal_upstream", {}, {}),
-        ("marshal_refresh", {"project": "acme", "base": "main"}, {"project": "acme", "base": "main"}),
-        ("marshal_watch", {"project": None, "run": "r1", "fleet": True}, {"project": None, "run": "r1", "fleet": True}),
-    ],
-)
+# One delegation case per registered tool; ``test_every_tool_spec_has_a_delegation_case`` keeps it complete.
+_DELEGATION_CASES = [
+    ("list_marshal_tools", {}, {}),
+    ("marshal_status", {"project": "acme"}, {"project": "acme"}),
+    ("marshal_check", {"scope": "all", "project": None}, {"scope": "all", "project": None}),
+    ("marshal_homes", {}, {}),
+    ("marshal_preflight", {"slug": "pyforge-marshal"}, {"slug": "pyforge-marshal"}),
+    ("marshal_upstream", {}, {}),
+    ("marshal_refresh", {"project": "acme", "base": "main"}, {"project": "acme", "base": "main"}),
+    ("marshal_watch", {"project": None, "run": "r1", "fleet": True}, {"project": None, "run": "r1", "fleet": True}),
+    (
+        "marshal_preserve_list",
+        {"station": "pyforge-marshal", "story": None, "producer": None, "state": "open"},
+        {"station": "pyforge-marshal", "story": None, "producer": None, "state": "open"},
+    ),
+    ("marshal_preserve_push", {"pending": True}, {"pending": True}),
+    (
+        "marshal_preserve_retire",
+        {"tag": "refs/tags/preserve/x", "evidence": "e"},
+        {"tag": "refs/tags/preserve/x", "evidence": "e"},
+    ),
+]
+
+
+def test_every_tool_spec_has_a_delegation_case():
+    """Story 115.3: a tool added to TOOL_SPECS (and so registered) needs its delegation case below."""
+    assert [case[0] for case in _DELEGATION_CASES] == list(TOOL_SPECS)
+
+
+@pytest.mark.parametrize("tool_name, arguments, forwarded", _DELEGATION_CASES)
 def test_build_server_tool_call_returns_the_tools_function_value(tool_name, arguments, forwarded, monkeypatch):
     """Each registered tool delegates to its ``tools.py`` function: a monkeypatched one is what the call returns."""
     import asyncio

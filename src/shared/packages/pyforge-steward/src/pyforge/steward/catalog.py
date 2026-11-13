@@ -1,6 +1,6 @@
 """Steward's ``catalog`` duty — the estate BMAD catalog: config names backends
 and sources (Story 60.1, CAP-117) and publish + steward review records
-(Story 60.2, spec-self-hosted-bmad-marketplace CAP-2 / CAP-118).
+(Story 60.2, spec-pyforge-steward CAP-118).
 
 Git is the edit store: ``src/shared/packages/pyforge-steward/catalog/`` is
 tracked in this repo and is where listings are edited. ``catalog.yaml`` there
@@ -38,7 +38,7 @@ Verbs: ``steward catalog check|list|render [--check]|pointers|ship [--backend]
 modules are BMad Certified and never enter ``estate-listings``. Story 60.3
 adds ``ship``: materialize the vendored snapshot and run a ship backend.
 Story 60.4 extends ``render`` to also write the estate Frame index and thin
-browse list under ``docs/foundry/frames/`` (CAP-4 / CAP-7).
+browse list under ``docs/foundry/frames/`` (CAP-120 / CAP-123).
 
 ``CatalogDuty`` never calls ``sys.exit`` (AD-8) — it returns a
 ``DutyResult`` and ``cli.main`` projects it.
@@ -63,9 +63,10 @@ import yaml
 from .bootstrap import repo_root
 from .frames import preflight_frames
 from .interfaces import DutyResult
+from .root_layout import MARKETPLACE_GIT_URL, STEWARD_PACKAGE_DIR
 from .suite import INSTALL_CLASS_MODULE, SUITE_PACKAGES, read_recipe_version
 
-CATALOG_RELATIVE = Path("src/shared/packages/pyforge-steward/catalog")
+CATALOG_RELATIVE = STEWARD_PACKAGE_DIR / "catalog"
 CONFIG_FILENAME = "catalog.yaml"
 CLAUDE_MANIFEST_RELATIVE = Path(".claude-plugin/marketplace.json")
 CODEX_MANIFEST_RELATIVE = Path(".agents/plugins/marketplace.json")
@@ -145,7 +146,7 @@ MARKETPLACE_SPARSE_PATHS = (
 #: Codex reads ``.agents/plugins/marketplace.json`` in the directory ``codex plugin marketplace add`` names
 #: (the catalog directory holds one). The ``owner/repo`` form needs that file at the repository root.
 CODEX_ROOT_MANIFEST_RELATIVE = ".agents/plugins/marketplace.json"
-PUBLIC_MARKETPLACE_GIT_URL = "https://github.com/rxm7706/local-recipes.git"
+PUBLIC_MARKETPLACE_GIT_URL = MARKETPLACE_GIT_URL
 
 
 @dataclass(frozen=True)
@@ -1356,7 +1357,7 @@ class CatalogEngine:
         }
 
     def index_artifacts(self, rows: list[Listing]) -> dict[str, str]:
-        """Generated Frame index (CAP-7) and thin browse list (CAP-4)."""
+        """Generated Frame index (CAP-123) and thin browse list (CAP-120)."""
         frame_rows = [row for row in rows if row.kind == KIND_FRAME]
         frame_rows.sort(key=lambda row: row.name)
         browse_rows = sorted(rows, key=lambda row: (row.kind, row.name))

@@ -203,6 +203,47 @@ verify_commands = [
   "_bmad-output/projects/*/planning-artifacts/specs/*/.memlog.md",
   "docs/governance/spec-feature-flag-governance/**",
 ]
+"31" = [  # the scribe Spec and its public contract say what the code does (spec-pyforge-scribe CAP-4, CAP-33, CAP-34; the 2026-11-10 cutover-readiness mint), added 2026-11-10.
+  # The default surface, restated because a declared entry replaces it outright, plus the planning chain 31.3
+  # re-stamps, the Dream, the two catalogs, team memory and the late AGENTS.md edit of the closer 31.4.
+  "src/shared/packages/pyforge-scribe/**",
+  "_bmad-output/projects/pyforge-scribe/planning-artifacts/**",
+  "_bmad-output/projects/pyforge-scribe/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "docs/dreams/pyforge-scribe.md",
+  "docs/reference/bmad-estate-llms-full.md",
+  "docs/reference/library-llms-full.md",
+  ".claude/memory/**",
+  "AGENTS.md",
+]
+"32" = [  # the instruction surface, team memory and the seed state the ruled cutover (spec-pyforge-scribe CAP-1, CAP-27, CAP-35), added 2026-11-10.
+  "src/shared/packages/pyforge-scribe/**",
+  "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-scribe/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "AGENTS.md",
+  "docs/reference/agent-instruction-notes.md",
+  ".claude/memory/**",
+  "archive/.claude/memory/**",
+]
+"33" = [  # scribe's suite is an oracle a second root can run (spec-pyforge-scribe CAP-28, CAP-31; relay of spec-pyforge-steward:CAP-175), added 2026-11-10.
+  "src/shared/packages/pyforge-scribe/**",
+  "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-scribe/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+]
 
 [model_tier_map.heavy]
 dev = { harness = "cursor", model = "composer-2.5-fast" }

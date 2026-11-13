@@ -4,7 +4,7 @@ title: Herald's Pitch Deck Family Expansion — PRD
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief -> PRD and spec -> PRD); no CAP, FR or AD is minted. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): chain-currency cascade (spec -> PRD) after spec-pyforge-herald re-derived CAP-47 and CAP-58..CAP-61 from the EGM audit (research/egm-audit-2026-11-01.md: 30 findings, 22 accepted); FR-8.6, FR-11.1, FR-12.1, FR-12.4 and FR-12.5 amended in place in the re-derive, no FR added, removed or renumbered, no arrow moved. See § Currency reconciliation — 2026-11-01 (EGM fleet audit). Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 47.1): chain-currency cascade (spec -> PRD) after the Spec's capability text was restored from the pre-fold source (titles, intents, successes; no CAP added or moved); no FR, NFR or arrow changes. See § Currency reconciliation — 2026-10-26 (Story 47.1). Prior "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 46.1): eleven FR arrows the 2026-09-17 fold mapped by section are re-pointed at the capabilities that realize them (FR-1.1..FR-1.3 and FR-2.3 to CAP-11..CAP-13, FR-2.1 adds them beside CAP-3, FR-6.1..FR-6.3 to CAP-12 and CAP-13, and, on the independent review, FR-3.2, FR-4.2, FR-4.5 and FR-6.2 gain the live-backend CAP-38 or CAP-39); no FR text, number or NFR moves. See § Currency reconciliation — 2026-10-25 (Story 46.1). Prior "2026-10-14"   # RE-STAMPED 2026-10-14 (later): chain-currency cascade (spec -> PRD) for CAP-60 and CAP-61 (Epics 42-43; Epic 41 a fix): Feature Group 12 opened, FR-12.1..FR-12.5 registered (the Pages site, redesigned). See § Currency reconciliation — 2026-10-14 (later). Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for CAP-59 (Epic 39): Feature Group 11 opened, FR-11.1 registered (the dossier's CI surfaces tile, read from steward's `ci status --json` through a committed snapshot). See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD) for CAP-58 (Epic 40): FR-8.6 added to Feature Group 8 (the documentation site). See § Currency reconciliation — 2026-10-12. Prior: RE-STAMPED 2026-10-11: code->prd currency after herald Stories 19.2 (PR #2123) and 36.1 (PR #2128) landed and Story 37.1 was minted (PR #2126); no FR, CAP or AD added, amended or removed. Prior: RE-STAMPED 2026-10-10: Story 19.2 re-scoped to the local host by the operator ruling of 2026-10-10 (spec-pyforge-herald memlog decision); the 2026-09-14 "no perimeter to host a persistent listener on" premise is superseded; FR-7.1..FR-7.4 source-capability arrows corrected in place (they were shifted against the 2026-09-17 remint); one residual recorded (FR-7.1 CI-notifies half stays open on a loopback host). No FR added, renumbered or removed. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-08: chain-currency behind-code (code -> PRD) for Story 32.1 as built (CAP-57, FR-10.6, flag pyforge.herald.deck_export_native) on dispatch/pyforge-herald/32.1; FR-10.6 corrected in place (the pptxgenjs-plus pin is 4.2.1.* channel-pinned to SelfExplainML; the flag gate; no slide is rendered as an image); no FR registered; one FR-10.6 divergence recorded (multi-line speaker notes and paragraph text are not carried). See § Currency reconciliation — 2026-10-08. Earlier: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-03..07 entries (Stories 35.1-35.2 records, the marshal 86.8 co-governor edit, Story 27.1 and its surface decision, Story 28.1 / CAP-53); no FR registered; one FR-8.1 divergence recorded. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 35, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-54..CAP-57 (Epics 29-32): Feature Group 10, FR-10.1..FR-10.6 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+updated: "2026-11-12"   # RE-STAMPED 2026-11-12 (cutover readiness, landed; herald Story 50.2): chain-currency cascade (spec -> PRD) after spec-pyforge-herald's last re-derive of the change (Constraints, Non-goals and Assumptions back; CAP-46 and CAP-62 shipped 2026-11-11); FR-14.1 <- CAP-62 and FR-12.5 <- CAP-61, CAP-46 verified as the mint wrote them; no FR text moves. See § Currency reconciliation — 2026-11-12 (cutover readiness, landed). Prior "2026-11-10"   # RE-STAMPED 2026-11-10 (cutover readiness mint, herald unit): chain-currency cascade (spec -> PRD) after spec-pyforge-herald minted CAP-62 and amended CAP-46; Feature Group 14 opened, FR-14.1 <- CAP-62 registered (Group 13 left unused); FR-12.5 amended in place, arrow <- CAP-61, CAP-46. See § Currency reconciliation — 2026-11-10 (cutover readiness). Prior "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief -> PRD and spec -> PRD); no CAP, FR or AD is minted. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): chain-currency cascade (spec -> PRD) after spec-pyforge-herald re-derived CAP-47 and CAP-58..CAP-61 from the EGM audit (research/egm-audit-2026-11-01.md: 30 findings, 22 accepted); FR-8.6, FR-11.1, FR-12.1, FR-12.4 and FR-12.5 amended in place in the re-derive, no FR added, removed or renumbered, no arrow moved. See § Currency reconciliation — 2026-11-01 (EGM fleet audit). Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 47.1): chain-currency cascade (spec -> PRD) after the Spec's capability text was restored from the pre-fold source (titles, intents, successes; no CAP added or moved); no FR, NFR or arrow changes. See § Currency reconciliation — 2026-10-26 (Story 47.1). Prior "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 46.1): eleven FR arrows the 2026-09-17 fold mapped by section are re-pointed at the capabilities that realize them (FR-1.1..FR-1.3 and FR-2.3 to CAP-11..CAP-13, FR-2.1 adds them beside CAP-3, FR-6.1..FR-6.3 to CAP-12 and CAP-13, and, on the independent review, FR-3.2, FR-4.2, FR-4.5 and FR-6.2 gain the live-backend CAP-38 or CAP-39); no FR text, number or NFR moves. See § Currency reconciliation — 2026-10-25 (Story 46.1). Prior "2026-10-14"   # RE-STAMPED 2026-10-14 (later): chain-currency cascade (spec -> PRD) for CAP-60 and CAP-61 (Epics 42-43; Epic 41 a fix): Feature Group 12 opened, FR-12.1..FR-12.5 registered (the Pages site, redesigned). See § Currency reconciliation — 2026-10-14 (later). Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for CAP-59 (Epic 39): Feature Group 11 opened, FR-11.1 registered (the dossier's CI surfaces tile, read from steward's `ci status --json` through a committed snapshot). See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD) for CAP-58 (Epic 40): FR-8.6 added to Feature Group 8 (the documentation site). See § Currency reconciliation — 2026-10-12. Prior: RE-STAMPED 2026-10-11: code->prd currency after herald Stories 19.2 (PR #2123) and 36.1 (PR #2128) landed and Story 37.1 was minted (PR #2126); no FR, CAP or AD added, amended or removed. Prior: RE-STAMPED 2026-10-10: Story 19.2 re-scoped to the local host by the operator ruling of 2026-10-10 (spec-pyforge-herald memlog decision); the 2026-09-14 "no perimeter to host a persistent listener on" premise is superseded; FR-7.1..FR-7.4 source-capability arrows corrected in place (they were shifted against the 2026-09-17 remint); one residual recorded (FR-7.1 CI-notifies half stays open on a loopback host). No FR added, renumbered or removed. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-08: chain-currency behind-code (code -> PRD) for Story 32.1 as built (CAP-57, FR-10.6, flag pyforge.herald.deck_export_native) on dispatch/pyforge-herald/32.1; FR-10.6 corrected in place (the pptxgenjs-plus pin is 4.2.1.* channel-pinned to SelfExplainML; the flag gate; no slide is rendered as an image); no FR registered; one FR-10.6 divergence recorded (multi-line speaker notes and paragraph text are not carried). See § Currency reconciliation — 2026-10-08. Earlier: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-03..07 entries (Stories 35.1-35.2 records, the marshal 86.8 co-governor edit, Story 27.1 and its surface decision, Story 28.1 / CAP-53); no FR registered; one FR-8.1 divergence recorded. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 35, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-54..CAP-57 (Epics 29-32): Feature Group 10, FR-10.1..FR-10.6 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED: chain-currency cascade (spec -> PRD) for CAP-53 (Epic 28): Feature Group 9, FR-9.1..FR-9.2 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD) for CAP-52 (Epic 27): Feature Group 8, FR-8.1..FR-8.5 registered (FR-8.2 amended and FR-8.5 added the same day for the operator rulings D7/D8). See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-herald memlog moved 2026-09-25T04:02 (steward 59.6 surface reconcile); no FR change. Prior 2026-09-20
@@ -1586,8 +1586,10 @@ EGM audit HER-K4; the Lane 1 link, `/status/ci/`'s snapshot rule, the input enve
   `pyforge.herald.pages_one_generator` gates the Astro path until Story 43.7 retires the Jinja path and the flag.
   Stories 43.1, 43.2, 43.3, 43.4, 43.7.
 
-**FR-12.5: Every number is measured, every page says what built it, and agents can read the site** ← CAP-61
-- Every dossier stat with `check:` is computed at build by the measurer (`verify_claims.py` becomes a producer); each
+**FR-12.5: Every number is measured, every page says what built it, and agents can read the site** ← CAP-61, CAP-46 *(amended 2026-11-10 with CAP-46: Story 51.1; every figure in a stats band or the scale table is counted at build, and a typed one fails the build)*
+- Every figure in a dossier stats band or the scale table is counted at build by the measurer (`verify_claims.py`
+  becomes a producer), and a typed one fails the build (amended 2026-11-10 with CAP-46; until then every dossier stat
+  with `check:` was computed at build and the rest were typed); each
   section carries the date its prose was measured; every page of the build's own carries one footer naming the commit,
   time and run that built it, or `local build` with no `GITHUB_SHA`, while redirect stubs and the mounted trees carry
   none (amended 2026-11-01 with CAP-61, EGM audit HER-K3).
@@ -1595,7 +1597,9 @@ EGM audit HER-K4; the Lane 1 link, `/status/ci/`'s snapshot rule, the input enve
   `main` with an RSS feed, from a Guild-step input, until a CalVer tag exists; `/status/runs/` renders `marshal status
   --format json` and `herald progress --json` inputs. Stories 43.5, 43.6.
 
-**ONE FR space now Feature Groups 1–12** (FR-13.1 is the next free id).
+**ONE FR space now Feature Groups 1–12** (FR-13.1 was the next free id on 2026-10-14; rewritten 2026-11-10: Feature
+Groups 1–12 and 14; Group 13 is left unused because `FR-13` is a cross-project citation in herald's persona and tests;
+FR-14.2 is the next free id).
 
 **Content changed:** this section added (Feature Group 12, FR-12.1..FR-12.5). No FR renumbered or removed. FR-10.5 is
 amended by FR-12.3 (no flag; the origin rule stands). The architecture amends AD-21 (the placement rule, the duct's
@@ -1671,3 +1675,54 @@ arrow or NFR moves. § Success Metrics is unchanged.
 *Chain-currency cascade (research -> brief -> PRD and spec -> PRD), EGM audit, marshal Story 113.18.*
 
 `research/egm-audit-2026-11-05.md` (marshal Story 113.18, `spec-pyforge-marshal:CAP-302`): 14 high findings, 4 accepted, 7 rejected, 3 deferred; the medium and low findings are not triaged. Nothing in the Spec's contract moved; the accepted findings are skill findings, parked on steward Story 29.5. No FR is added, renumbered or re-scoped.
+
+## Currency reconciliation — 2026-11-10 (cutover readiness)
+
+*RE-STAMPED: chain-currency cascade (spec → PRD) for CAP-62 (minted) and CAP-46 (amended), Epics 50 and 51. Same-day
+reconcile; each requirement derives from its capability.*
+
+The fleet audit of 2026-11-10 at `82a2b18828` (`research/cutover-readiness-audit-2026-11-10.md`) ruled herald not ready
+as a rebuild input, and the operator accepted every recommendation of the design pass that followed (the three
+2026-11-10 entries of `docs/dreams/pyforge-unifying-strategy.md`; the station Dream's 2026-11-10 (cutover readiness)
+entry). `spec-pyforge-herald` minted CAP-62 (herald's public contract is one companion, and a test holds the code to
+it) and amended CAP-46 (dossier figures are counted from the tree at build); both read `(ready 2026-11-10)` until
+Stories 50.3 and 51.1 land. The other capability corrections of that day (markers, retirements, restatements; Story
+50.1) change no requirement of this PRD.
+
+### Feature Group 14: Herald's public contract (registered 2026-11-10)
+
+This group is new, not an amendment: no group holds the surface a caller touches as one contract. Group 13 is left
+unused because `FR-13` is a cross-project citation in herald's persona and tests (the persona's "FR-13 grammar").
+The bare `FR-14` that `src/shared/packages/pyforge-herald/src/pyforge/herald/watch.py` (lines 17 and 81) and
+`spec-4-1-poll-loop-with-quiescence-debounce.md` (line 126) cite is a pre-fold, undotted id for the design bridge's
+poll interval, not this group; a Group 14 citation is always dotted (`FR-14.n`), and Story 50.4 re-keys capability
+ids only, so those lines keep it.
+
+**FR-14.1: Herald's public contract is recorded and enforced** ← CAP-62
+- `contract.md`, a companion beside the Spec, lists every CLI verb path and flag with the capability it realizes, the
+  two MCP tools of `POST /stations/herald/mcp`, every feature-flag key herald reads, the repository key it reads
+  through a core seam (`roots.this`, Story 52.2), every environment variable the package and the docs-site build read,
+  every `HeraldError` class with its exit code, and the closed exit-code set. It is written by hand from the code; no
+  verb or generator is added for it.
+- Herald's own meta-test (`tests/meta/test_public_contract.py`) fails, naming the item, on a difference in either
+  direction: a verb, option, MCP tool, flag key, environment variable or error class the code has and the contract
+  does not list, or a row the code no longer has. Story 50.3.
+
+FR-12.5 is amended in place: its arrow gains CAP-46, and its first clause now reads that every figure in a stats band or
+the scale table is counted at build and a typed one fails the build (Story 51.1).
+
+**ONE FR space now Feature Groups 1–12 and 14** (FR-14.2 is the next free id).
+
+**Content changed:** this section added (Feature Group 14, FR-14.1); FR-12.5 amended in place (arrow
+`← CAP-61, CAP-46` and its first clause); the 2026-10-14 (later) next-free-id line rewritten for Group 13. No FR
+renumbered or removed. The spine gains no AD: CAP-62 is a companion and a test, and CAP-46 widens the measurer that
+AD-23 already names; see the spine's § Currency reconciliation — 2026-11-10 (cutover readiness). § Success Metrics is
+unchanged. `updated:` bumped.
+
+## Currency reconciliation — 2026-11-12 (cutover readiness, landed)
+
+*RE-STAMPED: chain-currency cascade (spec → PRD), herald Story 50.2.* 2026-11-12: Stories 50.3 and 51.1 are built and
+reviewed on branch `cutover-readiness-2026-11-10`, so `spec-pyforge-herald` CAP-62 and CAP-46 read `(shipped
+2026-11-11)`, and the Spec's Constraints, Non-goals and Assumptions are re-derived from its memlog. FR-14.1 ← CAP-62
+and FR-12.5 ← CAP-61, CAP-46 stand as the mint wrote them (verified, not rewritten), and no requirement changes.
+**Content changed:** this section and `updated:`.

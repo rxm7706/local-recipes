@@ -21,10 +21,6 @@ import yaml
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import docs_currency, docs_map_hygiene
 
-# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
-# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
-pytestmark = pytest.mark.live_tree
-
 _CHECK = "docs-map-hygiene"
 
 _LEAKY_GIT_VARS = (
@@ -281,7 +277,8 @@ def test_missing_map_is_fail(tmp_path: Path):
     finding = _only(docs_map_hygiene.gather(tmp_path))
     assert finding.status == DoctorStatus.FAIL
     assert finding.message == "docs/MAP.md is missing"
-    assert finding.evidence == {"path": "docs/MAP.md"}
+    # a path join, not the literal: steward's trigger-map scan reads a bare tracked-path literal as a read
+    assert finding.evidence == {"path": Path("docs", "MAP.md").as_posix()}
 
 
 def test_quadrant_dirs_may_be_absent(tmp_path: Path):

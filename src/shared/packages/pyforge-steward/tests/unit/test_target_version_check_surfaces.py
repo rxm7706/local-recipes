@@ -1,4 +1,6 @@
-"""Story 95.1 — target_version_check three surfaces (AC3, AC7)."""
+"""Story 95.1 — target_version_check three surfaces (AC3, AC7); Story 124.3 (spec-pyforge-steward:CAP-153) adds the
+fourth, every pyforge-* package pixi.toml's host and run ``python`` floor. Every case runs ``main()`` over a fixture
+tree under tmp_path; nothing here reads a live package manifest."""
 
 from __future__ import annotations
 
@@ -12,13 +14,16 @@ import pytest
 # station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
 pytestmark = pytest.mark.live_tree
 
-ROOT = Path(__file__).resolve().parents[6]
-SCRIPTS = ROOT / "scripts"
+
+def _check_script() -> Path:
+    # The repository root is derived when a test runs, never at import time (the live_tree split guards); the one
+    # live-tree read is the script itself, the path steward's live-half trigger already names.
+    return Path(__file__).resolve().parents[6] / "scripts" / "target_version_check.py"
 
 
 def _load():
     name = "_target_version_check_surfaces"
-    spec = importlib.util.spec_from_file_location(name, SCRIPTS / "target_version_check.py")
+    spec = importlib.util.spec_from_file_location(name, _check_script())
     mod = importlib.util.module_from_spec(spec)
     sys.modules[name] = mod
     spec.loader.exec_module(mod)  # type: ignore[union-attr]
@@ -34,6 +39,23 @@ def _write_pyforge(root: Path, name: str, *, ruff: str = "py314", mypy: str = "3
         f'[tool.mypy]\npython_version = "{mypy}"\n',
         encoding="utf-8",
     )
+
+
+def _write_manifest(root: Path, name: str, *, host: str | None = '">=3.14"', run: str | None = '">=3.14"') -> Path:
+    """A package pixi.toml in the members' shape; ``None`` leaves that table's ``python`` line out."""
+    pkg = root / "src" / "shared" / "packages" / name
+    pkg.mkdir(parents=True, exist_ok=True)
+    host_line = f"python = {host}\n" if host is not None else ""
+    run_line = f"python = {run}\n" if run is not None else ""
+    manifest = pkg / "pixi.toml"
+    manifest.write_text(
+        f'[package]\nname = "{name}"\nversion = "0.1.0"\n\n'
+        f'[package.build.backend]\nname = "pixi-build-python"\nversion = "0.*"\n\n'
+        f'[package.host-dependencies]\n{host_line}hatchling = "*"\n\n'
+        f'[package.run-dependencies]\n{run_line}pyyaml = "*"\n',
+        encoding="utf-8",
+    )
+    return manifest
 
 
 def _write_django(root: Path, name: str, *, ruff: str = "py314", req: str = ">=3.14", with_ruff: bool = True) -> None:
@@ -62,6 +84,7 @@ def _seed_tree(root: Path, *, pin: str = ">=3.14.7,3.14.*") -> None:
     )
     for i in range(1, 11):
         _write_pyforge(root, f"pyforge-p{i}")
+        _write_manifest(root, f"pyforge-p{i}")
     for i in range(1, 10):
         _write_django(root, f"django-p{i}")
     _write_platform(root)
@@ -156,6 +179,10 @@ def test_pin_315_moves_expected_targets(tmp_path: Path) -> None:
     for i in range(1, 10):
         _write_django(tmp_path, f"django-p{i}", ruff="py315", req=">=3.15")
     _write_platform(tmp_path, ruff="py315", mypy="3.15")
+    # Story 124.3: the package manifests are still at 3.14, so the 3.15 pin reds them alone.
+    assert _run_main(mod, tmp_path) == 1
+    for i in range(1, 11):
+        _write_manifest(tmp_path, f"pyforge-p{i}", host='">=3.15"', run='">=3.15"')
     assert _run_main(mod, tmp_path) == 0
 
 
@@ -202,4 +229,63 @@ def test_mutation_removing_requires_python_check_would_hide_drift(
     _write_django(tmp_path, "django-p1", req=">=3.12")
     assert _run_main(mod, tmp_path) == 1
     monkeypatch.setattr(mod, "_requires_python_floor", lambda *a, **k: [])
+    assert _run_main(mod, tmp_path) == 0
+
+
+# --- Story 124.3 (spec-pyforge-steward:CAP-153): every pyforge-* package pixi.toml's host and run python floor ---
+
+
+@pytest.mark.parametrize("table", ["host", "run"])
+def test_package_manifest_python_312_drifts_and_names_the_file(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], table: str
+) -> None:
+    mod = _load()
+    _seed_tree(tmp_path)
+    floors = {"host": '">=3.14"', "run": '">=3.14"'}
+    floors[table] = '">=3.12"'
+    _write_manifest(tmp_path, "pyforge-p3", **floors)
+    assert _run_main(mod, tmp_path) == 1
+    out = capsys.readouterr().out
+    assert "src/shared/packages/pyforge-p3/pixi.toml" in out
+    assert f"[package.{table}-dependencies] python = '>=3.12'" in out
+    assert "pyforge-p1/pixi.toml" not in out
+
+
+def test_package_manifest_table_form_python_is_read(tmp_path: Path) -> None:
+    mod = _load()
+    _seed_tree(tmp_path)
+    _write_manifest(tmp_path, "pyforge-p2", run='{ version = ">=3.12" }')
+    assert _run_main(mod, tmp_path) == 1
+    _write_manifest(tmp_path, "pyforge-p2", run='{ version = ">=3.14" }')
+    assert _run_main(mod, tmp_path) == 0
+
+
+def test_package_manifest_without_python_drifts(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    mod = _load()
+    _seed_tree(tmp_path)
+    _write_manifest(tmp_path, "pyforge-p4", host=None)
+    assert _run_main(mod, tmp_path) == 1
+    assert "pyforge-p4/pixi.toml: [package.host-dependencies] has no python" in capsys.readouterr().out
+
+
+def test_package_manifest_unparseable_python_drifts(tmp_path: Path) -> None:
+    mod = _load()
+    _seed_tree(tmp_path)
+    _write_manifest(tmp_path, "pyforge-p5", run='"*"')
+    assert _run_main(mod, tmp_path) == 1
+
+
+def test_nine_package_manifests_could_not_run(tmp_path: Path) -> None:
+    mod = _load()
+    _seed_tree(tmp_path)
+    (tmp_path / "src/shared/packages/pyforge-p10/pixi.toml").unlink()
+    assert _run_main(mod, tmp_path) == 2
+
+
+def test_mutation_dropping_manifest_check_would_hide_drift(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    mod = _load()
+    _seed_tree(tmp_path)
+    _write_manifest(tmp_path, "pyforge-p1", host='">=3.12"', run='">=3.12"')
+    assert _run_main(mod, tmp_path) == 1
+    monkeypatch.setattr(mod, "findings_for_package_manifest", lambda *a, **k: [])
     assert _run_main(mod, tmp_path) == 0

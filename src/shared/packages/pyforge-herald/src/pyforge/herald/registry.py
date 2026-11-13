@@ -6,7 +6,7 @@ Design project -- this module is its sole owner: ``register`` appends the
 section when a README has none yet, or replaces it in place when one already
 exists (never duplicating the heading); ``read`` parses it back into a
 ``DesignProject``. The shared ``.herald/bridge-state.json`` (``state.py``,
-AD-5) stays the *operational* source of truth CAP-3/CAP-4 read from -- this
+AD-5) stays the *operational* source of truth CAP-4's status and watch read from -- this
 section is the *human-readable* registry, wired in as a bootstrap fallback
 only by a later story (``bridge.py``'s own docstring names that split; it
 does not land here).
@@ -514,9 +514,9 @@ def append_push_ledger_row(readme_path: Path, *, date: str, rows: Sequence[tuple
         raise errors.HeraldError(f"{could_not}: {exc}") from exc
 
 
-# --- Story 23.1: account-wide reconciliation (CAP-1) -------------------------
+# --- Story 23.1: account-wide reconciliation (CAP-29) ------------------------
 #
-# CAP-1's account enumeration (`deck_pipeline.account_status`) classifies
+# CAP-29's account enumeration (`deck_pipeline.account_status`) classifies
 # every Design project `list_projects` returns as a presentation (with or
 # without a local twin -- resolved against every deck's own § *Design
 # project* section, `read`, above), a design system (a bound library, never
@@ -550,7 +550,7 @@ _EXCLUDED_TABLE_SEPARATOR = "|---|---|"
 
 def read_exclusions(readme_path: Path) -> dict[str, str]:
     """Every Design project name intentionally excluded from the twin-per-
-    deck loop, mapped to its recorded reason (Story 23.1, CAP-1) --
+    deck loop, mapped to its recorded reason (Story 23.1, CAP-29) --
     `presentations/README.md`'s own `_EXCLUDED_SECTION_HEADING` table.
 
     Returns `{}` when `readme_path` does not exist or carries no such

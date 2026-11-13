@@ -6,11 +6,11 @@
   "source_authority": "internal",
   "source_repo": "src/shared/packages/pyforge-mason",
   "source_root": "src/shared/packages/pyforge-mason",
-  "source_commit": "c9e07879721e5a23e74c054383668026f49b0dc7",
+  "source_commit": "b69fd81eb812eb0a2de4580c4b04d9af41259ef8",
   "source_ref": "local",
   "confidence_tier": "Quick",
   "spec_version": "1.3",
-  "generation_date": "2026-10-05T17:19:19Z",
+  "generation_date": "2026-11-12T00:00:00Z",
   "description": "Mason station CLI grammar for the recipe, package and environment crafts plus doctor, reached as pyforge mason or POST /stations/mason/mcp. Use when running pyforge mason recipe, package, environment or doctor commands, scripting Mason exit codes or --format json output, or working in src/shared/packages/pyforge-mason/. Do not import pyforge.mason internals; the CLI is the public contract. Do not use for recipe knowledge such as pins, selectors or build fixes; conda-forge-expert owns recipe semantics and Mason's recipe verbs only wrap it.",
   "language": "python",
   "exports": [
@@ -45,6 +45,11 @@
       "detected_via": "readme_always",
       "content_hash": "sha256:52ac2db1edac9f8ce0d8258b4885917ef0c54692b52f157329c8e6e4d129ff5f",
       "recorded_at": "2026-10-05T17:21:00Z"
+    },
+    {
+      "url": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/contract.md",
+      "detected_via": "skill_brief_doc_urls",
+      "recorded_at": "2026-11-12T00:00:00Z"
     }
   ],
   "generated_by": "create-skill",

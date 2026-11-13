@@ -16,9 +16,12 @@ from pyforge.marshal.core.dispatch_ruff_format import (
 )
 from pyforge.marshal.dispatch_supervisor import __main__ as supervisor_main
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): this module reads the repository outside this package, so it runs in
+# the live-tree half; it finds the repository root when a test runs, never at import, so the module imports off
+# the tree (the package half collects it before the marker deselects it).
+pytestmark = pytest.mark.live_tree
+
 _MARSHAL_PKG = Path(__file__).resolve().parents[2]
-_REPO_ROOT = _MARSHAL_PKG.parents[3]
-_PLATFORM_ROOT = _REPO_ROOT / "src/platform"
 _MARSHAL_STORY_PY = "src/shared/packages/pyforge-marshal/src/pyforge/marshal/sample.py"
 _PLATFORM_PROBE = "src/platform/tests/test_probe.py"
 _PORTAL_FIXTURE_ROOT = "src/shared/packages/django-fixture"
@@ -72,7 +75,7 @@ class _RecordingProcess:
 def _seed_platform_ac1(worktree: Path) -> None:
     platform = worktree / "src/platform"
     platform.mkdir(parents=True, exist_ok=True)
-    shutil.copy(_PLATFORM_ROOT / "pyproject.toml", platform / "pyproject.toml")
+    shutil.copy(_MARSHAL_PKG.parents[3] / "src/platform" / "pyproject.toml", platform / "pyproject.toml")
     (platform / "tests").mkdir(parents=True, exist_ok=True)
     (platform / "tests/__init__.py").write_text("", encoding="utf-8")
     (platform / "tests/test_probe.py").write_text(

@@ -75,6 +75,11 @@ from conftest import (
     station_source_files,
 )
 
+# Story 117.1 (spec-pyforge-core:CAP-14): this module reads every sibling station's src/ (through conftest) outside
+# pyforge-core, so it runs in the core suite's live-tree half (`-m live_tree`), never in the package half a second
+# root runs from the package alone.
+pytestmark = pytest.mark.live_tree
+
 _sibling_station_dirs = sibling_station_dirs
 _station_source_files = station_source_files
 _parse = parse_module

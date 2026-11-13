@@ -1544,6 +1544,21 @@
         "on_everywhere": "",
         "cleanup_by": ""
       }
+    },
+    "pyforge.steward.cutover_ledger_write": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "steward",
+        "story": "121-2-steward-cutover-plans-the-ledger-and-no-longer-copies-trees",
+        "created": "2026-11-10",
+        "on_everywhere": "2026-11-10",
+        "cleanup_by": "2027-02-08"
+      }
     }
   }
 }

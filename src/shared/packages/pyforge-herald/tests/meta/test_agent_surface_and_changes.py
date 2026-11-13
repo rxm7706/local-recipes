@@ -10,6 +10,9 @@ Two halves, as Story 43.2's parity test splits them:
   fails under ``HERALD_DOCS_SITE_REQUIRED`` (Story 45.1). It builds Astro into a scratch directory with the inputs
   present, partly present and absent, and with ``pyforge.herald.status_pages`` on and off (AC1-AC7). Since Story 43.7
   every surface is emitted on every build; ``pages-check``'s judging of them is ``test_pages_artifact.py``'s.
+
+Story 51.2 (spec-python-foundry-cutover:CAP-14): the dossier's machine keys -- ``asserts``, ``check``, ``source`` and
+``section`` -- are data, never text, so ``/llms-full.txt`` publishes none of them (the ``machine_keys`` tests).
 """
 
 from __future__ import annotations
@@ -27,9 +30,10 @@ import pytest
 import yaml
 from pages_astro import ASTRO_BIN, needs_astro, require_astro
 
-REPO_ROOT = Path(__file__).resolve().parents[6]
-DOCS_SITE = REPO_ROOT / "docs-site"
-SURFACE_TS = DOCS_SITE / "src" / "lib" / "agent-surface.ts"
+# Story 52.1 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 CHANGES = FIXTURES / "changes-five-merges.json"
 MARSHAL = FIXTURES / "marshal-status-two-homes.json"
@@ -37,10 +41,32 @@ PROGRESS = FIXTURES / "herald-progress-records.json"
 SITE_URL = "https://rxm7706.github.io/local-recipes"
 _NODE = shutil.which("node")
 needs_node = pytest.mark.skipif(_NODE is None, reason="node is not on PATH")
-#: The ten gallery infographics and their families (site.yml's include list), each listed in /llms.txt (Story 43.7).
-_GALLERY = len(
-    yaml.safe_load((DOCS_SITE / "src/content/site.yml").read_text(encoding="utf-8"))["infographics"]["include"]
-)
+
+
+def _repo_root() -> Path:
+    """The checkout this module reads, found inside a function, never at import (the live-tree split rule)."""
+    here = Path(__file__).resolve()
+    for candidate in here.parents:
+        if (candidate / "pixi.toml").is_file() and (
+            candidate / "src" / "shared" / "packages" / "pyforge-herald"
+        ).is_dir():
+            return candidate
+    raise AssertionError("could not locate the repository root")
+
+
+def _docs_site() -> Path:
+    return _repo_root() / "docs-site"
+
+
+def _surface_ts() -> Path:
+    return _docs_site() / "src" / "lib" / "agent-surface.ts"
+
+
+def _gallery() -> int:
+    """The ten gallery infographics and their families (site.yml's include list), each listed in /llms.txt (43.7)."""
+    site = yaml.safe_load((_docs_site() / "src/content/site.yml").read_text(encoding="utf-8"))
+    return len(site["infographics"]["include"])
+
 
 #: The five fixture merges, newest first (AC3, AC4).
 _MERGES_NEWEST_FIRST = [
@@ -61,7 +87,7 @@ def _ts(expression: str, **inputs: object) -> object:
     """Evaluate ``expression`` with the module imported as ``m`` and ``inputs`` bound as ``inp``; a thrown
     error comes back as ``{"error": name, "message": ...}``."""
     script = (
-        f"import * as m from {json.dumps(SURFACE_TS.as_uri())};\n"
+        f"import * as m from {json.dumps(_surface_ts().as_uri())};\n"
         f"const inp = {json.dumps(inputs)};\n"
         "try {\n"
         f"  const value = await (async () => {{ {expression} }})();\n"
@@ -73,7 +99,7 @@ def _ts(expression: str, **inputs: object) -> object:
     env = {k: v for k, v in os.environ.items() if k not in ("PYTEST_ADDOPTS", "PAGES_BUILD_INPUTS_DIR")}
     done = subprocess.run(
         [_NODE or "node", "--experimental-strip-types", "--no-warnings", "--input-type=module", "-e", script],
-        cwd=DOCS_SITE,
+        cwd=_docs_site(),
         env=env,
         capture_output=True,
         text=True,
@@ -239,6 +265,24 @@ def test_shelf_routes_and_the_lane1_rule() -> None:
     assert links == [None, None, None, {"href": "https://lane1.example/console/", "label": "Live view on Lane 1"}]
 
 
+@needs_node
+def test_flatten_text_drops_the_dossier_machine_keys() -> None:
+    """Story 51.2: a dossier's ``asserts``, ``check``, ``source`` and ``section`` values are never text."""
+    row = {
+        "cells": ["Steward"],
+        "section": "steward",
+        "source": "k-cutover-flag",
+        "asserts": ["story:steward/44-4=blocked"],
+    }
+    callout = {"type": "callout", "body": ["Epic 44 is in progress."], "asserts": [["epic:steward/44=in-progress"]]}
+    doc = {
+        "stats": [{"value": "8", "label": "Stations", "check": "stations"}],
+        "sections": [{"blocks": [{"type": "table", "check": "src_lines", "rows": [row]}, callout]}],
+    }
+    text = _ts("return m.flattenText(inp.doc)", doc=doc)["value"]
+    assert text == ["8", "Stations", "Steward", "Epic 44 is in progress."]
+
+
 # ------------------------------------------------------------------ the built site
 
 
@@ -275,7 +319,7 @@ def _astro(out: Path, *, status: bool, inputs: Path) -> None:
     )
     done = subprocess.run(
         [_NODE or "node", str(ASTRO_BIN), "build", "--outDir", str(out)],
-        cwd=DOCS_SITE,
+        cwd=_docs_site(),
         env=env,
         capture_output=True,
         text=True,
@@ -342,13 +386,13 @@ def test_ac7_every_surface_on_every_build_and_the_runs_page_with_the_status_flag
 def test_ac1_llms_lists_every_map_page_and_every_herald_page(build) -> None:
     site = build("full")
     llms = (site / "llms.txt").read_text(encoding="utf-8")
-    document = yaml.safe_load((REPO_ROOT / "docs" / "map.yaml").read_text(encoding="utf-8"))
+    document = yaml.safe_load((_repo_root() / "docs" / "map.yaml").read_text(encoding="utf-8"))
     herald = next(section for section in document["sections"] if section["key"] == "herald")["entries"]
     entries = re.findall(r"^- \[([^\]]+)\]\(([^)]+)\)", llms, re.M)
     sections = re.split(r"^## ", llms, flags=re.M)
     pages = [s for s in sections if s.startswith(("Docs\n", "Herald\n"))]
     page_entries = [line for s in pages for line in s.splitlines() if line.startswith("- [")]
-    assert len(page_entries) == len(document["pages"]) + len(herald) + 2 * _GALLERY  # Story 43.7: each gallery
+    assert len(page_entries) == len(document["pages"]) + len(herald) + 2 * _gallery()  # Story 43.7: each gallery
     # infographic and each deck family is listed with its text
     docs_section = next(section for section in sections if section.startswith("Docs\n"))
     docs_urls = re.findall(r"^- \[[^\]]+\]\(([^)]+)\)", docs_section, re.M)
@@ -365,7 +409,7 @@ def test_ac1_llms_lists_every_map_page_and_every_herald_page(build) -> None:
     assert f"URL: {SITE_URL}/herald/dossier/" in full
     # The dossier's prose and a shelf page's text are there, not only their titles.
     assert "The PyForge Dossier" in full
-    getting_started = (REPO_ROOT / "docs" / "tutorials" / "getting-started.md").read_text(encoding="utf-8")
+    getting_started = (_repo_root() / "docs" / "tutorials" / "getting-started.md").read_text(encoding="utf-8")
     if getting_started.startswith("---"):  # the shelf loader keeps the body, not the frontmatter
         getting_started = getting_started.split("\n---", 1)[1]
     probe = next(line for line in getting_started.splitlines() if len(line) > 40 and not line.startswith("#"))
@@ -376,7 +420,7 @@ def test_ac1_llms_lists_every_map_page_and_every_herald_page(build) -> None:
 def test_ac2_facts_json_is_one_object_per_facts_yaml(build) -> None:
     site = build("full")
     document = json.loads((site / "facts.json").read_text(encoding="utf-8"))
-    files = sorted((REPO_ROOT / "presentations").glob("*/facts.yaml"))
+    files = sorted((_repo_root() / "presentations").glob("*/facts.yaml"))
     decks = {yaml.safe_load(f.read_text(encoding="utf-8"))["deck"]: f for f in files}
     assert sorted(document) == sorted(decks)
     for deck, path in decks.items():
@@ -431,6 +475,39 @@ def test_ac6_a_missing_input_is_one_line_and_the_build_passes(build) -> None:
     assert _rss((none / "changes" / "rss.xml").read_text(encoding="utf-8")).findall("item") == []
 
 
+#: An ``asserts:`` entry of the dossier's closed grammar (Story 51.2), wherever it would land in published text.
+_ASSERT_TEXT = re.compile(r"\b(?:story|epic):[a-z]+/\d|\bflag:pyforge\.|\bledger:(?:mode|claim)")
+
+
+def _dossier_values(value: object, key: str) -> set[str]:
+    """Every string the dossier holds under ``key``, at any depth."""
+    if isinstance(value, dict):
+        found = {str(v) for k, v in value.items() if k == key and isinstance(v, str)}
+        return found.union(*(_dossier_values(v, key) for v in value.values()))
+    if isinstance(value, list):
+        return set().union(*(_dossier_values(v, key) for v in value))
+    return set()
+
+
+@needs_astro
+def test_the_built_llms_full_publishes_no_dossier_machine_keys(build) -> None:
+    """Story 51.2 (AC8): ``/llms-full.txt`` carries the dossier's prose, and no ``asserts:`` entry, no line that is only
+    a ``check:`` key or a § 10 ``source:`` id. (A scale row's ``section:`` is a station id, and the atlas chips publish
+    one of them, ``core``, as text, so the model test above holds that key.)"""
+    full = (build("full") / "llms-full.txt").read_text(encoding="utf-8")
+    assert "story:steward/" not in full
+    assert "flag:pyforge.cutover_root=" not in full
+    dossier = next(part for part in full.split("\n---\n\n") if f"URL: {SITE_URL}/herald/dossier/" in part)
+    assert "Nothing flips it automatically." in dossier  # the prose itself is still published
+    assert not _ASSERT_TEXT.search(dossier)
+    content = _repo_root() / "docs-site" / "src" / "content" / "dossier" / "dossier.yml"
+    document = yaml.safe_load(content.read_text(encoding="utf-8"))
+    keys = {name: _dossier_values(document, name) for name in ("check", "source")}
+    assert all(keys.values()), keys
+    lines = {line.strip() for line in dossier.splitlines()}
+    assert {name: sorted(values & lines) for name, values in keys.items()} == {"check": [], "source": []}
+
+
 @needs_astro
 def test_an_empty_merge_list_says_so_and_the_feed_is_an_empty_channel(build) -> None:
     site = build("no-merges")
@@ -442,20 +519,22 @@ def test_an_empty_merge_list_says_so_and_the_feed_is_an_empty_channel(build) -> 
 
 # ------------------------------------------------------------------ the docs-site's one flag reader
 
-FLAGS_TS = DOCS_SITE / "src" / "lib" / "flags.ts"
+
+def _flags_ts() -> Path:
+    return _docs_site() / "src" / "lib" / "flags.ts"
 
 
 @needs_node
 def test_one_flag_reader_accepts_the_python_sides_values() -> None:
     """``src/lib/flags.ts`` reads a flag on for 1, true or yes, the values the Guild step's export writes."""
     script = (
-        f"import {{ envFlagOn }} from {json.dumps(FLAGS_TS.as_uri())};\n"
+        f"import {{ envFlagOn }} from {json.dumps(_flags_ts().as_uri())};\n"
         "const values = ['1', 'true', 'TRUE', ' yes ', 'Yes', '0', 'false', 'no', '', 'on', undefined];\n"
         "process.stdout.write(JSON.stringify(values.map((v) => envFlagOn('F', v === undefined ? {} : { F: v }))));\n"
     )
     done = subprocess.run(
         [_NODE or "node", "--experimental-strip-types", "--no-warnings", "--input-type=module", "-e", script],
-        cwd=DOCS_SITE,
+        cwd=_docs_site(),
         capture_output=True,
         text=True,
         check=False,
@@ -478,14 +557,15 @@ def test_only_the_flag_reader_reads_the_flag_environment() -> None:
     )
     assert all(pattern.search(line) for line in planted)
     assert not pattern.search("throw new Error('missing while PYFORGE_STATUS_PAGES=1');")
-    sources = [DOCS_SITE / "astro.config.mjs", *(DOCS_SITE / "src").rglob("*"), *(DOCS_SITE / "scripts").rglob("*")]
+    docs_site = _docs_site()
+    sources = [docs_site / "astro.config.mjs", *(docs_site / "src").rglob("*"), *(docs_site / "scripts").rglob("*")]
     readers = sorted(
-        path.relative_to(DOCS_SITE).as_posix()
+        path.relative_to(docs_site).as_posix()
         for path in sources
         if path.is_file()
         and path.suffix in {".ts", ".mjs", ".js", ".astro"}
         and pattern.search(path.read_text(encoding="utf-8"))
     )
     assert readers == [], readers
-    flags = FLAGS_TS.read_text(encoding="utf-8")
+    flags = _flags_ts().read_text(encoding="utf-8")
     assert "envFlagOn('PYFORGE_STATUS_PAGES')" in flags and "envFlagOn('PYFORGE_CI_SURFACES_TILE')" in flags

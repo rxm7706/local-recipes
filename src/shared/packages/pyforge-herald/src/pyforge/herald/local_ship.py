@@ -6,6 +6,14 @@ platform host on loopback, which forwards herald's two webhook paths to the
 mcp-host sidecar where herald's webhook runs (steward Story 87.3). Not a
 ``herald`` CLI verb — operator-run via
 ``pixi run -e pyforge-herald herald-ship-local``.
+
+The on-pr-close body names this checkout's forge (Story 52.2, a fix under
+spec-pyforge-herald CAP-38): ``roots.this`` of the nearest
+``docs/governance/guild-roster.json``, mapped to its slug by
+``pyforge.core.cutover_root.forge_slug_for`` and read at call time. It is not
+the root of record: herald's landing record follows the checkout it ships
+from, never the ``pyforge.cutover_root`` flag. A missing roster or
+``roots.this`` is a :class:`ForgeSlugError`, never a fallback slug.
 """
 
 from __future__ import annotations
@@ -25,10 +33,12 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
-from pyforge.core import landing_evidence, roster
+from pyforge.core import cutover_root, landing_evidence, roster
+from pyforge.core.errors import PyforgeError
 
 _MERGE_SUBJECT_TEMPLATE = "Merge {slug}/{key} into main"
-_DEFAULT_REPO = "rxm7706/local-recipes"
+ROSTER_RELATIVE = Path("docs/governance/guild-roster.json")
+"""Where a checkout declares which root it is (``roots.this``)."""
 _LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
 DEFAULT_HOST_URL = "http://127.0.0.1:8001"
 """The host's loopback URL: the rendered daphne unit binds ``127.0.0.1`` on
@@ -36,6 +46,36 @@ instance port 8001 (``steward deploy perimeter``'s first worker port)."""
 REQUEST_TIMEOUT_SECONDS = 150.0
 """Above ``webhook_host.REQUEST_TIMEOUT_SECONDS`` (120 s), so a hung handler's
 ``500`` (DW-13-6-2) reaches the caller instead of racing a client timeout."""
+
+
+class ForgeSlugError(PyforgeError, ValueError):
+    """Named refusal: this checkout's forge slug cannot be read (no roster above
+    the start directory, no ``roots.this`` in it, or a root core has no slug for)."""
+
+
+def this_forge_slug(start: Path | None = None) -> str:
+    """This checkout's forge slug: ``roots.this`` of the nearest roster at or
+    above ``start`` (default: the working directory), through
+    ``cutover_root.forge_slug_for``. Read at call time, never at import."""
+    here = (start if start is not None else Path.cwd()).resolve()
+    for candidate in (here, *here.parents):
+        roster_path = candidate / ROSTER_RELATIVE
+        if roster_path.is_file():
+            break
+    else:
+        raise ForgeSlugError(f"no {ROSTER_RELATIVE} at or above {here}: cannot tell which root this checkout is")
+    try:
+        data = json.loads(roster_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ForgeSlugError(f"unreadable roster {roster_path}: {exc}") from exc
+    roots = data.get("roots") if isinstance(data, dict) else None
+    this = roots.get("this") if isinstance(roots, dict) else None
+    if not isinstance(this, str) or not this:
+        raise ForgeSlugError(f"{roster_path} declares no 'roots.this': cannot tell which root this checkout is")
+    try:
+        return cutover_root.forge_slug_for(this)
+    except cutover_root.CutoverRootError as exc:
+        raise ForgeSlugError(f"{roster_path} roots.this: {exc}") from exc
 
 
 @dataclass(frozen=True)
@@ -117,7 +157,11 @@ def build_on_ship_body(landing: LandingCommit) -> bytes:
     return json.dumps(payload, separators=(",", ":")).encode("utf-8")
 
 
-def build_on_pr_close_body(landing: LandingCommit, *, repo: str = _DEFAULT_REPO) -> bytes:
+def build_on_pr_close_body(landing: LandingCommit, *, repo: str | None = None) -> bytes:
+    """The on-pr-close body. An explicit ``repo`` wins and reads no roster;
+    otherwise :func:`this_forge_slug` names it (a :class:`ForgeSlugError` when it cannot)."""
+    if repo is None:
+        repo = this_forge_slug()
     payload = {
         "merged": True,
         "gates_passed": True,
@@ -171,12 +215,17 @@ def deliver_landing(
     base_url: str,
     secret: bytes,
     landing: LandingCommit,
+    *,
+    repo: str | None = None,
 ) -> dict[str, object]:
     base = base_url.rstrip("/")
     on_ship_url = f"{base}/stations/herald/api/v1/webhooks/on-ship"
     on_close_url = f"{base}/stations/herald/api/v1/webhooks/on-pr-close"
-    on_ship_status, on_ship_body = post_signed(on_ship_url, secret, build_on_ship_body(landing))
-    on_close_status, on_close_body = post_signed(on_close_url, secret, build_on_pr_close_body(landing))
+    # Both bodies are built before either POST, so a ForgeSlugError refuses before anything is sent.
+    ship_body = build_on_ship_body(landing)
+    close_body = build_on_pr_close_body(landing, repo=repo)
+    on_ship_status, on_ship_body = post_signed(on_ship_url, secret, ship_body)
+    on_close_status, on_close_body = post_signed(on_close_url, secret, close_body)
     return {
         "target": base,
         "landing": {
@@ -222,8 +271,15 @@ def main(argv: list[str] | None = None) -> int:
         print(f"refusing non-loopback webhook URL: {args.url!r}", file=sys.stderr)
         return 1
 
-    landing = resolve_landing_commit(args.repo_root.resolve(), args.commit)
-    result = deliver_landing(args.url, secret, landing)
+    repo_root = args.repo_root.resolve()
+    try:
+        repo = this_forge_slug(repo_root)
+    except ForgeSlugError as exc:
+        print(f"refusing to ship: {exc}", file=sys.stderr)
+        return 1
+
+    landing = resolve_landing_commit(repo_root, args.commit)
+    result = deliver_landing(args.url, secret, landing, repo=repo)
     print(json.dumps(result, indent=2, sort_keys=True))
 
     on_ship = result["on_ship"]

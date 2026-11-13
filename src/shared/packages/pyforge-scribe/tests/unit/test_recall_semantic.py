@@ -1,4 +1,8 @@
-"""Story 28.2 — opt-in bag-of-concepts recall hits a no-overlap target; lexical misses it."""
+"""Story 28.2 — opt-in bag-of-concepts recall hits a no-overlap target; lexical misses it.
+
+Story 33.1 (spec-pyforge-scribe CAP-31): the module reads the platform tree and the host's
+changesets, so it is ``live_tree``; a test that needs the server carries ``postgres``.
+"""
 
 from __future__ import annotations
 
@@ -14,8 +18,9 @@ from pyforge.scribe.graph_store_pg import PostgresGraphStore
 from pyforge.scribe.models import GraphNode
 from pyforge.scribe.recall import _answer_semantic, answer
 
+pytestmark = pytest.mark.live_tree
+
 _SCRIBE_ROOT = Path(__file__).resolve().parents[2]
-_REPO_ROOT = Path(__file__).resolve().parents[6]
 
 
 def _node(node_id: str, text: str, citation: str) -> GraphNode:
@@ -51,6 +56,7 @@ def _load_pair(store: PostgresGraphStore | FlatFileGraphStore, repo: Path) -> No
     store.commit()
 
 
+@pytest.mark.postgres
 def test_semantic_recall_hits_no_lexical_overlap_target(tmp_path: Path, pg_dsn: str, cited_repo: Path) -> None:
     store = PostgresGraphStore(pg_dsn, tmp_path / "ignored")
     _load_pair(store, cited_repo)
@@ -76,6 +82,7 @@ def test_flatfile_semantic_stays_lexical_only(cited_repo: Path) -> None:
     assert store.query_similar("canine") == []
 
 
+@pytest.mark.postgres
 def test_semantic_skips_unresolvable_citation(tmp_path: Path, pg_dsn: str, cited_repo: Path) -> None:
     store = PostgresGraphStore(pg_dsn, tmp_path / "ignored")
     store.reset()
@@ -115,14 +122,14 @@ def test_callers_still_do_not_import_postgres_adapter() -> None:
         assert "graph_store_pg" not in imported, f"{rel} imports the PG adapter"
 
 
-def test_no_pyforge_package_under_src_platform() -> None:
-    platform = _REPO_ROOT / "src" / "platform"
+def test_no_pyforge_package_under_src_platform(live_repo_root: Path) -> None:
+    platform = live_repo_root / "src" / "platform"
     assert platform.is_dir()
     offenders: list[str] = []
     for path in platform.rglob("*.py"):
         text = path.read_text(encoding="utf-8", errors="replace")
         if "query_similar" in text or "embed_text" in text or "graph_store_pg" in text:
-            offenders.append(str(path.relative_to(_REPO_ROOT)))
+            offenders.append(str(path.relative_to(live_repo_root)))
     assert offenders == []
 
 

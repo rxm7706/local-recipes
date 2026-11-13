@@ -9,6 +9,7 @@ station terms nothing else defines carry a gloss.
 
 - **Station, Charter, `CAP-n`, `FR-n` / `NFR-n`, `AD-n` and its `canopy:` / `pap:` / `fnd:` prefixes, A and B, CFE, Twin, Tier 0 / 2 / 3, the rebase, Path B** — `docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md` § 0.
 - **`spec-<x>:CAP-n`, `← CAP-m`, `(ready <date>)` / `(shipped <date>)`** — CHAIN-STANDARD § 2; the `FR` / `NFR` id grammar is § 6.
+- **`(retired <date>[: <reason>])` and a marker's `; <qualifier>`** — the capability-marker grammar of CHAIN-STANDARD § 4 as steward Story 120.3 amends it; every capability carries exactly one dated marker, and `(retired 2026-11-10: closed one-time campaign)` marks doctor's closed one-time campaigns (Story 57.1).
 - **verdict, gate, detector, check, preflight, advisory; scope `repo` / `runtime`; exit codes** — `docs/reference/judgement-vocabulary.md`.
 - **Check, Finding, Source, Watch axis, Prescription, Partition, operability exit code** — the PRD's § 3 Glossary, `../../prds/prd-pyforge-doctor-2026-07-25/prd.md`.
 - **`AD-n` as this Spec cites it** — `../../architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md`; the ones it binds are restated in `SPEC.md` § Constraints.

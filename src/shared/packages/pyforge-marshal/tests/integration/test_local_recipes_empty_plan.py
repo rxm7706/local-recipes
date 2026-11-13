@@ -22,6 +22,11 @@ target (a fresh clone, as CI runs it).
 The live-repo integration tests is ``@pytest.mark.slow`` (real detect/plan
 over the full tree); unit tests below pin the exclusion and diff helpers so
 ``pyforge-marshal-test`` still exercises the oracle contract without the cost.
+
+Story 116.1 (spec-pyforge-marshal:CAP-305): the module reads the live tree as
+a whole, so it is marked ``live_tree``, and a run outside the ``local-recipes``
+checkout fails rather than skips -- a skip there false-greened the oracle on a
+tree that is not this one.
 """
 
 from __future__ import annotations
@@ -43,6 +48,8 @@ from pyforge.marshal.seed.plan.types import NO_PACKAGED_PAYLOAD_SKIP_PATTERN, Ac
 from pyforge.marshal.seed.state import SeedState, write_state
 from pyforge.marshal.seed.verbs.adopt import run_adopt
 from pyforge.marshal.seed.verbs.update import run_update
+
+pytestmark = pytest.mark.live_tree
 
 # Explicit exclusion (Story 12.2 AC): the three ``unclassified-deferred`` ids
 # from ``seed/templates/manifest.yaml`` — deferral is enumerated, not a gap.
@@ -372,7 +379,7 @@ def test_format_plan_diff_names_diverged_artifacts():
 def test_local_recipes_adopt_dry_run_yields_empty_plan_excluding_deferred():
     repo_root = _local_recipes_root()
     if repo_root is None:
-        pytest.skip("not running inside the local-recipes monorepo checkout")
+        pytest.fail("not inside the local-recipes monorepo checkout: this live-tree oracle reads that checkout")
 
     manifest = _load_packaged_manifest()
     plan_path = repo_root / ".marshal" / "plan.json"
@@ -410,7 +417,7 @@ def test_local_recipes_adopt_dry_run_yields_empty_plan_excluding_deferred():
 def test_local_recipes_update_dry_run_yields_empty_plan_with_documented_skips():
     repo_root = _local_recipes_root()
     if repo_root is None:
-        pytest.skip("not running inside the local-recipes monorepo checkout")
+        pytest.fail("not inside the local-recipes monorepo checkout: this live-tree oracle reads that checkout")
 
     manifest = _load_packaged_manifest()
     plan_path = repo_root / ".marshal" / "plan.json"

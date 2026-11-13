@@ -42,4 +42,4 @@ prompt = "Complete the station task by running `pyforge doctor check` only. Do n
 [[agent.menu]]
 code = "MCP"
 description = "Call the doctor service face"
-prompt = "POST /stations/doctor/mcp only (initialize and tools/call station_face). No other URL or method. No filesystem."
+prompt = "POST /stations/doctor/mcp only (initialize, then tools/call start_scan with a target and get_scan with its handle). No other URL or method. No filesystem."

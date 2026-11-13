@@ -1,4 +1,4 @@
-"""Story 31.1 — class-keyed playbook is the operator path (CAP-1).
+"""Story 31.1 — class-keyed playbook is the operator path (CAP-27).
 
 Locks three contracts: `steward provision --help` names the playbook;
 the playbook's six rows list pixi, cited native wire, and steward surface;

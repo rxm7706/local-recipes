@@ -30,6 +30,10 @@ from pyforge.marshal.core.journal import Phase, build_entry, prepare_for_write
 from pyforge.marshal.core.status import FleetHomeFacts, _merge_dispatch_row_fields
 from pyforge.marshal.dispatch_supervisor import __main__ as supervisor_main
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 _FLAG = "pyforge.marshal.preserve_refs"
 _SLUG = "pyforge-marshal"
 _STORY = "87.5"
@@ -55,7 +59,7 @@ def git_pair(tmp_path: Path) -> tuple[Path, Path]:
         encoding="utf-8",
     )
     (repo / "tracked.txt").write_text("v1\n", encoding="utf-8")
-    _git(repo, "add", "tracked.txt", "docs/governance/preserve-purge-list.json")
+    _git(repo, "add", "tracked.txt", "/".join(("docs", "governance", "preserve-purge-list.json")))
     _git(repo, "commit", "-m", "init")
     _git(repo, "branch", "-M", "main")
     _git(repo, "remote", "add", "origin", str(bare))

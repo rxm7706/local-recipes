@@ -9,6 +9,11 @@ description: >
   Deterministic BMAD-loop supervisor CLI. Agents use the marshal CLI
   (status, homes, check, seed, factory dispatch / spin / challenge, context
   advisory / retrieve) rather than importing pyforge.marshal internals.
+doc_urls:
+  - url: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/contract.md
+    label: marshal public contract (verbs, MCP tools, flags, exit codes)
+  - url: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/glossary.md
+    label: marshal glossary (Challenger vocabulary)
 forge_tier: Quick
 created: '2026-08-25'
 created_by: skf-create-skill
@@ -25,6 +30,10 @@ scope:
     - src/pyforge/marshal/cli/dispatch.py
     - src/pyforge/marshal/cli/context.py
     - src/pyforge/marshal/cli/challenge.py
+    - src/pyforge/marshal/mcp/tools.py
+    - src/pyforge/marshal/mcp/server.py
+    - src/pyforge/marshal/seed/errors.py
+    - src/pyforge/marshal/core/verdict.py
     - README.md
   exclude:
     - tests/**
@@ -35,6 +44,19 @@ scope:
     Scope widened 2026-11-01 (steward Story 29.4, EGM audit RUL-CL2): spin.py,
     dispatch.py (where factory dispatch registers), context.py and challenge.py
     carry the verbs AGENTS.md names; recompiled in place at 0.1.0.
+    Recompiled in place at 0.1.0 on 2026-11-12 (steward Story 29.5, EGM audit
+    2026-11-05): mcp/tools.py and mcp/server.py (the marshal-mcp tools),
+    seed/errors.py (the seed exit domain) and core/verdict.py (the frozen exit
+    domain) join the scope, and the station contract (contract.md) and
+    glossary.md are doc sources. Carry: pyforge marshal and marshal are one
+    CLI, the examples use the console script, personas the pyforge marshal
+    spelling (MAR-R-F1, MAR-R-F20, MAR-R-F47, in MANUAL:additional-notes);
+    factory challenge's prerequisites, paid session, exit codes and Tier-3
+    report path, pointing at glossary.md's Challenger vocabulary (MAR-R-F2,
+    MAR-R-F49, in MANUAL:additional-notes); what --audit reads after Stories
+    113.14..113.17; --section and --dream-section; run_challenge's line; the
+    context verbs; the marshal-mcp tools; both exit domains; what each MCP
+    face's runner runs and does not run.
   rationale:
     recommended: specific-modules
     chosen: specific-modules

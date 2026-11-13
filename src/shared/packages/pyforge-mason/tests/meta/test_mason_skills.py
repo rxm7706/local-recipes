@@ -18,6 +18,11 @@ from pathlib import Path
 import pytest
 import yaml
 
+# Story 38.2 (spec-pyforge-mason CAP-7, relaying spec-pyforge-steward:CAP-175): this module reads the live tree
+# outside its package (.claude/skills and docs/how-to), so it runs in the station's live-tree half and fires on what
+# it reads.
+pytestmark = pytest.mark.live_tree
+
 CFE_LINK_FRAGMENT = ".claude/skills/conda-forge-expert/"
 GOTCHA_HEADING_RE = re.compile(r"^### G\d+\.", re.MULTILINE)
 

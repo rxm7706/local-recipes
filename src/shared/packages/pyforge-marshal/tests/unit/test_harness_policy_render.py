@@ -18,6 +18,8 @@ import tomllib
 
 import pytest
 import tomlkit
+from bmad_loop import policy as bmad_loop_policy
+from bmad_loop import verify as bmad_loop_verify
 
 from pyforge.marshal.adapters.harness_bmadloop import (
     _SURFACE_RECONCILE_COMMAND,
@@ -359,8 +361,6 @@ def test_rendered_defaults_pass_the_installed_bmad_loop_load():
     value is never READ or CONSUMED by the harness itself, per AD-4 --
     it is still a real, rendered TOML key, just an inert one to bmad_loop's
     own loader)."""
-    bmad_loop_policy = pytest.importorskip("bmad_loop.policy")
-
     loaded = bmad_loop_policy.loads(render_policy_toml(_compose()))
     assert loaded.review.on_timeout == "retry"
     assert loaded.review.on_status_contradiction == "escalate"
@@ -397,7 +397,6 @@ def test_enum_frozensets_mirror_the_installed_bmad_loop_vocabularies():
     the live installed package, so a future bmad-loop bump that widens or
     respells either vocabulary reds this test instead of surfacing as a
     load-time PolicyError in a loop home."""
-    bmad_loop_policy = pytest.importorskip("bmad_loop.policy")
     from pyforge.marshal.core import policy as policy_module
 
     assert policy_module._REVIEW_ON_TIMEOUT_MODES == frozenset(bmad_loop_policy.REVIEW_ON_TIMEOUT_MODES)
@@ -592,65 +591,6 @@ def test_write_policy_document_wraps_oserror_in_harness_policy_write_error(tmp_p
 # the tracked file from pyforge-marshal's own loop home, leaving it with no policy
 # at all. These tests assert the seam EXISTS, which is the property the original
 # suite could not see: a writer proven correct in isolation, that nobody can reach.
-
-
-def test_conventional_project_policy_path_lands_on_the_repo_root(tmp_path):
-    """An off-by-one in `repo_root()` resolves to `<repo>/src` and every
-    convention lookup silently misses -- falling back to bare defaults whose
-    `verify_commands` is EMPTY, i.e. no gate at all. Caught exactly that during
-    implementation, hence this test."""
-    from pyforge.marshal.cli import config as config_cli
-
-    root = config_cli.repo_root()
-    assert (root / "pixi.toml").is_file(), (
-        f"repo_root() resolved to {root}, which has no pixi.toml -- the parent "
-        "index is wrong and every project-policy lookup will miss"
-    )
-    p = config_cli.conventional_project_policy_path("pyforge-marshal")
-    assert p == root / ("_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml")
-
-
-def test_cli_writes_the_harness_policy_via_the_convention_layer(tmp_path):
-    """The whole point: `marshal config --project <slug> --write-harness-policy
-    <home>` must find the tracked layer by convention and write a policy carrying
-    that project's OWN verify command -- with no --project-policy passed."""
-    from pyforge.marshal.cli.main import main
-
-    rc = main(
-        [
-            "config",
-            "--project",
-            "pyforge-marshal",
-            "--write-harness-policy",
-            str(tmp_path),
-            "--format",
-            "json",
-        ]
-    )
-    assert rc == 0, "a clean composition must exit 0"
-
-    written = tmp_path / ".bmad-loop" / "policy.toml"
-    assert written.is_file(), "the CLI did not reach write_policy_toml"
-    parsed = tomllib.loads(written.read_text(encoding="utf-8"))
-    # Still an EXACT list, deliberately -- this assertion is the only thing standing
-    # between a mis-composed layer and a run with no gate, so it is not loosened to a
-    # membership check. The list grew to two on 2026-07-31 when marshal absorbed the
-    # pyforge-genesis installer as epics 7-12: marshal's own suite cannot gate a story
-    # that builds pyforge-genesis (it would pass regardless -- the same false green the
-    # 2026-07-30 audit found on six loop homes running warden's suite), so the station
-    # layer carries pyforge-deps-test as a second entry. That check discovers
-    # src/shared/packages/pyforge-* BY GLOB, so it covers a package the day it lands.
-    assert parsed["verify"]["commands"] == [
-        "pixi run --frozen -e pyforge-marshal pyforge-marshal-test",
-        "pixi run --frozen -e pyforge-ci pyforge-deps-test",
-        # S-13.7 (2026-08-09): the repo-wide surface guard, APPENDED at render.
-        # Kept inside the exact list on purpose -- this assertion is what stands
-        # between a mis-composed layer and a run with no gate, and the guard is
-        # now part of what "gated" means.
-        _SURFACE_RECONCILE_COMMAND,
-    ], "the project layer was not composed in -- verify would be EMPTY (no gate)"
-    assert parsed["gates"]["mode"] == "none"
-    assert parsed["limits"]["max_followup_reviews"] == 2
 
 
 def test_cli_refuses_to_write_a_policy_from_an_error_composition(tmp_path):
@@ -1022,8 +962,6 @@ def test_rendered_session_timeout_constant_is_the_value_the_rendered_policy_carr
 def test_rendered_preserve_keep_is_zero_and_passes_installed_bmad_loop_load():
     """Story 87.13 / AD-78: marshal renders ``preserve_keep = 0`` unflagged;
     the installed harness loader must accept it with zero warnings."""
-    bmad_loop_policy = pytest.importorskip("bmad_loop.policy")
-
     rendered = render_policy_toml(_compose())
     doc = tomllib.loads(rendered)
     assert doc["scm"]["preserve_keep"] == 0
@@ -1036,7 +974,6 @@ def test_rendered_preserve_keep_is_zero_and_passes_installed_bmad_loop_load():
 def test_preserve_keep_zero_means_never_prune_in_installed_bmad_loop(tmp_path):
     """AD-78 drift guard: ``keep <= 0`` must keep meaning never prune in the
     installed ``bmad_loop`` package -- not only in marshal's render."""
-    verify = pytest.importorskip("bmad_loop.verify")
     import subprocess
 
     repo = tmp_path / "repo"
@@ -1056,7 +993,7 @@ def test_preserve_keep_zero_means_never_prune_in_installed_bmad_loop(tmp_path):
             env=env,
         )
 
-    assert verify.prune_preserve_refs(repo, 0) == []
+    assert bmad_loop_verify.prune_preserve_refs(repo, 0) == []
     listed = subprocess.run(
         ["git", "-C", str(repo), "branch", "--list", "attempt-preserve/*"],
         capture_output=True,
@@ -1066,7 +1003,7 @@ def test_preserve_keep_zero_means_never_prune_in_installed_bmad_loop(tmp_path):
     ).stdout.strip()
     assert len([line for line in listed.splitlines() if line.strip()]) == 3
 
-    pruned = verify.prune_preserve_refs(repo, 1)
+    pruned = bmad_loop_verify.prune_preserve_refs(repo, 1)
     assert len(pruned) == 2
 
 

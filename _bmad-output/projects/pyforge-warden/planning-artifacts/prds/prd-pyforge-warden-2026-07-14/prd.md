@@ -15,7 +15,7 @@ stepsCompleted:
   - step-10-nonfunctional
   - step-11-polish
   - step-12-complete
-updated: "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief -> PRD and spec -> PRD); no CAP, FR or AD is minted. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): chain-currency cascade (spec -> PRD) for the Spec's 2026-11-01 re-derive of CAP-23..CAP-26 (research/egm-audit-2026-11-01.md: 30 findings, 28 accepted, 2 rejected, 0 deferred; fix stories 13.2, 14.4, 15.2 and 16.6-16.10, all done); FR-41..FR-43 carry their dated 2026-11-01 amendments; NFR-C1's pixi floor reads 0.80.0 (was 0.72.2) and NFR-S2's egress rule is scoped by process, its arrow gaining CAP-26; no FR added, renumbered or removed. See § Currency reconciliation — 2026-11-01. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 20.2): the 23 lettered NFR lines gain `← CAP-m` arrows traced from the Spec's capability intent and success text; by the operator's ruling of 2026-10-26 (option A) eight ids are re-spelled to CHAIN-STANDARD § 6's grammar (NFR-R3a/NFR-R3b → NFR-R3.1/NFR-R3.2, NFR-P-warm/-cold/-concurrency → NFR-P2/P3/P4, FR33/FR35 → FR-33/FR-35), the FR30 traceability note names FR-30 after its title, and the six FR-NEW-* journey rows name their canonical FRs; no NFR or FR text, number or arrow target changes. See § Currency reconciliation — 2026-10-26 (Story 20.2). Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 20.1): chain-currency cascade (spec -> PRD) after the Spec's capability text was restored from the pre-fold source (no CAP added or moved); no FR, NFR or arrow changes; the NFR lines (no arrows) are Story 20.2's. See § Currency reconciliation — 2026-10-26 (Story 20.1). Prior "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 19.1): FR-11 and FR-12 re-pointed at CAP-11, CAP-4, FR-34 and FR-36 at CAP-4, CAP-11 (on the review), and FR33 and FR35, which the 2026-09-17 fold skipped, gain CAP-5 (FR35 also CAP-11); no FR text, number, spelling or NFR moves. See § Currency reconciliation — 2026-10-25 (Story 19.1). Prior "2026-10-11"   # RE-STAMPED 2026-10-11: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-11 entries (operator rulings: the fleet is an operator-designated github.com organisation read through the operator's gh login and never named in a tracked file; Story 16.1 re-scoped, Story 16.5 minted under CAP-26 / FR-43); no FR registered. See § Currency reconciliation — 2026-10-11. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Stories 15.1 and 16.1's gates cleared, their keys flipped blocked -> backlog by operator ruling) and the 2026-10-07 mint of fix Story 11.3; no FR registered. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-03..07 surface-reconcile entries (Story 17.1 landing, Story 14.1 landing, Story 14.2); no FR registered. See § Currency reconciliation — 2026-10-07. Prior 2026-10-03 (Phase 4+5)   # RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 17, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-24..26 (Epics 14-16); FR-41..FR-43 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-23 (the TEA advisory's base is the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (py-rattler test-oracle floor 0.26.0 → 0.25.0 for the pyforge-foundry-full union solve; surface reconcile); no requirement/AD/story delta. Prior 2026-09-17
+updated: "2026-11-12"   # RE-STAMPED 2026-11-12 (the cutover readiness close, warden Story 25.2): NFR-C1 reads Python 3.14 (decision D6) and names the engine ranges pixi.toml carries; NFR-S9 claims an age only for the LTS registry (operator ruling 2026-11-10); Journey 4 names status bypassed, not the unbuilt review_required (operator ruling 2026-09-14); NFR-R3.2 no longer says --deterministic pins a volatile-field set (operator ruling 2026-11-10); the 2026-08-26 Epic 9 line qualifies spec-pyforge-unifying-strategy:CAP-18. FR-44..FR-50 were registered and FR-43 re-traced at the 2026-11-10 mint; no FR added, renumbered or removed here. See § Currency reconciliation — 2026-11-10 (Story 25.2). Prior "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief -> PRD and spec -> PRD); no CAP, FR or AD is minted. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): chain-currency cascade (spec -> PRD) for the Spec's 2026-11-01 re-derive of CAP-23..CAP-26 (research/egm-audit-2026-11-01.md: 30 findings, 28 accepted, 2 rejected, 0 deferred; fix stories 13.2, 14.4, 15.2 and 16.6-16.10, all done); FR-41..FR-43 carry their dated 2026-11-01 amendments; NFR-C1's pixi floor reads 0.80.0 (was 0.72.2) and NFR-S2's egress rule is scoped by process, its arrow gaining CAP-26; no FR added, renumbered or removed. See § Currency reconciliation — 2026-11-01. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 20.2): the 23 lettered NFR lines gain `← CAP-m` arrows traced from the Spec's capability intent and success text; by the operator's ruling of 2026-10-26 (option A) eight ids are re-spelled to CHAIN-STANDARD § 6's grammar (NFR-R3a/NFR-R3b → NFR-R3.1/NFR-R3.2, NFR-P-warm/-cold/-concurrency → NFR-P2/P3/P4, FR33/FR35 → FR-33/FR-35), the FR30 traceability note names FR-30 after its title, and the six FR-NEW-* journey rows name their canonical FRs; no NFR or FR text, number or arrow target changes. See § Currency reconciliation — 2026-10-26 (Story 20.2). Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 20.1): chain-currency cascade (spec -> PRD) after the Spec's capability text was restored from the pre-fold source (no CAP added or moved); no FR, NFR or arrow changes; the NFR lines (no arrows) are Story 20.2's. See § Currency reconciliation — 2026-10-26 (Story 20.1). Prior "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 19.1): FR-11 and FR-12 re-pointed at CAP-11, CAP-4, FR-34 and FR-36 at CAP-4, CAP-11 (on the review), and FR33 and FR35, which the 2026-09-17 fold skipped, gain CAP-5 (FR35 also CAP-11); no FR text, number, spelling or NFR moves. See § Currency reconciliation — 2026-10-25 (Story 19.1). Prior "2026-10-11"   # RE-STAMPED 2026-10-11: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-11 entries (operator rulings: the fleet is an operator-designated github.com organisation read through the operator's gh login and never named in a tracked file; Story 16.1 re-scoped, Story 16.5 minted under CAP-26 / FR-43); no FR registered. See § Currency reconciliation — 2026-10-11. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Stories 15.1 and 16.1's gates cleared, their keys flipped blocked -> backlog by operator ruling) and the 2026-10-07 mint of fix Story 11.3; no FR registered. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-03..07 surface-reconcile entries (Story 17.1 landing, Story 14.1 landing, Story 14.2); no FR registered. See § Currency reconciliation — 2026-10-07. Prior 2026-10-03 (Phase 4+5)   # RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 17, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-24..26 (Epics 14-16); FR-41..FR-43 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-23 (the TEA advisory's base is the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (py-rattler test-oracle floor 0.26.0 → 0.25.0 for the pyforge-foundry-full union solve; surface reconcile); no requirement/AD/story delta. Prior 2026-09-17
 currency_review: "Reviewed 2026-09-14 — chain-currency sweep. spec-pyforge-warden moved to 2026-09-12 (a 2-path surface-drift-exclude block; twelve dated verified: CAP lines from the 2026-09-11 sweep; three open_questions hoisted into frontmatter 2026-09-11; the story-set Assumption re-grounded from 31/6 to 43 keys/11 epics) while this PRD sat at 2026-09-07. Reconciled in § Currency reconciliation — 2026-09-14. ONE REAL GAP RECORDED, independently re-verified: `review_required` — named in FR9, in the acceptance matrix and in the bypass success criteria — occurs ZERO times in shipped src/ or tests/. Recorded, NOT repaired: adding the field is a behaviour + schema change needing its own Dream/Spec. The Spec's three open questions remain OPERATOR-OWNED and unanswered; the station's coherence checkpoint stays red by design until they are answered. Prior — Reviewed 2026-09-07 — reconciled against Epic 11 (bmad-os-review-pr/findings-triage + tea-test-review, both advisory lenses, landed since the 2026-08-26 pass) and the DW-FU-11-2 fail-closed judgment call. v1 FR1-FR40 content verified unchanged; post-v1 growth recorded in § Currency reconciliation — 2026-09-07 (and the 2026-08-26 entry above it)."
 classification:
   projectType: cli_tool
@@ -236,11 +236,11 @@ Every one of these is **exit 2, explicitly not clean** — the absence of an exp
 
 **Opening.** Priya has a release to ship, but osv flags a `high` CVE with no upstream fix. A hard block strands the release; silently ignoring it is dishonest.
 
-**Rising action.** She runs `... --bypass --reason "no upstream fix; tracking GHSA-xxxx"`. The tool emits a committed `.warden-waivers.yaml` stanza (`accepted_at` / `expires_at`, default 14d, + an `authorized_by` field) that it **reads but never writes** (NFR3). It exits 0 with `status: bypassed`, `review_required: true` — **and the run still carries `bypassed` in the audit record even though the residual exit is 0**, so the trail is never blind to a suppression. Only the *covered* finding is suppressed; a residual un-waived violation still surfaces `policy-violation`.
+**Rising action.** She runs `... --bypass --reason "no upstream fix; tracking GHSA-xxxx"`. The tool emits a committed `.warden-waivers.yaml` stanza (`accepted_at` / `expires_at`, default 14d, + an `authorized_by` field) that it **reads but never writes** (NFR3). It exits 0 with `status: bypassed` — **and the run still carries `bypassed` in the audit record even though the residual exit is 0**, so the trail is never blind to a suppression. Only the *covered* finding is suppressed; a residual un-waived violation still surfaces `policy-violation`.
 
 **The trust boundary (explicit).** The waiver file is **untrusted input**. The tool's *only* runtime obligations are: parse it, enforce `expires_at` against wall-clock, and emit an auditable record (id, matched finding, `authorized_by`-as-claimed, expiry, days-remaining). *Was the approver real? Was the date hand-edited forward?* — **out of the tool's process boundary, delegated to code review + CODEOWNERS on the waiver file.** The tool can't verify a GitHub control at runtime, and the PRD says so rather than pretending otherwise.
 
-**Climax — the other side.** Two weeks later Alex (P4) sees the waiver surface via `review_required`; meanwhile Priya's next CI run finds it **expired** → the finding **re-blocks** (exit 1). The bypass was a time-boxed loan, not a permanent mute. *(Waiver-at-scale / expiry-storm renewal is deferred post-v1.)*
+**Climax — the other side.** Two weeks later Alex (P4) sees the waiver through the run's status `bypassed` and the committed waiver stanza (`authorized_by`, `reason`, `accepted_at` / `expires_at`); meanwhile Priya's next CI run finds it **expired** → the finding **re-blocks** (exit 1). The bypass was a time-boxed loan, not a permanent mute. *(Waiver-at-scale / expiry-storm renewal is deferred post-v1.)*
 
 *Reveals:* FR9 waivers-as-code (expiring, `authorized_by`); `status=bypassed` routing; expiry re-block; **waiver-as-untrusted-input trust boundary**; NFR3. *Implies FR-26 (waiver integrity + authorizer identity, extending FR9 beyond expiry).*
 
@@ -601,7 +601,7 @@ Offline-operation *property* (mechanism behind FR11) · noise-free machine-outpu
 - **NFR-R1 (corpus robustness)** ← CAP-2: **0 uncaught exceptions** across the full recipe corpus (~1,950 `recipes/*/{recipe.yaml,meta.yaml}`, globbed at runtime); any unparseable manifest degrades to name-only+marked.
 - **NFR-R2 (bounded parse-error budget)** ← CAP-2: unparseable rate is ratcheted — a **committed baseline number** + corpus; CI enforces **monotonic non-increase** across releases.
 - **NFR-R3.1 (no mutation)** ← CAP-10: a scan never mutates the scanned tree or host state; cleanup on success *and* failure.
-- **NFR-R3.2 (determinism, two-tier)** ← CAP-10: **default** = *decision-determinism* — identical inputs + identical DB snapshot ⇒ identical exit code + findings set. **Opt-in** `--deterministic` / `SOURCE_DATE_EPOCH` ⇒ **byte-identical** output, achieved by pinning a **documented volatile-field set** (report/SBOM timestamps, CycloneDX `serialNumber`/`bom-ref`, set-iteration order → sorted, absolute paths → repo-relative, DB-version). *(The opt-in mode is also what makes the SBOM reproducible for downstream/forensics.)*
+- **NFR-R3.2 (determinism, two-tier)** ← CAP-10: **default** = *decision-determinism* — identical inputs + identical DB snapshot ⇒ identical exit code + findings set — and the report on stdout is also **byte-identical** by default (sorted keys, fixed separators, no wall-clock field). `--deterministic` is **reserved**: it is accepted and changes nothing today. The SBOM's `serialNumber` and `metadata.timestamp` are volatile and differ run to run; pinning them is unbuilt (operator ruling 2026-11-10, DW-warden-cutover-2026-11-10-2; *corrected 2026-11-10, Story 25.2*: this line said the opt-in mode pinned a documented volatile-field set, report and SBOM, which was never built).
 - **NFR-R5 (engine timeout)** ← CAP-8: every engine invocation sets a **bounded, configurable subprocess timeout**; `TimeoutExpired` maps to a typed error (FR21) + frozen exit code — never an indefinite hang, never scored as pass. *(Tested via injected fake, not a real sleep.)*
 
 ### Security *(each stated as an enforced, testable mechanism)*
@@ -613,7 +613,7 @@ Offline-operation *property* (mechanism behind FR11) · noise-free machine-outpu
 - **NFR-S6 (engine-input purity)** ← CAP-2: the synthesized engine input (requirements projection) is a **pure data projection** — any line starting with `-`, or containing a URL / VCS ref / path / environment-marker we did not author, is rejected or neutralized; manifest-derived values are **never** passed as CLI flags; `shell=True` is banned; DB-extract paths are **zip-slip confined**.
 - **NFR-S7 (output neutralization)** ← CAP-7: every input-derived string (package name / version / description) is emitted **only through a schema-aware JSON/XML encoder** (never string concatenation); purls are canonically percent-encoded per the purl spec; control/escape chars are stripped — so a malicious component string cannot make the tool a confused-deputy injection vector against a downstream SBOM/dashboard consumer. Property-tested over an adversarial name/version corpus (`</script>`, JSON/XML metachars, ANSI, 10 KB names).
 - **NFR-S8 (trusted-input integrity)** ← CAP-11, CAP-8: engines + vuln DB must be **present, fresh (bounded max-age), and authentic (checksum / known-good)** before a verdict is trusted; a stale/empty/swapped/unverifiable DB → **fail-loud, never green** (the security twin of FR12).
-- **NFR-S9 (bundled-data max-age — added 2026-07-15)** ← CAP-11: bundled data files (LTS registry, conda→pypi map) carry a build-time `snapshot_at`, and every verdict derived from them carries `max_age_ok` against a configurable max-age (default 180 days); a stale bundled registry can never silently report `supported` — stale + gated (FR-35, v1 flag-activated) → `indeterminate` (the bundled twin of NFR-S8/FR12).
+- **NFR-S9 (bundled-data max-age — added 2026-07-15; narrowed 2026-11-10 to the LTS registry)** ← CAP-11: the bundled LTS registry carries its own `updated:` date and a fixed 180-day maximum age; the report's `currency_data` slot carries its `snapshot_at` and `max_age_ok`; a stale bundled registry can never silently report `supported` — its curated LTS and end-of-life lines are not consulted, and stale + gated (FR-35, v1 flag-activated) → `indeterminate` (the bundled twin of NFR-S8/FR12). The bundled conda→pypi map carries no snapshot and no age check (operator ruling 2026-11-10; DW-warden-cutover-2026-11-10-1).
 
 ### Performance & Footprint *(measurable = named corpus + reference hardware + percentile)*
 - **NFR-P2 (warm: our overhead)** ← CAP-10: the extraction + orchestration + report overhead the tool adds *on top of the engines* is **≤ ~2s p95** on a median repo over the pinned reference corpus, **measured with engines stubbed** (engine scan time scales with dep count and is not ours to promise). Gated on p95/median over N runs, never a single run.
@@ -630,7 +630,7 @@ Offline-operation *property* (mechanism behind FR11) · noise-free machine-outpu
 - **NFR-U2 (safe-by-default + on-ramp)** ← CAP-9, CAP-5: the zero-config default is the **secure** one (fail on critical, expiring waivers, unknown/incompatible engine → fail-loud, air-gap explicit), **paired** with the documented warn-only adoption on-ramp (FR23) so a repo's pre-existing debt doesn't trigger a day-one mass-disable. *(The fuller baseline-bootstrap ships v1 as FR39 — baseline & grandfathering, D12.)*
 
 ### Portability / Compatibility
-- **NFR-C1** ← CAP-8: runs on **Python ≥ 3.12**; requires deptry + osv-scanner on PATH within a **tested version range** and **fails loud when an engine is out-of-range** (guarding against silent output-schema drift — the engine comes from the feedstock, so a range, not an exact pin); requires **pixi ≥ 0.80.0**, the workspace's `requires-pixi`, for the pixi path (a build/dev-environment floor; at runtime only FR-41's real fix-PR path runs pixi, under a tested range whose floor is that same `requires-pixi`; corrected 2026-11-01 from 0.72.2, Story 14.4); conda + wheel + sdist build green. **The engine version-range is also the distribution gate (story 6.6, 2026-07-15):** internal JFrog v1 and public v1.x publish only after `pixi.toml`'s `deptry`/`osv-scanner` run-deps carry the tested range (both are `"*"` today).
+- **NFR-C1** ← CAP-8: runs on **Python ≥ 3.14**, the package's `requires-python` (decision D6, 2026-11-10: its source uses PEP 758's unparenthesised `except A, B:`); requires deptry + osv-scanner on PATH within a **tested version range** and **fails loud when an engine is out-of-range** (guarding against silent output-schema drift — the engine comes from the feedstock, so a range, not an exact pin); requires **pixi ≥ 0.80.0**, the workspace's `requires-pixi`, for the pixi path (a build/dev-environment floor; at runtime only FR-41's real fix-PR path runs pixi, under a tested range whose floor is that same `requires-pixi`; corrected 2026-11-01 from 0.72.2, Story 14.4); conda + wheel + sdist build green. **The engine version-range is also the distribution gate (story 6.6, 2026-07-15):** internal JFrog v1 and public v1.x publish only after `pixi.toml`'s `deptry`/`osv-scanner` run-deps carry the tested range (both do: `>=0.25.1,<0.26` and `>=2.4.0,<2.5`, Story 6.6).
 
 *Cut/deferred this step: standalone "fleet-scale" NFR (folded into NFR-P4) · broad observability/telemetry (kernel → NFR-U1) · forward-compat migration machinery (trimmed to NFR-I2). Accessibility skipped.*
 
@@ -717,7 +717,7 @@ retrofitted into the FR text above:**
    `/stations/warden/` with a permanent `/compliance/` redirect (steward S-19.1) —
    and a host MCP face (`POST /stations/warden/mcp`). Engines are called, never
    reimplemented; the portal is a projection with no second write path.
-3. **Epic 9 — PR-gate hook specs; scanners are plugins** (canopy:FR-44, CAP-18 retrofit;
+3. **Epic 9 — PR-gate hook specs; scanners are plugins** (canopy:FR-44, spec-pyforge-unifying-strategy:CAP-18 retrofit;
    landed 2026-08-24): `hooks.py` publishes the PR-gate hook book on
    `pyforge.core.hooks`; `scanner_plugins.py` wraps today's engines as the default
    plugin bundle; commercial scanners (Checkmarx, Sonar, Black Duck, GHAS) are
@@ -982,7 +982,11 @@ pointer becomes the behaviour it named.*
 - Verified by `pixi run --frozen -e pyforge-warden pyforge-warden-test` (exit 0; `tests/unit/test_sast_opengrep.py`).
 - Decomposes into **Epic 15** (Stories 15.1–15.2; mason Story 21.4 ships the opengrep package).
 
-#### FR-43: Warden scans the enterprise fleet, one verdict per repo ← CAP-26
+#### FR-43: Warden scans the enterprise fleet, one verdict per repo ← CAP-26, CAP-29
+
+*Amended 2026-11-10 (the cutover readiness mint; the operator's ruling of 2026-11-10 splits CAP-26): the arrow gains
+CAP-29, the fleet's portal half in `django-warden`. The consequences below are unchanged: the read-only GitHub clients
+and the non-Python security axis trace to CAP-26, the run, its exports, the proposals and the approve to CAP-29.*
 
 A fleet run, started only by an operator action, inventories an operator-designated github.com organisation (its name
 lives in a gitignored local config, and the leak guard keeps it out of warden's own files) and scans each repo with `warden scan`. This lifts two Non-goals by operator ruling
@@ -1287,3 +1291,119 @@ Spec, the audit's residue `research/egm-audit-2026-11-01.md` and the as-built fi
 *Chain-currency cascade (research -> brief -> PRD and spec -> PRD), EGM audit, marshal Story 113.18.*
 
 `research/egm-audit-2026-11-05.md` (marshal Story 113.18, `spec-pyforge-marshal:CAP-302`): 21 high findings, 6 accepted, 14 rejected, 1 deferred; the medium and low findings are not triaged. CAP-26 is re-derived: the leak guard's real scope, and no portal action. No FR is added, renumbered or re-scoped.
+
+## Currency reconciliation — 2026-11-10 (the cutover readiness mint)
+
+*Trigger: the station Dream's entry of 2026-11-10 (the cutover readiness audit) and the operator's rulings of the same
+day (`docs/dreams/pyforge-unifying-strategy.md`, Realization log, second addendum). `spec-pyforge-warden` gained
+CAP-27 (the PR-gate hook book), CAP-28 (the public contract) and CAP-29 (the fleet's portal half, split from CAP-26).
+Each FR below is traced from its CAP's intent and success (CHAIN-STANDARD § 12). Every other edit this PRD owes the
+change (NFR-C1's floor, NFR-S9, the bypass journey, the Epic 9 history line) is Story 25.2's.*
+
+### The FR space: FR-44..FR-50 registered
+
+FR-44 is the next free id. The `canopy:FR-44` citations in this PRD (§ Currency reconciliation — 2026-08-26 item 3,
+FR-42's body) are steward's canopy space, qualified in place, and name a different requirement. FR-44 and FR-45 give
+the two new capabilities their requirements; FR-46..FR-50 give the shipped capabilities CAP-13..CAP-23, which had none,
+theirs. CAP-29 takes no new id: FR-43, which already states the fleet's portal behaviour, is re-traced to
+`← CAP-26, CAP-29` in place.
+
+#### FR-44: The PR-gate hook book ← CAP-27
+
+Warden publishes the three PR-gate hook specs on `pyforge.core.hooks`, ships its own engines as the default plugin
+bundle, runs an optional scanner only when `WARDEN_OPTIONAL_SCANNERS` names it, omits an absent optional scanner without
+failing, and is the only publisher of the PR-gate verdict.
+
+- Verified by `pixi run --frozen -e pyforge-warden pytest` over CAP-27's five test modules (exit 0).
+- Shipped by Epic 9 (Stories 9.1–9.3, 2026-08-24); the capability was minted at the 2026-11-10 mint, and Story 25.1
+  verifies its text.
+
+#### FR-45: The public contract ← CAP-28
+
+`contract.md` beside `SPEC.md` lists every CLI flag, config key, exit code, status rung, error kind, feature-flag key,
+environment variable, MCP tool, management command, plugin entry point, open report slot, engine range and imported
+symbol; `proof-map.md` names the tests that prove each capability; and a test fails when the code and the lists differ.
+
+- Verified by `pixi run --frozen -e pyforge-warden pytest` over `tests/meta/test_public_contract.py`,
+  `tests/meta/test_contract_surface.py` and `tests/meta/test_capability_proof_map.py` (exit 0).
+- Decomposes into **Epic 26** (Stories 26.1–26.3).
+
+#### FR-46: One eligibility answer with its provenance ← CAP-13, CAP-14, CAP-15
+
+Source adapters ingest heterogeneous inventories through one contract and one identity API, the eligibility union
+carries a provenance trail per result, and the answer leaves as deterministic CycloneDX. A library surface: no CLI verb
+or portal calls it today.
+
+- Shipped by Epic 7 (Stories 7.1–7.3).
+
+#### FR-47: A web face for the compliance factory ← CAP-16, CAP-17
+
+An uploaded manifest returns a job id and runs the existing engines asynchronously, and its results render with
+progress derived from phase position. Lives in `django-warden`.
+
+- Shipped by Epic 8 (Stories 8.1–8.2).
+
+#### FR-48: Environment-scoped lockfile extraction ← CAP-18
+
+`warden scan --pixi-environment <name> --pixi-platform <platform>` extracts exactly the packages one pixi environment
+resolves for one platform from a multi-environment `pixi.lock`; unscoped keeps the union and warns.
+
+- Shipped by Epic 12.
+
+#### FR-49: A promotion gate that has seen what it ships ← CAP-19, CAP-20, CAP-21, CAP-22
+
+The platform's promotion scans the shipped closure against a provisioned offline OSV database, records an honest and
+specific verdict, and deploy promotes a digest only when that verdict is clean. Platform code that calls `warden scan`.
+
+- Shipped by Epic 12.
+
+#### FR-50: The TEA advisory ← CAP-23
+
+When enabled, warden runs TEA's test review against the diff from the remote-tracking ref and reports its result, or
+one skip record, in the advisory section; it never becomes a finding, a rung or the exit code, and a roster without
+`tea` refuses loudly.
+
+- Shipped by Epic 13 (Stories 13.1–13.2). This supersedes § Currency reconciliation — 2026-09-27 and 2026-11-01's
+  "CAP-23 still has no FR": the 2026-11-10 audit found CAP-13..CAP-23 with no FR arrow, and each now has one.
+
+**ONE FR space now FR-1..FR-50** (FR-51 = next free id; `canopy:FR-44` is a different space).
+
+**Content changed:** this section added (FR-44..FR-50 registered) and FR-43's arrow re-traced to `← CAP-26, CAP-29`
+with a dated note. No FR renumbered or removed. `updated:` moves with Story 25.2's re-stamp.
+
+## Currency reconciliation — 2026-11-10 (Story 25.2)
+
+*Trigger: the cutover readiness change's closer, warden Story 25.2. The 2026-11-10 mint registered FR-44..FR-50 and
+re-traced FR-43 (§ Currency reconciliation — 2026-11-10 (the cutover readiness mint)); Story 25.1 re-derived the
+Spec's Constraints, Assumptions and companions. This pass makes the rest of the PRD say what that Spec says.*
+
+- **The NFR-C1 floor** reads Python ≥ 3.14, the package's `requires-python` (decision D6 of the cutover readiness plan; audit
+  MUST 4). `pyproject.toml` and, since steward Story 124.3, both `python` lines of `pixi.toml` read `>=3.14`, and the
+  source uses PEP 758's unparenthesised `except A, B:`. Its last sentence said `pixi.toml`'s `deptry` and
+  `osv-scanner` run-deps were both `"*"`; they carry the tested ranges (`>=0.25.1,<0.26`, `>=2.4.0,<2.5`), so it says
+  so.
+- **The NFR-S9 age** is claimed only for the bundled LTS registry: its own `updated:` date, a fixed 180-day maximum age
+  (`currency.py`'s `_REGISTRY_MAX_AGE_DAYS`, no config key), and `snapshot_at` + `max_age_ok` on the report's
+  `currency_data` slot. The conda→pypi map carries no snapshot and nothing checks its age (operator ruling
+  2026-11-10; row DW-warden-cutover-2026-11-10-1), as the Spec's narrowed *Bundled data carries its own age*
+  Constraint says. Its arrow stays `← CAP-11`.
+- **Journey 4** names what ships. The rising action exits 0 with `status: bypassed`, and the climax has Alex see the
+  waiver through status `bypassed` and the committed waiver stanza. `review_required` was never built (operator
+  ruling 2026-09-14, § Currency reconciliation — 2026-09-14); the dated record sections and the frontmatter's decision
+  list keep their wording.
+- **NFR-R3.2** says what CAP-10 says (operator ruling 2026-11-10; row DW-warden-cutover-2026-11-10-2). It had the
+  opt-in `--deterministic` mode reach byte-identical output by pinning a documented volatile-field set, report and
+  SBOM. Nothing was built: the report is byte-identical by default, the flag is reserved and changes nothing, and the
+  SBOM's `serialNumber` and `metadata.timestamp` differ run to run. Its arrow stays `← CAP-10`. The success criteria
+  and CLI lines that say the output is byte-identical in `--deterministic` mode stay: that holds, since it holds by
+  default.
+- **§ Currency reconciliation — 2026-08-26, item 3** qualifies its foreign capability as
+  `spec-pyforge-unifying-strategy:CAP-18` (the hook-spec retrofit). Warden's own CAP-18 is environment-scoped
+  lockfile extraction (FR-48).
+- **CAP-28 reads shipped (FR-45).** The Spec's CAP-28 reads `(shipped 2026-11-11)`: Stories 26.1, 26.2 and 26.3 built
+  `contract.md`, `proof-map.md` and the three tests FR-45 names, and the Spec lists both companions.
+
+**ONE FR space still FR-1..FR-50** (FR-51 = next free id; `canopy:FR-44` is a different space).
+
+**Content changed:** this section, NFR-C1, NFR-S9, NFR-R3.2, Journey 4's rising action and climax, the 2026-08-26 item 3
+citation and `updated:`. No FR added, renumbered or removed; no arrow moves.

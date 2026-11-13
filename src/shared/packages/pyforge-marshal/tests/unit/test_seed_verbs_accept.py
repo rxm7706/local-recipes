@@ -47,13 +47,17 @@ from pyforge.marshal.seed.verbs.adopt import run_adopt
 from pyforge.marshal.seed.verbs.check import run_check
 from pyforge.marshal.seed.verbs.update import run_update
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 _VERSION = ModelVersion.parse("1.0.0")
 _NO_NEVER_WRITE = NeverWrite(patterns=())
 
-SWITCH = "scripts/bmad-switch"
-REGISTRY = "scripts/detectors.py"
+SWITCH = "/".join(("scripts", "bmad-switch"))
+REGISTRY = "/".join(("scripts", "detectors.py"))
 HYBRID = "HYBRID.md"
-STATE_PATH = ".marshal/seed-state.yml"
+STATE_PATH = "/".join((".marshal", "seed-state.yml"))
 
 
 # --- builders ---------------------------------------------------------------

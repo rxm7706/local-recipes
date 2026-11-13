@@ -23,8 +23,8 @@ per-session cache, no mutable global state. Two operators (or two
 independent `FlatFileGraphStore` instances loading the same file) always get
 the identical answer.
 
-A `stale`-flagged node (Story 6.3, CAP-13) is excluded from candidacy the
-same way an `is_current is False` node already is -- this is the "consumer
+A `stale`-flagged node (Story 6.3, token-economy:CAP-13) is excluded from
+candidacy the same way an `is_current is False` node already is -- this is the "consumer
 falls back to its non-graph path rather than serving the stale node
 silently" contract: `scribe recall` never returns a stale node's content as
 if it were current, falling through to the next resolvable, non-stale
@@ -41,12 +41,12 @@ from pyforge.scribe.compile import source_committed_after
 from pyforge.scribe.graph_store import GraphStore
 from pyforge.scribe.models import GraphNode, GraphNodeKind
 
-#: Default `answer()` / `scribe recall` candidate kinds (Story 8.5 / CAP-4).
+#: Default `answer()` / `scribe recall` candidate kinds (Story 8.5 / CAP-14).
 #: `code` stays in the store for `index report` and `--kind code`; it is
 #: not a default lexical/semantic peer of memory, Dreams, or SPECs.
 DEFAULT_RECALL_KINDS: frozenset[GraphNodeKind] = frozenset({"memory", "memlog", "commit", "doc", "transcript"})
 _ALL_RECALL_KINDS: frozenset[str] = frozenset({"memory", "memlog", "commit", "doc", "transcript", "code"})
-#: User-facing `--mode` bags (Story 16.1 / CAP-11). Distinct from
+#: User-facing `--mode` bags (Story 16.1 / CAP-25). Distinct from
 #: `answer(..., mode=)` which is lexical vs semantic ranking.
 RECALL_MODE_KINDS: dict[str, frozenset[str]] = {
     "planning": frozenset({"doc", "memlog"}),
@@ -136,7 +136,7 @@ def _scope_prefix(scope: str) -> str:
 
 
 #: Herald fact ledger compiled by Story 8.3. Scoped retrieve admits the
-#: ledger whose directory name equals `--scope` (Story 9.1 / CAP-1).
+#: ledger whose directory name equals `--scope` (Story 9.1 / CAP-16).
 _FACTS_LEDGER_CITATION_RE = re.compile(r"^presentations/(?P<slug>[^/]+)/facts\.yaml$")
 
 

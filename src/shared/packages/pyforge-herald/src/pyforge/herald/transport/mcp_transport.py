@@ -505,7 +505,7 @@ class McpTransport:
         return parse_list_files_payload(payload)
 
     def list_projects(self) -> Sequence[ProjectSummary]:
-        """Story 23.1's 11th port method (CAP-1). Verified live 2026-09-18:
+        """Story 23.1's 11th port method (CAP-29). Verified live 2026-09-18:
         the deployed tool takes no arguments and answers with a plain JSON
         array, never the ``{"key": [...]}`` wrapper ``list_files`` uses --
         so this cannot go through ``_call_json`` (it requires a ``Mapping``

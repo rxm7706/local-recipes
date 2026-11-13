@@ -26,6 +26,7 @@ from pyforge.core.hooks import (
     publish_verdict,
 )
 
+from pyforge import marshal as marshal_package
 from pyforge.marshal.adapters.harness_bmadloop import (
     DEFAULT_LOOP_RUNNER_PLUGIN_ID,
     LOOP_RUNNER_HOOK_SPEC,
@@ -34,7 +35,7 @@ from pyforge.marshal.adapters.harness_bmadloop import (
 )
 
 _MARSHAL_ROOT = Path(__file__).resolve().parents[2]
-_HARNESS_SOURCE = _MARSHAL_ROOT / "src" / "pyforge" / "marshal" / "adapters" / "harness_bmadloop.py"
+_HARNESS_SOURCE = Path(marshal_package.__file__).resolve().parent / "adapters" / "harness_bmadloop.py"
 _PYPROJECT = _MARSHAL_ROOT / "pyproject.toml"
 
 

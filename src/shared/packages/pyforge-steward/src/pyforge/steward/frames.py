@@ -1,4 +1,4 @@
-"""In-repo Frame preflight (Story 53.2 / 53.5 / 53.6, spec-intelligence-hub CAP-2).
+"""In-repo Frame preflight (Story 53.2 / 53.5 / 53.6, spec-pyforge-steward CAP-53).
 
 Checks the nine tracked Frames under ``docs/foundry/frames/``. Git is the store.
 

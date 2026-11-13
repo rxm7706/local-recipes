@@ -3,7 +3,7 @@ fold-exemption: different-lifecycle
 spec: foundry-regenerate-not-fold
 status: ready
 created: "2026-09-13"
-updated: "2026-09-17"
+updated: "2026-11-11"
 owner-dream: docs/dreams/foundry-regenerate-not-fold.md
 extends: spec-python-foundry-cutover
 surface: []
@@ -31,46 +31,59 @@ open_questions: []
 Frames / Build the Intelligence Hub / Wire the BMAD-suite cannot be a
 `src/shared/packages` path-rename. Foundry is a clean BMAD-on-B tree.
 local-recipes is the A control and legacy oracle. The shared starting
-contract is Dream + Frame + Spec five-fields; behavior is A/B tested.
-Historical PRD / arch / epics / comments stay on A.
+contract is the Dream plus its memlog (`archive/**/.memlog.md` included,
+no backfill), from which the Spec five-fields are re-derived; a Frame is
+a pointer to them, not a seed. Behavior is A/B tested. Historical PRD /
+arch / epics / comments stay on A.
 
 ## Capabilities
 
-- **CAP-1 — Thin oracle.**
+- **CAP-1 — Thin oracle.** (shipped 2026-11-10, Stories 54.1 and 120.5)
   - **intent:** The operator can freeze a small archived suite that is
-    also the A/B case list for the foundry kernel.
-  - **success:** A tracked list of about 20–40 existing core / steward /
-    marshal cases lives with this Spec (and on B after 54.5); those cases
-    run against foundry trees; Frame frontmatter preflight alone is not
+    also the A/B case list for the foundry kernel and the oracle of the
+    Launch slice.
+  - **success:** A tracked list of existing core / steward / marshal
+    cases lives with this Spec (`case-list.md`; on B after 54.5); every
+    `spec-python-foundry-cutover` `launch-slice.md` step that has an A
+    test has a row;
+    `src/shared/packages/pyforge-steward/tests/meta/test_cutover_case_list.py`
+    holds the count line equal to the rows and exits 0; those cases run
+    against foundry trees; Frame frontmatter preflight alone is not
     acceptance.
 
-- **CAP-2 — Rebuild `pyforge-core` in foundry.**
+- **CAP-2 — Rebuild `pyforge-core` in foundry.** (ready 2026-11-10; not met: green on B against today's core contract, as B holds a prototype at the PR #1344 pin that passed its slice 2026-09-14 and is not re-pinned until the truth sweep, DW-steward-121-2)
   - **intent:** Foundry gains `station_port`, hooks, and the cutover-root
-    reader as a new leaf under `src/packages/`, not a copy of
+    reader as a new leaf under `src/packages/`, rebuilt from Dream plus
+    memlog and the re-derived Spec (a Frame points at them), not a copy of
     `src/shared/packages/pyforge-core`.
   - **success:** The public core contract plus the CAP-1 core slice are
     green on B, with an A/B row that is not `diverge`.
 
-- **CAP-3 — Rebuild steward in foundry.**
-  - **intent:** `pyforge steward` (provision, workspace, frames, guards,
-    cutover, suite register path) exists as a regenerated engine with CLI
-    and MCP.
+- **CAP-3 — Rebuild steward in foundry.** (ready 2026-11-10; not met: green on B against today's steward contract, as B holds a prototype at the PR #1344 pin that passed its slice 2026-09-14 and is not re-pinned until the truth sweep, DW-steward-121-2)
+  - **intent:** `pyforge steward` (provision, workspace, guards, cutover,
+    suite register path) exists as an engine regenerated from Dream plus
+    memlog and the re-derived Spec, with CLI and MCP; the Frame check is
+    the `frame-preflight` task, not a duty.
   - **success:** Steward's CAP-1 slice is green on B with an A/B row;
     implementation commits land only in a python-foundry worktree.
 
-- **CAP-4 — Rebuild marshal in foundry.**
-  - **intent:** `pyforge marshal` cursor-native dispatch exists as a
-    regenerated engine with CLI and MCP.
+- **CAP-4 — Rebuild marshal in foundry.** (ready 2026-11-10; not met: green on B against today's marshal contract, as B holds a prototype at the PR #1344 pin that passed its slice 2026-09-14 and is not re-pinned until the truth sweep, DW-steward-121-2)
+  - **intent:** `pyforge marshal` cursor-native dispatch exists as an
+    engine regenerated from Dream plus memlog and the re-derived Spec,
+    with CLI and MCP.
   - **success:** One dispatch against the foundry remote plus the CAP-1
     marshal slice are green with an A/B row. Drain corners not in the
     thin list stay on A until `fnd:CAP-9` / 44.14 grows the list.
 
-- **CAP-5 — Dual-root A/B.**
+- **CAP-5 — Dual-root A/B.** (shipped 2026-11-10, Stories 54.5 and 120.2)
   - **intent:** The operator can keep one starting contract across two
     git roots and compare behavior without copying BMAD trees or code.
-  - **success:** `ab-sync.md` is in `companions:`; B (after 54.5) has a
-    pin file and a case-list stub; writer lock holds (one Dream author);
-    `diverge` blocks `verified-in-foundry`; no `_bmad-output` rsync.
+  - **success:** `ab-sync.md` is in `companions:`; A writes every Dream,
+    Frame, Spec and the capability ledger until the flip, and B reads A at
+    the SHA in its `docs/foundry/PIN.md` and writes none of them; the flip
+    hands the writer lock to B (`fnd:CAP-8`); B (after 54.5) has a pin
+    file and a case-list stub; `diverge` blocks `verified-in-foundry`; no
+    `_bmad-output` rsync.
     B's starting station five-fields are `spec-pyforge-marshal`,
     `spec-pyforge-steward`, `spec-pyforge-atlas`, `spec-pyforge-doctor`,
     `spec-pyforge-herald`, `spec-pyforge-mason`, `spec-pyforge-scribe`,
@@ -79,8 +92,10 @@ Historical PRD / arch / epics / comments stay on A.
 
 ## Constraints
 
-- After the 48h kit exists on B, B is writer for new Dreams / Frames /
-  Specs. A mirrors by SHA pin. Until then this Spec on A is the seed.
+- A writes every Dream, Frame, Spec and the capability ledger until the
+  `pyforge.cutover_root` flip; B reads A at the SHA in its
+  `docs/foundry/PIN.md` and writes none of them; the flip hands the
+  writer lock to B.
 - Factory / CFE / recipes stay invented on A until a foundry CFE exists.
   Kernel package commits only on B.
 - The eight folded station Specs on A are B's starting contracts
@@ -91,11 +106,15 @@ Historical PRD / arch / epics / comments stay on A.
   Regenerate on B; do not fold again.
 - Public CLI verbs stay (`pyforge steward`, `pyforge marshal`, `warden scan`).
 - `steward cutover apply --phase 1a` is not how packages appear.
-- `pyforge.cutover_root` stays `local-recipes` until the kernel passes
-  the shared list; the flip is attended and refused while a loop is running.
+- `pyforge.cutover_root` stays `local-recipes` until the operator flips it by hand, with no loop running, once the Launch slice is
+  proven: B lands one story on itself through its own dispatch and its own detectors,
+  and every Launch row of the case list reads `verified-in-foundry`. Nothing flips it
+  automatically, and a flip is refused while a loop runs.
 - Never commit on the shared local-recipes checkout; never
   `scripts/bmad-switch` from a parallel agent.
-- Do not flip Epic 44 `blocked` keys (44.9, 44.10, 44.11, 44.14, 44.15, 44.1, 44.8).
+- Do not flip Epic 44 `blocked` keys (44.1, 44.2, 44.4, 44.5, 44.6, 44.8, 44.9,
+  44.10, 44.11, 44.14, 44.15); 44.1 and 44.4 to 44.6 retired 2026-11-10 and
+  44.10 on 2026-09-25.
 
 ## Non-goals
 

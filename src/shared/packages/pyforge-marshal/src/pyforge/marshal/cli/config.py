@@ -535,17 +535,9 @@ def repo_root() -> Path:
     misses, falling back to bare defaults with no verify command. The installed
     branch is asserted by `tests/unit/test_repo_root.py`.
     """
-    ancestors = Path(__file__).resolve().parents
-    if len(ancestors) > _EDITABLE_ROOT_PARENT_INDEX:
-        candidate = ancestors[_EDITABLE_ROOT_PARENT_INDEX]
-        try:
-            is_repo = (candidate / _PACKAGE_SOURCE_RELPATH).is_dir()
-        except OSError:
-            # Python 3.12 pathlib propagates PermissionError for an
-            # unsearchable ancestor; an unreadable candidate is not the repo.
-            is_repo = False
-        if is_repo:
-            return candidate
+    editable = _editable_checkout_root()
+    if editable is not None:
+        return editable
     try:
         return GitVcs().repo_common_root(Path.cwd())
     except (OSError, VcsCommandError) as exc:
@@ -554,6 +546,50 @@ def repo_root() -> Path:
             f"a source checkout of {str(_PACKAGE_SOURCE_RELPATH)!r}, and the invocation "
             f"directory is not inside a git repository ({exc})"
         ) from exc
+
+
+def _editable_checkout_root() -> Path | None:
+    """The `__file__`-anchored ancestor when it carries this package's own
+    source tree (`_PACKAGE_SOURCE_RELPATH`), else `None`. Never indexed past
+    the path's own ancestors."""
+    ancestors = Path(__file__).resolve().parents
+    if len(ancestors) <= _EDITABLE_ROOT_PARENT_INDEX:
+        return None
+    candidate = ancestors[_EDITABLE_ROOT_PARENT_INDEX]
+    try:
+        is_repo = (candidate / _PACKAGE_SOURCE_RELPATH).is_dir()
+    except OSError:
+        # Python 3.12 pathlib propagates PermissionError for an
+        # unsearchable ancestor; an unreadable candidate is not the repo.
+        is_repo = False
+    return candidate if is_repo else None
+
+
+def checkout_root() -> Path:
+    """The source checkout this module runs from: the `__file__`-anchored half
+    of `repo_root()` under its own name (Story 115.1, CAP-229).
+
+    For the scripts this package loads install-free from the checkout it ships
+    in (`scripts/promote_sprint_status.py`, `scripts/fleet_scan.py`): they are
+    source code beside this package, never project data, so they are never
+    looked up under `repo_root()` -- which tests redirect into a sandbox
+    (`monkeypatch.setattr(deploy, "repo_root", ...)`) and which, under an
+    installed package, falls back to the invocation directory's repository.
+    Returns the ancestor only when it carries `_PACKAGE_SOURCE_RELPATH`; under
+    an installed layout there is no checkout above `__file__`, and this raises
+    `RepoRootUnresolvedError` -- never an `IndexError`, never a guessed root.
+    The callers degrade on it: `cli/land.py`'s two loaders return `None`
+    (`MRS-LAND-011`), and `cli/deploy.py::_repair_tier3_feed` folds it into
+    `MRS-DEPLOY-027`.
+    """
+    editable = _editable_checkout_root()
+    if editable is None:
+        raise RepoRootUnresolvedError(
+            f"no source checkout above {str(Path(__file__))!r}: the scripts this "
+            f"package loads from {str(_PACKAGE_SOURCE_RELPATH)!r}'s checkout are absent "
+            "under an installed layout"
+        )
+    return editable
 
 
 def conventional_project_policy_path(slug: str) -> Path:
@@ -587,7 +623,12 @@ class RepoRootUnresolvedError(PyforgeError, Exception):
     consumer reports it could not evaluate rather than composing bare
     defaults. ``cli/gate.py::evaluate_gate`` turns it into its one
     could-not-evaluate finding; ``cli/main.py::main`` relays it from any
-    other consumer as one stderr line plus the UNEVALUABLE exit."""
+    other consumer as one stderr line plus the UNEVALUABLE exit.
+
+    Also raised by ``checkout_root()`` (Story 115.1) when no source checkout
+    sits above this module; its callers never relay it: ``cli/land.py``'s
+    loaders return ``None`` and ``cli/deploy.py`` folds it into
+    ``MRS-DEPLOY-027``."""
 
     def __init__(self, message: str) -> None:
         super().__init__(message)

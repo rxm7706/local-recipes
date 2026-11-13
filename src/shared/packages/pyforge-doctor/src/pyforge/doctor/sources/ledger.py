@@ -1039,7 +1039,10 @@ def gather_direction(target: Path, *, base_ref: str = MAIN) -> tuple[Finding, ..
       them landed by a batched PR whose subject named no story.
 
     Never opens ``implementation-artifacts/sprint-status.yaml``. Degrades
-    to WARN when git is unavailable; OK when every twin agrees with git.
+    to WARN when git is unavailable; OK when every twin agrees with git. A
+    target with no tracked sprint ledger, or one git cannot read, is one
+    cannot-evaluate WARN (``evidence["unevaluable"] is True``), never an OK
+    over nothing (spec-pyforge-doctor:CAP-93, spec-pyforge-doctor:AD-15).
 
     Story 27.2: before the ``landed-but-unpromoted``/``done-but-unmerged``
     comparison, every merge-derived story id is translated through the
@@ -1059,7 +1062,7 @@ def gather_direction(target: Path, *, base_ref: str = MAIN) -> tuple[Finding, ..
                 message=(
                     f"git is unavailable or {target} is not a repository — ledger-vs-git direction cannot be checked"
                 ),
-                evidence={"target": str(target)},
+                evidence={"target": str(target), UNEVALUABLE_EVIDENCE_KEY: True},
             ),
         )
 
@@ -1077,7 +1080,7 @@ def gather_direction(target: Path, *, base_ref: str = MAIN) -> tuple[Finding, ..
                 check="ledger-direction",
                 status=DoctorStatus.WARN,
                 message=(f"cannot read {shown!r} commit subjects — ledger-vs-git direction cannot be checked"),
-                evidence={"target": str(target), "base_ref": shown},
+                evidence={"target": str(target), "base_ref": shown, UNEVALUABLE_EVIDENCE_KEY: True},
             ),
         )
     commits: list[tuple[str, str]] = []
@@ -1103,10 +1106,10 @@ def gather_direction(target: Path, *, base_ref: str = MAIN) -> tuple[Finding, ..
             *rekey_problems,
             Finding(
                 source=Source.LEDGER_DIRECTION,
-                check="ledger-direction",
-                status=DoctorStatus.OK,
-                message="no tracked sprint ledgers found — nothing to direction-check",
-                evidence={"audited": 0},
+                check="ledger-direction-unevaluable",
+                status=DoctorStatus.WARN,
+                message="no tracked sprint ledger found — ledger-vs-git direction cannot be evaluated here",
+                evidence={"audited": 0, UNEVALUABLE_EVIDENCE_KEY: True},
             ),
         )
 

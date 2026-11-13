@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: 6adc96276cd7c116
-story_count: 172
-test_file_count: 99
+source_fingerprint: bba21084d22cccf6
+story_count: 184
+test_file_count: 131
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 172
-- **Epics parsed:** 54
-- **Test files inventoried:** 99 under `src/shared/packages/pyforge-doctor/tests/`
+- **Stories parsed:** 184
+- **Epics parsed:** 57
+- **Test files inventoried:** 131 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `6adc96276cd7c116`
+- **Source fingerprint:** `bba21084d22cccf6`
 
 ## Risk Assessment
 
@@ -90,6 +90,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 53: The archived doctor Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 - Epic 54: The absorbed doctor Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
 - Epic 55: The repo-scope detectors and the doctor suite answer in seconds (fixes under spec-pyforge-doctor CAP-20 and CAP-42; relay of spec-pyforge-steward:CAP-175)
+- Epic 56: The cutover's detectors read the real ledger and the writer lock, and a source that measured nothing is never a pass (spec-pyforge-doctor CAP-93, CAP-94, CAP-95, CAP-100)
+- Epic 57: The doctor Spec says what the code does, and its public contract is written once (spec-pyforge-doctor CAP-96..CAP-99; decisions D1 and D4)
+- Epic 58: The package-local half is the rebuild oracle, and the branch's baselines name only live Specs (spec-pyforge-doctor CAP-97, CAP-59)
 
 ## Test Inventory
 
@@ -105,9 +108,11 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-doctor/tests/meta/test_flag_gate_stays_outside_every_station.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_hatchling_floor_agrees.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_no_warden_import.py` | meta | none observed |
+| `src/shared/packages/pyforge-doctor/tests/meta/test_package_half_is_the_oracle.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_portal_fleet_pulse.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_preflight_mirrors_scripts_suite.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_prescribe_pure_function.py` | meta | none observed |
+| `src/shared/packages/pyforge-doctor/tests/meta/test_public_contract.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_read_only_guard.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_refs_are_full_refnames.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_score_pure_function.py` | meta | none observed |
@@ -135,6 +140,34 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-doctor/tests/unit/test_hooks_plugins.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_hygiene_definitions.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_landing_evidence_conformance.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_capability_ledger_case_list.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_checks_env_hygiene.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_cutover_ledger.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_flag_kill_switch.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_hygiene_definitions.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_bmad_method.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_board.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_board_chain_layers_audit.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_capability_effect_caller_reach.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_chain_deferred_work.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_chain_dreams_hygiene.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_chain_due_for_verification.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_chain_source_spec_resolution.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_chain_spec_surface.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_ci_pause_drift.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_docs_shelf.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_factory.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_general_docs_consistency.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_hygiene.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_live_proof_surfaces.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_one_chain.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_one_chain_fold_complete.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_one_chain_fr_arrows.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_pages_liveness.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_status_body_consistency.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_status_body_open_questions.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_status_body_promissory.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_status_body_status_comment.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_main_stub.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_models.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_prescribe_partition.py` | unit | none observed |
@@ -191,7 +224,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_open_questions.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_promissory.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_status_comment.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_sources_unmeasured.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_warden.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_sources_writer_lock.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py` | unit | none observed |
 
@@ -371,6 +406,18 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 55.2 | The chain-currency sweep audits the eight stations in one process | none observed |
 | 55.3 | The doctor suite takes its worker count from the caller, not its own cmd | none observed |
 | 55.4 | Doctor's live-tree readers run as their own half | none observed |
+| 56.1 | frozen-path-changed reads the ledger's rebuilding rows, not a manifest that n... | none observed |
+| 56.2 | capability-ledger judges every v1 row by its Spec heading, its mode and its e... | none observed |
+| 56.3 | The aggregate reads a source that measured nothing as unmeasured, never pass | none observed |
+| 56.4 | A source that finds no subject says so, in one cannot-evaluate warning | none observed |
+| 56.5 | A chain write on a checkout that is not the writer is a named finding | none observed |
+| 57.1 | The doctor Spec's markers and text say what the code does | none observed |
+| 57.2 | Doctor's public contract is one companion file, and a meta-test reds what it ... | none observed |
+| 57.3 | Doctor's chain closes: the oracle meta-test, the live ledger proof, the new c... | none observed |
+| 58.1 | The chain, ledger, board and one-chain tests that build their own tree run in... | none observed |
+| 58.2 | The docs, factory, method, env-hygiene and Pages tests that build their own t... | none observed |
+| 58.3 | spec_surface_check.py prunes the baseline keys of Specs that no longer exist,... | none observed |
+| 58.4 | The branch's baselines and governance reports are refreshed once, after every... | none observed |
 
 ## Quality Gates
 

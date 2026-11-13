@@ -14,6 +14,14 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
+import pytest
+
+# Story 117.1 (spec-pyforge-core:CAP-14): these helpers enumerate every sibling station's tree, so this file reads
+# the repository outside pyforge-core. pytest ignores `pytestmark` in a conftest (each module that imports from here
+# carries its own); the line is the declaration steward's station-tests trigger-map Scanner reads (the precedent is
+# steward's tests/integration/conftest.py).
+pytestmark = pytest.mark.live_tree
+
 # tests/meta/conftest.py -> parents[3] is src/shared/packages/ (mirrors
 # every sibling meta test's identical arithmetic: tests/meta/<file>.py also
 # has 2 directory levels between it and this file's own containing dir).

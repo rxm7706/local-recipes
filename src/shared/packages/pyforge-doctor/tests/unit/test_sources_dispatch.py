@@ -52,6 +52,7 @@ from pyforge.doctor.sources import (
     platform_policy,
     sibling_dreams,
     status_body_consistency,
+    writer_lock,
 )
 
 # --- DISPATCH: name -> the exact function the Code Map names ----------------
@@ -108,6 +109,8 @@ _EXPECTED_DISPATCH = {
     "dreams-hygiene": chain.gather_dreams_hygiene,
     # Story 42.1 -- duplicate frontmatter keys in tracked story specs.
     "frontmatter-duplicate-keys": frontmatter_duplicate_keys.gather,
+    # Story 56.5 (spec-pyforge-doctor CAP-100) -- a chain path changed off the writer.
+    "writer-lock": writer_lock.gather,
 }
 
 

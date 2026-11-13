@@ -28,9 +28,9 @@ the host or the source.
 
 ## What is real
 
-- **43/43 stories merged** across epics 1–11
-  (`_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml`),
-  FR1–FR40 frozen, schema 1.1.0, honest dashboard live. Built loop-driven by
+- **Shipped and merged, epic by epic.** The ledger is the story and epic count of record
+  (`_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml`);
+  this Dream states none. FR1–FR40 frozen, schema 1.1.0, honest dashboard live. Built loop-driven by
   [[pyforge-marshal]]. Epics 7–11 post-date the original v1 scope: the eligibility
   union (7), the web face (8), the PR-gate hook book + scanner plugins (9), the
   skill/persona/portal slice (10), and the two advisory lenses (11). Epic 12 was
@@ -39,9 +39,10 @@ the host or the source.
   `scripts/platform-deploy-verify-promotion.py:31` refuses any digest whose recorded
   verdict is not `clean`.
 - Spec: `_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/`
-  (Tier 2, `ready` — living station contract after the 2026-09-17 one-chain fold);
-  `docs/specs/pyforge-warden.md` is the absorbed legacy Tier-1
-  intake. Package at `src/shared/packages/pyforge-warden/`.
+  (Tier 2, `ready` — living station contract after the 2026-09-17 one-chain fold; its public
+  contract `contract.md` and its proof map `proof-map.md` sit beside `SPEC.md`); the absorbed
+  legacy Tier-1 intake is archived at `archive/docs/specs/pyforge-warden.md`. Package at
+  `src/shared/packages/pyforge-warden/`.
 
 ## Realization log
 
@@ -259,6 +260,26 @@ One-chain fold: satellite Dreams archived in place with `Consolidated into [[pyf
   spec-pyforge-marshal:CAP-302) read the compiled skill, CAP-26 and Epics 16 and 18: 21 high findings, 6 accepted, 14 rejected,
   1 deferred, with 86 medium and 16 low not triaged; residue
   `_bmad-output/projects/pyforge-warden/planning-artifacts/research/egm-audit-2026-11-05.md`. CAP-26 is re-derived with the leak guard's real scope and without a portal action that does not exist.
+- **2026-11-10 (the cutover readiness audit) — Found:** the read-only audit at main `82a2b18828` (one of nine, the
+  fleet's 2026-11-10 entry on [[pyforge-unifying-strategy]]) found that `spec-pyforge-warden` resolves against the tree
+  but is not ready for a rebuild from Frame + Spec. It names none of the nine feature flags that gate CAP-24..CAP-26
+  (each off in production, on in dev and staging). Four capabilities still read `ready` after their stories landed on
+  2026-11-01. It states things the code lacks: `review_required`, a snapshot age on the conda-to-pypi map, and
+  `--deterministic` pinning. It omits things the code does: the default KEV gate, six scan flags, and the forge and
+  feed environment variables. No capability carries the PR-gate hook book, CAP-1..CAP-22 name no proving test, and
+  other packages import `pyforge.warden` symbols that no contract names. **What it looks like when fixed:** the Spec,
+  PRD and spine say what the shipped code does (Epic 25; CAP-27 minted for the hook book). The public contract is one
+  companion, `contract.md`, held to the code by tests, with a per-capability `proof-map.md` beside it (Epic 26;
+  CAP-28). The suite runs its live-tree readers apart from its package tests, so the package half can serve a second
+  root as an oracle (Epic 27; a relay of `spec-pyforge-steward:CAP-175`). **Ruled** (operator, 2026-11-10, "Accept
+  all, run mint"; the second addendum on `docs/dreams/pyforge-unifying-strategy.md`, items 4 and 6): CAP-26 splits.
+  It keeps the kernel half (mode `rebuild`), and the portal half in `django-warden` becomes CAP-29 (`A-only`, expiry
+  steward Story 121.5). The report schema stays 1.1.0. The bundled-data age Constraint narrows to the LTS registry; no
+  age gate is built for the conda-to-pypi map. `--deterministic` stays reserved: the report is byte-identical by
+  default, and the SBOM's serial number and timestamp stay volatile. CAP-13..CAP-15 are `A-only`, expiry steward
+  Story 44.8. `spec-pyforge-warden` does not co-govern `django-warden`; `contract.md`'s table of where each capability
+  lives is enough. **Constraints:** no product behaviour changes and no flag is added; each piece left unbuilt is a
+  deferred-work row. Owner `spec-pyforge-warden`. → CAP-27, CAP-28, CAP-29 / Epics 25, 26, 27, specced 2026-11-10.
 
 ## 2026-10-26 — A web face for the compliance factory — upload a manifest, watch warden and atlas analyze it (folded from compliance-factory-web-face)
 

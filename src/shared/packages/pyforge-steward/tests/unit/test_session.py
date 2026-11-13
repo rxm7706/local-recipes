@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import sys
 import types
+from collections.abc import Sequence
 from pathlib import Path
 
 import pytest
@@ -26,6 +27,7 @@ from pyforge.steward.session import (
     format_session_report,
     gather_session_findings,
 )
+from pyforge.steward.upgrade import CommandRunner
 
 # Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
 # station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
@@ -76,10 +78,9 @@ def test_pixi_guild_finding_ok(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
 
 
 def _hide_doctor(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Make ``pyforge.doctor`` unimportable for one test, whatever env runs it. The
-    fallback tests assumed the ``pyforge-steward`` env (no doctor) and failed under
-    ``-e pyforge-guild``, where doctor is installed (found by Story 79.1). Every
-    submodule is masked too: a cached ``pyforge.doctor.models`` would import without
+    """The doctor-hidden state of ``_DOCTOR_STATES``: make ``pyforge.doctor`` unimportable
+    for one test, whatever env runs it (``-e pyforge-guild`` installs doctor; Story 79.1).
+    Every submodule is masked too: a cached ``pyforge.doctor.models`` would import without
     its parent."""
     for name in (
         "pyforge.doctor",
@@ -90,136 +91,136 @@ def _hide_doctor(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setitem(sys.modules, name, None)
 
 
-def test_bmad_method_finding_fallback_ok(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """With ``pyforge.doctor`` unimportable, the real AC4 fallback path
-    (``upgrade.run_bmad_drift_integrity``) runs."""
-    _hide_doctor(monkeypatch)
-    calls: dict[str, Path] = {}
+#: The one command whose verdict finding (2) takes, everywhere (Story 123.3, operator ruling 2026-11-10).
+_DRIFT_ARGV = ["pixi", "run", "-e", "pyforge-guild", "bmad-drift-check"]
+_DRIFT_REMEDY = "pixi run -e pyforge-guild bmad-drift-check"
 
-    def fake_run_bmad_drift_integrity(repo: Path) -> types.SimpleNamespace:
-        calls["repo"] = repo
-        return types.SimpleNamespace(ok=True, detail="no HARD findings")
 
-    monkeypatch.setattr("pyforge.steward.upgrade.run_bmad_drift_integrity", fake_run_bmad_drift_integrity)
-    finding = _bmad_method_finding(tmp_path)
+def _make_doctor_importable(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Inject a ``pyforge.doctor`` whose bmad-method and factory sources would report no
+    FAIL row. The in-process read this replaced passed here whatever the pin said, so a
+    guard that could not fire; now it must never be consulted at all."""
+
+    def never_called(_root: Path) -> list[object]:
+        pytest.fail("finding (2) read pyforge.doctor in-process instead of bmad-drift-check")
+
+    class FakeDoctorStatus(enum.Enum):
+        OK = "ok"
+        FAIL = "fail"
+
+    models_mod = types.ModuleType("pyforge.doctor.models")
+    models_mod.DoctorStatus = FakeDoctorStatus  # type: ignore[attr-defined]
+    sources_pkg = types.ModuleType("pyforge.doctor.sources")
+    bmad_method_mod = types.ModuleType("pyforge.doctor.sources.bmad_method")
+    bmad_method_mod.gather = never_called  # type: ignore[attr-defined]
+    factory_mod = types.ModuleType("pyforge.doctor.sources.factory")
+    factory_mod.gather = never_called  # type: ignore[attr-defined]
+    sources_pkg.bmad_method = bmad_method_mod  # type: ignore[attr-defined]
+    sources_pkg.factory = factory_mod  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "pyforge.doctor", types.ModuleType("pyforge.doctor"))
+    monkeypatch.setitem(sys.modules, "pyforge.doctor.models", models_mod)
+    monkeypatch.setitem(sys.modules, "pyforge.doctor.sources", sources_pkg)
+    monkeypatch.setitem(sys.modules, "pyforge.doctor.sources.bmad_method", bmad_method_mod)
+    monkeypatch.setitem(sys.modules, "pyforge.doctor.sources.factory", factory_mod)
+
+
+def _drift_runner(returncode: int, stdout: str = "") -> tuple[list[list[str]], CommandRunner]:
+    """A stubbed ``bmad-drift-check``: records each argv and answers with ``returncode``."""
+    calls: list[list[str]] = []
+
+    def run(argv: Sequence[str], cwd: Path) -> subprocess.CompletedProcess[str]:
+        calls.append(list(argv))
+        return subprocess.CompletedProcess(list(argv), returncode, stdout=stdout, stderr="")
+
+    return calls, run
+
+
+_DOCTOR_STATES = pytest.mark.parametrize("doctor_importable", [False, True], ids=["doctor-hidden", "doctor-importable"])
+
+
+@_DOCTOR_STATES
+def test_bmad_method_finding_fails_when_the_drift_check_exits_1(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, doctor_importable: bool
+) -> None:
+    """Exit 1 (findings) fails finding (2) with the bmad-drift-check remedy, doctor or not."""
+    (_make_doctor_importable if doctor_importable else _hide_doctor)(monkeypatch)
+    calls, run = _drift_runner(1, "[bmad-drift] pin-drift: FAIL -- bmad-method behind its pin\n")
+    finding = _bmad_method_finding(tmp_path, run)
     assert finding.name == "bmad-method"
+    assert finding.ok is False
+    assert finding.remedy == _DRIFT_REMEDY
+    assert "exit 1" in finding.detail
+    assert "pin-drift: FAIL" in finding.detail
+    assert calls == [_DRIFT_ARGV]
+
+
+@_DOCTOR_STATES
+def test_bmad_method_finding_passes_when_the_drift_check_exits_0(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, doctor_importable: bool
+) -> None:
+    (_make_doctor_importable if doctor_importable else _hide_doctor)(monkeypatch)
+    calls, run = _drift_runner(0)
+    finding = _bmad_method_finding(tmp_path, run)
     assert finding.ok is True
     assert finding.remedy is None
-    assert calls["repo"] == tmp_path
+    assert "bmad-drift-check" in finding.detail
+    assert calls == [_DRIFT_ARGV]
 
 
-def test_bmad_method_finding_fallback_fail_names_remedy(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    _hide_doctor(monkeypatch)
-    monkeypatch.setattr(
-        "pyforge.steward.upgrade.run_bmad_drift_integrity",
-        lambda repo: types.SimpleNamespace(ok=False, detail="2 HARD finding(s)"),
-    )
+def test_bmad_method_finding_could_not_run_is_a_failure(tmp_path: Path) -> None:
+    """Exit 2 (the check could not run) never reads as a pass."""
+    _calls, run = _drift_runner(2)
+    finding = _bmad_method_finding(tmp_path, run)
+    assert finding.ok is False
+    assert "could-not-run (exit 2)" in finding.detail
+    assert finding.remedy == _DRIFT_REMEDY
+
+
+def test_bmad_method_finding_launch_error_is_a_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A pixi that cannot launch is could-not-run (exit 2), and the detail names no doctor import."""
+
+    def fake_run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        raise OSError("pixi: not found")
+
+    monkeypatch.setattr("pyforge.steward.session.subprocess.run", fake_run)
     finding = _bmad_method_finding(tmp_path)
     assert finding.ok is False
-    assert finding.detail == "2 HARD finding(s)"
-    assert finding.remedy == "pixi run -e pyforge-guild bmad-drift-check"
+    assert "could-not-run (exit 2)" in finding.detail
+    assert "pixi: not found" in finding.detail
+    assert "pyforge.doctor" not in finding.detail
+    assert finding.remedy == _DRIFT_REMEDY
 
 
-def test_bmad_method_finding_uses_doctor_verdict_when_importable(
+def test_bmad_method_finding_timeout_is_a_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        raise subprocess.TimeoutExpired(argv, 60)
+
+    monkeypatch.setattr("pyforge.steward.session.subprocess.run", fake_run)
+    finding = _bmad_method_finding(tmp_path)
+    assert finding.ok is False
+    assert "could-not-run (exit 124)" in finding.detail
+    assert finding.remedy == _DRIFT_REMEDY
+
+
+def test_bmad_method_finding_default_runner_shells_the_drift_task_frozen(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """AC3: when ``pyforge.doctor`` IS importable, its own verdict is used verbatim
-    -- simulated here by injecting fake ``pyforge.doctor.*`` modules into
-    ``sys.modules`` (the real package is not installed in this pixi env)."""
+    """With no runner given, the real subprocess runs the pixi task in the repo root, frozen:
+    ``pixi run --frozen`` does not hand ``--frozen`` to a child pixi (review round 1)."""
+    seen: dict[str, object] = {}
 
-    class FakeDoctorStatus(enum.Enum):
-        OK = "ok"
-        WARN = "warn"
-        FAIL = "fail"
+    def fake_run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        seen["argv"] = list(argv)
+        seen["cwd"] = kwargs.get("cwd")
+        env = kwargs.get("env")
+        seen["PIXI_FROZEN"] = env.get("PIXI_FROZEN") if isinstance(env, dict) else None
+        seen["timeout"] = kwargs.get("timeout")
+        return subprocess.CompletedProcess(list(argv), 1, stdout="", stderr="")
 
-    class FakeRow:
-        def __init__(self, status: FakeDoctorStatus, check: str, message: str) -> None:
-            self.status = status
-            self.check = check
-            self.message = message
-
-    models_mod = types.ModuleType("pyforge.doctor.models")
-    models_mod.DoctorStatus = FakeDoctorStatus  # type: ignore[attr-defined]
-    sources_pkg = types.ModuleType("pyforge.doctor.sources")
-    bmad_method_mod = types.ModuleType("pyforge.doctor.sources.bmad_method")
-    doctor_pkg = types.ModuleType("pyforge.doctor")
-
-    seen: dict[str, Path] = {}
-
-    def fake_gather(root: Path) -> list[FakeRow]:
-        seen["root"] = root
-        return [FakeRow(FakeDoctorStatus.OK, "bmad-pin", "on target")]
-
-    bmad_method_mod.gather = fake_gather  # type: ignore[attr-defined]
-
-    monkeypatch.setitem(sys.modules, "pyforge.doctor", doctor_pkg)
-    monkeypatch.setitem(sys.modules, "pyforge.doctor.models", models_mod)
-    monkeypatch.setitem(sys.modules, "pyforge.doctor.sources", sources_pkg)
-    monkeypatch.setitem(sys.modules, "pyforge.doctor.sources.bmad_method", bmad_method_mod)
-
-    finding = _bmad_method_finding(tmp_path)
-    assert finding.ok is True
-    assert seen["root"] == tmp_path
-    assert "no FAIL findings" in finding.detail
-
-
-def test_bmad_method_finding_matches_real_doctor_gather_when_importable(repo_root: Path) -> None:
-    """Story 63.4 review finding (Intent Alignment (e)): AC3's other two
-    tests inject fake ``pyforge.doctor.*`` modules into ``sys.modules``
-    because the real package is absent from the ``pyforge-steward`` pixi
-    env -- so the actual import branch (real ``pyforge.doctor`` on
-    ``sys.path``) was never proven. Skips there; runs for real under
-    ``-e pyforge-guild`` / ``-e local-recipes``, where both packages are
-    installed, and asserts ``_bmad_method_finding``'s verdict matches the
-    real ``gather`` call verbatim -- not a re-implementation of its logic.
-    """
-    pytest.importorskip("pyforge.doctor")
-    from pyforge.doctor.models import DoctorStatus
-    from pyforge.doctor.sources import bmad_method
-
-    finding = _bmad_method_finding(repo_root)
-    rows = bmad_method.gather(repo_root)
-    fail_rows = [row for row in rows if row.status is DoctorStatus.FAIL]
-    if fail_rows:
-        assert finding.ok is False
-        for row in fail_rows[:5]:
-            assert row.check in finding.detail
-        assert finding.remedy == "pixi run -e pyforge-guild bmad-drift-check"
-    else:
-        assert finding.ok is True
-        assert "no FAIL findings" in finding.detail
-        assert finding.remedy is None
-
-
-def test_bmad_method_finding_doctor_fail_rows_surface(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    class FakeDoctorStatus(enum.Enum):
-        OK = "ok"
-        FAIL = "fail"
-
-    class FakeRow:
-        def __init__(self, status: FakeDoctorStatus, check: str, message: str) -> None:
-            self.status = status
-            self.check = check
-            self.message = message
-
-    models_mod = types.ModuleType("pyforge.doctor.models")
-    models_mod.DoctorStatus = FakeDoctorStatus  # type: ignore[attr-defined]
-    sources_pkg = types.ModuleType("pyforge.doctor.sources")
-    bmad_method_mod = types.ModuleType("pyforge.doctor.sources.bmad_method")
-    bmad_method_mod.gather = lambda root: [  # type: ignore[attr-defined]
-        FakeRow(FakeDoctorStatus.FAIL, "bmad-pin", "core is behind pinned version")
-    ]
-    doctor_pkg = types.ModuleType("pyforge.doctor")
-
-    monkeypatch.setitem(sys.modules, "pyforge.doctor", doctor_pkg)
-    monkeypatch.setitem(sys.modules, "pyforge.doctor.models", models_mod)
-    monkeypatch.setitem(sys.modules, "pyforge.doctor.sources", sources_pkg)
-    monkeypatch.setitem(sys.modules, "pyforge.doctor.sources.bmad_method", bmad_method_mod)
-
+    monkeypatch.setattr("pyforge.steward.session.subprocess.run", fake_run)
     finding = _bmad_method_finding(tmp_path)
     assert finding.ok is False
-    assert "bmad-pin" in finding.detail
-    assert finding.remedy == "pixi run -e pyforge-guild bmad-drift-check"
+    assert seen == {"argv": _DRIFT_ARGV, "cwd": tmp_path, "PIXI_FROZEN": "true", "timeout": 60.0}
 
 
 # --------------------------------------------------------------------------
@@ -735,8 +736,8 @@ def test_gather_session_findings_returns_all_seven_in_order(tmp_path: Path, monk
         lambda _root: (_ for _ in ()).throw(OSError("no seed check")),
     )
     monkeypatch.setattr(
-        "pyforge.steward.upgrade.run_bmad_drift_integrity",
-        lambda repo: types.SimpleNamespace(ok=True, detail="ok"),
+        "pyforge.steward.upgrade._run_bmad_drift_task",
+        lambda repo, runner=None: types.SimpleNamespace(ok=True, detail="ok"),
     )
     findings = gather_session_findings(root=tmp_path)
     assert [f.name for f in findings] == [

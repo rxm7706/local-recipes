@@ -116,6 +116,7 @@ _MANIFEST_DIR_RELPATH = ".claude/data/pyforge-marshal/derived-context"
 #: rather than by auditing every present and future reader for tolerance of
 #: a run with no `dispatch-launch` entry.
 _SESSION_ADVISORIES_DIRNAME = "session-advisories"
+# CAP-4: loop-home FILE read -- marshal's own file: the journal marshal writes in its own run dir, not bmad-loop run state
 _ADVISORY_JOURNAL_FILENAME = "journal.jsonl"
 
 #: Story 46.6 review triage fix 2 -- the distinguishing marker `data`

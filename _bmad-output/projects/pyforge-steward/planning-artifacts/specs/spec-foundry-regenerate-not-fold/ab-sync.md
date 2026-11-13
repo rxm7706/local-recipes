@@ -1,28 +1,36 @@
 ---
 companion-of: spec-foundry-regenerate-not-fold
-updated: "2026-09-13"
+updated: "2026-11-11"
 ---
 
 # Dual-root A/B — contract shared, behavior compared
 
-**fnr:CAP-5.** One starting contract. A/B the behavior. Do not drag
-local-recipes comments, PRDs, epics, or package trees into foundry.
+**fnr:CAP-5.** One starting contract, written on A until the flip. A/B the
+behavior. Do not drag local-recipes comments, PRDs, epics, or package trees
+into foundry.
 
 ## Roles
 
+A writes every Dream, Frame, Spec and the capability ledger until the
+`pyforge.cutover_root` flip; B reads A at the SHA in its
+`docs/foundry/PIN.md` and writes none of them. The flip hands the writer
+lock to B (`fnd:CAP-8`; operator ruling 1 of 2026-11-10).
+
 | Layer | A `rxm7706/local-recipes` | B `rxm7706/python-foundry` |
 |---|---|---|
-| Dream + Frame + Spec five-fields | Mirror + SHA pin after B is writer | **Writer** once the 48h kit exists |
-| This Spec (seed) | Writer until the kit lands on B | Then pin |
+| Dream, Frame, Spec and the capability ledger | **Writer** until the flip | Reads A at the SHA in its `docs/foundry/PIN.md` and writes none of them; takes the writer lock at the flip |
+| The seed: Dream plus memlog (`archive/**/.memlog.md` included, no backfill) | Writes it until the flip | Re-derives each Spec from it; a Frame is a pointer to it, not a seed |
 | PRD / ARCH / epics / sprint / stories | Historical archive. Do not copy. | Slim foundry chain only. New numbers OK; cite the same `CAP-N`. |
-| Code | Brownfield control. Oracle. | `src/packages/` treatment. Born, not folded. |
+| Code | Brownfield control. Oracle. | `src/packages/` treatment. Born, not folded. The three kernel leaves are a prototype at A's PR #1344, not re-pinned until the core, steward and marshal Specs pass a truth sweep. |
 | Factory / CFE / recipes | Invent here until a foundry CFE exists | Factory island only; CFE resolve may stay on A |
 
-Never author the same Dream in both repos. The follower is a pin, not a fork.
+Never author the same Dream in both repos. B is the follower until the
+flip: a pin, not a fork.
 
 ## Pin
 
-On the follower, one tracked file (foundry: `docs/foundry/PIN.md` after 54.5):
+On the follower, one tracked file (foundry: `docs/foundry/PIN.md` since
+54.5):
 
 ```
 contract: <repo>@<sha>
@@ -31,8 +39,10 @@ frame: <path>
 spec: <path>
 ```
 
-A Dream/Frame/Spec edit on the writer opens a pin-bump PR on the follower
-the same day (docs only).
+B stays pinned at A's PR #1344 until the core, steward and marshal Specs
+pass a truth sweep (operator ruling 1). From then on, a Dream, Frame, Spec
+or ledger edit on the writer opens a pin-bump PR on the follower the same
+day (docs only).
 
 ## Compare (per Story that ships on B)
 
@@ -54,8 +64,12 @@ comments. Frame preflight is not this test.
 - `rsync` `_bmad-output` or `src/shared/packages`
 - Merge epics across roots
 - A third git root
-- Treat `pyforge.cutover_root` as the A/B harness (it stays
-  `local-recipes` until the kernel passes the shared list)
+- Treat `pyforge.cutover_root` as the A/B harness. It is the writer lock
+  and the root of record, and it stays `local-recipes` until the operator
+  flips it by hand, with no loop running, once the Launch slice is proven:
+  B lands one story on itself through its own dispatch and its own
+  detectors, and every Launch row of the case list reads
+  `verified-in-foundry`. Nothing flips it automatically.
 
 ## 48h vs kernel
 

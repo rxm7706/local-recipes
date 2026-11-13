@@ -13,6 +13,11 @@ from pathlib import Path
 
 import pytest
 
+# Story 48.1 (a relay of spec-pyforge-steward:CAP-175): this module reads the live tree outside its package (the
+# inventory quartet's scripts under scripts/), so it runs in atlas's live-tree half and fires on what it reads, not on
+# every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 _REPO_ROOT = Path(__file__).resolve().parents[7]
 _DASHBOARD_SRC = _REPO_ROOT / "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard"
 _METRICS_SCRIPT = _REPO_ROOT / "scripts/conda-forge-packaging-inventory-operations_metrics.py"

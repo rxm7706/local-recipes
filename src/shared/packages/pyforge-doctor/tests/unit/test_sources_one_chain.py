@@ -2,8 +2,9 @@
 re-key map parser both share with ledger-regression / story-status (25.3).
 
 Fixtures build a tiny planning tree under ``tmp_path``; the live-tree tests
-at the bottom run the two gathers on this checkout and pin that neither
-FAILs at the ruling snapshot (the conformance leg each story names).
+that run the two gathers on this checkout and pin that neither FAILs at the
+ruling snapshot (the conformance leg each story names) are in
+``test_live_sources_one_chain.py``.
 """
 
 from __future__ import annotations
@@ -11,31 +12,19 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
-
 from pyforge.doctor import rekey
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import one_chain
 
-# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
-# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
-pytestmark = pytest.mark.live_tree
-
-try:
-    _REPO_ROOT: Path | None = Path(__file__).resolve().parents[6]
-except IndexError:
-    _REPO_ROOT = None
-
-
-def _live_root() -> Path:
-    if _REPO_ROOT is None or not (_REPO_ROOT / ".claude").is_dir():
-        pytest.skip("live repo root not resolvable from this checkout")
-    return _REPO_ROOT
+# Doctor Story 58.1 (spec-pyforge-doctor:CAP-97): no test here reads this repository, so the module runs in the
+# package half; the tests that do run in test_live_sources_one_chain.py.
 
 
 # --- fixture tree ------------------------------------------------------------
 
 _STATIONS = ["herald", "marshal", "atlas", "warden", "mason", "doctor", "scribe", "steward"]
+# A join: a bare literal naming the tracked station Dream would read as a live read (steward's scan_strings).
+_MARSHAL_DREAM = "/".join(("docs", "dreams", "pyforge-marshal.md"))
 
 
 def _roster(root: Path, *, exemptions: list[str] | None = ["different-owner", "governance"]) -> None:
@@ -109,7 +98,7 @@ def test_sprawl_new_dream_without_exemption_fails(tmp_path: Path) -> None:
     assert f.status is DoctorStatus.FAIL
     assert f.evidence["path"] == "docs/dreams/brand-new.md"
     assert f.evidence["reason"] == "no fold-exemption"
-    assert "docs/dreams/pyforge-marshal.md" in f.evidence["station_dreams"]
+    assert _MARSHAL_DREAM in f.evidence["station_dreams"]
 
 
 def test_sprawl_new_spec_folder_with_listed_value_is_visible_ok(tmp_path: Path) -> None:
@@ -134,7 +123,7 @@ def test_sprawl_station_dream_and_station_spec_and_story_file_are_excluded(tmp_p
     # remove them from the baseline to prove the exclusion is structural
     p = root / one_chain.CHAIN_SPRAWL_BASELINE_REL
     data = json.loads(p.read_text())
-    assert "docs/dreams/pyforge-marshal.md" not in data["dreams"]
+    assert _MARSHAL_DREAM not in data["dreams"]
     assert not any(x.endswith("spec-pyforge-marshal") for x in data["spec_folders"])
     assert not any(x.endswith(".md") for x in data["spec_folders"])
     _dream(root, "pyforge-doctor", owner="doctor", status="realized")  # a station Dream, not in baseline
@@ -148,6 +137,7 @@ def test_sprawl_missing_baseline_is_warn_not_fail(tmp_path: Path) -> None:
     (root / one_chain.CHAIN_SPRAWL_BASELINE_REL).unlink()
     (f,) = one_chain.gather_chain_sprawl(root)
     assert f.check == "chain-sprawl-no-baseline" and f.status is DoctorStatus.WARN
+    assert f.evidence["unevaluable"] is True  # Story 56.4: a cannot-evaluate WARN carries the marker
 
 
 def test_sprawl_exemption_list_comes_from_roster_only(tmp_path: Path) -> None:
@@ -243,6 +233,7 @@ def test_fr_missing_baseline_is_warn(tmp_path: Path) -> None:
     (root / one_chain.FR_BASELINE_REL).unlink()
     (f,) = one_chain.gather_fr_without_cap(root)
     assert f.check == "fr-without-cap-no-baseline" and f.status is DoctorStatus.WARN
+    assert f.evidence["unevaluable"] is True  # Story 56.4: a cannot-evaluate WARN carries the marker
 
 
 def test_fr_rebaseline_one_project_carries_the_others(tmp_path: Path) -> None:
@@ -285,36 +276,3 @@ def test_rekey_load_groups_by_project(tmp_path: Path) -> None:
     maps = rekey.load_rekey_maps(tmp_path)
     assert list(maps) == ["pyforge-marshal"]
     assert maps["pyforge-marshal"][0][1].mapping == {"46-1-a": "1-1-a"}
-
-
-# --- live tree (conformance legs) --------------------------------------------
-
-
-def test_live_tree_chain_sprawl_has_no_fail_at_ruling_snapshot() -> None:
-    root = _live_root()
-    findings = one_chain.gather_chain_sprawl(root)
-    fails = [f for f in findings if f.status is DoctorStatus.FAIL]
-    assert not fails, [f.message for f in fails]
-    assert not any(f.check == "chain-sprawl-no-baseline" for f in findings)
-
-
-def test_live_tree_fr_without_cap_has_no_fail_at_ruling_snapshot() -> None:
-    """No FAIL on this checkout: every structural finding the tree still
-    carries is keyed in fr-baseline.json `findings` (Story 50.1 ratchet)."""
-    root = _live_root()
-    findings = one_chain.gather_fr_without_cap(root)
-    fails = [f for f in findings if f.status is DoctorStatus.FAIL]
-    assert not fails, [f.message for f in fails]
-    assert not any(f.check == "fr-without-cap-no-baseline" for f in findings)
-    assert not any(f.check == "fr-baseline-stale" for f in findings), "prune fr-baseline.json"
-
-
-def test_live_roster_declares_the_closed_list() -> None:
-    root = _live_root()
-    data = json.loads((root / "docs/governance/guild-roster.json").read_text())
-    assert data["fold_exemptions"] == [
-        "different-owner",
-        "different-lifecycle",
-        "cross-station-seam",
-        "governance",
-    ]

@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
+import pytest
 from pyforge.testing_kit import (
     changed_paths_since,
     commit_files,
@@ -12,6 +13,11 @@ from pyforge.testing_kit import (
     pyforge_import_offenders,
     unsanctioned_commits,
 )
+
+# Story 38.2 (spec-pyforge-mason CAP-7, relaying spec-pyforge-steward:CAP-175): this module reads the live tree
+# outside its package (the django-mason and django-pyforge packages), so it runs in the station's live-tree half and
+# fires on what it reads.
+pytestmark = pytest.mark.live_tree
 
 _CFE_CHANGELOG = ".claude/skills/conda-forge-expert/CHANGELOG.md"
 

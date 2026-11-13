@@ -19,6 +19,11 @@ from pyforge.atlas.mcp.parity import (
 )
 from pyforge.atlas.mcp.tools import TOOL_SPECS
 
+# Story 48.1 (a relay of spec-pyforge-steward:CAP-175): tests/meta runs whole in atlas's live-tree half, as doctor
+# Story 55.4 moved its own meta suite, so this module carries the marker with its siblings although it reads only the
+# package and Kedro's command group.
+pytestmark = pytest.mark.live_tree
+
 
 def test_tool_specs_covers_registered_server_tools():
     assert set(TOOL_SPECS) == registered_surface_tools()

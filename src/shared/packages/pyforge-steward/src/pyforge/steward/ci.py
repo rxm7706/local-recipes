@@ -17,9 +17,10 @@ from pyforge.core.atomic_write import atomic_write_text
 
 from .bootstrap import repo_root
 from .interfaces import DutyResult
+from .root_layout import CI_DEFAULT_REPOSITORY
 
 CI_FLAG_KEY = "pyforge.steward.ci_pause_control"
-DEFAULT_REPO = "rxm7706/local-recipes"
+DEFAULT_REPO = CI_DEFAULT_REPOSITORY
 CI_VARS_REL = Path(".steward/ci-vars.json")
 #: Story 99.8: the last ``ci status`` envelope, which ``pr-preflight`` reads for red ``main`` runs.
 CI_STATUS_REL = Path(".steward/ci-status.json")

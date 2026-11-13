@@ -21,6 +21,10 @@ from pyforge.marshal.dispatch_verify import (
     _run_verify_command,
 )
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 
 class _Process:
     def __init__(self, outcome: ProcessResult | Exception) -> None:
@@ -97,7 +101,7 @@ def test_surface_guard_runs_with_supervisor_interpreter_not_bare_python(tmp_path
     report, finding = _run_verify_command(_SURFACE_RECONCILE_COMMAND, process=process, worktree=tmp_path)
     assert finding is None
     assert report["command"] == _SURFACE_RECONCILE_COMMAND
-    assert process.calls == [[sys.executable, "scripts/spec_surface_reconcile.py"]]
+    assert process.calls == [[sys.executable, "/".join(("scripts", "spec_surface_reconcile.py"))]]
 
 
 def test_argv_for_verify_execution_leaves_non_guard_commands_untouched() -> None:
@@ -109,5 +113,5 @@ def test_surface_guard_whitespace_normalized_before_interpreter_substitution() -
     spaced = _SURFACE_RECONCILE_COMMAND.replace(" ", "  ", 1)
     assert _argv_for_verify_execution(spaced, spaced.split()) == [
         sys.executable,
-        "scripts/spec_surface_reconcile.py",
+        "/".join(("scripts", "spec_surface_reconcile.py")),
     ]

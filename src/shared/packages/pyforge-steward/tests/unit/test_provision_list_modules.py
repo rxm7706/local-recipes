@@ -192,7 +192,7 @@ def test_module_install_states_malformed_custom_config_toml_raises_toml_decode_e
 
 
 def test_supported_modules_are_exactly_the_five_wire_decided_names():
-    """Story 15.3 / CAP-3: registry is {bmb, tea, cis, utility-skills,
+    """Story 15.3 / spec-pyforge-steward CAP-23: registry is {bmb, tea, cis, utility-skills,
     manticore}; WDS stays skip-only."""
     assert set(_SUPPORTED_MODULES) == {
         "bmb",

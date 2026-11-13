@@ -1,14 +1,14 @@
-"""Story 14.1 — CAP-1 pre-flight retrodicts the 6.10.0→6.11.0 upgrade traps.
+"""Story 14.1 — CAP-9 pre-flight retrodicts the 6.10.0→6.11.0 upgrade traps.
 
-Story 14.7 — CAP-7: the packaged 6.12.0 catalog names skf under
+Story 14.7 — CAP-15: the packaged 6.12.0 catalog names skf under
 ``custom_modules`` and a manifest without ``modules:`` yields no custom-module
 findings.
 
-Story 14.8 — CAP-8: a marker-free byte-diff scan of installer-owned skill
+Story 14.8 — CAP-16: a marker-free byte-diff scan of installer-owned skill
 files and ``_bmad/scripts/*.py`` finds local edits the marker-based trap-1
 mechanism misses (trap 16).
 
-Story 14.9 — CAP-9: ``shims_to_retire`` is a catalog∩installed preview of
+Story 14.9 — CAP-17: ``shims_to_retire`` is a catalog∩installed preview of
 what a future ``--no-shims`` apply would remove — computed unconditionally
 and never added to ``trap_ids``.
 """
@@ -136,7 +136,7 @@ def test_catalog_ships_611():
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
     assert data["version"] == "6.11.0"
     assert data["baseline_pair_from"] == "6.10.0"
-    # 6.11.0 predates CAP-7: no custom_modules, and the loader tolerates that.
+    # 6.11.0 predates CAP-15: no custom_modules, and the loader tolerates that.
     assert "custom_modules" not in data
     assert load_custom_modules(data) == ()
 
@@ -307,7 +307,7 @@ def test_cli_refuses_unknown_target(tmp_path, capsys):
     assert "no release catalog" in combined
 
 
-# ── Story 14.8 / CAP-8 fixtures ────────────────────────────────────────────
+# ── Story 14.8 / CAP-16 fixtures ───────────────────────────────────────────
 
 
 def _write_package_root(
@@ -423,7 +423,7 @@ def test_scan_script_with_no_packaged_counterpart_is_not_a_finding(tmp_path):
 
 def test_scan_excludes_upstream_touched_paths(tmp_path):
     # resolve_config.py is `_write_610_repo`'s trap-1 marker file AND a catalog
-    # `upstream_touched_paths` entry — CAP-8 must not double-report it.
+    # `upstream_touched_paths` entry — CAP-16 must not double-report it.
     repo = _write_610_repo(tmp_path / "repo", with_legacy_custom=False)
     package = _write_package_root(tmp_path / "pkg")
     report = build_preflight_report(repo=repo, target_version="6.11.0", installed_package_root=package)
@@ -445,7 +445,7 @@ def test_scan_excludes_skill_shaped_upstream_touched_path(tmp_path):
 
 
 def test_scan_skips_pycache_noise(tmp_path):
-    """CAP-8 trap 16 false-positive fix: __pycache__/*.pyc never fingerprints as a finding."""
+    """CAP-16 trap 16 false-positive fix: __pycache__/*.pyc never fingerprints as a finding."""
     repo = _write_610_repo(tmp_path / "repo", with_legacy_custom=False)
     _add_skill_and_script(repo)
     pycache_dir = repo / ".claude" / "skills" / "bmad-dev-auto" / "__pycache__"
@@ -498,12 +498,12 @@ def test_preflight_installed_package_root_wrong_shape_notes_scan_skipped(tmp_pat
     assert "(none detected — see Notes below if the scan was skipped)" in text
 
 
-# ── Story 14.9 / CAP-9 fixtures ────────────────────────────────────────────
+# ── Story 14.9 / CAP-17 fixtures ───────────────────────────────────────────
 
 
 def _write_repo_with_skills(root: Path, skill_names: list[str]) -> Path:
     """Minimal installed-shaped repo carrying exactly *skill_names* in its
-    skill-manifest.csv (no other CAP-9-irrelevant machinery)."""
+    skill-manifest.csv (no other CAP-17-irrelevant machinery)."""
     (root / "scripts").mkdir(parents=True)
     (root / "scripts" / "bmad-loop-worktree").write_text("#!/bin/sh\n", encoding="utf-8")
     manifest_dir = root / "_bmad" / "_config"

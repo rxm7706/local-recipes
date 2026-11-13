@@ -106,7 +106,7 @@ _LEGACY_FLAG_ALIASES: Dict[str, str] = {
 }
 _TREE_TO_LEGACY: Dict[str, str] = {tree: short for short, tree in _LEGACY_FLAG_ALIASES.items()}
 
-# Formatter name -> the flag that gates it (every optional integration, CAP-2).
+# Formatter name -> the flag that gates it (every optional integration, CAP-147).
 FORMATTER_FLAGS: Dict[str, str] = {
     "static-dossier": FLAG_DOSSIER_EXPORT,
     "herald-facts": FLAG_HERALD_FACTS,

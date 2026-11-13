@@ -204,14 +204,30 @@ def test_pyforge_atlas_root_finds_named_segment(tmp_path: Path):
     assert got == tmp_path / "pyforge-atlas"
 
 
-def test_pyforge_atlas_root_falls_back_to_repo_root(tmp_path: Path):
+def test_pyforge_atlas_root_falls_back_to_the_member(tmp_path: Path):
+    # Story 48.2: no pyforge-atlas segment above the export -> the member this module ships in,
+    # never a guessed <repo>/src/shared/packages/pyforge-atlas.
     root = tmp_path / "fake-repo"
     (root / ".git").mkdir(parents=True)
     export = root / "data" / "derived" / "x" / "x.parquet"
     export.parent.mkdir(parents=True)
     export.write_bytes(b"x")
     got = ig._pyforge_atlas_root(export)
-    assert got == root / "src/shared/packages/pyforge-atlas"
+    assert got == ig._MEMBER_ROOT
+    assert got.name == "pyforge-atlas"
+    assert (got / "conf" / "base" / "catalog.yml").is_file()
+
+
+def test_pyforge_atlas_root_installed_layout_falls_back_to_the_working_directory(tmp_path: Path, monkeypatch):
+    # Installed from the built artifact, parents[4] is site-packages: no conf/base/catalog.yml beside it.
+    site_packages = tmp_path / "lib" / "site-packages"
+    site_packages.mkdir(parents=True)
+    monkeypatch.setattr(ig, "_MEMBER_ROOT", site_packages)
+    cwd = tmp_path / "cwd"
+    cwd.mkdir()
+    monkeypatch.chdir(cwd)
+    export = tmp_path / "data" / "derived" / "x" / "x.parquet"
+    assert ig._pyforge_atlas_root(export) == cwd
 
 
 def test_data_root_from_export_is_three_parents_up():

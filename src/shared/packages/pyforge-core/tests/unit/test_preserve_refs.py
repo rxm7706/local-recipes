@@ -261,6 +261,68 @@ def test_push_cap_refuses_excess(git_pair: tuple[Path, Path]):
     assert any(f.reason is ContentGateReason.PUSH_CAP_RUN for f in result.findings)
 
 
+# Story 117.3 (CAP-287): a purge list that is missing or cannot be parsed keeps the tag local
+# with a finding, like a purge-listed sha; it never raises and never pushes.
+
+
+def _assert_unreadable_purge_list_keeps_tag_local(
+    git_pair: tuple[Path, Path], purge_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import pyforge.core.preserve_refs as mod
+
+    repo, bare = git_pair
+    commit = _run(repo, "rev-parse", "HEAD").stdout.strip()
+    ref = render_preserve_ref(commit_sha=commit, producer="hand", project_slug="pyforge-marshal", story_key="117.3")
+    tag_preserve(repo, refname=ref, commit=commit, trailers=_trailers(commit))
+    real_git = mod._git
+    git_verbs: list[str] = []
+
+    def _recording_git(repo_arg, *args, **kwargs):
+        git_verbs.append(args[0] if args else "")
+        return real_git(repo_arg, *args, **kwargs)
+
+    monkeypatch.setattr(mod, "_git", _recording_git)
+    result = push_preserve_ref(repo, ref, purge_list_path=purge_path, remote="origin")
+    assert result.pushed is False
+    assert len(result.findings) == 1
+    finding = result.findings[0]
+    assert finding.reason is ContentGateReason.PURGE_LIST_UNREADABLE
+    assert "purge-list" in finding.reason.value
+    assert "purge list" in finding.message and str(purge_path) in finding.message
+    assert "rev-parse" in git_verbs  # the recorder saw the local resolve, so its silence below is real
+    assert "push" not in git_verbs and "ls-remote" not in git_verbs
+    assert _run(repo, "rev-parse", "--verify", f"{ref}^{{commit}}").stdout.strip() == commit
+    on_bare = subprocess.run(
+        ["git", "--git-dir", str(bare), "for-each-ref", "refs/tags/"], capture_output=True, text=True, check=True
+    )
+    assert on_bare.stdout.strip() == ""
+
+
+def test_push_missing_purge_list_keeps_tag_local(git_pair: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch):
+    repo, _ = git_pair
+    missing = repo / "docs" / "governance" / "preserve-purge-list.json"
+    assert not missing.exists()
+    _assert_unreadable_purge_list_keeps_tag_local(git_pair, missing, monkeypatch)
+
+
+def test_push_unparsable_purge_list_keeps_tag_local(git_pair: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch):
+    repo, _ = git_pair
+    garbled = repo / "purge-list.json"
+    garbled.write_text('{"commit_shas": [', encoding="utf-8")
+    _assert_unreadable_purge_list_keeps_tag_local(git_pair, garbled, monkeypatch)
+
+
+def test_load_purge_list_still_raises_for_direct_callers(tmp_path: Path):
+    from pyforge.core.preserve_refs import load_purge_list
+
+    with pytest.raises(FileNotFoundError):
+        load_purge_list(tmp_path / "absent.json")
+    garbled = tmp_path / "garbled.json"
+    garbled.write_text("not json", encoding="utf-8")
+    with pytest.raises(json.JSONDecodeError):
+        load_purge_list(garbled)
+
+
 def test_content_gate_mutation_secret_rule_required(git_pair: tuple[Path, Path]):
     """Removing the secret-scan rule must fail this guard."""
     import pyforge.core.preserve_refs as mod

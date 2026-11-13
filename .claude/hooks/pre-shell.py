@@ -3,8 +3,9 @@
 
 (steward Story 63.3, spec-pyforge-steward CAP-5)
 
-WHAT THIS IS. A repo-level `PreToolUse` guard for the sixteen AGENTS.md/CLAUDE.md
-session rules that were previously prose only, plus three steward
+WHAT THIS IS. A repo-level `PreToolUse` guard for the seventeen AGENTS.md/CLAUDE.md
+session rules that were previously prose only (the seventeenth is the writer
+lock's chain-write denial, steward Story 121.4), plus three steward
 operator-consent denials. Registered on `Bash` and on
 `Edit`/`Write`/`NotebookEdit` in `.claude/settings.json` (Claude Code) and on
 `beforeShellExecution` / `afterFileEdit` in `.cursor/hooks.json` (Cursor) --
@@ -31,7 +32,7 @@ revision whatever the tool call's cwd.
 Cursor's `afterFileEdit` has no permission/deny or message-injection output
 in its current schema (checked live against https://cursor.com/docs/agent/hooks,
 2026-09-20), and Cursor has no "before write" event for file edits at all --
-so the file rule there is necessarily a post-hoc WARN: a clear message on
+so the file rules there are necessarily a post-hoc WARN: a clear message on
 stderr plus a non-zero exit (visible in Cursor's own hook log), not a block.
 On Claude Code, by contrast, `Edit`/`Write`/`NotebookEdit` are `PreToolUse`-gated,
 so this script denies the edit outright before it lands.
@@ -46,7 +47,9 @@ as it always did).
 
 This file is intentionally stdlib-only (json/re/shlex/subprocess/tomllib) --
 it has to run bare via `python3`, outside any pixi environment, on whatever
-interpreter launched the agent.
+interpreter launched the agent. Its one reuse is pyforge-core's stdlib-only
+`pyforge.core.cutover_root` (the root of record and each root's forge slug),
+installed or loaded from this tree's core source (see `_cutover_root()`).
 """
 
 from __future__ import annotations
@@ -668,10 +671,10 @@ def match_gh_pr_create_missing_repo(ctx: Context, rule: dict[str, Any]) -> Optio
         has_repo = False
         for i, tok in enumerate(tokens):
             if tok in ("-R", "--repo") and i + 1 < len(tokens):
-                if tokens[i + 1] == "rxm7706/local-recipes":
+                if tokens[i + 1] == _this_forge_slug():
                     has_repo = True
             elif tok.startswith("--repo="):
-                if tok.split("=", 1)[1] == "rxm7706/local-recipes":
+                if tok.split("=", 1)[1] == _this_forge_slug():
                     has_repo = True
         if not has_repo:
             return str(rule["reason"])
@@ -1137,7 +1140,6 @@ def match_unreachable_ref_deletion(ctx: Context, rule: dict[str, Any]) -> Option
     return None
 
 
-_LOCAL_RECIPES_SLUG = "rxm7706/local-recipes"
 _GITHUB_SLUG_RE = re.compile(
     r"^(?:https?://(?:[^/@]+@)?github\.com/|git@github\.com:|ssh://(?:[^/@]+@)?github\.com/)([^/]+)/([^/]+?)(?:\.git)?(?:/.*)?$",
     re.IGNORECASE,
@@ -1174,8 +1176,9 @@ def _normalize_repo_slug(text: str) -> Optional[str]:
     raw = text.strip().strip('"').strip("'")
     if not raw:
         return None
-    if raw.lower() == _LOCAL_RECIPES_SLUG:
-        return _LOCAL_RECIPES_SLUG
+    this_slug = _this_forge_slug()
+    if raw.lower() == this_slug.lower():
+        return this_slug
     if "/" in raw and "://" not in raw and not raw.startswith("git@"):
         owner, repo = raw.split("/", 1)
         repo = repo.removesuffix(".git")
@@ -1188,7 +1191,8 @@ def _normalize_repo_slug(text: str) -> Optional[str]:
 
 
 def _is_local_recipes_slug(slug: Optional[str]) -> bool:
-    return slug is not None and slug.lower() == _LOCAL_RECIPES_SLUG
+    """True for this checkout's own forge slug, `FORGE_SLUGS[roots.this]`."""
+    return slug is not None and slug.lower() == _this_forge_slug().lower()
 
 
 def _is_local_filesystem_destination(dest: str) -> bool:
@@ -1543,8 +1547,8 @@ def match_outward_github_write(ctx: Context, rule: dict[str, Any]) -> Optional[s
             if len(parts) >= 4 and parts[0] == "repos" and parts[3] == "forks":
                 return reason
             if len(parts) >= 3 and parts[0] == "repos":
-                slug = f"{parts[1].lower()}/{parts[2].lower()}"
-                if _is_local_recipes_slug(slug):
+                api_slug = f"{parts[1].lower()}/{parts[2].lower()}"
+                if _is_local_recipes_slug(api_slug):
                     continue
             return reason
         if len(body) >= 3 and body[1] in ("pr", "issue", "release"):
@@ -1652,6 +1656,148 @@ def match_outward_mcp_submission(ctx: Context, rule: dict[str, Any]) -> Optional
     return reason
 
 
+# --------------------------------------------------------------------------
+# This checkout's root and the root of record -- the writer lock (steward
+# Story 121.4, fnd:CAP-8, fnd:AD-24).
+# --------------------------------------------------------------------------
+
+_CUTOVER_ROOT_MODULE = "pyforge.core.cutover_root"
+_CORE_SOURCE = Path("src") / "shared" / "packages" / "pyforge-core" / "src"
+_ROOTS_CACHE: dict[str, Any] = {}
+
+
+def _cutover_root() -> Any:
+    """`pyforge.core.cutover_root`: the one home of the root of record and of
+    each root's forge slug (`FORGE_SLUGS`; marshal Story 117.2,
+    spec-pyforge-core:CAP-13), reused here and never copied.
+
+    The installed module when this interpreter carries pyforge-core; otherwise
+    this hook's own tree's core source, put on `sys.path` for the one import
+    (the `_commit_msg_hook` precedent: reuse by path). The module is
+    stdlib-only, so the bare `python3` that runs this hook imports it. Neither
+    is a RuntimeError -- fail loud (exit 2), never a guessed slug or root.
+    """
+    cached = _ROOTS_CACHE.get("module")
+    if cached is not None:
+        return cached
+    try:
+        module = importlib.import_module(_CUTOVER_ROOT_MODULE)
+    except ImportError:
+        source = _hook_install_repo_root() / _CORE_SOURCE
+        if not (source / "pyforge" / "core" / "cutover_root.py").is_file():
+            raise RuntimeError(
+                f"cannot load {_CUTOVER_ROOT_MODULE}: pyforge-core is not installed "
+                f"and {source} holds no core source"
+            ) from None
+        sys.path.insert(0, str(source))
+        try:
+            module = importlib.import_module(_CUTOVER_ROOT_MODULE)
+        finally:
+            sys.path.remove(str(source))
+    _ROOTS_CACHE["module"] = module
+    return module
+
+
+def _this_root() -> str:
+    """`roots.this` from the hook's own tree's roster: the root this checkout
+    is, read as data (the name only; its slug is core's `FORGE_SLUGS`)."""
+    cached = _ROOTS_CACHE.get("this")
+    if cached is not None:
+        return str(cached)
+    roster_path = _hook_install_repo_root() / "docs" / "governance" / "guild-roster.json"
+    data = json.loads(roster_path.read_text(encoding="utf-8"))
+    roots = data.get("roots")
+    this = roots.get("this") if isinstance(roots, dict) else None
+    if not isinstance(this, str) or not this:
+        raise RuntimeError(
+            f"{roster_path} declares no 'roots.this': the hook cannot tell which root this checkout is"
+        )
+    _ROOTS_CACHE["this"] = this
+    return this
+
+
+def _this_forge_slug() -> str:
+    """This checkout's forge repository slug: `FORGE_SLUGS[roots.this]`."""
+    slugs = _cutover_root().FORGE_SLUGS
+    this = _this_root()
+    if this not in slugs:
+        raise RuntimeError(
+            f"roots.this {this!r} has no entry in {_CUTOVER_ROOT_MODULE}.FORGE_SLUGS"
+        )
+    return str(slugs[this])
+
+
+def _chain_glob_to_re(pattern: str) -> re.Pattern[str]:
+    """One `paths` glob read the way doctor's writer-lock source reads it
+    (chain.py's `_glob_to_re`, the branch half, spec-pyforge-doctor:CAP-100):
+    `**` spans path separators, `*` and `?` do not, anything else is literal."""
+    out: list[str] = []
+    i = 0
+    while i < len(pattern):
+        if pattern[i : i + 2] == "**":
+            out.append(".*")
+            i += 2
+        elif pattern[i] == "*":
+            out.append("[^/]*")
+            i += 1
+        elif pattern[i] == "?":
+            out.append("[^/]")
+            i += 1
+        else:
+            out.append(re.escape(pattern[i]))
+            i += 1
+    return re.compile("^" + "".join(out) + "$")
+
+
+def _chain_path(ctx: Context, rule: dict[str, Any]) -> Optional[str]:
+    """The edited file's path relative to its checkout when one of the
+    denial's declared `paths` globs matches it, else None."""
+    if ctx.file_path is None:
+        return None
+    globs = rule.get("paths")
+    if not isinstance(globs, list) or not globs or not all(isinstance(g, str) and g for g in globs):
+        raise RuntimeError(f"session_denials entry {rule.get('id')!r} declares no 'paths' glob list")
+    target = os.path.realpath(_resolve_against_cwd(ctx.cwd, ctx.file_path))
+    try:
+        rel = Path(target).relative_to(os.path.realpath(ctx.repo_root)).as_posix()
+    except ValueError:
+        return None
+    return rel if any(_chain_glob_to_re(g).match(rel) for g in globs) else None
+
+
+def _root_of_record_at(repo_root: Path) -> Any:
+    """`root_of_record()` as the checkout the write lands in sees it:
+    `PYFORGE_FLAGS_PATH` first, else core's walk up from that checkout -- the
+    hook process's own cwd is the harness's, not necessarily the tool call's.
+    A tree that raises `CutoverRootError` is not caught: it fails loud (exit 2)."""
+    module = _cutover_root()
+    before = os.getcwd()
+    os.chdir(repo_root)
+    try:
+        return module.root_of_record()
+    finally:
+        os.chdir(before)
+
+
+def match_chain_write_off_the_writer(ctx: Context, rule: dict[str, Any]) -> Optional[str]:
+    """Steward Story 121.4: the session half of the writer lock. An Edit or
+    Write to a chain path is allowed only on the writer -- `root_of_record()`
+    read from a flag tree (`source == 'flag-tree'`) names this checkout's
+    `roots.this`. A `default` answer proves no writer and denies with its own
+    reason. A Bash write is not matched here: doctor's writer-lock source
+    (Story 56.5) judges the branch for every harness."""
+    if _chain_path(ctx, rule) is None:
+        return None
+    this = _this_root()
+    record = _root_of_record_at(ctx.repo_root)
+    reasons = rule["reason"]
+    if record.source != "flag-tree":
+        return str(reasons["default"]).format(root=record.root, slug=record.forge_slug)
+    if record.root == this:
+        return None
+    return str(reasons["off_writer"]).format(root=record.root, slug=record.forge_slug)
+
+
 MATCHERS: dict[str, Callable[[Context, dict[str, Any]], Optional[str]]] = {
     "guild-task-via-local-recipes": match_guild_task_via_local_recipes,
     "adhoc-package-install": match_adhoc_package_install,
@@ -1672,6 +1818,7 @@ MATCHERS: dict[str, Callable[[Context, dict[str, Any]], Optional[str]]] = {
     "outward-github-write": match_outward_github_write,
     "outward-package-submission": match_outward_package_submission,
     "outward-mcp-submission": match_outward_mcp_submission,
+    "chain-write-off-the-writer": match_chain_write_off_the_writer,
 }
 
 

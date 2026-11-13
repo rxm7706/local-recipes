@@ -1,4 +1,4 @@
-"""Story 9.1/9.3 — the "declared, not implemented" half of CAP-2, AD-4, and AD-7.
+"""Story 9.1/9.3 — the "declared, not implemented" half of CAP-110, AD-4, and AD-7.
 
 Three frozen dataclasses an adopter fills in instead of hand-writing
 filtering, hand-wiring a trust boundary, or hand-picking an audit retention
@@ -71,7 +71,7 @@ _HTTP_TOKEN_RE = re.compile(r"[!#$%&'*+\-.^_`|~0-9A-Za-z]+\Z")
 
 @dataclass(frozen=True)
 class AccessDeclaration:
-    """CAP-2: the column that carries access, and the role vocabulary.
+    """CAP-110: the column that carries access, and the role vocabulary.
 
     ``access_column`` names the field of the master dataset that determines
     which rows a role may see; ``roles`` is the closed vocabulary of role
@@ -155,7 +155,7 @@ class TrustedIngress:
     ``identity_header``/``role_header`` name the proxy headers that carry
     identity and role — adopter-declared, never hardcoded, so the same
     dashboard runs behind two proxies that use different header names by
-    configuration alone (CAP-1). They must be different names.
+    configuration alone (CAP-109). They must be different names.
     """
 
     addresses: tuple[str, ...]

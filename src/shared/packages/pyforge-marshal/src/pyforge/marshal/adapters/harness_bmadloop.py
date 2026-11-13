@@ -2247,6 +2247,7 @@ class BmadLoopHarness:
             story_key=story_key,
             story_weighted_tokens=story_weighted_tokens,
             run_weighted_tokens=run_weighted_tokens,
+            # CAP-4: loop-home FILE read -- AD-3 harness seam: names the state.json the budget usage sample came from, not run-state truth
             sample_path=run_dir / "state.json",
             layer_savings=layer_savings,
             cost_estimate_usd=cost_estimate_usd,

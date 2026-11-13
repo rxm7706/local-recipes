@@ -3,14 +3,14 @@
   "skill_name": "pyforge-mason",
   "skill_type": "single",
   "source_repo": "src/shared/packages/pyforge-mason",
-  "source_commit": "c9e07879721e5a23e74c054383668026f49b0dc7",
+  "source_commit": "b69fd81eb812eb0a2de4580c4b04d9af41259ef8",
   "source_ref": "local",
-  "generated_at": "2026-10-05T17:19:19Z",
+  "generated_at": "2026-11-12T00:00:00Z",
   "grounding": {
-    "date": "2026-10-05",
-    "commit_short": "c9e07879",
+    "date": "2026-11-12",
+    "commit_short": "b69fd81eb8",
     "station": "mason",
-    "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-19-1-mason-s-station-skill-is-skf-compiled-exported-and-consulted-by-the-persona.md"
+    "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-29-5-the-station-skills-carry-the-fixes-the-2026-11-05-audit-accepted.md"
   },
   "entries": [
     {
@@ -20,7 +20,7 @@
       "params": [],
       "return_type": "argparse.ArgumentParser",
       "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py",
-      "source_line": 523,
+      "source_line": 560,
       "confidence": "T1-low",
       "extraction_method": "skf-extract-public-api",
       "ast_node_type": null,
@@ -35,7 +35,7 @@
       ],
       "return_type": "int",
       "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py",
-      "source_line": 1080,
+      "source_line": 1137,
       "confidence": "T1-low",
       "extraction_method": "skf-extract-public-api",
       "ast_node_type": null,

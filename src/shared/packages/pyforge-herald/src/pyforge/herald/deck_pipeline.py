@@ -1,4 +1,4 @@
-"""CAP-1 ``seed`` -- Story 1.6, the first bridge-core operation `cli.py`
+"""CAP-1/CAP-4 ``seed`` -- Story 1.6, the first bridge-core operation `cli.py`
 composes with ``bridge.run`` (``bridge.py``'s own docstring names this
 module and names ``seed`` as its first tenant).
 
@@ -14,7 +14,7 @@ never a concrete adapter, and the ``transport.base`` import below is
 the story spec's Design Notes:**
 
 1. **Conflict detection is pre-flight (state + registry), not
-   write-response-based.** ``bridge-protocol.md``'s CAP-1 success criterion
+   write-response-based.** ``bridge-protocol.md``'s seed success criterion (CAP-1/CAP-4)
    says re-seeding over existing Design-side edits "is refused with a
    structured conflict and writes nothing". Story 1.2's own deferred-work
    ledger (DW-1-2-5) records that a conflicted ``write_files``/``copy_files``
@@ -23,7 +23,7 @@ the story spec's Design Notes:**
    shape yet. This story therefore gates on two cheaper, well-evidenced
    signals instead, both checked *before any transport call at all* (so
    "writes nothing" holds by construction): first ``state.read`` (the
-   *operational* source of truth CAP-3/CAP-4 read from); if that finds
+   *operational* source of truth CAP-4's status and watch read from); if that finds
    nothing, ``registry.read`` against the deck's own README -- exactly the
    "bootstrap fallback" ``registry.py``'s own module doc names Story 1.6 as
    the wirer of. The fallback matters concretely: the four pilot decks
@@ -36,7 +36,7 @@ the story spec's Design Notes:**
    a corrupt-but-present link is still a link, not "nothing registered yet".
    Detecting a genuine write-level conflict from an unpinned wire shape
    remains out of this story's scope (deferred, ``deferred-work-ledger.md``).
-2. **``deck-stage.js`` is copied from a fixed pilot project.** CAP-1 step 6
+2. **``deck-stage.js`` is copied from a fixed pilot project.** Seed step 6 (CAP-1/CAP-4)
    is a server-side ``copy_files`` "from an existing deck project" -- the
    bootstrap dependency every *first* seed has. ``PILOT_SUPPORT_SOURCE_PROJECT_ID``
    pins the already-seeded ``pyforge-marshal`` pilot project
@@ -97,7 +97,7 @@ class SeedResult:
 
 @runtime_checkable
 class LocalProver(Protocol):
-    """The injectable local-prove seam (CAP-1 step 1: "prove locally before
+    """The injectable local-prove seam (seed step 1, CAP-1/CAP-4: "prove locally before
     any Design write"). Real implementation shells ``npm run extract`` then
     ``npm run build``; every test injects a hand-written fake -- mirrors
     Story 1.3's process-launch seam, for the same reason: a subprocess this
@@ -155,7 +155,7 @@ def seed(
     state_path: Path | None = None,
     prover: LocalProver | None = None,
 ) -> SeedResult:
-    """CAP-1: seed ``slug`` into Claude Design (``bridge-protocol.md`` §
+    """CAP-1/CAP-4: seed ``slug`` into Claude Design (``bridge-protocol.md`` §
     Seed, steps 1-8).
 
     Refuses before any transport call when ``slug`` already has a recorded
@@ -322,7 +322,7 @@ def seed(
     return SeedResult(project=project, persona=persona, prototype_filename=prototype_filename)
 
 
-# --- CAP-2: pull (Design -> repo), Story 2.1 --------------------------------
+# --- CAP-1/CAP-4: pull (Design -> repo), Story 2.1 --------------------------
 #
 # `bridge-protocol.md` § *Pull*: `read_file(path, if_none_match: <last-seen
 # etag>)` -> `{unchanged: true}` short-circuits (no body transferred, nothing
@@ -559,7 +559,7 @@ class _PixiPartialDeckExporter:
 
 
 class PptxTemplateExporter:
-    """CAP-1's ``.potx`` template-fill path (Story 23.3): routed to in
+    """CAP-41's ``.potx`` template-fill path (Story 23.3, CAP-33): routed to in
     place of ``PixiDeckExporter`` only for a deck whose README declares a
     ``.potx`` template (``select_exporter``, below). Replaces ONLY the
     "deck" PPTX target -- the one target whose content shape (a linear
@@ -623,7 +623,7 @@ def _default_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-# --- CAP-2: --commit, Story 2.2 ----------------------------------------------
+# --- CAP-1/CAP-4: --commit, Story 2.2 ----------------------------------------
 #
 # `bridge-protocol.md` § *Pull* step 5: "Commit is the operator's (or
 # `--commit`'s) move -- never implicit." Herald has no pre-existing
@@ -713,7 +713,7 @@ def pull_prototype(
     committer: GitCommitter | None = None,
     now: Callable[[], datetime] | None = None,
 ) -> PullResult:
-    """CAP-2, Story 2.1: pull the main prototype (``bridge-protocol.md`` §
+    """CAP-1/CAP-4, Story 2.1: pull the main prototype (``bridge-protocol.md`` §
     Pull, steps 1-4). Requires a prior ``seed`` (``_require_seeded_state``).
 
     On ``{unchanged: true}``: returns immediately with
@@ -786,7 +786,7 @@ def pull_prototype(
     )
 
 
-# --- CAP-2: authored-source pull (Marp sources), Story 2.3 -------------------
+# --- CAP-1/CAP-4: authored-source pull (Marp sources), Story 2.3 -------------
 #
 # `bridge-protocol.md` § *Authored-source pull*: same read/etag/decode loop as
 # the prototype pull, different landing path, NO extract/build step --
@@ -818,7 +818,7 @@ def pull_marp_source(
     committer: GitCommitter | None = None,
     now: Callable[[], datetime] | None = None,
 ) -> PullResult:
-    """CAP-2, Story 2.3: pull one authored Marp source (``bridge-protocol.md``
+    """CAP-1/CAP-4, Story 2.3: pull one authored Marp source (``bridge-protocol.md``
     § Authored-source pull). ``kind`` must be one of ``_MARP_KINDS``.
 
     Same read/etag/decode loop as ``pull_prototype`` (``_pull_and_land``,
@@ -893,7 +893,7 @@ def pull_marp_source(
     )
 
 
-# --- CAP-2: authored-source pull (standalone bundle), Story 2.4 -------------
+# --- CAP-1/CAP-4: authored-source pull (standalone bundle), Story 2.4 -------
 #
 # `bridge-protocol.md` § *Authored-source pull*: the Design-authored
 # "standalone bundle" (a richer, self-contained infographic HTML poster)
@@ -919,7 +919,7 @@ def pull_standalone_bundle(
     committer: GitCommitter | None = None,
     now: Callable[[], datetime] | None = None,
 ) -> PullResult:
-    """CAP-2, Story 2.4: pull the Design-authored standalone infographic
+    """CAP-1/CAP-4, Story 2.4: pull the Design-authored standalone infographic
     bundle (``bridge-protocol.md`` § Authored-source pull). Same
     read/etag/decode loop as ``pull_marp_source`` (``_pull_and_land``, Story
     2.1/2.3 reused unchanged) -- no re-decoding, a truncated answer refuses,
@@ -990,7 +990,7 @@ def pull_standalone_bundle(
     )
 
 
-# --- CAP-2 (from spec-design-sync-loop): adopt, Story 23.2 -------------------
+# --- CAP-30: adopt, Story 23.2 -----------------------------------------------
 #
 # `_require_seeded_state`'s own docstring names the gap: pulling (and
 # pushing) a deck needs a `project_id` `state.py` already has on record, and
@@ -1185,7 +1185,7 @@ def adopt(
     state_path: Path | None = None,
     now: Callable[[], datetime] | None = None,
 ) -> AdoptResult:
-    """Story 23.2 (CAP-2): adopt an existing Design project that has no
+    """Story 23.2 (CAP-30): adopt an existing Design project that has no
     local twin (or, `agentic-sdlc`'s case, an unregistered one) -- see the
     module comment above this function for why this cannot reuse `seed`
     (repo -> Design, creates a NEW remote project) or any `pull_*`
@@ -1282,7 +1282,7 @@ def adopt(
     )
 
 
-# --- CAP-3: status (Story 3.1/3.2) -------------------------------------------
+# --- CAP-4: status (Story 3.1/3.2) -------------------------------------------
 #
 # `bridge-protocol.md`'s pilot table (§ Pilot evidence) names the cautionary
 # fixture this pair of stories exists for: the "Local recipes repository
@@ -1314,7 +1314,7 @@ could produce by accident, comfortably below what a real repo mirror
 
 @dataclass(frozen=True)
 class DeckStatus:
-    """One deck's status report (CAP-3): whether it is linked to a Design
+    """One deck's status report (CAP-4): whether it is linked to a Design
     project, a fresh etag-based sync classification when it is, the
     last-pull timestamp `state.py` has on record, and the stale-hand-mirror
     flag (FR-12, Story 3.2).
@@ -1457,7 +1457,7 @@ def status(
     repo_root: Path,
     state_path: Path | None = None,
 ) -> list[DeckStatus]:
-    """CAP-3, Story 3.1/3.2: report every known deck's bridge state (or just
+    """CAP-4, Story 3.1/3.2: report every known deck's bridge state (or just
     ``slug``'s, when given), each with a fresh etag comparison against
     Design and the stale-hand-mirror flag (FR-12).
 
@@ -1503,9 +1503,9 @@ def _status_or_conflict(transport: DesignTransport, slug: str, state_path: Path)
         )
 
 
-# --- Story 23.1: account-wide reconciliation (CAP-1) -------------------------
+# --- Story 23.1: account-wide reconciliation (CAP-29) ------------------------
 #
-# `herald deck status` above (CAP-3) only ever reports on a deck this repo
+# `herald deck status` above (CAP-4) only ever reports on a deck this repo
 # already knows about -- a slug with a `presentations/<slug>/` directory or a
 # `state.py` entry. It has no way to see a Design project that exists in the
 # signed-in account but has no local twin at all: `docs/dreams/
@@ -1519,16 +1519,16 @@ def _status_or_conflict(transport: DesignTransport, slug: str, state_path: Path)
 # project is a presentation, "linked" when some local deck's own § *Design
 # project* section (`registry.read`, never `state.py`'s gitignored,
 # per-clone cache) names this exact project id, "untwinned" otherwise. Like
-# CAP-3's `status`, this is read-only end to end: it never calls a
+# CAP-4's `status`, this is read-only end to end: it never calls a
 # write-side transport method and never touches `state.py`.
 
 
 @dataclass(frozen=True)
 class AccountProjectStatus:
     """One Design project's account-wide reconciliation report (Story
-    23.1, CAP-1): every project ``transport.list_projects()`` returns,
+    23.1, CAP-29): every project ``transport.list_projects()`` returns,
     classified against the registry so ``herald deck status --account``
-    can report on all of them -- no project absent (CAP-1's own success
+    can report on all of them -- no project absent (CAP-29's own success
     signal) -- not just the ones a local README registry section already
     names.
 
@@ -1550,7 +1550,7 @@ def _twinned_project_ids(repo_root: Path) -> dict[str, str]:
     """Every local ``presentations/<slug>/`` deck's own registered Design
     project id, mapped back to its slug -- read from each deck's own README
     § *Design project* section (``registry.read``), the durable, git-tracked
-    record CAP-1 reconciles against (never ``state.py``'s gitignored,
+    record CAP-29 reconciles against (never ``state.py``'s gitignored,
     per-clone operational cache, which a fresh clone starts without --
     mirrors Story 20.13's identical "no second registry" ruling). A README
     with no such section, or that fails to parse, contributes nothing for
@@ -1587,9 +1587,9 @@ def _twinned_project_ids(repo_root: Path) -> dict[str, str]:
 
 
 def account_status(transport: DesignTransport, *, repo_root: Path) -> list[AccountProjectStatus]:
-    """CAP-1 (Story 23.1): enumerate every Design project the signed-in
+    """CAP-29 (Story 23.1): enumerate every Design project the signed-in
     account can see and reconcile it against the registry, so
-    ``herald deck status --account`` reports on all of it -- unlike CAP-3's
+    ``herald deck status --account`` reports on all of it -- unlike CAP-4's
     ``status`` above, which only ever reports on a slug this repo already
     knows about.
 
@@ -1600,7 +1600,7 @@ def account_status(transport: DesignTransport, *, repo_root: Path) -> list[Accou
     "linked" when some local deck's own registry section names this exact
     project id, "untwinned" otherwise.
 
-    Read-only, like CAP-3's ``status``: calls only
+    Read-only, like CAP-4's ``status``: calls only
     ``transport.list_projects``, never a write-side transport method, and
     never touches ``state.py``."""
     exclusions = registry.read_exclusions(repo_root / "presentations" / "README.md")
@@ -1648,7 +1648,7 @@ def account_status(transport: DesignTransport, *, repo_root: Path) -> list[Accou
     return results
 
 
-# --- CAP-5: export push-back, Epic 5 -----------------------------------------
+# --- CAP-4: export push-back, Epic 5 -----------------------------------------
 #
 # `bridge-protocol.md` § *Export push-back*: after `deck-export` regenerates the
 # derived set, push it into the Design project so Design holds the complete set
@@ -1673,7 +1673,7 @@ def account_status(transport: DesignTransport, *, repo_root: Path) -> list[Accou
 # companions. The poster's own text push stays byte-for-byte unchanged: it
 # never carries an `encoding` key.
 #
-# **`--prove` (Story 23.4, CAP-6).** `push_exports`'s optional `prove=True`
+# **`--prove` (Story 23.4, CAP-34).** `push_exports`'s optional `prove=True`
 # mechanizes the manual "curl the serve URL, strip the injected harness,
 # diff the bytes" recipe (`docs/how-to/presentation-deck.md` § *Large-file
 # uploads*) into a read-back assertion run right after a successful push:
@@ -1929,10 +1929,10 @@ def push_exports(
     prove: bool = False,
     now: Callable[[], datetime] | None = None,
 ) -> ExportPushResult:
-    """CAP-5, Story 5.1/5.2/23.6: push the derived export set back into
+    """CAP-4, Story 5.1/5.2/23.6: push the derived export set back into
     Design after a pull + ``deck-export`` regeneration (``bridge-protocol.md``
     § Export push-back). Requires a prior ``seed`` (``_require_seeded_state``,
-    reused from CAP-2).
+    reused from the pull, CAP-1/CAP-4).
 
     For each discovered export file (``_discover_export_files``): compares
     its freshly computed content hash against the ``f"export:{filename}"``
@@ -1960,7 +1960,7 @@ def push_exports(
     mistaken for a per-file conflict, and the caller isn't left hammering
     the remaining files against a connection that's still broken).
 
-    **``--prove`` (Story 23.4, CAP-6).** When ``prove=True``, every file
+    **``--prove`` (Story 23.4, CAP-34).** When ``prove=True``, every file
     that was actually written this run (never a skipped or conflicted one)
     is read back via ``transport.fetch_rendered_bytes`` and compared,
     after ``_strip_serve_harness``, against the exact bytes just sent. A

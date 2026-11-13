@@ -228,7 +228,7 @@ def test_an_empty_identity_header_value_sets_no_identity():
     """Review pass 2: `X-Forwarded-User:` (present, empty) passed the
     `is None` gate and put `''` on the scope -- a falsy-but-present identity
     every downstream consumer would have to remember to special-case.
-    CAP-1's degradation is the no-identity state, not an empty-string one.
+    CAP-109's degradation is the no-identity state, not an empty-string one.
     """
     events: list[dict] = []
     calls: list[dict] = []

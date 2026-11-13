@@ -255,6 +255,7 @@ from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from ..adapters.clock_system import SystemClock
 from ..adapters.forge_gh import GhForge
+from ..adapters.forge_root import forge_repo
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
 from ..adapters.vcs_git import GitVcs, VcsCommandError
@@ -287,6 +288,7 @@ from .config import (
     PolicyIOError,
     _read_project_policy,
     _suppress_downstream_pipe_close,
+    checkout_root,
     conventional_project_policy_path,
     repo_root,
 )
@@ -379,6 +381,7 @@ _LEDGER_LOCK_TIMEOUT_S = 5.0
 
 # Story 4.3's own journal kind (mirrors cli/init.py's `_ABANDON_KIND`
 # convention) -- one `observation` entry per manual landing.
+# CAP-4: loop-home FILE read -- marshal's own file: the journal marshal writes in its own run dir, not bmad-loop run state
 _LAND_JOURNAL_FILENAME = "journal.jsonl"
 _LAND_KIND = "manual-landing"
 
@@ -398,14 +401,12 @@ _BATCH_PR_WRITE_KIND = "deploy-batch-pr-write"
 _LEDGER_COMMIT_KIND = "deploy-reconcile-ledger-commit"
 _RECONCILIATION_KIND = "reconciliation"
 
-# Story 4.4's own repo constant: every Marshal station lives inside this ONE
-# physical repo (this repo's own `local-recipes` fork, per the team's own
-# reference note "gh pr create needs --repo rxm7706/local-recipes" -- this
-# repo is a staged-recipes fork, so the forge's own repo-inference from cwd
-# is never trustworthy here). No policy field names this -- it is not a
-# per-project decision the way `landing_base_branch` is; it is a fact about
-# which physical repo Marshal itself runs inside.
-_FORGE_REPO = "rxm7706/local-recipes"
+# Story 4.4 named the forge repository explicitly (`gh pr create --repo`): the
+# forge's own repo-inference from cwd is never trustworthy here. No policy
+# field names it -- it is not a per-project decision the way
+# `landing_base_branch` is. Story 115.4 (CAP-208): it is the root of record's
+# repository, read at each use through `adapters/forge_root.py::forge_repo`;
+# this module holds no repository slug.
 
 
 def add_deploy_subparser(subparsers: argparse._SubParsersAction) -> None:
@@ -2901,7 +2902,19 @@ def run_batch_pr(
         )
         return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
 
-    repo_ref = ForgeRef(_FORGE_REPO)
+    try:
+        repo_ref = ForgeRef(forge_repo())
+    except ForgeCommandError as exc:
+        findings.append(
+            Finding(
+                code=_MRS_DEPLOY_014,
+                severity=Severity.ERROR,
+                message=f"cannot resolve the forge repository for {head_branch!r}: {exc}",
+            )
+        )
+        data["opened"] = False
+        data["updated"] = False
+        return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
     head_branch_ref = ForgeRef(head_branch)
 
     # Hygiene preflight, BEFORE any PR write (the story's own Always
@@ -3573,30 +3586,29 @@ def _load_promote_sprint_status() -> object:
     story's own Approach: "reusing ... rather than shelling out where a
     direct call suffices").
 
-    Resolved via THIS module's own file location
-    (``Path(__file__).resolve().parents[8]``), NOT the ``repo_root()``
-    symbol this module otherwise imports and every OTHER path in
-    ``run_reconcile_completions`` is built from -- deliberately: that
-    symbol names the ACTIVE PROJECT's data root, freely redirected by
+    Resolved through ``cli/config.py::checkout_root()`` -- the guarded,
+    ``__file__``-anchored half of ``repo_root()`` (Story 115.1) -- NOT the
+    ``repo_root()`` symbol this module otherwise imports and every OTHER
+    path in ``run_reconcile_completions`` is built from -- deliberately:
+    that symbol names the ACTIVE PROJECT's data root, freely redirected by
     ``tests/unit/test_deploy.py``'s own ``monkeypatch.setattr(deploy_
     module, "repo_root", ...)`` into an isolated ``tmp_path`` sandbox for
     every OTHER test in this module, but ``scripts/promote_sprint_
     status.py`` is source code belonging to THIS checkout, always present
     alongside ``cli/deploy.py`` itself in every worktree of this repo --
-    never a project-relative data artifact. The exact same ``parents[8]``
-    relationship ``cli/config.py::repo_root()``'s own docstring documents
-    for its own identical file depth (``cli/config.py`` and
-    ``cli/deploy.py`` are siblings) -- mirrors ``scripts/spec_surface_
+    never a project-relative data artifact. Mirrors ``scripts/spec_surface_
     reconcile.py``'s own identical "always present on disk in any
     worktree of this repo" precedent for reaching a SIBLING source tree
-    the opposite direction (a script reaching a package).
+    the opposite direction (a script reaching a package). Under an
+    installed package there is no checkout above this module, and
+    ``checkout_root()`` raises ``RepoRootUnresolvedError`` -- never an
+    ``IndexError``, never a path inside the environment prefix.
 
-    Raises on any failure (missing file, a stale copy missing the
-    expected attribute, etc.) -- the caller, ``_repair_tier3_feed``,
-    folds that into ``MRS-DEPLOY-027``, never a hard crash of the whole
-    run."""
-    checkout_root = Path(__file__).resolve().parents[8]
-    path = checkout_root / "scripts" / "promote_sprint_status.py"
+    Raises on any failure (no source checkout, missing file, a stale copy
+    missing the expected attribute, etc.) -- the caller,
+    ``_repair_tier3_feed``, folds that into ``MRS-DEPLOY-027``, never a
+    hard crash of the whole run."""
+    path = checkout_root() / "scripts" / "promote_sprint_status.py"
     spec = importlib.util.spec_from_file_location("_promote_sprint_status", path)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)

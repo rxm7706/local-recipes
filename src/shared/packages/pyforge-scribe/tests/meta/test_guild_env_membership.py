@@ -16,6 +16,10 @@ from pathlib import Path
 
 import pytest
 
+# Story 33.1 (spec-pyforge-scribe CAP-31, relay of spec-pyforge-steward:CAP-175): the module reads the repository
+# outside this package, so it runs in the live-tree half.
+pytestmark = pytest.mark.live_tree
+
 
 def _repo_root() -> Path:
     here = Path(__file__).resolve()
@@ -25,7 +29,6 @@ def _repo_root() -> Path:
     raise AssertionError("could not locate repo root (pixi.toml + .claude/skills)")
 
 
-ROOT = _repo_root()
 # Every doc that teaches capture or recall (Story 19.4, EGM audit RUL-D6 / RUL-C4): the instruction
 # files, the how-to, the package README (the skill's SKF compile source) and the compiled skill,
 # named by its `active/` path in text.
@@ -43,7 +46,7 @@ HEAVY_EXTRAS = ("graphifyy", "cocoindex", "psycopg")
 
 
 def _pixi() -> dict:
-    return tomllib.loads((ROOT / "pixi.toml").read_text(encoding="utf-8"))
+    return tomllib.loads((_repo_root() / "pixi.toml").read_text(encoding="utf-8"))
 
 
 def test_scribe_core_is_a_guild_feature_dependency() -> None:
@@ -68,6 +71,6 @@ def test_heavy_scribe_extras_stay_out_of_the_guild_default(extra: str) -> None:
 
 @pytest.mark.parametrize("rel", GOVERNANCE_DOCS)
 def test_governance_docs_no_longer_route_capture_or_recall_to_the_scribe_env(rel: str) -> None:
-    text = (ROOT / rel).read_text(encoding="utf-8")
+    text = (_repo_root() / rel).read_text(encoding="utf-8")
     stale = re.findall(r"-e pyforge-scribe scribe (?:capture|recall)", text)
     assert not stale, f"{rel} still routes `scribe capture`/`recall` to -e pyforge-scribe: {stale}"

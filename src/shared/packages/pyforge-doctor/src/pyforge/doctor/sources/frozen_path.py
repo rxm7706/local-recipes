@@ -1,131 +1,127 @@
-"""The frozen-path-changed gather filter -- Doctor's verdict on whether a
-capability entering ``rebuilding``/``moving`` had one of its own frozen
-source paths touched by the working branch anyway (Story 20.3, Epic 20,
-architecture spine AD-22).
+"""The frozen-path-changed source -- the branch half of the freeze ``fnd:AD-22``
+states: a change under the frozen paths of a capability the ledger marks
+``rebuilding`` is a named FAIL (``spec-pyforge-doctor:CAP-94``, Story 56.1;
+first built by Story 20.3).
 
-**Why this detector exists.** AD-22 (``_bmad-output/projects/pyforge-steward/
-planning-artifacts/architecture/architecture-python-foundry-cutover-2026-09-04/
-ARCHITECTURE-SPINE.md:225``) says a capability entering ``rebuilding`` or
-``moving`` freezes its source paths in ``local-recipes`` at once, and names a
-``frozen-path-changed`` detector as the enforcement mechanism -- but nothing
-had built it (``cutover-readiness.md`` G11: "never built"). Until the real
-python-foundry cutover begins, no capability ledger exists at all
-(``docs/foundry/`` is empty today), so this detector spends most of its life
-reporting "nothing to check yet" -- but it must exist and be correct BEFORE
-the first capability enters ``rebuilding``/``moving``, not be built reactively
-after a frozen path is silently broken.
+**The rule.** ``fnd:AD-22`` (the steward spine,
+``_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/
+architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md``, as steward
+Story 120.3 amends it): each capability row carries its own ``state`` and its
+``frozen_paths``; a capability entering ``rebuilding`` freezes its
+``frozen_paths`` in ``local-recipes`` at once, and the freeze is this source's
+to judge, keyed by ledger state, never by the root-of-record flag.
 
-**The manifest schema is a documented synthesis, not a fixed contract.** The
-architecture spine defines two only loosely related schemas -- a per-FILE
-manifest row and a per-CAPABILITY row -- and neither, as literally written,
-carries a path-list field a detector could diff against. This module reads
-one YAML/JSON file at ``docs/foundry/manifest.{yaml,yml,json}`` (first found
-wins) holding a ``capabilities:`` list, each entry carrying ``capability``,
-``state``, and a ``frozen_paths`` list -- the minimal synthesis needed to
-build something real (``[ASSUMPTION: schema]`` -- see the story spec's Design
-Notes). If steward's own cutover work later lands a different concrete shape,
-updating ``_find_manifest``/``_load_capabilities`` to match is that later
-story's job, not a defect in this one.
+**The subject.** ``docs/foundry/capability-ledger.yaml`` and nothing else: the
+v1 ledger of ``spec-foundry-capability-ledger:CAP-1`` (schema
+``pyforge.capability-ledger/v1``; the one definition is that Spec's
+``modes.md`` § Schema v1, written by steward Story 120.2). Its rows carry
+``id``, ``state`` (``planned`` | ``rebuilding`` | ``verified-in-foundry`` |
+``cut``) and, on a rebuilding row, ``frozen_paths`` (each a repo-relative file
+or directory). The frozen set is the constant ``{"rebuilding"}``: no header
+key is read for it (the header's ``frozen_states`` holds the same constant),
+the retired ``moving`` state freezes nothing, and the ``cells:`` list is never
+read -- a cell is never frozen. The schema version is not checked, so a v0
+ledger (rows with no ``state``) reads ``0 frozen of <N> rows`` until steward
+Story 121.3 regenerates it. Story 20.3 probed a ``docs/foundry/manifest``
+file that never existed, so every run answered OK over no subject at all (the
+2026-11-10 cutover readiness audit, MUST 2); this module replaced that probe.
 
-**Read-only, one subprocess site.** Reads the capability ledger file and runs
-``git diff --name-only`` only -- no writes, no git mutation, no other
-subprocess (AD-5: ``cli_bridge`` is the sole subprocess site). ``_git``
-mirrors ``sources/ledger.py``'s own wrapper exactly.
+**Verdicts.**
 
-**Malformed ledger vs. absent ledger.** A found-but-malformed ledger
-(unparseable YAML/JSON, not a mapping, missing/non-list ``capabilities``) is a
-TRACKED-contract-file defect, not silent absence: ``_load_capabilities``
-RAISES and is left uncaught inside ``_gather``, so the outer
-``degrade_on_exception`` wrapper folds it into one generic WARN -- mirrors
-``bmad_method.py``'s CAP-1/CAP-2 "raise on a tracked file, degrade at the
-outer net" style, not Story 20.2's fail-open-per-layer style (a capability
-ledger, once it exists, is a real contract file whose corruption is worth
-flagging). An unresolvable git ref, or any other git failure, is instead a
-WARN emitted directly by ``_gather`` -- mirrors ``sources/ledger.py``'s own
-"unresolvable base ref... yields a WARN Finding" precedent for the identical
-``origin/main..HEAD`` shape.
+* a path changed between ``refs/remotes/origin/main`` and ``HEAD`` that equals
+  or sits under a rebuilding row's frozen path (``_is_frozen``): one FAIL per
+  (row id, changed path), naming both;
+* a rebuilding row with no ``frozen_paths`` (absent, not a list, or no
+  non-empty string in it): one FAIL, because it guards nothing;
+* no rebuilding row: one OK naming ``0 frozen of <N> rows``; rebuilding rows
+  with nothing changed under them: one OK naming ``<k> frozen of <N> rows``;
+* a missing, unreadable or unparseable ledger, one that is not a mapping or has
+  no ``capabilities`` list, or an unresolvable ``origin/main``: one
+  cannot-evaluate WARN (``frozen-path-changed-unevaluable``, evidence
+  ``unevaluable: true``), never an OK (``spec-pyforge-doctor:AD-15``). Anything
+  else raised inside ``_gather`` is folded into one WARN by the outer
+  ``degrade_on_exception`` net.
 
-**Why this source can FAIL, unlike most of this epic's siblings.** Epic 20's
-own framing paragraph says "HARD boundaries: every finding stays advisory --
-warn at most," but this story's own Given/When/Then is explicit: "a change
-under a frozen path is a fail naming the capability and the path." A more
-specific, deliberately-worded AC governs over the general framing sentence --
-this package already has extensive FAIL-capable precedent (``LEDGER_
-REGRESSION``, ``SPEC_SURFACE``, ``PLATFORM_POLICY_SUITE``, ...) proving
-"advisory, never a second PR gate" means never competing with Warden's own
-PR-approval mechanism, not a categorical ban on FAIL.
+**Why this source can FAIL.** "Advisory, never a second PR gate" means never
+competing with Warden's own PR-approval mechanism, not a categorical ban on
+FAIL: a change under a frozen path is a FAIL by ``spec-pyforge-doctor:CAP-94``'s
+own words, like the ``ledger-regression`` and ``spec-surface`` sources. The
+exit domain stays ``{0, 2, 130}`` (``spec-pyforge-doctor:AD-2``): a WARN never
+changes the exit code.
 
-**Independence.** Never imports ``pyforge.steward``/``pyforge.marshal`` or any
-other station package, never invokes ``steward cutover plan``, never writes
-to ``docs/foundry/**`` -- this source is structurally independent of the
-mechanism it inspects, same rule every sibling source in this package
-follows.
+**Read-only, one subprocess site, independent.** Reads the ledger as data and
+runs ``git diff --name-only`` through ``cli_bridge.run_git`` only
+(``spec-pyforge-doctor:AD-5``); writes nothing. Imports no station package and
+never invokes ``steward cutover plan`` (``spec-pyforge-doctor:AD-1``,
+``spec-pyforge-doctor:AD-11``).
 """
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import yaml
 
 from ..cli_bridge import CliBridgeError, run_git
-from ..models import DoctorStatus, Finding, Source
-from ..refs import ORIGIN_MAIN
+from ..models import UNEVALUABLE_EVIDENCE_KEY, DoctorStatus, Finding, Source
+from ..refs import ORIGIN_MAIN, display_ref
 from . import degrade_on_exception
 
 __all__ = ("gather",)
 
-#: Probed in this order under ``docs/foundry/`` -- first existing file wins.
-_MANIFEST_CANDIDATES: tuple[str, ...] = ("manifest.yaml", "manifest.yml", "manifest.json")
+#: The one subject, relative to the target: ``docs/foundry/capability-ledger.yaml``.
+_LEDGER_PARTS: tuple[str, ...] = ("docs", "foundry", "capability-ledger.yaml")
+_LEDGER_SHOWN = "/".join(_LEDGER_PARTS)
 
-#: AD-22's own rule: only these two states freeze a capability's paths.
-_FROZEN_STATES = frozenset({"rebuilding", "moving"})
+#: ``fnd:AD-22``: the one freezing state. A constant -- never read from the ledger's header.
+_FROZEN_STATES = frozenset({"rebuilding"})
 
 _CHECK = "frozen-path-changed"
+#: ``spec-pyforge-doctor:AD-15``'s ``<source>-unevaluable`` check for a cannot-evaluate WARN.
+_CHECK_UNEVALUABLE = f"{_CHECK}-unevaluable"
+
+
+class _Unevaluable(Exception):
+    """The ledger exists but cannot be read as a ledger -- a cannot-evaluate WARN, never an OK."""
 
 
 def _git(target: Path, *args: str) -> str | None:
     """``git`` stdout, or ``None`` on any failure -- mirrors
     ``sources/ledger.py``'s own ``_git`` wrapper exactly. Routes through
-    ``cli_bridge.run_git`` (AD-5: the sole subprocess site)."""
+    ``cli_bridge.run_git`` (``spec-pyforge-doctor:AD-5``: the sole subprocess site)."""
     try:
         return run_git(target, list(args))
     except CliBridgeError, UnicodeDecodeError:
         return None
 
 
-def _find_manifest(target: Path) -> Path | None:
-    """The first existing ``docs/foundry/manifest.{yaml,yml,json}`` file, in
-    that order, or ``None`` if none exists -- the dominant, expected outcome
-    for every real invocation until cutover begins."""
-    base = target / "docs" / "foundry"
-    for name in _MANIFEST_CANDIDATES:
-        candidate = base / name
-        if candidate.is_file():
-            return candidate
-    return None
+def _ledger_path(target: Path) -> Path:
+    """``<target>/docs/foundry/capability-ledger.yaml`` -- the only file this source reads."""
+    return target.joinpath(*_LEDGER_PARTS)
 
 
-def _load_capabilities(path: Path) -> list[dict]:
-    """Parse ``path`` (YAML or JSON, by extension) and return its
-    ``capabilities`` list.
+def _load_rows(path: Path) -> list[object]:
+    """The ledger's ``capabilities`` list, read as data.
 
-    RAISES ``ValueError``/``yaml.YAMLError``/``json.JSONDecodeError`` on
-    anything that doesn't parse to ``{"capabilities": [...]}`` -- deliberately
-    not caught here (Boundaries): a malformed tracked ledger propagates out of
-    ``_gather`` to the outer ``degrade_on_exception`` net, which folds it into
-    one generic WARN rather than this function inventing its own partial
-    recovery.
+    RAISES ``_Unevaluable`` when the file cannot be read, does not parse as
+    YAML, or does not parse to a mapping holding a ``capabilities`` list --
+    each is one cannot-evaluate WARN in ``_gather``. The header and ``cells:``
+    are never looked at.
     """
-    text = path.read_text(encoding="utf-8")
-    if path.suffix == ".json":
-        data = json.loads(text)
-    else:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise _Unevaluable(f"cannot be read ({type(exc).__name__})") from exc
+    try:
         data = yaml.safe_load(text)
-    if not isinstance(data, dict) or not isinstance(data.get("capabilities"), list):
-        raise ValueError(f"{path}: expected a mapping with a 'capabilities' list, got {data!r}")
-    return data["capabilities"]
+    except yaml.YAMLError as exc:
+        raise _Unevaluable(f"does not parse as YAML ({type(exc).__name__})") from exc
+    if not isinstance(data, dict):
+        raise _Unevaluable(f"is not a mapping (got {type(data).__name__})")
+    rows = data.get("capabilities")
+    if not isinstance(rows, list):
+        raise _Unevaluable("has no `capabilities` list")
+    return rows
 
 
 def _changed_paths(target: Path, *, base: str = ORIGIN_MAIN, head: str = "HEAD") -> set[str] | None:
@@ -159,126 +155,150 @@ def _is_frozen(changed_path: str, frozen_prefix: str) -> bool:
     ``src/foobar/x.py``. A trailing slash and a leading ``./`` on
     ``frozen_prefix`` are both normalized away first -- ``git diff
     --name-only`` output is always plain-relative with no leading ``./``, so
-    a manifest entry authored with one would otherwise never match a real
+    a ledger entry authored with one would otherwise never match a real
     changed path."""
     prefix = frozen_prefix.rstrip("/").removeprefix("./")
     return changed_path == prefix or changed_path.startswith(f"{prefix}/")
 
 
+def _is_rebuilding(row: dict) -> bool:
+    """Whether the row's ``state`` is in the constant frozen set. A non-string
+    ``state`` (a list, a mapping) freezes nothing and never crashes the lookup."""
+    state = row.get("state")
+    return isinstance(state, str) and state in _FROZEN_STATES
+
+
+def _row_id(row: dict) -> str:
+    # `or`, not a `.get(..., default)` second arg: an `id: null` row has the
+    # key PRESENT with value None, which would stringify to the text "None".
+    return str(row.get("id") or "<no id>")
+
+
+def _frozen_paths(row: dict) -> list[str]:
+    """The row's usable frozen paths: the non-empty strings of its ``frozen_paths``
+    list. Anything else in the list is skipped; a value that is not a list is none."""
+    paths = row.get("frozen_paths")
+    if not isinstance(paths, list):
+        return []
+    return [path for path in paths if isinstance(path, str) and path.strip()]
+
+
+def _unevaluable(message: str, **evidence: object) -> Finding:
+    return Finding(
+        source=Source.FROZEN_PATH_CHANGED,
+        check=_CHECK_UNEVALUABLE,
+        status=DoctorStatus.WARN,
+        message=f"{message} -- frozen paths cannot be evaluated",
+        evidence={"ledger": _LEDGER_SHOWN, **evidence, UNEVALUABLE_EVIDENCE_KEY: True},
+    )
+
+
 def _gather(target: Path) -> tuple[Finding, ...]:
-    manifest_path = _find_manifest(target)
-    if manifest_path is None:
+    ledger = _ledger_path(target)
+    if not ledger.is_file():
+        return (_unevaluable(f"capability ledger {_LEDGER_SHOWN} is missing"),)
+    try:
+        rows = _load_rows(ledger)
+    except _Unevaluable as exc:
+        return (_unevaluable(f"capability ledger {_LEDGER_SHOWN} {exc}"),)
+
+    total = len(rows)
+    # A row that is not a mapping is counted in <N> and freezes nothing.
+    rebuilding = [row for row in rows if isinstance(row, dict) and _is_rebuilding(row)]
+    if not rebuilding:
         return (
             Finding(
                 source=Source.FROZEN_PATH_CHANGED,
                 check=_CHECK,
                 status=DoctorStatus.OK,
-                message="no capability ledger found (pre-cutover)",
-                evidence={"searched": [str((target / "docs" / "foundry" / name)) for name in _MANIFEST_CANDIDATES]},
-            ),
-        )
-
-    # May raise (ValueError / yaml.YAMLError / json.JSONDecodeError) --
-    # deliberately left uncaught here; the outer degrade_on_exception net
-    # (wired by gather(), below) folds it into one generic WARN Finding.
-    capabilities = _load_capabilities(manifest_path)
-    manifest_evidence = str(manifest_path.relative_to(target))
-
-    frozen_capabilities = [cap for cap in capabilities if isinstance(cap, dict) and cap.get("state") in _FROZEN_STATES]
-
-    if not frozen_capabilities:
-        count = len(capabilities)
-        return (
-            Finding(
-                source=Source.FROZEN_PATH_CHANGED,
-                check=_CHECK,
-                status=DoctorStatus.OK,
-                message=(
-                    f"no capability is rebuilding/moving -- nothing frozen "
-                    f"({count} capabilit{'y' if count == 1 else 'ies'} checked)"
-                ),
-                evidence={"manifest": manifest_evidence, "checked": count},
-            ),
-        )
-
-    changed = _changed_paths(target)
-    if changed is None:
-        return (
-            Finding(
-                source=Source.FROZEN_PATH_CHANGED,
-                check=_CHECK,
-                status=DoctorStatus.WARN,
-                message="could not diff origin/main..HEAD",
-                evidence={
-                    "manifest": manifest_evidence,
-                    "frozen_capabilities": len(frozen_capabilities),
-                },
-            ),
-        )
-
-    violations: set[tuple[str, str]] = set()
-    total_frozen_paths = 0
-    for cap in frozen_capabilities:
-        # `or`, not a `.get(..., default)` second arg: a `capability: null`
-        # entry has the key PRESENT with value None, so `.get` would return
-        # None (not the default), stringifying to the literal text "None".
-        name = str(cap.get("capability") or "<unnamed>")
-        frozen_paths = cap.get("frozen_paths")
-        if not isinstance(frozen_paths, list):
-            frozen_paths = []
-        total_frozen_paths += len(frozen_paths)
-        for changed_path in changed:
-            if any(isinstance(prefix, str) and _is_frozen(changed_path, prefix) for prefix in frozen_paths):
-                violations.add((name, changed_path))
-
-    if not violations:
-        return (
-            Finding(
-                source=Source.FROZEN_PATH_CHANGED,
-                check=_CHECK,
-                status=DoctorStatus.OK,
-                message=(
-                    f"{len(frozen_capabilities)} frozen capabilit"
-                    f"{'y' if len(frozen_capabilities) == 1 else 'ies'} "
-                    f"checked ({total_frozen_paths} frozen path(s)) -- no "
-                    "changed path falls under a frozen prefix"
-                ),
-                evidence={
-                    "manifest": manifest_evidence,
-                    "checked_capabilities": len(frozen_capabilities),
-                    "checked_frozen_paths": total_frozen_paths,
-                },
+                message=f"0 frozen of {total} rows in {_LEDGER_SHOWN}",
+                evidence={"ledger": _LEDGER_SHOWN, "rows": total, "frozen": 0},
             ),
         )
 
     findings: list[Finding] = []
-    for name, changed_path in sorted(violations):
+    guarded: list[tuple[str, list[str]]] = []
+    for row in rebuilding:
+        row_id = _row_id(row)
+        paths = _frozen_paths(row)
+        if paths:
+            guarded.append((row_id, paths))
+            continue
         findings.append(
             Finding(
                 source=Source.FROZEN_PATH_CHANGED,
                 check=_CHECK,
                 status=DoctorStatus.FAIL,
-                message=(f"{name}: change under a frozen path -- {changed_path}"),
-                evidence={
-                    "manifest": manifest_evidence,
-                    "capability": name,
-                    "path": changed_path,
-                },
+                message=f"{row_id}: rebuilding with no frozen_paths -- it guards nothing",
+                evidence={"ledger": _LEDGER_SHOWN, "id": row_id},
             )
         )
-    return tuple(findings)
+
+    if not guarded:
+        return tuple(findings)
+
+    changed = _changed_paths(target)
+    if changed is None:
+        base = display_ref(ORIGIN_MAIN)
+        findings.append(
+            _unevaluable(
+                f"could not diff {base}..HEAD for {len(guarded)} frozen row(s)",
+                base=base,
+                head="HEAD",
+            )
+        )
+        return tuple(findings)
+
+    violations = sorted(
+        {
+            (row_id, changed_path)
+            for row_id, paths in guarded
+            for changed_path in changed
+            if any(_is_frozen(changed_path, prefix) for prefix in paths)
+        }
+    )
+    for row_id, changed_path in violations:
+        findings.append(
+            Finding(
+                source=Source.FROZEN_PATH_CHANGED,
+                check=_CHECK,
+                status=DoctorStatus.FAIL,
+                message=f"{row_id}: change under a frozen path -- {changed_path}",
+                evidence={"ledger": _LEDGER_SHOWN, "id": row_id, "path": changed_path},
+            )
+        )
+    if findings:
+        return tuple(findings)
+
+    frozen_path_count = sum(len(paths) for _, paths in guarded)
+    return (
+        Finding(
+            source=Source.FROZEN_PATH_CHANGED,
+            check=_CHECK,
+            status=DoctorStatus.OK,
+            message=(
+                f"{len(rebuilding)} frozen of {total} rows in {_LEDGER_SHOWN} "
+                f"({frozen_path_count} frozen path(s)) -- no changed path falls under one"
+            ),
+            evidence={
+                "ledger": _LEDGER_SHOWN,
+                "rows": total,
+                "frozen": len(rebuilding),
+                "frozen_paths": frozen_path_count,
+            },
+        ),
+    )
 
 
 def gather(target: Path) -> tuple[Finding, ...]:
-    """Judge whether ``origin/main..HEAD`` changed a path frozen by a
-    capability currently ``rebuilding``/``moving`` in the tracked capability
-    ledger (``docs/foundry/manifest.{yaml,yml,json}``).
+    """Judge whether ``origin/main..HEAD`` changed a path frozen by a row the
+    capability ledger (``docs/foundry/capability-ledger.yaml``) marks
+    ``rebuilding`` (``spec-pyforge-doctor:CAP-94``, ``fnd:AD-22``).
 
-    No ledger at all -- true for every real invocation until cutover begins
-    -- is OK. A malformed ledger degrades to one generic WARN via the outer
-    ``degrade_on_exception`` net; every other failure mode (no frozen
-    capability, no violation, an unresolvable git ref) is handled directly by
-    ``_gather``. A genuine violation is FAIL, one Finding per (capability,
-    changed path) pair.
+    A FAIL per (row id, changed path) and per rebuilding row with no frozen
+    paths; one OK naming ``<k> frozen of <N> rows`` otherwise; one
+    cannot-evaluate WARN when the ledger or the diff cannot be read
+    (``spec-pyforge-doctor:AD-15``). The outer ``degrade_on_exception`` net
+    folds anything else raised into one WARN.
     """
     return degrade_on_exception(Source.FROZEN_PATH_CHANGED, _CHECK, lambda: _gather(target))

@@ -1,5 +1,5 @@
 # GENERATED — do not hand-edit. Regenerate with:
-#     pixi run -e local-recipes sprint-ledger-sync
+#     pixi run -e pyforge-guild sprint-ledger-sync
 #
 # TRACKED twin of _bmad-output/projects/pyforge-marshal/implementation-artifacts/sprint-status.yaml
 # which is gitignored Tier-3 (.gitignore:736) and therefore invisible to CI and
@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 750
+# stories: 782
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -111,6 +111,28 @@ development_status:
   113-7-the-first-fleet-audit-runs-and-lands-its-residue: done
   113-8-a-challenge-that-did-not-fully-run-never-reads-as-clean-and-watch-shows-the-readiness-result: done
   113-9-the-challenger-model-is-a-claude-entry-of-marshal-s-own-catalog: done
+  114-1-every-marshal-capability-carries-a-marker-that-matches-the-ledger-and-the-spec-records-this-change-s-two-capabilities-and-seven-amendments: done
+  114-2-no-marshal-capability-or-constraint-names-a-file-flag-verb-or-skill-that-is-gone: done
+  114-3-marshal-s-public-contract-is-one-companion-and-a-meta-test-keeps-it-complete: done
+  115-1-marshal-finds-the-checkout-and-the-loop-home-through-its-guarded-roots-and-the-guard-that-says-so-can-fire: done
+  115-2-a-landing-reaches-the-spec-surface-verdict-through-doctor-s-command-never-an-import: done
+  115-3-marshal-mcp-registers-every-tool-it-lists-and-a-seed-failure-exits-with-the-code-its-taxonomy-documents: done
+  115-4-marshal-s-forge-repository-is-the-root-of-record-s: done
+  116-1-a-marshal-test-fails-never-skips-when-the-tree-it-reads-is-absent: done
+  116-2-marshal-s-suite-runs-as-a-package-local-half-and-a-live-tree-half: done
+  116-3-the-four-largest-landing-and-challenge-test-modules-keep-their-package-local-tests-in-the-package-half: done
+  116-4-a-package-half-test-that-opens-a-repository-file-outside-the-package-fails-wherever-the-package-half-runs: done
+  116-5-the-change-closes-on-a-reconciled-marshal-spec-shipped-markers-one-surface-reconcile-the-stamps-the-deferred-rows-and-the-counts: done
+  117-1-every-core-test-module-that-reads-the-repository-carries-the-live-tree-marker: done
+  117-2-one-function-answers-the-root-of-record-and-the-forge-slug: done
+  117-3-a-missing-purge-list-keeps-a-preserve-tag-local-instead-of-crashing-the-push: done
+  117-4-the-leaf-s-public-surface-is-written-down-and-the-suite-reds-what-it-lacks: done
+  117-5-the-core-spec-says-what-the-leaf-is-and-carries-epic-117-s-capabilities: done
+  117-6-a-station-left-out-of-a-kernel-guard-is-left-out-path-by-path-and-the-list-only-shrinks: done
+  117-7-the-flag-reader-s-tests-run-from-the-package-alone: done
+  117-8-the-kernel-specs-are-reconciled-and-stamped-once-after-the-last-edit-on-the-branch: done
+  118-1-the-testing-kit-s-suite-runs-without-the-host-and-its-public-surface-is-written-down: done
+  118-2-the-testing-charter-says-what-was-built-and-carries-epic-118-s-capabilities: done
   12-1-full-pixi-wiring-distribution-and-repo-gate-compliance: done
   12-2-the-local-recipes-empty-plan-oracle-critical: done
   12-3-offline-operation-and-the-egress-counter: done
@@ -576,6 +598,16 @@ development_status:
   epic-112-retrospective: optional
   epic-113: done
   epic-113-retrospective: optional
+  epic-114: done
+  epic-114-retrospective: optional
+  epic-115: done
+  epic-115-retrospective: optional
+  epic-116: done
+  epic-116-retrospective: optional
+  epic-117: done
+  epic-117-retrospective: optional
+  epic-118: done
+  epic-118-retrospective: optional
   epic-12: done
   epic-12-retrospective: optional
   epic-13: done

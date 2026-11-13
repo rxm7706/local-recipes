@@ -11,9 +11,10 @@ from pathlib import Path
 
 import pytest
 
+from pyforge import marshal as marshal_package
 from pyforge.marshal.scope import UNRECOGNIZED, ScopeDrift, verify_scope
 
-_SCOPE_SRC = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "scope.py"
+_SCOPE_SRC = Path(marshal_package.__file__).resolve().parent / "scope.py"
 
 
 def _point_triangle(root: Path, slug: str) -> None:

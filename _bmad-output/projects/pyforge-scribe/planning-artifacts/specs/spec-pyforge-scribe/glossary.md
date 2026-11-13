@@ -2,12 +2,25 @@
 
 Companion to `SPEC.md`, pointer-only: one line per station term the Spec uses that the 2026-11-01 EGM audit's
 reviewers found undefined (`../../research/egm-audit-2026-11-01.md`), each saying where the term is defined. Fleet
-terms (station, `CAP-n`, `FR-n`, `AD-n`, the tiers, Path B, the `(ready <date>)` and `(shipped <date>)` markers) are in
+terms (station, `CAP-n`, `FR-n`, `AD-n`, the tiers, Path B, the `(ready <date>)`, `(shipped <date>)` and
+`(retired <date>[: <reason>])` markers and their qualifiers) are in
 `docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md` § 0, § 2 and § 4. The cross-harness facts behind CAP-27
 and CAP-29 are in `../../research/multi-harness-instruction-surface-2026-09-19.md` (§ 7 for the `agents-md` mod); the
 decisions behind every CAP are in this folder's `.memlog.md`. Below, "the parity meta-test" is
 `src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py` and `catalog.py` is
 `src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py`.
+
+## Capture, compile and recall (CAP-1..CAP-3, CAP-17, CAP-18, CAP-21..CAP-23)
+
+- **Nested schema, `metadata.type`** — `CaptureRecord.to_frontmatter()` in the package's `models.py` (AD-3, AD-9); `.claude/memory/README.md` § Schema.
+- **Supersession's writer** — `capture(supersedes=)` in `capture.py`, read by `_apply_supersession()` in `compile.py` (CAP-2, AD-4).
+- **Trigger backend** — `--backend` or `PYFORGE_SCRIBE_TRIGGER_BACKEND` in `scripts/scribe_install_nightly_trigger.py` (its docstring names the four).
+- **Freshness check** — `scripts/scribe_graph_freshness_check.py`, `SCHEDULE_PERIOD_HOURS`.
+- **Cost ceiling** — `_DEFAULT_MAX_FILES`, `_DEFAULT_MAX_TOTAL_BYTES`, `_DEFAULT_PER_FILE_TIMEOUT_S` and the scan cache in `transcripts.py` (Story 3.3).
+- **Durable driver, plane driver** — `graph_store_pg.py` (owner `steward`) and `graph_store_plane.py` (owner `atlas`), chosen by `open_graph_store()` in `graph_store_plugins.py` (AD-5).
+- **The four changesets** — `src/platform/db/changelog/changes/pyforge-scribe-1..4*.sql`, under `spec-pyforge-unifying-strategy:CAP-14` (Non-goal *Not CAP-14*).
+- **MCP face** — django-scribe's `src/shared/packages/django-scribe/src/django_scribe_portal/mcp_asgi.py`; `contract.md` § MCP tools.
+- **Public contract** — `contract.md` in this folder (CAP-4).
 
 ## Instruction surface (CAP-27, CAP-29, CAP-30)
 

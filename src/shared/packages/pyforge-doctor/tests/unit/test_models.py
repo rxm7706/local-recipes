@@ -15,12 +15,14 @@ import pytest
 from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
 
 from pyforge.doctor.models import (
+    UNEVALUABLE_EVIDENCE_KEY,
     DoctorReport,
     DoctorStatus,
     Finding,
     Partition,
     Prescription,
     Source,
+    is_gather_failure,
 )
 
 _FIXTURES_DIR = Path(__file__).resolve().parent.parent / "fixtures"
@@ -234,6 +236,9 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         # Story 42.1 (CAP-81 / CAP-86): duplicate frontmatter keys in tracked
         # story specs.
         "frontmatter-duplicate-keys",
+        # Story 56.5 (spec-pyforge-doctor CAP-100): a chain path changed on a
+        # checkout that is not the writer.
+        "writer-lock",
     }
 
 
@@ -245,6 +250,57 @@ def test_finding_to_json_dict_shape():
         "message": "m",
         "evidence": {},
     }
+
+
+# --- is_gather_failure: the one predicate (Story 56.3, spec-pyforge-doctor:AD-15) ---
+
+
+def _shaped(status: DoctorStatus, evidence: dict, check: str = "x") -> Finding:
+    return Finding(source=Source.DREAM_CHAIN, check=check, status=status, message="m", evidence=evidence)
+
+
+@pytest.mark.parametrize(
+    "finding",
+    [
+        # the sources/atlas.py sentinel: its check, no evidence (a FAIL in that module)
+        _shaped(DoctorStatus.FAIL, {}, check="doctor.sources.atlas"),
+        # sources.degrade_on_exception's WARN
+        _shaped(DoctorStatus.WARN, {"exception": "OSError"}),
+        # a cannot-evaluate WARN
+        _shaped(DoctorStatus.WARN, {"target": "/x", UNEVALUABLE_EVIDENCE_KEY: True}),
+    ],
+    ids=["atlas-sentinel", "degrade-on-exception-warn", "unevaluable-warn"],
+)
+def test_is_gather_failure_matches_each_of_its_three_shapes(finding):
+    assert is_gather_failure(finding) is True
+
+
+@pytest.mark.parametrize(
+    "finding",
+    [
+        _shaped(DoctorStatus.WARN, {}),
+        _shaped(DoctorStatus.WARN, {"x": 1}),
+        _shaped(DoctorStatus.OK, {}),
+        # degrade_on_exception only ever emits a WARN: a FAIL naming an exception is a verdict
+        _shaped(DoctorStatus.FAIL, {"exception": "X"}),
+        # the marker must be True, not merely present, and only on a WARN
+        _shaped(DoctorStatus.WARN, {UNEVALUABLE_EVIDENCE_KEY: "no"}),
+        _shaped(DoctorStatus.OK, {UNEVALUABLE_EVIDENCE_KEY: True}),
+        # the atlas check name WITH evidence is a real finding about a package
+        _shaped(DoctorStatus.FAIL, {"delta": 3}, check="doctor.sources.atlas"),
+    ],
+    ids=[
+        "warn-empty-evidence",
+        "warn-real-evidence",
+        "ok",
+        "fail-with-exception-evidence",
+        "warn-marker-not-true",
+        "ok-with-marker",
+        "atlas-check-with-evidence",
+    ],
+)
+def test_is_gather_failure_leaves_a_real_finding_alone(finding):
+    assert is_gather_failure(finding) is False
 
 
 # --- Prescription -----------------------------------------------------

@@ -1552,6 +1552,73 @@ verify_commands = [
   "docs/dreams/pyforge-steward.md",
   "_bmad-output/projects/*/planning-artifacts/specs/*/.memlog.md",
 ]
+"120" = [  # the cutover contract says what the operator ruled on 2026-11-10 (spec-python-foundry-cutover, spec-foundry-regenerate-not-fold, spec-foundry-capability-ledger), added 2026-11-10.
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/**",
+  "src/shared/packages/pyforge-steward/tests/meta/test_cutover_case_list.py",
+  "docs/governance/spec-one-chain-per-station/**",
+  "docs/governance/spec-coverage-gate-independence/**",
+  "docs/foundry/frames/**",
+  "docs/dreams/pyforge-steward.md",
+  "docs/dreams/pyforge-unifying-strategy.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/*/.memlog.md",
+]
+"121" = [  # the cutover control plane: one generated capability ledger, one writer lock (fnd:CAP-8, fnd:CAP-9, fcl:CAP-1, fcl:CAP-2), added 2026-11-10.
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/**",
+  "docs/foundry/capability-ledger.yaml",
+  "docs/governance/guild-roster.json",
+  ".claude/hooks/pre-shell.py",
+  "tests/scripts/test_pre_shell_hook.py",
+  "docs/dreams/pyforge-steward.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/*/.memlog.md",
+]
+"122" = [  # the steward Spec says what the code does (spec-pyforge-steward CAP-179, CAP-180; the markers and text of existing capabilities), added 2026-11-10.
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/**",
+  "src/shared/packages/pyforge-steward/**",
+  "docs/reference/station-cheat-sheet.md",
+  "docs/map.yaml",
+  "docs/dreams/pyforge-steward.md",
+  "docs/dreams/pyforge-unifying-strategy.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/*/.memlog.md",
+]
+"123" = [  # the steward suite is an oracle a second root can run (spec-pyforge-steward CAP-181, CAP-182), added 2026-11-10.
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/*/.memlog.md",
+]
+"124" = [  # the shared surfaces carry what every station's cutover-readiness work needs (CAP-153, CAP-175; spec-pyforge-unifying-strategy CAP-4, CAP-14, CAP-16), added 2026-11-10.
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "docs/how-to/pixi-tasks.md",
+  "docs/reference/environments.md",
+  "docs/map.yaml",
+  ".github/workflows/pyforge-station-tests.yml",
+  "docs/governance/ci-surfaces.yaml",
+  "docs/governance/preflight-budgets.toml",
+  "src/shared/packages/pyforge-steward/**",
+  "src/shared/packages/pyforge-core/pixi.toml",
+  "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
+  "src/shared/packages/pyforge-testing-kit/pixi.toml",
+  "src/shared/packages/pyforge-marshal/pixi.toml",
+  "src/shared/packages/pyforge-warden/pixi.toml",
+  "scripts/target_version_check.py",
+  "src/platform/uv.lock",
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "src/platform/tests/test_openfeature_file_flags.py",
+  ".claude/skills/bmad-agent-atlas/**",
+  ".claude/skills/bmad-agent-doctor/**",
+  ".claude/skills/bmad-agent-herald/**",
+  ".claude/skills/bmad-agent-marshal/**",
+  ".claude/skills/bmad-agent-mason/**",
+  ".claude/skills/bmad-agent-scribe/**",
+  ".claude/skills/bmad-agent-steward/**",
+  ".claude/skills/bmad-agent-warden/**",
+  "docs/how-to/reach-a-station-mcp-endpoint.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/*/.memlog.md",
+]
 
 # dispatch (Story 85.1 / CAP-286 knobs), added 2026-10-13: steward's verify-fix turn gets 45 minutes, not the
 # 15-minute default. pyforge-steward-test alone runs ~4 minutes (2482 tests), so a fix turn that must re-run it two or

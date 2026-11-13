@@ -24,6 +24,11 @@ from pyforge.core.dispatch import (
     station_token_from_dist_name,
 )
 
+# Story 117.1 (spec-pyforge-core:CAP-14): this module reads every sibling station's package and steward's planning
+# specs outside pyforge-core, so it runs in the core suite's live-tree half (`-m live_tree`), never in the package
+# half a second root runs from the package alone.
+pytestmark = pytest.mark.live_tree
+
 
 class ParityMatrixError(AssertionError):
     """Raised when the matrix would silently skip a station CLI."""

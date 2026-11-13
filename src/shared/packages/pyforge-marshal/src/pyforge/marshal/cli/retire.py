@@ -105,6 +105,7 @@ _DONE_PHASE = "done"
 # `_journal_manual_landing`'s own "mint a fresh Tier-3 run directory, then
 # append one entry" shape (there is no pre-existing run a retirement sweep
 # belongs to, exactly like a manual landing).
+# CAP-4: loop-home FILE read -- marshal's own file: the journal marshal writes in its own run dir, not bmad-loop run state
 _RETIRE_JOURNAL_FILENAME = "journal.jsonl"
 _RETIRE_KIND = "branch-retirement"
 

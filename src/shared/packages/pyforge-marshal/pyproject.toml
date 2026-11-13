@@ -75,7 +75,13 @@ packages = ["src/pyforge"]
 # dominated by real `git worktree add` subprocess calls, too slow for the
 # default pyforge-marshal-test task (pixi.toml passes -m "not slow" there)
 # to stay a sub-minute loop. Mirrors pyforge-warden's identical convention.
-markers = ["slow: dominated by real git/subprocess calls, not part of the default pyforge-marshal-test task"]
+# Story 116.1 (spec-pyforge-marshal:CAP-305): a module that reads the live tree outside this package carries
+# `pytestmark = pytest.mark.live_tree` and fails, never skips, when what it reads is absent; the marker text is
+# steward's (Story 117.4, spec-pyforge-steward:CAP-175).
+markers = [
+    "slow: dominated by real git/subprocess calls, not part of the default pyforge-marshal-test task",
+    "live_tree: the module reads the repository outside its own package (planning artifacts, docs, pixi.toml, the workflows, other stations); it runs in the station's live-tree half and fires on what it reads",
+]
 
 [tool.importlinter]
 root_packages = ["pyforge.marshal"]

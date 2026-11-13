@@ -2,8 +2,9 @@
 
 An archived Dream under ``archive/docs/dreams/`` must have every long
 paragraph of its body in its station Dream before its file moves. Fixtures
-build a tiny tree under ``tmp_path``; the live-tree tests at the bottom run
-the gather and the CLI on this checkout (the "today's main" leg).
+build a tiny tree under ``tmp_path``; the live-tree tests that run the gather
+and the CLI on this checkout (the "today's main" leg) are in
+``test_live_sources_one_chain_fold_complete.py``.
 """
 
 from __future__ import annotations
@@ -19,23 +20,18 @@ from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import __main__ as dispatch
 from pyforge.doctor.sources import one_chain
 
-# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
-# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
-pytestmark = pytest.mark.live_tree
-
-try:
-    _REPO_ROOT: Path | None = Path(__file__).resolve().parents[6]
-except IndexError:
-    _REPO_ROOT = None
-
-
-def _live_root() -> Path:
-    if _REPO_ROOT is None or not (_REPO_ROOT / ".claude").is_dir():
-        pytest.skip("live repo root not resolvable from this checkout")
-    return _REPO_ROOT
+# Doctor Story 58.1 (spec-pyforge-doctor:CAP-97): no test here reads this repository, so the module runs in the
+# package half; the tests that do run in test_live_sources_one_chain_fold_complete.py.
 
 
 # --- fixture tree ------------------------------------------------------------
+
+# Paths the fixture tree reuses by their real names, built as joins: a bare literal naming a tracked file would read
+# as a live read of this repository (steward's scan_strings).
+_MASON_DREAM = "/".join(("docs", "dreams", "pyforge-mason.md"))
+_ATLAS_DREAM = "/".join(("docs", "dreams", "pyforge-atlas.md"))
+_DECKCRAFT = "/".join(("archive", "docs", "dreams", "deckcraft.md"))
+_BASELINE_REL = "/".join(("docs", "governance", "fold-complete-baseline.json"))
 
 
 def _para(tag: str) -> str:
@@ -56,7 +52,7 @@ def _dream_text(body: str, **fm: str) -> str:
 
 def _archived(root: Path, name: str, body: str, **fm: str) -> Path:
     fm = {"owner": "mason", "status": "archived", **fm}
-    return _write(root, f"archive/docs/dreams/{name}.md", _dream_text(body, **fm))
+    return _write(root, "/".join(("archive", "docs", "dreams", f"{name}.md")), _dream_text(body, **fm))
 
 
 def _station(root: Path, owner: str, body: str) -> Path:
@@ -131,7 +127,7 @@ def test_a_complete_fold_reports_an_ok_naming_the_file(tmp_path: Path) -> None:
     _station(root, "mason", f"{_para('one')}\n\n{_para('two')}\n")
     (ok,) = _by_check(one_chain.gather_fold_complete(root))["fold-complete-ok"]
     assert ok.status is DoctorStatus.OK
-    assert "archive/docs/dreams/foo.md" in ok.message and "docs/dreams/pyforge-mason.md" in ok.message
+    assert "archive/docs/dreams/foo.md" in ok.message and _MASON_DREAM in ok.message
     assert ok.evidence["paragraphs"] == 2 and ok.evidence["owner"] == "mason"
 
 
@@ -152,7 +148,7 @@ def test_one_missing_paragraph_fails_naming_file_and_count(tmp_path: Path) -> No
     assert "1 paragraph missing" in f.message
     assert f.evidence["missing"] == 1 and f.evidence["paragraphs"] == 2
     assert f.evidence["missing_excerpts"] == [_para("two")[:80]]
-    assert f.evidence["station_dream"] == "docs/dreams/pyforge-mason.md"
+    assert f.evidence["station_dream"] == _MASON_DREAM
 
 
 def test_several_missing_paragraphs_are_counted_and_pluralised(tmp_path: Path) -> None:
@@ -241,7 +237,7 @@ def test_missing_station_dream_fails_naming_it(tmp_path: Path) -> None:
     (f,) = _by_check(one_chain.gather_fold_complete(root))["fold-complete-no-station-dream"]
     assert f.status is DoctorStatus.FAIL
     assert "archive/docs/dreams/foo.md" in f.message
-    assert "docs/dreams/pyforge-atlas.md" in f.message
+    assert _ATLAS_DREAM in f.message
 
 
 def test_a_non_utf8_station_dream_fails_as_unreadable(tmp_path: Path) -> None:
@@ -252,7 +248,7 @@ def test_a_non_utf8_station_dream_fails_as_unreadable(tmp_path: Path) -> None:
     station.write_bytes(b"\xff\xfe\x00 not utf-8 \x80\x81")
     (f,) = _by_check(one_chain.gather_fold_complete(root))["fold-complete-no-station-dream"]
     assert f.status is DoctorStatus.FAIL
-    assert "archive/docs/dreams/foo.md" in f.message and "docs/dreams/pyforge-mason.md" in f.message
+    assert "archive/docs/dreams/foo.md" in f.message and _MASON_DREAM in f.message
 
 
 def test_two_owners_are_each_judged_against_their_own_station_dream(tmp_path: Path) -> None:
@@ -278,7 +274,7 @@ def test_a_paragraph_in_the_wrong_station_dream_does_not_count(tmp_path: Path) -
     findings = one_chain.gather_fold_complete(root)
     (f,) = _fails(findings)
     assert f.check == "fold-complete-incomplete"
-    assert "archive/docs/dreams/b-atlas.md" in f.message and "docs/dreams/pyforge-atlas.md" in f.message
+    assert "archive/docs/dreams/b-atlas.md" in f.message and _ATLAS_DREAM in f.message
     assert _by_check(findings)["fold-complete"][0].evidence["complete"] == ["archive/docs/dreams/a-mason.md"]
 
 
@@ -296,7 +292,7 @@ def test_each_archived_dream_is_judged_on_its_own(tmp_path: Path) -> None:
 # --- AC 6: the archived-in-live-tree countdown -------------------------------
 
 
-def test_archived_dreams_in_the_live_tree_are_one_warn_with_per_station_counts(tmp_path: Path) -> None:
+def test_archived_dreams_in_docs_dreams_are_one_warn_with_per_station_counts(tmp_path: Path) -> None:
     root = _tree(tmp_path)
     # filename order (a-herald, b-doctor) is the reverse of station order, so the
     # message is only "doctor 1, herald 1" if the join sorts by station
@@ -312,7 +308,7 @@ def test_archived_dreams_in_the_live_tree_are_one_warn_with_per_station_counts(t
     assert warn.evidence["by_station"] == {"doctor": 1, "herald": 1}
 
 
-def test_no_archived_dream_in_the_live_tree_is_no_warn(tmp_path: Path) -> None:
+def test_no_archived_dream_in_docs_dreams_is_no_warn(tmp_path: Path) -> None:
     root = _tree(tmp_path)
     _write(root, "docs/dreams/live.md", _dream_text("x\n", owner="doctor", status="specified"))
     assert not [f for f in one_chain.gather_fold_complete(root) if f.status is DoctorStatus.WARN]
@@ -325,7 +321,7 @@ def test_an_ownerless_archived_dream_is_counted_under_unknown(tmp_path: Path) ->
     assert warn.evidence["by_station"] == {"unknown": 1}
 
 
-def test_unreadable_frontmatter_in_the_live_tree_is_reported_beside_the_count(tmp_path: Path) -> None:
+def test_unreadable_frontmatter_in_docs_dreams_is_reported_beside_the_count(tmp_path: Path) -> None:
     root = _tree(tmp_path)
     _write(root, "docs/dreams/one.md", _dream_text("x\n", owner="doctor", status="archived"))
     _write(root, "docs/dreams/glued.md", "---title: Glued\nstatus: archived\n---\nx\n")
@@ -371,7 +367,7 @@ def _record_opens(monkeypatch: pytest.MonkeyPatch) -> Iterator[list[str]]:
 
 def test_a_baselined_file_is_ok_and_never_read(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     root = tmp_path / "repo"
-    listed = "archive/docs/dreams/deckcraft.md"
+    listed = _DECKCRAFT
     _write(root, listed, "no frontmatter, no owner: would be a FAIL if it were read\n")
     _baseline(root, listed)
 
@@ -387,7 +383,7 @@ def test_a_baselined_file_is_ok_and_never_read(tmp_path: Path, monkeypatch: pyte
 
 def test_a_baselined_file_reports_an_ok_naming_it(tmp_path: Path) -> None:
     root = tmp_path / "repo"
-    listed = "archive/docs/dreams/deckcraft.md"
+    listed = _DECKCRAFT
     _write(root, listed, "not read\n")
     _baseline(root, listed)
     (f,) = _by_check(one_chain.gather_fold_complete(root))["fold-complete-baselined"]
@@ -397,7 +393,7 @@ def test_a_baselined_file_reports_an_ok_naming_it(tmp_path: Path) -> None:
 
 def test_the_recorder_catches_an_unbaselined_file_being_read(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     root = tmp_path / "repo"
-    _write(root, "archive/docs/dreams/deckcraft.md", "not baselined\n")
+    _write(root, _DECKCRAFT, "not baselined\n")
     _baseline(root)
     with _record_opens(monkeypatch) as opened:
         one_chain.gather_fold_complete(root)
@@ -406,7 +402,7 @@ def test_the_recorder_catches_an_unbaselined_file_being_read(tmp_path: Path, mon
 
 def test_a_file_missing_from_the_baseline_is_measured(tmp_path: Path) -> None:
     root = tmp_path / "repo"
-    _write(root, "archive/docs/dreams/deckcraft.md", "no owner here\n")
+    _write(root, _DECKCRAFT, "no owner here\n")
     _baseline(root, "archive/docs/dreams/other.md")
     assert [f.check for f in _fails(one_chain.gather_fold_complete(root))] == ["fold-complete-no-owner"]
 
@@ -419,6 +415,7 @@ def test_a_missing_or_unreadable_baseline_is_a_warn_not_a_crash(tmp_path: Path, 
         _write(root, str(one_chain.FOLD_COMPLETE_BASELINE_REL), payload)
     (f,) = one_chain.gather_fold_complete(root)
     assert f.check == "fold-complete-no-baseline" and f.status is DoctorStatus.WARN
+    assert f.evidence["unevaluable"] is True  # Story 56.4: a cannot-evaluate WARN carries the marker
 
 
 def test_an_empty_tree_is_an_ok_summary(tmp_path: Path) -> None:
@@ -437,8 +434,8 @@ def test_the_check_is_read_only(tmp_path: Path) -> None:
     assert {p: p.read_bytes() for p in before} == before
     assert sorted(p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file()) == [
         "archive/docs/dreams/foo.md",
-        "docs/dreams/pyforge-mason.md",
-        "docs/governance/fold-complete-baseline.json",
+        _MASON_DREAM,
+        _BASELINE_REL,
     ]
 
 
@@ -457,37 +454,4 @@ def test_cli_exits_2_on_an_incomplete_fold_and_0_on_a_complete_one(
     assert "fold-complete-incomplete: fail" in capsys.readouterr().out
 
     _station(root, "mason", _para("one"))
-    assert dispatch.main(["fold-complete"]) == 0
-
-
-# --- live tree (conformance legs) --------------------------------------------
-
-
-def test_live_baseline_names_the_seven_non_fold_paths() -> None:
-    root = _live_root()
-    data = json.loads((root / one_chain.FOLD_COMPLETE_BASELINE_REL).read_text(encoding="utf-8"))
-    assert "$comment" in data
-    assert data["paths"] == sorted(data["paths"])
-    assert set(data["paths"]) <= {
-        "archive/docs/dreams/deckcraft.md",
-        "archive/docs/dreams/design-code-bridge.md",
-        "archive/docs/dreams/herald-pitch-deck-family-expansion.md",
-        "archive/docs/dreams/modernist-identity.md",
-        "archive/docs/dreams/pyforge-genesis.md",
-        "archive/docs/dreams/pyforge-unifying-strategy-2026-08-23-topology.md",
-        "archive/docs/dreams/video-scripts.md",
-    }  # the baseline only ever shrinks
-
-
-def test_live_tree_has_no_fail_and_no_stray_baseline_warn() -> None:
-    root = _live_root()
-    findings = one_chain.gather_fold_complete(root)
-    assert not _fails(findings), [f.message for f in _fails(findings)]
-    assert not any(f.check == "fold-complete-no-baseline" for f in findings)
-    # the only WARN the live tree may carry is the migration countdown
-    assert {f.check for f in findings if f.status is DoctorStatus.WARN} <= {"fold-complete-archived-in-live-tree"}
-
-
-def test_live_cli_exits_0(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.chdir(_live_root())
     assert dispatch.main(["fold-complete"]) == 0

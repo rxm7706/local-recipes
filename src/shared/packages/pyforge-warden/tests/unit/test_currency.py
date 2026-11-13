@@ -828,30 +828,8 @@ def test_bundled_registry_facts_the_suite_relies_on():
     ), "the slug-routing tests pin python as a source:endoflife slug-map entry"
 
 
-def test_bundled_registry_matches_the_cfe_canonical_source_when_present():
-    """The bundled registry is regenerated from the CFE canonical source
-    (registry header contract): the parsed DATA must stay equal -- only the
-    bundled header comment block may differ (review finding, 2026-07-23).
-    Runs only in the monorepo checkout; the canonical file is not part of
-    the installed package."""
-    import yaml
-
-    canonical = (
-        Path(__file__).resolve().parents[6]
-        / ".claude"
-        / "skills"
-        / ("conda-forge-expert")
-        / "data"
-        / "lts-registry.yaml"
-    )
-    if not canonical.is_file():
-        pytest.skip("CFE canonical registry not present (non-monorepo context)")
-    canonical_doc = yaml.safe_load(canonical.read_text(encoding="utf-8"))
-    assert canonical_doc == _load_registry(), (
-        "bundled data/lts-registry.yaml drifted from the CFE canonical "
-        "source -- re-copy it (data verbatim; keep the bundled header "
-        "comment block)"
-    )
+# Story 27.1: the bundled registry's equality check against the CFE canonical source reads the
+# conda-forge-expert skill outside this package, so it lives in test_currency_cfe_parity.py (the live-tree half).
 
 
 def test_currency_findings_drops_colliding_snapshot_keys_entirely(component_factory, monkeypatch, tmp_path):

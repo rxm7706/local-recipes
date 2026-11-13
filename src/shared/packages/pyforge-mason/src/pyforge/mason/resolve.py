@@ -258,8 +258,13 @@ class ResolvedFactoryIsland:
 
 
 def is_factory_recipe_path(recipe_path: str) -> bool:
-    """Return ``True`` when ``recipe_path`` names a factory-island recipe."""
-    normalized = recipe_path.replace("\\", "/").lstrip("./")
+    """Return ``True`` when ``recipe_path`` names a factory-island recipe.
+
+    Only ``factory/recipes/<r>`` and ``./factory/recipes/<r>`` qualify: one
+    leading ``./`` is stripped, never a run of dots and slashes, so
+    ``../factory/recipes/<r>``, ``/factory/recipes/<r>`` and
+    ``..factory/recipes/<r>`` are not island paths (Story 39.1, CAP-36)."""
+    normalized = recipe_path.replace("\\", "/").removeprefix("./")
     return normalized.startswith(_FACTORY_RECIPES_PREFIX)
 
 
@@ -268,7 +273,10 @@ def resolve_foundry_root(
     environ: Mapping[str, str],
     start_directory: Path,
 ) -> Path | None:
-    """Resolve the python-foundry git root: flag/env -> upward walk -> ``None``.
+    """Resolve the python-foundry git root: explicit/env -> upward walk -> ``None``.
+
+    ``explicit`` is the caller's own value (``recipe.build`` passes the
+    ``MASON_FOUNDRY_ROOT`` it read); there is no foundry-root flag.
 
     The walk marker is ``factory/pixi.toml`` plus ``factory/pixi.lock`` at
     the same directory level — the island lock the spec requires (R-17b).
@@ -313,8 +321,8 @@ def resolve_factory_island(
     if foundry is None:
         raise FactoryIslandMissingError(
             "the python-foundry root could not be resolved for a factory/recipes/ "
-            "build: set --foundry-root, set MASON_FOUNDRY_ROOT, or run from "
-            "within a clone that contains factory/pixi.toml and factory/pixi.lock"
+            "build: set MASON_FOUNDRY_ROOT, or run from within a clone that "
+            "contains factory/pixi.toml and factory/pixi.lock"
         )
 
     factory_root = foundry / "factory"
@@ -324,7 +332,7 @@ def resolve_factory_island(
             "factory/pixi.toml and factory/pixi.lock (Story 44.7 / R-17b)"
         )
 
-    normalized = recipe_path.replace("\\", "/").lstrip("./")
+    normalized = recipe_path.replace("\\", "/").removeprefix("./")
     slug = normalized.removeprefix(_FACTORY_RECIPES_PREFIX)
     if not slug or slug.endswith("/"):
         raise FactoryIslandMissingError(

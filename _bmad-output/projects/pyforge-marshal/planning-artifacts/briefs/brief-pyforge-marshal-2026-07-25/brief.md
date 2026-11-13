@@ -2,7 +2,7 @@
 title: Marshal — graduated autonomy on the factory floor
 status: draft
 created: 2026-07-25
-updated: "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior 2026-11-01  # currency reconciliation — the EGM audit research (2026-11-01) folded in; the zero-false-greens criterion extends to the challenger's own reads. See "Currency reconciliation — 2026-11-01".
+updated: "2026-11-13"   # RE-STAMPED 2026-11-13 (cutover readiness, marshal Story 116.5, the chain close (CHAIN-STANDARD § 3 step 7)): chain-currency cascade (research -> brief) for the 2026-11-10 cutover readiness research; spec-pyforge-marshal:CAP-304 and spec-pyforge-marshal:CAP-305 read shipped; the product scope does not change; no CAP, FR or AD is minted. See "Currency reconciliation — 2026-11-13 (Story 116.5)". Prior "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior 2026-11-01  # currency reconciliation — the EGM audit research (2026-11-01) folded in; the zero-false-greens criterion extends to the challenger's own reads. See "Currency reconciliation — 2026-11-01".
 # 2026-10-04  # currency reconciliation — the preserved-work-refs research (2026-10-04) and its review folded in; durability of saved work joins the problem and success criteria. See "Currency reconciliation — 2026-10-04".
 # 2026-08-26  # currency reconciliation — the 2026-08-08 research triad (domain/market/technical refresh + technical-pyforge-unification) folded in; shipped state re-grounded at 165/165 stories, Epics 1-27; harness era corrected to bmad-loop >=0.11.0,<0.12. See "Currency reconciliation - 2026-08-26" at the end of this file.
 # 2026-08-02  # genesis-installer brief consolidated in as a Satellite section (explicit user override); competitive re-framing + Epic-1 shipped facts + Q3 resolution (see JSON block)
@@ -657,3 +657,7 @@ Stories 113.8–113.14).
 *Chain-currency cascade (research -> brief), EGM audit, marshal Story 113.18.*
 
 The station's audit record joins this brief's inputs: `research/egm-audit-2026-11-05.md` (marshal Story 113.18, `spec-pyforge-marshal:CAP-302`): 15 high findings, 11 accepted, 4 rejected, 0 deferred; the medium and low findings are not triaged. The product scope does not change.
+
+## Currency reconciliation — 2026-11-13 (Story 116.5)
+
+*Chain close (CHAIN-STANDARD § 3 step 7), cutover readiness, marshal Story 116.5.* The 2026-11-10 research (`research/cutover-readiness-audit-2026-11-10.md`, `research/cutover-readiness-audit-core-host-2026-11-10.md`, `research/cap-marker-truth-2026-11-10.md`) joins this brief's inputs: `spec-pyforge-marshal:CAP-304` (the public contract is one companion) and `spec-pyforge-marshal:CAP-305` (the suite is an oracle off the monorepo) read `(shipped 2026-11-11)`, the seven amended capabilities read shipped beside them, and the audit's open gaps are rows of the deferred-work ledger; the product scope does not change.

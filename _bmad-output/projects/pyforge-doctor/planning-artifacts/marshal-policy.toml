@@ -576,6 +576,41 @@ verify_commands = [
   "_bmad-output/projects/*/planning-artifacts/specs/*/.memlog.md",
 ]
 
+"56" = [  # the cutover's detectors read the real ledger and the writer lock, and a source that measured nothing is never a pass (CAP-93, CAP-94, CAP-95, CAP-100), added 2026-11-10.
+  "src/shared/packages/pyforge-doctor/**",
+  "scripts/detectors.py",
+  "tests/scripts/test_detectors_doctor_sources.py",
+  "docs/reference/judgement-vocabulary.md",
+  "docs/how-to/run-and-understand-detectors.md",
+  "docs/reference/detectors.md",
+  "docs/map.yaml",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/**",
+  "docs/dreams/pyforge-doctor.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/*/.memlog.md",
+]
+
+"57" = [  # the doctor Spec says what the code does, and its public contract is written once (CAP-96..CAP-99; decisions D1 and D4), added 2026-11-10.
+  "src/shared/packages/pyforge-doctor/**",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/**",
+  "docs/dreams/pyforge-doctor.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/*/.memlog.md",
+]
+
+"58" = [  # the package-local half is the rebuild oracle, and the branch's baselines name only live Specs (CAP-97, CAP-59), added 2026-11-10.
+  "src/shared/packages/pyforge-doctor/**",
+  "scripts/spec_surface_check.py",
+  "scripts/memlog_fidelity_check.py",
+  "tests/scripts/test_spec_surface_prune.py",
+  "scripts/.spec-surface-baseline.json",
+  "scripts/spec_surface_allowlist.txt",
+  "docs/governance/fr-baseline.json",
+  "docs/governance/flag-inventory/**",
+  "docs-site/src/content/ci-status.json",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/**",
+  "docs/dreams/pyforge-doctor.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/*/.memlog.md",
+]
+
 # dispatch (Story 102.1 / spec-pyforge-marshal CAP-161), added 2026-10-15: a re-landing reuses this station's own
 # verified verdict when only merges of main and planning-only commits moved the branch since the head it judged,
 # after a narrow re-check, and still waits for CI (operator rulings 2026-10-15; the Pages stations' speed ask). The

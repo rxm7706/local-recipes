@@ -728,6 +728,45 @@ Folded Dreams: [[bmad-drift-new-artifact-shape]], [[bmad-method-version-drift]],
   spec-pyforge-marshal:CAP-302) read the compiled skill, CAP-93 and Epic 50: 12 high findings, 1 accepted, 9 rejected,
   2 deferred, with 45 medium and 15 low not triaged; residue
   `_bmad-output/projects/pyforge-doctor/planning-artifacts/research/egm-audit-2026-11-05.md`. CAP-93 names its pre-write guard test. Most highs were rejected: the tracked story specs already decide them.
+- **2026-11-10 (the cutover readiness audit) — Found:** the read-only audit of doctor's chain at main `82a2b18828`
+  (one of the nine whose fleet picture and rulings `docs/dreams/pyforge-unifying-strategy.md` § Realization log
+  carries, the three 2026-11-10 entries) returned "not ready" for a rebuild from Frame + Spec. `frozen-path-changed`
+  reads `docs/foundry/manifest.*`, a file that never existed, and answers OK on every run; `capability-ledger` matches
+  a row by id alone and runs no expiry clock; over an empty tree 27 of the 29 `detectors-ci` sources exit 0, and the
+  aggregate reads a source that measured nothing as pass; nothing outside one session hook guards a chain write on a
+  checkout that is not the writer. The Spec trails the code: 40 capabilities carry an in-progress, draft or missing
+  marker and 17 a stale ready one against 172 of 172 stories done, the read-only rule contradicts
+  `doctor flags kill-switch`, three verbs are named against five, and three sources, the MCP tools and the public
+  contract have no capability. 1,247 of 2,164 test functions sit in the live-tree half although about 30 read A's
+  tree, and the spec-surface baseline keeps 166 keys of Specs that no longer exist. **Ruled** (2026-11-10, operator:
+  rulings 2 and 4, the "Retire both" addendum and the second addendum, "Accept all, run mint"):
+  `pyforge.cutover_root` is the writer lock and the root of record, so a chain write off the writer is a named
+  finding for every harness; the operator flips the flag by hand once the Launch slice is proven, and no detector
+  decides it; an `A-only` expiry warns 30 days ahead and fails once due; a source that measured nothing reads
+  `unmeasured`, a warning the merge bar does not fail on; `doctor flags kill-switch` stays Doctor's one actuator;
+  doctor's closed one-time campaigns retire and read `(retired 2026-11-10: closed one-time campaign)`, the third
+  marker of CHAIN-STANDARD § 4; no new behaviour and no new kill switch, each gap a deferred-work row. Decisions D1
+  (the public contract is one companion file), D2 (the live-tree split), D4 (the Spec says what the code does) and D6
+  (the Python floor is 3.14) hold. **For doctor:** this entry binds one chain, `spec-pyforge-doctor`: it mints CAP-94
+  to CAP-100 at `(ready 2026-11-10)`, amends CAP-59, CAP-87 and CAP-93 (Story 57.1 amends the markers), registers
+  FR-25 to FR-33, adds AD-15 and decomposes as Epics 56, 57 and 58, twelve stories on the one integration branch
+  `cutover-readiness-2026-11-10`; Story 58.4 runs last and holds the PR bar.
+- **2026-11-12 (cutover readiness, landed) — Landed:** Stories 56.1 to 56.5, 57.1, 57.2 and 58.1 to 58.3 are built
+  and reviewed on branch `cutover-readiness-2026-11-10`, Story 57.3 closes the chain, and all land with its single PR;
+  Story 58.4 refreshes the baselines last. Story 56.1:
+  `frozen-path-changed` reads the ledger's rebuilding rows (`0 frozen of 923 rows` on this tree). Story 56.2:
+  `capability-ledger` judges every row by its Spec heading, its mode and its expiry clock. Stories 56.3 and 56.4: a
+  source that measured nothing reads `unmeasured`, and a source with no subject says so in one cannot-evaluate WARN.
+  Story 56.5: a chain write off the writer is a named finding (`writer-lock`). Story 57.1: the Spec's markers and text
+  say what the code does. Story 57.2: Doctor's public contract is `contract.md`, held to the code by
+  `tests/meta/test_public_contract.py`. Stories 58.1 and 58.2: the tests that build their own tree run in the package
+  half. Story 58.3: `spec_surface_check.py --prune` drops the baseline keys of Specs that no longer exist. Story 57.3:
+  `tests/meta/test_package_half_is_the_oracle.py` holds the package half to the oracle rule, and
+  `tests/unit/test_live_cutover_ledger.py` proves the two ledger detectors and the writer lock on this tree;
+  spec-pyforge-doctor:CAP-94 to spec-pyforge-doctor:CAP-100 read `(shipped 2026-11-12)` (77 shipped and 23 retired of
+  CAP-1 to CAP-100), `contract.md` joins the Spec's companions and `scripts/detectors.py` its surface. New open rows
+  of the change: `DW-doctor-cutover-2026-11-10-1` to `-9`, `DW-doctor-56-4-1`, `DW-doctor-56-5-1` and
+  `DW-doctor-58-1-1`; `DW-doctor-egm-2026-11-05-2` (no detector checks the markers) stays open.
 
 ## 2026-10-26 — A spike report is not a corrupt file, and the classifier can't yet tell the difference (folded from bmad-drift-new-artifact-shape)
 

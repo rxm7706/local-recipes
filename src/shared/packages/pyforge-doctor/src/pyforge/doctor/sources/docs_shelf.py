@@ -16,7 +16,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from ..models import DoctorStatus, Finding, Source
+from ..models import UNEVALUABLE_EVIDENCE_KEY, DoctorStatus, Finding, Source
 from . import degrade_on_exception
 
 __all__ = (
@@ -30,6 +30,9 @@ _CHECK_BMAD_OUTPUT_ROOT = "docs-shelf-bmad-output-root"
 _CHECK_AIRGAP_CLUSTER = "docs-shelf-airgap-cluster"
 _CHECK_STALE_ARCHIVE_CITATION = "docs-shelf-stale-archive-citation"
 _CHECK_CLEAN = "docs-shelf-occupancy"
+#: spec-pyforge-doctor:AD-15's ``<source>-unevaluable`` check (Story 56.4).
+_CHECK_UNEVALUABLE = f"{_CHECK_CLEAN}-unevaluable"
+_MAP_REL = "docs/MAP.md"
 
 # Story 23.5 archived these from `_bmad-output/` root; live docs must cite
 # `archive/_bmad-output/…`, never the pre-archive root path.
@@ -179,6 +182,18 @@ def _gather_all(target: Path) -> tuple[Finding, ...]:
     findings.extend(find_stale_archive_root_citations(target))
     if findings:
         return tuple(findings)
+    if not (target / _MAP_REL).is_file():
+        # Story 56.4 (spec-pyforge-doctor:CAP-93): the allow-list is
+        # docs/MAP.md's own; without it a clean result is an OK over nothing.
+        return (
+            Finding(
+                source=Source.DOCS_SHELF_OCCUPANCY,
+                check=_CHECK_UNEVALUABLE,
+                status=DoctorStatus.WARN,
+                message=f"{_MAP_REL} is missing — no allow-list, so shelf occupancy cannot be evaluated here",
+                evidence={"path": _MAP_REL, UNEVALUABLE_EVIDENCE_KEY: True},
+            ),
+        )
     return (
         Finding(
             source=Source.DOCS_SHELF_OCCUPANCY,

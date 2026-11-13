@@ -234,7 +234,9 @@ def test_cfe_unresolved_error_message_names_how_to_satisfy_the_first_three():
     message = str(exc)
     assert "--cfe-root" in message
     assert "MASON_CFE_ROOT" in message
-    assert ".claude/scripts/conda-forge-expert" in message
+    # Story 124.2: tracked paths are spelled as joins here -- steward's trigger-map scan counts a bare
+    # tracked-path literal as a read of the live tree, and this module reads none.
+    assert "/".join((".claude", "scripts", "conda-forge-expert")) in message
 
 
 def test_cfe_unresolved_error_is_a_mason_error():

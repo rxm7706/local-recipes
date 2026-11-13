@@ -504,6 +504,7 @@ from .intent_gap_preserve import (
 # _LOG_FILENAME -- duplicated, not imported, per this module's own docstring
 # (the new AD-9 contract forbids importing anything from pyforge.marshal.cli
 # at all).
+# CAP-4: loop-home FILE read -- marshal's own file: the journal marshal writes in its own run dir, not bmad-loop run state
 _JOURNAL_FILENAME = "journal.jsonl"
 _LAUNCH_KIND = "run-launch"
 # Story 3.7 review finding: a supervisor spawned by `marshal factory resume`
@@ -681,6 +682,7 @@ _CEILING_RANK: Mapping[CeilingStatus, int] = {
 # alone), mirroring this module's existing `session_name`/
 # `_HARNESS_LOG_FILENAME` precedent of naming a bmad-loop-owned artifact by
 # its own known-live shape rather than importing a constant for it.
+# CAP-4: loop-home FILE read -- the supervisor's budget sample of the run it supervises and itself publishes, not a consumer read
 _STATE_JSON_FILENAME = "state.json"
 
 # No policy knob exists for this yet (this story's own Never clause) -- a
@@ -1515,6 +1517,7 @@ def run_supervisor(
                     "idle ladder cannot act for this run, and neither can "
                     "the two token ceilings, the per-story wall-clock "
                     "ceiling, or per-story cost attribution (Story 3.6: all "
+                    # CAP-4: loop-home FILE read -- message text naming bmad-loop's state.json, not a read
                     "four read the harness run's own state.json); the "
                     "per-run wall-clock ceiling remains the only binding "
                     "constraint; continuing heartbeat-only supervision"
@@ -2492,11 +2495,14 @@ def run_supervisor(
                     elif unevaluable_this_tick:
                         if not usage_stale:
                             if state_freshness is UsageFreshness.UNEVALUABLE:
+                                # CAP-4: loop-home FILE read -- message text naming bmad-loop's state.json, not a read
                                 reason = f"unevaluable (state.json mtime {state_mtime!r} cannot be judged against the wall clock)"
                             elif is_stale:
+                                # CAP-4: loop-home FILE read -- message text naming bmad-loop's state.json, not a read
                                 reason = f"stale (state.json mtime {state_mtime!r})"
                             else:
                                 reason = (
+                                    # CAP-4: loop-home FILE read -- message text naming bmad-loop's state.json, not a read
                                     "unreadable this tick (state.json mtime "
                                     f"{state_mtime!r} is fresh, but the read failed)"
                                 )

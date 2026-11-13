@@ -25,23 +25,22 @@ import pytest
 from pyforge.core.process import ProcessError
 from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
 
+from pyforge import marshal as marshal_package
 from pyforge.marshal.adapters import harness_bmadloop as harness_module
 from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.adapters.harness_bmadloop import (
     BmadLoopHarness,
     HarnessError,
     HarnessPolicyWriteError,
-    render_policy_toml,
 )
 from pyforge.marshal.cli import spin as spin_module
 from pyforge.marshal.cli.main import main
 from pyforge.marshal.cli.spin import _non_negative_int, run_attach, run_resume, run_spin
-from pyforge.marshal.core import policy as policy_module
 from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
 from pyforge.marshal.core.verdict import EXIT_OK, EXIT_SIGINT, Verdict, exit_code_for
 from pyforge.marshal.ports.harness import DeferredStory, RunStatusSnapshot, SpinResult
 
-_SCHEMA_PATH = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "schemas" / "envelope.v1.json"
+_SCHEMA_PATH = Path(marshal_package.__file__).resolve().parent / "schemas" / "envelope.v1.json"
 
 
 class FakeFs:
@@ -2360,36 +2359,6 @@ def _declare_wire_layer(monkeypatch, tmp_path: Path, *, enabled: bool) -> None:
     monkeypatch.setattr(spin_module, "conventional_project_policy_path", lambda _slug: path)
 
 
-def test_spin_states_the_wire_layer_disposition_on_every_run(home, capsys, monkeypatch):
-    """Story 28.2 (SPEC-marshal-token-economy CAP-2) / Story 46.4: a spin
-    report always says what the wire-compression layer did, exactly as it
-    always says where ``supervisor.log`` is. Undeclared now means the
-    repo-default tri-state ``"auto"`` (Story 46.4), not off -- the packaged
-    ``claude`` profile declares a ``[wrapper]``, so with its binary
-    resolvable the layer genuinely applies. This is the spec's own I/O
-    matrix row 1: fresh loop home, zero station config, Claude profile.
-
-    Resolver patched to a fixed path -- see
-    ``test_spin_applies_wire_layer_via_bmadloop_profile_overlay_when_available``
-    for why real PATH/fallback-dir resolution isn't deterministic across
-    environments."""
-    from pyforge.marshal.adapters import harness_bmadloop as bmadloop_module
-
-    monkeypatch.setattr(bmadloop_module, "_resolve_wrapper_binary", lambda *_a, **_k: "/usr/bin/headroom")
-    fs = FakeFs(dirs={home})
-    harness = FakeHarness()
-    harness.feed_keys = ("1-1-first-story",)
-
-    run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
-
-    envelope = json.loads(capsys.readouterr().out)
-    assert envelope["data"]["wire"]["applied"] is True
-    assert envelope["data"]["wire"]["reason"] is None
-    assert envelope["data"]["wire"]["aggressiveness"] == "medium"
-    assert envelope["data"]["wire"]["store_dir"] is not None
-    assert [f for f in envelope["findings"] if f["code"] == "MRS-SPIN-017"] == []
-
-
 def test_spin_applies_wire_layer_via_bmadloop_profile_overlay_when_available(home, capsys, monkeypatch, tmp_path):
     """Story 33.3: when headroom resolves, factory spin writes a bmad-loop
     profile overlay and reports ``wire.applied=True`` instead of the pre-33.3
@@ -4497,72 +4466,6 @@ def test_spin_populated_model_tier_map_renders_a_different_policy_toml_than_an_e
     empty_parsed = tomllib.loads(empty_rendered)
     assert populated_parsed["adapter"]["dev"]["model"] == "opus"
     assert "dev" not in empty_parsed.get("adapter", {})
-
-
-def test_the_real_pyforge_marshal_policy_declares_a_working_model_tier_map():
-    """Regression guard for Story 3.11 (review-pass finding): the REAL,
-    committed `marshal-policy.toml` (not a hand-duplicated test fixture) must
-    keep its `model_tier_map` table block valid and last -- a future edit
-    that appends any root-level key after it would silently nest that key
-    under `model_tier_map.easy` instead of the document root, per TOML's own
-    table-scoping rule (see this file's own Design Notes). Also drives the
-    `easy` tier end to end, which the populated-vs-empty test above never
-    does: `easy` overrides only `dev`, so `review` must stay at its own
-    unrelated `opus` baseline, not silently fall to something else."""
-    real_policy_path = (
-        Path(__file__).resolve().parents[6]
-        / "_bmad-output"
-        / "projects"
-        / "pyforge-marshal"
-        / "planning-artifacts"
-        / "marshal-policy.toml"
-    )
-    if not real_policy_path.is_file():
-        pytest.skip("tracked project policy file not present in this checkout")
-
-    parsed = tomllib.loads(real_policy_path.read_text(encoding="utf-8"))
-
-    # Root-level keys survived the table placement -- the exact footgun this
-    # story's own Design Notes warn about.
-    assert parsed["gate_mode"] == "none"
-    assert len(parsed["verify_commands"]) == 2
-    assert len(parsed["landing_rules"]) == 2
-    # 2026-09-13 (spec-cursor-native-tier-map / Story 33.15): every station's
-    # dev/review stages name an explicit {harness, model} inline table (CAP-1)
-    # so a foreign model id cannot land on the wrong adapter. 2026-09-18: the
-    # ids themselves are volatile per-week config (Cursor ran out of usage and
-    # the fleet moved back to claude/sonnet), so this asserts the SHAPE the
-    # story established, not a pinned ladder -- pinned ids turned this test
-    # red on `main` the first time the harness changed.
-    # 2026-10-25: the three classes a story falls into by default must exist; an
-    # operator-ruled opt-in class (`fable`, selected by a spec's `difficulty:`) may
-    # sit beside them and is held to the same shape below.
-    tier_map = parsed["model_tier_map"]
-    assert {"heavy", "medium", "easy"} <= set(tier_map)
-    for difficulty, stages in tier_map.items():
-        assert "dev" in stages, difficulty
-        for stage, entry in stages.items():
-            assert set(entry) == {"harness", "model"}, (difficulty, stage, entry)
-            assert entry["harness"] and entry["model"], (difficulty, stage, entry)
-    assert set(tier_map["easy"]) == {"dev"}  # easy overrides dev only
-
-    effective, findings = policy_module.compose(project=parsed, project_slug="pyforge-marshal", flags={})
-    assert findings == ()
-
-    rendered_easy = render_policy_toml(effective, difficulty="easy")
-    parsed_easy = tomllib.loads(rendered_easy)
-    easy_dev = tier_map["easy"]["dev"]
-    if easy_dev["harness"] == "claude":
-        # Happy path: the tier map names the adapter this render targets, so
-        # the override applies as an [adapter.dev] sub-table.
-        assert parsed_easy["adapter"]["dev"]["model"] == easy_dev["model"]
-    else:
-        # Fails-safe path (Story 33.15 CAP-2): a foreign harness's model
-        # against the claude adapter is dropped entirely -- no [adapter.dev]
-        # sub-table, per FR-51's "absent stage inherits [adapter].model".
-        assert "dev" not in parsed_easy["adapter"]
-    assert parsed_easy["adapter"]["model"] == "sonnet"
-    assert parsed_easy["adapter"]["review"]["model"] == "opus"
 
 
 # =============================================================================

@@ -1,4 +1,4 @@
-"""Story 15.2 — CAP-2 one-command advance of a stale bmad-suite package.
+"""Story 15.2 — CAP-22 one-command advance of a stale bmad-suite package.
 
 Chains autotick (tag | head) → build → test → publish → listing verify →
 open a reviewable PR. Never auto-merges. Foreign stages are injectable so
@@ -166,7 +166,7 @@ def _default_build(repo: Path, package: str, dry_run: bool) -> Mapping[str, Any]
 
 
 def _default_test(repo: Path, package: str, dry_run: bool) -> Mapping[str, Any]:
-    del repo, package  # stage kept for CAP-2 sequencing; build covers recipe tests
+    del repo, package  # stage kept for CAP-22 sequencing; build covers recipe tests
     if dry_run:
         return {"ok": True, "dry_run": True, "skipped": True}
     return {"ok": True, "note": "recipe tests covered by build stage"}
@@ -195,7 +195,7 @@ def _default_listing(repo: Path, package: str, dry_run: bool) -> Mapping[str, An
 
 
 def _default_open_pr(repo: Path, package: str, dry_run: bool) -> Mapping[str, Any]:
-    """Open a reviewable PR. Never merges (CAP-2 / story AC)."""
+    """Open a reviewable PR. Never merges (CAP-22 / story AC)."""
     if dry_run:
         return {
             "ok": True,
@@ -207,7 +207,7 @@ def _default_open_pr(repo: Path, package: str, dry_run: bool) -> Mapping[str, An
     branch = f"steward/suite-advance-{package}"
     title = f"chore(suite): advance {package} (steward suite advance)"
     body = (
-        f"Automated CAP-2 advance for `{package}` via "
+        f"Automated CAP-22 advance for `{package}` via "
         f"`steward suite advance`.\n\n"
         f"**Do not auto-merge** — human review required.\n"
     )
@@ -255,7 +255,7 @@ def run_advance(
     baseline: bool = False,
     hooks: AdvanceHooks | None = None,
 ) -> AdvanceReport:
-    """Execute the CAP-2 advance chain for *package*."""
+    """Execute the CAP-22 advance chain for *package*."""
     hooks = hooks or AdvanceHooks()
     report = AdvanceReport(package=package, ok=False, mode="", dry_run=dry_run)
 

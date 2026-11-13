@@ -432,7 +432,7 @@ class AgentSdkTransport:
         return parse_list_files_payload(payload)
 
     def list_projects(self) -> Sequence[ProjectSummary]:
-        """Story 23.1's 11th port method (CAP-1) -- mirrors
+        """Story 23.1's 11th port method (CAP-29) -- mirrors
         ``McpTransport.list_projects`` exactly: the tool answers with a
         bare JSON array, never the object-wrapped shape ``_call_json``
         expects, so this parses the relay's raw text directly."""

@@ -39,6 +39,10 @@ from pyforge.marshal.ports.build_harness import (
 from pyforge.marshal.ports.fs import AdvisoryLock
 from pyforge.marshal.scope import verify_scope
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 
 def _init_git_repo(path: Path, *, scope_slug: str | None = None) -> None:
     subprocess.run(["git", "init"], cwd=path, check=True, capture_output=True)
@@ -659,34 +663,6 @@ def test_run_dispatch_surfaces_the_context_payload(
     assert payload["data"]["context"] == expected
     launch_lines = [line for _, line, _ in fs.appended if "dispatch-launch" in line]
     assert any(json.loads(line)["payload"].get("context") == expected for line in launch_lines)
-
-
-def test_compose_policy_on_real_repo_enables_all_context_layers_for_dispatch() -> None:
-    """Story 33.2 (CAP-1): factory dispatch reads the tracked marshal-policy.toml
-    and resolves all six context layers enabled via the single composition site.
-
-    Story 46.4: pyforge-marshal's own marshal-policy.toml no longer declares a
-    `[context]` block at all -- the 4 harness-agnostic layers now come from
-    the repo-default `_bmad-output/policy-defaults.toml`, and `wire`'s value
-    passes through `resolve_context_layers` as the raw `"auto"` tri-state
-    (unresolved at this composition-time call site -- no harness profile is
-    in scope here yet)."""
-    from pyforge.marshal.cli.dispatch import _compose_policy
-    from pyforge.marshal.core import policy
-
-    repo_root = Path(__file__).resolve().parents[6]
-    policy_path = repo_root / "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml"
-    if not policy_path.is_file():
-        pytest.skip("marshal-policy.toml not present in this checkout")
-
-    effective = _compose_policy("pyforge-marshal")
-    resolved = policy.resolve_context_layers(effective)
-    assert set(resolved) == set(policy.CONTEXT_LAYER_NAMES)
-    for layer in policy.CONTEXT_LAYER_NAMES:
-        if layer == "wire":
-            assert resolved[layer] == {"enabled": "auto", "aggressiveness": "medium"}
-            continue
-        assert resolved[layer] == {"enabled": True, "aggressiveness": "medium"}
 
 
 def test_run_dispatch_refuses_missing_harness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -4469,7 +4445,7 @@ def test_dispatch_once_refuses_a_spec_the_flag_gate_reds_before_any_worktree_or_
     assert _FLAG_SPEC_REL in refusal.message
     assert "flag-missing" in refusal.message
     assert "neither a `flag:` block nor a `flag-exempt:` value" in refusal.message
-    assert "docs/reference/story-spec-flag-block.md" in refusal.message
+    assert "/".join(("docs", "reference", "story-spec-flag-block.md")) in refusal.message
     assert attempt.errors == (refusal,)
     assert not attempt.launched
     assert harness.calls == [] and vcs.added == []
@@ -4478,7 +4454,7 @@ def test_dispatch_once_refuses_a_spec_the_flag_gate_reds_before_any_worktree_or_
     assert "session_pid" not in attempt.data
     # The gate was consulted once, as a process, from the repo root.
     [(argv, cwd, timeout_s)] = process.gate_calls
-    assert argv == [sys.executable, "scripts/flag_gate_check.py", "--spec", _FLAG_SPEC_REL]
+    assert argv == [sys.executable, "/".join(("scripts", "flag_gate_check.py")), "--spec", _FLAG_SPEC_REL]
     assert cwd == tmp_path
     assert timeout_s == dispatch_module._FLAG_GATE_TIMEOUT_S
 

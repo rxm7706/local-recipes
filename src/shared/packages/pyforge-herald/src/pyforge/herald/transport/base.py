@@ -5,20 +5,20 @@ method -- not a 10th remote tool -- by Story 23.4, and to an 11th tool,
 
 ``DesignTransport`` is the whole surface Herald is allowed to use against
 the ``claude-design`` server: the 8 tools the proven bridge loop needs
-(``bridge-protocol.md``) plus ``list_files``, added for CAP-3 (``herald
+(``bridge-protocol.md``) plus ``list_files``, added for CAP-4 (``herald
 deck status``), plus ``fetch_rendered_bytes`` (Story 23.4), a port-only
 method that calls no new remote tool, plus ``list_projects`` (Story 23.1,
-CAP-1) -- see below. It is a ``@runtime_checkable typing.Protocol`` --
+CAP-29) -- see below. It is a ``@runtime_checkable typing.Protocol`` --
 never an ABC -- mirroring ``pyforge.warden.interfaces``: adapters conform
 structurally and are substituted by injection, so a test can pass a
 hand-written fake with no inheritance and no network.
 
-**An 11th port method, for a whole-account listing (Story 23.1, CAP-1).**
+**An 11th port method, for a whole-account listing (Story 23.1, CAP-29).**
 ``list_projects`` enumerates every Design project the signed-in account can
 see -- nothing in the other 10 methods can do that: ``list_files``
 enumerates one *already-known* project's own files, never the account's
 own project list, and every other method takes a ``project_id`` its caller
-must already have. CAP-1's account-wide reconciliation
+must already have. CAP-29's account-wide reconciliation
 (``deck_pipeline.account_status``) needs the account's whole project set
 before it can classify any of it. Verified live 2026-09-18: the deployed
 tool takes no arguments and answers with a plain JSON array (a 20-project
@@ -40,7 +40,7 @@ ever names its files. Story 3.1/3.2 is that "before Epic 3" amendment:
 ``list_files`` is the 9th port method, added here (the spine) rather than
 as an adapter-local addition, per F10's own recommendation.
 
-**A 10th port method with no 10th remote tool (Story 23.4, CAP-6).**
+**A 10th port method with no 10th remote tool (Story 23.4, CAP-34).**
 ``fetch_rendered_bytes`` exists to mechanize ``herald deck push --prove``'s
 read-back check. It calls the *same* remote tool ``render_preview`` already
 calls -- the port is widened because ``render_preview``'s own answer
@@ -263,7 +263,7 @@ def parse_list_files_payload(payload: Any) -> list[ListedFile]:
 class ProjectSummary:
     """One project entry from ``list_projects`` (Story 23.1's 11th port
     method): its id, display name, and durable ``claude.ai/design`` editor
-    url -- the whole shape CAP-1's account enumeration needs to classify a
+    url -- the whole shape CAP-29's account enumeration needs to classify a
     live Design project and reconcile it against the registry.
 
     Distinct from ``create_project``'s ``ProjectRef``: that dataclass has
@@ -318,7 +318,7 @@ class DesignTransport(Protocol):
     def list_projects(self) -> Sequence[ProjectSummary]:
         """Enumerate every Design project the signed-in account can see
         (tool ``list_projects``, Story 23.1's 11th port method -- see the
-        module docstring). ``deck_pipeline.account_status`` (CAP-1) is the
+        module docstring). ``deck_pipeline.account_status`` (CAP-29) is the
         sole caller; no other capability in this port needs the whole
         account's project list."""
         ...
@@ -386,7 +386,7 @@ class DesignTransport(Protocol):
     def list_files(self, *, project_id: str) -> Sequence[ListedFile]:
         """Enumerate every file currently in ``project_id`` (tool
         ``list_files``, Story 3.1/3.2's spine amendment -- see the module
-        docstring). CAP-3's stale-mirror heuristic (``deck_pipeline.py``)
+        docstring). CAP-4's stale-mirror heuristic (``deck_pipeline.py``)
         reads the returned shape; no other capability in this port needs
         it yet."""
         ...
@@ -401,7 +401,7 @@ class DesignTransport(Protocol):
         no field for one) and uses it for exactly one GET inside this
         method's own implementation -- the URL itself must never be
         returned, logged, or persisted anywhere else. Used only by
-        ``deck_pipeline.push_exports``'s ``--prove`` read-back (CAP-6);
+        ``deck_pipeline.push_exports``'s ``--prove`` read-back (CAP-34);
         no other capability in this port needs it."""
         ...
 

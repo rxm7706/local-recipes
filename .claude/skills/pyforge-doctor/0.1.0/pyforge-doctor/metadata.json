@@ -6,11 +6,11 @@
   "source_authority": "internal",
   "source_repo": "src/shared/packages/pyforge-doctor",
   "source_root": "src/shared/packages/pyforge-doctor",
-  "source_commit": "865b95dc951c8a6de87d05bb10c8395a75da8008",
+  "source_commit": "b69fd81eb812eb0a2de4580c4b04d9af41259ef8",
   "source_ref": "local",
   "confidence_tier": "Quick",
   "spec_version": "1.3",
-  "generation_date": "2026-08-25T00:00:00Z",
+  "generation_date": "2026-11-12T00:00:00Z",
   "description": "Pre-flight and fleet-watch diagnostics via the doctor CLI. Use pyforge doctor grammar. Findings stay advisory or Warden inputs — not a second PR gate. Do not import pyforge.doctor internals.",
   "language": "python",
   "exports": [
@@ -23,15 +23,15 @@
   },
   "confidence_distribution": {
     "t1": 0,
-    "t1_low": 2,
+    "t1_low": 5,
     "t2": 0,
     "t3": 0
   },
   "stats": {
-    "exports_documented": 2,
+    "exports_documented": 5,
     "exports_public_api": 1,
-    "exports_internal": 1,
-    "exports_total": 2,
+    "exports_internal": 4,
+    "exports_total": 5,
     "public_api_coverage": 1.0,
     "total_coverage": 1.0,
     "scripts_count": 0,
@@ -44,6 +44,11 @@
       "url": "src/shared/packages/pyforge-doctor/README.md",
       "detected_via": "readme_always",
       "recorded_at": "2026-08-25T00:00:00Z"
+    },
+    {
+      "url": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/contract.md",
+      "detected_via": "skill_brief_doc_urls",
+      "recorded_at": "2026-11-12T00:00:00Z"
     }
   ],
   "generated_by": "create-skill",

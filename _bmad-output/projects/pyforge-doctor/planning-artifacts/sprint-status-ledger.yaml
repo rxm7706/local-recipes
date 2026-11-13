@@ -1,5 +1,5 @@
 # GENERATED — do not hand-edit. Regenerate with:
-#     pixi run -e local-recipes sprint-ledger-sync
+#     pixi run -e pyforge-guild sprint-ledger-sync
 #
 # TRACKED twin of _bmad-output/projects/pyforge-doctor/implementation-artifacts/sprint-status.yaml
 # which is gitignored Tier-3 (.gitignore:736) and therefore invisible to CI and
@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: doctor
-# stories: 280
+# stories: 298
 development_status:
   1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
   1-2-wrap-warden-s-engine-availability-self-check-fr-1: done
@@ -158,6 +158,18 @@ development_status:
   55-2-the-chain-currency-sweep-audits-the-eight-stations-in-one-process: done
   55-3-the-doctor-suite-takes-its-worker-count-from-the-caller-not-its-own-cmd: done
   55-4-doctor-s-live-tree-readers-run-as-their-own-half: done
+  56-1-frozen-path-changed-reads-the-ledger-s-rebuilding-rows-not-a-manifest-that-never-existed: done
+  56-2-capability-ledger-judges-every-v1-row-by-its-spec-heading-its-mode-and-its-expiry-clock: done
+  56-3-the-aggregate-reads-a-source-that-measured-nothing-as-unmeasured-never-pass: done
+  56-4-a-source-that-finds-no-subject-says-so-in-one-cannot-evaluate-warning: done
+  56-5-a-chain-write-on-a-checkout-that-is-not-the-writer-is-a-named-finding: done
+  57-1-the-doctor-spec-s-markers-and-text-say-what-the-code-does: done
+  57-2-doctor-s-public-contract-is-one-companion-file-and-a-meta-test-reds-what-it-lacks: done
+  57-3-doctor-s-chain-closes-the-oracle-meta-test-the-live-ledger-proof-the-new-capabilities-shipped: done
+  58-1-the-chain-ledger-board-and-one-chain-tests-that-build-their-own-tree-run-in-the-package-half: done
+  58-2-the-docs-factory-method-env-hygiene-and-pages-tests-that-build-their-own-tree-run-in-the-package-half: done
+  58-3-spec_surface_check-py-prunes-the-baseline-keys-of-specs-that-no-longer-exist-and-touches-no-live-spec: done
+  58-4-the-branch-s-baselines-and-governance-reports-are-refreshed-once-after-every-unit-s-last-edit: done
   6-1-profile-doctor-check-and-bring-it-inside-its-budget: done
   6-10-independence-is-structural-for-every-source: done
   6-11-the-classifier-recognizes-a-spike-report: done
@@ -286,6 +298,12 @@ development_status:
   epic-54-retrospective: optional
   epic-55: done
   epic-55-retrospective: optional
+  epic-56: done
+  epic-56-retrospective: optional
+  epic-57: done
+  epic-57-retrospective: optional
+  epic-58: done
+  epic-58-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional
   epic-7: done

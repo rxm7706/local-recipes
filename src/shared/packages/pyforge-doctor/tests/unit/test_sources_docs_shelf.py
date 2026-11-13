@@ -8,16 +8,11 @@ as an equally-covered symptom, exercised here too.
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
-
-import pytest
 
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import docs_shelf
-
-# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
-# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
-pytestmark = pytest.mark.live_tree
 
 _FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "docs_shelf"
 _CLEAN = _FIXTURES / "clean"
@@ -26,8 +21,13 @@ _CLEAN = _FIXTURES / "clean"
 # --- clean MAP fixture is silent (both checks) ------------------------------
 
 
-def test_clean_fixture_gather_is_a_single_ok_finding():
-    findings = docs_shelf.gather(_CLEAN)
+def test_clean_fixture_gather_is_a_single_ok_finding(tmp_path: Path):
+    # Story 56.4 (spec-pyforge-doctor:CAP-93): the allow-list is docs/MAP.md's, so a clean OK needs the map
+    # present; without it the same tree is one cannot-evaluate WARN (test_sources_unmeasured.py).
+    clean = tmp_path / "clean"
+    shutil.copytree(_CLEAN, clean)
+    (clean / "docs" / "MAP.md").write_text("# Documentation map\n", encoding="utf-8")
+    findings = docs_shelf.gather(clean)
     assert len(findings) == 1
     finding = findings[0]
     assert finding.source == Source.DOCS_SHELF_OCCUPANCY
@@ -188,17 +188,3 @@ def test_gather_never_reports_fail():
     # second PR gate).
     findings = docs_shelf.gather(_CLEAN)
     assert all(f.status != DoctorStatus.FAIL for f in findings)
-
-
-# --- live-repo proof, mirroring general_docs_consistency's own discipline ---
-
-
-def test_live_repo_gather_is_clean():
-    """Live proof (never validate only against a fully-synthetic fixture):
-    the real repo's _bmad-output/ root and air-gap cluster are already
-    clean per Stories 23.5/23.2 -- this pins that a live, unmodified repo
-    reports silent, not merely that a synthetic fixture does."""
-    repo_root = Path(__file__).resolve().parents[6]
-    findings = docs_shelf.gather(repo_root)
-    assert len(findings) == 1
-    assert findings[0].status == DoctorStatus.OK

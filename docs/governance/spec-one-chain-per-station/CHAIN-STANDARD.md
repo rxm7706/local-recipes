@@ -4,7 +4,7 @@ type: companion
 spec: one-chain-per-station
 status: ready
 created: "2026-09-16"
-updated: "2026-11-05"   # AMENDED 2026-11-05 (EGM audit 2026-11-05 RUL-C-F3, RUL-C-F4, RUL-C-F7, marshal Story 113.18): § 4 names the feed words, § 11 step 2 says where a live companion goes, § 12 scopes the no-stable-id reason. Prior 2026-11-01: AMENDED 2026-11-01 (EGM audit, marshal Story 113.7; operator rulings 2026-11-01): § 0 terms and provenance; CAP date markers (ready <date>)/(shipped <date>), qualified spec-<x>:CAP-n cites and success clauses that name their command and exit code (§§ 1-4); the story-spec ladder (§ 4); station long and short forms (§ 5); B named rxm7706/python-foundry; § 11 item 3 dated done; counts read at their amendment; fr-baseline.json's one writer (§ 12). Prior "2026-10-26": AMENDED 2026-10-26 (CAP-5): a requirement cites defined CAPs only — §2, §6 (NFR families), §12 (the ruling and the arrows it reverses). Prior "2026-09-17"
+updated: "2026-11-11"   # AMENDED 2026-11-11 (steward Story 120.3, on the operator rulings of 2026-11-10): § 0's A, B row says B is the root A's capabilities are rebuilt on and A writes until the flip; its Frame row says B rebuilds from Dream plus memlog and the re-derived Spec, a Frame being a pointer; § 4 gains the third CAP marker (retired <date>[: <reason>]) and three semicolon qualifiers. Prior "2026-11-05": AMENDED 2026-11-05 (EGM audit 2026-11-05 RUL-C-F3, RUL-C-F4, RUL-C-F7, marshal Story 113.18): § 4 names the feed words, § 11 step 2 says where a live companion goes, § 12 scopes the no-stable-id reason. Prior 2026-11-01: AMENDED 2026-11-01 (EGM audit, marshal Story 113.7; operator rulings 2026-11-01): § 0 terms and provenance; CAP date markers (ready <date>)/(shipped <date>), qualified spec-<x>:CAP-n cites and success clauses that name their command and exit code (§§ 1-4); the story-spec ladder (§ 4); station long and short forms (§ 5); B named rxm7706/python-foundry; § 11 item 3 dated done; counts read at their amendment; fr-baseline.json's one writer (§ 12). Prior "2026-10-26": AMENDED 2026-10-26 (CAP-5): a requirement cites defined CAPs only — §2, §6 (NFR families), §12 (the ruling and the arrows it reverses). Prior "2026-09-17"
 ---
 
 # The chain standard
@@ -36,8 +36,8 @@ again before relying on one.
 | `CAP-n` | A capability in a Spec: an intent and a success clause. Everything below the Spec cites one (§ 2). |
 | `FR-n`, `NFR-n` | A functional or non-functional requirement in a station PRD; each cites the CAPs it realizes or bounds (§ 2, § 6, § 12). |
 | `AD-n`; `canopy:`, `pap:`, `fnd:` | An architecture decision in a spine, cited with its spine prefix: `canopy` for steward's spine (the Canopy, the platform's modular monolith), `pap` for the platform host's (python-agent-platform), `fnd` for the foundry cutover's (folded into the steward spine on 2026-09-08). |
-| A, B | A is `rxm7706/local-recipes`, this repository; B is `rxm7706/python-foundry`, the root the cutover moves to. |
-| Frame | The Intelligence Hub's word for a scoped, versioned text artifact that carries context and policy (`docs/dreams/pyforge-steward.md`, *The whitepaper, distilled* § 4.3). B rebuilds its engines from Frame and Spec. |
+| A, B | A is `rxm7706/local-recipes`, this repository; B is `rxm7706/python-foundry`, the root A's capabilities are rebuilt on, each by its capability-ledger mode. A writes every Dream, Frame, Spec and the capability ledger until the operator flips `pyforge.cutover_root`; the flip moves the writer lock, and A is never archived (operator ruling 1 of 2026-11-10, `docs/dreams/pyforge-unifying-strategy.md` § Realization log). |
+| Frame | The Intelligence Hub's word for a scoped, versioned text artifact that carries context and policy (`docs/dreams/pyforge-steward.md`, *The whitepaper, distilled* § 4.3). B rebuilds from Dream plus memlog and the re-derived Spec; a Frame is a pointer to that seed, not a seed (operator ruling 1 of 2026-11-10). |
 | CFE | The `conda-forge-expert` skill (`.claude/skills/conda-forge-expert/`), which owns recipe semantics. |
 | Twin | The tracked `sprint-status-ledger.yaml`, which `sprint-ledger-sync` (`scripts/promote_sprint_status.py`) generates from the gitignored Tier-3 sprint feed. |
 | Tier 0, 2, 3 | Dream; Spec and planning; execution output (AGENTS.md § *The tiers*). Tier 1, the legacy intake specs under `docs/specs/`, was retired on 2026-10-10 (§ 11 item 3). |
@@ -148,9 +148,24 @@ may be no-ops (recorded as such in the memlog), never absent.
 | Tier | Enum (closed) | The living value | Retired at the rebase |
 |---|---|---|---|
 | Dream | `dreamt · pitched · specified · realized · archived` | station Dream = **`specified`** | — (`living` rejected: an ongoing state in an act-based ladder; README + roster) |
-| Spec | `draft · ready · shipped · archived · absorbed · superseded · extension-point` | station Spec = **`ready`** — "the contract binds", forever; each CAP reads `(ready <date>)` until met and `(shipped <date>)` once met | **`in-progress`** — 17 uses at this amendment → 0 (vocabulary CAP-1/2 said "grandfathered only, never write new"; the rebase ends the grandfathering) |
+| Spec | `draft · ready · shipped · archived · absorbed · superseded · extension-point` | station Spec = **`ready`** — "the contract binds", forever; each CAP reads `(ready <date>)` until met and `(shipped <date>)` once met, or `(retired <date>[: <reason>])` (below) | **`in-progress`** — 17 uses at this amendment → 0 (vocabulary CAP-1/2 said "grandfathered only, never write new"; the rebase ends the grandfathering) |
 | Story (ledger) | `backlog · in-progress · done · blocked · optional` | — | — (`optional` is BMAD's retrospective lattice, vocabulary CAP-3; `blocked` is operator-flipped only) |
 | Story spec (frontmatter) | `draft · ready-for-dev · in-progress · in-review · done · blocked · superseded` | — | — (a story's own ladder, `.claude/skills/bmad-build-auto/spec-template.md`; not the ledger enum) |
+
+**CAP markers — three, closed** (operator ruling 2 of the 2026-11-10 second addendum,
+`docs/dreams/pyforge-unifying-strategy.md` § Realization log). A capability heading carries
+exactly one: `(ready <date>)` until its success is met, `(shipped <date>)` once it is, and
+`(retired <date>[: <reason>])` for a capability whose artifact was deleted, whose one-time
+campaign closed, or which was never built and is carried by no live `blocked` or `backlog`
+Story (ruling 4 of the same addendum). A retired id is never reused. A marker may take
+qualifiers, each after a semicolon inside the parentheses:
+
+- `; not met: <clause>, DW-<id>` — a clause of the success still unmet, and the deferred-work
+  row that holds it;
+- `; operator act open, DW-<id>` — the capability waits on an act only the operator can take;
+- `; superseded by CAP-n` — another capability of the same Spec now carries it.
+
+No other marker exists: such a never-built capability reads `(retired <date>: never built)`.
 
 **The story-spec ladder is not mapped onto the ledger.** No code translates
 one into the other. `scripts/promote_sprint_status.py` never reads story-spec

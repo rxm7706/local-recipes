@@ -3,7 +3,7 @@
 Wraps ``nic validate|deploy|kubeconfig|outputs|destroy`` by subprocess (AD-1) over a tracked
 config under ``src/platform/deploy/nic/``. Operator credentials are read from an untracked
 ``.env`` at the repo root: each ``NAME=relative/path.age`` line names an age-encrypted secret
-file decrypted through ``keys.decrypt_file`` (CAP-1) — never ``os.environ[NAME]`` on the
+file decrypted through ``keys.decrypt_file`` (spec-pyforge-steward CAP-1) — never ``os.environ[NAME]`` on the
 parent process. Each run appends ``{verb, config, seconds, exit}`` to
 ``.steward/nic-deploy.jsonl``. Returns ``DutyResult`` only (AD-8); the kill switch is
 ``pyforge.steward.nkp_deploy`` (wired through ``cli.RETROFIT_KEY_VERBS``). ``down`` runs

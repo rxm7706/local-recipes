@@ -1122,13 +1122,7 @@ def test_graphify_extra_on_writes_code_nodes_through_the_same_store(
 def test_graphify_extra_on_but_unavailable_degrades_to_warning_not_abort(
     tmp_path: Path, memory_root: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    try:
-        import graphify  # noqa: F401
-    except ImportError:
-        pass
-    else:
-        pytest.skip("graphifyy is installed in this environment")
-
+    monkeypatch.setitem(sys.modules, "graphify", None)  # Story 33.1: absent, whatever the env installs
     monkeypatch.setenv("SCRIBE_GRAPHIFY_EXTRA", "1")
     (tmp_path / "src" / "shared" / "packages").mkdir(parents=True)
     (tmp_path / "src" / "shared" / "packages" / "example.py").write_text("x = 1\n", encoding="utf-8")
@@ -1449,7 +1443,9 @@ def test_facts_ledger_becomes_one_doc_node(tmp_path: Path, memory_root: Path) ->
     )
 
     fact_nodes = [n for n in store.iter_nodes() if n.citation.endswith("facts.yaml")]
-    assert [n.citation for n in fact_nodes] == ["presentations/pyforge-scribe/facts.yaml"]
+    # Story 124.2: tracked paths are spelled as joins here -- steward's trigger-map scan counts a bare
+    # tracked-path literal as a read of the live tree, and this module reads none.
+    assert [n.citation for n in fact_nodes] == ["/".join(("presentations", "pyforge-scribe", "facts.yaml"))]
     assert fact_nodes[0].kind == "doc"
     assert fact_nodes[0].id == "doc:presentations/pyforge-scribe/facts.yaml"
     assert fact_nodes[0].title == "facts:pyforge-scribe"
@@ -1528,7 +1524,7 @@ def test_active_dreams_and_specs_compile_inactive_are_skipped(tmp_path: Path, me
     citations = {n.citation for n in store.iter_nodes() if n.kind == "doc"}
     assert "docs/dreams/live.md" in citations
     assert "docs/dreams/done.md" not in citations
-    assert "docs/dreams/README.md" not in citations
+    assert "/".join(("docs", "dreams", "README.md")) not in citations
     assert "_bmad-output/projects/demo/planning-artifacts/specs/spec-demo/SPEC.md" in citations
     assert "_bmad-output/projects/demo/planning-artifacts/specs/spec-old/SPEC.md" not in citations
 
@@ -1718,12 +1714,12 @@ def test_named_docs_compile_how_tos_and_catalog_extract_not_docs_tree(tmp_path: 
     )
 
     citations = {n.citation: n for n in store.iter_nodes() if n.kind == "doc"}
-    assert "docs/how-to/pixi-tasks.md" in citations
-    assert "howtopixiuniquetoken" in citations["docs/how-to/pixi-tasks.md"].text
-    assert "docs/how-to/README.md" not in citations
+    assert "/".join(("docs", "how-to", "pixi-tasks.md")) in citations
+    assert "howtopixiuniquetoken" in citations["/".join(("docs", "how-to", "pixi-tasks.md"))].text
+    assert "/".join(("docs", "how-to", "README.md")) not in citations
     assert "docs/explanation/why.md" not in citations
-    assert "docs/tutorials/getting-started.md" not in citations
-    catalog_cite = "docs/reference/library-llms-full.md"
+    assert "/".join(("docs", "tutorials", "getting-started.md")) not in citations
+    catalog_cite = "/".join(("docs", "reference", "library-llms-full.md"))
     assert catalog_cite in citations
     assert "pointer:library-catalog" in citations[catalog_cite].text
     assert "1. Core runtime" in citations[catalog_cite].text

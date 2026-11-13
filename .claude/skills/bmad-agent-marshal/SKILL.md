@@ -70,7 +70,7 @@ Station tasks use **only** these kinds:
 
 - `consult_content_skill` — load `.claude/skills/pyforge-marshal/active/pyforge-marshal/SKILL.md` (CAP-15). No other skill or data file.
 - `grammar` — FR-13 unified dispatch: argv must start `pyforge marshal`. Example: `pyforge marshal status`. Do not call the `marshal` binary as a second public grammar. Do not import `pyforge.marshal` internals.
-- `mcp` — FR-11 service face: `POST /stations/marshal/mcp` only (identity tool `station_face`). No other URL, method, or host.
+- `mcp` — FR-11 service face: `POST /stations/marshal/mcp` only: `start_loop` (a `<slug>/<story>` target; refused unless the caller is `pyforge:admin` and `pyforge.steward.start_loop_dispatch` is on), `get_loop` (its handle), `list_loop_story_tasks` and `marshal_watch`. No other URL, method, or host.
 
 ## Forbidden actions
 

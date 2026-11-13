@@ -20,6 +20,7 @@ import jsonschema
 import pytest
 from pyforge.core.process import ProcessResult
 
+from pyforge import marshal as marshal_package
 from pyforge.marshal.adapters.fs_local import FsError, LocalFs
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli import config as config_module
@@ -27,7 +28,7 @@ from pyforge.marshal.cli import gate as gate_module
 from pyforge.marshal.core.egress import GATE_RECORD_FILENAME
 from pyforge.marshal.core.verdict import exit_code_for
 
-_SCHEMA_PATH = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "schemas" / "gate-record.json"
+_SCHEMA_PATH = Path(marshal_package.__file__).resolve().parent / "schemas" / "gate-record.json"
 _SLUG = "acme"
 _NOW = datetime(2026, 10, 2, 12, 34, 56, 789000, tzinfo=timezone.utc)
 _HEAD = "0123456789abcdef0123456789abcdef01234567"

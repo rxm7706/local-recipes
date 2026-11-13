@@ -4,7 +4,7 @@ Story 1.6; Epic 6 -- Stories 6.1/6.2/6.3/6.5 -- extends it with the
 the operator-role write gate, and inline help).
 
 ``deck``'s own subparsers gained ``pull`` in Epic 2, ``status`` in Epic 3,
-``watch`` in Epic 4, and ``push`` in Epic 5 (Story 5.1 -- CAP-5 export
+``watch`` in Epic 4, and ``push`` in Epic 5 (Story 5.1 -- CAP-4 export
 push-back). ``progress``/``success``/``notice`` are all real as of Epics
 8/9/10: each is local-storage-backed (``progress.py``/``claims.py``/
 ``notices.py``, all scaled down from the epics doc's live-database/
@@ -226,9 +226,9 @@ def _build_parser() -> _HeraldArgumentParser:
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     subparsers = parser.add_subparsers(dest="command", required=False, metavar="command")
-    deck = subparsers.add_parser("deck", help="manage Claude Design decks (seed/pull/status/watch)")
+    deck = subparsers.add_parser("deck", help="manage Claude Design decks")
     deck_subparsers = deck.add_subparsers(dest="deck_command", required=True)
-    seed = deck_subparsers.add_parser("seed", help="seed a deck slug into Claude Design (CAP-1)")
+    seed = deck_subparsers.add_parser("seed", help="seed a deck slug into Claude Design (CAP-1, CAP-4)")
     seed.add_argument("slug", help="deck slug, e.g. pyforge-warden")
     seed.add_argument(
         "--repo-root",
@@ -243,7 +243,9 @@ def _build_parser() -> _HeraldArgumentParser:
             "Design project id to copy deck-stage.js from (default: the already-seeded pyforge-marshal pilot project)"
         ),
     )
-    pull = deck_subparsers.add_parser("pull", help="pull a deck's prototype from Claude Design into the repo (CAP-2)")
+    pull = deck_subparsers.add_parser(
+        "pull", help="pull a deck's prototype from Claude Design into the repo (CAP-1, CAP-4)"
+    )
     pull.add_argument("slug", help="deck slug, e.g. pyforge-warden")
     pull.add_argument(
         "--repo-root",
@@ -273,7 +275,7 @@ def _build_parser() -> _HeraldArgumentParser:
     )
     status = deck_subparsers.add_parser(
         "status",
-        help="show one or all decks' bridge state, JSON (CAP-3)",
+        help="show one or all decks' bridge state, JSON (CAP-4)",
     )
     status.add_argument(
         "slug",
@@ -294,7 +296,7 @@ def _build_parser() -> _HeraldArgumentParser:
             "report every Design project the signed-in account can see, "
             "reconciled against the registry (linked/mirrored/excluded/"
             "untwinned) instead of one or all known decks' bridge state "
-            "(CAP-1); cannot be combined with a slug argument"
+            "(CAP-29); cannot be combined with a slug argument"
         ),
     )
     watch = deck_subparsers.add_parser(
@@ -320,7 +322,7 @@ def _build_parser() -> _HeraldArgumentParser:
     )
     push = deck_subparsers.add_parser(
         "push",
-        help="push regenerated derived exports back into Claude Design (CAP-5)",
+        help="push regenerated derived exports back into Claude Design (CAP-4)",
     )
     push.add_argument("slug", help="deck slug, e.g. pyforge-warden")
     push.add_argument(
@@ -334,7 +336,7 @@ def _build_parser() -> _HeraldArgumentParser:
         action="store_true",
         help=(
             "read every file pushed this run back through Design and assert "
-            "byte-identity, appending a Ledger row per proven file (CAP-6)"
+            "byte-identity, appending a Ledger row per proven file (CAP-34)"
         ),
     )
     _publish_help = disabled_help(
@@ -377,7 +379,7 @@ def _build_parser() -> _HeraldArgumentParser:
         help=(
             "enumerate -> pull -> refresh -> derive -> push -> prove -> "
             "publish, in order, for every registered deck or one --slug "
-            "(Story 23.6, CAP-8)"
+            "(Story 23.6, CAP-36)"
         ),
     )
     sync_all_parser.add_argument(
@@ -423,7 +425,7 @@ def _build_parser() -> _HeraldArgumentParser:
     )
     pptx_spec = deck_subparsers.add_parser(
         "pptx-spec",
-        help=("parse a .pptx/.potx template into spec.json -- layouts + placeholders (Story 15.1, CAP-1)"),
+        help=("parse a .pptx/.potx template into spec.json -- layouts + placeholders (Story 15.1, CAP-41)"),
     )
     pptx_spec.add_argument(
         "--template",
@@ -443,7 +445,7 @@ def _build_parser() -> _HeraldArgumentParser:
         "pptx-fill",
         help=(
             "fill a content_plan.json into a .pptx/.potx template, "
-            "producing a genuinely editable deck (Story 15.1, CAP-1)"
+            "producing a genuinely editable deck (Story 15.1, CAP-41)"
         ),
     )
     pptx_fill.add_argument("content_plan", type=Path, help="content_plan.json path")
@@ -477,6 +479,11 @@ def _build_parser() -> _HeraldArgumentParser:
         default=None,
         help="repo root containing presentations/<slug>/ (default: cwd)",
     )
+    # Story 50.3: the deck group's help lists its verbs from the parser, so it cannot fall behind a new verb.
+    deck_verbs = "/".join(deck_subparsers.choices)
+    for choice in subparsers._choices_actions:
+        if choice.dest == "deck":
+            choice.help = f"manage Claude Design decks ({deck_verbs})"
 
     global_flags = _global_flags_parent()
 
@@ -942,7 +949,7 @@ def _run_deck_status(args: argparse.Namespace) -> int:
     line: the report itself is the whole output, for one deck or every
     known one alike.
 
-    ``--account`` (Story 23.1, CAP-1) reports a different shape entirely --
+    ``--account`` (Story 23.1, CAP-29) reports a different shape entirely --
     every Design project the signed-in account can see, reconciled against
     the registry, rather than the per-known-deck bridge state above -- so
     it is refused together with an explicit ``slug`` (``errors.HeraldError``,
@@ -1048,7 +1055,7 @@ def _run_deck_push(args: argparse.Namespace) -> int:
     lets an operator re-run just the push after fixing a conflict without
     re-pulling anything.
 
-    ``--prove`` (Story 23.4, CAP-6) passes straight through to
+    ``--prove`` (Story 23.4, CAP-34) passes straight through to
     ``push_exports``'s own ``prove`` parameter; a proven file gets its own
     printed line, and a ``ReadBackMismatchError`` reaches ``dispatch``
     exactly like any other ``HeraldError`` -- no special handling here."""
@@ -1156,7 +1163,7 @@ def _run_deck_exports(args: argparse.Namespace) -> int:
 
 def _run_deck_sync_all(args: argparse.Namespace) -> int:
     """``herald deck sync-all [--slug SLUG] [--dry-run] [--proof-dir DIR]``
-    (Story 23.6, CAP-8 + CAP-3's sweep half): composes enumerate -> pull ->
+    (Story 23.6, CAP-36 + CAP-31's sweep half): composes enumerate -> pull ->
     refresh -> derive -> push -> prove -> publish, in order, for every
     registered deck (or just ``--slug``), and prints one report line per
     deck. Mirrors ``_run_deck_seed``/``_run_deck_pull``'s composition shape
@@ -1233,7 +1240,7 @@ def _run_deck_qa(args: argparse.Namespace) -> int:
 
 def _run_deck_pptx_spec(args: argparse.Namespace) -> int:
     """``herald deck pptx-spec [--template PATH] [-o out.json]`` (Story
-    15.1, CAP-1): parse a ``.pptx``/``.potx`` template into ``spec.json``
+    15.1, CAP-41): parse a ``.pptx``/``.potx`` template into ``spec.json``
     and print it (or write it with ``-o``). Fully local/offline, like
     ``_run_deck_qa`` -- no ``McpTransport``, no ``bridge.run``: there is
     nothing to reach Claude Design for when reading a template already on
@@ -1252,7 +1259,7 @@ def _run_deck_pptx_spec(args: argparse.Namespace) -> int:
 
 def _run_deck_pptx_fill(args: argparse.Namespace) -> int:
     """``herald deck pptx-fill <content-plan.json> [--template PATH] -o
-    out.pptx`` (Story 15.1, CAP-1): mechanically fill a content plan into a
+    out.pptx`` (Story 15.1, CAP-41): mechanically fill a content plan into a
     template, producing a genuinely editable ``.pptx`` (Design Notes: real
     ``text_frame``/``add_paragraph`` calls, never hand-written OOXML).
     Fully local/offline, same rationale as ``_run_deck_pptx_spec``."""

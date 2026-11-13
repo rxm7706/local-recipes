@@ -8,12 +8,18 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
 from pyforge.testing_kit import (
     cfe_surface,
     changed_paths_since,
     pyforge_import_offenders,
     unsanctioned_commits,
 )
+
+# Story 48.1 (a relay of spec-pyforge-steward:CAP-175): this module reads the live tree outside its package (the
+# compiled skill and persona under .claude/skills, the root AGENTS.md and the git history), so it runs in atlas's
+# live-tree half and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
 
 STATION = "atlas"
 SKILL_NAME = f"pyforge-{STATION}"

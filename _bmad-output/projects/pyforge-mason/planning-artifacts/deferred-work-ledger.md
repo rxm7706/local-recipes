@@ -1861,7 +1861,8 @@ status: open
   origin: spec-deferred ac7cb93c54db — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: high
   promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: 2026-11-12 — Story 37.4 (37-4-mason-s-change-closes-retro-surface-reconcile-deferrals-and-ledger), judged on the commits. The 92-recipe queue ran as Track B batches 1 to 8, Stories 25.5 to 25.12 (merges 26992240c4, 96c64771f0, ab9e52789b, 2095e94e43, 32344834ec, a46fd89638, 1dfc9cca86, 90456f9c6c, all 2026-10-10); each batch's `## Run results` table carries a `Maintainers (G53)` column (the G53 audit), and each batch closed with its Rule-2 retro, `retro(cfe):` v8.99.3 (f5341a2923, renumbered v8.99.4 in ba275a622e), v8.99.7 (957a2facae), v8.99.8 (8716229a2e), v8.99.10 (b8ba385659), v8.99.11 (25f0ae5761, renumbered v8.99.13 in d09366cbcc), v8.99.14 (75d2c0ab34), v8.99.15 (f6807e472c) and v8.99.16 (de5943a19a). Story 25.18 (c806b74707, landed in f604a1ab86) re-bucketed the co-maintained recipes live from the atlas, and Story 25.19 (6d52ea19c3) rebuilt every in-scope failed record and closed spec-pyforge-mason:CAP-35's grep clause; that capability reads retired as a closed one-time campaign since Story 37.1 (839fc04c9f). What has drifted since the batches is its own open row, DW-mason-25-18.
 
 ### DW-mason-25-2-4: B2 dry-run blocked billiard (no CFE block) and cachetools (host setuptools-scm dependency diff).
 
@@ -2155,4 +2156,98 @@ status: open
   origin: spec-deferred 094c45232566 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-11-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-38-3: Mason's fidelity test runs one of ten wrapped scripts for real (validate); the other nine wrapped scripts have a static option check only. Generate, update, scan and submit need the network or credentials and submit is outward; the argv contract proper belongs to conda-forge-expert's own Spec (Story 39.2, blocked on the flip).
+
+- source_spec: `planning-artifacts/specs/spec-38-3-mason-s-adapters-pass-only-what-the-wrapped-scripts-declare.md`
+  summary: Mason's fidelity test runs one of ten wrapped scripts for real (validate); the other nine wrapped scripts have a static option check only. Generate, update, scan and submit need the network or credentials and submit is outward; the argv contract proper belongs to conda-forge-expert's own Spec (Story 39.2, blocked on the flip).
+  evidence: Mason's fidelity test runs one of ten wrapped scripts for real (validate); the other nine wrapped scripts have a static option check only. Generate, update, scan and submit need the network or credentials and submit is outward; the argv contract proper belongs to conda-forge-expert's own Spec (Story 39.2, blocked on the flip).
+  location: src/shared/packages/pyforge-mason/tests/integration/test_delegation_fidelity.py
+  origin: spec-deferred 38330e71f6e7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  owner: mason
+  severity: low
+  promoted: 2026-11-11 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-39-1: The Docker build of a factory-island recipe builds nothing from the island and reports an island artifact directory the script never wrote: cfe.py runs [interpreter, build-locally.py, config], build-locally.py reads neither factory variable, and cfe.py reports <factory root>/build_artifacts/<config>. Wiring it is a conda-forge-expert change, A-only by operator ruling 2026-11-10, and --docker on a factory path stays as recorded.
+
+- source_spec: `planning-artifacts/specs/spec-39-1-the-factory-island-build-is-a-mason-capability-and-its-error-names-only-what-exists.md`
+  summary: The Docker build of a factory-island recipe builds nothing from the island and reports an island artifact directory the script never wrote: cfe.py runs [interpreter, build-locally.py, config], build-locally.py reads neither factory variable, and cfe.py reports <factory root>/build_artifacts/<config>. Wiring it is a conda-forge-expert change, A-only by operator ruling 2026-11-10, and --docker on a factory path stays as recorded.
+  evidence: The Docker build of a factory-island recipe builds nothing from the island and reports an island artifact directory the script never wrote: cfe.py runs [interpreter, build-locally.py, config], build-locally.py reads neither factory variable, and cfe.py reports <factory root>/build_artifacts/<config>. Wiring it is a conda-forge-expert change, A-only by operator ruling 2026-11-10, and --docker on a factory path stays as recorded.
+  location: src/shared/packages/pyforge-mason/src/pyforge/mason/cfe.py:1296
+  origin: spec-deferred 717f1656ad88 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  owner: mason
+  severity: medium
+  promoted: 2026-11-11 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-39-1-2: Mason's ship and submit root does not follow the root of record, and no test asserts a ship never targets local-recipes: a conda-forge ship and a submit resolve <cfe-root>/recipes/<name> only (package.py:819). Blocked on steward Stories 44.8 and 44.9 (operator ruling 2026-11-10).
+
+- source_spec: `planning-artifacts/specs/spec-39-1-the-factory-island-build-is-a-mason-capability-and-its-error-names-only-what-exists.md`
+  summary: Mason's ship and submit root does not follow the root of record, and no test asserts a ship never targets local-recipes: a conda-forge ship and a submit resolve <cfe-root>/recipes/<name> only (package.py:819). Blocked on steward Stories 44.8 and 44.9 (operator ruling 2026-11-10).
+  evidence: Mason's ship and submit root does not follow the root of record, and no test asserts a ship never targets local-recipes: a conda-forge ship and a submit resolve <cfe-root>/recipes/<name> only (package.py:819). Blocked on steward Stories 44.8 and 44.9 (operator ruling 2026-11-10).
+  location: src/shared/packages/pyforge-mason/src/pyforge/mason/package.py:819
+  origin: spec-deferred ca6974f18dd4 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  owner: mason
+  severity: medium
+  promoted: 2026-11-11 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-39-1-3: Mason's runtime capabilities have no kill switch; the 2026-10-26 retrofit skipped mason because its inventory read 7 capabilities (docs/governance/flag-inventory/pyforge-mason.md: CAP rows 7, runtime 0; src/platform/config/flags.json holds no pyforge.mason key). No retrofit switch is added in this change (operator ruling 2026-11-10).
+
+- source_spec: `planning-artifacts/specs/spec-39-1-the-factory-island-build-is-a-mason-capability-and-its-error-names-only-what-exists.md`
+  summary: Mason's runtime capabilities have no kill switch; the 2026-10-26 retrofit skipped mason because its inventory read 7 capabilities (docs/governance/flag-inventory/pyforge-mason.md: CAP rows 7, runtime 0; src/platform/config/flags.json holds no pyforge.mason key). No retrofit switch is added in this change (operator ruling 2026-11-10).
+  evidence: Mason's runtime capabilities have no kill switch; the 2026-10-26 retrofit skipped mason because its inventory read 7 capabilities (docs/governance/flag-inventory/pyforge-mason.md: CAP rows 7, runtime 0; src/platform/config/flags.json holds no pyforge.mason key). No retrofit switch is added in this change (operator ruling 2026-11-10).
+  location: docs/governance/flag-inventory/pyforge-mason.md
+  origin: spec-deferred 2231842f7736 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  owner: mason
+  severity: medium
+  promoted: 2026-11-11 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-37-1: validate_backend_shape's missing-contract-key branch is dead: `provided` is hard-coded to the three contract keys (airgap_contract.py:71-78), so the guard cannot fire. spec-pyforge-mason:CAP-37 is worded as the code behaves and does not claim it; making the guard live is a small code fix for a later Story under spec-pyforge-mason:CAP-37.
+
+- source_spec: `planning-artifacts/specs/spec-37-1-the-mason-spec-defines-each-capability-once-and-marks-it-as-it-stands.md`
+  summary: validate_backend_shape's missing-contract-key branch is dead: `provided` is hard-coded to the three contract keys (airgap_contract.py:71-78), so the guard cannot fire. spec-pyforge-mason:CAP-37 is worded as the code behaves and does not claim it; making the guard live is a small code fix for a later Story under spec-pyforge-mason:CAP-37.
+  evidence: validate_backend_shape's missing-contract-key branch is dead: `provided` is hard-coded to the three contract keys (airgap_contract.py:71-78), so the guard cannot fire. spec-pyforge-mason:CAP-37 is worded as the code behaves and does not claim it; making the guard live is a small code fix for a later Story under spec-pyforge-mason:CAP-37.
+  location: src/shared/packages/pyforge-mason/src/pyforge/mason/airgap_contract.py:71
+  origin: spec-deferred e7a637cc751e — written by mason's station closer, Story 37.4, from this spec's § Planned deferral (written at build); the build wrote no frontmatter row, and the fingerprint is the intake's over this summary and location
+  owner: mason
+  severity: low
+  promoted: 2026-11-12 — Story 37.4 (mason's station closer), cutover readiness change
+  status: open
+
+### DW-mason-37-2: spec-pyforge-mason's `companions:` comments trail the reviewed chain: SPEC.md's frontmatter comments read FR-1..FR-50 / NFR-1..NFR-16 / D-1..D-13 for the PRD and AD-1..AD-16 + AD-25/AD-26 (Presenton AD-17..AD-24) for the mason spine; after Story 37.2's review the PRD holds FR-1..FR-64 and the mason spine adds AD-27 and AD-28. No capability text, surface or acceptance criterion reads the comments; the next re-derive of spec-pyforge-mason restates both ranges.
+
+- source_spec: `planning-artifacts/specs/spec-37-2-the-mason-brief-prd-and-spine-are-reviewed-against-the-spec-they-derive-from.md`
+  summary: spec-pyforge-mason's `companions:` comments trail the reviewed chain: SPEC.md's frontmatter comments read FR-1..FR-50 / NFR-1..NFR-16 / D-1..D-13 for the PRD and AD-1..AD-16 + AD-25/AD-26 (Presenton AD-17..AD-24) for the mason spine; after Story 37.2's review the PRD holds FR-1..FR-64 and the mason spine adds AD-27 and AD-28. No capability text, surface or acceptance criterion reads the comments; the next re-derive of spec-pyforge-mason restates both ranges.
+  evidence: spec-pyforge-mason's `companions:` comments trail the reviewed chain: SPEC.md's frontmatter comments read FR-1..FR-50 / NFR-1..NFR-16 / D-1..D-13 for the PRD and AD-1..AD-16 + AD-25/AD-26 (Presenton AD-17..AD-24) for the mason spine; after Story 37.2's review the PRD holds FR-1..FR-64 and the mason spine adds AD-27 and AD-28. No capability text, surface or acceptance criterion reads the comments; the next re-derive of spec-pyforge-mason restates both ranges.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  origin: spec-deferred ae1029afc3bd — written by mason's station closer, Story 37.4, from this spec's § Planned deferral (written at build); the build wrote no frontmatter row, and the fingerprint is the intake's over this summary and location
+  owner: mason
+  severity: low
+  promoted: 2026-11-12 — Story 37.4 (mason's station closer), cutover readiness change
+  status: open
+
+### DW-mason-37-4: 108 open mason deferrals are untriaged against what has shipped since; 72 carry no severity. Counted by the 2026-11-10 audit; the burn-down is a Dream-sized effort of its own, as the 2026-10-01 campaign was.
+
+- source_spec: `planning-artifacts/specs/spec-37-4-mason-s-change-closes-retro-surface-reconcile-deferrals-and-ledger.md`
+  summary: 108 open mason deferrals are untriaged against what has shipped since; 72 carry no severity. Counted by the 2026-11-10 audit; the burn-down is a Dream-sized effort of its own, as the 2026-10-01 campaign was.
+  evidence: 108 open mason deferrals are untriaged against what has shipped since; 72 carry no severity. Counted by the 2026-11-10 audit; the burn-down is a Dream-sized effort of its own, as the 2026-10-01 campaign was.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md
+  origin: spec-deferred ec4dd0e4c57d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-11-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-37-4-2: Two mason story specs carry a `-2` suffix no ledger key has (spec-2-5-mason-recipe-validate-2.md, spec-5-4-free-inheritance-verification-2.md); CHAIN-STANDARD section 5 names a story spec by its key exactly. Both are entries in docs/governance/flag-rule-baseline.json, which only scripts/flag_rule_baseline.py writes, so a rename needs that script's pass.
+
+- source_spec: `planning-artifacts/specs/spec-37-4-mason-s-change-closes-retro-surface-reconcile-deferrals-and-ledger.md`
+  summary: Two mason story specs carry a `-2` suffix no ledger key has (spec-2-5-mason-recipe-validate-2.md, spec-5-4-free-inheritance-verification-2.md); CHAIN-STANDARD section 5 names a story spec by its key exactly. Both are entries in docs/governance/flag-rule-baseline.json, which only scripts/flag_rule_baseline.py writes, so a rename needs that script's pass.
+  evidence: Two mason story specs carry a `-2` suffix no ledger key has (spec-2-5-mason-recipe-validate-2.md, spec-5-4-free-inheritance-verification-2.md); CHAIN-STANDARD section 5 names a story spec by its key exactly. Both are entries in docs/governance/flag-rule-baseline.json, which only scripts/flag_rule_baseline.py writes, so a rename needs that script's pass.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-5-4-free-inheritance-verification-2.md
+  origin: spec-deferred f3b691a4233e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-11-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open

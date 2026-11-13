@@ -38,4 +38,7 @@ notes: >-
   the Markdown encoding; `identifier` is already mandatory; `type` is the
   encoding's sentinel, not an element, and the encoding itself requires it):
   the estate keeps every v0.2 reader accepting these documents, where the
-  draft alone would require only `type`.
+  draft alone would require only `type`. Section 4.3.3 says the content of an
+  issued Frame Version MUST NOT be revised; the preflight cannot enforce it, so
+  it is a writer's rule: a revised Frame takes a new `version` in the same
+  change (Story 120.4 moved all nine to 0.2.0).

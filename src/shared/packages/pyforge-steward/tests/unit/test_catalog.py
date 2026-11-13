@@ -1,6 +1,6 @@
 """Stories 60.1–60.4 — estate BMAD catalog config, publish + review, ship
-backends and thin browse indexes (spec-self-hosted-bmad-marketplace CAP-1..4 CAP-7 /
-spec-pyforge-steward CAP-117..118).
+backends and thin browse indexes (spec-pyforge-steward CAP-117..120 and CAP-123;
+the oracle map holds CAP-117..121 as one row).
 
 Git is the edit store; backends and sources are declared in ``catalog.yaml``
 and bound to plugins; a new backend or source is a plugin, not a rewrite.

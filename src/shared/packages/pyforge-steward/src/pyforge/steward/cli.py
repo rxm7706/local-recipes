@@ -48,8 +48,8 @@ _ISO_DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 # The eight duties — all real as of this story. `keys` (Epic 1), `deploy`
 # (Epic 2), `provision` (Epic 3), `budget` (Epic 4, complete as of Story 4.3),
 # `sync` (Epic 8, Story 8.1), `workspace` (Epic 13, Stories 13.1–13.2),
-# `upgrade` (Epic 14, Stories 14.1–14.5 — pre-flight + apply + CAP-3 reconcile + CAP-4 pin fan-out + CAP-5 prove-landed),
-# `suite` (Epic 15, Story 15.1 — CAP-1 pipeline-truth report),
+# `upgrade` (Epic 14, Stories 14.1–14.5 — pre-flight + apply + CAP-11 reconcile + CAP-12 pin fan-out + CAP-13 prove-landed),
+# `suite` (Epic 15, Story 15.1 — CAP-21 pipeline-truth report),
 # `init`/`shell-init`/`setup`/`initrepo`/`validate-fast` (Epic 17 — machine bootstrap),
 # `revoke` (Epic 42, Story 42.2 — stop one runaway subject),
 # `catalog` (Epic 60, Story 60.1 — the estate BMAD catalog config),
@@ -60,7 +60,7 @@ _ISO_DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 # `glass` (Epic 61, Story 61.3 — as-of glass over the inbound corridor, standup/shipped + flag-gated export),
 # `quarantine` (Epic 61, Story 61.5 — missing-passport mint-then-reject shelf),
 # `session` (Epic 63, Story 63.4 — one verdict for the session preconditions, run from every entry point).
-# `deck-drift` (Story 59.4 / spec-vocabulary-one-name-one-job CAP-5 — flags silent
+# `deck-drift` (Story 59.4 / spec-pyforge-steward CAP-135 — flags silent
 #   size/etag drift on a pulled Design deck artifact; Herald owns the pull itself).
 # `preflight` (Epic 103, Story 103.6 / CAP-159 — verify-deferred, the catch-up for a touched-scope preflight).
 # `pages` (Epic 102, Story 102.3 / CAP-168 — build/deploy/status of the one Pages workflow; replaced
@@ -146,7 +146,7 @@ _HELP = {
     ),
     "keys": "credential lifecycle — encrypt/decrypt/rotate/list/audit/revoke/exec",
     "deploy": (
-        "perimeter: AD-5 shareability + daphne/nginx manifests; static: CAP-8/AD-10 "
+        "perimeter: sld:AD-5 shareability + daphne/nginx manifests; static: CAP-116/sld:AD-10 "
         "static-export publish (the Pages artifact itself is `steward pages`); "
         "nic: CAP-176 NKP bring-up on kind (behind pyforge.steward.nkp_deploy)"
     ),
@@ -161,16 +161,16 @@ _HELP = {
         "(single-repo or repo-set; own-worktrees-only; archive-not-delete)"
     ),
     "upgrade": (
-        "BMAD-METHOD core upgrade — bmad-core pre-flight (CAP-1), "
-        "deliberate --apply (CAP-2), CAP-3 clobber detect/re-apply, "
-        "pin-fan-out report (CAP-4), prove-landed single verdict (CAP-5); "
+        "BMAD-METHOD core upgrade — bmad-core pre-flight (CAP-9), "
+        "deliberate --apply (CAP-10), CAP-11 clobber detect/re-apply, "
+        "pin-fan-out report (CAP-12), prove-landed single verdict (CAP-13); "
         "never edits foreign-station pin sites beyond documented loop-home "
         "relay refresh"
     ),
     "suite": (
-        "bmad-suite channel product — pipeline-truth (CAP-1) reports "
+        "bmad-suite channel product — pipeline-truth (CAP-21) reports "
         "upstream/recipe/channel/installed/wired for all 13 suite packages "
-        "with per-stage drift and fail-open probes; advance (CAP-2) chains "
+        "with per-stage drift and fail-open probes; advance (CAP-22) chains "
         "autotick→build→test→publish→listing→reviewable PR (never auto-merged)"
     ),
     "init": (
@@ -192,13 +192,16 @@ _HELP = {
     ),
     "track": (
         "assemble one tracked track.json per run from journal/gate-record/state "
-        "(Story 53.3 / hub:CAP-3); not a detector"
+        "(Story 53.3 / spec-pyforge-steward CAP-54); not a detector"
     ),
     "guards": (
         "Hub Guard library — catalog, spec lacking, source-ground (AD-8 copy); "
-        "never a PR verdict (Story 53.4 / hub:CAP-4)"
+        "never a PR verdict (Story 53.4 / spec-pyforge-steward CAP-55)"
     ),
-    "cutover": ("flag-gated cutover plan/apply/flip (Story 44.12 / fnd:CAP-8); default root stays local-recipes"),
+    "cutover": (
+        "the capability ledger's generator and validator, and the root-of-record flag "
+        "(spec-python-foundry-cutover fnd:CAP-8, fnd:CAP-9)"
+    ),
     "session": (
         "one verdict for the session preconditions -- pixi/pyforge-guild, bmad-method drift, "
         "the token-economy kit + codegraph index, gh auth/rate-limit, the Tier-3 sprint-status "
@@ -226,7 +229,7 @@ _HELP = {
 }
 
 
-# Story 31.1 / spec-bmad-suite-install-class-wiring CAP-1: operator path for
+# Story 31.1 / spec-pyforge-steward CAP-27: operator path for
 # the six non-module suite pieces. Cited from install-class-playbook.md;
 # native commands live there (and in install-matrix.md), never invented here.
 INSTALL_CLASS_PLAYBOOK = (
@@ -616,16 +619,43 @@ def _add_deck_drift_arguments(deck_drift_parser: argparse.ArgumentParser) -> Non
 
 
 def _add_cutover_subparsers(cutover_parser: argparse.ArgumentParser) -> None:
-    """Story 44.12: plan / apply / flip."""
-    cutover_subs = cutover_parser.add_subparsers(dest="cutover_verb", metavar="{plan,apply,flip}")
-    plan = cutover_subs.add_parser("plan", help="regenerate or append the move-list")
-    plan.add_argument("--regenerate", action="store_true")
-    plan.add_argument("--append", action="store_true")
-    plan.add_argument("--manifest", default=None, metavar="PATH")
-    apply = cutover_subs.add_parser("apply", help=retrofit_help(("cutover", "apply"), "replay one phase into foundry"))
-    apply.add_argument("--phase", required=True, metavar="N", help="1a or 1b")
-    apply.add_argument("--manifest", default=None, metavar="PATH")
-    apply.add_argument("--foundry-root", default=None, metavar="DIR")
+    """Story 121.2 (spec-python-foundry-cutover fnd:CAP-8, fnd:CAP-9): plan / flip; apply is retired."""
+    cutover_subs = cutover_parser.add_subparsers(dest="cutover_verb", metavar="{plan,flip}")
+    plan = cutover_subs.add_parser(
+        "plan",
+        help="generate (--regenerate, --append) or validate (--check, the default) the capability ledger",
+    )
+    plan.set_defaults(plan_mode="check")
+    plan_mode = plan.add_mutually_exclusive_group()
+    plan_mode.add_argument(
+        "--regenerate",
+        dest="plan_mode",
+        action="store_const",
+        const="regenerate",
+        help="rewrite the derived fields from the live Specs, keep the decided ones "
+        "(behind pyforge.steward.cutover_ledger_write)",
+    )
+    plan_mode.add_argument(
+        "--append",
+        dest="plan_mode",
+        action="store_const",
+        const="append",
+        help="add rows for new capabilities only (behind pyforge.steward.cutover_ledger_write)",
+    )
+    plan_mode.add_argument(
+        "--check",
+        dest="plan_mode",
+        action="store_const",
+        const="check",
+        help="judge the ledger against the live Specs and the written rules; write nothing, exit 1 on a finding",
+    )
+    plan.add_argument(
+        "--ledger",
+        default=None,
+        metavar="PATH",
+        help="the ledger file (default: <repo root>/docs/foundry/capability-ledger.yaml)",
+    )
+    plan.add_argument("--json", action="store_true", help="print the report as JSON")
     flip = cutover_subs.add_parser(
         "flip",
         help=retrofit_help(("cutover", "flip"), "set pyforge.cutover_root (refuses if a loop is running)"),
@@ -987,10 +1017,10 @@ def _add_guards_subparsers(guards_parser: argparse.ArgumentParser) -> None:
 
 
 def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
-    """Add the `perimeter` and `static` verbs. `perimeter` (Story 9.5, CAP-6)
+    """Add the `perimeter` and `static` verbs. `perimeter` (Story 9.5, CAP-114)
     validates and renders the `pyforge.steward.dashboard` Django app's
     deployment perimeter (AD-5 shareability + daphne/nginx manifests).
-    `static` (Story 9.7, CAP-8/AD-10) writes a board as a self-contained
+    `static` (Story 9.7, CAP-116/AD-10) writes a board as a self-contained
     static export to `docs/dashboard/<board>/index.html`, which lands
     through a pull request like any tracked file. Story 102.3 retired
     `dashboard` and `status` (the Pages artifact is `steward pages`); a call
@@ -1002,8 +1032,8 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
         "perimeter",
         help=retrofit_help(
             ("deploy", "perimeter"),
-            "validate the AD-5 cross-worker shareability of a dashboard "
-            "deployment topology and render its daphne+nginx manifests (CAP-6)",
+            "validate the sld:AD-5 cross-worker shareability of a dashboard "
+            "deployment topology and render its daphne+nginx manifests (CAP-114)",
         ),
     )
     perimeter.add_argument(
@@ -1076,7 +1106,7 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
 
     static_help = (
         "write a board as a self-contained static export (docs/dashboard/<board>/index.html) — "
-        "CAP-8/AD-10; the file lands through a pull request like any tracked file (no verb pushes)"
+        "CAP-116/sld:AD-10; the file lands through a pull request like any tracked file (no verb pushes)"
     )
     static = deploy_subs.add_parser("static", help=static_help, description=static_help)
     static.add_argument(
@@ -1126,7 +1156,7 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
 def _add_provision_subparsers(provision_parser: argparse.ArgumentParser) -> None:
     """Add the `--list-modules`/`--module`/`--env`/`--runner`/`--list`/
     `--json`/`--verify`/`--prove-class-path` flags (Epic 3's four stories, plus Epic 6 Story
-    6.1's `--module` and Story 6.2's `--list-modules`; Story 31.3 CAP-3 proof).
+    6.1's `--module` and Story 6.2's `--list-modules`; Story 31.3 CAP-29 proof).
 
     Unlike `keys`/`deploy`, `provision` has no verb subcommands — every
     action is a flag directly on the `provision` duty parser, matching each
@@ -1154,7 +1184,7 @@ def _add_provision_subparsers(provision_parser: argparse.ArgumentParser) -> None
         "--prove-class-path",
         action="store_true",
         help=(
-            "prove the documented fresh-clone class-path (install-class CAP-3): "
+            "prove the documented fresh-clone class-path (CAP-29): "
             "method core, loop --runner, skill-forge own installer, labs plugin "
             "docs, the Kedro-Viz producer (kedro-viz-export artifact), template N/A"
         ),
@@ -1248,7 +1278,7 @@ def _add_sync_subparsers(sync_parser: argparse.ArgumentParser) -> None:
 
 
 def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None:
-    """Add `start`/`ls`/`status`/`clean` (Stories 13.1–13.4 / CAP-1..4 + set teardown)."""
+    """Add `start`/`ls`/`status`/`clean` (Stories 13.1–13.4 / CAP-104..107 + set teardown)."""
     workspace_subs = workspace_parser.add_subparsers(dest="workspace_verb", metavar="{start,ls,status,clean}")
 
     start = workspace_subs.add_parser(
@@ -1550,7 +1580,7 @@ def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
         "--apply",
         action="store_true",
         help=(
-            "CAP-2/6/7 deliberate apply: require a clean tree, consume the CAP-1 "
+            "CAP-10/14/15 deliberate apply: require a clean tree, consume the CAP-9 "
             "pre-flight, create the review branch, run `bmad-method install --action "
             "update -y --directory <repo> --modules <every manifest module, core "
             "first> [--pin <name>=<pin>]` with stdin closed, then for each catalog "
@@ -1575,7 +1605,7 @@ def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
         "--no-shims",
         action="store_true",
         help=(
-            "CAP-9: retire the installed core's deprecation shims on this apply "
+            "CAP-17: retire the installed core's deprecation shims on this apply "
             "(installShims: false); refused if a legacy-name _bmad/custom/** "
             "override exists (trap 2)"
         ),
@@ -1631,7 +1661,7 @@ def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
     pin_fan = upgrade_subs.add_parser(
         "pin-fan-out",
         help=(
-            "CAP-4 report-only: enumerate known pin sites for a bmad-loop or "
+            "CAP-12 report-only: enumerate known pin sites for a bmad-loop or "
             "bmad-method version change with moved/not-moved status; "
             "foreign-station sites are never edited"
         ),
@@ -1678,7 +1708,7 @@ def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
     prove = upgrade_subs.add_parser(
         "prove-landed",
         help=(
-            "CAP-5 post-apply gate: bmad-drift integrity + CFE meta-tests + "
+            "CAP-13 post-apply gate: bmad-drift integrity + CFE meta-tests + "
             "per-loop-home bmad-loop init (relay refresh) + validate; "
             "reports one pass/fail verdict"
         ),
@@ -1711,7 +1741,7 @@ def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
 
     verify = upgrade_subs.add_parser(
         "verify",
-        help=("alias for prove-landed (CAP-5 post-apply single-verdict gate)"),
+        help=("alias for prove-landed (CAP-13 post-apply single-verdict gate)"),
     )
     verify.add_argument(
         "--repo-root",
@@ -1746,7 +1776,7 @@ def _add_suite_subparsers(suite_parser: argparse.ArgumentParser) -> None:
     truth = suite_subs.add_parser(
         "pipeline-truth",
         help=(
-            "CAP-1: report upstream (npm/GitHub), recipe, channel, installed, "
+            "CAP-21: report upstream (npm/GitHub), recipe, channel, installed, "
             "and wired-or-not for all 13 bmad-suite packages — drift named "
             "per stage; every probe fail-open"
         ),
@@ -1773,7 +1803,7 @@ def _add_suite_subparsers(suite_parser: argparse.ArgumentParser) -> None:
     advance = suite_subs.add_parser(
         "advance",
         help=(
-            "CAP-2: advance one stale suite package end-to-end "
+            "CAP-22: advance one stale suite package end-to-end "
             "(autotick tag|head → build → test → publish → listing → "
             "reviewable PR; never auto-merged)"
         ),
@@ -1963,7 +1993,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         if not ns.duty:
             parser.print_help()
             return EXIT_OK
-        # Epic 114 (CAP-7): the invoked duty's kill switches, read before it runs (FlagOff -> EXIT_USAGE below).
+        # Epic 114 (spec-feature-flag-governance CAP-7): the invoked duty's kill switches, read before it runs (FlagOff -> EXIT_USAGE below).
         require_retrofit_flags(ns)
         result: DutyResult = resolve_duty(ns.duty).run(ns)
         # An empty summary prints nothing: a duty that has already delivered its

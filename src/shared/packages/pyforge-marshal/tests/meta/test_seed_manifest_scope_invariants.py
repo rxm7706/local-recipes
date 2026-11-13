@@ -7,12 +7,13 @@ from pathlib import Path
 
 import pytest
 
+from pyforge import marshal as marshal_package
 from pyforge.marshal.seed.model.manifest import load_manifest, manifest_for_adopt_scope
 
 
 def test_adopt_and_update_modules_do_not_define_private_manifest_filters():
-    adopt_src = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "seed" / "verbs" / "adopt.py"
-    update_src = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "seed" / "verbs" / "update.py"
+    adopt_src = Path(marshal_package.__file__).resolve().parent / "seed" / "verbs" / "adopt.py"
+    update_src = Path(marshal_package.__file__).resolve().parent / "seed" / "verbs" / "update.py"
     for path in (adopt_src, update_src):
         text = path.read_text(encoding="utf-8")
         assert "def _manifest_for_" not in text, f"{path.name} must not define a private manifest filter"

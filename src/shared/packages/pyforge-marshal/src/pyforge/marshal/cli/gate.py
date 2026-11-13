@@ -226,6 +226,7 @@ from .spin import _format_utc_compact, _random_token, _run_dir, _tier3_path
 # (this package's established cross-module precedent: `cli/spin.py` itself
 # duplicates several of `cli/init.py`'s helpers rather than reaching across
 # for a private symbol every module needs).
+# CAP-4: loop-home FILE read -- marshal's own file: the journal marshal writes in its own run dir, not bmad-loop run state
 _JOURNAL_FILENAME = "journal.jsonl"
 
 # The base branch a scope check's `VcsPort.changed_files` diffs against --

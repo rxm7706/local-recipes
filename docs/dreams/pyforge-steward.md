@@ -8052,3 +8052,75 @@ this host; the ruling on the capability-ledger mode.
   CAP-176, CAP-177 and CAP-178 are amended on `spec-pyforge-steward` (its memlog's 2026-11-01 entries carry
   the record); Story 118.3 is amended to match and stays `backlog` until its operator-owned inputs exist.
   Story 118.7 put `kubectl` and `helm` into the `pyforge-steward` environment the same day.
+
+## 2026-11-10 — Cutover readiness: the steward Spec, suite and shared surfaces tell the truth
+
+*Appended 2026-11-10 as a dated section (CHAIN-STANDARD § 3, step 1). It is steward's half of the
+operator's cutover-readiness rulings of that day (`pyforge-unifying-strategy.md` § Realization log, the
+2026-11-10 entry and its two addenda): steward keeps what works and makes it rebuildable from Dream,
+memlog and Spec. Nothing here changes the Foundry's shape; the Unifying Strategy owns it.*
+
+### The cutover control plane (steward Epics 120 and 121)
+
+`steward cutover plan` generates and validates the capability ledger, and `apply` and the move manifest
+retire. `pyforge.cutover_root` is the writer lock: a chain write off the writer is refused in session, and the
+operator flips the flag by hand, with no loop running, once the Launch slice is proven. The nine Frames become
+pointers to the seed (the station Dream and the Spec memlog), and the frame-spec pin moves. Story 121.5 is
+minted `blocked` as the expiry anchor of the host, platform and portal rows, and Story 44.1 retires like 44.4
+to 44.6. This binds `spec-python-foundry-cutover` (`fnd:CAP-2`, `fnd:CAP-8`, `fnd:CAP-9`, and the markers of
+the rest), `spec-foundry-regenerate-not-fold:CAP-1` to `spec-foundry-regenerate-not-fold:CAP-5`,
+`spec-foundry-capability-ledger:CAP-1` and `spec-foundry-capability-ledger:CAP-2` and
+`spec-pyforge-steward:CAP-6` and `spec-pyforge-steward:CAP-53`, and adds no product behaviour. Its one new
+flag is the kill switch `pyforge.steward.cutover_ledger_write` over the ledger generator's two write modes
+(`cutover_ledger.py`; registered by Story 124.4): a switch on a new verb mode, not a retrofit, which the
+second addendum's ruling 5 forbids. → **Minted the same day:** Epic 120 (Stories 120.1–120.5) and Epic 121
+(Stories 121.1–121.7, with 121.5 `blocked`), each with its ledger key and tracked story spec; the three
+cutover Specs take memlog entries and one re-derive each; no FR and no AD at mint (the spine's `fnd:AD-24` to
+`fnd:AD-26` are Story 120.1's).
+
+### The steward Spec, suite and shared surfaces (steward Epics 122 to 124, and Story 29.5)
+
+The fleet audit of 2026-11-10 found the steward Spec naming a gone verb (`steward deploy dashboard`) and a
+script that was never written (`scripts/station_suite_ci.py`), 18 `(ready)` markers on finished work, two
+shipped duties (`restore --drill`, `revoke --sub`) with no capability, 21 of 30 `pyforge.steward.*` flag keys
+unspecced, 144 of 178 capabilities cited by no test, and A-tree paths, the repository slug and a
+`pyforge.doctor` import in source. Under the operator's rulings of that day steward keeps what works and makes
+it rebuildable from Dream, memlog and Spec: markers and text follow the tree (`CAP-2` retires, superseded by
+`CAP-168`); the public contract is one companion, `contract.md`, with a meta-test that fails when the code has
+more; every capability names its source modules and tests in `oracle-map.md`; one module, `root_layout.py`,
+names this root's layout and repository, and those identity constants stay with this checkout (they do not
+follow the root of record); help and output cite today's capability ids; `steward session check` takes
+`bmad-drift-check`'s verdict everywhere, so its bmad-method finding can fail; and `estate plan` refuses when
+its pixi dry run fails. Steward also lands what every station needs on the surfaces it owns: live-tree task
+halves and CI jobs for six stations, core and the testing kit; the Python 3.14 floor in its manifests and one
+re-lock; the cutover-ledger kill switch in the flag tree; personas that name the MCP tools their station's
+face really serves; and the pending skills recompile (Story 29.5), which runs last. It binds
+`spec-pyforge-steward` (`CAP-179` to `CAP-182` minted; the markers Story 122.1 lists and the text of `CAP-2`,
+`CAP-4`, `CAP-5`, `CAP-6`, `CAP-7`, `CAP-26`, `CAP-38`, `CAP-43`, `CAP-46`, `CAP-53`, `CAP-70`, `CAP-93`,
+`CAP-117`, `CAP-122`, `CAP-139`, `CAP-153`, `CAP-159`, `CAP-161`, `CAP-167` and `CAP-175` amended in the memlog
+at mint and rendered by Story 122.1) and `spec-pyforge-unifying-strategy` (`spec-pyforge-unifying-strategy:CAP-4`,
+`spec-pyforge-unifying-strategy:CAP-14` and `spec-pyforge-unifying-strategy:CAP-16` amended by Story 124.5;
+`spec-pyforge-unifying-strategy:CAP-20` cited), and adds no product behaviour and no retrofit kill switch:
+`restore` and `revoke` stay unswitched, a deferred-work row.
+→ **Minted the same day:** `spec-pyforge-steward:CAP-179` (the public contract), `spec-pyforge-steward:CAP-180`
+(restore and revoke, `shipped` since their duties landed on 2026-09-02), `spec-pyforge-steward:CAP-181` (the
+oracle map) and `spec-pyforge-steward:CAP-182` (one root-layout module), with FR-53 to FR-56 on the PRD and no
+AD; Epic 122 (Stories 122.1–122.5), Epic 123 (Stories 123.1–123.3) and Epic 124 (Stories 124.1–124.5), each
+with its ledger key and tracked story spec; Story 29.5 amended in place (Surface and Deps).
+
+### Realization log
+
+- **2026-11-13 (cutover readiness, closed)** — Stories 120.1 to 120.5, 121.1 to 121.4, 121.6, 121.7, 122.1 to
+  122.4, 123.1 to 123.3, 124.1 to 124.5 and 29.5 are built and reviewed on branch `cutover-readiness-2026-11-10`;
+  Story 121.5 stays `blocked` as the host anchor, Story 44.1 retired at mint, and Story 122.5 closes the chain.
+  `spec-pyforge-steward:CAP-153`, `spec-pyforge-steward:CAP-166`, `spec-pyforge-steward:CAP-179` and
+  `spec-pyforge-steward:CAP-181` read `(shipped 2026-11-12)`, and `spec-pyforge-steward:CAP-182` reads
+  `(shipped 2026-11-11; not met: every other module derives from it, DW-steward-123-2-2)`;
+  `spec-pyforge-steward:CAP-180` was minted shipped. The steward Spec's memlog and the host Spec's memlog each name,
+  in one `Surface reconcile` event, every path the change moved on their surfaces, for doctor Story 58.4's scoped
+  stamps, and the host's companion `stack.md` now cites `pyforge-atlas:AD-13`. The brief, PRD, spine and `epics.md`
+  are re-stamped 2026-11-13; no readiness report is due before 2026-12-01 (the 2026-09-09 gate's shelf life ends
+  2026-12-08). The gaps the rulings keep are tracked ledger rows: DW-steward-121-1 to DW-steward-121-4,
+  DW-steward-cutover-2026-11-10-1 (resolved by Story 123.3) to DW-steward-cutover-2026-11-10-12, DW-steward-121-6-1,
+  DW-steward-121-6-2, DW-steward-122-4-1 and DW-steward-123-2-2. The ledger keys move to `done` in the change's
+  ledger close. Owner `spec-pyforge-steward`.

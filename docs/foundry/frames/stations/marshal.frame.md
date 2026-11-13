@@ -5,7 +5,7 @@ license: https://www.apache.org/licenses/LICENSE-2.0
 name: PyForge Marshal
 description: Station Frame for Marshal — deterministic BMAD-loop supervisor. Load when supervising runs, landing stories, or checking fleet/loop-home state.
 visibility: private
-version: 0.1.0
+version: 0.2.0
 scope: station
 maintainer:
   - marshal
@@ -15,6 +15,9 @@ inherits:
 
 # Marshal
 
+- Seed: `docs/dreams/pyforge-marshal.md`
+- Seed: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md`
+- Derived: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/contract.md`
 - Grammar: `pyforge marshal …` and `POST /stations/marshal/mcp`. Do not import `pyforge.marshal` internals.
 - Wraps bmad-loop with gates-as-objects, run supervision, landing, and Genesis seed.
 - Hub Track field enumeration is a relay from steward's Intelligence Hub epic — do not invent a second factory-spin surface here.

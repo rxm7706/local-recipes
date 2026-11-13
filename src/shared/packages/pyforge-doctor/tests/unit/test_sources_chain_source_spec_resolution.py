@@ -4,18 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from pyforge.doctor.sources import chain
 
-# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
-# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
-pytestmark = pytest.mark.live_tree
-
-try:
-    _REPO_ROOT: Path | None = Path(__file__).resolve().parents[6]
-except IndexError:
-    _REPO_ROOT = None
+# Doctor Story 58.1 (spec-pyforge-doctor:CAP-97): no test here reads this repository, so the module runs in the
+# package half; the tests that do run in test_live_sources_chain_source_spec_resolution.py.
 
 _HERALD_DW_FU_15_1_SOURCE_SPEC = (
     "`planning-artifacts/specs/spec-15-1-template-parse-then-fill-produces-a-genuinely-editable-deck.md`"
@@ -48,10 +40,8 @@ def test_herald_dw_fu_15_1_project_relative_source_spec_resolves(tmp_path: Path)
 
 def test_repo_root_relative_source_spec_still_resolves(tmp_path: Path) -> None:
     """I/O matrix: repo-root-relative ``source_spec`` (existing working case)."""
-    rel = (
-        "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/"
-        "spec-15-1-template-parse-then-fill-produces-a-genuinely-editable-deck.md"
-    )
+    # a join: a bare literal naming the tracked spec would read as a live read (steward's scan_strings)
+    rel = "/".join(("_bmad-output", "projects", "pyforge-herald", _HERALD_SPEC_REL))
     spec_path = tmp_path / rel
     spec_path.parent.mkdir(parents=True, exist_ok=True)
     spec_path.write_text("# spec\n", encoding="utf-8")
@@ -114,20 +104,4 @@ def test_tier3_source_spec_is_neither_present_nor_absent(tmp_path: Path) -> None
 
     assert resolution.status is chain.SourceSpecResolutionStatus.TIER3
     assert chain.source_spec_verdict_phrase(resolution) == ("source_spec is Tier-3 (gitignored, not in clone)")
-    assert chain.source_spec_mechanical_still_open_eligible(resolution) is False
-
-
-@pytest.mark.skipif(_REPO_ROOT is None, reason="layout too shallow for repo root")
-def test_herald_dw_fu_15_1_live_regression() -> None:
-    """Regression fixture built from herald's real ``DW-FU-15-1`` ledger row."""
-    resolution = chain.resolve_source_spec(
-        _HERALD_DW_FU_15_1_SOURCE_SPEC,
-        repo_root=_REPO_ROOT,
-        project="pyforge-herald",
-    )
-
-    assert resolution.status is chain.SourceSpecResolutionStatus.PRESENT
-    assert resolution.resolution_basis == "project_root"
-    expected = _REPO_ROOT / "_bmad-output/projects/pyforge-herald" / _HERALD_SPEC_REL
-    assert resolution.resolved_path == expected.resolve()
     assert chain.source_spec_mechanical_still_open_eligible(resolution) is False

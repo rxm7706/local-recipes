@@ -70,7 +70,7 @@ Station tasks use **only** these kinds:
 
 - `consult_content_skill` — load `.claude/skills/pyforge-scribe/active/pyforge-scribe/SKILL.md` (CAP-15). No other skill or data file.
 - `grammar` — FR-13 unified dispatch: argv must start `pyforge scribe`. Example: `pyforge scribe recall "why did we pin typer"`. Do not call the `scribe` binary as a second public grammar. Do not import `pyforge.scribe` internals.
-- `mcp` — FR-11 service face: `POST /stations/scribe/mcp` only (identity tool `station_face`). No other URL, method, or host.
+- `mcp` — FR-11 service face: `POST /stations/scribe/mcp` only: `start_recall` (the query as its target) and `get_recall` (its handle). No other URL, method, or host.
 
 ## Forbidden actions
 

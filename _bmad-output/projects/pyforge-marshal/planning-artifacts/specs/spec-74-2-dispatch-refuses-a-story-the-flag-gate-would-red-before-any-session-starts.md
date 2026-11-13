@@ -2,7 +2,7 @@
 title: '74.2: Dispatch refuses a story the flag gate would red, before any session starts'
 type: 'feature'
 created: '2026-09-28'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'd7c798649479458741580630d995c69af722ec1b'
 flag-exempt: detector-or-gate   # a refusal path is a gate; a gated gate reports a silent green (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
@@ -147,6 +147,7 @@ decomposed 2026-09-28 (night) as Epic 74's mint.
 
 - 2026-09-30 -- operator flip, `blocked` -> `backlog`: the cross-station gate cleared when doctor Story 34.2 landed on main (5a6dbc5e21). Nothing else in the contract changed. A resumed worktree brings `origin/main` into its branch first (merge, never rebase).
 - 2026-09-30 -- step-02 planning, no contract change: (1) the two WARN outcomes take a sibling code, `MRS-DISP-055`, because the verdict is classified by code and AD-31 gives one code one rung (Design Notes); `MRS-DISP-052` is still the only code the Acceptance Criteria name and is registered once. (2) The frontmatter `status` was `backlog`, which step-01 does not list; it was treated as "not yet planned", the path Stories 74.1, 75.1, 76.1, 77.1 and 78.1 took.
+- 2026-11-10 -- frontmatter `status` `in-review` -> `done` (marshal Story 114.1, the cutover-readiness audit's story-spec drift): the ledger key has read `done` since 2026-09-30 (`ddff15e9d9`); the landing left this spec behind. No contract change.
 
 ## Binding
 

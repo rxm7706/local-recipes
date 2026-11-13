@@ -6,7 +6,13 @@ import json
 import re
 from pathlib import Path
 
+import pytest
 from pyforge.testing_kit import changed_paths_since, pyforge_import_offenders
+
+# Story 116.2 (spec-pyforge-marshal:CAP-305): this module reads the repository outside this package, so it runs in
+# the live-tree half; it finds the repository root when a test runs, never at import, so the module imports off
+# the tree (the package half collects it before the marker deselects it).
+pytestmark = pytest.mark.live_tree
 
 STATION = "marshal"
 PERSONA = "bmad-agent-marshal"

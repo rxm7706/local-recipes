@@ -716,7 +716,7 @@ def save_inventory(path: str | Path, entries: tuple[KeyIdentityEntry, ...]) -> N
 
     Creates parent directories as needed. `yaml.safe_dump` only.
 
-    Writes atomically via `pyforge.core.atomic_write` (Story 14.2, CAP-2 --
+    Writes atomically via `pyforge.core.atomic_write` (Story 14.2, spec-pyforge-core CAP-2 --
     the one shared temp-file-then-`os.replace` primitive, mkstemp-based) --
     review finding: a concurrent `load_inventory` reader (e.g. `steward keys
     list` running at the same moment as a `rotate`/`revoke`) could otherwise

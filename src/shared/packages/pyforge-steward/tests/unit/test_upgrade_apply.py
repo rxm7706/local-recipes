@@ -1,22 +1,22 @@
-"""Story 14.2 — CAP-2 deliberate apply: branch-first, refuse legacy, preserve custom.
+"""Story 14.2 — CAP-10 deliberate apply: branch-first, refuse legacy, preserve custom.
 
-Story 14.6 — CAP-6: the installer is driven on purpose (``--directory`` /
+Story 14.6 — CAP-14: the installer is driven on purpose (``--directory`` /
 ``--modules`` from the manifest, stdin closed, pixi-bin PATH fallback) and an
 exit-0 apply that changed nothing is a refusal (trap 12), never a green.
 
-Story 14.7 — CAP-7: a ``source: custom`` module (fixture: skf) survives the
+Story 14.7 — CAP-15: a ``source: custom`` module (fixture: skf) survives the
 core apply — catalog-annotated config paths are snapshotted and restored, the
 module's own installer runs from the repo root, skill dirs are verified against
 the packaged source (finding only), and the regenerated ``[modules.<name>]``
 block is reported as a diff (traps 13/14 replayed with fake installers only).
 
-Story 14.8 — CAP-8: a marker-free byte-diff scan finds installer-owned skill
+Story 14.8 — spec-pyforge-steward CAP-16: a marker-free byte-diff scan finds installer-owned skill
 files and ``_bmad/scripts/*.py`` edited in place (trap 16); after the core
 installer regenerates them, a real ``git merge-file`` three-way merge lands
 the clean ones and flags genuine conflicts with a ``.customization-conflict``
 sibling, repo bytes left exactly as the installer wrote them.
 
-Story 14.9 — CAP-9: ``--no-shims`` inserts literally on the installer argv
+Story 14.9 — CAP-17: ``--no-shims`` inserts literally on the installer argv
 right after ``--modules``, before any ``--pin`` pair; a same-version run that
 really deletes a shim is a real diff (never trap 12); the sole refusal under
 ``--no-shims`` is the pre-existing trap-2 legacy-custom check, unchanged.
@@ -246,7 +246,7 @@ def _fake_installer_script(
     ``_bmad/skf/**``, regenerate ``config.yaml`` from defaults with a literal
     ``{project-root}/{value}``, drop the undeclared ``skf-campaign`` skill dir,
     and rewrite the ``[modules.skf]`` block of ``_bmad/config.toml`` with defaults.
-    ``no_shims`` (Story 14.9 / CAP-9) asserts ``--no-shims`` really is on argv
+    ``no_shims`` (Story 14.9 / CAP-17) asserts ``--no-shims`` really is on argv
     and deletes a fixture shim-shaped dir (``_bmad/bmm/v6-shims/bmad-dev-auto``,
     when present) to mimic a real shim-retirement diff.
     """
@@ -603,7 +603,7 @@ def test_cli_apply_ok(tmp_path, capsys):
     assert payload["branch"] == "review/cli-apply"
     assert payload["custom_identical"] is True
     assert payload["installer_exit"] == 0
-    # CAP-6: the fake received --directory <repo> / --modules core,bmm,skf and
+    # CAP-14: the fake received --directory <repo> / --modules core,bmm,skf and
     # the payload records the same argv; a real diff is not zero-diff.
     expected_cmd = [
         str(installer),
@@ -709,7 +709,7 @@ def test_steward_never_writes_bmm_core_itself(tmp_path):
     assert report.custom_identical is True
 
 
-# ── Story 14.6 / CAP-6 — the installer is driven on purpose ────────────────
+# ── Story 14.6 / CAP-14 — the installer is driven on purpose ───────────────
 
 
 def test_read_installed_modules_core_first_and_deduplicated(tmp_path):
@@ -1007,7 +1007,7 @@ def test_apply_refuses_unresolvable_installer_binary_before_branch(tmp_path):
     assert not (repo / "_bmad" / "bmm" / "updated.txt").exists()
 
 
-# ── Story 14.7 / CAP-7 — custom modules survive the core apply ─────────────
+# ── Story 14.7 / CAP-15 — custom modules survive the core apply ────────────
 
 
 def test_apply_custom_module_survives_core_apply_trap_13_14_replay(tmp_path):
@@ -1066,7 +1066,7 @@ def test_apply_custom_module_survives_core_apply_trap_13_14_replay(tmp_path):
     assert payload["custom_modules"][0]["own_installer_exit"] == 0
 
     text = format_apply(report, as_json=False)
-    assert "## CAP-7 custom modules" in text
+    assert "## CAP-15 custom modules" in text
     assert _SKF_CONFIG_REL in text and "restored" in text
     assert "sidecar_path" in text
 
@@ -1104,7 +1104,7 @@ def test_apply_custom_module_catalog_pin_lands_on_core_argv(tmp_path):
 
 
 def test_real_catalog_pins_skf_v2_1_0():
-    """Story 46.7: the REAL packaged 6.12.0 catalog carries the skf pin (CAP-7).
+    """Story 46.7: the REAL packaged 6.12.0 catalog carries the skf pin (CAP-15).
 
     ``test_apply_custom_module_catalog_pin_lands_on_core_argv`` above proves the
     generic pin-to-argv mechanism works once a pin exists, but it only ever
@@ -1706,7 +1706,7 @@ def test_cli_apply_help_names_real_argv_shape(capsys, monkeypatch):
     """14.6's deferred item: the --apply help quotes the argv the apply really builds."""
     # argparse wraps help at the terminal width and hyphen-breaks long tokens
     # (`bmad-module-\nskill-forge`); a wide COLUMNS keeps every token whole.
-    monkeypatch.setenv("COLUMNS", "400")
+    monkeypatch.setenv("COLUMNS", "1000")
     rc = main(["upgrade", "bmad-core", "--help"])
     assert rc == EXIT_OK
     text = " ".join(capsys.readouterr().out.split())
@@ -1716,7 +1716,7 @@ def test_cli_apply_help_names_real_argv_shape(capsys, monkeypatch):
     assert "bmad-module-skill-forge update" in text
 
 
-# ── Story 14.8 / CAP-8 — local customizations found & re-applied ───────────
+# ── Story 14.8 / spec-pyforge-steward CAP-16 — local customizations found & re-applied ──
 
 _CAP8_SKILL_NAME = "bmad-dev-auto"
 _CAP8_SCRIPT_NAME = "helper.py"
@@ -1755,7 +1755,7 @@ def _write_cap8_package(root: Path, *, script_body: str, skill1_body: str, skill
 
 
 def _write_cap8_repo(root: Path) -> Path:
-    """`_write_repo` (no skf) plus the three CAP-8-flagged files, committed."""
+    """`_write_repo` (no skf) plus the three spec-pyforge-steward CAP-16-flagged files, committed."""
     repo = _write_repo(root, modules=("core", "bmm"), custom=(), with_legacy_custom=False)
     skill_dir = repo / ".claude" / "skills" / _CAP8_SKILL_NAME
     skill_dir.mkdir(parents=True)
@@ -1768,7 +1768,7 @@ def _write_cap8_repo(root: Path) -> Path:
 
 
 def _fake_cap8_installer_script(path: Path, *, target_package_root: Path) -> Path:
-    """Fake ``bmad-method`` that regenerates the three CAP-8 files from *target_package_root*.
+    """Fake ``bmad-method`` that regenerates the three spec-pyforge-steward CAP-16 files from *target_package_root*.
 
     Mirrors trap 16 live: the installer rewrites every installer-owned file it
     ships with the target release's content, dropping the repo's edits.
@@ -1890,7 +1890,7 @@ def test_apply_cap8_three_files_two_clean_one_conflict(tmp_path):
     assert report.local_customizations_ok is False
 
     text = format_apply(report, as_json=False)
-    assert "## CAP-8 local customizations re-applied" in text
+    assert "## CAP-16 local customizations re-applied" in text
     assert "[merged_clean] _bmad/scripts/helper.py" in text
     assert "[conflict_needs_manual_merge] .claude/skills/bmad-dev-auto/step-02.md" in text
     assert "conflict file: .claude/skills/bmad-dev-auto/step-02.md.customization-conflict" in text
@@ -2154,7 +2154,7 @@ def test_cli_apply_help_names_installed_package_root_flag(capsys, monkeypatch):
     assert "run `bmad-method install --action update -y`," not in text
 
 
-# ── Story 14.9 / CAP-9 — --no-shims deliberate shim retirement ─────────────
+# ── Story 14.9 / CAP-17 — --no-shims deliberate shim retirement ────────────
 
 
 def _add_fixture_shim(repo: Path) -> Path:

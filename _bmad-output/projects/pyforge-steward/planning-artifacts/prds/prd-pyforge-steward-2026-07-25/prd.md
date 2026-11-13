@@ -2,7 +2,7 @@
 fr-derivation-from: "2026-09-17"
 title: Steward (pyforge-steward)
 created: 2026-07-25
-updated: "2026-11-06"   # RE-STAMPED 2026-11-06 (CAP-20, Epic 119): chain-currency cascade (spec -> PRD); canopy:FR-51 registered, no other FR moves.
+updated: "2026-11-13"   # RE-STAMPED 2026-11-13 (steward Story 122.5, the chain close): chain-currency cascade (spec -> PRD) for the re-derive of spec-pyforge-steward that flips the markers of CAP-153, CAP-166, CAP-179, CAP-181 and CAP-182 to shipped; no FR registered, renumbered, removed or amended. See § Currency reconciliation — 2026-11-13 (Story 122.5). Prior "2026-11-11"   # RE-STAMPED 2026-11-11 (steward Story 122.1): chain-currency cascade (spec -> PRD) for this PR's one re-derive of spec-pyforge-steward and the 2026-11-11 re-derives of spec-python-foundry-cutover, spec-foundry-regenerate-not-fold and spec-foundry-capability-ledger; FR delta FR-53..FR-56 (registered at mint); pointers on the UJ-2, FR-8..FR-11, In Scope, SM-2, D6 and 2026-08-26 lines; FR-49's driver line corrected; no FR registered, renumbered or removed. See § Currency reconciliation — 2026-11-11 (Story 122.1). Prior "2026-11-11"   # AMENDED 2026-11-11 (fix pass of the cutover-readiness mint): FR-54's Consequence follows CAP-180's corrected success (exit 1, never 70, the host command's own error; no message names --python); no FR registered, renumbered or removed. Prior "2026-11-10"   # AMENDED 2026-11-10 (cutover-readiness mint, steward-station unit): FR-53 <- CAP-179, FR-54 <- CAP-180, FR-55 <- CAP-181 and FR-56 <- CAP-182 registered, each traced from its capability; no FR renumbered or removed. See § Currency reconciliation — 2026-11-10 (CAP-179..CAP-182). Story 122.1 writes the rest of the cascade (pointers, the driver line). Prior "2026-11-06"   # RE-STAMPED 2026-11-06 (CAP-20, Epic 119): chain-currency cascade (spec -> PRD); canopy:FR-51 registered, no other FR moves.
 # 2026-11-05  # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief -> PRD and spec -> PRD); no CAP, FR or AD is minted. Prior "2026-11-04"   # RE-STAMPED 2026-11-04: chain-currency cascade (spec -> PRD) (the Surface reconcile of Stories 118.7 and 118.8 on spec-pyforge-steward and spec-pyforge-unifying-strategy); no CAP, FR, AD, epic or story moved. See § Currency reconciliation — 2026-11-04.
 # 2026-11-01  # RE-STAMPED 2026-11-01 (steward Stories 118.7 and 118.8): chain-currency cascade (spec -> PRD) for spec-pyforge-steward's amendments of CAP-176, CAP-177 and CAP-178; FR-50, FR-51 and FR-52 amended in place; no FR registered, renumbered or removed. See § Currency reconciliation — 2026-11-01 (Stories 118.7 and 118.8). Prior "2026-11-01"
 # 2026-11-01  # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): chain-currency cascade (brief -> PRD, spec -> PRD) for research/egm-audit-2026-11-01.md (25 of 30 findings accepted) and spec-pyforge-steward's re-derive of CAP-176 and CAP-177; FR-50 and FR-51 amended in place, FR-52 unchanged (CAP-178 rides Story 118.8); no FR registered, renumbered or removed. See § Currency reconciliation — 2026-11-01 (EGM fleet audit). Prior "2026-10-31"
@@ -46,7 +46,7 @@ There is no external customer and no second human operator. Steward is not desig
 *Downscaled per the template's guidance for internal tooling with a single operator role — each duty gets a one-sentence journey rather than a full multi-beat narrative.*
 
 - **UJ-1.** The operator, having just read a Doctor-class finding about a credential leak, runs `steward keys audit --drift` and gets a report naming the exact code path that needs host-scoping, then fixes it and reruns to confirm clean. Realizes FR-4, FR-7.
-- **UJ-2.** The operator, having edited `pyforge.doctor.sources.fleet_scan`, runs `steward deploy dashboard` once and trusts that nothing happens if there's no real diff, and a clean reconciled commit+push happens if there is. Realizes FR-8–FR-11.
+- **UJ-2.** The operator, having edited `pyforge.doctor.sources.fleet_scan`, runs `steward deploy dashboard` once and trusts that nothing happens if there's no real diff, and a clean reconciled commit+push happens if there is. Realizes FR-8–FR-11. *(Superseded in part 2026-10-14; Story 102.3 removed the verb: § Currency reconciliation — 2026-10-14 (the Pages duct).)*
 - **UJ-3.** A bmad-loop session, needing the `pyforge-atlas` environment for a new worktree, runs `steward provision --env pyforge-atlas` instead of recalling the raw `pixi install -e` invocation. Realizes FR-12, FR-13.
 - **UJ-4.** The operator, six months from now, runs `steward budget show` to remember what ceiling was declared and when, instead of grepping Dream files. Realizes FR-16, FR-17.
 
@@ -134,11 +134,11 @@ The `JFROG_API_KEY` cross-host leak pattern is closed as a named, automated regr
 
 #### FR-8: Dashboard build ← CAP-2, CAP-168
 
-`steward deploy dashboard --build` runs the existing `dashboard-gen` pixi task (no new build logic — wraps it).
+`steward deploy dashboard --build` runs the existing `dashboard-gen` pixi task (no new build logic — wraps it). *(Superseded in part 2026-10-14; Story 102.3 removed the verb: § Currency reconciliation — 2026-10-14 (the Pages duct).)*
 
 #### FR-9: Reconciled push ← CAP-2, CAP-168
 
-`steward deploy dashboard` builds (FR-8), diffs the freshly generated `docs/dashboard/` output against the currently committed tree, and only commits + pushes when a real difference exists.
+`steward deploy dashboard` builds (FR-8), diffs the freshly generated `docs/dashboard/` output against the currently committed tree, and only commits + pushes when a real difference exists. *(Superseded in part 2026-10-14; Story 102.3 removed the verb: § Currency reconciliation — 2026-10-14 (the Pages duct).)*
 
 **Consequences (testable):**
 - Running twice in a row with no source changes between runs results in zero commits on the second run.
@@ -146,11 +146,11 @@ The `JFROG_API_KEY` cross-host leak pattern is closed as a named, automated regr
 
 #### FR-10: Dry-run ← CAP-2, CAP-168
 
-`steward deploy dashboard --dry-run` performs the build and diff (FR-8, FR-9) and prints the diff without committing or pushing.
+`steward deploy dashboard --dry-run` performs the build and diff (FR-8, FR-9) and prints the diff without committing or pushing. *(Superseded in part 2026-10-14; Story 102.3 removed the verb: § Currency reconciliation — 2026-10-14 (the Pages duct).)*
 
 #### FR-11: Deploy status ← CAP-2, CAP-168
 
-`steward deploy status` reports the last successful dashboard deploy (commit SHA, timestamp), read from Git history — no separate state store.
+`steward deploy status` reports the last successful dashboard deploy (commit SHA, timestamp), read from Git history — no separate state store. *(Superseded in part 2026-10-14; Story 102.3 removed the verb: § Currency reconciliation — 2026-10-14 (the Pages duct).)*
 
 **Feature-specific NFRs:**
 - No standing GitOps control plane (no ArgoCD/Flux) — deploy is a CLI-invoked reconciliation step, run manually or from an existing workflow, not a continuously-running controller (Decision D6, §8).
@@ -226,7 +226,7 @@ The `JFROG_API_KEY` cross-host leak pattern is closed as a named, automated regr
 ### 6.1 In Scope
 
 - `steward keys`: host-scoped credential resolution, `age`-based at-rest encryption, on-demand rotation, drift audit, inventory, revocation records, and the `JFROG_API_KEY` regression test (FR-1–FR-7).
-- `steward deploy dashboard`: build, reconciled push, dry-run, status (FR-8–FR-11).
+- `steward deploy dashboard`: build, reconciled push, dry-run, status (FR-8–FR-11). *(Superseded in part 2026-10-14; Story 102.3 removed the verb: § Currency reconciliation — 2026-10-14 (the Pages duct).)*
 - `steward provision`: environment materialization, runner provisioning wrapper, inventory, sync-gate check (FR-12–FR-15).
 - `steward budget`: ceiling declaration, display, honest manual-check stub (FR-16–FR-18).
 - Packaging as a `pyforge-warden`-pattern pixi workspace member: `src/shared/packages/pyforge-steward/`, `hatchling` build backend, `argparse` CLI (Decision D5, §8), lean dependency posture, `unit`/`conformance`/`meta` test-tier split, dogfooding test (Steward provisioning its own dev environment / auditing this repo's own credential surface).
@@ -242,7 +242,7 @@ The `JFROG_API_KEY` cross-host leak pattern is closed as a named, automated regr
 
 **Primary**
 - **SM-1**: The `JFROG_API_KEY` cross-host leak pattern has a passing, named regression test in Steward's `conformance/` suite. Validates FR-7.
-- **SM-2**: `steward deploy dashboard` replaces 100% of manual `dashboard-gen` + push invocations going forward (measured by: no more hand-run occurrences in the operator's own workflow after Steward ships). Validates FR-8–FR-11.
+- **SM-2**: `steward deploy dashboard` replaces 100% of manual `dashboard-gen` + push invocations going forward (measured by: no more hand-run occurrences in the operator's own workflow after Steward ships). Validates FR-8–FR-11. *(History since 2026-10-14: CAP-168's measure replaces it; Story 102.3 removed the verb: § Currency reconciliation — 2026-10-14 (the Pages duct).)*
 - **SM-3**: `steward provision --env <name>` succeeds for every entry in pixi.toml's `[environments]` table without the operator needing to consult raw pixi syntax. Validates FR-12, FR-14.
 
 **Secondary**
@@ -261,7 +261,7 @@ Every open question the brief carried forward now has an explicit PRD decision. 
 - **D3 (was OQ3, deploy v1 boundary) — DECIDED, high confidence.** v1's `deploy` scope is the Pages dashboard only; `presenton-pixi-image`/air-gap bundle deploy is explicitly deferred (§6.2).
 - **D4 (was OQ4, Steward/Marshal provisioning boundary) — DECIDED, high confidence.** Steward's `provision` duty invokes existing Marshal-owned machinery (`scripts/bmad-loop-worktree`, the pixi `[environments]` table) via CLI wrapper (FR-12–FR-15); it does not take ownership of or modify that machinery's implementation. Marshal retains ownership of multi-project/worktree machinery per the Ecosystem Crew Dream's 2026-07-23 assignment.
 - **D5 (was OQ5, CLI framework) — RESOLVED as fact, not a product decision.** `argparse`, confirmed by directly reading `src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py` (uses plain `argparse`, not Click/Typer). Steward matches its packaging sibling for consistency.
-- **D6 (was OQ6, deploy mechanism) — DECIDED, medium confidence.** v1 uses direct push to the existing Pages-serving branch (native GitHub behavior, zero new Actions workflow), invoked via `steward deploy dashboard` run by the operator or an existing workflow — not a new `upload-pages-artifact`/`deploy-pages` or `peaceiris/actions-gh-pages` Actions workflow. Rationale: matches today's actual manual process shape and keeps v1 minimal; **flag for revisit** if scheduled/push-button automation becomes a real want (§6.2).
+- **D6 (was OQ6, deploy mechanism) — DECIDED, medium confidence.** v1 uses direct push to the existing Pages-serving branch (native GitHub behavior, zero new Actions workflow), invoked via `steward deploy dashboard` run by the operator or an existing workflow — not a new `upload-pages-artifact`/`deploy-pages` or `peaceiris/actions-gh-pages` Actions workflow. Rationale: matches today's actual manual process shape and keeps v1 minimal; **flag for revisit** if scheduled/push-button automation becomes a real want (§6.2). *(Its workflow clause retired 2026-10-14 and Story 102.3 removed the verb: § Currency reconciliation — 2026-10-14 (the Pages duct).)*
 
 ## 9. Open Questions
 
@@ -2013,7 +2013,7 @@ loop this PRD formalized (FR-8..11) was replaced end-to-end and then the generat
 was deleted: CAP-2 of `spec-pyforge-unifying-strategy` superseded the static Guildhall
 console with the CMS-managed Lane 1 front door, and Story 30.2 (2026-08-25) removed
 `dashboard-gen` and its inbound references after the console-parity inventory proved
-coverage. `steward deploy dashboard` remains as a reconciled diff+commit over
+coverage. `steward deploy dashboard` (removed later by Story 102.3, 2026-10-15) remains as a reconciled diff+commit over
 `docs/dashboard/` (Kedro-Viz staging + stub; the build step is a no-op) — FR-9/FR-10/FR-11
 semantics intact, FR-8's wrapped task gone with the console. SM-2 was met for the whole
 period the manual loop existed.
@@ -3006,7 +3006,8 @@ live-tree readers from package suites, never by narrowing the arrays.
 **Consequences (testable):**
 - Every pytest lane runs under `pytest-xdist` where its tests allow, with the serial remainder named in the task and run
   alone; no test is deleted, skipped or re-marked to meet a budget.
-- A station's coverage floor is judged from the JSON its own suite run wrote (`scripts/station_suite_ci.py`), locally
+- A station's coverage floor is judged from the JSON its own suite run wrote (`scripts/coverage_gates_ci.py`, with
+  `scripts/run_station_coverage_gate.py` for the full-package named-module gate; corrected 2026-11-11), locally
   and in CI alike; `coverage-gates.yml` reads `state: retired` in `docs/governance/ci-surfaces.yaml`.
 - The preflight admits lanes longest-first by the expected seconds and core weight it reads from its own journal; a
   full run's `total_seconds` is within 10 % of its longest lane.
@@ -3173,3 +3174,78 @@ amended on 2026-11-01 and stand as written.
 *Chain-currency cascade (spec -> PRD).*
 
 `spec-pyforge-unifying-strategy` CAP-20 (a start tool does the work it names) adds canopy:FR-51, traced from that capability's intent and success. No other FR moves. It takes up the wiring half of the operator's 2026-11-05 ruling on N1, on the rulings of 2026-11-06.
+
+## Currency reconciliation — 2026-11-10 (CAP-179..CAP-182)
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-steward` gained CAP-179, CAP-180, CAP-181 and CAP-182 on 2026-11-10
+from the station Dream's section of that date (cutover readiness: the steward Spec, suite and shared surfaces tell the truth) and
+the operator's rulings of the same day and their two addenda. Same-day reconcile; each FR is traced from its capability's intent
+and success. FR-53 is the next free id after FR-52.*
+
+### The FR space: FR-53..FR-56 registered
+
+#### FR-53: The steward public contract is one companion, and a meta-test fails when the code has more ← CAP-179
+
+A reader of the steward Spec can list every verb, flag, MCP tool, feature-flag key, environment variable, exit code and entry
+point steward exposes, the Python names other packages import from it, the verbs it has retired and what it needs from the tree,
+without reading source, from one companion beside the Spec (`contract.md`), each row naming the capability that carries it.
+Consequence: `test_public_contract.py` exits 0, and exits 1 when the code gains a verb path, flag, flag key, environment read,
+exit constant or MCP tool or target the contract lacks, or when the contract or the Spec names a verb that is neither live nor
+retired.
+
+#### FR-54: `steward restore --drill` and `steward revoke --sub` drive the host's own commands and own the exit code ← CAP-180
+
+An operator can run a restore drill against a backup and stop one runaway subject through steward, and each reports the host
+command's result with steward's exit code; neither imports Django nor writes run state. Consequence: `test_restore_duty.py` and
+`test_revoke_duty.py` exit 0 and fail without the duty modules, and `steward revoke` with an interpreter that cannot import the
+platform's Django exits 1, never 70, its summary carrying the host command's own error. (Corrected 2026-11-11 with CAP-180's
+success: no message names `--python`.)
+
+#### FR-55: Every steward capability names its source modules and the tests that prove it, and every test names a capability ← CAP-181
+
+Someone rebuilding a steward capability can read which modules realize it, which tests prove it and in which half they run
+(`oracle-map.md`), and every steward test module is named by a capability row or listed as unmapped with a reason.
+Consequence: `test_oracle_map.py` exits 0, and exits 1 when a capability or a test module falls off the map, a row names
+nothing tracked, or a row's proof value disagrees with its tests' `live_tree` markers.
+
+#### FR-56: One steward module names this root's layout and repository, and a test holds the rest of the source to it ← CAP-182
+
+Someone moving steward to another tree changes one module (`root_layout.py`) for the packages directory and this checkout's
+repository identity, which stays with this checkout and does not follow the root of record, and steward reads another station's
+verdict through that station's command, never its import. Consequence: `test_portability.py` exits 0, and exits 1 when a second
+module names this root's layout or repository in a string constant or imports another station.
+
+**Content changed:** this section added; FR-53..FR-56 registered, each derived from its CAP; no FR renumbered or removed.
+`updated:` bumped. The pointers on the FR-8..FR-11, UJ-2, D6 and SM-2 lines and the corrected driver line are Story 122.1's.
+
+## Currency reconciliation — 2026-11-11 (Story 122.1)
+
+*Trigger: the chain-currency `spec→prd` edge. Steward Story 122.1 re-derived `spec-pyforge-steward` on 2026-11-11 from
+the fix pass's change entries, verified against the ledger, the merges and the tree (the Spec memlog's 2026-11-11
+entries); the three cutover Specs this project hosts were re-derived the same day: `spec-python-foundry-cutover` (Story 120.1), `spec-foundry-regenerate-not-fold` and `spec-foundry-capability-ledger` (Story 120.2), each re-derived 2026-11-11 by the anchored script render with both self-validate passes on its memlog.*
+
+**The FR space: no FR registered, renumbered or removed.** The FR delta of this PR is FR-53..FR-56, registered at mint
+(§ Currency reconciliation — 2026-11-10). FR-54's arrow stays `← CAP-180`, whose marker reads `(shipped 2026-09-02)`.
+
+**What moved in the Spec, read against this PRD:** CAP-2 now reads `(retired 2026-10-15; superseded by CAP-168)`; the
+lines here that name the two removed `steward deploy` verbs (UJ-2, FR-8..FR-11, the In Scope list, SM-2, D6 and the
+2026-08-26 section) each carry a pointer to § Currency reconciliation — 2026-10-14, whose record stands: FR-8..FR-11
+superseded in part and D6's workflow clause retired, their text left as written. FR-49's driver line names
+`scripts/coverage_gates_ci.py` (with `scripts/run_station_coverage_gate.py` for the full-package named-module gate):
+the script it named at 2026-10-27 was never written. The Spec's markers now date every met capability: CAP-150,
+CAP-152, CAP-154..CAP-164, CAP-167, CAP-168, CAP-174 and CAP-169..CAP-171 read `shipped`, CAP-153 and CAP-166 stay
+`ready` until Stories 124.3 and 124.2 land; no FR's text depends on a marker.
+
+**Content changed:** this section added; the pointers and the driver line above; `updated:` bumped.
+
+## Currency reconciliation — 2026-11-13 (Story 122.5)
+
+*Trigger: the chain-currency `spec→prd` edge. Steward Story 122.5 re-derived `spec-pyforge-steward` on 2026-11-13 from
+the five `change` entries of its memlog (ruling 6 of the 2026-11-10 second addendum: the markers of capabilities this PR
+builds flip to shipped at the station's closing Story).*
+
+**The FR space: no FR registered, renumbered, removed or amended.** CAP-153 and CAP-166 (Stories 124.3 and 124.2), CAP-179 (Stories 122.2 and 122.3) and CAP-181 (Story 123.1) read `(shipped 2026-11-12)`, and CAP-182 (Story 123.2) reads `(shipped 2026-11-11; not met: every other module derives from it, DW-steward-123-2-2; ...)`. FR-53 ← CAP-179, FR-55 ← CAP-181 and
+FR-56 ← CAP-182 keep their arrows and their text; no FR's text depends on a marker. CAP-182's unmet clause is the
+deferred row DW-steward-123-2-2, not a requirement.
+
+**Content changed:** this section added; `updated:` bumped.

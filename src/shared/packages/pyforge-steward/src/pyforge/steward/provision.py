@@ -53,7 +53,7 @@ module's legacy config, and `cleanup-legacy.py --module-code bmb` would
 the full evidence trail). Wired as `steward provision --module <name>
 [--json]`, the new first precedence check ahead of `--verify`.
 
-Story 15.3 slice (Epic 15 / CAP-3): grows `_SUPPORTED_MODULES` to
+Story 15.3 slice (Epic 15 / CAP-23): grows `_SUPPORTED_MODULES` to
 `{bmb, tea, cis, utility-skills, manticore}`. The four new names drive each
 conda package's `*-install` entry point, skill-name-collision-check before
 first wire, and record a `_bmad/config.yaml` manifest section so
@@ -105,7 +105,7 @@ config.yaml`) so `cis`'s still-unmigrated Story 46.8 entry keeps reporting
 migrates `cis`'s existing entry in place -- the read-side fallback is the
 whole fix.
 
-Story 46.3 slice (CAP-4 half): TEA's own upstream `*-install` layout nests
+Story 46.3 slice (spec-pyforge-steward CAP-33 half): TEA's own upstream `*-install` layout nests
 its nine workflow skills one level too deep (`workflows/testarch/bmad-
 testarch-*`), invisible to Claude Code's own one-level `.claude/skills/
 <name>/SKILL.md` discovery -- `CondaInstallBackend.flatten_nested_dirs`
@@ -124,7 +124,7 @@ other TEA variable keeps its own declared default), merged by
 `installer`/`skills`. Neither mechanism touches `cis`/`utility-skills`/
 `manticore` -- both fields default to `()`/`None`.
 
-Story 46.4 slice (CAP-1 half): closes bmb's own long-standing gap --
+Story 46.4 slice (CAP-30 half): closes bmb's own long-standing gap --
 `SetupSkillBackend` only ever drove `merge-config.py`/`merge-help-csv.py`
 (the `_bmad/config.yaml` merge), never copied bmad-builder's five skill
 directories (`bmad-bmb-setup`, `bmad-agent-builder`, `bmad-workflow-builder`,
@@ -370,7 +370,7 @@ def _run_verify(ns: argparse.Namespace) -> DutyResult:  # noqa: ARG001 -- no fla
 
 # ── Module provisioning (FR-?, Story 6.1; Story 15.3 grows the registry) ─────
 
-# Story 6.1 registered `bmb` via its setup-skill scripts. Story 15.3 (CAP-3)
+# Story 6.1 registered `bmb` via its setup-skill scripts. Story 15.3 (CAP-23)
 # adds tea / cis / utility-skills / manticore via each conda package's
 # `*-install` entry point. Skill Forge stays deferred (TTY-only Installer).
 # Keep the `--module` help text in `cli.py`'s `_add_provision_subparsers` in
@@ -917,7 +917,7 @@ def _record_module_manifest(
         updated = section_text
 
     # Atomic replace so a crash mid-write cannot leave a truncated config
-    # (Story 14.2, CAP-2: pyforge-core's atomic_write is the sole write-open
+    # (Story 14.2, spec-pyforge-core CAP-2: pyforge-core's atomic_write is the sole write-open
     # + os.replace implementation -- also handles the parent mkdir).
     def _write(tmp: Path) -> None:
         tmp.write_text(updated, encoding="utf-8")
@@ -1576,7 +1576,7 @@ _PROVISION_HELP = (
 
 
 def _run_prove_class_path(ns: argparse.Namespace) -> DutyResult:
-    """`provision --prove-class-path` — Story 31.3 / install-class CAP-3."""
+    """`provision --prove-class-path` — Story 31.3 / CAP-29."""
     from .fresh_clone import prove
 
     report = prove()

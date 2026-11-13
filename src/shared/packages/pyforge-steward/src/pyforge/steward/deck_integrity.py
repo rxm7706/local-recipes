@@ -1,5 +1,5 @@
 """Steward `deck-drift` duty -- flags silent size/etag drift on a pulled
-Design deck artifact (Story 59.4 / spec-vocabulary-one-name-one-job CAP-5).
+Design deck artifact (Story 59.4 / spec-pyforge-steward CAP-135).
 
 Herald owns the Design pull itself (`herald deck pull`, `.herald/bridge-state.json`'s
 per-slug etags); this module owns the *drift* half named on Q10 of that Spec's Dream

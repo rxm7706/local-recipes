@@ -13,9 +13,14 @@ import sys
 import tomllib
 from pathlib import Path
 
+import pytest
 from packaging.specifiers import SpecifierSet
 
 from pyforge.mason.cfe import CFE_IMPORT_FLOOR, probe_import_floor
+
+# Story 38.2 (spec-pyforge-mason CAP-7, relaying spec-pyforge-steward:CAP-175): this module reads the live tree
+# outside its package (the root pixi.toml), so it runs in the station's live-tree half and fires on what it reads.
+pytestmark = pytest.mark.live_tree
 
 _CANONICAL_FLOOR_SOURCES: dict[str, tuple[str, str]] = {
     "truststore": ("python", "truststore"),

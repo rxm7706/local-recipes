@@ -8,6 +8,11 @@ language: python
 description: >
   Dream-to-deck bridge CLI. Agents use the herald CLI (deck seed / pull /
   status) rather than importing pyforge.herald internals.
+doc_urls:
+  - url: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/contract.md
+    label: herald public contract (verbs, MCP tools, flags, error classes, exit codes)
+  - url: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/bridge-protocol.md
+    label: herald bridge protocol (the claude-design tool-call loop)
 forge_tier: Quick
 created: '2026-08-25'
 created_by: skf-create-skill
@@ -16,6 +21,9 @@ scope:
   include:
     - src/pyforge/herald/cli.py
     - src/pyforge/herald/__init__.py
+    - src/pyforge/herald/errors.py
+    - src/pyforge/herald/deck_pipeline.py
+    - src/pyforge/herald/transport/mcp_transport.py
     - README.md
   exclude:
     - tests/**
@@ -24,6 +32,19 @@ scope:
   notes: >
     CAP-15 compile for the herald station. Public contract is the herald CLI
     (AD-7). Portal django-herald and Lane 1 CMS are out of scope.
+    Recompiled in place at 0.1.0 on 2026-11-12 (steward Story 29.5, EGM audit
+    2026-11-05): errors.py (the exit-code map), deck_pipeline.py (seed, pull
+    and the DeckStatus value meanings) and transport/mcp_transport.py (how the
+    CLI reaches Claude Design and the session it needs) join the scope, and the
+    station contract (contract.md) and bridge-protocol.md are doc sources.
+    Carry: the capability ids from the folded Spec, as the cli.py help strings
+    herald Story 50.3 corrected say (HER-R-F1); seed's and pull's preconditions
+    and side effects on Claude Design and the repo, what Claude Design is, the
+    claude-design MCP transport, the /design-login session, and that pull
+    leaves files uncommitted unless --commit (HER-R-F17, HER-R-F27, HER-R-F28);
+    the exit codes (HER-R-F16); the sync and stale_mirror meanings (HER-R-F29);
+    the twelve deck verbs; what the station MCP runner runs (notice get only)
+    and does not run.
   rationale:
     recommended: specific-modules
     chosen: specific-modules

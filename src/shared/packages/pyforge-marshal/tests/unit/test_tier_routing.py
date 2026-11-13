@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import tomllib
 
+import pytest
 from pyforge.core.roster import STATIONS, long_form
 
 from pyforge.marshal.adapters.harness_bmadloop import render_policy_toml
@@ -21,6 +22,12 @@ from pyforge.marshal.core.tier_routing import (
     resolve_tier_launch,
     sort_candidates_by_pool_preference,
 )
+
+# Story 116.4 (spec-pyforge-marshal:CAP-305): ``test_no_live_tier_renders_a_model_its_adapter_cannot_run`` composes
+# every station's tracked ``marshal-policy.toml`` through ``compose_effective``, which resolves them from
+# ``repo_root()``; the tree-read guard runs each package-half test off the tree, where it fails. The module holds 20
+# tests, so it is marked whole (Story 116.2's rule) and fails, never skips, when a station's policy is absent.
+pytestmark = pytest.mark.live_tree
 
 _SAMPLE_CATALOG = {
     "providers": {

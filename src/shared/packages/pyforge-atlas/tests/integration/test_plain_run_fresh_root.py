@@ -32,6 +32,11 @@ import pandas as pd
 import pytest
 import requests
 
+# Story 48.1 (a relay of spec-pyforge-steward:CAP-175): this module reads the live tree outside its package
+# (conda-forge-expert's seed data under .claude/skills), so it runs in atlas's live-tree half and fires on what it
+# reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 _MEMBER_DIR = Path(__file__).resolve().parents[2]
 _REPO_ROOT = _MEMBER_DIR.parents[3]
 _CREDENTIALS_KEY_RE = re.compile(r"^\s*credentials:\s*([A-Za-z_][A-Za-z0-9_]*)\s*$")

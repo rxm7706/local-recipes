@@ -22,6 +22,10 @@ from pyforge.herald.ci_surfaces_tile import CI_SURFACES_TILE_FLAG, ci_surfaces_t
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "meta"))
 from pages_astro import DOCS_SITE, needs_node, ts  # noqa: E402 -- the shared Pages helpers
 
+# Story 52.1 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 flag_provider = make_flag_provider_fixture()
 
 STATUS_TS = DOCS_SITE / "src" / "lib" / "status.ts"

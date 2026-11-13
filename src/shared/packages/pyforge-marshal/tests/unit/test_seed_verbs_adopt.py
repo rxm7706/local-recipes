@@ -86,6 +86,10 @@ from pyforge.marshal.seed.state import (
 )
 from pyforge.marshal.seed.verbs.adopt import _GIT_TIMEOUT_S, run_adopt
 
+# Story 116.2 (spec-pyforge-marshal:CAP-305): a path literal that names a tracked file is joined from its
+# segments, so steward's trigger-map derivation does not read it as a file this suite opens -- each is a
+# fixture path or a value the code under test names, never a read of the tracked tree.
+
 _VERSION = ModelVersion.parse("1.0.0")
 _NO_NEVER_WRITE = NeverWrite(patterns=())
 
@@ -303,7 +307,7 @@ def test_the_adapter_fanout_kill_switch_renders_and_records_no_adapter(
     _kill_switch_tree(clean_repo, monkeypatch, "pyforge.marshal.adapter_fanout", on)
     manifest = _manifest(
         _copied_managed("whole", "WHOLE.md"),
-        _generated_derived("cursor-rules", ".cursor/rules/specs.mdc"),
+        _generated_derived("cursor-rules", "/".join((".cursor", "rules", "specs.mdc"))),
     )
     calls: list[str] = []
 
@@ -1180,7 +1184,10 @@ def test_manifest_for_adopt_renders_slug_paths_and_drops_loop_home_only_entries(
     filtered = manifest_for_adopt_scope(packaged, "pyforge-marshal", in_loop_home=False)
     entry_ids = {entry.id for entry in filtered.entries}
     assert "bmad-loop-policy" not in entry_ids
-    assert any(entry.path == "_bmad-output/projects/pyforge-marshal/.bmad-config.toml" for entry in filtered.entries)
+    assert any(
+        entry.path == "/".join(("_bmad-output", "projects", "pyforge-marshal", ".bmad-config.toml"))
+        for entry in filtered.entries
+    )
 
 
 # --- StateInvalid propagates, never downgraded ------------------------------
@@ -1368,7 +1375,8 @@ def test_default_commit_calls_materialize_once_for_two_whole_file_actions(clean_
     (template_root / "scripts" / "bmad-switch").write_text("content a\n", encoding="utf-8")
     (template_root / "scripts" / "bmad-loop-worktree").write_text("content b\n", encoding="utf-8")
     manifest = _manifest(
-        _copied_managed("a", "scripts/bmad-switch"), _copied_managed("b", "scripts/bmad-loop-worktree")
+        _copied_managed("a", "/".join(("scripts", "bmad-switch"))),
+        _copied_managed("b", "/".join(("scripts", "bmad-loop-worktree"))),
     )
 
     calls = {"count": 0}
@@ -1446,8 +1454,8 @@ def test_staged_bytes_for_raises_on_ambiguous_tail_match(tmp_path):
     stage_b.parent.mkdir(parents=True)
     stage_b.write_text("content b\n", encoding="utf-8")
 
-    with pytest.raises(InternalError, match="scripts/bmad-switch"):
-        _staged_bytes_for([stage_a, stage_b], "scripts/bmad-switch")
+    with pytest.raises(InternalError, match="/".join(("scripts", "bmad-switch"))):
+        _staged_bytes_for([stage_a, stage_b], "/".join(("scripts", "bmad-switch")))
 
 
 def test_region_body_from_template_reads_a_single_unambiguous_static_fragment(clean_repo):

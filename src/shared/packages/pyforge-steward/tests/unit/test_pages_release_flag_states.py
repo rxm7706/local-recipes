@@ -1,4 +1,4 @@
-"""Story 102.5 (CAP-168 / feature-flag-governance CAP-4): the release asset in both flag states.
+"""Story 102.5 (CAP-168 / spec-feature-flag-governance CAP-4): the release asset in both flag states.
 
 The flag reaches the deploy job the way the workflow carries it: ``pages_artifact_download.py
 --flag-env`` prints ``PYFORGE_PAGES_DUTY=1|0``, the build job exports it as ``pages_duty``, and the

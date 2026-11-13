@@ -24,6 +24,28 @@ machinery; Marshal operates it.**
 Planning artifacts:
 [`_bmad-output/projects/pyforge-marshal/planning-artifacts/`](../../../../_bmad-output/projects/pyforge-marshal/planning-artifacts/)
 
+## Public contract
+
+Marshal's whole public surface is written down once, in the Spec's companion
+[`contract.md`](../../../../_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/contract.md)
+(spec-pyforge-marshal:CAP-304): every CLI verb path and flag, both MCP surfaces (the `marshal-mcp`
+stdio server and the station face at `POST /stations/marshal/mcp`), the feature-flag keys and
+environment variables marshal reads, its `MRS-*` finding codes and seed finding types, and its two
+exit-code domains. `tests/meta/test_public_contract.py` derives each of those from the code and fails
+when `contract.md` lacks an item or keeps one the code no longer has, so a change to the surface
+changes `contract.md` in the same change. The persona grammar is `pyforge marshal …`; the `marshal`
+console script takes the same verb paths.
+
+The verbs, by group (the flags of each are in `contract.md`):
+
+| Group | Verbs |
+|---|---|
+| Fleet and loop homes | `status`, `watch`, `homes`, `init`, `preflight`, `refresh`, `teardown`, `retire` |
+| The factory | `factory dispatch`, `factory spin`, `factory drain`, `factory challenge`, and their attach, resume and checkpoint verbs |
+| Gates and landing | `gate evaluate`, `land`, `deploy …`, `preserve …` |
+| Policy, context and adapters | `config`, `context …`, `planning chain-regenerate`, `adapters …`, `benchmark …`, `check`, `upstream`, `login` |
+| Genesis | `seed …` (below) |
+
 ## Genesis — seed verbs
 
 | Verb | Purpose | Typical use |

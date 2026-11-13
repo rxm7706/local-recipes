@@ -12,7 +12,13 @@ import json
 import zipfile
 from pathlib import Path
 
+import pytest
+
 from pyforge.herald import cli, deck_versions, pptx_pipeline
+
+# Story 52.1 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
 
 _REPO_ROOT = Path(__file__).resolve().parents[6]
 _PRESENTATIONS = _REPO_ROOT / "presentations"

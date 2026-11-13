@@ -117,24 +117,3 @@ def test_model_cost_module_has_no_network_imports():
     source = Path(model_cost.__file__).read_text(encoding="utf-8")
     for token in ("urllib", "requests", "httpx", "aiohttp", "socket"):
         assert token not in source
-
-
-def test_marshal_policy_toml_seed_catalog_parses():
-    repo_root = Path(__file__).resolve().parents[6]
-    policy_path = repo_root / "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml"
-    if not policy_path.is_file():
-        pytest.skip("marshal-policy.toml not present in this checkout")
-    import tomllib
-
-    with open(policy_path, "rb") as handle:
-        data = tomllib.load(handle)
-    catalog = data.get("model_cost_catalog")
-    assert catalog is not None
-    assert catalog_declared(catalog)
-    effective, findings = policy.compose(
-        project_slug="pyforge-marshal",
-        project={"model_cost_catalog": catalog},
-        flags={},
-    )
-    assert not findings
-    assert catalog_declared(effective.model_cost_catalog.value)

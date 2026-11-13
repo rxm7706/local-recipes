@@ -16,7 +16,9 @@ from typing import Any
 
 # Registry consumed by ``list_marshal_tools`` and by ``server.build_server``.
 # ``argv_template`` is the CLI argv AFTER the program name; optional typed
-# kwargs are appended as flags when provided.
+# kwargs are appended as flags when provided. Story 115.3 (CAP-23 amended
+# 2026-11-10): ``build_server`` registers exactly these names -- a tool listed
+# here is a tool an MCP client can call (``mcp.parity.registration_findings``).
 TOOL_SPECS: dict[str, dict[str, Any]] = {
     "list_marshal_tools": {
         "description": "List Marshal MCP tool names and their CLI argv templates.",

@@ -29,7 +29,9 @@ whose OWN gather degraded to a sentinel Finding -- ``sources/atlas.py``'s
 ``evidence == {}``), ``sources.degrade_on_exception``'s WARN (the source's
 own ``check`` with ``evidence["exception"]``), or a cannot-evaluate WARN
 (``evidence["unevaluable"] is True``, ``models.UNEVALUABLE_EVIDENCE_KEY``) --
-never gets graded as if it were real data. That axis grades ``incomplete``, and an incomplete axis poisons
+never gets graded as if it were real data. ``models.is_gather_failure`` is the
+one predicate that recognises all three (spec-pyforge-doctor:AD-15); this
+module asks it and keeps no copy. That axis grades ``incomplete``, and an incomplete axis poisons
 the WHOLE composite to ``incomplete`` too -- a computed letter grade must never
 stand in for missing data (this module never silently drops the incomplete axis
 from the composite the way it might be tempting to "just grade what we have").
@@ -41,17 +43,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 
-from .models import UNEVALUABLE_EVIDENCE_KEY, DoctorStatus, Finding, Source
-
-# Duplicated literal from ``sources/atlas.py``'s ``_one_fail_finding``'s own
-# default ``check`` parameter -- AD-7 forbids ``doctor.score`` from importing
-# ``sources.atlas`` (that would pull a subprocess/MCP-capable module into a
-# pure-function guard's own import surface), so this is a deliberate
-# duplicated literal, not a shared import. With an empty ``evidence`` it marks
-# "this axis's OWN gather failed" (the atlas shape) as distinct from an ordinary
-# FAIL Finding about a real package problem; ``_is_gather_failure`` also matches
-# the second shape, ``degrade_on_exception``'s ``evidence["exception"]`` WARN.
-_GATHER_FAILURE_CHECK = "doctor.sources.atlas"
+from .models import DoctorStatus, Finding, Source, is_gather_failure
 
 # Sources whose checks are independent capabilities, not samples of one
 # measurement: each check grades as its own axis (``"<source>/<check>"``) so
@@ -129,32 +121,6 @@ class GradeResult:
         }
 
 
-def _is_gather_failure(finding: Finding) -> bool:
-    """True when ``finding`` says its axis's OWN gather did not complete.
-
-    Three shapes, all matched here:
-
-    * the ``sources/atlas.py`` sentinel -- ``check == "doctor.sources.atlas"``
-      with no evidence (see ``_GATHER_FAILURE_CHECK``);
-    * ``sources.degrade_on_exception``'s WARN -- the source's own ``check`` plus
-      ``evidence={"exception": <class name>}``, the shape a gather that raised
-      outright leaves behind. ``"exception"`` is that function's own key, so the
-      WARN is matched by the evidence it alone produces, not by a ``check`` name
-      every source spells differently;
-    * a cannot-evaluate WARN -- ``evidence[UNEVALUABLE_EVIDENCE_KEY] is True``
-      (an unresolvable ledger head, ``chain-layers-audit-unevaluable``,
-      ``bmad-drift-unevaluable``; DW-doctor-40-1).
-
-    An ordinary WARN about a real problem carries none of these and is still
-    graded (DW-FU-6-6-11).
-    """
-    if finding.check == _GATHER_FAILURE_CHECK and not finding.evidence:
-        return True
-    if finding.status is not DoctorStatus.WARN:
-        return False
-    return "exception" in finding.evidence or finding.evidence.get(UNEVALUABLE_EVIDENCE_KEY) is True
-
-
 def _axis_key(finding: Finding) -> str:
     if finding.source in _PER_CHECK_AXIS_SOURCES:
         return f"{finding.source.value}/{finding.check}"
@@ -217,7 +183,7 @@ def grade(findings: Sequence[Finding]) -> GradeResult:
     incomplete_axes: list[str] = []
     for axis in sorted(by_axis):
         group = by_axis[axis]
-        if any(_is_gather_failure(f) for f in group):
+        if any(is_gather_failure(f) for f in group):
             incomplete_axes.append(axis)
             axis_scores.append(AxisScore(axis=axis, ok=0, warn=0, fail=0, grade=Grade.INCOMPLETE))
             continue

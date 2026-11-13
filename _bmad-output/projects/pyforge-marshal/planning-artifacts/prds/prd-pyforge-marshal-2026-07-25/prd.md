@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief -> PRD and spec -> PRD); no CAP, FR or AD is minted. Prior "2026-11-04"   # RE-STAMPED 2026-11-04 (Story 113.17): spec -> PRD for the CAP-301 re-derive; the FR-243 body follows; no FR registered, renumbered or removed. See § Currency reconciliation — 2026-11-04 (Story 113.17). Earlier the same day: RE-STAMPED 2026-11-04 (Stories 113.15 and 113.16): spec -> PRD for the CAP-299 re-derive (the write bound in the Edit form, session models are the models a session can run on); the FR-241 body follows; no FR registered, renumbered or removed. See § Currency reconciliation — 2026-11-04 (Stories 113.15 and 113.16). Prior "2026-11-04"   # RE-STAMPED 2026-11-04: chain-currency cascade (spec -> PRD) (the Surface reconcile of Story 113.14 and pixi.toml on spec-pyforge-marshal and spec-pyforge-core); no CAP, FR, AD, epic or story moved. See § Currency reconciliation — 2026-11-04.
+updated: "2026-11-13"   # RE-STAMPED 2026-11-13 (cutover readiness, marshal Story 116.5, the chain close (CHAIN-STANDARD § 3 step 7)): spec -> PRD for the Spec's render of 2026-11-13, which flips spec-pyforge-marshal:CAP-304, spec-pyforge-marshal:CAP-305 and the seven amended capabilities to (shipped 2026-11-11); no FR or NFR is added, renumbered, re-scoped or removed and no arrow moves; FR-255 stays the next free id. See § Currency reconciliation — 2026-11-13 (Story 116.5). Prior "2026-11-11"   # RE-STAMPED 2026-11-11 (marshal Story 114.1): spec -> PRD for the spec memlog's 2026-11-10 entries and the render of 2026-11-11; FR-246..FR-249 registered (FR-246 <- spec-pyforge-marshal:CAP-304, FR-247 <- spec-pyforge-marshal:CAP-305, FR-248 <- CAP-261, FR-249 <- CAP-227) and core-kit's FR-250..FR-254 in their own section (cross-Spec colon form); the FR-59, FR-126, FR-136 and FR-155 bodies gain one sentence each; the FR space is FR-1..FR-254. See § Currency reconciliation — 2026-11-11 (Story 114.1) and § The shared floor and the testing kit. Prior "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief -> PRD and spec -> PRD); no CAP, FR or AD is minted. Prior "2026-11-04"   # RE-STAMPED 2026-11-04 (Story 113.17): spec -> PRD for the CAP-301 re-derive; the FR-243 body follows; no FR registered, renumbered or removed. See § Currency reconciliation — 2026-11-04 (Story 113.17). Earlier the same day: RE-STAMPED 2026-11-04 (Stories 113.15 and 113.16): spec -> PRD for the CAP-299 re-derive (the write bound in the Edit form, session models are the models a session can run on); the FR-241 body follows; no FR registered, renumbered or removed. See § Currency reconciliation — 2026-11-04 (Stories 113.15 and 113.16). Prior "2026-11-04"   # RE-STAMPED 2026-11-04: chain-currency cascade (spec -> PRD) (the Surface reconcile of Story 113.14 and pixi.toml on spec-pyforge-marshal and spec-pyforge-core); no CAP, FR, AD, epic or story moved. See § Currency reconciliation — 2026-11-04.
 # 2026-11-01  # RE-STAMPED 2026-11-01 (Story 113.14): spec -> PRD for the CAP-298, CAP-299, CAP-300 and CAP-302 re-derive (the stage ceilings, the section selectors, the newest-CAP-slice audit); FR-240, FR-241, FR-242 and FR-244 amended in place; no FR registered, renumbered or removed. See § Currency reconciliation — 2026-11-01 (Story 113.14). Prior "2026-11-01"
 # 2026-11-01  # RE-STAMPED 2026-11-01 (Story 113.13): spec -> PRD for the CAP-303 re-derive; the FR-245 body follows (resolve takes --project and derives the owning Spec from it or from a rules target's governor, never from the report; --accept ID[:NOTE], --reject ID[:REASON], --type event; marshal writes only its own Spec's memlog and prints the exact memlog.py command for any other owning Spec; the story-spec-edit route dropped). See § 52. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (Story 113.12): spec -> PRD for the CAP-299, CAP-301 re-derive; the FR-241 and FR-243 bodies follow (the context rule binds the context, never the target; glossary.md when present; the Dream each target takes; the five-stage table of reviewer groups and standards as code fallbacks a block overrides; --target optional with --epic and --audit; the drift form names --project). See § 51. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (Story 113.11): spec -> PRD for the CAP-298, CAP-299, CAP-300, CAP-302 re-derive; the FR-240, FR-241, FR-242 and FR-244 bodies follow (the [challenge].plugin_version pin, the Claude Code 2.1.271 floor, the switch matrix, plugin-absent dispatch, the compiled active/ skill path, story specs out of the audit). See § 50. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (Story 113.10): spec -> PRD for the CAP-299 re-derive; the FR-241 body follows (beyond its context paths a reviewer's context is the adapter frontmatter and the challenge session's own settings, checked at runtime). See § 49. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (Story 113.8): spec -> PRD for the CAP-298, CAP-300, CAP-302 re-derive; FR-240, FR-242, FR-244 bodies follow (an unevaluable session or sweep exits 1; the readiness result in marshal status and marshal watch). See § 48. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM challenger, Epic 113): chain-currency cascade (spec -> PRD) for CAP-298..CAP-303; FR-240..FR-245 registered. See § 47. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (CAP-7 retrofit, Epic 110): the station memlog gained the retrofit decision; no requirement changes. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 108.1): FR-101 <- CAP-15; FR-120 <- CAP-14, CAP-15; FR-121 <- CAP-14, CAP-15, CAP-12; FR-125 <- CAP-17, CAP-13; FR-126 <- CAP-13, on the operator ruling of 2026-10-26 that a requirement cites defined capabilities only (reverses the 2026-10-25 "cite the constraint" rulings for Story 106.1); no FR added, renumbered or amended; the 33 lettered NFR lines (no arrows) are Story 108.2's. See § Currency reconciliation — 2026-10-26 (Story 108.1). Prior "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 106.2): spec -> PRD for CAP-293..CAP-296, the four detector self-verification capabilities the 2026-09-16 fold dropped, restored on the operator's ruling; FR-144..FR-147 now cite them (they read the counted CAP-102..CAP-105); DW-marshal-105-1 closed; no FR text, number or NFR moves. See § 46. Earlier 2026-10-25: RE-STAMPED 2026-10-25 (Story 106.1): section 15's 62 seed-installer FRs (FR-66..FR-127), which never had arrows, now name the capabilities that realize them (CAP-8, CAP-10..CAP-18), or, for FR-120, FR-121, FR-125 and FR-126, the Spec constraint that states them (operator ruling "Cite the constraint"), with FR-101 citing CAP-15 and its constraint (review ruling); no FR text, number or NFR moves. See § 45. Earlier 2026-10-25: RE-STAMPED 2026-10-25 (Story 105.1): 71 FR heading arrows the 2026-09-16 fold counted are re-mapped to the spec-pyforge-marshal (or cross-Spec) capabilities that realize them; FR-144..FR-147 wait on a source-capability decision (DW-marshal-105-1); no FR text, number or NFR moves. See § 44. Earlier 2026-10-25: RE-STAMPED 2026-10-25: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-24..25 entries (doctor Story 30.5's surface reconcile; Story 103.1 under CAP-1, CAP-21 and CAP-22 / FR-5, FR-153, FR-154, marshal-mcp on the official SDK and a preflight handshake); no FR registered. See § 43. Prior "2026-10-22"   # RE-STAMPED 2026-10-22: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-15..23 entries (Story 102.1, the 2026-10-22 surface reconciles, Stories 87.17 and 87.18 under CAP-287 / FR-234); no FR registered. See § 42. Prior "2026-10-14"   # RE-STAMPED 2026-10-14 (CAP-292): chain-currency cascade (spec -> PRD) for CAP-292 (Epic 100); FR-239 registered -- a dispatch landing records which CI surfaces were paused when it merged. See section 41. Earlier 2026-10-12: RE-STAMPED 2026-10-12 (Story 97.1): Extraction Manifest COPIED · MANAGED / COPIED · SEEDED tables move detector-registry, dreams-readme and detectors-ci-workflow to seeded (operator ruling 2026-10-12); no FR registered. See section Currency reconciliation — 2026-10-12 (Story 97.1). Earlier 2026-10-11 (recall fold): spec-marshal-recall-in-the-loop folded into spec-pyforge-marshal; FR-235..FR-238 registered from CAP-288..CAP-291 (Epic 93). See section Currency reconciliation — 2026-10-11 (recall fold). Earlier 2026-10-11: RE-STAMPED 2026-10-11: chain-currency cascade (spec -> PRD -> spine -> epics) after the memlog reconcile of marshal Story 90.1's code revert (its psutil group read held every dispatch live); no CAP/FR/AD/story moved. Prior: RE-STAMPED 2026-10-08: chain-currency behind-code (code -> PRD) truth-up for Story 46.9 as built (CAP-196, per-layer benchmark legs with cache-hit rates) and the cli.benchmark refusal fix that let its attr-defined mypy override go (MRS-BENCH-001..005); the spec memlog's entries since section 38 folded (Stories 22.18-22.21); no FR registered; two divergences and one FR-tag defect recorded. See section 39. Earlier 2026-10-07: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 34 entries since section 37 (fix stories 83.22, 83.23, 85.5, 70.2, 22.13-22.17, 53.4 and 85.6, their landings and surface reconciles); no FR registered. See section 38. Earlier 2026-10-04: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for CAP-287 (Epic 87); FR-234 registered; FR-59, FR-62 and FR-63 gain dated consequences. See section 37. Earlier 2026-10-03: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for CAP-286 (Epic 85); FR-233 registered. See section 36. Earlier 2026-10-02: RE-STAMPED 2026-10-02: chain-currency cascade (spec -> PRD) for CAP-285 (Epic 84); FR-232 registered. See section 35. Earlier 2026-10-01: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for CAP-284 (Epic 80); FR-231 registered. See section 34. Earlier 2026-09-30: RE-STAMPED 2026-09-30: chain-currency cascade (spec -> PRD) for CAP-283 (Epic 78); FR-230 registered. See section 33. Earlier 2026-09-29: RE-STAMPED 2026-09-29: chain-currency cascade (spec -> PRD) for CAP-282 (Epic 77); FR-229 registered. See section 32. Earlier 2026-09-28: RE-STAMPED (night): Epic 74 recorded for spec-feature-flag-governance CAP-3, CAP-4 and CAP-6 (the Guild's CAPs; no FR registered, the doctor Epic 24/25/32 relay). No AD amended. See section 31.11. Earlier: AMENDED (evening, cont. 6): operator rulings -- FR-225 (CAP-279, the loop-home scope for .bmad-loop/policy.toml), FR-227 (CAP-280 widened to dispatch land's ALREADY_LANDED read) and FR-228 (CAP-281, the per-campaign follow-up cap) amended in place; AD-55 amended in place on the spine. See § 31.10. Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade (spec -> PRD) for FR-228 / CAP-281 (Epic 73). No AD amended. See § 31.9. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade (spec -> PRD) for FR-227 / CAP-280 (Epic 72). No AD amended. See § 31.8. Earlier: AMENDED (evening, cont. 3): FR-211 re-scoped with CAP-265 (operator ruling; Story 54.1, key kept). No AD amended. See § 22 and § 31.7. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade (spec -> PRD) for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended. See § 31.6. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-225 / CAP-279 (Epic 70). No AD amended. See § 31.5. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-224 / CAP-278 (Epic 69). No AD amended. See § 31.4. Earlier: RE-STAMPED (later): chain-currency cascade (spec -> PRD) for FR-223 / CAP-277 (Epic 68). No AD amended. See § 31.3. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended. See § 31. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade (spec -> PRD) for FR-220 / CAP-274 (Epic 65). No AD amended. See § 30.2. Earlier: RE-STAMPED (late night): chain-currency cascade (spec -> PRD) for FR-219 / CAP-273 (Epic 64). No AD amended. See § 30. Earlier: RE-STAMPED (late, cont.): chain-currency cascade (spec -> PRD) for FR-218 / CAP-272 (Epic 62). No AD amended. See § 29. Earlier: RE-STAMPED (late): chain-currency cascade (spec -> PRD) for FR-217 / CAP-271 (Epic 61). No AD amended. See § 28. Earlier: RE-STAMPED (night): chain-currency cascade (spec -> PRD) for FR-216 / CAP-270 (Epic 60). No AD amended. See § 27. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-215 / CAP-269 (Epic 59). No AD amended. See § 26. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-214 / CAP-268 (Epic 58). No AD amended. See § 25. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57), § 24; FR-212 / CAP-266 (Epic 56), § 23. Prior 2026-09-26
@@ -703,6 +703,7 @@ The rules a repository demands for landing compose from the policy layers with p
 - The effective landing policy prints with each key's winning layer; an invalid landing policy is a preflight finding.
 - *Grounding: five PRs hand-driven in one session (2026-07-31), each repeating the same written-but-unenforced sequence; one (#170) merged a real detector break because nothing in the landing path asked.*
 - *(Amended 2026-10-04, FR-234 / AD-47 as amended:)* branch retirement never deletes an operational `loop/*` head: `marshal land` merges a `loop/<slug>` PR without `--delete-branch` and records `branch_retired` only from a post-merge remote fact. Only `marshal teardown` removes a station branch, under AD-81's preserve precondition (§ 37).
+- *(Amended 2026-11-10, CAP-208 / Story 115.4:)* the forge repository a landing addresses is the root of record's, read from `pyforge.core.cutover_root.root_of_record()` at each use, so no marshal module holds a repository slug.
 
 #### FR-60: The last mile lands itself — `marshal land` *(added 2026-08-01 — CAP-9)* ← CAP-9, CAP-206, CAP-209, CAP-210, CAP-211
 A story or wave that passed its gates lands on the integration branch without a human driving the sequence.
@@ -1679,7 +1680,10 @@ versioned artifact.
   FR-79 requires).
 - **FR-125** ← CAP-297, CAP-17 — `marshal seed version` reports both the CLI version and the bundled model version.
 - **FR-126** ← CAP-13 — Non-zero exit codes are distinct and documented per failure mode (conformance
-  failure, precondition failure, internal error).
+  failure, precondition failure, internal error). The six seed codes (1 conformance, 2 usage,
+  3 precondition, 4 never-write, 5 state invalid, 10 internal) hold at the process boundary:
+  `marshal seed ...` exits with them, and every other verb keeps the CLI's own exit domain
+  *(amended 2026-11-10, CAP-13 / Story 115.3)*.
 - **FR-127** ← CAP-10 — A `marshal seed explain <artifact>` verb prints an artifact's class, rationale, and
   update behavior — the model documenting itself to the agents that read it (D1).
 
@@ -1887,6 +1891,9 @@ remembered command; the trigger is deterministic, not heuristic.
 **2026-09-02:** the promote commit is published onto `origin/<base>` from an
 isolated detached worktree (CAP-5). It must not be committed on the operator
 `main` checkout — that leftover diverged local `main` after every `gh pr merge`.
+**2026-11-10:** the promote and fleet-scan loaders find the checkout through the guarded
+root (`cli/config.py`); outside a source checkout the landing reports `MRS-LAND-011` or
+`MRS-DEPLOY-027`, never an `IndexError` (CAP-229, Story 115.1).
 
 #### FR-137: Staleness is detectable on its own ← CAP-230
 A check answers "is the tracked ledger behind git?" independently of any run.
@@ -1992,6 +1999,8 @@ latter.
 
 #### FR-155: CLI ⇄ tool parity is gated, not reviewed ← CAP-23
 **Consequences:** a capability present in one surface and absent from the other fails a check.
+**2026-11-10:** the server's registered tool names equal the tool inventory: `marshal-mcp`
+registers exactly the tools `list_marshal_tools` reports (CAP-23, Story 115.3).
 
 #### FR-156: Coverage is measured, not assumed ← CAP-24
 **Consequences:** per-station tool-surface coverage is reported as a number; the 2026-07-28
@@ -3880,3 +3889,82 @@ unchanged, and the FR space stays FR-1..FR-245.
 *Chain-currency cascade (research -> brief -> PRD and spec -> PRD), EGM audit, marshal Story 113.18.*
 
 `research/egm-audit-2026-11-05.md` (marshal Story 113.18, `spec-pyforge-marshal:CAP-302`): 15 high findings, 11 accepted, 4 rejected, 0 deferred; the medium and low findings are not triaged. CAP-302 and CAP-303 keep their text. The audit's residue lands under them, and Story 113.19 will re-derive CAP-302. No FR is added, renumbered or re-scoped.
+
+## Currency reconciliation — 2026-11-11 (Story 114.1)
+
+*Trigger: the `spec→prd` edge after `spec-pyforge-marshal`'s memlog of 2026-11-10 (the station Dream's entry of that
+date, *The Spec says what marshal is, and its roots come from one place*, the operator's rulings of 2026-11-10, and the
+amendments the fix stories of Epic 115 realize) and the Spec's render of 2026-11-11 (marshal Story 114.1). That render
+dated every capability's marker (`research/cap-marker-truth-2026-11-10.md`), minted CAP-304 and CAP-305, and amended
+CAP-13, CAP-23, CAP-208, CAP-227, CAP-229, CAP-261 and CAP-287. A requirement cites only a capability its Spec defines
+(CHAIN-STANDARD section 12), so the arrows below follow the render.*
+
+### The FR space: FR-246..FR-249 registered
+
+#### FR-246: Marshal's public contract is one companion the suite keeps complete ← CAP-304
+Marshal's Spec folder carries `contract.md`: every CLI verb path with its flags, every `marshal-mcp` tool and every
+tool of the station face, every feature-flag key and environment variable marshal reads, every `MRS-*` code and seed
+finding type, and both exit-code domains. Marshal's own suite fails when the code and the file disagree in either
+direction (Story 114.3).
+
+#### FR-247: Marshal's suite is an oracle off the monorepo ← CAP-305
+Marshal's suite is two halves: package-local tests that read nothing in the repository outside the package, and tests
+marked `live_tree` that read the repository. A `live_tree` test fails when the file it reads is absent. A package-half
+test that opens a repository file outside the package fails (Stories 116.1 to 116.4).
+
+#### FR-248: The landing reads Doctor's spec-surface verdict by its command, never by import ← CAP-261
+The dispatch landing reads the spec-surface verdict from Doctor's own command output, in the worktree it is landing,
+through one adapter and the landing's process port; marshal imports no Doctor module, and a meta-test fails on such an
+import (Story 115.2).
+
+#### FR-249: A loop-home read outside the publisher fails the suite unless it is tagged ← CAP-227
+A read of the loop home or of a run-state file outside the publisher fails marshal's suite unless the line is tagged
+with its reason; the guard is proven by a fixture it must reject; `marshal watch` takes the loop-home root from the same
+override `marshal init` reads (Story 115.1).
+
+### Four bodies amended in place
+
+- **FR-59 ← CAP-9, CAP-206, CAP-208:** one consequence: the forge repository a landing addresses is the root of
+  record's, read from `pyforge.core.cutover_root.root_of_record()` (Story 115.4).
+- **FR-126 ← CAP-13:** the six seed codes hold at the process boundary (Story 115.3).
+- **FR-136 ← CAP-229:** the promote and fleet-scan loaders find the checkout through the guarded root (Story 115.1).
+- **FR-155 ← CAP-23:** the server's registered tool names equal the tool inventory (Story 115.3).
+
+No arrow moves. The spine's § Currency reconciliation — 2026-11-11 (Story 114.1) checks FR-246..FR-254 against its ADs
+and gives AD-7 its seed sentence.
+
+**Content changed:** this section, the next one, the four bodies above, and `updated:`. No FR is renumbered or removed.
+
+## The shared floor and the testing kit — FR-250..FR-254 (core-kit, 2026-11-10)
+
+`spec-pyforge-core` gains CAP-12..CAP-14 and `spec-pyforge-testing-charter` gains CAP-6 and CAP-7 (core-kit Stories
+117.5 and 118.2 rendered them; the station Dream's entry of 2026-11-10, *The shared floor says what it is: core and the
+testing kit before the cutover*). Both Specs live in this project, and their requirements take this PRD's FR ids,
+allocated after marshal's four from the next free id. Each arrow names its capability in the cross-Spec colon form, and
+each body is traced from that capability's intent and success.
+
+#### FR-250: The leaf's public surface is written down, and the suite reds what it lacks ← spec-pyforge-core:CAP-12
+The leaf's modules, public names, environment variables, flag keys, exit codes and entry points are recorded in a
+companion contract, and the core suite fails when source and contract differ (Story 117.4).
+
+#### FR-251: One function answers the root of record and the forge slug ← spec-pyforge-core:CAP-13
+One function in the leaf returns the root of record, that root's forge repository slug and the source of the answer;
+stations read it instead of holding the slug (Story 117.2).
+
+#### FR-252: The core suite has a package half a second root runs from the package alone ← spec-pyforge-core:CAP-14
+The core suite has a package half that passes from a copy of the package alone, and a live-tree half that reads the
+repository; together they are the whole suite (Stories 117.1 and 117.7).
+
+#### FR-253: The kit's public surface is written down, and its suite reds what it lacks ← spec-pyforge-testing-charter:CAP-6
+The kit's modules, public names, fixtures, markers and run-dependencies are recorded in a companion contract, and the
+kit's suite fails when source and contract differ (Story 118.1).
+
+#### FR-254: The kit's own suite runs without the host ← spec-pyforge-testing-charter:CAP-7
+The kit's suite has a package half that passes with no host package on the path, and a live-tree half for the portal
+contract, the lane wiring, the platform flag tree and the contract check (Story 118.1).
+
+**ONE FR space now FR-1..FR-254, with no hole** (FR-255 = next free id). No NFR changes.
+
+## Currency reconciliation — 2026-11-13 (Story 116.5)
+
+*Chain close (CHAIN-STANDARD § 3 step 7), cutover readiness, marshal Story 116.5.* `spec-pyforge-marshal:CAP-304` and `spec-pyforge-marshal:CAP-305`, from which FR-246 and FR-247 derive, read `(shipped 2026-11-11)` (Stories 114.3 and 116.1 to 116.4), and so do `spec-pyforge-marshal:CAP-13`, `spec-pyforge-marshal:CAP-23`, `spec-pyforge-marshal:CAP-208`, `spec-pyforge-marshal:CAP-227`, `spec-pyforge-marshal:CAP-229`, `spec-pyforge-marshal:CAP-261` and `spec-pyforge-marshal:CAP-287`, whose amendments FR-59, FR-126, FR-136, FR-155, FR-234, FR-248 and FR-249 carry (Stories 114.2, 115.1 to 115.4 and 117.3). No FR or NFR is added, renumbered, re-scoped or removed, no arrow moves, and FR-255 stays the next free id.

@@ -130,17 +130,17 @@ def _write(path: Path, text: str) -> None:
     path.write_text(text, encoding="utf-8")
 
 
-def test_gather_on_empty_target_returns_ok_with_zero_checked(tmp_path: Path):
+def test_gather_on_empty_target_returns_one_unevaluable_warn(tmp_path: Path):
     findings = bmad_config.gather(tmp_path)
 
     assert len(findings) == 1
     finding = findings[0]
     assert finding.source is Source.BMAD_RENDER_CONFIG_AMBIGUITY
-    assert finding.check == "bmad-render-config-ambiguity"
-    assert finding.status == DoctorStatus.OK
-    assert finding.evidence["checked"] == 0
-    # Sharpened wording: 0 checked must not read as "verified clean" --
-    # nothing was there to check at all.
+    # Story 56.4 (spec-pyforge-doctor:CAP-93): no layer is no subject -- one
+    # cannot-evaluate WARN, never an OK that reads as "verified clean".
+    assert finding.check == "bmad-render-config-ambiguity-unevaluable"
+    assert finding.status == DoctorStatus.WARN
+    assert finding.evidence == {"checked": 0, "unevaluable": True}
     assert "no central config layers found" in finding.message
 
 

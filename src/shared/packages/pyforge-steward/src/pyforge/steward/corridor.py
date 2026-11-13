@@ -1,5 +1,5 @@
 """Steward's ``load`` duty — corridor transports (Story 61.1,
-spec-work-passports-dated-extracts CAP-1 / spec-pyforge-steward CAP-139).
+spec-pyforge-steward CAP-139).
 
 Vendor and estate lists have no idempotent drop path today. This module is
 the corridor: every transport writes the SAME loader, keyed on batch sha +
@@ -21,9 +21,9 @@ not installed.
 ``LoadDuty`` never calls ``sys.exit`` (AD-8) — it returns a ``DutyResult``
 and ``cli.main`` projects it.
 
-**Since Story 61.4** (spec-work-passports-dated-extracts CAP-4 /
-spec-pyforge-steward CAP-142 — the signed-outbound-slice gate): a dump of
-Jira or factory BMAD can leave unsigned today unless this gate closes it.
+**Since Story 61.4** (spec-pyforge-steward CAP-142, the signed-outbound-slice
+gate): a dump of Jira or factory BMAD can leave unsigned today unless CAP-142
+closes it.
 Default deny — an ``outbound`` load additionally requires a named
 ``slice_name`` and a recorded ``signer`` (the named ``outbound-signer`` role
 on the existing app) before ``load_extract`` will create a new row; both are
@@ -49,8 +49,9 @@ import yaml
 
 from .bootstrap import repo_root
 from .interfaces import DutyResult
+from .root_layout import STEWARD_PACKAGE_DIR
 
-CORRIDOR_RELATIVE = Path("src/shared/packages/pyforge-steward/corridor")
+CORRIDOR_RELATIVE = STEWARD_PACKAGE_DIR / "corridor"
 CONFIG_FILENAME = "corridor.yaml"
 
 STATES: tuple[str, ...] = ("on", "off")
@@ -310,12 +311,12 @@ def load_extract(
         if not slice_name:
             raise CorridorLoadError(
                 "an outbound load requires a named slice -- default deny "
-                "(Story 61.4, spec-work-passports-dated-extracts CAP-4)"
+                "(Story 61.4, spec-pyforge-steward CAP-142: outbound slice gate)"
             )
         if not signer:
             raise CorridorLoadError(
                 f"an outbound load requires a recorded {SIGNER_ROLE} -- default deny "
-                "(Story 61.4, spec-work-passports-dated-extracts CAP-4)"
+                "(Story 61.4, spec-pyforge-steward CAP-142: outbound slice gate)"
             )
 
     # Only now (past the slice/signer gate, when it applies) does the

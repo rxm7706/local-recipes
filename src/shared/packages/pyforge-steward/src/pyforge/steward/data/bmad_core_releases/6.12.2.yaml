@@ -1,4 +1,4 @@
-# Target-release catalog for CAP-1 pre-flight (Story 14.1 shape).
+# Target-release catalog for CAP-9 pre-flight (Story 14.1 shape).
 # Grounded in the unpacked conda package `bmad-method 6.12.2`
 # (.pixi/envs/pyforge-guild/lib/node_modules/bmad-method, package.json 6.12.2,
 # CHANGELOG "v6.12.2 - 2026-10-11" and "v6.12.1 - 2026-10-04") diffed against the
@@ -13,7 +13,7 @@ skill_renames: []
 removals: []
 skill_adds: []
 
-# CAP-9 (Story 14.9): the 21 deprecation shims this installed core still ships
+# CAP-17 (Story 14.9): the 21 deprecation shims this installed core still ships
 # (installShims: true) — 20 skill-manifest.csv `v6-shims` paths (core + bmm)
 # plus `bmad-generate-project-context`, which ships as `lifecycle: shim` under
 # `src/bmm-skills/plan/bmad-generate-project-context/SKILL.md` rather than
@@ -114,7 +114,7 @@ config_migration:
     _bmad/bmm/config.yaml; no TOML cutover. 6.12.2 notes that v7 is available
     for preview: the v7 line is the cutover to flag loudly, not this release.
 
-# Custom modules (CAP-7, Story 14.7; failure-modes.md traps 13/14); see 6.12.0.yaml
+# Custom modules (CAP-15, Story 14.7; failure-modes.md traps 13/14); see 6.12.0.yaml
 # for the field contract.
 custom_modules:
   - name: skf

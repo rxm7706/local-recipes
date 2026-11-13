@@ -204,7 +204,7 @@ class ShipState(StrEnum):
     not yet built, is the only way a future caller would ever learn it).
     **`pending` is never collapsed into success in any rendering** (AD-9).
 
-    `StrEnum` (stdlib since 3.12, this package's floor), not a plain `Enum`
+    `StrEnum` (stdlib since 3.11, this package's floor is 3.14), not a plain `Enum`
     (Design Notes): `cli.py`'s dispatch renders every result via
     `render.write` -> `render_json`'s `json.dumps(dataclasses.asdict(result),
     ...)`, with no custom encoder (`render.py`'s own module docstring: only

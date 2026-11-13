@@ -6,8 +6,9 @@ findings that answer "is this session ready to do planning-chain work?" as data,
 prose:
 
 1. pixi is present and ``pyforge-guild`` is materialized at the frozen lock.
-2. bmad-method sits at the pinned version — reuses doctor's own drift verdict
-   (``pyforge.doctor.sources.bmad_method.gather``) verbatim; never re-implemented.
+2. bmad-method sits at the pinned version — the verdict of ``pixi run -e pyforge-guild
+   bmad-drift-check`` (run frozen), through the subprocess ``upgrade.py`` already runs; never
+   re-implemented.
 3. the token-economy kit — reuses marshal's own ``seed check --json`` verdict.
 4. ``gh`` is authenticated and has API budget left — this probe must NEVER fail
    open (see ``feedback_unauthenticated_github_probes_fail_open`` in team memory).
@@ -34,16 +35,23 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from .bootstrap import repo_root
 from .interfaces import DutyResult
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from .upgrade import CommandRunner
 
 _DEFAULT_PIXI_ENV = "pyforge-guild"
 _GUILD_ENV_RELATIVE_PATH = Path(".pixi/envs") / _DEFAULT_PIXI_ENV
 _ACTIVE_PROJECT_MARKER_RELATIVE_PATH = Path("_bmad/custom/.active-project")
 _SEED_CHECK_ARGV = ("pixi", "run", "--frozen", "-e", _DEFAULT_PIXI_ENV, "marshal", "seed", "check", "--json")
 _SEED_CHECK_TIMEOUT_S = 60.0
+#: Finding (2)'s drift task gets the timeout ``upgrade.py``'s default runner gave it.
+_DRIFT_CHECK_TIMEOUT_S = 60.0
 _GH_TIMEOUT_S = 20.0
 _TIER3_FEED_REMEDY = "cp planning-artifacts/sprint-status-ledger.yaml implementation-artifacts/sprint-status.yaml"
 
@@ -86,39 +94,52 @@ def _pixi_guild_finding(root: Path) -> SessionFinding:
     return SessionFinding(name="pixi-guild", ok=True, detail=f"{env_dir} is materialized")
 
 
-def _bmad_method_finding(root: Path) -> SessionFinding:
-    """Finding (2): bmad-method at the pinned version — doctor's verdict, verbatim.
+def _run_drift_check(argv: Sequence[str], cwd: Path) -> subprocess.CompletedProcess[str]:
+    """Finding (2)'s default runner: the drift task, run frozen, and never raising.
 
-    AC3: when ``pyforge.doctor`` is importable, this is
-    ``pyforge.doctor.sources.bmad_method.gather``'s own verdict, never re-implemented.
-    AC4: when it is not importable, falls back to the exact subprocess
-    ``upgrade.py::run_bmad_drift_integrity`` already runs, rather than raising.
+    ``pixi run --frozen`` does not hand ``--frozen`` to a child pixi, so the nested run sets
+    ``PIXI_FROZEN`` (pixi's environment form of the flag) rather than re-solving, or rewriting,
+    a lock that disagrees with ``pixi.toml`` under a session-start check; the seed check's argv
+    above is frozen for the same reason. A launch error reads as exit 2, the task's own
+    could-not-run code, and a timeout as 124, so the detail names the drift check and not a
+    doctor import this finding no longer makes (Story 123.3, review round 1).
     """
     try:
-        from pyforge.doctor.models import DoctorStatus
-        from pyforge.doctor.sources.bmad_method import gather as bmad_method_gather
-    except ImportError:
-        from .upgrade import run_bmad_drift_integrity
-
-        result = run_bmad_drift_integrity(root)
-        return SessionFinding(
-            name="bmad-method",
-            ok=result.ok,
-            detail=result.detail,
-            remedy=None if result.ok else f"pixi run -e {_DEFAULT_PIXI_ENV} bmad-drift-check",
+        return subprocess.run(
+            list(argv),
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=_DRIFT_CHECK_TIMEOUT_S,
+            env={**os.environ, "PIXI_FROZEN": "true"},
+            check=False,
         )
-
-    findings = bmad_method_gather(root)
-    failed = [row for row in findings if row.status is DoctorStatus.FAIL]
-    if failed:
-        detail = "; ".join(f"{row.check}: {row.message}" for row in failed[:5])
-        return SessionFinding(
-            name="bmad-method",
-            ok=False,
-            detail=detail,
-            remedy=f"pixi run -e {_DEFAULT_PIXI_ENV} bmad-drift-check",
+    except subprocess.TimeoutExpired:
+        return subprocess.CompletedProcess(
+            list(argv), 124, stdout="", stderr=f"timeout after {_DRIFT_CHECK_TIMEOUT_S:g}s"
         )
-    return SessionFinding(name="bmad-method", ok=True, detail="bmad-method drift verdict: no FAIL findings")
+    except (OSError, subprocess.SubprocessError) as exc:
+        return subprocess.CompletedProcess(list(argv), 2, stdout="", stderr=f"could not launch: {exc}")
+
+
+def _bmad_method_finding(root: Path, runner: CommandRunner | None = None) -> SessionFinding:
+    """Finding (2): bmad-method at the pinned version — ``bmad-drift-check``'s verdict, everywhere.
+
+    Always the exact subprocess ``upgrade.py::run_bmad_drift_integrity`` runs when
+    ``pyforge.doctor`` is not importable (exit 0 pass, 1 findings, 2 could not run), through
+    ``_run_drift_check`` unless a ``runner`` is given (the test seam). The in-process doctor read
+    it replaces could not fail where doctor was importable: a guard that could not fire (operator
+    ruling 2026-11-10, Story 123.3).
+    """
+    from .upgrade import _run_bmad_drift_task
+
+    result = _run_bmad_drift_task(root, runner or _run_drift_check)
+    return SessionFinding(
+        name="bmad-method",
+        ok=result.ok,
+        detail=result.detail,
+        remedy=None if result.ok else f"pixi run -e {_DEFAULT_PIXI_ENV} bmad-drift-check",
+    )
 
 
 def _run_seed_check(root: Path) -> subprocess.CompletedProcess[str]:

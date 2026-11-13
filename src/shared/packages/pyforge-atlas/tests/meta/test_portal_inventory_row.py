@@ -5,6 +5,13 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
+import pytest
+
+# Story 48.1 (a relay of spec-pyforge-steward:CAP-175): this module reads the live tree outside its package
+# (django-atlas, django-pyforge, src/platform and the root pixi.toml), so it runs in atlas's live-tree half and fires
+# on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 STATION_PORTAL = Path("src/shared/packages/django-atlas/src/django_atlas_portal")
 VIEWS = STATION_PORTAL / "views.py"
 CHROME_COPY_NAMES = frozenset({"base.html", "switcher.html", "theme.css"})

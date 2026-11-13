@@ -1,0 +1,352 @@
+"""Doctor Story 58.1 (spec-pyforge-doctor:CAP-97) -- the live-tree half of
+``test_sources_board_chain_layers_audit.py``.
+
+``board.gather_chain_layers_audit`` (Story 17.3 / FR-150 residual + FR-152)
+seeds layer computation from ``scripts/fleet_scan.py``. These tests copy that
+script and ``docs/governance/guild-roster.json`` from this repository into a
+fixture tree, load the checkout's own script, or scan this repository's
+stages, so they run in the station's live-tree half. Covers presence /
+absence reporting, per-project isolation, the checkout-script loader and the
+git date index.
+"""
+
+from __future__ import annotations
+
+import shutil
+from pathlib import Path
+
+import pytest
+
+from pyforge.doctor.models import DoctorStatus, Source
+from pyforge.doctor.sources import board
+
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
+
+def _repo_root() -> Path:
+    """This repository's root, resolved when a test runs (never at import time)."""
+    root = Path(__file__).resolve().parents[6]
+    assert (root / "scripts" / "fleet_scan.py").is_file() and (
+        root / "docs" / "governance" / "guild-roster.json"
+    ).is_file(), "fleet_scan.py + guild-roster.json required"
+    return root
+
+
+def _install_generate(target: Path) -> None:
+    root = _repo_root()
+    (target / "scripts").mkdir(parents=True, exist_ok=True)
+    (target / "docs" / "governance").mkdir(parents=True, exist_ok=True)
+    (target / "docs" / "dreams").mkdir(parents=True, exist_ok=True)
+    (target / "pixi.toml").write_text('[workspace]\nname = "fixture"\n', encoding="utf-8")
+    shutil.copy(
+        root / "scripts" / "fleet_scan.py",
+        target / "scripts" / "fleet_scan.py",
+    )
+    shutil.copy(
+        root / "docs" / "governance" / "guild-roster.json",
+        target / "docs" / "governance" / "guild-roster.json",
+    )
+
+
+def _write_project_skeleton(
+    target: Path,
+    project: str,
+    *,
+    dream: bool = True,
+    spec: bool = True,
+    brief: bool = False,
+    prd: bool = False,
+    arch: bool = False,
+    epics: bool = False,
+) -> None:
+    pa = target / "_bmad-output" / "projects" / project / "planning-artifacts"
+    pa.mkdir(parents=True, exist_ok=True)
+    if dream:
+        ddir = target / "docs" / "dreams"
+        ddir.mkdir(parents=True, exist_ok=True)
+        (ddir / f"{project}.md").write_text(
+            "---\nowner: marshal\nstatus: realized\ntitle: T\n---\nbody\n",
+            encoding="utf-8",
+        )
+    if spec:
+        sdir = pa / "specs" / f"spec-{project}"
+        sdir.mkdir(parents=True, exist_ok=True)
+        (sdir / "SPEC.md").write_text("---\nstatus: ready\n---\n# Spec\n", encoding="utf-8")
+        (sdir / ".memlog.md").write_text("---\nupdated: 2026-08-01\n---\n", encoding="utf-8")
+    if brief:
+        (pa / f"product-brief-{project}.md").write_text("# brief\n", encoding="utf-8")
+    if prd:
+        (pa / "prd.md").write_text("# prd\n", encoding="utf-8")
+    if arch:
+        (pa / "architecture.md").write_text("# arch\n", encoding="utf-8")
+    if epics:
+        (pa / "epics.md").write_text("# epics\n", encoding="utf-8")
+
+
+def test_reports_present_and_missing_layers(tmp_path: Path) -> None:
+    _install_generate(tmp_path)
+    _write_project_skeleton(tmp_path, "pyforge-marshal", dream=True, spec=True, brief=True)
+    findings = board.gather_chain_layers_audit(tmp_path, "pyforge-marshal")
+    layer_summary = [f for f in findings if f.check == "chain-layers-audit"]
+    assert len(layer_summary) == 1
+    f = layer_summary[0]
+    assert f.source is Source.CHAIN_LAYERS_AUDIT
+    assert f.status is DoctorStatus.WARN  # many layers still missing
+    assert "dream" in f.evidence["present"]
+    assert "spec" in f.evidence["present"]
+    assert "brief" in f.evidence["present"]
+    assert "prd" in f.evidence["missing"]
+    assert "arch" in f.evidence["missing"]
+    assert "epics" in f.evidence["missing"]
+    assert "chainAudit" in f.evidence
+    assert f.evidence["chainAudit"]["verdict"] == "fail"
+    # CAP-3 checkpoints emitted (Story 21.1).
+    checks = {f.check for f in findings}
+    assert "chain-audit-checkpoint-layers" in checks
+    assert "chain-audit-verdict" in checks
+    layers_cp = next(f for f in findings if f.check == "chain-audit-checkpoint-layers")
+    assert layers_cp.status is DoctorStatus.FAIL
+
+
+def test_full_applicable_layers_reports_ok(tmp_path: Path) -> None:
+    """When every non-na layer is present, status is OK."""
+    _install_generate(tmp_path)
+    project = "pyforge-marshal"
+    _write_project_skeleton(
+        tmp_path,
+        project,
+        dream=True,
+        spec=True,
+        brief=True,
+        prd=True,
+        arch=True,
+        epics=True,
+    )
+    pa = tmp_path / "_bmad-output" / "projects" / project / "planning-artifacts"
+    # Satisfy remaining primary-chain globs used by generate.py.
+    (pa / "research").mkdir(exist_ok=True)
+    (pa / "research" / "domain-pyforge-marshal.md").write_text("x\n", encoding="utf-8")
+    (pa / "research" / "market-pyforge-marshal.md").write_text("x\n", encoding="utf-8")
+    (pa / "research" / "technical-pyforge-marshal.md").write_text("x\n", encoding="utf-8")
+    (tmp_path / "presentations" / project / "project").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "presentations" / project / "project" / "x.html").write_text("<html></html>\n", encoding="utf-8")
+    (tmp_path / "AGENTS.md").write_text("# ctx\n", encoding="utf-8")
+    (pa / "sprint-status-ledger.yaml").write_text("development_status:\n", encoding="utf-8")
+    pkg = tmp_path / "src" / "shared" / "packages" / project
+    (pkg / "tests").mkdir(parents=True, exist_ok=True)
+    (pkg / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
+    (pkg / "tests" / "test_x.py").write_text("def test_x():\n    assert True\n", encoding="utf-8")
+    (pa / "implementation-readiness-report.md").write_text("# gate\n", encoding="utf-8")
+    (pa / "retros").mkdir(exist_ok=True)
+    (pa / "retros" / "retro-pyforge-marshal.md").write_text("# retro\n", encoding="utf-8")
+    (tmp_path / "pixi.toml").write_text(f'[tasks]\n"{project}-test" = "true"\n', encoding="utf-8")
+
+    findings = board.gather_chain_layers_audit(tmp_path, project)
+    layer_summary = [f for f in findings if f.check == "chain-layers-audit"]
+    assert len(layer_summary) == 1
+    ev = layer_summary[0].evidence
+    for layer in ("dream", "spec", "brief", "prd", "arch", "epics", "context"):
+        assert layer in ev["present"], layer
+    assert "prd" not in ev["missing"]
+    assert "context" not in ev.get("missing", []), (
+        "'context' resolves to the AGENTS.md fixture written above (Story 30.2, "
+        "2026-09-06 -- the project-context surface moved from a per-station "
+        "rulebook to this shared file); pin this so a future regression in "
+        "_stage_globs()'s 'context' glob reds here, not silently."
+    )
+    verdict = next(f for f in findings if f.check == "chain-audit-verdict")
+    assert "layers" in verdict.evidence["checkpoints"]
+    assert "orphans" in verdict.evidence["checkpoints"]
+    assert "context" not in verdict.evidence["checkpoints"]["layers"].get("gaps", [])
+
+
+def test_isolation_does_not_credit_sibling_project_artifacts(
+    tmp_path: Path,
+) -> None:
+    _install_generate(tmp_path)
+    _write_project_skeleton(tmp_path, "pyforge-marshal", dream=True, spec=True)
+    # Sibling has a full brief/prd — must NOT appear in marshal's report.
+    _write_project_skeleton(
+        tmp_path,
+        "pyforge-doctor",
+        dream=True,
+        spec=True,
+        brief=True,
+        prd=True,
+        arch=True,
+        epics=True,
+    )
+    findings = board.gather_chain_layers_audit(tmp_path, "pyforge-marshal")
+    ev = next(f for f in findings if f.check == "chain-layers-audit").evidence
+    assert "brief" in ev["missing"]
+    assert "prd" in ev["missing"]
+    # Files listed must stay under marshal (or shared dreams/presentations).
+    for paths in ev["files"].values():
+        for rel in paths:
+            assert "pyforge-doctor" not in rel, rel
+
+
+def test_unknown_project_is_unevaluable(tmp_path: Path) -> None:
+    _install_generate(tmp_path)
+    findings = board.gather_chain_layers_audit(tmp_path, "pyforge-no-such-station")
+    assert findings[0].check == "chain-layers-audit-unevaluable"
+
+
+# --- the audit executes Doctor's own checkout's script, never the judged tree's -------
+#
+# `target` is the tree being JUDGED, so its `scripts/fleet_scan.py` is data. Resolving the
+# loader's file from `target` ran any caller-supplied tree's Python with Doctor's privileges
+# (DW-FU-6-5-9, Story 40.1). Each test below plants a script in `target` that writes a probe
+# file when executed; the probe lives OUTSIDE `target` so the audit's own reads cannot touch it.
+
+
+def _plant_probe_script(target: Path, probe: Path, *, then_raise: bool = False) -> None:
+    body = f"from pathlib import Path\nPath({str(probe)!r}).write_text('executed')\n"
+    if then_raise:
+        # The sensitivity twin runs the planted script; raising afterwards makes the
+        # loader drop the half-built module instead of leaving a probe in sys.modules.
+        body += "raise RuntimeError('probe ran')\n"
+    (target / "scripts" / "fleet_scan.py").write_text(body, encoding="utf-8")
+
+
+def test_the_judged_trees_fleet_scan_is_data_never_executed(tmp_path: Path) -> None:
+    target = tmp_path / "target"
+    target.mkdir()
+    probe = tmp_path / "probe.txt"
+    _install_generate(target)
+    _write_project_skeleton(target, "pyforge-marshal", dream=True, spec=True, brief=True)
+    _plant_probe_script(target, probe)
+
+    findings = board.gather_chain_layers_audit(target, "pyforge-marshal")
+
+    assert not probe.exists(), "the judged tree's scripts/fleet_scan.py was executed"
+    # The layers still come from `target`'s own files: the checkout's code, the target's data.
+    summary = next(f for f in findings if f.check == "chain-layers-audit")
+    assert {"dream", "spec", "brief"} <= set(summary.evidence["present"])
+    assert "prd" in summary.evidence["missing"]
+
+
+def test_the_probe_runs_when_the_loader_resolves_from_target(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Sensitivity twin (mutation): re-point the locator at `target` -- the pre-fix
+    behaviour -- and the same planted script runs, so the test above can fail."""
+    target = tmp_path / "target"
+    target.mkdir()
+    probe = tmp_path / "probe.txt"
+    _install_generate(target)
+    _plant_probe_script(target, probe, then_raise=True)
+    monkeypatch.setattr(board, "locate_checkout_script", lambda name: target / "scripts" / name)
+
+    board.gather_chain_layers_audit(target, "pyforge-marshal")
+
+    assert probe.read_text(encoding="utf-8") == "executed"
+
+
+def test_the_loader_points_every_data_path_at_the_target_not_the_checkout(tmp_path: Path) -> None:
+    """`fleet_scan.py` fixes `ARCHIVE_DREAMS_DIR` (like `DREAMS_DIR`) at import from the
+    checkout's own root; left alone, auditing another tree reads the checkout's archived Dreams."""
+    target = tmp_path / "target"
+    target.mkdir()
+    checkout = _repo_root()
+
+    gen = board._load_dashboard_generate(target)
+
+    root = target.resolve()
+    assert gen.REPO_ROOT == root
+    assert gen.DREAMS_DIR == root / "docs" / "dreams"
+    assert gen.ARCHIVE_DREAMS_DIR == root / "archive" / "docs" / "dreams"
+    assert gen.ARCHIVE_DREAMS_DIR.is_relative_to(root)
+    assert not gen.ARCHIVE_DREAMS_DIR.is_relative_to(checkout)
+
+
+def test_no_checkout_script_is_unevaluable_and_never_falls_back_to_target(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = tmp_path / "target"
+    target.mkdir()
+    _install_generate(target)  # `target` carries its own, perfectly loadable fleet_scan.py
+    _write_project_skeleton(target, "pyforge-marshal", dream=True, spec=True)
+
+    def _no_checkout(name: str) -> Path:
+        raise FileNotFoundError(f"scripts/{name} not found above /nowhere")
+
+    monkeypatch.setattr(board, "locate_checkout_script", _no_checkout)
+
+    findings = board.gather_chain_layers_audit(target, "pyforge-marshal")
+
+    assert len(findings) == 1
+    assert findings[0].check == "chain-layers-audit-unevaluable"
+    assert findings[0].status is DoctorStatus.WARN
+    assert "scripts/fleet_scan.py not found" in findings[0].evidence["detail"]
+
+
+def test_cap3_checkpoint_findings_use_pass_fail(tmp_path: Path) -> None:
+    """Story 21.1: each CAP-3 checkpoint is OK or FAIL, not warn-only."""
+    _install_generate(tmp_path)
+    _write_project_skeleton(tmp_path, "pyforge-marshal", dream=True, spec=True, brief=True)
+    findings = board.gather_chain_layers_audit(tmp_path, "pyforge-marshal")
+    checkpoint_checks = {
+        "chain-audit-checkpoint-layers",
+        "chain-audit-checkpoint-coherence",
+        "chain-audit-checkpoint-staleness",
+        "chain-audit-checkpoint-orphans",
+        "chain-audit-verdict",
+    }
+    got = {f.check: f.status for f in findings if f.check in checkpoint_checks}
+    assert set(got) == checkpoint_checks
+    for status in got.values():
+        assert status in (DoctorStatus.OK, DoctorStatus.FAIL)
+
+
+# --- the git date index must cover every stage glob (found live 2026-09-20) -------
+#
+# scan_fleet reads a stage as REACHED only when _artifact_dates() dates one of the
+# files _resolve() found, and _artifact_dates() dates a path from the filename, its
+# frontmatter, or the one `git log -- *_GIT_SCOPES` pass. Story 30.2 (2026-09-06)
+# repointed the `context` stage at the root AGENTS.md -- no path date, no frontmatter,
+# and outside every scope -- so every station but atlas carried a phantom `context`
+# gap and the CAP-3 layers checkpoint read `fail` beside "15/15 layers present". The
+# fixture tests above cannot see it: a tmp_path is not a git repo and its files carry
+# no dates, so nothing is reached, `required` collapses to ["dream"], and "context not
+# in gaps" holds vacuously. These two pin the invariant structurally and live.
+
+
+def _live_scan():
+    return board._load_dashboard_generate(_repo_root())
+
+
+def _glob_root(pattern: str) -> str:
+    """The literal prefix of a glob, up to its first wildcard segment."""
+    parts: list[str] = []
+    for seg in pattern.split("/"):
+        if any(ch in seg for ch in "*?["):
+            break
+        parts.append(seg)
+    return "/".join(parts)
+
+
+def test_every_stage_glob_is_inside_the_git_date_index() -> None:
+    gen = _live_scan()
+    scopes = tuple(gen._GIT_SCOPES)
+    outside: list[str] = []
+    for slug, project, *_rest in gen._fleet_chains():
+        for stage, patterns in gen._stage_globs(slug, project, slug == project).items():
+            for pat in patterns:
+                root = _glob_root(pat)
+                if not any(root == s or root.startswith(s + "/") for s in scopes):
+                    outside.append(f"{slug}/{stage}: {pat}")
+    assert not outside, (
+        "stage globs outside _GIT_SCOPES -- _artifact_dates() cannot date what it "
+        "finds there, so scan_fleet reads the stage as never reached:\n  " + "\n  ".join(sorted(set(outside))[:20])
+    )
+
+
+def test_root_agents_md_is_dated_by_the_git_index() -> None:
+    gen = _live_scan()
+    assert (_repo_root() / ".git").exists(), "not a git checkout"
+    created, updated = gen._artifact_dates("AGENTS.md")
+    assert created and updated, (
+        "AGENTS.md is the `context` stage for every station (Story 30.2) and must "
+        f"date from the git index; got created={created!r} updated={updated!r}"
+    )

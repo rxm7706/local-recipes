@@ -17,6 +17,11 @@ import yaml
 
 from pyforge.atlas.dashboard import factory_status as fs
 
+# Story 48.1 (a relay of spec-pyforge-steward:CAP-175): this module reads the live tree outside its package (the
+# repository's git root and atlas's planning artifacts under _bmad-output), so it runs in atlas's live-tree half and
+# fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 STAMP = "2026-09-09T00:00:00Z"
 
 

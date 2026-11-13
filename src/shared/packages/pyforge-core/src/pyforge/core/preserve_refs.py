@@ -118,6 +118,7 @@ class ContentGateReason(StrEnum):
     PUSH_CAP_RUN = "push-cap-run"
     PUSH_CAP_STORY = "push-cap-story"
     REMOTE_UNREADABLE = "unreadable-remote"
+    PURGE_LIST_UNREADABLE = "purge-list-unreadable"
 
 
 @dataclass(frozen=True, slots=True)
@@ -869,7 +870,16 @@ def push_preserve_ref(
 
     commit = _full_sha(repo, f"{refname}^{{commit}}")
     plist_path = purge_list_path if purge_list_path is not None else default_purge_list_path(repo)
-    purge_list = load_purge_list(plist_path)
+    try:
+        purge_list = load_purge_list(plist_path)
+    except (OSError, json.JSONDecodeError) as exc:
+        # Story 117.3 (CAP-287): a purge list that is missing or unparsable keeps the tag local
+        # with a finding, like a purge-listed sha -- never a crash, never a push.
+        unreadable = ContentGateFinding(
+            ContentGateReason.PURGE_LIST_UNREADABLE,
+            f"purge list {plist_path} is missing or unparsable: {exc}",
+        )
+        return PushPreserveResult(refname, False, (unreadable,))
     gate_findings = run_content_gate(
         repo,
         commit=commit,

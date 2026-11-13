@@ -6,11 +6,11 @@
   "source_authority": "internal",
   "source_repo": "src/shared/packages/pyforge-warden",
   "source_root": "src/shared/packages/pyforge-warden",
-  "source_commit": "865b95dc951c8a6de87d05bb10c8395a75da8008",
+  "source_commit": "b69fd81eb812eb0a2de4580c4b04d9af41259ef8",
   "source_ref": "local",
   "confidence_tier": "Quick",
   "spec_version": "1.3",
-  "generation_date": "2026-08-25T00:00:00Z",
+  "generation_date": "2026-11-12T00:00:00Z",
   "description": "Runs the warden dependency-hygiene and vulnerability gate via the warden CLI (scan / scan --doctor). Do not import pyforge.warden internals. Do not invent a second PR-gate verdict.",
   "language": "python",
   "exports": [
@@ -47,6 +47,11 @@
       "url": "src/shared/packages/pyforge-warden/README.md",
       "detected_via": "readme_always",
       "recorded_at": "2026-08-25T00:00:00Z"
+    },
+    {
+      "url": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/contract.md",
+      "detected_via": "skill_brief_doc_urls",
+      "recorded_at": "2026-11-12T00:00:00Z"
     }
   ],
   "generated_by": "create-skill",

@@ -29,7 +29,9 @@ from typing import Any
 
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
+from .adapters.doctor_cli import Unavailable, read_spec_surface
 from .adapters.forge_gh import GhForge
+from .adapters.forge_root import forge_repo
 from .adapters.fs_local import LocalFs
 from .adapters.steward_cli import StewardCli
 from .adapters.vcs_git import GitVcs, VcsCommandError
@@ -69,7 +71,6 @@ from .ports.forge import ForgeCommandError, ForgePort, ForgeRef
 from .ports.fs import FsPort
 from .ports.vcs import VcsPort
 
-_FORGE_REPO = "rxm7706/local-recipes"
 _MERGE_BASE = "main"
 _MAINTENANCE_LABEL = "maintenance"
 # Story 51.1: `_ORIGIN_MAIN` (imported above from `core.refs`, Story 60.1) is
@@ -441,10 +442,12 @@ def _reconcile_spec_surface_drift(
     absorbed into a scoped stamp -- scoping the stamp would accept that
     unrelated drift as reconciled too.
 
-    Reads ``pyforge.doctor.sources.chain.gather_spec_surface`` install-free
-    (this checkout's own files on ``sys.path``, never modified -- Boundaries:
-    doctor's verdict is read-only here, and stays doctor's alone), mirroring
-    ``scripts/spec_surface_reconcile.py``'s own established pattern.
+    Story 115.2 (CAP-261 (b)): reads Doctor's spec-surface verdict through
+    Doctor's own command (``python -m pyforge.doctor.sources spec-surface
+    --json``, the worktree's own Doctor source first on the child's
+    ``sys.path``) via ``adapters/doctor_cli.py`` and this landing's
+    ``ProcessPort`` -- never by importing ``pyforge.doctor`` (Boundaries:
+    doctor's verdict is read-only here, and stays doctor's alone).
 
     Story 82.3 (DW-FU-53-2-3, DW-9-1-1): doctor's verdict keeps ONE row per
     path -- the lowest ``(rank, spec name)`` co-governor -- so a station's
@@ -457,7 +460,7 @@ def _reconcile_spec_surface_drift(
     branch is pushed once, after the loop. Each pass reconciles a spec no
     earlier pass did, and a reconciled spec governs a path of the branch, so the loop is bounded by the number of specs governing
     those paths: a spec still named after its own stamp (the stamp did not
-    settle it), or a re-read that raises, refuses (``MRS-DISP-048``). The
+    settle it), or a re-read that yields no verdict, refuses (``MRS-DISP-048``). The
     scoped stamp itself refuses a differing path its spec's memlog does not
     name, so each pass ``--accept``s the branch's own paths (and the memlogs and
     baseline this loop writes) and nothing else: hidden foreign drift refuses
@@ -465,9 +468,10 @@ def _reconcile_spec_surface_drift(
 
     Two families of failure, two tiers (AD-31's established reuse pattern;
     c.f. ``MRS-DEPLOY-003``/``MRS-DEPLOY-024``): failing to even EVALUATE
-    drift (the doctor source tree unreachable, or the verdict crashing --
-    both should be unreachable in a real dispatch worktree, which is always
-    a full checkout, but are defended against here regardless) reports
+    drift (Doctor's command printing no verdict: it could not launch, timed
+    out, crashed, or exited outside ``{0, 2}`` or without a JSON list --
+    each should be unreachable in a real dispatch worktree, which is always
+    a full checkout, but is defended against here regardless) reports
     through the same non-blocking ``MRS-DISP-047`` tier a successful
     reconcile does, since blocking every landing on an environment gap this
     story is not scoped to fix would be a worse outage than the ritual it
@@ -477,12 +481,8 @@ def _reconcile_spec_surface_drift(
     subprocess failing, or the reconcile commit failing to push) reports
     through ``MRS-DISP-048`` and refuses: none of THESE may reach
     ``forge.merge_pr`` with known, un-reconciled drift left behind."""
-    try:
-        doctor_src = worktree / "src" / "shared" / "packages" / "pyforge-doctor" / "src"
-        if str(doctor_src) not in sys.path:
-            sys.path.insert(0, str(doctor_src))
-        from pyforge.doctor.sources.chain import gather_spec_surface
-    except ImportError as exc:
+    first_read = read_spec_surface(worktree, process)
+    if isinstance(first_read, Unavailable):
         # Unlike the failures below, this fires before we know whether the
         # branch left ANY drift behind at all -- a real dispatch worktree is
         # always a full checkout with the doctor source tree in place, so
@@ -499,35 +499,13 @@ def _reconcile_spec_surface_drift(
                 severity=Severity.WARN,
                 message=(
                     f"cannot reach the spec-surface verdict from {worktree}: "
-                    f"{exc} — landing {key} without a drift reconcile"
+                    f"{first_read.reason} — landing {key} without a drift reconcile"
                 ),
             ),
             refuse=False,
         )
 
-    try:
-        surface_findings = gather_spec_surface(worktree)
-    except Exception as exc:  # noqa: BLE001 -- a read-only judge's own crash
-        # `gather_spec_surface` already wraps its own body in
-        # `degrade_on_exception` (converts an internal crash to a WARN
-        # finding rather than raising), so this is defense-in-depth for an
-        # exception escaping that boundary itself -- same "can't evaluate,
-        # don't know if there's drift" category as the ImportError above,
-        # so the same non-blocking MRS-DISP-047 tier applies.
-        return _SpecSurfaceReconcileOutcome(
-            finding=Finding(
-                code="MRS-DISP-047",
-                severity=Severity.WARN,
-                message=(
-                    f"spec-surface verdict crashed for {worktree}: "
-                    f"{exc.__class__.__name__}: {exc} — landing {key} "
-                    "without a drift reconcile"
-                ),
-            ),
-            refuse=False,
-        )
-
-    by_spec, no_baseline = _group_surface_findings(surface_findings)
+    by_spec, no_baseline = _group_surface_findings(first_read.rows)
 
     if own_changed_paths is not None:
         changed = set(own_changed_paths)
@@ -823,24 +801,23 @@ def _reconcile_spec_surface_drift(
             )
 
         # Re-read the verdict over the stamped tree: a co-governor the first
-        # read hid behind this pass's specs shows now. A re-read that raises
-        # leaves the post-stamp state unverified, so it refuses.
-        try:
-            surface_findings = gather_spec_surface(worktree)
-        except Exception as exc:  # noqa: BLE001 -- a read-only judge's own crash
+        # read hid behind this pass's specs shows now. A re-read that yields
+        # no verdict leaves the post-stamp state unverified, so it refuses.
+        re_read = read_spec_surface(worktree, process)
+        if isinstance(re_read, Unavailable):
             return _SpecSurfaceReconcileOutcome(
                 finding=Finding(
                     code="MRS-DISP-048",
                     severity=Severity.ERROR,
                     message=(
                         f"cannot re-read the spec-surface verdict on {head_branch!r} "
-                        f"after the scoped stamp ({exc.__class__.__name__}: {exc}) — "
+                        f"after the scoped stamp ({re_read.reason}) — "
                         "the post-stamp state is unverified — refusing to land"
                     ),
                 ),
                 refuse=True,
             )
-        by_spec, no_baseline = _group_surface_findings(surface_findings)
+        by_spec, no_baseline = _group_surface_findings(re_read.rows)
 
     pending_branch_stamp = (branch_stamp_specs or frozenset()) - set(reconciled)
     if pending_branch_stamp:
@@ -1598,9 +1575,11 @@ def execute_dispatch_land(
         return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
     data["head_sha"] = head_sha
 
-    repo_ref = ForgeRef(_FORGE_REPO)
     head_branch_ref = ForgeRef(head_branch)
     try:
+        # Story 115.4 (CAP-208): the root of record's repository, read at this use; a malformed
+        # flag tree is a ForgeCommandError, so it refuses here as MRS-DISP-018.
+        repo_ref = ForgeRef(forge_repo())
         existing = forge.find_open_pr(repo_ref, head_branch_ref)
     except ForgeCommandError as exc:
         findings.append(

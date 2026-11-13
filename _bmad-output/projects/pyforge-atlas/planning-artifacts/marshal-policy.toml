@@ -461,6 +461,52 @@ harness_preference = ["cursor"]
   "_bmad-output/projects/*/planning-artifacts/specs/*/.memlog.md",
   "docs/governance/spec-feature-flag-governance/**",
 ]
+"46" = [  # the atlas Spec says what is built, open or retired (spec-pyforge-atlas markers and text; Stories 46.1-46.2), added 2026-11-10.
+  # Planning artifacts only: the Spec, its memlog and companions, the 36.3 story spec, the chain-currency cascade and the deferred rows.
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/test-architecture.md",
+  # chain-currency re-stamps only
+  "_bmad-output/projects/*/planning-artifacts/prds/**",
+  "_bmad-output/projects/*/planning-artifacts/architecture/**",
+  "_bmad-output/projects/*/planning-artifacts/briefs/**",
+  "_bmad-output/projects/*/planning-artifacts/epics.md",
+]
+"47" = [  # the atlas public contract is written and held to the code (spec-pyforge-atlas CAP-73, FR-78; Stories 47.1-47.2), added 2026-11-10.
+  # The Spec folder's companions and the two new tests/meta modules.
+  "src/shared/packages/pyforge-atlas/tests/meta/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/test-architecture.md",
+  # chain-currency re-stamps only
+  "_bmad-output/projects/*/planning-artifacts/prds/**",
+  "_bmad-output/projects/*/planning-artifacts/architecture/**",
+  "_bmad-output/projects/*/planning-artifacts/briefs/**",
+  "_bmad-output/projects/*/planning-artifacts/epics.md",
+]
+"48" = [  # the atlas package and its suite stand apart from A's tree and from what was retired (relay of spec-pyforge-steward:CAP-175; Stories 48.1-48.4), added 2026-11-10.
+  # The package (tests, the two root literals, the views deletion, the member manifests, AGENTS.md) and the unit's closer.
+  "src/shared/packages/pyforge-atlas/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/retros/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/implementation-readiness-report-*.md",
+  "docs/dreams/pyforge-atlas.md",
+  "scripts/.spec-surface-baseline.json",
+  # co-governor reconciles
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/test-architecture.md",
+  # chain-currency re-stamps only
+  "_bmad-output/projects/*/planning-artifacts/prds/**",
+  "_bmad-output/projects/*/planning-artifacts/architecture/**",
+  "_bmad-output/projects/*/planning-artifacts/briefs/**",
+  "_bmad-output/projects/*/planning-artifacts/epics.md",
+]
 
 # dispatch (Story 102.1 / spec-pyforge-marshal CAP-161), added 2026-10-15: a re-landing reuses this station's own
 # verified verdict when only merges of main and planning-only commits moved the branch since the head it judged,

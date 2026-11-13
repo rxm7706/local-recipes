@@ -20,16 +20,19 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-postgres = ["psycopg>=3.3.4"]
+# Story 33.2 (spec-pyforge-scribe CAP-28): each extra takes the pin the estate carries for it in the root
+# pixi.toml's [feature.pyforge-scribe.dependencies], cap included; tests/meta/test_package_metadata_matches_estate.py
+# holds them equal. psycopg stays under the PostgreSQL 17 cap (fnd:CAP-12): 3.2.11+ needs libpq 18.
+postgres = ["psycopg>=3.2.10,<3.2.11"]
 # Story 6.1: the graphify `compile_surface` ingest extra -- off by default
 # (AD-6, air-gap); `pyforge.scribe.extras.graphify` imports it lazily.
-graphify = ["graphifyy>=0.9.51"]
+graphify = ["graphifyy>=0.9.89"]
 # Story 6.2: the cocoindex `compile_surface` incremental-ingest extra -- off
 # by default (AD-6, air-gap); `pyforge.scribe.extras.cocoindex_flow` imports
 # it lazily, and only calls its standalone `memo_fingerprint` primitive
 # (never the reactive App/Runner/component runtime -- see that module's
 # docstring).
-cocoindex = ["cocoindex>=1.0.20"]
+cocoindex = ["cocoindex>=1.0.25"]
 
 [project.scripts]
 scribe = "pyforge.scribe.cli:main"
@@ -41,6 +44,15 @@ scribe-graphstore-plane = "pyforge.scribe.graph_store_plane:PlaneGraphStorePlugi
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyforge"]
+
+[tool.pytest.ini_options]
+# Story 33.1 (spec-pyforge-scribe CAP-31, relay of spec-pyforge-steward:CAP-175): a module that reads the live tree
+# outside this package carries `pytestmark = pytest.mark.live_tree`, in the wording steward and doctor use; a test that
+# needs the server carries `postgres`. tests/meta/test_live_tree_split.py holds both, and the closed list of skip sites.
+markers = [
+    "live_tree: the module reads the repository outside its own package (planning artifacts, docs, pixi.toml, the workflows, other stations); it runs in the station's live-tree half and fires on what it reads",
+    "postgres: needs PostgreSQL 17 with pgvector at SCRIBE_GRAPH_DSN; fails, never skips, when the server is absent",
+]
 
 # Story 66.1 (spec-pyforge-steward CAP-153, 2026-09-20): the lint gate `pixi run -e pyforge-guild ruff`
 # / `ruff-format` reads THIS block (run from inside the package). Line width is ruff format's job;

@@ -82,6 +82,7 @@ RULES_OWNER_OVERRIDES: Mapping[str, str] = {
     CHAIN_STANDARD_RELPATH: "docs/governance/spec-one-chain-per-station",
 }
 REPORT_FILENAME = "report.json"
+# CAP-4: loop-home FILE read -- marshal's own file: the journal marshal writes in its own run dir, not bmad-loop run state
 JOURNAL_FILENAME = "journal.jsonl"
 SESSION_LOG_FILENAME = "session.log"
 KIND_CHALLENGE_RUN = "challenge-run"

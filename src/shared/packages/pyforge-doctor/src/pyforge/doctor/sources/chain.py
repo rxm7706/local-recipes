@@ -61,7 +61,7 @@ from pyforge.core.roster import STATIONS as _ROSTER_STATIONS
 
 from ..checks.env_hygiene import _PRUNED_DIR_NAMES
 from ..cli_bridge import CliBridgeError, run_git
-from ..models import DoctorStatus, Finding, Source
+from ..models import UNEVALUABLE_EVIDENCE_KEY, DoctorStatus, Finding, Source
 from . import degrade_on_exception
 
 __all__ = (
@@ -1006,7 +1006,7 @@ def _gather_dream_chain(target: Path) -> tuple[Finding, ...]:
                         f"under {target} — the Dream-to-Code chain cannot be "
                         f"evaluated here"
                     ),
-                    evidence={"target": str(target)},
+                    evidence={"target": str(target), UNEVALUABLE_EVIDENCE_KEY: True},
                 ),
             )
         return (
@@ -1419,7 +1419,7 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
                 check="dreams-hygiene-unevaluable",
                 status=DoctorStatus.WARN,
                 message=(f"no docs/dreams/ under {target} — Dream-tier hygiene cannot be evaluated here"),
-                evidence={"target": str(target)},
+                evidence={"target": str(target), UNEVALUABLE_EVIDENCE_KEY: True},
             ),
         )
 
@@ -1444,7 +1444,7 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
                 check="dreams-hygiene-unevaluable",
                 status=DoctorStatus.WARN,
                 message=(f"docs/dreams/ could not be read here — {type(exc).__name__}: {exc}"),
-                evidence={"target": str(dreams_dir)},
+                evidence={"target": str(dreams_dir), UNEVALUABLE_EVIDENCE_KEY: True},
             ),
         )
 
@@ -4720,7 +4720,7 @@ def _gather_deferred_work(target: Path) -> tuple[Finding, ...]:
                         f"{target} — deferred-work durability cannot be "
                         f"evaluated here"
                     ),
-                    evidence={"target": str(target)},
+                    evidence={"target": str(target), UNEVALUABLE_EVIDENCE_KEY: True},
                 ),
             )
         scanned = [p.name for p in projects_dir.iterdir() if p.is_dir() and (p / TIER3_REL).is_file()]

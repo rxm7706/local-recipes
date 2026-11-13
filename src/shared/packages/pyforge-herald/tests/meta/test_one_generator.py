@@ -9,9 +9,10 @@ lives (AC9). The built half needs docs-site installed (``pixi run -e site docs-s
 no font or script from a CDN (AC8), gives every page one CSP (the CSP decision), carries the artifact build of the
 dossier and the font licences, lists every gallery and family page in ``/llms.txt``, and a second build two days, two
 runs and two commits later differs only in the built-from line (Story 43.5's proof over the whole artifact).
-Story 43.5's measured-dossier tests moved here from the retired parity test. Story 42.4 pins, over the same build, the
-lines that say the status pages serve a snapshot: the guild page's capture time and not-live sentence, and the tile's
-capture time on the dossier and in its artifact build.
+Story 43.5's measured-dossier tests moved here from the retired parity test; Story 51.1 adds that every counted
+figure (the stories / epics tiles, the hero's four, the scale table's rows) shows what was planted, and that a typed
+stat fails the build. Story 42.4 pins, over the same build, the lines that say the status pages serve a snapshot: the
+guild page's capture time and not-live sentence, and the tile's capture time on the dossier and in its artifact build.
 """
 
 from __future__ import annotations
@@ -34,6 +35,7 @@ from pages_astro import (
     DOCS_SITE,
     DOSSIER_REL,
     REPO_ROOT,
+    STATIONS,
     astro_build,
     fixture_tree,
     font_vendoring_only,
@@ -44,6 +46,10 @@ from pages_astro import (
     ts,
     write,
 )
+
+# Story 52.1 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 REDIRECTS = json.loads((DOCS_SITE / "redirects.json").read_text(encoding="utf-8"))
@@ -436,16 +442,27 @@ def _page_stats(html: str) -> dict[str, list[tuple[str, str]]]:
     return out
 
 
-@needs_astro
-def test_43_5_the_dossier_shows_what_the_measurer_counted_and_every_page_its_build(tmp_path: Path) -> None:
-    root = fixture_tree(tmp_path / "tree")
+@pytest.fixture(scope="module")
+def counted(tmp_path_factory: pytest.TempPathFactory) -> tuple[Path, dict[str, dict[str, int]], Path]:
+    """The fixture tree (the live dossier over planted packages, ledgers and ``pyforge-core``), its planted counts, and
+    its build under CI's variables (Stories 43.5, 51.1)."""
+    tmp = tmp_path_factory.mktemp("counted")
+    root = fixture_tree(tmp / "tree")
     counts = station_packages(root)
-    done = astro_build(tmp_path / "astro", root=root, extra_env=_CI)
+    done = astro_build(tmp / "astro", root=root, extra_env=_CI)
     assert done.returncode == 0, done.stdout[-3000:] + done.stderr[-3000:]
-    html = (tmp_path / "astro/herald/dossier/index.html").read_text(encoding="utf-8")
+    return root, counts, tmp / "astro"
+
+
+@needs_astro
+def test_43_5_the_dossier_shows_what_the_measurer_counted_and_every_page_its_build(
+    counted: tuple[Path, dict[str, dict[str, int]], Path],
+) -> None:
+    root, counts, out = counted
+    html = (out / "herald/dossier/index.html").read_text(encoding="utf-8")
     doc = yaml.safe_load((root / DOSSIER_REL).read_text(encoding="utf-8"))
     shown = _page_stats(html)
-    total = sum(c["src_lines"] for c in counts.values())
+    total = sum(counts[station]["src_lines"] for station in STATIONS)
     assert shown[""][[s.get("check") for s in doc["stats"]].index("fleet_src_lines")][0] == f"~{round(total / 1000)}K"
     checked = 0
     for section in doc["sections"]:
@@ -467,7 +484,80 @@ def test_43_5_the_dossier_shows_what_the_measurer_counted_and_every_page_its_bui
         "herald/infographics/alpha.html",
         "how-to/index.html",
     ):
-        assert (tmp_path / "astro" / rel).read_text(encoding="utf-8").count(line) == 1, rel
+        assert (out / rel).read_text(encoding="utf-8").count(line) == 1, rel
+
+
+def _scale_table(html: str) -> list[list[str]]:
+    """The cells of each row of the built dossier's one scale table (the table headed Station, Source lines)."""
+    tables = re.findall(r"<table><thead><tr><th>Station</th><th>Source lines</th>.*?<tbody>(.*?)</tbody>", html, re.S)
+    assert len(tables) == 1, len(tables)
+    rows = re.findall(r"<tr>(.*?)</tr>", tables[0], re.S)
+    return [[re.sub(r"<[^>]+>", "", cell) for cell in re.findall(r"<td[^>]*>(.*?)</td>", row, re.S)] for row in rows]
+
+
+@needs_astro
+def test_51_1_the_stories_epics_tiles_the_hero_and_the_scale_table_equal_the_planted_counts(
+    counted: tuple[Path, dict[str, dict[str, int]], Path],
+) -> None:
+    """Story 51.1 (CAP-46): every figure the dossier shows beyond lines -- each station's stories / epics done and
+    Python floor, the hero's four, and the scale table's lines and files per row -- is what the build counted from the
+    fixture tree's planted packages and ledgers (``pages_astro.station_packages``), whatever the copied dossier types."""
+    root, counts, out = counted
+    html = (out / "herald/dossier/index.html").read_text(encoding="utf-8")
+    doc = yaml.safe_load((root / DOSSIER_REL).read_text(encoding="utf-8"))
+    shown = _page_stats(html)
+    stations = [counts[station] for station in STATIONS]
+    hero = {stat["check"]: value for stat, (value, _) in zip(doc["stats"], shown[""], strict=True)}
+    assert hero == {
+        "stations": "8",
+        "fleet_src_lines": f"~{round(sum(c['src_lines'] for c in stations) / 1000)}K",
+        "fleet_test_lines": f"~{round(sum(c['test_lines'] for c in stations) / 1000)}K",
+        "fleet_stories_epics": f"{sum(c['stories'] for c in stations)} / {sum(c['epics'] for c in stations)}",
+    }
+    tiles = 0
+    for section in (s for s in doc["sections"] if s["id"] in STATIONS):
+        stats = [st for b in section["blocks"] if b["type"] == "stats" for st in b["stats"]]
+        values = {stat["check"]: value for stat, (value, _) in zip(stats, shown[section["id"]], strict=True)}
+        want = counts[section["id"]]
+        assert values["stories_epics"] == f"{want['stories']} / {want['epics']}", section["id"]
+        assert values["python_floor"] == "py3.14", section["id"]
+        tiles += 1
+    assert tiles == len(STATIONS)
+    table = next(b for s in doc["sections"] for b in s["blocks"] if b["type"] == "table" and b.get("check"))
+    shown_rows = _scale_table(html)
+    assert len(shown_rows) == len(table["rows"]) == len(STATIONS) + 1
+    for row, cells in zip(table["rows"], shown_rows, strict=True):
+        want = counts[row["section"]]  # ``core`` is pyforge-core's planted package
+        assert (cells[0], cells[1], cells[2]) == (row["cells"][0], f"{want['src_lines']:,}", str(want["src_files"]))
+
+
+@needs_astro
+@pytest.mark.parametrize(
+    ("where", "named"),
+    [
+        ("hero", 'dossier stat "Stations" in the hero has no check:'),
+        ("herald", 'dossier stat "Stories / epics done" in section "herald" has no check:'),
+    ],
+)
+def test_51_1_the_build_refuses_a_typed_stat_naming_its_section_and_label(
+    tmp_path: Path, where: str, named: str
+) -> None:
+    """Story 51.1 (CAP-46): a stat with no ``check:``, in the hero or in a station's band, is a typed figure, and the
+    build fails naming where it is and its label."""
+    root = fixture_tree(tmp_path / "tree")
+    dossier = root / DOSSIER_REL
+    doc = yaml.safe_load(dossier.read_text(encoding="utf-8"))
+    if where == "hero":
+        stat = next(s for s in doc["stats"] if s["label"] == "Stations")
+    else:
+        section = next(s for s in doc["sections"] if s["id"] == where)
+        band = [s for b in section["blocks"] if b["type"] == "stats" for s in b["stats"]]
+        stat = next(s for s in band if s["label"] == "Stories / epics done")
+    del stat["check"]
+    dossier.write_text(yaml.safe_dump(doc, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    done = astro_build(tmp_path / "astro", root=root)
+    assert done.returncode != 0
+    assert named in done.stdout + done.stderr
 
 
 @needs_astro
@@ -509,7 +599,11 @@ def test_the_measurer_moved_beside_the_generator() -> None:
     assert (
         {"src_lines", "fleet_src_lines"}
         <= set(emitted)
-        <= {"src_lines", "test_lines", "python_floor", "fleet_src_lines"}
+        <= {
+            *("src_lines", "test_lines", "python_floor", "stories_epics"),  # a station section's keys (Story 51.1)
+            *("fleet_src_lines", "fleet_test_lines", "fleet_stories_epics", "stations"),  # the hero's
+            "rows",  # a table block carrying ``check: src_lines``
+        }
     )
 
 

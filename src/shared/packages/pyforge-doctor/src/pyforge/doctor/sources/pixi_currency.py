@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ..cli_bridge import CliBridgeError, run_git
-from ..models import DoctorStatus, Finding, Source
+from ..models import UNEVALUABLE_EVIDENCE_KEY, DoctorStatus, Finding, Source
 from . import degrade_on_exception
 
 __all__ = (
@@ -144,7 +144,7 @@ def _gather(target: Path) -> tuple[Finding, ...]:
                 check=_CHECK_DREAM_UNREADABLE,
                 status=DoctorStatus.WARN,
                 message=f"cannot read Dream ledger file {_DREAM_REL}",
-                evidence={"path": _DREAM_REL},
+                evidence={"path": _DREAM_REL, UNEVALUABLE_EVIDENCE_KEY: True},
             ),
         )
 

@@ -134,3 +134,15 @@ doctor relays ambient WARNs for installed/pinned members only.
 
 - frontmatter `status` `shipped` → `done` (ledger row `19-1-the-suite-watched-set-matches-the-channel-catalog-and-upstream-follows-recipe-registry: done`).
 - `## Auto Run Result` reconstructed from git (none survived).
+
+## Note 2026-11-11: the story-level memlog folded here
+
+The sibling folder `spec-19-1-the-suite-watched-set-matches-the-channel-catalog-and-upstream-follows-recipe-registry/`
+held only a `.memlog.md` (topic "Story 19.1 — the suite watched set matches the channel catalog and upstream follows
+the recipe registry", last updated 2026-09-09T06:10) and no `SPEC.md`, so no Spec discovery ever read it. Doctor
+Story 57.1 folds its three lines here verbatim, at scribe's request, and the folder goes (no baseline key names it):
+
+> # memlog — Story 19.1
+>
+> - (event) 2026-09-01: Story 19.1 shipped — `_manifest_suite_members`, `_resolve_upstream_latest`, `_fetch_pypi_latest_version`; rewired `_gather_suite_findings` and CORE channel/recipe drift to registry-aware upstream; 123 unit tests in `test_sources_bmad_method.py`. Depends on steward `suite-members.yaml` (CAP-1).
+> - (note by claude) 2026-09-09 hygiene (post-merge follow-up pass): this memlog gained the frontmatter it never had, so `memlog.py append` accepts it. NOTE for whoever reads this next: this directory holds ONLY this memlog — it has no SPEC.md, and `chain.py::_collect_surfaces` selects spec dirs with `sd.name.startswith('spec-') and _is_file(sd / 'SPEC.md')`, so this directory is NOT discovered as a spec and nothing here is governed or drift-checked. The real Story 19.1 artifact is the FLAT sibling file `spec-19-1-....md` one level up. Left in place rather than folded/deleted: the entry below is the only record of its shape and deleting a tracked file is not this pass's call. Tracked as a follow-up.

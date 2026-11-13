@@ -10,7 +10,7 @@ detectors and no two agreed:
 `check_layout` from all of them. That is the shape a hand-written list always
 takes: it omits exactly the newest thing, because adding a detector and
 remembering every place that names it are separate acts and only the first is
-forced. `pyforge.doctor.sources.fleet_scan` already derives a task's *command* from
+forced. `scripts/fleet_scan.py` already derives a task's *command* from
 `pixi.toml` "DERIVED, never declared twice" — but the list of detectors above it
 was typed by hand, and that was the bug.
 
@@ -34,7 +34,7 @@ archive/docs/dreams/fidelity-enforcement.md exists to close.
 
 EXIT CODES, and the rule that governs them:
 
-    0   every selected detector ran and passed
+    0   every selected detector ran and passed, or measured nothing
     1   at least one reported findings
     2   at least one COULD NOT RUN, and none reported findings
 
@@ -42,6 +42,13 @@ EXIT CODES, and the rule that governs them:
 (fidelity-enforcement, invariant 3) — the dashboard's status strip has behaved
 this way since it was built ("the strip never claims green it did not measure"),
 and this promotes it to a rule binding every consumer of the registry.
+
+A Doctor row that ran but measured nothing — its findings hold no FAIL and are
+all gather failures (`pyforge.doctor.models.is_gather_failure`) — reads
+**unmeasured, never pass** (spec-pyforge-doctor:AD-15, CAP-93), and the text
+summary counts it. It exits 0: a warning the merge bar does not fail on
+(operator ruling of 2026-11-10). An empty result still reads pass, because a
+source returns nothing only after it measured.
 
 Declarations are read with `ast`, never by importing: a detector's module body
 may open files, spawn a browser, or shell out, and discovery must be free of
@@ -326,6 +333,12 @@ _DOCTOR_SOURCE_TASKS: tuple[tuple[str, str], ...] = (
     # Story 42.1 (CAP-81 / CAP-86): duplicate frontmatter keys in tracked
     # story specs -- offline, deterministic, beside dreams-hygiene above.
     ("frontmatter-duplicate-keys", "frontmatter-duplicate-keys-check"),
+    # Story 56.5 (spec-pyforge-doctor CAP-100): the branch half of the
+    # chain-write guard (spec-python-foundry-cutover:CAP-8) -- a chain path
+    # changed on a checkout that is not the writer is a FAIL. Offline: the
+    # roster, the merge base and the flag tree at it, all read from git.
+    # The `writer-lock-check` pixi task is steward Story 124.1's.
+    ("writer-lock", "writer-lock-check"),
 )
 
 
@@ -351,11 +364,18 @@ def _run_doctor_sources(scope: str) -> list[dict]:
     WARN) is treated the same as the whole package being unimportable for
     THAT one row: `status="unknown"`, never a silently dropped source --
     the other nine still run.
+
+    A source that ran but measured nothing -- its findings hold no FAIL and
+    every one is a gather failure (`models.is_gather_failure`: a cannot-
+    evaluate WARN, a `degrade_on_exception` WARN, the atlas sentinel) -- reads
+    `status="unmeasured"` with rc 0, never `pass` (spec-pyforge-doctor:AD-15).
+    An empty result reads `pass`: a source returns nothing only after it
+    measured.
     """
     try:
         from pyforge.doctor.sources import scope_for
         from pyforge.doctor.sources.__main__ import DISPATCH
-        from pyforge.doctor.models import Source
+        from pyforge.doctor.models import Source, is_gather_failure
         from pyforge.doctor.verdict import exit_code_for
     except ImportError as exc:
         return [
@@ -378,7 +398,12 @@ def _run_doctor_sources(scope: str) -> list[dict]:
             rc = 1 if exit_code_for(findings) != 0 else 0
             lines = [f"[{f.source.value}] {f.check}: {f.status.value} -- {f.message}"
                      for f in findings]
-            status = {0: "pass", 1: "FINDINGS"}.get(rc, "unknown")
+            if rc:
+                status = "FINDINGS"
+            elif findings and all(is_gather_failure(f) for f in findings):
+                status = "unmeasured"
+            else:
+                status = "pass"
             summary = lines[-1][:200] if lines else "no findings"
             output = "\n".join(lines)
         except Exception as exc:  # noqa: BLE001 -- a defect in the source
@@ -555,10 +580,16 @@ def main() -> int:
     else:
         print(f"detectors — scope={args.scope}, {len(results)} selected\n")
         for r in results:
-            mark = {"pass": "✔", "FINDINGS": "✗", "unknown": "?"}[r["status"]]
-            print(f"  {mark} {r['name']:22} {r['status']:9} {r['secs']:5.1f}s  {r['summary']}")
+            mark = {"pass": "✔", "FINDINGS": "✗", "unknown": "?", "unmeasured": "○"}[r["status"]]
+            print(f"  {mark} {r['name']:22} {r['status']:10} {r['secs']:5.1f}s  {r['summary']}")
         for f in registry_findings:
             print(f"\n  ✗ registry: {f}")
+        # spec-pyforge-doctor:AD-15: a row that measured nothing is counted, never
+        # folded into the passes -- a warning the merge bar does not fail on.
+        unmeasured = [r["name"] for r in results if r["status"] == "unmeasured"]
+        if unmeasured:
+            print(f"\n  ○ {len(unmeasured)} measured nothing (unmeasured, exit unchanged): "
+                  f"{', '.join(unmeasured)}")
         bad = [r for r in results if r["status"] == "FINDINGS"]
         if bad:
             print("\n" + "=" * 72)

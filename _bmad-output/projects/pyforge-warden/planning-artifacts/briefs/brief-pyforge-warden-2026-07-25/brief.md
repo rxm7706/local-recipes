@@ -2,7 +2,7 @@
 title: 'Product Brief: Warden (pyforge-warden)'
 status: complete
 created: 2026-07-25
-updated: "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior "2026-11-01"
+updated: "2026-11-12"   # RE-STAMPED 2026-11-12 (the cutover readiness close, warden Story 25.2): chain-currency cascade (research -> brief) for research/cutover-readiness-audit-2026-11-10.md; no CAP, FR or AD is minted here. See § Currency reconciliation — 2026-11-10. Prior "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior "2026-11-01"
 inputs:
   - 'docs/dreams/pyforge-warden.md'
   - 'docs/dreams/pyforge-charter.md § 4 Warden'
@@ -318,3 +318,26 @@ inside the actuator's real path) and Decision 2 (the fleet lives in `django-ward
 *Chain-currency cascade (research -> brief), EGM audit, marshal Story 113.18.*
 
 The station's audit record joins this brief's inputs: `research/egm-audit-2026-11-05.md` (marshal Story 113.18, `spec-pyforge-marshal:CAP-302`): 21 high findings, 6 accepted, 14 rejected, 1 deferred; the medium and low findings are not triaged. The product scope does not change.
+
+## Currency reconciliation — 2026-11-10
+
+*Trigger: the chain-currency `research→brief` edge. `research/cutover-readiness-audit-2026-11-10.md`, warden's report
+of the 2026-11-10 cutover readiness audit, is dated 2026-11-10 while this brief sat at 2026-11-05. Re-stamped by Story
+25.2, the change's closer.* The body and the sections above stay as written.
+
+**1. The research.** A read-only audit at main `82a2b18828` found that `spec-pyforge-warden` resolves against the tree
+(no dead path, test, flag or environment variable) but was not ready for a rebuild from Frame + Spec. It named none of
+the nine feature flags that gate CAP-24..CAP-26. Four capabilities still read `ready` after their stories landed. It
+stated things the code lacks (`review_required`, a snapshot age on the conda-to-pypi map, `--deterministic` pinning)
+and omitted things the code does (the default KEV gate, six scan flags, the forge and feed environment variables).
+Other packages import `pyforge.warden` symbols that no contract named.
+
+**2. What the change did.** The operator ruled on 2026-11-10 (`docs/dreams/pyforge-unifying-strategy.md`, Realization
+log, second addendum): CAP-26 splits into its kernel half and the portal half, CAP-29; the report schema stays 1.1.0;
+the bundled-data age Constraint narrows to the LTS registry; `--deterministic` stays reserved. Epics 25–27 carry it.
+The Spec, PRD, spine and epics say what the code does (Epic 25; CAP-27, the PR-gate hook book, minted shipped). The
+public contract is `contract.md`, with a per-capability `proof-map.md` beside it, each held to the code by a test
+(Epic 26; CAP-28). The suite runs its live-tree readers apart from its package tests (Epic 27).
+
+**3. This brief's frame does not move.** The product promise, the users and the scope above stand: the change adds
+no rung, status, exit code or product behaviour, and each piece it left unbuilt is a deferred-work row.

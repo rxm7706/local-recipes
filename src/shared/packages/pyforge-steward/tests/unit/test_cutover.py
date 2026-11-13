@@ -1,90 +1,31 @@
-"""Story 44.12 — plan preserve-moved, apply idempotent, flip refuses loops."""
+"""Story 121.2 (spec-python-foundry-cutover fnd:CAP-8, fnd:CAP-9): ``steward cutover plan`` generates and checks the
+capability ledger, its two write modes behind ``pyforge.steward.cutover_ledger_write``; ``flip`` refuses a running
+loop and stamps the Realization log (Story 44.12)."""
 
 from __future__ import annotations
 
 import argparse
 import json
-import subprocess
-from collections.abc import Callable
 from pathlib import Path
-from typing import Any
 
 import pytest
+import yaml
 from pyforge.core.cutover_root import CutoverRootError, read_cutover_root
+from pyforge.testing_kit import make_flag_provider_fixture
+from pyforge.testing_kit.flags import flag_states
 
+from pyforge.steward import cli
 from pyforge.steward.cutover import (
-    DEFAULT_MANIFEST,
-    ENV_FOUNDRY,
-    FOUNDRY_EPOCH,
+    LEDGER_WRITE_FLAG,
     REALIZATION_LOG,
     CutoverDuty,
-    apply_phase,
     flip_root,
     loops_running,
-    plan_append,
-    plan_regenerate,
 )
+from pyforge.steward.cutover_ledger import DEFAULT_LEDGER
 from pyforge.steward.interfaces import DutyResult
 
-# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
-# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
-pytestmark = pytest.mark.live_tree
-
-
-def _git_repo(tmp_path: Path) -> Path:
-    root = tmp_path / "repo"
-    pkg = root / "src/shared/packages/demo"
-    pkg.mkdir(parents=True)
-    (pkg / "pyproject.toml").write_text("[project]\nname='demo'\n", encoding="utf-8")
-    subprocess.run(["git", "init"], cwd=root, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.email", "t@t"], cwd=root, check=True)
-    subprocess.run(["git", "config", "user.name", "t"], cwd=root, check=True)
-    subprocess.run(["git", "add", "-A"], cwd=root, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", "seed"], cwd=root, check=True, capture_output=True)
-    return root
-
-
-def test_regenerate_preserves_moved(tmp_path: Path) -> None:
-    root = _git_repo(tmp_path)
-    manifest = tmp_path / "manifest.json"
-    first = plan_regenerate(root, manifest)
-    assert first["rows"]
-    first["rows"][0]["status"] = "moved"
-    manifest.write_text(json.dumps(first), encoding="utf-8")
-    second = plan_regenerate(root, manifest)
-    moved = [r for r in second["rows"] if r["status"] == "moved"]
-    assert moved
-    assert moved[0]["path"] == first["rows"][0]["path"]
-
-
-def test_append_preserves_moved(tmp_path: Path) -> None:
-    root = _git_repo(tmp_path)
-    manifest = tmp_path / "manifest.json"
-    first = plan_regenerate(root, manifest)
-    first["rows"][0]["status"] = "moved"
-    manifest.write_text(json.dumps(first), encoding="utf-8")
-    extra = root / "src/shared/packages/demo/extra.txt"
-    extra.write_text("x", encoding="utf-8")
-    subprocess.run(["git", "add", "-A"], cwd=root, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", "delta"], cwd=root, check=True, capture_output=True)
-    second = plan_append(root, manifest)
-    by_path = {r["path"]: r for r in second["rows"]}
-    assert by_path[first["rows"][0]["path"]]["status"] == "moved"
-    assert "src/shared/packages/demo/extra.txt" in by_path
-
-
-def test_apply_is_idempotent(tmp_path: Path) -> None:
-    root = _git_repo(tmp_path)
-    manifest = tmp_path / "manifest.json"
-    dest = tmp_path / "foundry"
-    plan_regenerate(root, manifest)
-    once = apply_phase(root, manifest, "1a", dest)
-    twice = apply_phase(root, manifest, "1a", dest)
-    assert once["copied"] >= 1
-    assert twice["copied"] == 0
-    assert twice["skipped"] >= 1
-    copied = dest / "src/packages/demo/pyproject.toml"
-    assert copied.is_file()
+flag_provider = make_flag_provider_fixture()
 
 
 def test_flip_refused_while_loop_running(tmp_path: Path) -> None:
@@ -268,180 +209,7 @@ def test_flip_refuses_an_invalid_overlay_entry_before_writing_anything(
     assert overlays_path.read_text(encoding="utf-8") == overlays_before
 
 
-# --- plan / apply / flip edges and the duty's verbs (coverage floor for Story 76.1) -------------
-
-# Tracked beside the seed's src/shared/packages/demo/pyproject.toml; the last two fall outside
-# every apply phase (conda-forge-expert stays on A; a root README is in no Launch tree).
-_MIXED = {
-    "docs/dreams/demo.md": "# demo\n",
-    "docs/dreams/.env": "TOKEN=x\n",
-    "presentations/deck/cert.pem": "-----BEGIN-----\n",
-    ".claude/skills/conda-forge-expert/SKILL.md": "# cfe\n",
-    "README.md": "# root\n",
-}
-_IN_SCOPE = {
-    "src/shared/packages/demo/pyproject.toml",
-    "docs/dreams/demo.md",
-    "docs/dreams/.env",
-    "presentations/deck/cert.pem",
-}
-
-
-def _commit(root: Path, message: str) -> None:
-    subprocess.run(["git", "add", "-A"], cwd=root, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", message], cwd=root, check=True, capture_output=True)
-
-
-def _head(root: Path) -> str:
-    return subprocess.run(
-        ["git", "rev-parse", "HEAD"], cwd=root, check=True, capture_output=True, text=True
-    ).stdout.strip()
-
-
-def _mixed_repo(tmp_path: Path) -> Path:
-    root = _git_repo(tmp_path)
-    for rel, text in _MIXED.items():
-        target = root / rel
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(text, encoding="utf-8")
-    # -f: a global excludes file may ignore .env / *.pem; the tree under test must track them.
-    subprocess.run(["git", "add", "-f", "--", *_MIXED], cwd=root, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", "mixed"], cwd=root, check=True, capture_output=True)
-    return root
-
-
-def _rows_by_path(manifest: Path) -> dict[str, dict[str, Any]]:
-    rows = json.loads(manifest.read_text(encoding="utf-8"))["rows"]
-    return {str(row["path"]): row for row in rows if isinstance(row, dict)}
-
-
-def test_regenerate_routes_each_path_by_phase_and_leaves_the_rest_out(tmp_path: Path) -> None:
-    root = _mixed_repo(tmp_path)
-    manifest = tmp_path / "manifest.json"
-    payload = plan_regenerate(root, manifest)
-    by_path = {row["path"]: row for row in payload["rows"]}
-    assert set(by_path) == _IN_SCOPE
-    assert by_path["src/shared/packages/demo/pyproject.toml"] == {
-        "path": "src/shared/packages/demo/pyproject.toml",
-        "dest": "src/packages/demo/pyproject.toml",
-        "status": "planned",
-        "kind": "file",
-        "phase": "1a",
-    }
-    assert by_path["docs/dreams/demo.md"] == {
-        "path": "docs/dreams/demo.md",
-        "dest": "docs/dreams/demo.md",
-        "status": "planned",
-        "kind": "file",
-        "phase": "1b",
-    }
-    assert by_path["docs/dreams/.env"]["kind"] == "secret"
-    assert by_path["presentations/deck/cert.pem"]["kind"] == "secret"
-    assert payload["source_sha"] == _head(root)
-    assert payload["foundry_epoch"] == FOUNDRY_EPOCH
-    assert json.loads(manifest.read_text(encoding="utf-8")) == payload
-
-
-def test_regenerate_keeps_a_moved_row_whose_file_left_the_tree(tmp_path: Path) -> None:
-    root = _git_repo(tmp_path)
-    manifest = tmp_path / "manifest.json"
-    gone = {
-        "path": "src/shared/packages/gone/mod.py",
-        "dest": "src/packages/gone/mod.py",
-        "status": "moved",
-        "kind": "file",
-        "phase": "1a",
-    }
-    planned = {"path": "src/shared/packages/demo/pyproject.toml", "status": "planned"}
-    manifest.write_text(json.dumps({"source_sha": "", "rows": ["junk", planned, gone]}), encoding="utf-8")
-    payload = plan_regenerate(root, manifest)
-    assert [row["path"] for row in payload["rows"]] == [
-        "src/shared/packages/demo/pyproject.toml",
-        "src/shared/packages/gone/mod.py",
-    ]
-    assert payload["rows"][0]["status"] == "planned"
-    assert payload["rows"][0]["dest"] == "src/packages/demo/pyproject.toml"
-    assert payload["rows"][1] == gone
-
-
-@pytest.mark.parametrize("plan", [plan_regenerate, plan_append])
-def test_a_manifest_that_is_not_an_object_plans_from_scratch(
-    tmp_path: Path, plan: Callable[[Path, Path], dict[str, Any]]
-) -> None:
-    root = _git_repo(tmp_path)
-    manifest = tmp_path / "manifest.json"
-    manifest.write_text("[]", encoding="utf-8")
-    payload = plan(root, manifest)
-    assert [row["path"] for row in payload["rows"]] == ["src/shared/packages/demo/pyproject.toml"]
-    assert payload["source_sha"] == _head(root)
-    assert payload["foundry_epoch"] == FOUNDRY_EPOCH
-
-
-def test_append_without_a_manifest_plans_every_in_scope_tracked_file(tmp_path: Path) -> None:
-    root = _mixed_repo(tmp_path)
-    manifest = tmp_path / "manifest.json"
-    payload = plan_append(root, manifest)
-    assert {row["path"] for row in payload["rows"]} == _IN_SCOPE
-    assert all(row["status"] == "planned" for row in payload["rows"])
-    assert payload["source_sha"] == _head(root)
-
-
-def test_append_survives_a_source_sha_git_no_longer_knows(tmp_path: Path) -> None:
-    root = _git_repo(tmp_path)
-    manifest = tmp_path / "manifest.json"
-    manifest.write_text(json.dumps({"source_sha": "0" * 40, "rows": []}), encoding="utf-8")
-    payload = plan_append(root, manifest)
-    assert [row["path"] for row in payload["rows"]] == ["src/shared/packages/demo/pyproject.toml"]
-    assert payload["source_sha"] == _head(root)
-
-
-def test_append_plans_a_path_only_the_delta_still_names(tmp_path: Path) -> None:
-    root = _mixed_repo(tmp_path)
-    manifest = tmp_path / "manifest.json"
-    manifest.write_text(json.dumps({"source_sha": _head(root), "rows": []}), encoding="utf-8")
-    (root / "docs/dreams/demo.md").unlink()
-    _commit(root, "drop the dream")
-    payload = plan_append(root, manifest)
-    assert {row["path"] for row in payload["rows"]} == _IN_SCOPE
-
-
-def test_append_leaves_an_already_planned_row_as_it_found_it(tmp_path: Path) -> None:
-    root = _git_repo(tmp_path)
-    manifest = tmp_path / "manifest.json"
-    first = plan_regenerate(root, manifest)
-    first["rows"][0]["dest"] = "hand/edited.toml"
-    manifest.write_text(json.dumps(first), encoding="utf-8")
-    second = plan_append(root, manifest)
-    assert second["rows"] == first["rows"]
-
-
-def test_apply_replays_only_its_phase_and_passes_over_absent_sources(tmp_path: Path) -> None:
-    root = _mixed_repo(tmp_path)
-    manifest = tmp_path / "manifest.json"
-    payload = plan_regenerate(root, manifest)
-    absent = {
-        "path": "src/shared/packages/demo/absent.py",
-        "dest": "src/packages/demo/absent.py",
-        "status": "planned",
-        "kind": "file",
-        "phase": "1a",
-    }
-    payload["rows"].extend(["junk", absent])
-    manifest.write_text(json.dumps(payload), encoding="utf-8")
-    dest = tmp_path / "foundry"
-
-    assert apply_phase(root, manifest, "1a", dest) == {"copied": 1, "skipped": 0, "phase": "1a"}
-    rows = _rows_by_path(manifest)
-    assert rows["src/shared/packages/demo/pyproject.toml"]["status"] == "moved"
-    assert rows["src/shared/packages/demo/absent.py"]["status"] == "planned"
-    assert rows["docs/dreams/demo.md"]["status"] == "planned"
-    assert not (dest / "src/packages/demo/absent.py").exists()
-    assert not (dest / "docs").exists()
-
-    assert apply_phase(root, manifest, "1b", dest) == {"copied": 3, "skipped": 0, "phase": "1b"}
-    assert (dest / "docs/dreams/demo.md").read_text(encoding="utf-8") == "# demo\n"
-    assert (dest / "presentations/deck/cert.pem").is_file()
-    assert all(row["status"] == "moved" for path, row in _rows_by_path(manifest).items() if path in _IN_SCOPE)
+# --- loop and flip edges ---------------------------------------------------------
 
 
 def test_loops_running_reads_past_unreadable_and_idle_state(tmp_path: Path) -> None:
@@ -477,13 +245,34 @@ def test_flip_stamps_the_realization_log_when_it_exists(tmp_path: Path) -> None:
     assert text.endswith("`pyforge.cutover_root` → `foundry`\n")
 
 
+# --- the duty: one live Spec in a checkout as its cwd --------------------------------
+
+# Spelled out for the flag gate's two-state check, which reads the key literally (Story 34.5).
+_SWITCH = "pyforge.steward.cutover_ledger_write"
+_SPEC = Path("_bmad-output/projects/pyforge-demo/planning-artifacts/specs/spec-pyforge-demo/SPEC.md")
+_CAP_ONE = "pyforge-demo:CAP-1"
+_CAP_TWO = "pyforge-demo:CAP-2"
+
+
+def _write_spec(root: Path, *numbers: int) -> None:
+    """One live Spec whose capabilities read shipped, so a fresh ledger row draws only the defaulted-row warning."""
+    lines = ["---", "title: demo", "status: ready", "---", "", "## Capabilities", ""]
+    lines += [f"- **CAP-{n} — Demo capability {n}.** (shipped 2026-11-10)" for n in numbers]
+    path = root / _SPEC
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 @pytest.fixture
 def duty_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """A tracked tree as the duty's cwd, with HOME and every env override pinned inside tmp_path."""
-    root = _mixed_repo(tmp_path).resolve()
+    """A checkout holding one live Spec as the duty's cwd, with HOME and every env override pinned inside tmp_path."""
+    root = (tmp_path / "repo").resolve()
+    (root / ".git").mkdir(parents=True)
+    (root / REALIZATION_LOG).parent.mkdir(parents=True)
+    _write_spec(root, 1)
     monkeypatch.chdir(root)
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
-    for name in (ENV_FOUNDRY, "PYFORGE_FLAGS_PATH", "PYFORGE_ENVIRONMENT"):
+    for name in ("PYFORGE_FLAGS_PATH", "PYFORGE_ENVIRONMENT"):
         monkeypatch.delenv(name, raising=False)
     return root
 
@@ -492,84 +281,34 @@ def _run(**kwargs: object) -> DutyResult:
     return CutoverDuty().run(argparse.Namespace(**kwargs))
 
 
-def test_duty_without_a_verb_names_the_three_verbs(duty_repo: Path) -> None:
-    result = _run()
-    assert result.ok is False
-    assert result.summary == "cutover: need plan, apply, or flip"
+def _switch(monkeypatch: pytest.MonkeyPatch, on: bool) -> list[str]:
+    """Pin the write switch and return the keys the run reads.
+
+    The reader is patched, never pointed at a one-key flag tree: that would pin the process-wide OpenFeature
+    provider for every later test on the worker.
+    """
+    reads: list[str] = []
+
+    def read_boolean(key: str, default: bool = False, **_kw: object) -> bool:
+        reads.append(key)
+        return on if key == _SWITCH else default
+
+    monkeypatch.setattr("pyforge.core.flags.read_boolean", read_boolean)
+    return reads
 
 
-def test_duty_plan_needs_a_mode(duty_repo: Path) -> None:
-    result = _run(cutover_verb="plan", regenerate=False, append=False, manifest=None)
-    assert result.ok is False
-    assert result.summary == "cutover plan: pass --regenerate or --append"
-    assert not (duty_repo / DEFAULT_MANIFEST).exists()
+def _regenerate(monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Write the default ledger with the switch on; return its path."""
+    _switch(monkeypatch, True)
+    assert _run(cutover_verb="plan", plan_mode="regenerate").ok is True
+    return Path.cwd() / DEFAULT_LEDGER
 
 
-def test_duty_plan_regenerate_finds_the_repo_root_from_a_subdirectory(
-    duty_repo: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.chdir(duty_repo / "docs/dreams")
-    result = _run(cutover_verb="plan", regenerate=True, append=False, manifest=None)
-    manifest = duty_repo / DEFAULT_MANIFEST
-    assert result.ok is True
-    assert result.summary == f"cutover plan --regenerate: 4 rows → {manifest}"
-    assert result.details == {"rows": 4, "path": str(manifest)}
-    assert set(_rows_by_path(manifest)) == _IN_SCOPE
-
-
-def test_duty_plan_append_honours_an_explicit_manifest(duty_repo: Path, tmp_path: Path) -> None:
-    manifest = tmp_path / "elsewhere.json"
-    result = _run(cutover_verb="plan", regenerate=False, append=True, manifest=str(manifest))
-    assert result.ok is True
-    assert result.details == {"rows": 4, "path": str(manifest)}
-    assert not (duty_repo / DEFAULT_MANIFEST).exists()
-
-
-def test_duty_plan_on_a_malformed_manifest_is_a_failed_result_not_a_raise(duty_repo: Path, tmp_path: Path) -> None:
-    manifest = tmp_path / "bad.json"
-    manifest.write_text("{not json", encoding="utf-8")
-    result = _run(cutover_verb="plan", regenerate=False, append=True, manifest=str(manifest))
-    assert result.ok is False
-    assert result.summary.startswith("cutover: ")
-
-
-@pytest.mark.parametrize("phase", [None, "", "2"])
-def test_duty_apply_refuses_an_unknown_phase(duty_repo: Path, phase: str | None) -> None:
-    result = _run(cutover_verb="apply", phase=phase, manifest=None, foundry_root=None)
-    assert result.ok is False
-    assert result.summary == "cutover apply: --phase must be 1a or 1b"
-
-
-def test_duty_apply_copies_into_an_explicit_foundry_root(duty_repo: Path, tmp_path: Path) -> None:
-    manifest = tmp_path / "m.json"
-    plan_regenerate(duty_repo, manifest)
-    dest = tmp_path / "explicit"
-    result = _run(cutover_verb="apply", phase="1a", manifest=str(manifest), foundry_root=str(dest))
-    assert result.ok is True
-    assert result.summary == "cutover apply --phase 1a: copied 1, skipped 0"
-    assert result.details == {"copied": 1, "skipped": 0, "phase": "1a"}
-    assert (dest / "src/packages/demo/pyproject.toml").is_file()
-
-
-def test_duty_apply_reads_the_foundry_root_from_the_environment(
-    duty_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    manifest = tmp_path / "m.json"
-    plan_regenerate(duty_repo, manifest)
-    dest = tmp_path / "from-env"
-    monkeypatch.setenv(ENV_FOUNDRY, str(dest))
-    result = _run(cutover_verb="apply", phase="1b", manifest=str(manifest), foundry_root=None)
-    assert result.ok is True
-    assert result.details == {"copied": 3, "skipped": 0, "phase": "1b"}
-    assert (dest / "docs/dreams/demo.md").is_file()
-
-
-def test_duty_apply_defaults_to_the_sibling_python_foundry_checkout(duty_repo: Path, tmp_path: Path) -> None:
-    manifest = tmp_path / "m.json"
-    plan_regenerate(duty_repo, manifest)
-    result = _run(cutover_verb="apply", phase="1a", manifest=str(manifest))
-    assert result.ok is True
-    assert (duty_repo.parent / "python-foundry/src/packages/demo/pyproject.toml").is_file()
+def test_duty_without_a_verb_names_plan_and_flip(duty_repo: Path) -> None:
+    for verb in (None, "apply"):
+        result = _run(cutover_verb=verb)
+        assert result.ok is False
+        assert result.summary == "cutover: need plan or flip"
 
 
 @pytest.mark.parametrize("flags", [None, "missing.json"])
@@ -601,3 +340,201 @@ def test_duty_flip_refused_by_a_running_loop_is_a_failed_result(duty_repo: Path,
     assert result.ok is False
     assert result.summary == "cutover: flip refused: a Marshal loop is running"
     assert flags.read_text(encoding="utf-8") == before
+
+
+# --- plan: the capability ledger's generator, its check and the write switch -------------------
+
+
+def test_the_parser_offers_plan_and_flip_and_refuses_apply(duty_repo: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    assert LEDGER_WRITE_FLAG == _SWITCH
+    assert "fnd:CAP-8" in cli._HELP["cutover"] and "fnd:CAP-9" in cli._HELP["cutover"]
+    parser = cli.build_parser()
+    assert parser.parse_args(["cutover", "plan"]).plan_mode == "check"
+    for mode in ("regenerate", "append", "check"):
+        assert parser.parse_args(["cutover", "plan", f"--{mode}"]).plan_mode == mode
+    ns = parser.parse_args(["cutover", "plan", "--ledger", "elsewhere.yaml", "--json"])
+    assert (ns.ledger, ns.json) == ("elsewhere.yaml", True)
+    for argv in (["cutover", "apply", "--phase", "1a"], ["cutover", "plan", "--regenerate", "--check"]):
+        with pytest.raises(SystemExit) as refused:
+            parser.parse_args(argv)
+        assert refused.value.code == cli.EXIT_USAGE
+    capsys.readouterr()
+    assert cli.main(["cutover", "apply", "--phase", "1a"]) == cli.EXIT_USAGE
+    assert "invalid choice" in capsys.readouterr().err
+    assert not (duty_repo / DEFAULT_LEDGER).exists()
+
+
+def test_duty_regenerates_the_ledger_from_a_subdirectory(duty_repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """No flag tree in reach: the write switch reads its default, on."""
+    monkeypatch.chdir(duty_repo / "docs/dreams")
+    ledger = duty_repo / DEFAULT_LEDGER
+    first = _run(cutover_verb="plan", plan_mode="regenerate")
+    assert first.ok is True
+    assert first.summary == (
+        f"cutover plan --regenerate: {ledger}: written; 1 added, 0 dropped, 0 remoded\n  defaulted-row {_CAP_ONE}"
+    )
+    assert first.details == {
+        "mode": "regenerate",
+        "ledger": str(ledger),
+        "changed": True,
+        "added": [_CAP_ONE],
+        "dropped": [],
+        "remoded": [],
+    }
+    written = ledger.read_bytes()
+    again = _run(cutover_verb="plan", plan_mode="regenerate")
+    assert again.ok is True
+    assert again.summary == f"cutover plan --regenerate: {ledger}: unchanged; 0 added, 0 dropped, 0 remoded"
+    assert ledger.read_bytes() == written
+
+
+def test_duty_appends_only_the_new_row_to_a_ledger_named_from_the_cwd(
+    duty_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    reads = _switch(monkeypatch, True)
+    monkeypatch.chdir(duty_repo / "docs")
+    ledger = duty_repo / "docs/ledger.yaml"
+    assert _run(cutover_verb="plan", plan_mode="regenerate", ledger="ledger.yaml").ok is True
+    before = {row["id"]: row for row in yaml.safe_load(ledger.read_text(encoding="utf-8"))["capabilities"]}
+    _write_spec(duty_repo, 1, 2)
+    result = _run(cutover_verb="plan", plan_mode="append", ledger="ledger.yaml")
+    assert result.ok is True
+    assert result.details["ledger"] == str(ledger)
+    assert result.details["added"] == [_CAP_TWO]
+    after = {row["id"]: row for row in yaml.safe_load(ledger.read_text(encoding="utf-8"))["capabilities"]}
+    assert set(after) == {_CAP_ONE, _CAP_TWO}
+    assert after[_CAP_ONE] == before[_CAP_ONE]
+    assert reads == [_SWITCH, _SWITCH]
+    assert not (duty_repo / DEFAULT_LEDGER).exists()
+
+
+def test_duty_plan_check_ok(duty_repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    ledger = _regenerate(monkeypatch)
+    before = ledger.read_bytes()
+    reads = _switch(monkeypatch, True)
+    result = _run(cutover_verb="plan")  # a bare `plan` is --check
+    assert result.ok is True
+    lines = result.summary.splitlines()
+    assert lines[0] == f"cutover plan --check: {ledger}: 0 findings, 1 warning"
+    assert lines[1].startswith(f"  warning defaulted-row {_CAP_ONE}: ")
+    assert result.details["mode"] == "check"
+    assert result.details["findings"] == []
+    assert [(item["code"], item["id"]) for item in result.details["warnings"]] == [("defaulted-row", _CAP_ONE)]
+    assert reads == []  # --check never reads the write switch
+    assert cli.main(["cutover", "plan"]) == 0
+    assert ledger.read_bytes() == before
+
+
+def test_duty_plan_check_findings_exit_1(
+    duty_repo: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    ledger = _regenerate(monkeypatch)
+    _write_spec(duty_repo, 1, 2)  # a live capability the ledger has no row for
+    before = ledger.read_bytes()
+    result = _run(cutover_verb="plan", plan_mode="check")
+    assert result.ok is False
+    assert result.summary.splitlines()[0] == f"cutover plan --check: {ledger}: 1 finding, 1 warning"
+    assert f"\n  finding unclassified {_CAP_TWO}: " in result.summary
+    assert [(item["code"], item["id"]) for item in result.details["findings"]] == [("unclassified", _CAP_TWO)]
+    assert "exit_code" not in result.details
+    capsys.readouterr()
+    assert cli.main(["cutover", "plan", "--check"]) == cli.EXIT_FAILED
+    assert f"finding unclassified {_CAP_TWO}" in capsys.readouterr().err
+    assert ledger.read_bytes() == before
+
+
+def test_duty_plan_bad_ledger_is_a_failed_result(
+    duty_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _switch(monkeypatch, True)
+    absent = _run(cutover_verb="plan", plan_mode="check")
+    assert absent.ok is False
+    assert absent.summary == f"cutover: {duty_repo / DEFAULT_LEDGER}: no capability ledger to check"
+    bad = tmp_path / "bad.yaml"
+    bad.write_text("{not yaml", encoding="utf-8")
+    for mode in ("check", "regenerate", "append"):
+        result = _run(cutover_verb="plan", plan_mode=mode, ledger=str(bad))
+        assert result.ok is False, mode
+        assert result.summary.startswith(f"cutover: {bad}: not YAML"), mode
+        assert bad.read_text(encoding="utf-8") == "{not yaml"
+
+
+def test_duty_plan_refuses_an_unknown_mode_with_the_usage_code(duty_repo: Path) -> None:
+    result = _run(cutover_verb="plan", plan_mode="fold")
+    assert result.ok is False
+    assert result.summary == "cutover plan: unknown mode 'fold'; pass --regenerate, --append or --check"
+    assert result.details == {"exit_code": cli.EXIT_USAGE}
+    assert not (duty_repo / DEFAULT_LEDGER).exists()
+
+
+def test_duty_plan_json_reports_on_stdout_even_when_the_check_fails(
+    duty_repo: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _switch(monkeypatch, True)
+    ledger = duty_repo / DEFAULT_LEDGER
+    assert cli.main(["cutover", "plan", "--regenerate", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out) == {
+        "mode": "regenerate",
+        "ledger": str(ledger),
+        "changed": True,
+        "added": [_CAP_ONE],
+        "dropped": [],
+        "remoded": [],
+    }
+    _write_spec(duty_repo, 1, 2)
+    assert cli.main(["cutover", "plan", "--json"]) == cli.EXIT_FAILED
+    checked = json.loads(capsys.readouterr().out)
+    assert (checked["mode"], checked["ledger"], checked["ok"]) == ("check", str(ledger), False)
+    assert [(item["code"], item["id"]) for item in checked["findings"]] == [("unclassified", _CAP_TWO)]
+
+
+@pytest.mark.parametrize("mode", ["regenerate", "append"])
+def test_write_switch_off_refuses_the_write_mode_and_writes_nothing(
+    duty_repo: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], mode: str
+) -> None:
+    ledger = _regenerate(monkeypatch)
+    _write_spec(duty_repo, 1, 2)  # either write mode would now add a row
+    before = ledger.read_bytes()
+    reads = _switch(monkeypatch, False)
+    result = _run(cutover_verb="plan", plan_mode=mode)
+    assert result.ok is False
+    assert result.summary == (
+        f"cutover plan --{mode}: refused, the kill switch {_SWITCH} is off; nothing was written (plan --check still runs)"
+    )
+    assert result.details == {"exit_code": cli.EXIT_USAGE, "mode": mode, "ledger": str(ledger)}
+    assert reads == [_SWITCH]
+    capsys.readouterr()
+    assert cli.main(["cutover", "plan", f"--{mode}"]) == cli.EXIT_USAGE
+    assert "refused, the kill switch" in capsys.readouterr().err
+    assert ledger.read_bytes() == before
+
+
+def test_write_switch_off_leaves_plan_check_running(duty_repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    ledger = _regenerate(monkeypatch)
+    before = ledger.read_bytes()
+    reads = _switch(monkeypatch, False)
+    result = _run(cutover_verb="plan", plan_mode="check")
+    assert result.ok is True
+    assert result.summary.startswith(f"cutover plan --check: {ledger}: 0 findings")
+    assert cli.main(["cutover", "plan", "--check"]) == 0
+    assert _SWITCH not in reads
+    assert ledger.read_bytes() == before
+
+
+@flag_states("pyforge.steward.cutover_ledger_write")
+def test_the_ledger_write_flag_gates_the_write_modes_only(
+    flag_provider: dict[str, bool], duty_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    on = flag_provider[_SWITCH]
+    ledger = _regenerate(monkeypatch)
+    _write_spec(duty_repo, 1, 2)
+    before = ledger.read_bytes()
+    _switch(monkeypatch, on)
+    wrote = _run(cutover_verb="plan", plan_mode="append")
+    assert wrote.ok is on
+    assert (ledger.read_bytes() != before) is on
+    assert wrote.details.get("exit_code") == (None if on else cli.EXIT_USAGE)
+    # --check runs in both states and judges what is on disk: the new capability has a row only when on.
+    checked = _run(cutover_verb="plan", plan_mode="check")
+    assert checked.summary.startswith(f"cutover plan --check: {ledger}: ")
+    assert checked.ok is on

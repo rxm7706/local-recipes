@@ -1,4 +1,4 @@
-"""Story 15.4 — CAP-4 dual-path: advisory native spot-checks orbit CAP-5."""
+"""Story 15.4 — CAP-24 dual-path: advisory native spot-checks orbit spec-pyforge-steward CAP-13."""
 
 from __future__ import annotations
 

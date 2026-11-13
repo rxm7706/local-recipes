@@ -1,4 +1,4 @@
-"""Story 15.1 — CAP-1 suite pipeline-truth (whole-pipeline report)."""
+"""Story 15.1 — CAP-21 suite pipeline-truth (whole-pipeline report)."""
 
 from __future__ import annotations
 
@@ -59,7 +59,7 @@ def test_baseline_2026_08_22_reproduces_research_matrix_shape(tmp_path: Path):
     assert by_name["mybmad-dashboard"].upstream_github.value == "0.1.0"
     assert by_name["bmad-dashboard"].upstream_github.value == "1.2.2"
 
-    # Channel relic that motivated CAP-1 / CAP-5.
+    # Channel relic that motivated CAP-21 / spec-pyforge-steward CAP-25.
     method = by_name["bmad-method"]
     assert "channel" in method.drifts
 

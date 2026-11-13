@@ -1,5 +1,5 @@
 """Steward's ``quarantine`` duty — missing-passport mint-then-reject (Story 61.5,
-spec-work-passports-dated-extracts CAP-5 / spec-pyforge-steward CAP-143).
+spec-pyforge-steward CAP-143).
 
 Unlinked inbound rows wait on a quarantine shelf until a human links
 nicknames. During the configured missing-passport window (default 14 days,

@@ -18,6 +18,12 @@ from __future__ import annotations
 import tomllib
 from pathlib import Path
 
+import pytest
+
+# Story 48.1 (a relay of spec-pyforge-steward:CAP-175): this module reads the live tree outside its package (the root
+# pixi.toml), so it runs in atlas's live-tree half and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 # atlas project root: <repo>/src/shared/packages/pyforge-atlas (parents[2] from
 # tests/orchestration/<this file>: [0]=orchestration [1]=tests [2]=pyforge-atlas).
 PROJECT_PATH = Path(__file__).resolve().parents[3]

@@ -22,7 +22,12 @@ PAGES = DOCS_SITE / "scripts" / "pages.mts"
 PUBLIC_GIT = "https://github.com/rxm7706/local-recipes.git"
 MOUNT = "return m.marketplaceMount(inp.dir, inp.env).map((f) => [f.rel, f.data.toString('utf8')]);"
 
-pytestmark = needs_node
+# Story 52.1 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = [
+    pytest.mark.live_tree,
+    needs_node,
+]
 
 
 PUBLIC_BLOB = "https://github.com/rxm7706/local-recipes/blob/main/"

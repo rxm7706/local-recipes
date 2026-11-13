@@ -12,7 +12,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from ..models import DoctorStatus, Finding, Source
+from ..models import UNEVALUABLE_EVIDENCE_KEY, DoctorStatus, Finding, Source
 from . import degrade_on_exception
 
 __all__ = (
@@ -260,13 +260,29 @@ def _gather_all(target: Path) -> tuple[Finding, ...]:
     findings.extend(find_agents_herald_marshal_contradiction(target))
     if findings:
         return tuple(findings)
+    scanned = len(iter_pyforge_station_surfaces(target))
+    if scanned == 0:
+        # Story 56.4 (spec-pyforge-doctor:CAP-93): no station surface scanned,
+        # no subject -- one cannot-evaluate WARN, never an OK over nothing.
+        return (
+            Finding(
+                source=Source.GENERAL_DOCS_CONSISTENCY,
+                check="general-docs-consistency-unevaluable",
+                status=DoctorStatus.WARN,
+                message=(
+                    "no pyforge-* station with both a README.md and a skill-brief.yaml here — "
+                    "documentation identity cannot be evaluated"
+                ),
+                evidence={"scanned_stations": 0, UNEVALUABLE_EVIDENCE_KEY: True},
+            ),
+        )
     return (
         Finding(
             source=Source.GENERAL_DOCS_CONSISTENCY,
             check="general-docs-consistency",
             status=DoctorStatus.OK,
             message="no general documentation identity contradictions",
-            evidence={"scanned_stations": len(iter_pyforge_station_surfaces(target))},
+            evidence={"scanned_stations": scanned},
         ),
     )
 
