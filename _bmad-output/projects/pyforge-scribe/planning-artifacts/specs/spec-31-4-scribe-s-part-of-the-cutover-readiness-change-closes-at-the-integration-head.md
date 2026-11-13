@@ -145,3 +145,48 @@ Type / Effort / Deps: chore / M / 31.1, 31.2, 31.3, 32.1, 32.2, 32.3, 33.1, 33.2
   parses, and the key is `blocked` (feed, synced ledger, this spec's status, the `epics.md` Status line) until
   Epics 32 and 33 are done; the dated blockquote above says so. The Notes clause that `capability-ledger-check`
   exits 2 until steward:S-121.7 is corrected: the mint wrote scribe's CAP-33..CAP-35 rows and the check exits 0.
+
+## Planned deferral (written at build)
+
+Written 2026-11-13. No frontmatter `deferred:` row; the ledger rows below are proposed for whoever writes scribe's
+`deferred-work-ledger.md` next (it is not in this story's files).
+
+- **`DW-scribe-31-4-1`** (proposed; low; location `AGENTS.md`, inside the `bmad:context` block: the *Running and
+  verifying* lint paragraph and the *Policy* line on `src/platform/`). The plan's late edit names "the lint paragraph"
+  and "the src/platform import-guard pitfall", but both lines sit inside the `bmad:context` block, which this story's
+  Never forbids hand-editing; the operator's per-PR approval (b) of 2026-11-10 covers Story 32.1's headless refresh
+  only, and `bmad-project-context` otherwise needs the user to approve every write. The facts landed outside the
+  block instead, in Pre-PR checklist item 1: both suite halves for every station (`pyforge-<station>-test` and
+  `pyforge-<station>-live-test`; the kernel packages' `pyforge-<x>-package-test`), that `target-version-check` also
+  holds the `python` floors of each `src/shared/packages/pyforge-*/pixi.toml`, and the import-guard pitfall. The lint
+  paragraph is incomplete, not wrong: it still names the `pyproject.toml` targets and floors only. Closes on the next
+  operator-approved `bmad-project-context` refresh, which copies the two facts into the block.
+- **`DW-scribe-31-4-2`** (proposed; low; location `.claude/skills/.export-manifest.json`). The `[SKF Skills]` section
+  was re-exported with the exporter's own script (`_bmad/skf/shared/scripts/skf-rebuild-managed-sections.py assemble`,
+  then `replace`), which reads the export manifest and does not write it, so its `last_exported` dates still read
+  2026-08-26 (2026-10-05 for mason). The manifest is under `.claude/skills/**`, steward:S-29.5's files, not this
+  story's. Closes on the next `skf-export-skill` run.
+
+Planned red windows (not deferrals; each closes with a later story of this PR):
+
+- AC4 and AC7's live half: `test_live_tree_no_spec_is_behind_its_memlog` fails only on `spec-pyforge-steward`, behind
+  three memlog events (`6b8cc9e9dc14555e` Story 122.2, `03c01d7cef54a9a5` Story 122.3, `fd0f73ef01b524f0` Story
+  122.4). steward:S-122.5 (BUILD-17) re-derives that Spec. No known row was added for them: the file only shrinks.
+- Reconcile request: `docs/reference/library-llms-full.md` moved (the `tornado` ghost entry removed and one dated
+  header clause). It is governed by `spec-pyforge-marshal` and `spec-pyforge-steward`; their closers (marshal:S-116.5,
+  steward:S-122.5) name it in their `Surface reconcile` events.
+
+Build facts the reviewer needs:
+
+- The library catalog has no generator for a ghost entry: `llms_full_check.py --fix-floors` rewrites floors only, and
+  the catalog header says "undocumenteds and ghosts still require a human". The ghost was removed by that human pass
+  (atlas's shared request: "Reword or regenerate the three entries"); the catalog never carried `starlette`, and
+  `bokeh`'s § 8 entry names no atlas use, so only `tornado` moved.
+- The steward-station request asked the pitfall to "cite the 21 tests". Measured: 21 tests carry the guard's names,
+  but 19 red on any changed `src/platform/` `.py` that imports `pyforge`; doctor's `test_portal_fleet_pulse.py` reds
+  only on an import the branch adds, and herald's `test_this_story_platform_delta_does_not_import_pyforge` reads one
+  fixed file. Item 1 cites the 19.
+- `spec_behind_memlog_known.json` is `{}`: all 32 rows (25 `spec-pyforge-marshal`, 7 `spec-pyforge-unifying-strategy`)
+  were no longer behind with full history; the Guild Specs' rows had already left at Story 32.3's BUILD-1 gate.
+- No capture text from another unit was found in the branch's story specs or shared requests; the one
+  `scribe capture --type project` carries scribe's close only.

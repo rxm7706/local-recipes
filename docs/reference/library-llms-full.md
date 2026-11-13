@@ -30,7 +30,7 @@ as codegraph's) and 2026-09-26 (version-floor re-sync: 57 floors caught up to
 `bmad-loop`, `caveman-installer`, `codegraph`, `bmad-module-skill-forge`,
 `fastmcp`/`fastmcp-slim`, `kedro-mcp`, `silo` and `openfeature-flagd-api`
 now resolve from conda-forge and their SelfExplainML
-channel pins are gone) and 2026-10-10 (Story 67.9: conda-recipe-manager + dbt-core catalog entries — crm click cap >=8.2.1,<=8.4.1, feedstock PR #46, feedstock PR #44 closed unmerged 2026-09-01, sbom-crm-click-cap; prose only, `llms-full-check` unchanged). Channels:
+channel pins are gone) and 2026-10-10 (Story 67.9: conda-recipe-manager + dbt-core catalog entries — crm click cap >=8.2.1,<=8.4.1, feedstock PR #46, feedstock PR #44 closed unmerged 2026-09-01, sbom-crm-click-cap; prose only, `llms-full-check` unchanged) and 2026-11-13 (scribe Story 31.4: § 1a's `tornado` entry removed as a ghost — atlas Story 48.3 deleted `pyforge/atlas/views/` and dropped `bokeh`, `tornado` and `starlette` from atlas's nested manifest and `pyproject.toml`; `bokeh` keeps its § 8 entry for the envs that still list it, and the catalog carries no `starlette` entry to reword). Channels:
 conda-forge + SelfExplainML.
 > Platforms: linux-64, win-64, osx-arm64 (macOS >= 14.5 "Sonoma" floor, required by mlx).
 
@@ -182,11 +182,6 @@ manifest is a second, un-mirrored source root `pixi.toml` doesn't otherwise expo
   (`duckdb_writer.py`, `admission.py`) only. Distinct from the separate marshal/scribe
   filelock *adoption* question tracked in `spec-pyforge-unifying-strategy`'s "Estate
   leverage — installed, bind now" table — this is atlas's own already-shipped use.
-- **tornado** (>=6.5.8) — async networking: IOLoop + HTTP server; `pyforge-atlas` only
-  (`views/live.py` hard-imports `bokeh.server.server.Server`, which runs on Tornado —
-  Story 14.3 / AUD-ATLAS-010: an undeclared module-level import is a runtime dependency).
-  Resolvable transitively via **bokeh** in every other env; declared directly only in
-  atlas's nested manifest, in step with its `pyproject.toml`.
 - **brotli-python** (>=1.2) — Brotli compression bindings (PyPI `Brotli`; imports as
   `brotli`; the `brotli` conda package is the C library and CLI, with no Python module); `pyforge-atlas` only
   (`datasets/tier3_sources.py` decodes the nixpkgs `packages.json.br` through a guarded

@@ -1,0 +1,8 @@
+---
+name: "2026-11-13-scribe-close-of-the-cutover-readiness-change-bran"
+description: "2026-11-13 scribe close of the cutover-readiness change (branch cutover-readiness-2026-11-10, scribe Story 31.4). Done…"
+metadata:
+  type: project
+---
+
+2026-11-13 scribe close of the cutover-readiness change (branch cutover-readiness-2026-11-10, scribe Story 31.4). Done on the branch: the library catalog is clean again (its tornado entry left as a ghost after atlas Story 48.3 deleted pyforge/atlas/views/), the BMAD-estate catalog is current, tests/meta/data/spec_behind_memlog_known.json is an empty object (all 32 rows were no longer behind, so test_spec_not_behind_memlog now judges every live Spec with no tolerated row), scribe's memlog carries one Surface reconcile event naming the 31 scribe-governed paths the branch moved, and AGENTS.md carries the SKF section re-exported from the recompiled station snippets (atlas lists 13 MCP tools), both suite halves and the package pixi.toml floors in Pre-PR item 1, the src/platform import-guard pitfall (19 whole-branch guards, no carve-out), and seventeen guarded rules with chain-write-off-the-writer. Still open after it: spec-pyforge-steward is behind three memlog events (Stories 122.2, 122.3, 122.4) until steward Story 122.5 re-derives it, so scribe's live half stays red until then; the lint paragraph inside the bmad:context block does not yet say target-version-check holds the package pixi.toml floors, and it changes only through an operator-approved bmad-project-context refresh; the library catalog change goes to the spec-pyforge-marshal and spec-pyforge-steward closers (116.5, 122.5) as a reconcile request; doctor Story 58.4 takes the scoped stamp of spec-pyforge-scribe and the CLOSE-LEDGERS job promotes the keys.

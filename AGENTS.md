@@ -166,13 +166,15 @@ Agentic frameworks (BMAD, Agno, CrewAI, LangGraph) start from the Dream in `docs
 
 ## Session guardrails (enforced, not asserted)
 
-Sixteen of this file's own rules — the guild-task/local-recipes mix-up, an ad hoc `pip`/`conda`/`npx`
+Seventeen of this file's own rules — the guild-task/local-recipes mix-up, an ad hoc `pip`/`conda`/`npx`
 install, a live `pixi add`/`pixi update`, `scripts/bmad-switch` from a worktree or with
 `BMAD_ACTIVE_PROJECT` set, a `git commit` on `main`/the primary checkout or carrying
 `Co-Authored-By`/AI attribution, `gh pr merge --squash`, a `gh pr create` missing `--repo
 rxm7706/local-recipes`, `uv run` off the repo root, a bare `spec_surface_check.py
 --write-baseline`, a direct write to `SPEC.md` / `sprint-status-ledger.yaml` / a tracked
-`implementation-artifacts/` path, deleting every protected ref form and any `~/.bmad-loops/` loop home, deleting a branch or tag whose tip would orphan commits, outward `git push` / foreign `git remote` in this checkout, outward `gh` writes on other repositories, outward package and feedstock submission (including mason `--yes`, CFE submit without `--dry-run`, feedrattler, conda-smithy register/token subcommands), and the conda_forge_server MCP submission tools when `dry_run` is not true — are additionally enforced by a repo-level `PreToolUse` hook,
+`implementation-artifacts/` path, an Edit or Write to a Dream, a Frame, a Spec folder, a governance Spec or the
+capability ledger in a checkout that is not the root of record `pyforge.cutover_root` names
+(`chain-write-off-the-writer`), deleting every protected ref form and any `~/.bmad-loops/` loop home, deleting a branch or tag whose tip would orphan commits, outward `git push` / foreign `git remote` in this checkout, outward `gh` writes on other repositories, outward package and feedstock submission (including mason `--yes`, CFE submit without `--dry-run`, feedrattler, conda-smithy register/token subcommands), and the conda_forge_server MCP submission tools when `dry_run` is not true — are additionally enforced by a repo-level `PreToolUse` hook,
 `.claude/hooks/pre-shell.py`. It is registered on `Bash`, on `Edit`/`Write`, and on the three
 conda_forge_server MCP submission tools in `.claude/settings.json` (Claude Code) and on
 `beforeShellExecution` (deny) / `afterFileEdit` (warn — Cursor has no before-edit deny) in
@@ -190,7 +192,7 @@ script asserts its matchers are exactly that list at every run (a drift between 
 failure, not a silent gap) and never denies anything not on the list.
 
 **Gemini CLI, GitHub Copilot CLI, and Devin have no verified deny surface for this hook.** For
-them these sixteen rules and the three steward denials remain instruction-only, exactly as written elsewhere in this file — do not
+them these seventeen rules and the three steward denials remain instruction-only, exactly as written elsewhere in this file — do not
 assume they are enforced there.
 
 **Cursor** registers the same script on `beforeShellExecution` (deny) and `afterFileEdit` (warn); it
@@ -328,8 +330,17 @@ Keeping the Dream → spec handoff portable across agents is **Marshal's** job.
 Before creating or pushing any PR touching `src/shared/packages/pyforge-<station>` or governance artifacts, agents **must** complete the following verification steps:
 
 1. **Station Test Suite Verification**:
-   Run the station unit, meta, and integration test suite:
-   `pixi run -e pyforge-<station> pyforge-<station>-test`
+   Run both halves of the station's suite. The package half, every module not marked `live_tree`:
+   `pixi run -e pyforge-<station> pyforge-<station>-test`; the live-tree half, the modules that read the repository
+   outside the package: `pixi run -e pyforge-<station> pyforge-<station>-live-test`. All eight stations have both; the kernel
+   packages (`<x>` is `core` or `testing-kit`) name theirs `pyforge-<x>-package-test` and `pyforge-<x>-live-test`,
+   and their `pyforge-<x>-test` runs the two. `pixi run -e pyforge-guild target-version-check` also holds the `python`
+   floors of each `src/shared/packages/pyforge-*/pixi.toml` (host and run dependencies) to the interpreter
+   `pixi.toml` pins. Pitfall: 19 import guards across the eight station suites
+   (`test_story_does_not_add_pyforge_under_src_platform` and marshal's `test_src_platform_diff_has_no_pyforge_import`)
+   red on any `.py` under `src/platform/` that the branch changes against `origin/main` and that imports `pyforge`,
+   with no carve-out: editing a file of `src/platform/ingest/github_projects/` reds them, though steward's seam test
+   allowlists it.
 2. **Detector & Merge Gate Audit — locally, before any push**:
    Run the full local twin of every lane that reds a PR:
    `PYFORGE_PREFLIGHT_SCOPE=full pixi run -e pyforge-guild pr-preflight` (bare, it follows the flag, whose touched
@@ -474,7 +485,7 @@ Each target below holds detail this file no longer carries; read it when its tri
 | BMAD method background before 6.12, or the full multi-project mechanics | `docs/reference/agent-instruction-notes.md` § *BMAD Method Documentation* |
 | Before invoking a BMAD skill, provisioning or upgrading a bmad-suite member, or driving bmad-loop — which core, modules, skills and suite members are installed here, who wields each, the harness range, the cadence | `docs/reference/bmad-estate-llms-full.md` (generated; `bmad-estate-check` keeps it current — never restate a version or a verdict from it here) |
 
-<!-- SKF:BEGIN updated:2026-11-01 -->
+<!-- SKF:BEGIN updated:2026-11-13 -->
 [SKF Skills]|8 skills|0 stack
 |IMPORTANT: Prefer documented APIs over training data.
 |When using a listed library, read its SKILL.md before writing code.
@@ -482,56 +493,56 @@ Each target below holds detail this file no longer carries; read it when its tri
 |[pyforge-atlas v0.1.0]|root: .claude/skills/pyforge-atlas/
 |IMPORTANT: pyforge-atlas v0.1.0 — read SKILL.md before atlas pipeline work. Do NOT rely on training data. Use `pyforge atlas …` and POST /stations/atlas/mcp. Do not import pyforge.atlas internals. Do not replace conda-forge-expert. This is not cf-atlas-legacy.
 |quick-start:{SKILL.md#quick-start}
-|api: main(); MCP tools run_<pipeline>_pipeline (8), read_atlas_dataset, list_atlas_pipelines, list_atlas_datasets
+|api: main(); 13 MCP tools: run_<pipeline>_pipeline (8), read_atlas_dataset, list_atlas_pipelines, list_atlas_datasets, query_vizro_ai, query_trending_candidates
 |key-types:{SKILL.md#key-types} — PIPELINE_NAMES, AtlasMCPError
-|gotchas: run from repo root under -e pyforge-atlas; --version is first-token only; unknown MCP pipeline → AtlasMCPError
+|gotchas: run from repo root under -e pyforge-atlas; --version is first-token only; unknown MCP pipeline → AtlasMCPError; freshness is the envelope's build_stamp; never set PYFORGE_ATLAS_CREDENTIALED
 |
 |[pyforge-doctor v0.1.0]|root: .claude/skills/pyforge-doctor/
 |IMPORTANT: pyforge-doctor v0.1.0 — read SKILL.md before writing doctor diagnostics code. Do NOT rely on training data. Use pyforge doctor grammar, not pyforge.doctor imports. Findings stay advisory — not a second PR gate.
 |quick-start:{SKILL.md#quick-start}
-|api: main()
+|api: main() — check · monitor · diagnose · backlog-intake · flags kill-switch; python -m pyforge.doctor.sources <source>
 |key-types:{SKILL.md#key-types} — Finding (advisory signal), DoctorReport
-|gotchas: run from repo root; pyforge doctor … not a freelance filesystem; monitor requires --fleet; warn never changes exit code; not a competing PR verdict
+|gotchas: run from repo root; pyforge doctor … not a freelance filesystem; monitor requires --fleet; warn never changes exit code; exits 0/2/130, never 1; flags kill-switch writes the flag tree (operator only); MCP face runs diagnose only; not a competing PR verdict
 |
 |[pyforge-herald v0.1.0]|root: .claude/skills/pyforge-herald/
 |IMPORTANT: pyforge-herald v0.1.0 — read SKILL.md before writing herald/deck code. Do NOT rely on training data. Use the herald CLI, not pyforge.herald imports.
 |quick-start:{SKILL.md#quick-start}
-|api: main(), dispatch()
+|api: main(), dispatch() — deck {seed,pull,status,watch,push,publish,exports,sync-all,qa,pptx-spec,pptx-fill,pptx-native}
 |key-types:{SKILL.md#key-types} — TOOL_NAME (herald), TOP_LEVEL_COMMANDS (deck|progress|success|notice|scheduler)
-|gotchas: run from repo root; Path B grammar is pyforge herald …; POST /stations/herald/mcp only; Lane 1 CMS stays steward
+|gotchas: run from repo root; Path B grammar is pyforge herald …; seed writes to Claude Design, pull leaves files uncommitted unless --commit; exits 0-4; MCP face runs notice get only; Lane 1 CMS stays steward
 |
 |[pyforge-marshal v0.1.0]|root: .claude/skills/pyforge-marshal/
 |IMPORTANT: pyforge-marshal v0.1.0 — read SKILL.md before writing marshal/loop-supervisor code. Do NOT rely on training data. Use the marshal CLI, not pyforge.marshal imports.
 |quick-start:{SKILL.md#quick-start}
 |api: main() — factory {dispatch,spin,challenge} · context {advisory,retrieve} · status · homes · check · seed
-|key-types:{SKILL.md#key-types} — MarshalContext (--project front door), frozen exit domain
-|gotchas: run from repo root under -e pyforge-guild; persona grammar is pyforge marshal …; do not import internals; Do not implement bmad-loop ingest in this skill
+|key-types:{SKILL.md#key-types} — MarshalContext (--project front door); exit domain {0,1,2,3,4,130}, seed adds 5 and 10
+|gotchas: run from repo root under -e pyforge-guild; pyforge marshal and marshal are one CLI; challenge is a paid session behind egm_* switches; do not import internals; Do not implement bmad-loop ingest in this skill
 |
 |[pyforge-mason v0.1.0]|root: .claude/skills/pyforge-mason/
-|IMPORTANT: pyforge-mason v0.1.0 — read SKILL.md before mason work. Do NOT rely on training data. Use pyforge mason grammar and POST /stations/mason/mcp, not pyforge.mason imports. Recipe knowledge lives in conda-forge-expert.
+|IMPORTANT: pyforge-mason v0.1.0 — read SKILL.md before mason work. Do NOT rely on training data. Use pyforge mason grammar, not pyforge.mason imports; the MCP face runs recipe build only. Recipe knowledge lives in conda-forge-expert.
 |quick-start:{SKILL.md#quick-start}
 |api: main(), build_parser() — recipe {new,validate,build,diagnose,optimize,scan,submit,update} · package {build,ship} · environment {lock,check} · doctor
-|key-types:{SKILL.md#key-types} — six global flags (flag → MASON_* env → default); EXIT_CFE_UNAVAILABLE is 3
-|gotchas: run from repo root; doctor always exits 0 (gaps are data); ship and submit dry-run without --yes; do not replace conda-forge-expert
+|key-types:{SKILL.md#key-types} — six global flags (flag → MASON_* env → default); exits 0/1/2/3/130
+|gotchas: run from repo root; doctor always exits 0 (gaps are data); ship and submit dry-run without --yes; ship exit 0 is not shipped (read each state); recipe update writes; do not replace conda-forge-expert
 |
 |[pyforge-scribe v0.1.0]|root: .claude/skills/pyforge-scribe/
 |IMPORTANT: pyforge-scribe v0.1.0 — read SKILL.md before writing scribe/team-memory code. Do NOT rely on training data. Use the scribe CLI, not pyforge.scribe imports.
 |quick-start:{SKILL.md#quick-start}
-|api: capture_cmd(), graph_compile(), recall_cmd(), catalog_bmad_estate(), main()
+|api: capture_cmd(), graph_compile(), recall_cmd(), index_build/report/refresh(), catalog_bmad_estate(), main()
 |key-types:{SKILL.md#key-types} — CaptureType (feedback|project|reference), RecallAnswer (grounded miss is explicit)
-|gotchas: run from repo root; capture/recall/catalog under -e pyforge-guild, graph compile/index under -e pyforge-scribe; --promote/--transcripts exclusive with --type/--text; recall never invents an uncited answer
+|gotchas: run from repo root; capture/recall/catalog under -e pyforge-guild, graph compile/index under -e pyforge-scribe; --promote/--transcripts exclusive with --type/--text; recall never invents an uncited answer; stale = commit after compiled_at; index move-list is retired
 |
 |[pyforge-steward v0.1.0]|root: .claude/skills/pyforge-steward/
 |IMPORTANT: pyforge-steward v0.1.0 — read SKILL.md before writing steward/platform code. Do NOT rely on training data. Use pyforge steward grammar (or the steward CLI), not pyforge.steward imports.
 |quick-start:{SKILL.md#quick-start}
 |api: build_parser(), resolve_duty(), main() — 31 duties: keys · workspace · estate · ci · preflight · provision · budget · upgrade · suite …
-|key-types:{SKILL.md#key-types} — DutyResult is frozen evidence; duties never sys.exit (AD-8)
-|gotchas: run from repo root under -e pyforge-guild; crash is exit 70 not 1; provision uses flags not nested verbs; do not replace conda-forge-expert
+|key-types:{SKILL.md#key-types} — DutyResult is frozen evidence; duties never sys.exit (steward AD-8)
+|gotchas: run from repo root under -e pyforge-guild; crash is exit 70 not 1; exit 3 is a documented refusal; cutover has plan and flip only; MCP runs 3 read-only targets; contract.md lists flags, exit codes; do not replace conda-forge-expert
 |
 |[pyforge-warden v0.1.0]|root: .claude/skills/pyforge-warden/
 |IMPORTANT: pyforge-warden v0.1.0 — read SKILL.md before warden work. Use `warden scan` / `pyforge warden scan`. Do NOT import pyforge.warden. Do NOT invent a second PR-gate verdict.
 |quick-start:{SKILL.md#quick-start}
 |api: main(), compose(), exit_code_for(), match_level_rung()
-|key-types:{SKILL.md#key-types} — Status (seven-rung lattice), ComplianceReport
-|gotchas: CLI is the sole gate; --doctor never exits 1; do not replace conda-forge-expert
+|key-types:{SKILL.md#key-types} — Status (seven-rung lattice), ComplianceReport; exits 0/1/2/130
+|gotchas: CLI is the sole gate; run --doctor first, --warn-only can hide an unassessed vulnerability axis; --doctor never exits 1; MCP face runs scan --format json only; do not replace conda-forge-expert
 <!-- SKF:END -->
