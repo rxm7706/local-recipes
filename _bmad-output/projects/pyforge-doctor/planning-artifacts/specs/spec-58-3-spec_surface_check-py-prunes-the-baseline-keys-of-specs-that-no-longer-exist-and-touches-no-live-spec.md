@@ -2,7 +2,7 @@
 title: '58.3: spec_surface_check.py prunes the baseline keys of Specs that no longer exist, and touches no live Spec'
 type: 'fix'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 story: 58-3-spec_surface_check-py-prunes-the-baseline-keys-of-specs-that-no-longer-exist-and-touches-no-live-spec
 spec: spec-pyforge-doctor
 difficulty: 'easy'

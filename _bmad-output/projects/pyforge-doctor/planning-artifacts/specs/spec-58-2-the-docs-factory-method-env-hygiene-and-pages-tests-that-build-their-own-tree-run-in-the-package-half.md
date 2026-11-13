@@ -2,7 +2,7 @@
 title: '58.2: The docs, factory, method, env-hygiene and Pages tests that build their own tree run in the package half'
 type: 'chore'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 story: 58-2-the-docs-factory-method-env-hygiene-and-pages-tests-that-build-their-own-tree-run-in-the-package-half
 spec: spec-pyforge-doctor
 difficulty: 'heavy'

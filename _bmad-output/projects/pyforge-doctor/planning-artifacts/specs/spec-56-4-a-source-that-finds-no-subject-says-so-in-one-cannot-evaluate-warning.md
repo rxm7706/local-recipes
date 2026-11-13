@@ -2,7 +2,7 @@
 title: '56.4: A source that finds no subject says so, in one cannot-evaluate warning'
 type: 'fix'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 story: 56-4-a-source-that-finds-no-subject-says-so-in-one-cannot-evaluate-warning
 spec: spec-pyforge-doctor
 difficulty: 'heavy'

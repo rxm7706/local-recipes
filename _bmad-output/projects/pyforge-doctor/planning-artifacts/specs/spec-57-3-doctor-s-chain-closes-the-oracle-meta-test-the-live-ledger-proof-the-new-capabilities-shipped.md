@@ -2,7 +2,7 @@
 title: '57.3: Doctor''s chain closes: the oracle meta-test, the live ledger proof, the new capabilities shipped'
 type: 'chore'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 story: 57-3-doctor-s-chain-closes-the-oracle-meta-test-the-live-ledger-proof-the-new-capabilities-shipped
 spec: spec-pyforge-doctor
 difficulty: 'medium'

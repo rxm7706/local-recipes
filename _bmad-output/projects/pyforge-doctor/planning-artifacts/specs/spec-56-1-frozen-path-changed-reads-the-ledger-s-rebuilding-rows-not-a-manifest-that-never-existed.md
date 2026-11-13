@@ -2,7 +2,7 @@
 title: '56.1: frozen-path-changed reads the ledger''s rebuilding rows, not a manifest that never existed'
 type: 'fix'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 story: 56-1-frozen-path-changed-reads-the-ledger-s-rebuilding-rows-not-a-manifest-that-never-existed
 spec: spec-pyforge-doctor
 difficulty: 'medium'

@@ -2,7 +2,7 @@
 title: '57.1: The doctor Spec''s markers and text say what the code does'
 type: 'docs'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 story: 57-1-the-doctor-spec-s-markers-and-text-say-what-the-code-does
 spec: spec-pyforge-doctor
 difficulty: 'heavy'

@@ -2,7 +2,7 @@
 title: '56.2: capability-ledger judges every v1 row by its Spec heading, its mode and its expiry clock'
 type: 'fix'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 story: 56-2-capability-ledger-judges-every-v1-row-by-its-spec-heading-its-mode-and-its-expiry-clock
 spec: spec-pyforge-doctor
 difficulty: 'medium'

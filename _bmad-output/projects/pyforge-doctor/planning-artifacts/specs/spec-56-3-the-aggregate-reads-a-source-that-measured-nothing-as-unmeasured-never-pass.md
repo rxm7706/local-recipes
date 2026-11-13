@@ -2,7 +2,7 @@
 title: '56.3: The aggregate reads a source that measured nothing as unmeasured, never pass'
 type: 'fix'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 story: 56-3-the-aggregate-reads-a-source-that-measured-nothing-as-unmeasured-never-pass
 spec: spec-pyforge-doctor
 difficulty: 'medium'

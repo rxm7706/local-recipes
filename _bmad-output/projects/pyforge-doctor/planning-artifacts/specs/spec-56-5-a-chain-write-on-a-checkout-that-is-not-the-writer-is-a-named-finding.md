@@ -2,7 +2,7 @@
 title: '56.5: A chain write on a checkout that is not the writer is a named finding'
 type: 'feature'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 story: 56-5-a-chain-write-on-a-checkout-that-is-not-the-writer-is-a-named-finding
 spec: spec-pyforge-doctor
 difficulty: 'medium'

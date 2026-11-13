@@ -2,7 +2,7 @@
 title: '58.1: The chain, ledger, board and one-chain tests that build their own tree run in the package half'
 type: 'chore'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 story: 58-1-the-chain-ledger-board-and-one-chain-tests-that-build-their-own-tree-run-in-the-package-half
 spec: spec-pyforge-doctor
 difficulty: 'heavy'

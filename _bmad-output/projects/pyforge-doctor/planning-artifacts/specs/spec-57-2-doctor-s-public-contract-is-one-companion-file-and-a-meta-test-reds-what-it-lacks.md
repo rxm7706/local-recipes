@@ -2,7 +2,7 @@
 title: '57.2: Doctor''s public contract is one companion file, and a meta-test reds what it lacks'
 type: 'feature'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 story: 57-2-doctor-s-public-contract-is-one-companion-file-and-a-meta-test-reds-what-it-lacks
 spec: spec-pyforge-doctor
 difficulty: 'heavy'
