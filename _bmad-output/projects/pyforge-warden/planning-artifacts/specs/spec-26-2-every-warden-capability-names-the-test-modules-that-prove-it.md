@@ -2,7 +2,7 @@
 title: "26.2: Every warden capability names the test modules that prove it"
 type: 'chore'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

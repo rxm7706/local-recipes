@@ -2,7 +2,7 @@
 title: "25.3: The warden package points at the live Spec"
 type: 'fix'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

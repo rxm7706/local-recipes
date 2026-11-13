@@ -2,7 +2,7 @@
 title: "25.2: The warden PRD, spine, brief and epics follow the Spec, and the chain closes"
 type: 'docs'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

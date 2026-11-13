@@ -2,7 +2,7 @@
 title: "27.1: Warden's live-tree readers run as their own half"
 type: 'chore'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

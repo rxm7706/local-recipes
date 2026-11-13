@@ -2,7 +2,7 @@
 title: "26.3: The contract names what other code imports, where each capability lives, and the open slots"
 type: 'chore'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

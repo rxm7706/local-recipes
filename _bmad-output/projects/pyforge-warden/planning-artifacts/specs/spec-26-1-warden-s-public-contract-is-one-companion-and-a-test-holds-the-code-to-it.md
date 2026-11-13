@@ -2,7 +2,7 @@
 title: "26.1: Warden's public contract is one companion, and a test holds the code to it"
 type: 'chore'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
