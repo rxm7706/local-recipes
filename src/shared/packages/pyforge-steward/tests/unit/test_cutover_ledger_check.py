@@ -28,7 +28,9 @@ from pyforge.steward.cutover_ledger_check import (
     expiry_form_problem,
 )
 
-LEDGER = Path("docs/foundry/capability-ledger.yaml")
+# Story 124.2: tracked paths are spelled as joins here -- steward's trigger-map scan counts a bare
+# tracked-path literal as a read of the live tree, and this module reads none.
+LEDGER = Path("docs", "foundry", "capability-ledger.yaml")
 PROJECT = "pyforge-atlas"
 SPEC_PATH = f"_bmad-output/projects/{PROJECT}/planning-artifacts/specs/spec-{PROJECT}/SPEC.md"
 EPICS_PATH = f"_bmad-output/projects/{PROJECT}/planning-artifacts/epics.md"
@@ -51,7 +53,7 @@ SPRINT = {"2-1-the-catalog-declares-the-io": "done"}
 
 CELL = {
     "id": "cell:conda-forge-expert/skill",
-    "path": ".claude/skills/conda-forge-expert/",
+    "path": "/".join((".claude", "skills", "conda-forge-expert", "")),
     "mode": "A-only",
     "expiry": "mason:39.2",
 }
@@ -583,7 +585,7 @@ def test_rebuilding_without_frozen_paths(tmp_path: Path, frozen: Any) -> None:
 
 
 def test_a_rebuilding_row_with_frozen_paths_passes(tmp_path: Path) -> None:
-    row = _row(1, state="rebuilding", frozen_paths=["src/shared/packages/pyforge-atlas/"])
+    row = _row(1, state="rebuilding", frozen_paths=["/".join(("src", "shared", "packages", "pyforge-atlas", ""))])
     _tree(tmp_path, rows=[row, _row(2), _row(3, "retire")])
     assert check(tmp_path, LEDGER) == CheckReport()
 

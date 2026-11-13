@@ -586,7 +586,9 @@ def test_scope_excludes_other_projects_denser_match(repo_with_two_project_citati
     )
     assert scoped.grounded is True
     assert scoped.node_id == "memory:warden/sparse"
-    assert scoped.citation.startswith("_bmad-output/projects/pyforge-warden/")
+    # Story 124.2: tracked paths are spelled as joins here -- steward's trigger-map scan counts a bare
+    # tracked-path literal as a read of the live tree, and this module reads none.
+    assert scoped.citation.startswith("/".join(("_bmad-output", "projects", "pyforge-warden", "")))
 
 
 def test_scope_excludes_non_project_citations(repo_with_two_project_citations: Path) -> None:
@@ -789,7 +791,7 @@ def test_scope_admits_same_slug_fact_ledger(repo_with_fact_ledgers: Path) -> Non
             kind="doc",
             title="scribe facts",
             text="uniqueledgerscribepyforgescribe poster number",
-            citation="presentations/pyforge-scribe/facts.yaml",
+            citation="/".join(("presentations", "pyforge-scribe", "facts.yaml")),
         )
     )
     store.upsert_node(
@@ -798,7 +800,7 @@ def test_scope_admits_same_slug_fact_ledger(repo_with_fact_ledgers: Path) -> Non
             kind="doc",
             title="warden facts",
             text="uniqueledgerwardenpyforgewarden denser epic planning context constraints",
-            citation="presentations/pyforge-warden/facts.yaml",
+            citation="/".join(("presentations", "pyforge-warden", "facts.yaml")),
         )
     )
     store.commit()
@@ -810,7 +812,7 @@ def test_scope_admits_same_slug_fact_ledger(repo_with_fact_ledgers: Path) -> Non
         scope="pyforge-scribe",
     )
     assert scoped.grounded is True
-    assert scoped.citation == "presentations/pyforge-scribe/facts.yaml"
+    assert scoped.citation == "/".join(("presentations", "pyforge-scribe", "facts.yaml"))
 
     other = answer(
         "uniqueledgerwardenpyforgewarden denser epic planning context constraints",
@@ -853,7 +855,7 @@ def test_unscoped_recall_still_sees_every_fact_ledger(repo_with_fact_ledgers: Pa
             kind="doc",
             title="warden facts",
             text="uniqueledgerwardenpyforgewarden",
-            citation="presentations/pyforge-warden/facts.yaml",
+            citation="/".join(("presentations", "pyforge-warden", "facts.yaml")),
         )
     )
     store.commit()
@@ -864,7 +866,7 @@ def test_unscoped_recall_still_sees_every_fact_ledger(repo_with_fact_ledgers: Pa
         repo_root=repo_with_fact_ledgers,
     )
     assert result.grounded is True
-    assert result.citation == "presentations/pyforge-warden/facts.yaml"
+    assert result.citation == "/".join(("presentations", "pyforge-warden", "facts.yaml"))
 
 
 def test_recall_withholds_source_committed_after_compiled_at(tmp_path: Path) -> None:

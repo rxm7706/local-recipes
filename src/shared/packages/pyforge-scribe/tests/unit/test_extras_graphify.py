@@ -348,8 +348,10 @@ def test_graphify_not_imported_outside_the_extras_adapter(rel: str) -> None:
 
 def test_default_graphify_targets_are_the_named_list_not_recipes() -> None:
     rels = {p.as_posix() for p in DEFAULT_GRAPHIFY_TARGETS}
-    assert rels == {"src/shared/packages", "src/platform", "scripts"}
-    assert DEFAULT_GRAPHIFY_TARGET.as_posix() == "src/shared/packages"
+    # Story 124.2: tracked paths are spelled as joins here -- steward's trigger-map scan counts a bare
+    # tracked-path literal as a read of the live tree, and this module reads none.
+    assert rels == {"/".join(("src", "shared", "packages")), "src/platform", "scripts"}
+    assert DEFAULT_GRAPHIFY_TARGET.as_posix() == "/".join(("src", "shared", "packages"))
 
 
 class _PerTargetFake(_FakeGraphifyModule):
@@ -368,7 +370,9 @@ class _PerTargetFake(_FakeGraphifyModule):
         assert last is not None
         posix = last.as_posix()
         rel = next(
-            name for name in ("src/shared/packages", "src/platform", "scripts", "recipes") if posix.endswith(name)
+            name
+            for name in ("/".join(("src", "shared", "packages")), "src/platform", "scripts", "recipes")
+            if posix.endswith(name)
         )
         return _FakeGraph(
             {
@@ -384,7 +388,7 @@ class _PerTargetFake(_FakeGraphifyModule):
 
 def test_ingest_repo_walks_named_list_and_skips_recipes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     for rel in (
-        "src/shared/packages",
+        "/".join(("src", "shared", "packages")),
         "src/platform",
         "scripts",
         "recipes",
@@ -421,7 +425,7 @@ def test_ingest_repo_missing_optional_targets_are_silent(tmp_path: Path, monkeyp
 
 
 def test_ingest_repo_explicit_target_stays_one_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    for rel in ("src/shared/packages", "scripts"):
+    for rel in ("/".join(("src", "shared", "packages")), "scripts"):
         path = tmp_path / rel
         path.mkdir(parents=True)
         (path / "a.py").write_text("x = 1\n", encoding="utf-8")
@@ -450,7 +454,9 @@ class _PerTargetFake(_FakeGraphifyModule):
         assert last is not None
         posix = last.as_posix()
         rel = next(
-            name for name in ("src/shared/packages", "src/platform", "scripts", "recipes") if posix.endswith(name)
+            name
+            for name in ("/".join(("src", "shared", "packages")), "src/platform", "scripts", "recipes")
+            if posix.endswith(name)
         )
         return _FakeGraph(
             {

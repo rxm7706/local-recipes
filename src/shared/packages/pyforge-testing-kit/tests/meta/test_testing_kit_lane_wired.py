@@ -21,9 +21,12 @@ running a package-half task and ``testing-kit-live-test`` running
 ``depends-on`` aggregate of both halves, so it stays the whole suite. Which half
 a task runs is read from its ``-m`` marker expression. The
 ``test_detector_fires_when_a_half_is_dropped_*`` tests prove it on the split:
-the real ``pixi.toml`` since steward:S-124.1 landed its half, and a split copy
-of the workflow until steward:S-124.2 lands its own. This module reads
-``pixi.toml`` and the workflow, so it is itself ``live_tree``.
+the real ``pixi.toml`` since steward:S-124.1 landed its half, and the real
+workflow since steward:S-124.2 landed its own (``testing-kit-test`` runs
+``pyforge-testing-kit-package-test`` on ``testing_kit``,
+``testing-kit-live-test`` runs ``pyforge-testing-kit-live-test`` on
+``testing_kit_live``). This module reads ``pixi.toml`` and the workflow, so it
+is itself ``live_tree``.
 """
 
 from __future__ import annotations
@@ -307,12 +310,20 @@ def test_detector_fires_when_the_job_is_deleted() -> None:
     assert job_problems(mutated) == [f"no `{JOB}` job under jobs:"]
 
 
+def _job_run(text: str | None = None) -> str:
+    """The kit job's one run step: the package half's task since the split (steward:S-124.2)."""
+    (task,) = _kit_runs(_jobs(_workflow_text() if text is None else text)[JOB])
+    return f"pixi run --frozen -e {ENV} {task}"
+
+
 def test_detector_fires_when_the_job_runs_pytest_directly() -> None:
-    mutated = _workflow_text().replace(
-        f"      - run: {RUN}\n", "      - run: pytest src/shared/packages/pyforge-testing-kit/tests\n"
+    text = _workflow_text()
+    mutated = text.replace(
+        f"      - run: {_job_run(text)}\n", "      - run: pytest src/shared/packages/pyforge-testing-kit/tests\n", 1
     )
+    assert mutated != text, "mutation premise: the kit job runs one kit task"
     assert job_problems(mutated) == [
-        f"`{JOB}` does not run exactly `{RUN}`",
+        f"`{JOB}` does not run exactly one `pixi run --frozen -e {ENV} <task>`",
         f"`{JOB}` invokes pytest or a tests/ sub-path directly instead of the pixi task",
     ]
 
@@ -357,10 +368,14 @@ def test_detector_fires_when_the_if_line_changes() -> None:
 
 
 def test_detector_fires_on_an_extra_pytest_step() -> None:
-    mutated = _workflow_text().replace(
-        f"      - run: {RUN}\n",
-        f"      - run: {RUN}\n      - run: pytest src/shared/packages/pyforge-testing-kit/tests\n",
+    text = _workflow_text()
+    run = _job_run(text)
+    mutated = text.replace(
+        f"      - run: {run}\n",
+        f"      - run: {run}\n      - run: pytest src/shared/packages/pyforge-testing-kit/tests\n",
+        1,
     )
+    assert mutated != text, "mutation premise: the kit job runs one kit task"
     assert job_problems(mutated) == [f"`{JOB}` invokes pytest or a tests/ sub-path directly instead of the pixi task"]
 
 
@@ -389,9 +404,12 @@ _PACKAGE_TASK = "pyforge-testing-kit-package-test"  # the split copy's package-h
 
 
 def _split_workflow(text: str | None = None) -> str:
-    """Today's workflow split the way steward:S-124.2 lands it: the kit job runs the package half and a
-    live-tree job, a copy of it, runs the live half."""
+    """The workflow split the way steward:S-124.2 lands it: the kit job runs the package half and a
+    live-tree job runs the live half. The real workflow once it carries the live-tree job (as
+    pyforge-core's ``_split_workflow_text`` does), else a split copy of a whole-suite job."""
     text = _workflow_text() if text is None else text
+    if LIVE_JOB in _jobs(text):
+        return text
     block = _jobs(text)[JOB]
     assert f"      - run: {RUN}\n" in block, "mutation premise: the kit job runs the whole-suite task"
     package = block.replace(f"      - run: {RUN}\n", f"      - run: pixi run --frozen -e {ENV} {_PACKAGE_TASK}\n")
@@ -468,6 +486,7 @@ def test_detector_fires_when_a_half_is_dropped_from_the_whole_suite_task() -> No
         leg["cmd"] = _MARKER_ARG.sub('-m "not live_tree"', leg["cmd"])
     assert task_halves(data, LIVE_TASK) == {PACKAGE_HALF}
     assert leg_problems(data) == [f"`{TASK}` does not run the {LIVE_HALF} half -- it must stay the whole suite"]
-    assert halves_problems(_workflow_text(), data) == [
-        f"no job runs the {LIVE_HALF} half of the kit's suite (the kit's jobs: `{JOB}`)"
+    assert halves_problems(_split_workflow(), data) == [
+        f"no job runs the {LIVE_HALF} half of the kit's suite (the kit's jobs: `{JOB}`, `{LIVE_JOB}`)",
+        f"`{LIVE_JOB}` does not run the {LIVE_HALF} half",
     ]

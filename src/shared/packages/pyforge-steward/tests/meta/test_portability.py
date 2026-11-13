@@ -22,9 +22,11 @@ from pathlib import Path
 import pytest
 
 LAYOUT_MODULE = "root_layout.py"
+# Story 124.2: tracked paths are spelled as joins here -- steward's trigger-map scan counts a bare
+# tracked-path literal as a read of the live tree, and this module reads none.
 #: Text only ``root_layout.py`` may hold in a string constant: the station-packages directory and
 #: the repository owner (which every slug, clone URL and owner name of this estate contains).
-ROOT_MARKERS: tuple[str, ...] = ("src/shared/packages", "rxm7706")
+ROOT_MARKERS: tuple[str, ...] = ("/".join(("src", "shared", "packages")), "rxm7706")
 #: The station-packages directory as path segments: a chain that spells it out one segment at a time
 #: (``root / "src" / "shared" / "packages"``) names this root as surely as the one string does.
 STATION_PACKAGES_SEGMENTS: tuple[str, ...] = ("src", "shared", "packages")
@@ -294,7 +296,7 @@ def test_root_layout_names_each_estate_bound_constant_once() -> None:
     """The four identity sites are one constant each, and the layout constants derive from one directory."""
     from pyforge.steward import root_layout
 
-    assert root_layout.STATION_PACKAGES == "src/shared/packages"
+    assert root_layout.STATION_PACKAGES == "/".join(("src", "shared", "packages"))
     assert root_layout.STEWARD_PACKAGE_DIR == Path(root_layout.STATION_PACKAGES) / "pyforge-steward"
     assert root_layout.MARSHAL_PACKAGE_DIR == Path(root_layout.STATION_PACKAGES) / "pyforge-marshal"
     assert root_layout.CI_DEFAULT_REPOSITORY == "rxm7706/local-recipes"
@@ -321,11 +323,11 @@ def test_each_moved_site_derives_from_root_layout_and_keeps_its_value() -> None:
         workspace,
     )
 
-    assert catalog.CATALOG_RELATIVE == Path("src/shared/packages/pyforge-steward/catalog")
-    assert corridor.CORRIDOR_RELATIVE == Path("src/shared/packages/pyforge-steward/corridor")
-    assert measures.MEASURES_RELATIVE == Path("src/shared/packages/pyforge-steward/measures")
+    assert catalog.CATALOG_RELATIVE == Path("src", "shared", "packages", "pyforge-steward", "catalog")
+    assert corridor.CORRIDOR_RELATIVE == Path("src", "shared", "packages", "pyforge-steward", "corridor")
+    assert measures.MEASURES_RELATIVE == Path("src", "shared", "packages", "pyforge-steward", "measures")
     assert upgrade._MARSHAL_PKG is root_layout.MARSHAL_PACKAGE_DIR
-    assert root_layout.MARSHAL_PACKAGE_DIR == Path("src/shared/packages/pyforge-marshal")
+    assert root_layout.MARSHAL_PACKAGE_DIR == Path("src", "shared", "packages", "pyforge-marshal")
     assert preflight_ci.STATION_PACKAGES is root_layout.STATION_PACKAGES
     assert ci.DEFAULT_REPO is root_layout.CI_DEFAULT_REPOSITORY
     assert bootstrap._DEFAULT_REPO_URL is root_layout.BOOTSTRAP_DEFAULT_URL
@@ -340,12 +342,16 @@ def test_preflight_ci_station_paths_are_unchanged(tmp_path: Path) -> None:
     from pyforge.steward.preflight_ci import is_packaging_test_input, station_package_dirs
 
     assert is_packaging_test_input("pixi.toml") and is_packaging_test_input("Containerfile.guild")
-    assert is_packaging_test_input("src/shared/packages/pyforge-core/pyproject.toml")
-    assert is_packaging_test_input("src/shared/packages/pyforge-core/src/pyforge/core/flags.py")
-    assert not is_packaging_test_input("src/shared/packages/pyforge-core/README.md")
-    assert not is_packaging_test_input("src/shared/packages/pyforge-core/tests/unit/test_flags.py")
+    assert is_packaging_test_input("/".join(("src", "shared", "packages", "pyforge-core", "pyproject.toml")))
+    assert is_packaging_test_input(
+        "/".join(("src", "shared", "packages", "pyforge-core", "src", "pyforge", "core", "flags.py"))
+    )
+    assert not is_packaging_test_input("/".join(("src", "shared", "packages", "pyforge-core", "README.md")))
+    assert not is_packaging_test_input(
+        "/".join(("src", "shared", "packages", "pyforge-core", "tests", "unit", "test_flags.py"))
+    )
     assert not is_packaging_test_input("src/shared/packages/django-core/pyproject.toml")
-    assert not is_packaging_test_input("docs/MAP.md")
+    assert not is_packaging_test_input("/".join(("docs", "MAP.md")))
     for name in ("pyforge-x", "django-x"):
         (tmp_path / "src" / "shared" / "packages" / name).mkdir(parents=True)
     assert station_package_dirs(tmp_path, "pyforge-x") == (

@@ -13,8 +13,10 @@ installed it, so on a fresh worktree and on every CI runner the 25 tests skipped
   ``pyforge-herald-test-coverage`` installs first too, and sets ``HERALD_DOCS_SITE_REQUIRED``;
 * the coverage-gate task takes no install dependency (CI's coverage leg runs its driver, not the task, so the
   preflight's reader can select the gate's lane without the install's, and that lane would never start);
-* CI's herald job runs ``pyforge-herald-test-built`` with ``HERALD_DOCS_SITE_REQUIRED=1`` and the ``site`` environment
-  set up;
+* CI's ``herald-live-test`` job, which runs the live-tree half and so the built-site tests, sets up the ``site``
+  environment, runs ``docs-site-install`` first and then ``pyforge-herald-live-test`` with
+  ``HERALD_DOCS_SITE_REQUIRED=1``; ``herald-test`` runs the package half alone, with no ``site`` environment (steward
+  Story 124.2 split the job);
 * ``needs_astro`` fails, never skips, when the install is required and missing, and pytest reports that as a failure;
   a build helper a module fixture calls fails first, naming the install rather than node's stack.
 
@@ -137,17 +139,34 @@ def test_the_coverage_gate_takes_no_install_dependency() -> None:
     assert DOCS_SITE_REQUIRED_ENV not in gate.get("env", {})
 
 
-def test_ci_s_herald_job_runs_the_built_task_strictly_with_the_site_environment() -> None:
-    job = yaml.safe_load(STATION_TESTS.read_text(encoding="utf-8"))["jobs"]["herald-test"]
+def _setup_environments(job: dict[str, Any]) -> set[str]:
     setups = [step for step in job["steps"] if str(step.get("uses", "")).startswith("prefix-dev/setup-pixi@")]
     assert len(setups) == 1
-    assert {"pyforge-herald", "site"} <= set(str(setups[0]["with"]["environments"]).split())
-    runs = [step for step in job["steps"] if "run" in step and "pyforge-herald-test" in str(step["run"])]
-    # By task name, so pixi runs the install first; the variable turns a missing install into failures.
+    return set(str(setups[0]["with"]["environments"]).split())
+
+
+def _pixi_runs(job: dict[str, Any]) -> list[dict[str, Any]]:
+    return [step for step in job["steps"] if "run" in step and str(step["run"]).strip().startswith("pixi run ")]
+
+
+def test_ci_s_herald_live_job_installs_then_runs_the_live_half_strictly_with_the_site_environment() -> None:
+    """Steward Story 124.2: the built-site tests are live-tree modules, so the job that runs them installs first and
+    sets the variable; the package half's job stays npm-free."""
+    jobs = yaml.safe_load(STATION_TESTS.read_text(encoding="utf-8"))["jobs"]
+    live = jobs["herald-live-test"]
+    assert {"pyforge-herald", "site"} <= _setup_environments(live)
+    runs = _pixi_runs(live)
+    # The install's step comes first; the variable turns a missing install into failures.
     assert [str(step["run"]).strip() for step in runs] == [
-        "pixi run --frozen -e pyforge-herald pyforge-herald-test-built"
+        "pixi run --frozen -e site docs-site-install",
+        "pixi run --frozen -e pyforge-herald pyforge-herald-live-test",
     ]
-    assert runs[0]["env"][DOCS_SITE_REQUIRED_ENV] == "1"
+    assert runs[1]["env"][DOCS_SITE_REQUIRED_ENV] == "1"
+    package = jobs["herald-test"]
+    assert "site" not in _setup_environments(package)
+    assert [str(step["run"]).strip() for step in _pixi_runs(package)] == [
+        "pixi run --frozen -e pyforge-herald pyforge-herald-test"
+    ]
 
 
 def _decorated(**state: bool):

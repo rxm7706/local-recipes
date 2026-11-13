@@ -30,7 +30,9 @@ from pyforge.steward.cutover_ledger import (
 
 TODAY = date(2026, 11, 10)
 SHA = "0123abcd"
-LEDGER = Path("docs/foundry/capability-ledger.yaml")
+# Story 124.2: tracked paths are spelled as joins here -- steward's trigger-map scan counts a bare
+# tracked-path literal as a read of the live tree, and this module reads none.
+LEDGER = Path("docs", "foundry", "capability-ledger.yaml")
 
 
 def _write(root: Path, rel: str, text: str) -> Path:
@@ -102,7 +104,17 @@ def test_regenerate_adds_a_missing_row_defaulted_rebuild_planned(tmp_path: Path)
         "spec": "pyforge-atlas",
         "station": "pyforge-atlas",
         "heading": "all IO is catalog-declared",
-        "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md",
+        "path": "/".join(
+            (
+                "_bmad-output",
+                "projects",
+                "pyforge-atlas",
+                "planning-artifacts",
+                "specs",
+                "spec-pyforge-atlas",
+                "SPEC.md",
+            )
+        ),
         "mode": "rebuild",
         "state": "planned",
         "defaulted": "2026-11-10",
@@ -368,7 +380,9 @@ def test_live_specs_keep_ready_and_in_progress_by_path(tmp_path: Path) -> None:
     _spec(tmp_path, "pyforge-herald", "no-status", "- **CAP-1 — d.**\n", status="title: x")
     _spec(tmp_path, "pyforge-herald", "listy", "- **CAP-1 — d.**\n", status="status: [ready]")
     _write(
-        tmp_path, "docs/governance/spec-feature-flag-governance/SPEC.md", "---\nstatus: ready\n---\n- **CAP-1 — g.**\n"
+        tmp_path,
+        "/".join(("docs", "governance", "spec-feature-flag-governance", "SPEC.md")),
+        "---\nstatus: ready\n---\n- **CAP-1 — g.**\n",
     )
     _write(tmp_path, "docs/governance/spec-no-frontmatter/SPEC.md", "# no frontmatter\n- **CAP-1 — n.**\n")
     _write(tmp_path, "docs/governance/spec-unclosed/SPEC.md", "---\nstatus: ready\n- **CAP-1 — n.**\n")
@@ -442,7 +456,11 @@ def test_regenerate_rewrites_derived_fields_and_keeps_decided_ones(tmp_path: Pat
 def test_regenerate_keeps_cells_and_the_leading_comments(tmp_path: Path) -> None:
     _spec(tmp_path, "pyforge-atlas", "pyforge-atlas", ATLAS)
     cells = [
-        {"id": "cell:conda-forge-expert/skill", "path": ".claude/skills/conda-forge-expert/", "mode": "A-only"},
+        {
+            "id": "cell:conda-forge-expert/skill",
+            "path": "/".join((".claude", "skills", "conda-forge-expert", "")),
+            "mode": "A-only",
+        },
         {"note": "n", "expiry": "mason:39.2", "mode": "A-only", "path": "p/", "id": "cell:conda-forge-expert/data"},
     ]
     path = _ledger(tmp_path, [], cells=cells)

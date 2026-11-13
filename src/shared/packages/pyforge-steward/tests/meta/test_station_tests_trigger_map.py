@@ -1,8 +1,10 @@
 """Story 98.1 (spec-pyforge-steward CAP-159): station tests run when what they read changes.
 
-``.github/workflows/pyforge-station-tests.yml`` gates each of its ten suite jobs on a
+``.github/workflows/pyforge-station-tests.yml`` gates each of its suite jobs on a
 literal list of paths (one array per job in the ``changes`` step, plus the identical
-``on.pull_request.paths`` / ``on.push.paths`` lists). Before this story the lists named each
+``on.pull_request.paths`` / ``on.push.paths`` lists); since Story 124.2
+(spec-pyforge-steward:CAP-175) every suite runs as two jobs, its package half and its live-tree
+half (Story 117.4's split). Before this story the lists named each
 suite's own package and a short shared surface, while the suites read files far outside
 both -- a change to one of those files ran no suite that reads it, and a break landed on
 ``main`` unseen (herald Story 38.1 changed ``scripts/lint_types.py`` and ``django-herald``;
@@ -10,7 +12,7 @@ steward's ``test_lint_types_django_tables.py`` went red on ``main`` with no job 
 
 This meta-test makes the lists derived, not remembered:
 
-* it reads the ten jobs from the workflow's ``jobs:`` and their pixi tasks from ``pixi.toml``
+* it reads the suite jobs from the workflow's ``jobs:`` and their pixi tasks from ``pixi.toml``
   (never a hand list), and derives what each job's tests read by static analysis of the
   tests themselves (``derive_reads``): ``Path(__file__)``-anchored expressions resolved
   to repository paths, and string literals that name a git-tracked path;
@@ -51,15 +53,36 @@ import yaml
 
 from pyforge.steward import preflight_ci
 
-# tests/meta -> tests -> pyforge-steward -> packages -> shared -> src -> repo root
-REPO_ROOT = Path(__file__).resolve().parents[6]
+# Story 124.2 (spec-pyforge-steward:CAP-175): this module reads every suite's tests, the workflow and pixi.toml, so it
+# runs in steward's live-tree half (pyforge-steward-live-test), whose job fires on what it reads: a station PR that adds
+# an outside read to its package half runs this guard in that PR. A live_tree module derives no repository path at
+# import time, so the root and the files under it are functions.
+pytestmark = pytest.mark.live_tree
+
 WORKFLOW_REL = ".github/workflows/pyforge-station-tests.yml"
-WORKFLOW = REPO_ROOT / WORKFLOW_REL
-THIS_FILE_REL = Path(__file__).resolve().relative_to(REPO_ROOT).as_posix()
-PIXI_TOML = REPO_ROOT / "pixi.toml"
 PACKAGES = "src/shared/packages"
 BASE_REF = "refs/remotes/origin/main"
 WILD = "*"
+
+
+@functools.cache
+def repo_root() -> Path:
+    """tests/meta -> tests -> pyforge-steward -> packages -> shared -> src -> repo root."""
+    return Path(__file__).resolve().parents[6]
+
+
+def workflow_file() -> Path:
+    return repo_root() / WORKFLOW_REL
+
+
+@functools.cache
+def this_file_rel() -> str:
+    return Path(__file__).resolve().relative_to(repo_root()).as_posix()
+
+
+def pixi_toml_file() -> Path:
+    return repo_root() / "pixi.toml"
+
 
 _GATE = re.compile(r"needs\.changes\.outputs\.(\w+)\s*==\s*'true'")
 _PIXI_RUN = re.compile(r"pixi run --frozen -e (\S+) (\S+)")
@@ -71,8 +94,8 @@ _PIXI_RUN = re.compile(r"pixi run --frozen -e (\S+) (\S+)")
 
 @functools.cache
 def tracked_files() -> tuple[str, ...]:
-    out = subprocess.run(["git", "ls-files", "-z"], cwd=REPO_ROOT, check=True, capture_output=True, text=True).stdout
-    return tuple(sorted(p for p in out.split("\0") if p and (REPO_ROOT / p).exists()))
+    out = subprocess.run(["git", "ls-files", "-z"], cwd=repo_root(), check=True, capture_output=True, text=True).stdout
+    return tuple(sorted(p for p in out.split("\0") if p and (repo_root() / p).exists()))
 
 
 @functools.cache
@@ -173,6 +196,53 @@ def _is_fixture(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
     return False
 
 
+def _is_autouse(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    """``@pytest.fixture(autouse=True)``: it runs for every test under it, requested or not."""
+    return _is_fixture(node) and any(
+        isinstance(dec, ast.Call)
+        and any(
+            kw.arg == "autouse" and isinstance(kw.value, ast.Constant) and kw.value.value is True for kw in dec.keywords
+        )
+        for dec in node.decorator_list
+    )
+
+
+def _used_fixtures(tree: ast.AST) -> list[str]:
+    """The fixtures ``pytest.mark.usefixtures("a", ...)`` requests anywhere in a module (a ``pytestmark``, a class or a
+    test's decorator): pytest runs them for those tests, though no parameter names them."""
+    return [
+        arg.value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call) and _dotted_name(node.func).split(".")[-1] == "usefixtures"
+        for arg in node.args
+        if isinstance(arg, ast.Constant) and isinstance(arg.value, str)
+    ]
+
+
+def _names_live_tree(node: ast.AST) -> bool:
+    """Does the expression name ``pytest.mark.live_tree`` (alone, in a list or a tuple)?"""
+    return any(
+        isinstance(sub, ast.Attribute)
+        and sub.attr == "live_tree"
+        and isinstance(sub.value, ast.Attribute)
+        and sub.value.attr == "mark"
+        for sub in ast.walk(node)
+    )
+
+
+class _ParamValue(str):
+    """One fixture param's value as ``request.param`` gives it: a string the scan may compare to decide a branch."""
+
+    __slots__ = ()
+
+
+@dataclass(frozen=True)
+class _Request:
+    """The ``request`` a parametrized fixture receives for one of its params (Story 124.2)."""
+
+    param: _ParamValue | None
+
+
 def _split_segments(text: str) -> list[str]:
     return [s for s in text.split("/") if s not in ("", ".")]
 
@@ -200,32 +270,46 @@ class Module:
         self.env: dict[str, object] = {}
         self.funcs: dict[str, ast.FunctionDef | ast.AsyncFunctionDef] = {}
         self.path_names: set[str] = {"Path", "PurePath", "PosixPath"}
-        self.fixtures: dict[str, object] = {}
+        self.fixtures: dict[str, object] = {}  # a fixture's value, evaluated when first requested (Scanner._fixture)
         self._depth = 0
 
 
 class Scanner:
-    """Collects the reads of every Python file handed to ``scan``."""
+    """Collects the reads of every Python file handed to ``scan``.
 
-    def __init__(self, package_dir: str | None) -> None:
+    ``package_half``: the scan derives a split suite's package half, which never runs a fixture param marked
+    ``live_tree`` -- pytest deselects it under ``-m "not live_tree"`` (Story 124.2). ``sources``: module text by
+    repository path, read before the tracked tree; the derivation's own checks plant modules that way.
+    """
+
+    def __init__(
+        self, package_dir: str | None, *, package_half: bool = False, sources: Mapping[str, str] | None = None
+    ) -> None:
         self.package_dir = package_dir
+        self.package_half = package_half
+        self.sources: Mapping[str, str] = sources or {}
         self.modules: dict[str, Module] = {}
         self.reads: dict[tuple[str, ...], set[str]] = defaultdict(set)
         self.handoffs: set[str] = set()
         self._loading: set[str] = set()
         self._returns: dict[tuple, object] = {}
+        self._cut = False  # the depth limit cut the evaluation in progress short
         self._inlined: set[tuple] = set()
         self._inline_depth = 0
 
     # -- module loading ---------------------------------------------------
 
+    def _exists(self, rel: str) -> bool:
+        return rel in self.sources or rel in _tracked_set()
+
     def module(self, rel: str) -> Module | None:
         if rel in self.modules:
             return self.modules[rel]
-        if rel in self._loading or rel not in _tracked_set():
+        if rel in self._loading or not self._exists(rel):
             return None
         try:
-            tree = ast.parse((REPO_ROOT / rel).read_text(encoding="utf-8"))
+            text = self.sources[rel] if rel in self.sources else (repo_root() / rel).read_text(encoding="utf-8")
+            tree = ast.parse(text)
         except SyntaxError, UnicodeDecodeError, ValueError:
             return None
         self._loading.add(rel)
@@ -236,15 +320,12 @@ class Scanner:
         return mod
 
     def _prepare(self, mod: Module) -> None:
+        """Bind the module-level environment. A fixture is evaluated when a scanned function requests it
+        (``_fixture``), never here: its reads count in the half whose module requests it (Story 124.2)."""
         for stmt in mod.tree.body:
             if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 mod.funcs[stmt.name] = stmt
         self._bind_statements(mod.tree.body, mod.env, mod, record=False)
-        for name, func in list(mod.funcs.items()):
-            if _is_fixture(func):
-                value = self._call_function(func, mod, {})
-                if value is not None:
-                    mod.fixtures[name] = value
 
     def _local_module(self, mod: Module, name: str, level: int) -> Module | None:
         """A sibling test-support module (``from conftest import X``, ``from .helpers import X``)."""
@@ -256,15 +337,50 @@ class Scanner:
         for d in search:
             for candidate in (f"{leaf}.py", f"{leaf}/__init__.py"):
                 rel = "/".join([*d, candidate])
-                if rel in _tracked_set():
+                if self._exists(rel):
                     return self.module(rel)
         return None
 
     # -- statements -------------------------------------------------------
 
-    def _bind_statements(self, body: Sequence[ast.stmt], env: dict[str, object], mod: Module, *, record: bool) -> None:
+    def _bind_statements(self, body: Sequence[ast.stmt], env: dict[str, object], mod: Module, *, record: bool) -> bool:
+        """Bind ``body``; True when a branch the scan decided ends in a ``return`` or a ``raise``, so the statements
+        after it do not run for this binding (Story 124.2: ``if request.param == "flatfile": ... return``)."""
         for stmt in body:
-            self._statement(stmt, env, mod, record=record)
+            taken = self._decide(stmt.test, env, mod) if isinstance(stmt, ast.If) else None
+            if taken is None:
+                self._statement(stmt, env, mod, record=record)
+                continue
+            assert isinstance(stmt, ast.If)
+            self.visit(stmt.test, env, mod, stmt)
+            branch = stmt.body if taken else stmt.orelse
+            if self._bind_statements(branch, env, mod, record=record) or (
+                branch and isinstance(branch[-1], (ast.Return, ast.Raise))
+            ):
+                return True
+        return False
+
+    def _decide(self, test: ast.expr, env: Mapping[str, object], mod: Module) -> bool | None:
+        """The branch an ``if`` takes, when it compares a fixture param's value (``request.param``) with constants;
+        None for every other test, whose two branches the scan both follows."""
+        if not (isinstance(test, ast.Compare) and len(test.ops) == 1):
+            return None
+        op = test.ops[0]
+        if not isinstance(op, (ast.Eq, ast.NotEq, ast.In, ast.NotIn)):
+            return None
+        left, right = self.ev(test.left, env, mod), self.ev(test.comparators[0], env, mod)
+        if not (isinstance(left, _ParamValue) or isinstance(right, _ParamValue)):
+            return None
+        if isinstance(op, (ast.Eq, ast.NotEq)) and isinstance(left, str) and isinstance(right, str):
+            return (left == right) == isinstance(op, ast.Eq)
+        if (
+            isinstance(op, (ast.In, ast.NotIn))
+            and isinstance(left, str)
+            and isinstance(right, (list, tuple))
+            and all(isinstance(item, str) for item in right)
+        ):
+            return (left in right) == isinstance(op, ast.In)
+        return None
 
     def _statement(self, stmt: ast.stmt, env: dict[str, object], mod: Module, *, record: bool) -> None:
         if isinstance(stmt, ast.Import):
@@ -381,7 +497,11 @@ class Scanner:
                 continue
             if alias.name in other.env:
                 env[bound] = other.env[alias.name]
-            elif alias.name in other.fixtures:
+            elif (
+                alias.name in other.funcs
+                and _is_fixture(other.funcs[alias.name])
+                and self._fixture(other, alias.name) is not None
+            ):
                 env[bound] = other.fixtures[alias.name]
             elif alias.name in other.funcs:
                 env[bound] = (other, other.funcs[alias.name])
@@ -397,16 +517,126 @@ class Scanner:
         directory = list(mod.parts[:-1])
         while directory:
             rel = "/".join([*directory, "conftest.py"])
-            if rel != mod.rel and rel in _tracked_set():
+            if rel != mod.rel and self._exists(rel):
                 other = self.module(rel)
                 if other is not None:
                     chain.append(other)
             directory.pop()
         return chain
 
+    # -- fixtures ---------------------------------------------------------
+
+    def _fixture_def(self, mod: Module, name: str) -> Module | None:
+        """The module defining the fixture ``name`` that a function in ``mod`` receives: the nearest, as pytest
+        resolves it."""
+        for owner in self._fixture_chain(mod):
+            func = owner.funcs.get(name)
+            if func is not None and _is_fixture(func):
+                return owner
+        return None
+
+    def _fixture(self, owner: Module, name: str) -> object | None:
+        """The value of ``owner``'s fixture ``name``, evaluated when a scanned function first requests it.
+
+        Story 124.2: the fixture's body runs where it is requested, so its reads, and those of the fixtures it requests,
+        count in the half whose module requests it, over the params that half runs (``_selected_params``)."""
+        if name in owner.fixtures:
+            return owner.fixtures[name]
+        func = owner.funcs[name]
+        owner.fixtures[name] = None  # a fixture reached again while it is evaluated gets no value
+        self._function(func, dict(owner.env), owner)
+        value = None
+        for request in self._selected_params(func, owner.env, owner):
+            value = self._call_function(func, owner, request)
+            if value is not None:
+                break
+        owner.fixtures[name] = value
+        return value
+
+    def _fixture_params(
+        self, func: ast.FunctionDef | ast.AsyncFunctionDef, env: Mapping[str, object], mod: Module
+    ) -> list[tuple[object | None, bool]] | None:
+        """A parametrized fixture's params, each with whether its ``pytest.param(..., marks=...)`` names ``live_tree``;
+        None for a fixture without ``params=`` (the fixture-param twin of ``_parametrized``)."""
+        for dec in func.decorator_list:
+            if not isinstance(dec, ast.Call):
+                continue
+            for kw in dec.keywords:
+                if kw.arg != "params":
+                    continue
+                if not isinstance(kw.value, (ast.List, ast.Tuple)):
+                    return [(None, False)]  # params the scan cannot list: one param, its value unknown, unmarked
+                params: list[tuple[object | None, bool]] = []
+                for elt in kw.value.elts:
+                    if isinstance(elt, ast.Call) and _dotted_name(elt.func).split(".")[-1] == "param":
+                        value = self.ev(elt.args[0], env, mod) if elt.args else None
+                        marked = any(kw2.arg == "marks" and _names_live_tree(kw2.value) for kw2 in elt.keywords)
+                        params.append((value, marked))
+                    else:
+                        params.append((self.ev(elt, env, mod), False))
+                return params
+        return None
+
+    def _selected_params(
+        self, func: ast.FunctionDef | ast.AsyncFunctionDef, env: Mapping[str, object], mod: Module
+    ) -> list[dict[str, object]]:
+        """The ``request`` binding of each param this half runs a fixture with (``[{}]``: a function that is no
+        parametrized fixture). A split suite's package half skips a param marked ``live_tree``: pytest deselects it
+        under ``-m "not live_tree"``, so only the live-tree half runs it and only that half counts its reads."""
+        params = self._fixture_params(func, env, mod) if _is_fixture(func) else None
+        if params is None:
+            return [{}]
+        return [
+            {"request": _Request(_ParamValue(value) if isinstance(value, str) else None)}
+            for value, live in params
+            if not (live and self.package_half)
+        ]
+
+    def requests_a_live_param(self, rel: str) -> bool:
+        """Does a function in ``rel`` request, directly or through the fixtures it requests, or does an autouse fixture
+        above it carry, a fixture param marked ``live_tree``? pytest then runs that test, with that param, in the
+        live-tree half (Story 124.2)."""
+        mod = self.module(rel)
+        if mod is None:
+            return False
+        frontier: list[tuple[Module, str]] = [
+            (mod, name) for func in mod.funcs.values() if not _is_fixture(func) for name in self._param_names(func)
+        ]
+        frontier += [
+            (owner, name)
+            for owner in self._fixture_chain(mod)
+            for name, func in owner.funcs.items()
+            if _is_autouse(func)
+        ]
+        frontier += [(mod, name) for name in _used_fixtures(mod.tree)]
+        seen: set[tuple[str, str]] = set()
+        while frontier:
+            where, name = frontier.pop()
+            owner = self._fixture_def(where, name)
+            if owner is None or (owner.rel, name) in seen:
+                continue
+            seen.add((owner.rel, name))
+            func = owner.funcs[name]
+            if any(live for _, live in self._fixture_params(func, owner.env, owner) or []):
+                return True
+            frontier += [(owner, param) for param in self._param_names(func)]
+        return False
+
+    # -- functions --------------------------------------------------------
+
     def _function(self, func: ast.FunctionDef | ast.AsyncFunctionDef, env: dict[str, object], mod: Module) -> None:
         for dec in func.decorator_list:
             self.visit(dec, env, mod, func)
+        for request in self._selected_params(func, env, mod):
+            self._function_body(func, env, mod, request)
+
+    def _function_body(
+        self,
+        func: ast.FunctionDef | ast.AsyncFunctionDef,
+        env: dict[str, object],
+        mod: Module,
+        request: Mapping[str, object],
+    ) -> None:
         scope = dict(env)
         params = self._param_names(func)
         bound: dict[str, list[object]] = {}
@@ -414,15 +644,16 @@ class Scanner:
             scope.pop(name, None)
             if name in ("self", "cls"):
                 continue
-            for owner in self._fixture_chain(mod):
-                if name in owner.fixtures:
-                    bound[name] = [owner.fixtures[name]]
-                    break
+            owner = self._fixture_def(mod, name)
+            if owner is not None:
+                value = self._fixture(owner, name)
+                if value is not None:
+                    bound[name] = [value]
         for name, values in self._parametrized(func, env, mod).items():
             if name in params:
                 bound[name] = values
         names = list(bound)
-        combos = [{}]
+        combos: list[dict[str, object]] = [dict(request)]
         for name in names:
             combos = [{**c, name: v} for c in combos for v in bound[name][:12]][:48]
         for combo in combos:
@@ -459,14 +690,19 @@ class Scanner:
         mod: Module,
         bound: Mapping[str, object],
     ) -> object | None:
-        """The path or string a helper (or fixture) returns for these argument values, when it is one."""
+        """The path or string a helper (or fixture) returns for these argument values, when it is one.
+
+        A result the depth limit cut short is not cached (Story 124.2): the same call made from a shallower frame is
+        evaluated again, so which caller reaches a helper first does not decide what the scan finds."""
         key = (mod.rel, func.lineno, tuple(sorted((k, repr(v)) for k, v in bound.items())))
         if key in self._returns:
             return self._returns[key]
         if mod._depth > 4:
+            self._cut = True
             return None
         self._returns[key] = None
         mod._depth += 1
+        outer_cut, self._cut = self._cut, False
         try:
             scope = dict(mod.env)
             for name in self._param_names(func):
@@ -480,9 +716,13 @@ class Scanner:
                     if value is not None:
                         result = value
                         break
-            self._returns[key] = result
+            if self._cut:
+                del self._returns[key]
+            else:
+                self._returns[key] = result
             return result
         finally:
+            self._cut = self._cut or outer_cut
             mod._depth -= 1
 
     def _resolve_function(
@@ -638,6 +878,8 @@ class Scanner:
 
     def _attribute(self, node: ast.Attribute, env: Mapping[str, object], mod: Module) -> object | None:
         base = self.ev(node.value, env, mod)
+        if isinstance(base, _Request):
+            return base.param if node.attr == "param" else None
         if isinstance(base, V):
             if node.attr == "parent":
                 if base.parts:
@@ -870,6 +1112,14 @@ class Scanner:
         mod = self.module(rel)
         if mod is None:
             return
+        for owner in self._fixture_chain(mod):  # an autouse fixture runs for every test under it, requested or not
+            for name, func in list(owner.funcs.items()):
+                if _is_autouse(func):
+                    self._fixture(owner, name)
+        for name in _used_fixtures(mod.tree):
+            owner = self._fixture_def(mod, name)
+            if owner is not None:
+                self._fixture(owner, name)
         for stmt in mod.tree.body:
             self._scan_top(stmt, mod)
         self.scan_strings(mod)
@@ -877,6 +1127,8 @@ class Scanner:
     def _scan_top(self, stmt: ast.stmt, mod: Module) -> None:
         env = dict(mod.env)
         if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            if mod.parts[-1] == "conftest.py" and not stmt.name.startswith("pytest_"):
+                return  # Story 124.2: a conftest's fixture counts where a module requests it, its helper where called
             self._function(stmt, env, mod)
         elif isinstance(stmt, ast.ClassDef):
             class_env = dict(env)
@@ -939,6 +1191,11 @@ def workflow_document(workflow_text: str) -> dict:
     return yaml.safe_load(workflow_text)
 
 
+# Story 124.2: the ``site`` environment holds the docs-site install (``npm ci`` in docs-site/) a job runs before its
+# suite -- herald's live-tree half, whose built-site tests build Astro -- and no suite, so it names no job's package.
+INSTALL_ENVIRONMENTS = frozenset({"site"})
+
+
 def load_jobs(workflow_text: str) -> list[Job]:
     jobs: list[Job] = []
     for key, body in workflow_document(workflow_text)["jobs"].items():
@@ -952,8 +1209,8 @@ def load_jobs(workflow_text: str) -> list[Job]:
                 tasks.append((m.group(1), m.group(2)))
         if not tasks:
             continue  # the coverage gate jobs run the gate script alone (Story 117.4); they collect no test
-        envs = {env for env, _ in tasks}
-        assert len(envs) == 1, f"{key} runs tasks in {envs}; expected exactly one pixi environment"
+        envs = {env for env, _ in tasks if env not in INSTALL_ENVIRONMENTS}
+        assert len(envs) == 1, f"{key} runs tasks in {envs}; expected exactly one suite pixi environment"
         jobs.append(Job(gate.group(1), key, f"{PACKAGES}/{next(iter(envs))}", tuple(tasks)))
     return jobs
 
@@ -1004,7 +1261,7 @@ def task_paths(pixi: Mapping, job: Job) -> list[str]:
 def _live_tree_marked(rel: str) -> bool:
     """Does the module carry ``pytestmark = pytest.mark.live_tree`` (alone or in a list) at module level?"""
     try:
-        tree = ast.parse((REPO_ROOT / rel).read_text(encoding="utf-8"))
+        tree = ast.parse((repo_root() / rel).read_text(encoding="utf-8"))
     except OSError, SyntaxError:
         return False
     for node in tree.body:
@@ -1012,13 +1269,7 @@ def _live_tree_marked(rel: str) -> bool:
             continue
         if not any(isinstance(target, ast.Name) and target.id == "pytestmark" for target in node.targets):
             continue
-        return any(
-            isinstance(sub, ast.Attribute)
-            and sub.attr == "live_tree"
-            and isinstance(sub.value, ast.Attribute)
-            and sub.value.attr == "mark"
-            for sub in ast.walk(node.value)
-        )
+        return _names_live_tree(node.value)
     return False
 
 
@@ -1043,17 +1294,98 @@ def _within(path: str, package: str) -> bool:
     return path == package or path.startswith(package + "/")
 
 
+def _collected(rel: str) -> bool:
+    """pytest collects test modules and loads ``conftest.py``; any other module under ``tests/`` is a helper they import."""
+    name = rel.rsplit("/", 1)[-1]
+    return name == "conftest.py" or name.startswith("test_") or name.endswith("_test.py")
+
+
+@functools.cache
+def _imported_names(rel: str) -> frozenset[str]:
+    """Every module name segment a file's imports carry (``import a.b``, ``from a import b``, ``from . import c``)."""
+    try:
+        tree = ast.parse((repo_root() / rel).read_text(encoding="utf-8"))
+    except OSError, SyntaxError, UnicodeDecodeError, ValueError:
+        return frozenset()
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                names.update(alias.name.split("."))
+        elif isinstance(node, ast.ImportFrom):
+            names.update((node.module or "").split("."))
+            names.update(alias.name for alias in node.names)
+    return frozenset(names)
+
+
+def half_modules(job: Job, files: Sequence[str], *, live_job: bool) -> list[str]:
+    """The modules one half of a split suite runs (Story 117.4; Story 124.2 for helpers and outside modules).
+
+    Inside the package, a test module, or a helper module (neither a test module nor a ``conftest.py``) that
+    carries the marker itself, runs in the half its ``live_tree`` marker names; an unmarked helper runs where a
+    module of that half imports it, directly or through another helper, and one nothing collected imports stays in
+    the package half. A module outside the package is on the half's own pixi command line (the atlas quartet,
+    ``scripts/tests``, CFE's parity test), which collects it whole, so the half that names it scans it.
+
+    A ``conftest.py`` is loaded by both halves. Its module-level statements count in every half that has a module
+    under its directory: each scanned module loads the conftests above it (``Scanner._fixture_chain``). A fixture
+    runs where it is requested (Story 124.2): its body, the fixtures it requests and the helpers it calls count in
+    the half whose module requests it (an autouse fixture: every module under it), and a conftest helper a module
+    calls counts in that module's half. The package half of a split suite runs a fixture without its params marked
+    ``live_tree``, which pytest deselects under ``-m "not live_tree"``, and where the fixture compares
+    ``request.param`` with a constant the scan follows the branch that param takes. The live-tree half runs every
+    param, and ``derive_reads`` also scans there a package-half module whose test requests such a param
+    (``Scanner.requests_a_live_param``), since pytest runs that test with that param in the live-tree half. So a
+    read only a marked param reaches counts in the live-tree half only (scribe's ``tests/unit/conftest.py``, its
+    ``graph_store_factory`` postgres param). The conftest's own whole-file scan (its hooks, its module-level
+    statements, its string literals) is placed here like a module's. ``pytest`` ignores a conftest's ``pytestmark``,
+    so here the line is a declaration only: it sends the whole-file scan to the live-tree half. Core's
+    ``tests/meta/conftest.py`` (Story 117.1) and steward's ``tests/integration/conftest.py`` (Story 117.4) carry
+    it. An unmarked conftest's whole-file scan stays in the package half, so an outside read in its hooks or its
+    literals always reds the package-half check, and a hook in a marked conftest that reads outside the package is
+    credited to the live half only."""
+    inside = [rel for rel in files if _within(rel, job.package)]
+    chosen = [rel for rel in files if not _within(rel, job.package)]
+    by_marker = [rel for rel in inside if _collected(rel) or _live_tree_marked(rel)]
+    chosen += [rel for rel in by_marker if _live_tree_marked(rel) == live_job]
+    helpers = {rel: rel.rsplit("/", 1)[-1].removesuffix(".py") for rel in inside if rel not in by_marker}
+    importers = [rel for rel in inside if _collected(rel)]
+    imported_anywhere = {stem for rel in importers for stem in helpers.values() if stem in _imported_names(rel)}
+    reached: set[str] = set()
+    frontier = list(chosen)
+    while frontier:
+        names = _imported_names(frontier.pop())
+        for helper, stem in helpers.items():
+            if helper not in reached and stem in names:
+                reached.add(helper)
+                frontier.append(helper)
+    if not live_job:
+        reached |= {helper for helper, stem in helpers.items() if stem not in imported_anywhere}
+    return sorted({*chosen, *reached})
+
+
 def derive_reads(job: Job, pixi: Mapping) -> JobReads:
     """What the job's tests (and its pixi task lines) read: the static derivation."""
     paths = task_paths(pixi, job)
-    scanner = Scanner(job.package)
-    live_job = job.output.endswith("_live")
-    split = live_job or f"{job.output}_live" in OUTPUTS
-    for rel in job_test_files(job, paths):
-        if rel == THIS_FILE_REL:  # its own literals are declarations and mutations, not reads
+    live_job = job.output in LIVE_OUTPUTS
+    split = job.output in LIVE_OUTPUTS | PACKAGE_OUTPUTS
+    scanner = Scanner(job.package, package_half=split and not live_job)
+    files = job_test_files(job, paths)
+    modules = half_modules(job, files, live_job=live_job) if split else files
+    if split and live_job:
+        # Story 124.2: a package-half test that requests a fixture param marked live_tree runs, with that param, here
+        modules += [
+            rel
+            for rel in half_modules(job, files, live_job=False)
+            if rel not in modules
+            and _within(rel, job.package)
+            and _collected(rel)
+            and not rel.endswith("/conftest.py")
+            and scanner.requests_a_live_param(rel)
+        ]
+    for rel in modules:
+        if rel == this_file_rel():  # its own literals are declarations and mutations, not reads
             continue
-        if split and _live_tree_marked(rel) != live_job:
-            continue  # Story 117.4: each half scans the modules its task collects
         scanner.scan(rel)
     reads: dict[tuple[str, ...], set[str]] = {k: set(v) for k, v in scanner.reads.items()}
     for path in paths:
@@ -1067,12 +1399,13 @@ STEWARD_OWN = "steward-live-test (this meta-test reads every suite's tests)"
 
 @functools.cache
 def real_derivation() -> dict[str, JobReads]:
-    pixi = tomllib.loads(PIXI_TOML.read_text(encoding="utf-8"))
-    jobs = load_jobs(WORKFLOW.read_text(encoding="utf-8"))
+    pixi = tomllib.loads(pixi_toml_file().read_text(encoding="utf-8"))
+    jobs = load_jobs(workflow_file().read_text(encoding="utf-8"))
     derived = {job.output: derive_reads(job, pixi) for job in jobs}
-    # Its own reads: this meta-test reads every suite's tests, so steward's list carries them -- a
-    # station PR that adds an outside read runs steward-test and is caught in that PR.
-    own = derived["steward_live"].reads  # this meta-test is a live-tree module
+    # Its own reads: this meta-test reads every suite's tests, so steward's live-tree list carries them -- a
+    # station PR that adds an outside read runs steward-live-test, which runs this module (marked live_tree), and is
+    # caught in that PR.
+    own = derived["steward_live"].reads  # this meta-test is a live-tree module (its pytestmark)
     own.setdefault((*PACKAGES.split("/"), "pyforge-*", "tests"), set()).add(STEWARD_OWN)
     for job in jobs:
         for path in task_paths(pixi, job):
@@ -1134,10 +1467,6 @@ _H: dict[str, tuple[tuple[str, ...], str]] = {
     "DOCTOR_BOARD": (
         (*_PLAN, "docs/dreams/**", "docs/governance/**", "docs/dashboard/**"),
         "the board gatherers read every spec, PRD and dream and the dashboard generator under the root",
-    ),
-    "DOCTOR_CALLER_REACH": (
-        (*_PLAN, ".claude/skills/**", "docs/dreams/**"),
-        "gather_caller_reach walks the planning artifacts and skills for capability callers",
     ),
     "DOCS_DIATAXIS": (
         ("docs/explanation/**", "docs/how-to/**"),
@@ -1220,6 +1549,21 @@ _H: dict[str, tuple[tuple[str, ...], str]] = {
         ("pixi.toml", "_bmad/**", ".claude/skills/**", "recipes/bmad-suite/**", ".pre-commit-config.yaml"),
         "the session start gatherers read the bmad estate and hooks from the root",
     ),
+    "LEDGER_AND_ROSTER": (
+        (
+            "docs/foundry/capability-ledger.yaml",
+            "docs/governance/**",
+            "src/platform/config/flags.json",
+            "src/platform/config/flag-overlays.json",
+            *_PLAN,
+        ),
+        "the ledger detectors and the writer lock read the capability ledger, every live Spec, the sprint ledgers, "
+        "the roster and the flag tree (the root of record) from the root",
+    ),
+    "LIVE_SPECS": (
+        ("_bmad-output/projects/*/planning-artifacts/specs/**", "docs/governance/**"),
+        "the check globs every live Spec folder (station Specs and the Guild Specs under docs/governance/) at the root",
+    ),
     "CI_STATUS_CONSUMERS": (
         ("pixi.toml", "src/shared/packages/pyforge-steward/tests/**"),
         "Story 103.1 AC6: consumer subprocess proofs run pixi from the repo root; the checked-in master fixture lives under steward tests",
@@ -1227,7 +1571,14 @@ _H: dict[str, tuple[tuple[str, ...], str]] = {
 }
 
 ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
-    "atlas": {
+    "core": {
+        "src/shared/packages/pyforge-core/tests/unit/test_league_measure_reads_the_tracked_catalog.py": (
+            ("_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/measure-catalog.md",),
+            "marshal Story 117.1 (spec-pyforge-core:CAP-14): validate_measure_cite reads steward's tracked measure "
+            "catalog from the root it is handed",
+        ),
+    },
+    "atlas_live": {
         "scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py": _H["ATLAS_PACKAGING_DOCS"],
         "src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_gist_markdown.py": _H[
             "ATLAS_GIST_RECIPES"
@@ -1242,33 +1593,46 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
         "src/shared/packages/pyforge-doctor/tests/meta/test_skf_domain_skill.py": _H["SKF_SKILL_TREE"],
         "src/shared/packages/pyforge-doctor/tests/meta/test_station_persona.py": _H["GIT_PLATFORM_DIFF"],
         "src/shared/packages/pyforge-doctor/tests/unit/test_check_speed_budget.py": _H["DOCTOR_WHOLE_CHECK"],
-        "src/shared/packages/pyforge-doctor/tests/unit/test_checks_env_hygiene.py": _H["PYTHON_SOURCES"],
-        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_bmad_method.py": _H["BMAD_SUITE_PINS"],
-        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_board.py": _H["DOCTOR_BOARD"],
-        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_board_chain_layers_audit.py": _H["DOCTOR_BOARD"],
-        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_capability_effect_caller_reach.py": _H[
-            "DOCTOR_CALLER_REACH"
+        "src/shared/packages/pyforge-doctor/tests/unit/test_live_checks_env_hygiene.py": _H["PYTHON_SOURCES"],
+        # Doctor Story 57.3 (spec-pyforge-doctor:CAP-94, spec-pyforge-doctor:CAP-95,
+        # spec-pyforge-doctor:CAP-100): frozen-path-changed, capability-ledger and
+        # writer-lock gather this checkout.
+        "src/shared/packages/pyforge-doctor/tests/unit/test_live_cutover_ledger.py": _H["LEDGER_AND_ROSTER"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_bmad_method.py": _H["BMAD_SUITE_PINS"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_board.py": _H["DOCTOR_BOARD"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_board_chain_layers_audit.py": _H[
+            "DOCTOR_BOARD"
         ],
-        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_deferred_work.py": _H["DOCTOR_CHAIN"],
-        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_dreams_hygiene.py": _H["DOCTOR_CHAIN"],
-        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_due_for_verification.py": _H["DOCTOR_CHAIN"],
-        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_source_spec_resolution.py": _H[
+        "src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_chain_deferred_work.py": _H["DOCTOR_CHAIN"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_chain_dreams_hygiene.py": _H["DOCTOR_CHAIN"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_chain_due_for_verification.py": _H[
             "DOCTOR_CHAIN"
         ],
-        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_docs_shelf.py": _H["DOCS_DIATAXIS"],
-        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_factory.py": _H["DOCTOR_FACTORY"],
-        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_general_docs_consistency.py": _H["DOCS_ALL"],
-        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_hygiene.py": _H["DOCTOR_PLANNING_AND_DOCS"],
-        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_live_proof_surfaces.py": _H["PLANNING"],
-        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_one_chain.py": _H["DOCTOR_CHAIN"],
-        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_one_chain_fold_complete.py": _H["DOCTOR_CHAIN"],
-        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_one_chain_fr_arrows.py": _H["DOCTOR_CHAIN"],
-        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_consistency.py": _H["DOCTOR_CHAIN"],
-        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_open_questions.py": _H["DOCTOR_CHAIN"],
-        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_promissory.py": _H["DOCTOR_CHAIN"],
-        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_status_comment.py": _H["DOCTOR_CHAIN"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_chain_source_spec_resolution.py": _H[
+            "DOCTOR_CHAIN"
+        ],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_docs_shelf.py": _H["DOCS_DIATAXIS"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_factory.py": _H["DOCTOR_FACTORY"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_general_docs_consistency.py": _H["DOCS_ALL"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_hygiene.py": _H["DOCTOR_PLANNING_AND_DOCS"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_live_proof_surfaces.py": _H["PLANNING"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_one_chain.py": _H["DOCTOR_CHAIN"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_one_chain_fold_complete.py": _H[
+            "DOCTOR_CHAIN"
+        ],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_one_chain_fr_arrows.py": _H["DOCTOR_CHAIN"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_status_body_consistency.py": _H[
+            "DOCTOR_CHAIN"
+        ],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_status_body_open_questions.py": _H[
+            "DOCTOR_CHAIN"
+        ],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_status_body_promissory.py": _H["DOCTOR_CHAIN"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_status_body_status_comment.py": _H[
+            "DOCTOR_CHAIN"
+        ],
     },
-    "herald": {
+    "herald_live": {
         "src/shared/packages/pyforge-herald/tests/meta/test_deck_working_set.py": _H["PRESENTATIONS"],
         "src/shared/packages/pyforge-herald/tests/meta/test_docs_site_imports_tracked.py": _H["DOCS_SITE"],
         "src/shared/packages/pyforge-herald/tests/meta/test_one_generator.py": (
@@ -1281,7 +1645,7 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
         "src/shared/packages/pyforge-herald/tests/meta/test_twins_zero_origin.py": _H["PRESENTATIONS"],
         "src/shared/packages/pyforge-herald/tests/unit/test_pptx_native.py": _H["PRESENTATIONS"],
     },
-    "marshal": {
+    "marshal_live": {
         "src/shared/packages/pyforge-marshal/tests/integration/test_local_recipes_empty_plan.py": _H[
             "ADOPT_MANIFEST_TREE"
         ],
@@ -1295,27 +1659,58 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
         "src/shared/packages/pyforge-marshal/tests/meta/test_skill_projection_manifest_untracked.py": _H[
             "GITIGNORE_SKILLS"
         ],
+        "src/shared/packages/pyforge-marshal/tests/meta/test_spec_names_live_paths.py": (
+            (
+                "_bmad-output/PROJECTS.md",
+                "_bmad-output/policy-defaults.toml",
+                "_bmad-output/projects/**",
+                ".claude/**",
+                ".github/copilot-instructions.md",
+                "_bmad/**",
+                "archive/**",
+                "docs/**",
+                "scripts/**",
+                "src/**",
+            ),
+            "marshal Story 114.2 (spec-pyforge-marshal:CAP-229): every path, file name and `*_check` name a live "
+            "capability of marshal's SPEC.md carries must resolve in `git ls-files` at the root; these are the trees "
+            "those names resolve in",
+        ),
         "src/shared/packages/pyforge-marshal/tests/meta/test_station_persona.py": _H["GIT_PLATFORM_DIFF"],
         "src/shared/packages/pyforge-marshal/tests/meta/test_tea_architecture_drift.py": _H["TEA_GENERATOR"],
         "src/shared/packages/pyforge-marshal/tests/meta/test_tea_architecture_generator.py": _H["TEA_GENERATOR"],
         "src/shared/packages/pyforge-marshal/tests/meta/test_wire_store_ignored_not_the_seed_namespace.py": _H[
             "GITIGNORE_STATE"
         ],
-        "src/shared/packages/pyforge-marshal/tests/unit/test_chain_regen.py": _H["MARSHAL_CODE_LINKAGE"],
+        "src/shared/packages/pyforge-marshal/tests/unit/test_chain_regen_live_tree.py": _H["MARSHAL_CODE_LINKAGE"],
+        "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_cfe_commit_live_tree.py": (
+            (".claude/skills/conda-forge-expert/SKILL.md", "scripts/commit_msg_hook.py"),
+            "marshal Story 116.2: the CFE commit path reads conda-forge-expert's SKILL.md and loads the commit-msg hook "
+            "from the root",
+        ),
         "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_spec_frontmatter.py": _H[
             "PLANNING_SPECS_TRACKED"
         ],
-        "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification.py": _H["HARNESS_PROFILES"],
-        "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_fix.py": _H["HARNESS_PROFILES"],
+        "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification_live_tree.py": (
+            (*_H["HARNESS_PROFILES"][0], "scripts/commit_msg_hook.py", "src/platform/config/flags.json"),
+            "marshal Story 116.2: load_profiles overlays the root's harness profiles, and the verification path loads "
+            "the commit-msg hook and reads the platform flag tree",
+        ),
+        "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_fix_live_tree.py": _H["HARNESS_PROFILES"],
     },
-    "mason": {
+    "mason_live": {
         "src/shared/packages/pyforge-mason/tests/meta/test_persona_consults_cfe.py": _H["GIT_PLATFORM_DIFF"],
         "src/shared/packages/pyforge-mason/tests/meta/test_portal_last_diagnose.py": _H["GIT_PLATFORM_DIFF"],
         "src/shared/packages/pyforge-mason/tests/meta/test_skf_mason_skill.py": _H["SKF_SKILL_TREE"],
     },
-    "scribe": {
+    "scribe_live": {
         "src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py": _H["GIT_PLATFORM_DIFF"],
         "src/shared/packages/pyforge-scribe/tests/meta/test_skf_skill_ownership.py": _H["GIT_PLATFORM_DIFF"],
+        "src/shared/packages/pyforge-scribe/tests/meta/test_spec_not_behind_memlog.py": (
+            (*_H["LIVE_SPECS"][0], "scripts/fleet_scan.py"),
+            "scribe Story 32.3 (spec-pyforge-scribe:CAP-35): git log and git show at the root over every live Spec "
+            "folder's SPEC.md and .memlog.md, the entries classified by scripts/fleet_scan.py",
+        ),
         "src/shared/packages/pyforge-scribe/tests/meta/test_station_persona.py": _H["GIT_PLATFORM_DIFF"],
     },
     "steward_live": {
@@ -1325,10 +1720,33 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
             "(default src/platform/deploy/nic/my-nebari-local.yaml) and the untracked .env under it",
         ),
         "src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py": _H["ADOPTION_PIPELINE"],
+        # Story 122.3 (spec-pyforge-steward:CAP-179): steward's SPEC.md, oracle-map.md and contract.md,
+        # CHAIN-STANDARD.md and every live Spec, globbed at the root.
+        "src/shared/packages/pyforge-steward/tests/meta/test_cap_citations.py": _H["LIVE_SPECS"],
+        # Story 121.7 (fcl:CAP-1): cutover_ledger_check.check and live_caps over this checkout.
+        "src/shared/packages/pyforge-steward/tests/meta/test_capability_ledger_live.py": _H["LEDGER_AND_ROSTER"],
         "src/shared/packages/pyforge-steward/tests/meta/test_first_portal_slice_provision_list.py": _H[
             "GIT_PLATFORM_DIFF"
         ],
         "src/shared/packages/pyforge-steward/tests/meta/test_five_tier_check.py": _H["FIVE_TIER"],
+        "src/shared/packages/pyforge-steward/tests/meta/test_oracle_map.py": (
+            (
+                "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/**",
+                ".claude/skills/**",
+                ".github/workflows/*.yml",
+                "docs/foundry/**",
+                "recipes/bmad-eval-quality/recipe.yaml",
+                "recipes/bmad-suite/**",
+                "recipes/nebari-infrastructure-core/recipe.yaml",
+                "recipes/silo/recipe.yaml",
+                "scripts/lint_types.py",
+                "scripts/pre_push_preflight.sh",
+                "src/platform/**",
+            ),
+            "Story 123.1 (spec-pyforge-steward:CAP-181): `git ls-files` at the root resolves every source module, test "
+            "path and glob oracle-map.md names, steward's and the CFE, workflow, recipe, script and platform tests that "
+            "prove other Specs' capabilities",
+        ),
         "src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py": _H["SKF_SKILL_TREE"],
         "src/shared/packages/pyforge-steward/tests/meta/test_skf_steward_skill.py": _H["GIT_PLATFORM_DIFF"],
         "src/shared/packages/pyforge-steward/tests/meta/test_station_persona.py": _H["GIT_PLATFORM_DIFF"],
@@ -1361,7 +1779,13 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
             "Story 102.2: pages_build_stamp.py is invoked as a subprocess from repo root",
         ),
     },
-    "warden": {
+    "warden_live": {
+        # warden Story 26.3 (spec-pyforge-warden:CAP-28): `git ls-files` at the root, then every tracked text file
+        # under src/ and scripts/ outside the package is scanned for its pyforge.warden imports.
+        "src/shared/packages/pyforge-warden/tests/meta/test_contract_surface.py": (
+            ("src/**", "scripts/**"),
+            "the import-surface scan lists src/ and scripts/ from the root and reads every tracked text file there",
+        ),
         "src/shared/packages/pyforge-warden/tests/meta/test_portal_audit_start_get.py": _H["GIT_PLATFORM_DIFF"],
         "src/shared/packages/pyforge-warden/tests/meta/test_skf_domain_skill.py": _H["SKF_SKILL_TREE"],
         "src/shared/packages/pyforge-warden/tests/meta/test_station_persona.py": _H["GIT_PLATFORM_DIFF"],
@@ -1426,7 +1850,7 @@ def job_reads_with_handoffs(output: str) -> dict[tuple[str, ...], set[str]]:
     """Derived reads plus the declared root-handoff globs, minus the job's own package."""
     derivation = real_derivation()[output]
     reads = {k: set(v) for k, v in derivation.reads.items()}
-    package = next(j.package for j in load_jobs(WORKFLOW.read_text(encoding="utf-8")) if j.output == output)
+    package = next(j.package for j in load_jobs(workflow_file().read_text(encoding="utf-8")) if j.output == output)
     for file, (globs, _reason) in ROOT_HANDOFF_INPUTS.get(output, {}).items():
         for glob in globs:
             parts = glob_parts(glob)
@@ -1490,29 +1914,35 @@ def without_trigger(workflow_text: str, glob: str) -> str:
 # Does the workflow fire? A fixture repository per representative path
 # ---------------------------------------------------------------------------
 
-# Story 117.4: a station with a live-tree half has two jobs -- `<s>` (the package half) and `<s>_live` (the modules
-# marked pytest.mark.live_tree); the gate job runs no pixi task and is not a job here.
-OUTPUTS = (
-    "core",
-    "testing_kit",
-    "atlas",
-    "doctor",
-    "doctor_live",
-    "herald",
-    "marshal",
-    "mason",
-    "scribe",
-    "steward",
-    "steward_live",
-    "warden",
-)
-STATIONS = tuple(o for o in OUTPUTS[2:] if not o.endswith("_live"))
-LIVE_SPLIT = tuple(o[: -len("_live")] for o in OUTPUTS if o.endswith("_live"))
+# Story 117.4: a split suite has two jobs -- its package half and its live-tree half (the modules marked
+# pytest.mark.live_tree); the gate job runs no pixi task and is not a job here. Story 124.2 split every suite: a
+# station's halves are `<s>` and `<s>_live`; pyforge-core's live-tree half keeps the `core` output every station's
+# change fires (spec-pyforge-core:CAP-8, as amended for marshal Story 117.1) and its package half is `core_package`;
+# the kit's are `testing_kit` and `testing_kit_live` (the kit's lane guard pins `testing_kit`).
+# suite -> (package-half output, live-tree-half output)
+SUITES: dict[str, tuple[str, str]] = {
+    "core": ("core_package", "core"),
+    "testing_kit": ("testing_kit", "testing_kit_live"),
+    **{s: (s, f"{s}_live") for s in ("atlas", "doctor", "herald", "marshal", "mason", "scribe", "steward", "warden")},
+}
+PACKAGE_OUTPUTS = frozenset(package for package, _ in SUITES.values())
+LIVE_OUTPUTS = frozenset(live for _, live in SUITES.values())
+OUTPUTS = tuple(output for pair in SUITES.values() for output in pair)
+STATIONS = tuple(s for s in SUITES if s not in ("core", "testing_kit"))
+LIVE_SPLIT = tuple(SUITES)  # Story 124.2: every suite
+# The outputs no `<output>_paths` array gates: core's package half (the shared surface) and the kit's package half
+# (the kit's fixed rule, pinned by its lane guard).
+UNARRAYED = frozenset({"core_package", "testing_kit"})
 
 
 def live_output(station: str) -> str:
-    """The job that carries a station's outside reads: its live half where it has one, else the station job."""
-    return f"{station}_live" if station in LIVE_SPLIT else station
+    """The job that carries a suite's outside reads: its live-tree half."""
+    return SUITES[station][1]
+
+
+def package_output(station: str) -> str:
+    """The job that runs a suite's package half."""
+    return SUITES[station][0]
 
 
 _WORKERS = 8
@@ -1667,21 +2097,25 @@ def derived_handoffs() -> dict[str, set[str]]:
 
 @pytest.fixture(scope="module")
 def workflow_text() -> str:
-    return WORKFLOW.read_text(encoding="utf-8")
+    return workflow_file().read_text(encoding="utf-8")
 
 
-def test_the_ten_jobs_are_read_from_the_workflow_not_listed(workflow_text: str) -> None:
+def test_the_suite_jobs_are_read_from_the_workflow_not_listed(workflow_text: str) -> None:
     jobs = load_jobs(workflow_text)
     assert sorted(j.output for j in jobs) == sorted(OUTPUTS)
-    pixi = tomllib.loads(PIXI_TOML.read_text(encoding="utf-8"))
+    pixi = tomllib.loads(pixi_toml_file().read_text(encoding="utf-8"))
     by_output = {j.output: j for j in jobs}
-    assert any(p.endswith("test_openteams_handoffs.py") for p in task_paths(pixi, by_output["atlas"]))
-    assert any(p.endswith("test_cli_tool_parity.py") for p in task_paths(pixi, by_output["mason"]))
-    assert "scripts/tests" in task_paths(pixi, by_output["atlas"])
+    # Story 124.2: the atlas quartet, scripts/tests and CFE's parity test read outside their packages, so their
+    # tasks are the live-tree halves'.
+    assert any(p.endswith("test_openteams_handoffs.py") for p in task_paths(pixi, by_output["atlas_live"]))
+    assert any(p.endswith("test_cli_tool_parity.py") for p in task_paths(pixi, by_output["mason_live"]))
+    assert "scripts/tests" in task_paths(pixi, by_output["atlas_live"])
+    for station in SUITES:
+        assert by_output[package_output(station)].package == by_output[live_output(station)].package
 
 
-def test_every_job_but_the_kit_has_a_path_array(workflow_text: str) -> None:
-    assert sorted(workflow_arrays(workflow_text)) == sorted(set(OUTPUTS) - {"testing_kit"})
+def test_every_job_but_the_fixed_rules_has_a_path_array(workflow_text: str) -> None:
+    assert sorted(workflow_arrays(workflow_text)) == sorted(set(OUTPUTS) - UNARRAYED)
     for output, entries in workflow_arrays(workflow_text).items():
         assert entries, f"{output}_paths is empty"
         assert len(entries) == len(set(entries)), f"{output}_paths repeats an entry"
@@ -1708,28 +2142,28 @@ DERIVED_ROWS = {
         "src/shared/packages/django-herald/pyproject.toml",
         "src/shared/packages/django-steward",
     ],
-    "herald": ["src/shared/packages/django-herald", "src/shared/packages/pyforge-steward/src"],
-    "atlas": ["src/platform/config/flags.json", "src/shared/packages/pyforge-scribe/src"],
+    "herald_live": ["src/shared/packages/django-herald", "src/shared/packages/pyforge-steward/src"],
+    "atlas_live": ["src/platform/config/flags.json", "src/shared/packages/pyforge-scribe/src"],
     "doctor_live": ["scripts/fleet_scan.py", "src/shared/packages/django-pyforge/src"],
-    "marshal": ["scripts/fleet_picture.py"],
-    "mason": ["scripts/cfe_rebuild_guard_check.py"],
-    "scribe": ["src/platform/db/changelog/changes"],
-    "warden": ["src/shared/packages/django-warden"],
-    "testing_kit": ["src/platform/config/flags.json"],
+    "marshal_live": ["scripts/fleet_picture.py"],
+    "mason_live": ["scripts/cfe_rebuild_guard_check.py"],
+    "scribe_live": ["src/platform/db/changelog/changes"],
+    "warden_live": ["src/shared/packages/django-warden"],
+    "testing_kit_live": ["src/platform/config/flags.json"],
 }
 PLANNING_ROWS = {
     "doctor_live": [
         "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
         "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
     ],
-    "marshal": [
+    "marshal_live": [
         "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml",
         ".claude/memory/MEMORY.md",
     ],
-    "herald": [
+    "herald_live": [
         "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-regenerate-not-fold/case-list.md"
     ],
-    "atlas": ["recipes"],
+    "atlas_live": ["recipes"],
 }
 
 
@@ -1761,25 +2195,74 @@ def test_the_steward_job_reads_every_suites_tests() -> None:
 
 @pytest.mark.parametrize("station", LIVE_SPLIT)
 def test_the_package_half_reads_nothing_outside_its_package(station: str) -> None:
-    """Story 117.4 AC2: every module with an outside read is marked live_tree, so the package job's derived reads
-    (inside-package reads are dropped by the scanner) are empty and the job fires on the package and the shared
-    surface alone; its handoffs are empty too."""
-    derived = real_derivation()[station]
+    """Story 117.4 AC2 (every suite since Story 124.2): every module with an outside read is marked live_tree, so the
+    package job's derived reads (inside-package reads are dropped by the scanner) are empty and the job fires on the
+    package and the shared surface alone; its handoffs are empty too."""
+    output = package_output(station)
+    derived = real_derivation()[output]
     assert derived.reads == {}, sorted("/".join(k) for k in derived.reads)
     assert derived.handoffs == set()
-    assert station not in ROOT_HANDOFF_INPUTS
+    assert output not in ROOT_HANDOFF_INPUTS
+
+
+# Story 124.2 (integrator ruling 2026-11-12): a fixture param marked live_tree runs in the live-tree half only. A planted
+# package (never on disk; ``Scanner(sources=...)``) whose conftest fixture reads one tracked path under its unmarked
+# param and another under its marked param, in the shape of scribe's ``graph_store_factory``.
+_PLANTED_PACKAGE = f"{PACKAGES}/pyforge-planted"
+_PLANTED_TEST = f"{_PLANTED_PACKAGE}/tests/unit/test_store.py"
+_PLANTED_SOURCES = {
+    f"{_PLANTED_PACKAGE}/tests/unit/conftest.py": (
+        "from pathlib import Path\n"
+        "import pytest\n"
+        "ROOT = Path(__file__).resolve().parents[6]\n"
+        "def _changesets():\n"
+        '    return sorted((ROOT / "src" / "platform" / "db" / "changelog" / "changes").glob("pyforge-scribe-*.sql"))\n'
+        '@pytest.fixture(params=["flatfile", pytest.param("postgres", marks=[pytest.mark.live_tree])])\n'
+        "def store(request, tmp_path):\n"
+        "    kind = request.param\n"
+        '    if kind == "flatfile":\n'
+        '        (ROOT / "pixi.toml").read_text()\n'
+        '        return tmp_path / "graph.json"\n'
+        "    _changesets()\n"
+        '    return tmp_path / "durable"\n'
+    ),
+    _PLANTED_TEST: "def test_store(store):\n    assert store\n",
+}
+_PLANTED_MARKED_READ = "src/platform/db/changelog/changes/pyforge-scribe-*.sql"
+
+
+def _planted_reads(*, package_half: bool) -> set[str]:
+    scanner = Scanner(_PLANTED_PACKAGE, package_half=package_half, sources=_PLANTED_SOURCES)
+    scanner.scan(_PLANTED_TEST)
+    return {"/".join(read) for read in scanner.reads}
+
+
+def test_a_live_tree_fixture_param_counts_in_the_live_tree_half_only() -> None:
+    """The package half runs the unmarked param alone, and the branch it takes returns before the marked param's read;
+    the live-tree half runs every param, and it scans the unmarked test module because that test requests the param."""
+    assert _planted_reads(package_half=True) == {"pixi.toml"}
+    assert _planted_reads(package_half=False) == {"pixi.toml", _PLANTED_MARKED_READ}
+    assert Scanner(_PLANTED_PACKAGE, sources=_PLANTED_SOURCES).requests_a_live_param(_PLANTED_TEST)
+    unmarked = {rel: text.replace(", marks=[pytest.mark.live_tree]", "") for rel, text in _PLANTED_SOURCES.items()}
+    assert not Scanner(_PLANTED_PACKAGE, sources=unmarked).requests_a_live_param(_PLANTED_TEST)
+    reads = Scanner(_PLANTED_PACKAGE, package_half=True, sources=unmarked)
+    reads.scan(_PLANTED_TEST)
+    assert {"/".join(read) for read in reads.reads} == {"pixi.toml", _PLANTED_MARKED_READ}, (
+        "unmarked, it is a package read"
+    )
 
 
 # --- Story 117.4 AC3 / doctor Story 55.4 AC3: the fan-out of one edit ----------
 
-# Stations whose suites are not yet split read another station's tree whole, so one edit there still runs their whole
-# suite: atlas and scribe read `src/shared/packages` (AD-1 boundary, portal inventory, graphify extras), herald reads
-# `src/shared/packages/pyforge-steward/src` (its Pages and docs-site tests import steward), marshal reads the planning
-# globs. Each station's own chain splits its suite (the atlas, herald, scribe and marshal entries of the preflight and
-# CI budget effort, spec-pyforge-steward CAP-175); when it lands, its name leaves the set here — the test then reds on
-# the stale name, which is the moment to remove it. Core reads `src` by design (spec-pyforge-core CAP-8).
-UNSPLIT_ON_A_STATION_SRC_EDIT = frozenset({"atlas", "herald", "scribe"})
-UNSPLIT_ON_A_PLANNING_EDIT = frozenset({"marshal"})
+# The package halves an edit fires beyond its own: a suite not yet split would read another station's tree whole, so
+# one edit there would still run its whole suite.
+# Story 124.2 split every suite (spec-pyforge-steward:CAP-175), so both sets are empty: atlas's and scribe's reads of
+# `src/shared/packages`, herald's of `src/shared/packages/pyforge-steward/src` and marshal's planning globs fire their
+# live-tree halves only.
+# Core's live-tree half reads `src` by design (spec-pyforge-core:CAP-8); its package half (`core_package`) is the
+# shared surface alone.
+UNSPLIT_ON_A_STATION_SRC_EDIT: frozenset[str] = frozenset()
+UNSPLIT_ON_A_PLANNING_EDIT: frozenset[str] = frozenset()
 
 STEWARD_SRC_EDIT = f"{PACKAGES}/pyforge-steward/src/pyforge/steward/preflight.py"
 DOCTOR_SRC_EDIT = f"{PACKAGES}/pyforge-doctor/src/pyforge/doctor/sources/hygiene.py"
@@ -1798,12 +2281,13 @@ def fan_out(workflow_text: str) -> dict[str, set[str]]:
 def test_a_steward_src_edit_runs_steward_core_and_the_live_halves_and_no_other_split_package_half(
     fan_out: dict[str, set[str]],
 ) -> None:
-    """Story 117.4 AC3: steward's package half, core (CAP-8), steward's live half and the live halves whose derived
-    reads cover ``src`` (doctor's ``src/**`` env-hygiene walk) fire; no other split station's package half does."""
+    """Story 117.4 AC3 and Story 124.2 AC2: steward's package half, core's live-tree half (spec-pyforge-core:CAP-8), steward's live half
+    and the live halves whose derived reads cover ``src`` (doctor's ``src/**`` env-hygiene walk) fire; no other
+    package half does."""
     fired = fan_out[STEWARD_SRC_EDIT]
     assert {"steward", "core", "steward_live", "doctor_live"} <= fired
     assert "doctor" not in fired  # the split package half of another station
-    assert fired - {"steward", "core", "steward_live", "doctor_live"} == UNSPLIT_ON_A_STATION_SRC_EDIT, sorted(fired)
+    assert (fired & PACKAGE_OUTPUTS) - {"steward"} == UNSPLIT_ON_A_STATION_SRC_EDIT, sorted(fired)
 
 
 def test_a_doctor_src_edit_runs_both_doctor_halves(fan_out: dict[str, set[str]]) -> None:
@@ -1815,13 +2299,12 @@ def test_a_doctor_src_edit_runs_both_doctor_halves(fan_out: dict[str, set[str]])
 def test_a_planning_only_edit_runs_live_halves_and_no_split_package_half(
     fan_out: dict[str, set[str]], path: str
 ) -> None:
-    """Story 117.4 AC3 and doctor Story 55.4 AC3: a planning-artifacts edit runs the live halves (doctor's and
-    steward's gatherer tests read every project's planning tree) and no split station's package half; the unsplit
-    marshal suite still fires until its own chain splits it."""
+    """Story 117.4 AC3, doctor Story 55.4 AC3 and Story 124.2 AC2: a planning-artifacts edit runs the live halves
+    (doctor's, steward's and marshal's gatherer tests read every project's planning tree) and no package half."""
     fired = fan_out[path]
-    assert {"doctor_live", "steward_live"} <= fired
+    assert {"doctor_live", "steward_live", "marshal_live"} <= fired
     assert not ({"doctor", "steward"} & fired), sorted(fired)
-    assert fired - {"doctor_live", "steward_live"} == UNSPLIT_ON_A_PLANNING_EDIT, sorted(fired)
+    assert fired & PACKAGE_OUTPUTS == UNSPLIT_ON_A_PLANNING_EDIT, sorted(fired)
 
 
 # --- AC3: every read fires its job ------------------------------------------
@@ -1862,8 +2345,11 @@ def test_root_handoffs_are_declared_exactly() -> None:
 def test_the_handoff_floor() -> None:
     derived = derived_handoffs()
     pkg = f"{PACKAGES}/pyforge-doctor/tests/unit"
-    assert {f"{pkg}/test_sources_chain_dreams_hygiene.py", f"{pkg}/test_sources_board.py"} <= derived["doctor_live"]
-    assert f"{PACKAGES}/pyforge-marshal/tests/meta/test_tea_architecture_generator.py" in derived["marshal"]
+    # Doctor's chain moved its live-tree readers to tests/unit/test_live_<x>.py (doctor Stories 56.1-58.2).
+    assert {f"{pkg}/test_live_sources_chain_dreams_hygiene.py", f"{pkg}/test_live_sources_board.py"} <= derived[
+        "doctor_live"
+    ]
+    assert f"{PACKAGES}/pyforge-marshal/tests/meta/test_tea_architecture_generator.py" in derived["marshal_live"]
 
 
 def _declared_globs(job: str) -> list[str]:
@@ -1876,8 +2362,8 @@ def _declared_globs(job: str) -> list[str]:
         ("doctor_live", "docs/dreams/a-dream.md"),
         ("doctor_live", "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md"),
         ("doctor_live", "archive/_bmad-output/x.md"),
-        ("marshal", "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md"),
-        ("marshal", f"{PACKAGES}/pyforge-atlas/tests/unit/test_x.py"),
+        ("marshal_live", "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md"),
+        ("marshal_live", f"{PACKAGES}/pyforge-atlas/tests/unit/test_x.py"),
     ],
 )
 def test_the_minimum_declarations_are_present(job: str, sample: str) -> None:
@@ -1910,9 +2396,9 @@ def test_dropping_lint_types_from_steward_fails_the_meta_test(workflow_text: str
 
 
 def test_dropping_django_herald_from_heralds_list_fails_the_meta_test(workflow_text: str) -> None:
-    mutant = without_array_entry(workflow_text, "herald", "src/shared/packages/django-herald")
-    failures = fire_failures(mutant, _targets("herald", "src/shared/packages/django-herald"))
-    assert failures and all(f.startswith("herald: read `src/shared/packages/django-herald`") for f in failures)
+    mutant = without_array_entry(workflow_text, "herald_live", "src/shared/packages/django-herald")
+    failures = fire_failures(mutant, _targets("herald_live", "src/shared/packages/django-herald"))
+    assert failures and all(f.startswith("herald_live: read `src/shared/packages/django-herald`") for f in failures)
 
 
 def test_dropping_the_django_glob_from_the_trigger_paths_fails_the_paths_half(workflow_text: str) -> None:
@@ -1930,34 +2416,39 @@ def test_dropping_docs_dreams_from_doctors_list_fails_the_meta_test(workflow_tex
 
 def test_dropping_the_planning_glob_from_marshals_list_fails_the_meta_test(workflow_text: str) -> None:
     glob = "_bmad-output/projects/*/planning-artifacts/**"
-    mutant = without_array_entry(workflow_text, "marshal", to_pathspec(glob_parts(glob)))
-    failures = fire_failures(mutant, _targets("marshal", "_bmad-output/projects/*/planning-artifacts"))
+    mutant = without_array_entry(workflow_text, "marshal_live", to_pathspec(glob_parts(glob)))
+    # Story 124.2: the spec-names guard's hand-off (marshal Story 114.2) puts `_bmad-output/projects` on the array
+    # too, which covers the planning glob; both go, so the planning read is left with no entry.
+    mutant = without_array_entry(mutant, "marshal_live", "_bmad-output/projects")
+    failures = fire_failures(mutant, _targets("marshal_live", "_bmad-output/projects/*/planning-artifacts"))
     assert failures and all(
-        f.startswith("marshal: read `_bmad-output/projects/*/planning-artifacts`") for f in failures
+        f.startswith("marshal_live: read `_bmad-output/projects/*/planning-artifacts`") for f in failures
     )
 
 
 def test_removing_a_handoff_file_from_its_declaration_fails_the_meta_test() -> None:
     victim = f"{PACKAGES}/pyforge-marshal/tests/meta/test_tea_architecture_generator.py"
     declared = {job: dict(files) for job, files in ROOT_HANDOFF_INPUTS.items()}
-    del declared["marshal"][victim]
+    del declared["marshal_live"][victim]
     assert handoff_problems(derived_handoffs(), declared) == [
-        f"marshal: `{victim}` hands the repo root to the code under test and is not in ROOT_HANDOFF_INPUTS"
+        f"marshal_live: `{victim}` hands the repo root to the code under test and is not in ROOT_HANDOFF_INPUTS"
     ]
 
 
 def test_a_stale_handoff_declaration_fails_the_meta_test() -> None:
     declared = {job: dict(files) for job, files in ROOT_HANDOFF_INPUTS.items()}
-    declared["warden"]["src/shared/packages/pyforge-warden/tests/unit/test_gone.py"] = (("docs/**",), "stale")
+    declared["warden_live"]["src/shared/packages/pyforge-warden/tests/unit/test_gone.py"] = (("docs/**",), "stale")
     problems = handoff_problems(derived_handoffs(), declared)
     assert problems == [
-        "warden: ROOT_HANDOFF_INPUTS names `src/shared/packages/pyforge-warden/tests/unit/test_gone.py`, "
+        "warden_live: ROOT_HANDOFF_INPUTS names `src/shared/packages/pyforge-warden/tests/unit/test_gone.py`, "
         "which hands no repo root to anything"
     ]
 
 
 # --- AC6: no job loses a path -------------------------------------------------
 
+# Story 124.2: a trigger a whole suite had moves to the half that runs its readers -- the live-tree half for a read
+# outside the package (core's is `core`), both halves for the package itself and the shared surface.
 ALL_JOBS = set(OUTPUTS)
 PRESERVED: dict[str, set[str]] = {
     "src/shared/packages/pyforge-core/src/x.py": ALL_JOBS,
@@ -1965,15 +2456,15 @@ PRESERVED: dict[str, set[str]] = {
     "pixi.toml": ALL_JOBS,
     "pixi.lock": ALL_JOBS,
     WORKFLOW_REL: ALL_JOBS,
-    "presentations/deck/x.md": {"herald"},
-    "docs-site/x.md": {"herald"},
-    "scripts/tests/test_x.py": {"atlas", "core"},
-    "tests/packaging/test_openteams_handoffs.py": {"atlas", "core"},
-    "scripts/openteams_identity_dashboards.py": {"atlas", "core"},
-    "scripts/conda-forge-packaging-inventory-operations_x.py": {"atlas", "core"},
-    "src/shared/packages/django-pyforge/src/x.py": {"testing_kit"},
-    "src/platform/config/flags.json": {"testing_kit"},
-    **{f"src/shared/packages/pyforge-{s}/src/x.py": {s, "core"} for s in STATIONS},
+    "presentations/deck/x.md": {live_output("herald")},
+    "docs-site/x.md": {live_output("herald")},
+    "scripts/tests/test_x.py": {live_output("atlas"), "core"},
+    "tests/packaging/test_openteams_handoffs.py": {live_output("atlas"), "core"},
+    "scripts/openteams_identity_dashboards.py": {live_output("atlas"), "core"},
+    "scripts/conda-forge-packaging-inventory-operations_x.py": {live_output("atlas"), "core"},
+    "src/shared/packages/django-pyforge/src/x.py": set(SUITES["testing_kit"]),
+    "src/platform/config/flags.json": set(SUITES["testing_kit"]),
+    **{f"src/shared/packages/pyforge-{s}/src/x.py": {*SUITES[s], "core"} for s in STATIONS},
 }
 
 

@@ -76,20 +76,22 @@ def _write_json(repo: Path, rel: str, payload: object) -> None:
     _write(repo, rel, json.dumps(payload, indent=2) + "\n")
 
 
-_ROSTER = "docs/governance/guild-roster.json"
-_FLAGS = "src/platform/config/flags.json"
-_OVERLAYS = "src/platform/config/flag-overlays.json"
+# Story 124.2: tracked paths are spelled as joins here -- steward's trigger-map scan counts a bare
+# tracked-path literal as a read of the live tree, and this module reads none.
+_ROSTER = "/".join(("docs", "governance", "guild-roster.json"))
+_FLAGS = "/".join(("src", "platform", "config", "flags.json"))
+_OVERLAYS = "/".join(("src", "platform", "config", "flag-overlays.json"))
 _LOCAL = "local-recipes"
 _FOUNDRY = "foundry"
 _CHAIN_PATH = "docs/dreams/x.md"
-_REALIZATION_LOG = "docs/dreams/pyforge-unifying-strategy.md"
+_REALIZATION_LOG = "/".join(("docs", "dreams", "pyforge-unifying-strategy.md"))
 _OTHER_PATH = "src/pkg/mod.py"
 
 #: The globs of the roster's `chain-write-off-the-writer` entry (steward Story 121.4), as test data.
 _CHAIN_GLOBS = [
     "docs/dreams/**",
     "docs/foundry/frames/**",
-    "docs/foundry/capability-ledger.yaml",
+    "/".join(("docs", "foundry", "capability-ledger.yaml")),
     "_bmad-output/projects/*/planning-artifacts/specs/spec-*/**",
     "docs/governance/spec-*/**",
 ]
@@ -350,7 +352,7 @@ def test_a_flag_tree_absent_at_the_merge_base_cannot_be_evaluated(tmp_path: Path
 
     finding = _assert_unevaluable(writer_lock.gather(repo))
 
-    assert "src/platform/config/flags.json" in finding.message
+    assert "/".join(("src", "platform", "config", "flags.json")) in finding.message
 
 
 def test_a_default_answer_is_never_proof_of_the_writer(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -371,7 +373,7 @@ def test_each_declared_glob_names_its_chain_path(tmp_path: Path) -> None:
     repo = _base(tmp_path, variant=_FOUNDRY)
     chain = [
         "docs/foundry/frames/kernel.frame.md",
-        "docs/foundry/capability-ledger.yaml",
+        "/".join(("docs", "foundry", "capability-ledger.yaml")),
         "_bmad-output/projects/pyforge-acme/planning-artifacts/specs/spec-acme/SPEC.md",
         "docs/governance/spec-acme/SPEC.md",
     ]

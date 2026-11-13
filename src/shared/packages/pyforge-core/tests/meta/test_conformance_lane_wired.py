@@ -39,10 +39,12 @@ steward:S-124.1 and steward:S-124.2 land -- a package-half job and a
 ``core`` output seeded from ``CORE_CHANGED``, and ``pyforge-core-test`` kept
 as the ``depends-on`` aggregate of both halves, so it stays the whole suite.
 Which half a task runs is read from its ``-m`` marker expression. The
-``test_detector_fires_when_a_half_is_dropped_*`` tests prove it on a split
-copy: the real one once it lands, a mutated copy of today's single wiring
-until then. This module reads ``pixi.toml`` and the workflow, so it is
-itself ``live_tree``.
+``test_detector_fires_when_a_half_is_dropped_*`` tests prove it on the
+split: the real one since steward:S-124.2 landed it (``core-test`` runs
+``pyforge-core-package-test`` on ``core_package``, the shared surface;
+``core-live-test`` runs ``pyforge-core-live-test`` on ``core``), a mutated
+copy of a single wiring before. This module reads ``pixi.toml`` and the
+workflow, so it is itself ``live_tree``.
 """
 
 from __future__ import annotations
@@ -383,8 +385,8 @@ def _all_pyforge_packages() -> list[str]:
     return names
 
 
-# The split wiring (Story 117.1): the real one once steward:S-124.1 / S-124.2 land it, else a mutated copy of
-# today's single task and job. The copy names its package-half task; the real split names its own.
+# The split wiring (Story 117.1): the real one since steward:S-124.1 / S-124.2 landed it, else a mutated copy of
+# a single task and job. The copy names its package-half task; the real split names its own.
 _COPY_PACKAGE_TASK = "pyforge-core-package-test"
 
 
