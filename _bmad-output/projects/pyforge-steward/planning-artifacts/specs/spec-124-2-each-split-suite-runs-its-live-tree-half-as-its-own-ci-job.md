@@ -504,3 +504,13 @@ scratch root); AC11 rc 1; AC12 rc 1 (every gate rc 0 alone); AC13 rc 1. The inte
 `test_preflight_ci.py` 25 passed, herald `test_preflight_pages_lane.py` and `test_built_site_tests_install_first.py`
 22 passed, core `test_conformance_lane_wired.py` 16 passed, the kit's `test_testing_kit_lane_wired.py` 21 passed.
 `pixi.lock` is unchanged.
+
+## Integrator re-run of the planned windows (2026-11-13)
+
+The three windows the 2026-11-12 ruling planned are now closed.
+
+- **AC10.** Doctor 58.4's full `pr-preflight` (chunk-10 retry, head df2a292e18) wrote `.steward/preflight-runs.jsonl` in this worktree. On head 193008e90a, `pixi run --frozen -e pyforge-guild preflight-budget` exits 0 without the scratch root. It reports 11 lanes over 1.5× budget, all warn-only (D3). Ten are the lanes this story added: their budgets are standalone medians, and the preflight runs lanes side by side, as the budgets file's own comment says. The eleventh, `scripts-lib-test@pyforge-guild`, has a budget this story did not touch. Re-measuring budgets from the journal is a governance act on `docs/governance/preflight-budgets.toml` and is not part of this story.
+- **AC11 and AC13.** Both reds named in the ruling are closed: steward 122.5 re-derived `spec-pyforge-steward`, and CLOSE-LEDGERS closed the capability-ledger finding. In doctor 58.4's chunk-10 retry, `pyforge-station-tests` exited 0 and the full `pr-preflight`, which runs both halves of every suite as its own lane, exited 0 with 48/48 lanes.
+- **AC12.** That full `pr-preflight` judged every touched station's coverage gate: atlas, doctor, herald, marshal, mason and steward passed. Scribe and warden had no touched modules.
+
+The integrator's own full `pr-preflight` on the branch's final commit is recorded in the PR description.
