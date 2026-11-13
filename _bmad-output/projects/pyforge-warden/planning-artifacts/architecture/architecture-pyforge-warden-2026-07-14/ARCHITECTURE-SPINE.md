@@ -41,7 +41,7 @@ completedAt: '2026-07-11'
 project_name: 'pyforge-warden'
 user_name: 'rxm7706'
 date: '2026-07-11'
-updated: "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (PRD -> arch); no CAP, FR or AD is minted. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): prd->arch cascade for the PRD's § Currency reconciliation — 2026-11-01 (the Spec's 2026-11-01 re-derive of CAP-23..CAP-26; fix stories 13.2, 14.4, 15.2 and 16.6-16.10, all done): they land on the 2026-09-28 Decisions 1 and 2 and the subprocess, temp-file and verdict rules as written; the Technical Constraints pixi line reads 0.80.0 (was 0.72.2) and the fix-PR actuator's egress bullet is scoped by process, as Decision 2 already decided; manifest_locations.py recorded; no AD added, amended or removed. See § Currency reconciliation — 2026-11-01. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 20.2): prd->arch cascade for the PRD's § Currency reconciliation — 2026-10-26 (Story 20.2) (the 23 NFR lines arrowed; eight requirement ids re-spelled to the CHAIN-STANDARD § 6 grammar by operator ruling): this spine's live citations of NFR-R3a/NFR-R3b, NFR-P-warm/-cold/-concurrency, FR30, FR33 and FR35 read NFR-R3.1/NFR-R3.2, NFR-P2/P3/P4, FR-30, FR-33 and FR-35; no AD added, amended or removed. See § Currency reconciliation — 2026-10-26 (Story 20.2). Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 20.1): prd->arch cascade for the PRD's § Currency reconciliation — 2026-10-26 (Story 20.1) (the Spec's capability text restored; no requirement moves); no AD moves. See § Currency reconciliation — 2026-10-26 (Story 20.1). Prior "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 19.1): prd->arch cascade for the PRD's § Currency reconciliation — 2026-10-25 (Story 19.1) (six FR arrows written to the capabilities that realize them); no AD moves. See § Currency reconciliation — 2026-10-25 (Story 19.1). Prior "2026-10-11"   # RE-STAMPED 2026-10-11: chain-currency cascade (spec -> PRD -> arch) for the operator's 2026-10-11 rulings (Story 16.1 re-scoped to an operator-designated github.com organisation read through the operator's gh login; Story 16.5 minted); lands on the 2026-09-28 Decision 2 as written, no AD amended. See § Currency reconciliation — 2026-10-11. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD -> arch) for Stories 15.1 and 16.1's gates clearing (keys blocked -> backlog by operator ruling); no AD amended. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD -> arch) for Story 17.1's landing and Stories 14.1-14.2 (FR-41 / CAP-24); lands on the 2026-09-28 Decision 1 and the subprocess, temp-file and no-execution rules as written, no AD amended; one older divergence recorded (tea_advisory.py spawns its own subprocess). See § Currency reconciliation — 2026-10-07. Prior 2026-10-03 (Phase 4+5)   # RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 17, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-41..FR-43 / CAP-24..26 (Epics 14-16); § Currency reconciliation — 2026-09-28 appended (two boundary decisions recorded, no prior decision reversed). Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-23 (prd -> arch), no AD delta; the dead first `updated:` key (2026-09-20, fleet consistency pass) removed -- YAML last-wins read only this one. Prior 2026-09-20   # RE-STAMPED 2026-09-20: chain-currency cascade (py-rattler floor, foundry-full union solve), no AD delta; prior 2026-09-17: one-chain warden fold cascade (PRD -> spine). Duplicate `updated:` key removed so YAML last-wins matches the 2026-09-17 front-matter stamp. No AD added, changed or removed.
+updated: "2026-11-12"   # RE-STAMPED 2026-11-12 (the cutover readiness close, warden Story 25.2): prd->arch cascade; § Project Structure's tree is re-drawn as built (every module under src/pyforge/warden), the two Python floor lines read 3.14 (decision D6), and the 2026-08-26 determinism.py bullet no longer says --deterministic pins anything (operator ruling 2026-11-10). No AD added, amended or removed. See § Currency reconciliation — 2026-11-10. Prior "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (PRD -> arch); no CAP, FR or AD is minted. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): prd->arch cascade for the PRD's § Currency reconciliation — 2026-11-01 (the Spec's 2026-11-01 re-derive of CAP-23..CAP-26; fix stories 13.2, 14.4, 15.2 and 16.6-16.10, all done): they land on the 2026-09-28 Decisions 1 and 2 and the subprocess, temp-file and verdict rules as written; the Technical Constraints pixi line reads 0.80.0 (was 0.72.2) and the fix-PR actuator's egress bullet is scoped by process, as Decision 2 already decided; manifest_locations.py recorded; no AD added, amended or removed. See § Currency reconciliation — 2026-11-01. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 20.2): prd->arch cascade for the PRD's § Currency reconciliation — 2026-10-26 (Story 20.2) (the 23 NFR lines arrowed; eight requirement ids re-spelled to the CHAIN-STANDARD § 6 grammar by operator ruling): this spine's live citations of NFR-R3a/NFR-R3b, NFR-P-warm/-cold/-concurrency, FR30, FR33 and FR35 read NFR-R3.1/NFR-R3.2, NFR-P2/P3/P4, FR-30, FR-33 and FR-35; no AD added, amended or removed. See § Currency reconciliation — 2026-10-26 (Story 20.2). Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 20.1): prd->arch cascade for the PRD's § Currency reconciliation — 2026-10-26 (Story 20.1) (the Spec's capability text restored; no requirement moves); no AD moves. See § Currency reconciliation — 2026-10-26 (Story 20.1). Prior "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 19.1): prd->arch cascade for the PRD's § Currency reconciliation — 2026-10-25 (Story 19.1) (six FR arrows written to the capabilities that realize them); no AD moves. See § Currency reconciliation — 2026-10-25 (Story 19.1). Prior "2026-10-11"   # RE-STAMPED 2026-10-11: chain-currency cascade (spec -> PRD -> arch) for the operator's 2026-10-11 rulings (Story 16.1 re-scoped to an operator-designated github.com organisation read through the operator's gh login; Story 16.5 minted); lands on the 2026-09-28 Decision 2 as written, no AD amended. See § Currency reconciliation — 2026-10-11. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD -> arch) for Stories 15.1 and 16.1's gates clearing (keys blocked -> backlog by operator ruling); no AD amended. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD -> arch) for Story 17.1's landing and Stories 14.1-14.2 (FR-41 / CAP-24); lands on the 2026-09-28 Decision 1 and the subprocess, temp-file and no-execution rules as written, no AD amended; one older divergence recorded (tea_advisory.py spawns its own subprocess). See § Currency reconciliation — 2026-10-07. Prior 2026-10-03 (Phase 4+5)   # RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 17, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-41..FR-43 / CAP-24..26 (Epics 14-16); § Currency reconciliation — 2026-09-28 appended (two boundary decisions recorded, no prior decision reversed). Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-23 (prd -> arch), no AD delta; the dead first `updated:` key (2026-09-20, fleet consistency pass) removed -- YAML last-wins read only this one. Prior 2026-09-20   # RE-STAMPED 2026-09-20: chain-currency cascade (py-rattler floor, foundry-full union solve), no AD delta; prior 2026-09-17: one-chain warden fold cascade (PRD -> spine). Duplicate `updated:` key removed so YAML last-wins matches the 2026-09-17 front-matter stamp. No AD added, changed or removed.
 currency_review: "Reviewed 2026-09-07 — cascade from the PRD's 2026-09-07 reconciliation (Epic 11 landed: two advisory lenses registered in the existing pyforge.core.hooks plugin bundle, no new architectural surface; DW-FU-11-2's fail-closed roster-missing posture resolved inside the existing plugin-error seam). v1 body and the 2026-08-26 entry below remain accurate. See § Currency reconciliation — 2026-09-07."
 ---
 
@@ -81,7 +81,7 @@ The **resolved-inventory object** is the spine (this *is* Gap B): discovery + ex
 ### Technical Constraints & Dependencies
 - **stdlib-lean library** (argparse / tomllib / re + the targeted safe deps: PyYAML `safe_load`, packaging, cyclonedx-python-lib, `jsonschema` — a RUNTIME dep per FR14; the original "empty `dependencies`" scaffold note is superseded, 4 runtime deps shipped); engines (`deptry`, `osv-scanner`) as **conda run-deps** (provisioned, not fetched — OD1).
 - **Pinned engine contracts (2026-07-11):** deptry = no-severity + `--json-output`; osv = `--format json` (JSON→stdout, else→stderr) + exit `{0 clean, 1 vulns-found=EXPECTED, 127 DB-load/coverage error, 128 no-packages}` — Story-1.4-reconciled: 127 is multiplexed and a DB-absent/empty 127 → `indeterminate` (coverage gap, gated by the content pre-flight below), other 127 → `error`; 128 → `indeterminate`.
-- python ≥ 3.12; pixi ≥ 0.80.0, the workspace's `requires-pixi` (**a build/dev-env floor — the tool never invokes pixi at runtime**, except the fix-PR actuator's real `--open-fix-prs` path under a tested range whose floor is that same `requires-pixi` — § Currency reconciliation — 2026-09-28, Decision 1; `pixi.lock` is `safe_load`-parsed; clarified 2026-07-12; floor corrected 2026-11-01 from 0.72.2, Story 14.4); `pixi-build-python` packaging; never-writes-repo (NFR-R3.1/S4); offline-first vuln data.
+- python ≥ 3.14, the package's `requires-python` (decision D6, 2026-11-10: the source uses PEP 758's unparenthesised `except A, B:`); pixi ≥ 0.80.0, the workspace's `requires-pixi` (**a build/dev-env floor — the tool never invokes pixi at runtime**, except the fix-PR actuator's real `--open-fix-prs` path under a tested range whose floor is that same `requires-pixi` — § Currency reconciliation — 2026-09-28, Decision 1; `pixi.lock` is `safe_load`-parsed; clarified 2026-07-12; floor corrected 2026-11-01 from 0.72.2, Story 14.4); `pixi-build-python` packaging; never-writes-repo (NFR-R3.1/S4); offline-first vuln data.
 - **Open dependency question (D1):** the waiver YAML writer may pull one small YAML lib *or* emit-for-human-to-commit — resolved in Architectural Decisions.
 
 ### Cross-Cutting Concerns Identified
@@ -109,7 +109,7 @@ CLI tool — a **non-interactive, single-process, stdlib-only Python CLI**. No w
 **Rationale** *(wording superseded by the library-policy revision — the binding constraint is stdlib-LEAN + no-execution, § NFR-S1 reframe; the no-CLI-framework conclusion still holds)*: the lean-runtime constraint is load-bearing (lightweight fleet gate + S1 security), so no third-party CLI framework is permissible. The existing scaffold at `src/shared/packages/pyforge-warden/` already establishes the entire foundation.
 
 **Technical stack (locked — versions fixed by PRD + scaffold, nothing to verify):**
-- Language/runtime: Python ≥ 3.12
+- Language/runtime: Python ≥ 3.14 (the package's `requires-python`; decision D6, 2026-11-10)
 - CLI: `argparse` (stdlib) — *not* Click/Typer
 - Config parse: `tomllib` (stdlib); manifest extraction: `re` (stdlib)
 - Packaging: `hatchling` + `pixi-build-python` (conda build member)
@@ -269,44 +269,73 @@ pyforge/warden/
 ## Project Structure & Boundaries
 
 ### Complete project tree (extends the existing scaffold)
+
+*Re-drawn 2026-11-10 (Story 25.2) from the package as built. The v1 tree it replaces planned `determinism.py`,
+`errors.py`, `extract/_jinja.py`, `extract/requirements.py` and `tests/conformance/`, none of which exists
+(§ Currency reconciliation — 2026-08-26 and — 2026-11-10). Which of these symbols other packages import is in the
+Spec's `contract.md`.*
+
 ```
 src/shared/packages/pyforge-warden/
-├── pyproject.toml              # deps: pyyaml, packaging, cyclonedx-python-lib, jsonschema (was [])
-├── pixi.toml                   # run-deps: python, deptry, osv-scanner (+ the above libs)
-├── README.md   .gitignore
+├── pyproject.toml              # requires-python >=3.14; deps pyyaml, packaging, cyclonedx-python-lib, jsonschema, packageurl-python, license-expression, pyforge-core; the `warden` script; ten pyforge.core.hooks entry points
+├── pixi.toml                   # pixi-build member; python >=3.14; deptry, osv-scanner in their tested ranges; opengrep (linux-64)
+├── README.md   .gitignore   .warden-baseline.yaml   # the baseline the package's own dogfood scan reads
+├── scripts/
+│   ├── generate_conda_pypi_map.py                     # regenerates data/conda_pypi_map.json
+│   ├── refresh_kev_feed.py  refresh_epss_feed.py  refresh_endoflife_feed.py   # fill the feed cache feeds.py reads
+│   └── harvest_corpus.py  dogfood_scan.py             # the conformance corpus; the package scanning itself
 ├── src/pyforge/warden/
-│   ├── __init__.py             # __version__
-│   ├── cli.py                  # E4 — argparse, exit emission (FR29/31)  [replaces the stub]
-│   ├── config.py               # ConfigLoader (FR-30): dual [tool.*] TOML, precedence, policy tables
-│   ├── models.py               # enums (Status/ErrorKind/WithholdReason/Ecosystem) + report/finding types
-│   ├── inventory.py            # Component + ResolvedInventory (the spine; identity+merge)
-│   ├── discovery.py            # FR1 — enumerate/classify manifests → resolved scan set
+│   ├── __init__.py             # __version__; points at the station Spec
+│   ├── cli.py                  # E4 — `warden scan`: argparse, scan orchestration, exit emission (FR29/31); --deterministic parsed, read by nothing
+│   ├── config.py               # ConfigLoader (FR-30): dual [tool.pyforge-warden] TOML, precedence, policy tables
+│   ├── models.py               # enums (Status/ErrorKind/WithholdReason/Ecosystem), ErrorRecord, report/finding types (no errors.py)
+│   ├── inventory.py            # Component + ResolvedInventory (the spine; identity + merge)
+│   ├── interfaces.py           # strategy Protocols + EngineResult + DefaultPolicy (the Engine seam)
+│   ├── discovery.py            # FR1 — bounded, deterministic manifest discovery → resolved scan set
 │   ├── routing.py              # FR2 — per-section ecosystem classification
 │   ├── extract/                # E1 — non-execution zone (AST-denylist enforced)
 │   │   ├── __init__.py         #   dispatch by format
-│   │   ├── _jinja.py           #   context capture + safe-filter allowlist + selector marking
+│   │   ├── _identity.py        #   shared identity resolution + component construction (no _jinja.py: each format module neutralizes its own templating)
 │   │   ├── recipe_v1.py  meta_v0.py  environment_yml.py  pixi.py
-│   │   ├── lockfiles.py            #   pixi.lock + conda-lock.yml → locked-closure (the vuln hero path; ownership added 2026-07-12)
-│   │   └── pyproject.py  requirements.py   # PyPI-delegate inputs
-│   ├── mapping.py              # bundled static conda→pypi map loader (v1 asset)
-│   ├── engines.py              # _engine_env() + deptry/osv runners (parallel) + output parse
+│   │   ├── lockfiles.py        #   pixi.lock + conda-lock.yml → locked closure; one pixi environment and platform on request (CAP-18)
+│   │   └── pyproject.py        #   PyPI-delegate input (no requirements.py: the engines parse requirements natively)
+│   ├── native_lockfiles.py     # non-Python lockfiles (npm, Go, Cargo) delegated to osv-scanner (CAP-26's kernel half)
+│   ├── mapping.py              # bundled conda→pypi map loader (the map carries no snapshot and no age check)
+│   ├── engines.py              # the only subprocess site: _engine_env() + deptry/osv/opengrep/tea runners, engine and pixi ranges
 │   ├── hygiene.py              # E2 — deptry per-code join → inventory
-│   ├── vuln.py                 # E3 — osv input synth, name-level CVE tier, indeterminate classing
-│   ├── report.py               # E4 — ComplianceReport assembly + jsonschema self-validate
-│   ├── sbom.py                 # E4 — CycloneDX 1.6 via cyclonedx-python-lib
-│   ├── verdict.py              # E4 — J9 lattice + 7→4 exit projection {0,1,2,130} + status.driver
-│   ├── waiver.py               # FR24-26 — .yaml read (safe_load) + --bypass stanza (safe_dump)
-│   ├── errors.py               # NOT CREATED (ratified, Story 1.7) — ErrorKind/ErrorRecord in models.py is the shipped implementation instead
-│   ├── determinism.py          # canonicalization + --deterministic pinning
+│   ├── vuln.py                 # E3 — offline DB resolution + content pre-flight, osv input synthesis, name-level tier, indeterminate classing
+│   ├── license.py              # Axis 3 — SPDX license verdicts + the license warn-cap (FR32)
+│   ├── currency.py             # Axis 4 — LTS registry / endoflife / N-1 tiers + runtime_python; the registry's 180-day age (FR34)
+│   ├── feeds.py                # KEV + EPSS + endoflife feed cache, staleness, provenance (FR36)
+│   ├── waiver.py               # FR24-26 + FR39 — one suppression engine: waivers, baseline & grandfathering, the --bypass stanza
+│   ├── verdict.py              # J9 lattice + 7→4 exit projection {0,1,2,130} + status.driver (sole owner)
+│   ├── report.py               # E4 — ComplianceReport assembly, canonical JSON, jsonschema self-validate (no determinism.py)
+│   ├── sbom.py                 # E4 — CycloneDX 1.6; serialNumber and metadata.timestamp stay volatile
+│   ├── actuator.py             # FR40 / FR-41 — opt-in, post-verdict fix-PR actuator; forge egress inside warden scan's process
+│   ├── fix_solver.py           # FR-41 — fix-target solver seam and the bounded default pixi-lock solver
+│   ├── manifest_edit.py        # FR-41 — field-scoped manifest requirement edits
+│   ├── manifest_fixup.py       # FR-41 — throwaway-copy manifest fix preparation
+│   ├── manifest_locations.py   # where each dependency is declared; shared by warden scan and the fleet approve
+│   ├── fleet_github_rest.py    # CAP-26 — GET-only GitHub REST org listing, called only from django-warden's worker
+│   ├── fleet_github_graphql.py # CAP-26 — query-only GitHub GraphQL project-item listing
+│   ├── hooks.py                # CAP-27 — the PR-gate hook book on pyforge.core.hooks; Warden owns the verdict
+│   ├── scanner_plugins.py      # CAP-27 — the default plugin bundle + optional scanner plugins (WARDEN_OPTIONAL_SCANNERS)
+│   ├── sast.py                 # CAP-25 — opengrep SAST advisory lens
+│   ├── tea_advisory.py         # CAP-23 — the tea-test-review advisory lens
+│   ├── sources.py              # CAP-13 — external evidence sources + the standalone identity API (a library; no CLI caller)
+│   ├── eligibility.py          # CAP-14 — estate-wide eligibility union with provenance
+│   ├── eligibility_sbom.py     # CAP-15 — CycloneDX projection of eligibility results
 │   └── data/
-│       ├── report-schema.json  # the report data contract (schema_version)
-│       └── conda_pypi_map.json # bundled conda→pypi identity map
+│       ├── report-schema.json  # the report data contract (schema 1.1.0)
+│       ├── conda_pypi_map.json # bundled conda→pypi identity map
+│       ├── lts-registry.yaml   # bundled LTS registry (its own updated: date; a copy of the CFE canonical)
+│       └── sast-rules/         # the estate's opengrep rules
 └── tests/
     ├── conftest.py
-    ├── fixtures/{recipes,lockfiles,malicious,engine-output}/
-    ├── unit/            # per-module
-    ├── meta/            # AST-denylist, no-jinja2-in-extract, SCRIPTS-runnable
-    └── conformance/     # corpus (0-exceptions, ratcheted rate), differential-oracle, false-green=0, twice-run
+    ├── fixtures/               # corpus, eligibility_corpus, lockfiles, osv-db, projects, SAST rules and trips, adversarial names
+    ├── unit/                   # per-module
+    ├── meta/                   # AST-denylist, sole-ownership walls, socket guard, public contract + proof map, live_tree marker
+    └── integration/            # renamed from conformance/ 2026-09-07: corpus, oracles, determinism, egress, performance
 ```
 
 ### Boundary contracts
@@ -383,11 +412,15 @@ over; the v1 body above is otherwise confirmed accurate against the shipped code
 
 ### As-built divergences from § Project Structure (recorded, accepted)
 
-- **`determinism.py` was never created.** Canonicalization + the `--deterministic`
-  volatile-field pinning live inside `report.py` and `cli.py` (the same
-  consolidation precedent as `errors.py` → `models.py`, ratified at Story 1.7). The
-  NFR-R3b discipline itself shipped and is tested (twice-run byte-identical); only
-  the module boundary differs from the tree above.
+- **`determinism.py` was never created.** Canonicalization lives inside `report.py`
+  (sorted keys, fixed separators, no wall-clock field), so the report is byte-identical
+  by default (the same consolidation precedent as `errors.py` → `models.py`, ratified at
+  Story 1.7). No volatile-field pinning was built: `cli.py` parses `--deterministic` and
+  nothing reads it, and the SBOM's `serialNumber` and `metadata.timestamp` stay volatile
+  (*corrected 2026-11-10, Story 25.2*: this bullet said the pinning lived in `report.py`
+  and `cli.py`; the operator ruled the flag stays reserved, row
+  DW-warden-cutover-2026-11-10-2). The NFR-R3b discipline itself shipped and is tested
+  (twice-run byte-identical report); only the module boundary differs from the tree above.
 - **`extract/` ships a different helper set than planned:** no `_jinja.py` and no
   `requirements.py` as named — the shipped submodules are `__init__.py`,
   `recipe_v1.py`, `meta_v0.py`, `environment_yml.py`, `pixi.py`, `pyproject.py`,
@@ -734,3 +767,36 @@ and its module-tree comment, and `updated:`. No AD added, amended or removed.
 *Chain-currency cascade (PRD -> arch), EGM audit, marshal Story 113.18.*
 
 The audit record `research/egm-audit-2026-11-05.md` and the Spec memlog moved on 2026-11-05. No AD moves.
+
+## Currency reconciliation — 2026-11-10
+
+*Trigger: the PRD's re-stamp of the same pass (prd→arch), for the cutover readiness change (warden Epics 25–27; the
+station Dream's entry of 2026-11-10 and the operator's rulings of that day). Written by Story 25.2, the change's
+closer.*
+
+- **§ Project Structure's tree is re-drawn as built.** It names every module under `src/pyforge/warden/`, the bundled
+  data and the package scripts. The v1 tree planned `determinism.py`, `errors.py`, `extract/_jinja.py`,
+  `extract/requirements.py` and `tests/conformance/`; none exists. It lacked `interfaces.py`, `license.py`,
+  `currency.py`, `feeds.py`, `actuator.py` and `extract/_identity.py`, and every module added since v1: `sources.py`,
+  `eligibility.py` and `eligibility_sbom.py` (Epic 7), `hooks.py` and `scanner_plugins.py` (Epic 9),
+  `tea_advisory.py` (Epic 11), `fix_solver.py`, `manifest_edit.py` and `manifest_fixup.py` (Epic 14), `sast.py`
+  (Epic 15), and `native_lockfiles.py`, `fleet_github_rest.py`, `fleet_github_graphql.py` and
+  `manifest_locations.py` (Epic 16). § Implementation Patterns' module list keeps its v1 text; where it and the tree
+  differ, the tree is authoritative, as that list already says.
+- **The two Python floor lines** (§ Technical Constraints & Dependencies, § Selected Starter) read ≥ 3.14, the
+  package's `requires-python` (decision D6 of the cutover readiness plan; the source uses PEP 758's unparenthesised
+  `except A, B:`).
+- **The 2026-08-26 `determinism.py` bullet is corrected.** It said the `--deterministic` volatile-field pinning lived
+  in `report.py` and `cli.py`. No pinning was built: `report.py` renders a canonical report that is byte-identical by
+  default, `cli.py` parses `--deterministic` and nothing reads it, and the SBOM's `serialNumber` and
+  `metadata.timestamp` stay volatile. The operator ruled on 2026-11-10 that the flag stays reserved (row
+  DW-warden-cutover-2026-11-10-2), and the Spec's *Determinism discipline* Constraint says the same. § Smaller
+  resolutions' *Determinism* bullet and § Determinism discipline above record the v1 plan, not what shipped.
+- **No AD moves.** The change adds no module, port, adapter or package boundary. The contract and proof-map tests
+  (`tests/meta/test_public_contract.py`, `tests/meta/test_contract_surface.py`,
+  `tests/meta/test_capability_proof_map.py`) and the `live_tree` split (`tests/meta/test_live_tree_marker.py`) are
+  tests. CAP-26's split into its kernel half and CAP-29, the portal half, is the 2026-09-28 Decision 2 as written: the
+  fleet lives in `django-warden`. The spine still has no numbered AD-n (row DW-warden-cutover-2026-11-10-7).
+
+**Content changed:** this section, § Project Structure's tree, the two Python floor lines, the 2026-08-26
+`determinism.py` bullet and `updated:`. No AD added, amended or removed.

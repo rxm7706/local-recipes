@@ -151,3 +151,20 @@ Type / Effort / Deps: docs / M / S-25.1, S-25.3, S-25.4, S-26.1, S-26.2, S-26.3,
 - Flag: none (a `docs` story, `spec-feature-flag-governance` Q1).
 - Cross-station deps: `steward:S-121.7` (the capability ledger's warden rows, CAP-27..CAP-29 among them), `steward:S-124.2` (the live-tree half that AC16 runs) and `steward:S-124.3` (the package manifest's Python floor and its re-lock). AC14, AC15 and AC16 pass only once those three steward stories are on the branch; a failure there names the missing cross-unit edit, not a warden defect.
 - The warden chain-currency cascade is planned red from the mint's memlog appends until this story lands.
+
+## Planned deferral (written at build)
+
+- **Five `live_tree` test modules derive the repository root at import** (found 2026-11-12 by this story's
+  retrospective, `retros/retro-pyforge-warden-2026-11-12.md` finding 5 and action 1). Evidence:
+  `src/shared/packages/pyforge-warden/tests/meta/test_public_contract.py:59`,
+  `tests/meta/test_contract_surface.py:75`, `tests/integration/test_pixi_lock_environment_scope.py:19`,
+  `tests/unit/test_currency_cfe_parity.py:22` and `tests/integration/test_fix_solver_real_pixi.py:29` evaluate
+  `Path(__file__).resolve().parents[6]` at module level (and `tests/meta/test_pixi_range_floor_matches_workspace.py:31`
+  climbs from `pyforge.warden.__file__`); the package half deselects them with `-m "not slow and not live_tree"` only
+  after importing them, so an export of the package to a path fewer than seven components deep raises `IndexError`
+  at collection. Fix: compute the root in a fixture or function, as `tests/meta/test_capability_proof_map.py:315`
+  does, and have `tests/meta/test_live_tree_marker.py` fail a module-level climb above the package root. Owner:
+  warden. Severity: low (both halves collect and pass in this checkout). Why deferred: the modules are Stories 26.1,
+  26.3 and 27.1's, outside this story's files, and the fix is a test change no story of this change carries. The
+  ledger row is written by whoever owns `deferred-work-ledger.md` at the change's close (this story's files do not
+  include it).

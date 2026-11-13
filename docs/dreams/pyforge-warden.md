@@ -28,9 +28,9 @@ the host or the source.
 
 ## What is real
 
-- **43/43 stories merged** across epics 1–11
-  (`_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml`),
-  FR1–FR40 frozen, schema 1.1.0, honest dashboard live. Built loop-driven by
+- **Shipped and merged, epic by epic.** The ledger is the story and epic count of record
+  (`_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml`);
+  this Dream states none. FR1–FR40 frozen, schema 1.1.0, honest dashboard live. Built loop-driven by
   [[pyforge-marshal]]. Epics 7–11 post-date the original v1 scope: the eligibility
   union (7), the web face (8), the PR-gate hook book + scanner plugins (9), the
   skill/persona/portal slice (10), and the two advisory lenses (11). Epic 12 was
@@ -39,9 +39,10 @@ the host or the source.
   `scripts/platform-deploy-verify-promotion.py:31` refuses any digest whose recorded
   verdict is not `clean`.
 - Spec: `_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/`
-  (Tier 2, `ready` — living station contract after the 2026-09-17 one-chain fold);
-  `docs/specs/pyforge-warden.md` is the absorbed legacy Tier-1
-  intake. Package at `src/shared/packages/pyforge-warden/`.
+  (Tier 2, `ready` — living station contract after the 2026-09-17 one-chain fold; its public
+  contract `contract.md` and its proof map `proof-map.md` sit beside `SPEC.md`); the absorbed
+  legacy Tier-1 intake is archived at `archive/docs/specs/pyforge-warden.md`. Package at
+  `src/shared/packages/pyforge-warden/`.
 
 ## Realization log
 

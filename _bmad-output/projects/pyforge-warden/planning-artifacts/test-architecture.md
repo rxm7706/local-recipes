@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: warden
-source_fingerprint: c0e73953cf962c4f
+source_fingerprint: 1d701d252920473e
 story_count: 84
-test_file_count: 83
+test_file_count: 89
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -21,10 +21,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Station:** `pyforge-warden`
 - **Stories parsed:** 84
 - **Epics parsed:** 26
-- **Test files inventoried:** 83 under `src/shared/packages/pyforge-warden/tests/`
+- **Test files inventoried:** 89 under `src/shared/packages/pyforge-warden/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `c0e73953cf962c4f`
+- **Source fingerprint:** `1d701d252920473e`
 
 ## Risk Assessment
 
@@ -89,10 +89,15 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-warden/tests/integration/test_report_schema.py` | integration | none observed |
 | `src/shared/packages/pyforge-warden/tests/integration/test_sbom_schema.py` | integration | none observed |
 | `src/shared/packages/pyforge-warden/tests/integration/test_scan_harness.py` | integration | none observed |
+| `src/shared/packages/pyforge-warden/tests/meta/test_capability_proof_map.py` | meta | none observed |
+| `src/shared/packages/pyforge-warden/tests/meta/test_contract_surface.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_engine_version_range_sync.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_extract_no_execution.py` | meta | none observed |
+| `src/shared/packages/pyforge-warden/tests/meta/test_live_tree_marker.py` | meta | none observed |
+| `src/shared/packages/pyforge-warden/tests/meta/test_pixi_range_floor_matches_workspace.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_portal_audit_start_get.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_pr_gate_plugin_registration.py` | meta | none observed |
+| `src/shared/packages/pyforge-warden/tests/meta/test_public_contract.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_skf_domain_skill.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_socket_deny_alive.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_station_persona.py` | meta | none observed |
@@ -109,6 +114,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-warden/tests/unit/test_cli_sbom.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_config.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_currency.py` | unit | none observed |
+| `src/shared/packages/pyforge-warden/tests/unit/test_currency_cfe_parity.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_default_warden_without_checkmarx.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_discovery_extract_cli.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_eligibility.py` | unit | none observed |
