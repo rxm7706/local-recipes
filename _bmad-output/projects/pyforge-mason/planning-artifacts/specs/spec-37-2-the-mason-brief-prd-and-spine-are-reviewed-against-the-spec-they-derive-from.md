@@ -2,7 +2,7 @@
 title: "37.2: The mason brief, PRD and spine are reviewed against the Spec they derive from"
 type: 'chore'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

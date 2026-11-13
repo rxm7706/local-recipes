@@ -2,7 +2,7 @@
 title: "37.4: Mason's change closes: retro, surface reconcile, deferrals and ledger"
 type: 'chore'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 blocking_condition: 'forward dependency (2026-11-10): Deps S-38.1, S-38.2, S-38.3, S-39.1 are later epics; the operator unblocks it once they are done'
 review_loop_iteration: 0
 followup_review_recommended: false

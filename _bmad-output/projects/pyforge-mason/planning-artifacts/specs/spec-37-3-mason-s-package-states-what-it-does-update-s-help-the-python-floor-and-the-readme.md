@@ -2,7 +2,7 @@
 title: "37.3: Mason's package states what it does: update's help, the Python floor and the README"
 type: 'fix'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 blocking_condition: 'forward dependency (2026-11-10): Deps S-38.1 is a later epic; the operator unblocks it once it is done'
 review_loop_iteration: 0
 followup_review_recommended: false

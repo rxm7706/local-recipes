@@ -2,7 +2,7 @@
 title: "38.2: Mason's suite runs as a package half and a live-tree half"
 type: 'feature'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

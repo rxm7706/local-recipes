@@ -2,7 +2,7 @@
 title: "38.1: Mason's public contract is written down, and a meta-test holds the code to it"
 type: 'feature'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

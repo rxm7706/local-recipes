@@ -2,7 +2,7 @@
 title: "39.1: The factory-island build is a mason capability, and its error names only what exists"
 type: 'fix'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

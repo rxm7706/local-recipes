@@ -1,5 +1,5 @@
 # GENERATED — do not hand-edit. Regenerate with:
-#     pixi run -e local-recipes sprint-ledger-sync
+#     pixi run -e pyforge-guild sprint-ledger-sync
 #
 # TRACKED twin of _bmad-output/projects/pyforge-mason/implementation-artifacts/sprint-status.yaml
 # which is gitignored Tier-3 (.gitignore:736) and therefore invisible to CI and
@@ -124,14 +124,14 @@ development_status:
   34-1-the-atlas-reads-the-conda-forge-bot-s-split-graph-repos: done
   35-1-mason-s-twelve-archived-dreams-leave-the-live-tree: done
   36-1-mason-s-absorbed-spec-folders-move-to-the-archive-home: done
-  37-1-the-mason-spec-defines-each-capability-once-and-marks-it-as-it-stands: blocked
-  37-2-the-mason-brief-prd-and-spine-are-reviewed-against-the-spec-they-derive-from: backlog
-  37-3-mason-s-package-states-what-it-does-update-s-help-the-python-floor-and-the-readme: blocked
-  37-4-mason-s-change-closes-retro-surface-reconcile-deferrals-and-ledger: blocked
-  38-1-mason-s-public-contract-is-written-down-and-a-meta-test-holds-the-code-to-it: backlog
-  38-2-mason-s-suite-runs-as-a-package-half-and-a-live-tree-half: backlog
-  38-3-mason-s-adapters-pass-only-what-the-wrapped-scripts-declare: backlog
-  39-1-the-factory-island-build-is-a-mason-capability-and-its-error-names-only-what-exists: backlog
+  37-1-the-mason-spec-defines-each-capability-once-and-marks-it-as-it-stands: done
+  37-2-the-mason-brief-prd-and-spine-are-reviewed-against-the-spec-they-derive-from: done
+  37-3-mason-s-package-states-what-it-does-update-s-help-the-python-floor-and-the-readme: done
+  37-4-mason-s-change-closes-retro-surface-reconcile-deferrals-and-ledger: done
+  38-1-mason-s-public-contract-is-written-down-and-a-meta-test-holds-the-code-to-it: done
+  38-2-mason-s-suite-runs-as-a-package-half-and-a-live-tree-half: done
+  38-3-mason-s-adapters-pass-only-what-the-wrapped-scripts-declare: done
+  39-1-the-factory-island-build-is-a-mason-capability-and-its-error-names-only-what-exists: done
   39-2-conda-forge-expert-gets-its-own-spec-after-the-root-of-record-flips: blocked
   4-1-lock-engine-adapter-and-provenance: done
   4-2-manifest-discovery: done
@@ -212,11 +212,11 @@ development_status:
   epic-35-retrospective: optional
   epic-36: done
   epic-36-retrospective: optional
-  epic-37: backlog
+  epic-37: done
   epic-37-retrospective: optional
-  epic-38: backlog
+  epic-38: done
   epic-38-retrospective: optional
-  epic-39: backlog
+  epic-39: in-progress
   epic-39-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional
