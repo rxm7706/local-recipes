@@ -1,4 +1,4 @@
-"""Story 9.1 — `DashboardIdentityMiddleware`: CAP-1 + AD-4's refuse-the-start rule.
+"""Story 9.1 — `DashboardIdentityMiddleware`: CAP-109 + AD-4's refuse-the-start rule.
 
 A raw ASGI3 callable (no Django/Channels middleware base class needed — the
 ASGI3 signature IS the contract): extracts identity/role from the
@@ -29,7 +29,7 @@ end-to-end (Story 9.6); this module cannot see its server's configuration.
 See the deferred-work ledger.
 
 When the identity header is absent, this middleware passes through with no
-identity set — the ingress check never triggers at all, matching CAP-1's
+identity set — the ingress check never triggers at all, matching CAP-109's
 "degrades to a single known-unprivileged identity rather than to an error".
 Any pre-existing identity/role key on the incoming `scope` is cleared up
 front, on every path including the refusals, so an upstream middleware
@@ -250,7 +250,7 @@ class DashboardIdentityMiddleware:
                 f"audit trail cannot store"
             )
         if not identity.strip():
-            # Header present but carrying no identity. CAP-1 degrades to a
+            # Header present but carrying no identity. CAP-109 degrades to a
             # known-unprivileged identity, which is the no-identity-set state
             # -- never an empty-string identity a downstream consumer has to
             # remember is falsy-but-present.

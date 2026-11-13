@@ -1,4 +1,4 @@
-"""Story 9.2 — CAP-3: an unauthorized page is absent, not hidden.
+"""Story 9.2 — CAP-111: an unauthorized page is absent, not hidden.
 
 `Page` is the declaration an adopter fills in instead of hand-wiring
 conditional navigation: the path/label a caller sees, and the closed set of
@@ -21,7 +21,7 @@ from typing import Sequence
 
 @dataclass(frozen=True)
 class Page:
-    """CAP-3: one navigable page, and the closed set of roles that may see it.
+    """CAP-111: one navigable page, and the closed set of roles that may see it.
 
     ``path``/``label`` are what a caller sees; ``roles`` is the closed
     vocabulary of role names allowed to see this page. This class does not
@@ -80,9 +80,9 @@ class Page:
 
 
 def build_navigation(role: str | None, pages: Sequence[Page]) -> tuple[Page, ...]:
-    """CAP-3: the pages `role` may see, in the declared order.
+    """CAP-111: the pages `role` may see, in the declared order.
 
-    ``role=None`` (no identity established) returns an empty tuple — CAP-1's
+    ``role=None`` (no identity established) returns an empty tuple — spec-pyforge-steward CAP-109's
     "degrades to a known-unprivileged identity, never an elevated one", the
     same fail-closed default `middleware.py` and `filtering.py` share. A page
     whose ``roles`` does not include ``role`` is simply omitted, not marked

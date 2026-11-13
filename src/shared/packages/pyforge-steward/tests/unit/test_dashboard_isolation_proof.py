@@ -1,4 +1,4 @@
-"""Story 9.6 — CAP-7's proof suite: isolation guarantees demonstrated, not claimed.
+"""Story 9.6 — CAP-115's proof suite: isolation guarantees demonstrated, not claimed.
 
 Four guard-pairs, one per surface (`filtering.py`, `views.py`/`navigation.py`,
 `export.py`, `cache.py` + `filtering.py`). Each pair's first test calls the
@@ -14,18 +14,18 @@ membership guard, and `export.py`'s role-membership check are all inline
 comparisons, not named patchable seams — see this story's spec, Design Notes).
 
 The cache pair is different in shape: `cache.py` has no runtime guard for
-CAP-2 at all — its own docstring states the invariant is a caller contract it
+spec-pyforge-steward CAP-110 at all — its own docstring states the invariant is a caller contract it
 cannot enforce. So instead of a "guard removed" variant, the second test
 reproduces the exact misuse `cache.py`'s docstring already narrates in prose
 (a role-pre-filtering `fetch` closure warming a shared key), converting that
 claim into an executable, pinned regression.
 
-This file additionally proves each surface's CAP-1 fail-closed default
+This file additionally proves each surface's spec-pyforge-steward CAP-109 fail-closed default
 (`role=None`, "no identity established" -- degrades to zero access, never an
 error or elevated grant) with the real production function, since that
 branch is as much an isolation guarantee as the two-role comparisons above.
 
-This file covers the cache invariant (9.1/AD-5/CAP-2) half of the AC below by
+This file covers the cache invariant (9.1/AD-5/spec-pyforge-steward CAP-110) half of the AC below by
 name. The retention refusal (9.3/AD-7) half is ALREADY a mutation-proof case
 -- `test_purge_expired_entries_rechecks_days_a_subclass_could_have_skipped`
 in `test_dashboard_audit.py` bypasses one guard via a subclass and proves a
@@ -110,7 +110,7 @@ def _fresh_backend():
     return backend
 
 
-# ── Filtering: filter_by_role (CAP-2/CAP-7) ──────────────────────────────
+# ── Filtering: filter_by_role (spec-pyforge-steward CAP-110/CAP-115) ─────
 
 _FILTER_DECLARATION = AccessDeclaration(access_column="region", roles=("east", "west"))
 _FILTER_MASTER = [
@@ -158,7 +158,7 @@ def test_filter_by_role_isolation_check_fails_if_the_equality_guard_is_removed()
 
 
 def test_filter_by_role_degrades_to_zero_rows_with_no_identity():
-    """CAP-1's fail-closed default: `role=None` (no identity established)
+    """spec-pyforge-steward CAP-109's fail-closed default: `role=None` (no identity established)
     returns zero rows, never an error and never every row.
     """
     view = filter_by_role(_FILTER_MASTER, _FILTER_DECLARATION, None)
@@ -166,7 +166,7 @@ def test_filter_by_role_degrades_to_zero_rows_with_no_identity():
     assert view.rows == ()
 
 
-# ── Navigation: build_navigation_view + Page (CAP-3/CAP-7) ───────────────
+# ── Navigation: build_navigation_view + Page (spec-pyforge-steward CAP-111/CAP-115) ──
 
 VIEWER_ONLY_PAGE = Page(path="/reports", label="Reports", roles=("viewer",))
 ADMIN_ONLY_PAGE = Page(path="/admin-console", label="Admin Console", roles=("admin",))
@@ -233,7 +233,7 @@ def test_navigation_isolation_check_fails_if_the_role_membership_guard_is_remove
 
 
 def test_navigation_degrades_to_no_pages_with_no_identity():
-    """CAP-1's fail-closed default: a scope with no `dashboard_role` key at
+    """spec-pyforge-steward CAP-109's fail-closed default: a scope with no `dashboard_role` key at
     all (`include_role_key=False` -- the shape a request untouched by
     `DashboardIdentityMiddleware` would have) sees no pages whatsoever, not
     every page.
@@ -245,7 +245,7 @@ def test_navigation_degrades_to_no_pages_with_no_identity():
     assert json.loads(response.content) == {"pages": []}
 
 
-# ── Export: authorize_export + ExportPolicy (CAP-5/CAP-7) ────────────────
+# ── Export: authorize_export + ExportPolicy (spec-pyforge-steward CAP-113/CAP-115) ──
 
 _EXPORT_POLICY = ExportPolicy(allowed_roles=("admin",))
 
@@ -292,14 +292,14 @@ def test_export_authorization_isolation_check_fails_if_the_role_check_is_removed
 
 
 def test_export_authorization_degrades_to_refusal_with_no_identity():
-    """CAP-1's fail-closed default: `role=None` (no identity established) is
+    """spec-pyforge-steward CAP-109's fail-closed default: `role=None` (no identity established) is
     refused exactly like any other unauthorized role, never granted export.
     """
     with pytest.raises(ExportUnauthorizedError):
         authorize_export(identity=None, role=None, policy=_EXPORT_POLICY)
 
 
-# ── Cache invariant: get_master_dataset + filter_by_role (AD-5/CAP-2/CAP-7) ─
+# ── Cache invariant: get_master_dataset + filter_by_role (AD-5/spec-pyforge-steward CAP-110/CAP-115) ──
 
 
 def test_cache_invariant_holds_under_correct_two_role_wiring():
@@ -344,7 +344,7 @@ def test_cache_invariant_holds_under_correct_two_role_wiring():
     assert east_ids.isdisjoint(west_ids)
 
     # The raw cached value equals the COMPLETE unfiltered master, not a
-    # subset -- the AC-named mutation-proof case for AD-5/CAP-2.
+    # subset -- the AC-named mutation-proof case for AD-5/spec-pyforge-steward CAP-110.
     assert backend.get(key) == master
 
 

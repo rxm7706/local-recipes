@@ -1,4 +1,4 @@
-"""Story 9.2 — CAP-3's "absent from the served response" proof surface.
+"""Story 9.2 — CAP-111's "absent from the served response" proof surface.
 
 `build_navigation_view` is a Django view *factory*: it closes over a fixed
 set of declared `Page`s and returns a plain view callable an adopter wires
@@ -6,7 +6,7 @@ into their own `urlpatterns` (AD-1 — the library provides the pipeline, not
 the routing; no `urls.py` or template ships here). The returned view reads
 the role Story 9.1's `DashboardIdentityMiddleware` already placed on
 `request.scope`, builds the role-filtered navigation via `navigation.py`,
-and renders it as JSON — so CAP-3's claim that a restricted page is *absent*,
+and renders it as JSON — so CAP-111's claim that a restricted page is *absent*,
 not merely unrendered, is checkable against an actual `HttpResponse` body
 rather than trusted from reading `build_navigation`'s source.
 
@@ -60,7 +60,7 @@ def build_navigation_view(pages: Sequence[Page]) -> Callable:
         role = getattr(request, "scope", {}).get("dashboard_role")
         visible = build_navigation(role, pages)
         response = JsonResponse({"pages": [{"path": page.path, "label": page.label} for page in visible]})
-        # This payload is role-scoped -- the entire point of CAP-3 is that a
+        # This payload is role-scoped -- the entire point of CAP-111 is that a
         # restricted page must not reach an unauthorized caller. A shared
         # HTTP cache or reverse proxy caching one role's response and
         # serving it to a different role's request would reopen exactly

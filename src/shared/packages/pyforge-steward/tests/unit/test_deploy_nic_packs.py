@@ -620,7 +620,7 @@ def test_run_nic_up_with_packs_writes_apps_labels_and_waits(
     assert record["pull_manifest"]
 
 
-# Story 118.7 (CAP-176/CAP-177): the pack step refuses by name, before any write or subprocess,
+# Story 118.7 (spec-pyforge-steward CAP-176/CAP-177): the pack step refuses by name, before any write or subprocess,
 # when kubectl or helm is not on PATH.
 
 

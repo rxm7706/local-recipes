@@ -1,14 +1,14 @@
 """Story 9.3 — `record_audit_entry` / `query_audit_entries` / `purge_expired_entries`.
 
-CAP-4's write/read/retention API over the `AuditEntry` model (`models.py`):
+CAP-112's write/read/retention API over the `AuditEntry` model (`models.py`):
 
-* `record_audit_entry` is the CAP-4 primitive — every data load, filter,
+* `record_audit_entry` is the CAP-112 primitive — every data load, filter,
   navigation, and export lands here, naming the actor, their role, the
   action, and the row count involved.
 * `query_audit_entries` reads the trail AND, per AD-7 ("reading the audit
   trail is a recorded act"), calls `record_audit_entry` for its own
   invocation before returning. AD-7's role-isolation half returns no rows when
-  the reader established no role (fail-closed, like CAP-2's ``filter_by_role``),
+  the reader established no role (fail-closed, like spec-pyforge-steward CAP-110's ``filter_by_role``),
   otherwise filters to rows whose stored ``role`` equals ``reader_role``,
   applies a bounded ``limit``, and persists the
   read's validated ``**filters`` into the ``AUDIT_READ`` row's ``scope`` field
@@ -20,7 +20,7 @@ CAP-4's write/read/retention API over the `AuditEntry` model (`models.py`):
 
 **Verbatim storage, enforced in Python, not the column type.** `actor`,
 `role`, and `target` are stored exactly as passed — no `.strip()`, no
-case-folding, no Unicode normalization. CAP-4's contract is "records what
+case-folding, no Unicode normalization. CAP-112's contract is "records what
 was actually seen"; normalizing at write time would substitute this
 module's own reinterpretation for what was presented (this is the
 identity-model decision Story 9.1's review pass 3 explicitly deferred
@@ -384,10 +384,10 @@ def record_audit_entry(
     occurred_at=None,
     scope: dict[str, str] | None = None,
 ) -> AuditEntry:
-    """CAP-4's write primitive: record that `actor` (as `role`) did `action`
+    """CAP-112's write primitive: record that `actor` (as `role`) did `action`
     to `row_count` rows of `target`, at `occurred_at`.
 
-    ``actor`` is required and must not be blank or whitespace-only — CAP-4's
+    ``actor`` is required and must not be blank or whitespace-only — CAP-112's
     "who saw" must never be unanswerable by construction. ``role`` may
     legitimately be `None` (Story 9.1's "no role established" scope state)
     and is stored as SQL `NULL`, never coerced to `""`; a non-`None` role
@@ -489,7 +489,7 @@ def query_audit_entries(
 
     **Role isolation (Story 84.2).** When ``reader_role`` is ``None`` (no
     established role), the result set is empty — the same fail-closed shape
-    as CAP-2's ``filter_by_role``. When ``reader_role`` is set, rows are
+    as spec-pyforge-steward CAP-110's ``filter_by_role``. When ``reader_role`` is set, rows are
     limited to those whose stored ``role`` equals it exactly. ``reader_role``
     is both recorded on the ``AUDIT_READ`` row and enforced on the result
     set. Caller-supplied ``**filters`` are ANDed with that isolation

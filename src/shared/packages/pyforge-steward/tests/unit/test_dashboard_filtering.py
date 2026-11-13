@@ -1,4 +1,4 @@
-"""Story 9.2 — `RoleFilteredRows`, `filter_by_role` (CAP-2), `search` (AD-6)."""
+"""Story 9.2 — `RoleFilteredRows`, `filter_by_role` (CAP-110), `search` (AD-6)."""
 
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ def test_filter_by_role_returns_only_rows_matching_the_role():
 
 
 def test_filter_by_role_with_no_identity_fails_closed_to_zero_rows():
-    """CAP-1's degrade: `role=None` never raises, and never returns every
+    """spec-pyforge-steward CAP-109's degrade: `role=None` never raises, and never returns every
     row -- only an empty `RoleFilteredRows`.
     """
     declaration = AccessDeclaration(access_column="region", roles=("east", "west"))

@@ -1,4 +1,4 @@
-"""Story 9.2 — `build_navigation_view` renders CAP-3's absent-not-hidden claim
+"""Story 9.2 — `build_navigation_view` renders CAP-111's absent-not-hidden claim
 as an actual served response, not a bare Python return value.
 
 Builds a real Django `ASGIRequest` from a hand-built ASGI scope (no mocking,

@@ -1,6 +1,6 @@
-"""Story 14.3 — CAP-3: clobbered custom surfaces detected and re-applied/flagged.
+"""Story 14.3 — CAP-11: clobbered custom surfaces detected and re-applied/flagged.
 
-Story 14.8 — CAP-8 amendment: the CAP-3 restore additionally replays the
+Story 14.8 — CAP-16 amendment: the CAP-11 restore additionally replays the
 old→new upstream delta onto the restored bytes (clean merge or conflict-noted
 plain restore), gated on both package roots being available; roots missing
 stays byte-identical to pre-14.8 behavior.
@@ -136,7 +136,7 @@ def _write_repo(root: Path, *, resolve_body: str = _CUSTOM_RESOLVE) -> Path:
 
     manifest_dir = root / "_bmad" / "_config"
     manifest_dir.mkdir(parents=True)
-    # CAP-6 (Story 14.6): apply selects every module the manifest lists; an
+    # spec-pyforge-steward CAP-14 (Story 14.6): apply selects every module the manifest lists; an
     # empty list is a refusal, so the fixture names the real trio.
     (manifest_dir / "manifest.yaml").write_text(
         "installation:\n  version: 6.10.0\n"
@@ -287,7 +287,7 @@ def test_apply_clobber_resolve_restores_and_accounts_bak(tmp_path):
     assert "_bmad-output/projects" in body
 
 
-# ── Story 14.8 / CAP-8 amendment: delta-replay onto the CAP-3 restore ──────
+# ── Story 14.8 / CAP-16 amendment: delta-replay onto the CAP-11 restore ────
 
 # Base/theirs carry NO markers (pristine upstream shape) so the clobber is
 # actually detected (``after`` markers-present must be False); only the

@@ -1,4 +1,4 @@
-"""Story 15.2 — CAP-2 suite advance orchestration (fixture-covered chain)."""
+"""Story 15.2 — CAP-22 suite advance orchestration (fixture-covered chain)."""
 
 from __future__ import annotations
 

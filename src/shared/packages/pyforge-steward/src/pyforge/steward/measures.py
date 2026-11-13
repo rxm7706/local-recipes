@@ -1,4 +1,4 @@
-"""Build League measure catalog config (Story 62.2, spec-build-league-scorecard CAP-2).
+"""Build League measure catalog config (Story 62.2, spec-pyforge-steward CAP-45).
 
 ``measures/measures.yaml`` names every published measure with ``on`` / ``off`` /
 ``archived`` state. A new source is a new row starting ``off``; archive keeps

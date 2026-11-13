@@ -1,4 +1,4 @@
-"""Story 9.4 — CAP-5's "declared, not implemented" half plus its server-side gate.
+"""Story 9.4 — CAP-113's "declared, not implemented" half plus its server-side gate.
 
 `middleware.py` (Story 9.1) resolves ``scope["dashboard_identity"]``/
 ``scope["dashboard_role"]`` at the ASGI boundary; this module is what an
@@ -162,7 +162,7 @@ def _webhook_target_is_blocked(hostname: str) -> bool:
 
 @dataclass(frozen=True)
 class ExportPolicy:
-    """CAP-5: the role vocabulary an export is gated on, plus its two opt-ins.
+    """CAP-113: the role vocabulary an export is gated on, plus its two opt-ins.
 
     ``allowed_roles`` is the closed set of role names `authorize_export`
     checks a resolved role against — independent of, and never
@@ -298,7 +298,7 @@ class ExportPolicy:
 
 
 class ExportUnauthorizedError(Exception):
-    """CAP-5: `authorize_export` refused a role that is not in the policy.
+    """CAP-113: `authorize_export` refused a role that is not in the policy.
 
     The message names only the refused role (or "no role" when none was
     resolved) — deliberately NOT `policy.allowed_roles` or
@@ -316,10 +316,10 @@ def authorize_export(
     policy: ExportPolicy,
     logger: logging.Logger | None = None,
 ) -> None:
-    """CAP-5: the ONLY place the export-authorization decision is made.
+    """CAP-113: the ONLY place the export-authorization decision is made.
 
     Returns `None` with no logging and no webhook call when `role` is in
-    `policy.allowed_roles`. Otherwise — including `role is None`, CAP-1's
+    `policy.allowed_roles`. Otherwise — including `role is None`, spec-pyforge-steward CAP-109's
     degrade-to-unprivileged case — logs a security-event WARNING, attempts
     one best-effort, HMAC-signed webhook POST if `policy.webhook_url` is set
     (any failure or SSRF-shaped refusal caught and logged, never suppressing
@@ -405,7 +405,7 @@ def _post_refusal_webhook(policy: ExportPolicy, *, identity: str | None, role: s
 
 
 def maybe_encrypt_export(path: str | Path, policy: ExportPolicy, *, output: str | Path) -> Path:
-    """CAP-5's optional-encryption half — wraps Story 1.3's `keys.encrypt_file`.
+    """CAP-113's optional-encryption half — wraps Story 1.3's `keys.encrypt_file`.
 
     Returns `Path(path)` unchanged, performing no encryption, when
     `policy.encryption_recipient is None`. Otherwise encrypts `path` to

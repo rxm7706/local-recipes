@@ -1,4 +1,4 @@
-"""Story 14.4 — CAP-4: pin fan-out enumerated, not discovered by red tests."""
+"""Story 14.4 — CAP-12: pin fan-out enumerated, not discovered by red tests."""
 
 from __future__ import annotations
 

@@ -138,3 +138,17 @@ Parent: `spec-pyforge-steward` (CHAIN-STANDARD section 6)
 - Cross-station: none. Story 29.5 recompiles the skill after it; no line moves, so `[SRC:]` references stay valid.
 - `$BASE` in the acceptance criteria is the `baseline_revision` the build writes into this spec's frontmatter when it starts (the commit it starts from); it is not set at mint.
 - No build story appends a `Surface reconcile` line to another Spec's memlog or runs `spec_surface_check.py --write-baseline`: each Spec's own closer writes its reconcile event from `git diff --name-only origin/main...HEAD` (steward and host: Story 122.5) and doctor Story 58.4 runs every scoped stamp once, after the last edit.
+
+## Planned deferral (written at build)
+
+- Three package files outside this story's surface still cite an absorbed Spec's id in a comment or a description,
+  so neither the citation test (`.py` only) nor AC6's phrase list catches them:
+  `src/shared/packages/pyforge-steward/src/pyforge/steward/data/sprint-ledger-query.schema.json:5` (the root
+  `description`, `spec-sprint-ledger-query-module CAP-4`, today `spec-pyforge-steward CAP-148`),
+  `src/shared/packages/pyforge-steward/measures/measures.yaml:1` (`spec-build-league-scorecard CAP-2`, today
+  `spec-pyforge-steward CAP-45`) and `src/shared/packages/pyforge-steward/catalog/catalog.yaml:1`
+  (`spec-self-hosted-bmad-marketplace CAP-1`, today `spec-pyforge-steward CAP-117`). Each is a one-line comment or
+  description re-key by the same provenance map; the station closer (Story 122.5) writes the ledger row.
+- `oracle-map.md`'s `spec-pyforge-steward:CAP-179` row note still says `test_cap_citations.py` holds the ids in
+  steward's help and output only; since this story it also holds every comment and docstring under the package's
+  `src` and `tests`. The companion is outside this story's surface; the closer amends the note with the row above.

@@ -1,6 +1,6 @@
 """Story 14.10 — `@next` rehearsal (report-only, fixture-based).
 
-Exercises CAP-6 pixi-bin PATH fallback, CAP-8 single-conflict path, and CAP-7 skf
+Exercises CAP-14 pixi-bin PATH fallback, CAP-16 single-conflict path, and CAP-15 skf
 restore together in the invocation shape documented in
 ``spec-pyforge-steward/release-cadence.md`` § The ``@next`` rehearsal.
 

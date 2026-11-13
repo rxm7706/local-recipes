@@ -1,6 +1,6 @@
 """The attended NKP probes' client (steward Story 118.6, spec-pyforge-steward CAP-177).
 
-CAP-177's success names observables the attended kind runs of 2026-10-31 checked by hand with
+spec-pyforge-steward CAP-177's success names observables the attended kind runs of 2026-10-31 checked by hand with
 untracked scratch scripts: the landing SPA signs in through Keycloak as the bootstrap admin
 (Story 118.1 AC2), the hub signs in through Keycloak and a ``small-instance`` server spawns, and
 the landing page lists the JupyterHub and Nebi cards as healthy (Story 118.2 AC2). This module is

@@ -153,7 +153,7 @@ def test_clean_repo_set_merged_only_archives_per_member(
     assert result["archived"][0]["member"] == "primary"
     archive = Path(result["archived"][0]["archive"])
     assert archive.is_file()
-    # Story 69.1 (CAP-157): primary is clean and on origin/main -- a note, not a tarball.
+    # Story 69.1 (spec-pyforge-steward CAP-157): primary is clean and on origin/main -- a note, not a tarball.
     assert archive.name.endswith(".landed.txt")
     assert "nothing unlanded" in archive.read_text(encoding="utf-8")
 

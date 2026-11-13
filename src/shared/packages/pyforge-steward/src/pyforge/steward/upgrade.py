@@ -1,33 +1,33 @@
 """Steward's ``upgrade`` duty — BMAD-METHOD core upgrade surfaces (Epic 14).
 
-Story 14.1 / CAP-1: report-only pre-flight for a target bmad-method release.
-Story 14.2 / CAP-2: deliberate ``--apply`` — clean tree + CAP-1 gate, branch
+Story 14.1 / CAP-9: report-only pre-flight for a target bmad-method release.
+Story 14.2 / CAP-10: deliberate ``--apply`` — clean tree + CAP-9 gate, branch
 first, run ``bmad-method install --action update -y`` (installer remains the
 only writer of ``_bmad/bmm/**`` / ``_bmad/core/**``), refuse on legacy-name
 custom that would halt shims, land the installer diff on a review branch,
 and prove ``_bmad/custom/**`` byte-identical (or name why not).
 
-Story 14.3 / CAP-3: after apply, detect clobbered repo-custom surfaces
+Story 14.3 / CAP-11: after apply, detect clobbered repo-custom surfaces
 (named case: ``resolve_config.py`` multi-project layers 5/6), re-apply from
 installer ``.bak`` or a pre-apply snapshot, or flag — never leave broken
 silently. Success: six-layer resolution via ``BMAD_ACTIVE_PROJECT`` and via
 a fixture-local ``.active-project`` marker. Never calls ``scripts/bmad-switch``.
 
-Story 14.4 / CAP-4: report-only pin fan-out enumeration for a bmad-method or
+Story 14.4 / CAP-12: report-only pin fan-out enumeration for a bmad-method or
 bmad-loop version change — every known pin site with moved/not-moved status.
 Foreign-station sites (marshal, loop-home relays) are reported, never edited.
 
-Story 14.5 / CAP-5: post-apply prove-landed — one command runs bmad-drift
+Story 14.5 / CAP-13: post-apply prove-landed — one command runs bmad-drift
 integrity, CFE skill meta-tests, and per-loop-home ``bmad-loop init`` relay
 refresh + ``validate``, then reports a single verdict. The only foreign-tree
 mutation is the documented relay refresh (``bmad-loop init``); gates themselves
 are report-only.
 
-Story 15.4 / CAP-4 dual-path orbit: prove-landed also advisory-spot-checks one
+Story 15.4 / CAP-24 dual-path orbit: prove-landed also advisory-spot-checks one
 cited native command per install-matrix class (dashboards = check-by-doc).
-Spot-check failures never flip CAP-5 ``verdict`` / ``DutyResult.ok``.
+Spot-check failures never flip CAP-13 ``verdict`` / ``DutyResult.ok``.
 
-Story 14.6 / CAP-6: the installer is driven on purpose — the argv carries
+Story 14.6 / CAP-14: the installer is driven on purpose — the argv carries
 ``--directory <repo> --modules <every module the installed manifest lists,
 core first>``, stdin is closed, and ``node`` / ``bmad-method`` resolve from the
 repo's ``.pixi/envs/pyforge-guild/bin`` only when absent from PATH. An exit-0
@@ -35,7 +35,7 @@ run that changed nothing is a refusal (``ApplyReport.zero_diff``, trap 12),
 never a green; a manifest that names no modules stops the apply before the
 review branch exists (trap 13). No wrapper script.
 
-Story 14.7 / CAP-7: custom modules survive the core apply. The release catalog's
+Story 14.7 / CAP-15: custom modules survive the core apply. The release catalog's
 ``custom_modules:`` list annotates each ``source: custom`` manifest module (own
 installer argv, config paths, optional pin, optional packaged source); selection
 still comes from the manifest — Story 14.6's design already guarantees every
@@ -49,8 +49,8 @@ module's own installer from the repo root through an injectable runner, verifies
 ``.claude/skills/<name>-*`` against the packaged source (a finding, never a
 gate), reports the regenerated ``[modules.<name>]`` block of ``_bmad/config.toml``
 as a diff (never edited), and gates ``custom_modules_ok`` on own-installer exit 0
-plus every config path restored. ``zero_diff`` keeps its CAP-6 meaning — judged
-on the core installer's own diff, before this phase runs; the CAP-7 phase itself
+plus every config path restored. ``zero_diff`` keeps its CAP-14 meaning — judged
+on the core installer's own diff, before this phase runs; the CAP-15 phase itself
 (config restore + own installer) is what addresses trap 14.
 
 Verb naming (SPEC open question): a dedicated ``steward upgrade bmad-core``
@@ -88,41 +88,41 @@ from .root_layout import MARSHAL_PACKAGE_DIR
 _BMAD_LOOP_WORKTREE_RELATIVE_PATH = Path("scripts/bmad-loop-worktree")
 _MANIFEST_RELATIVE_PATH = Path("_bmad/_config/manifest.yaml")
 _CUSTOM_RELATIVE_PATH = Path("_bmad/custom")
-# CAP-7: where a custom module's IDE skill dirs land (verified, never written by
+# CAP-15: where a custom module's IDE skill dirs land (verified, never written by
 # steward) and the installer-generated TOML whose `[modules.<name>]` block is
 # reported as a diff, never edited.
 _IDE_SKILLS_RELATIVE_PATH = Path(".claude/skills")
 _CONFIG_TOML_RELATIVE_PATH = Path("_bmad/config.toml")
 _SKILL_MANIFEST_RELATIVE_PATH = Path("_bmad/_config/skill-manifest.csv")
-# CAP-8: best-effort default location of a rattler/conda package cache, used to
+# CAP-16: best-effort default location of a rattler/conda package cache, used to
 # resolve the INSTALLED version's unpacked bmad-method package when
 # --installed-package-root is not passed.
 _RATTLER_PKGS_CACHE_RELATIVE_PATH = Path(".cache/rattler/cache/pkgs")
-# CAP-6: where the installer's `node` / `bmad-method` live when they are not on
+# CAP-14: where the installer's `node` / `bmad-method` live when they are not on
 # PATH — always derived from the repo path, never a machine path.
 # Story 63.6 (spec-pyforge-steward CAP-152): the Guild env is the only runtime env.
 _PIXI_LOCAL_RECIPES_BIN_RELATIVE_PATH = Path(".pixi/envs/pyforge-guild/bin")
 # Stable ``X.Y.Z`` plus optional npm prerelease suffix (e.g. ``6.12.1-next.0``).
 _VERSION_RE = re.compile(r"^\d+\.\d+\.\d+(-[\w.]+)?$")
 
-# Trap IDs from failure-modes.md that CAP-1 must retrodict for 6.10→6.11.
+# Trap IDs from failure-modes.md that CAP-9 must retrodict for 6.10→6.11.
 TRAP_LOCAL_MOD = 1
 TRAP_LEGACY_CUSTOM = 2
 TRAP_REMOVALS = 3
 TRAP_PREREQUISITES = 4
-TRAP_PIN_FANOUT = 5  # CAP-4 report surface (not a CAP-1 preflight trap)
-TRAP_LOOP_RELAY = 7  # CAP-5: stale hook relays → init + validate
+TRAP_PIN_FANOUT = 5  # CAP-12 report surface (not a CAP-9 preflight trap)
+TRAP_LOOP_RELAY = 7  # CAP-13: stale hook relays → init + validate
 TRAP_FORWARDER = 9
 TRAP_CONFIG_MIGRATION = 11
-# CAP-6 (Story 14.6) apply traps from the 2026-09-06 first 6.12 apply.
+# CAP-14 (Story 14.6) apply traps from the 2026-09-06 first 6.12 apply.
 TRAP_SILENT_NOOP_APPLY = 12  # exit 0, nothing written (cancelled directory prompt)
 TRAP_CUSTOM_MODULE_DESELECTED = 13  # `-y` deletes an unselected cached custom module
-# CAP-7 (Story 14.7): the installer regenerates a custom module's config.yaml
+# CAP-15 (Story 14.7): the installer regenerates a custom module's config.yaml
 # from module.yaml defaults and honours its marketplace.json skill list.
 TRAP_CUSTOM_MODULE_CONFIG_REGENERATED = 14
-# CAP-8 (Story 14.8): a marker-free byte-diff scan finds any OTHER
+# CAP-16 (Story 14.8): a marker-free byte-diff scan finds any OTHER
 # installer-owned skill file or `_bmad/scripts/*.py` script edited in place
-# (trap 15 is CAP-5's env gate — unrelated, never reused).
+# (trap 15 is CAP-13's env gate — unrelated, never reused).
 TRAP_LOCAL_CUSTOMIZATION = 16
 
 # 2026-08-21 worked example: eight loop homes validate clean, zero warnings.
@@ -231,7 +231,7 @@ class ConfigMigrationFinding:
 
 @dataclass(frozen=True)
 class CustomModuleFinding:
-    """CAP-7 pre-flight row: one catalog ``custom_modules`` entry vs the installed manifest.
+    """CAP-15 pre-flight row: one catalog ``custom_modules`` entry vs the installed manifest.
 
     ``matched`` is True only when the catalog names the module AND the manifest
     lists it with ``source: custom``. Any other combination is a trap-13
@@ -254,7 +254,7 @@ class CustomModuleFinding:
 
 @dataclass(frozen=True)
 class LocalCustomizationFinding:
-    """CAP-8: an installer-owned skill file or script edited in place (no marker needed)."""
+    """CAP-16: an installer-owned skill file or script edited in place (no marker needed)."""
 
     path: str
     reason: str
@@ -276,12 +276,12 @@ class PreflightReport:
     config_migration: ConfigMigrationFinding | None
     trap_ids: tuple[int, ...]
     notes: tuple[str, ...] = ()
-    # CAP-7 (Story 14.7) — appended after ``notes`` so positional constructors
+    # CAP-15 (Story 14.7) — appended after ``notes`` so positional constructors
     # written before it stay valid.
     custom_modules: tuple[CustomModuleFinding, ...] = ()
-    # CAP-8 (Story 14.8) — appended last for the same reason.
+    # CAP-16 (Story 14.8) — appended last for the same reason.
     local_customizations: tuple[LocalCustomizationFinding, ...] = ()
-    # CAP-9 (Story 14.9) — appended last for the same reason. A preview of what
+    # CAP-17 (Story 14.9) — appended last for the same reason. A preview of what
     # a future `--no-shims` run would remove; never a trap (see Design Notes).
     shims_to_retire: tuple[str, ...] = ()
 
@@ -304,7 +304,7 @@ class ClobberFinding:
 
 @dataclass(frozen=True)
 class ReconcileReport:
-    """CAP-3 detect / re-apply / flag outcome for clobbered custom surfaces."""
+    """CAP-11 detect / re-apply / flag outcome for clobbered custom surfaces."""
 
     findings: tuple[ClobberFinding, ...]
     bak_files_accounted: tuple[str, ...]
@@ -336,7 +336,7 @@ class ReconcileReport:
 
 @dataclass(frozen=True)
 class ConfigRestore:
-    """One catalog ``config_paths`` entry after the core installer ran (CAP-7)."""
+    """One catalog ``config_paths`` entry after the core installer ran (CAP-15)."""
 
     path: str
     status: str  # restored | unchanged | missing
@@ -348,7 +348,7 @@ class ConfigRestore:
 
 @dataclass(frozen=True)
 class CustomizationReapplyFinding:
-    """CAP-8: one pre-flight-flagged file's outcome after the core installer ran."""
+    """CAP-16: one pre-flight-flagged file's outcome after the core installer ran."""
 
     path: str
     # merged_clean | conflict_needs_manual_merge | unchanged | skipped_no_snapshot |
@@ -368,7 +368,7 @@ class CustomizationReapplyFinding:
 
 @dataclass(frozen=True)
 class CustomizationReapplyReport:
-    """CAP-8 outcome: three-way re-apply of every pre-flight-flagged local customization."""
+    """CAP-16 outcome: three-way re-apply of every pre-flight-flagged local customization."""
 
     findings: tuple[CustomizationReapplyFinding, ...]
     all_clean: bool
@@ -384,7 +384,7 @@ class CustomizationReapplyReport:
 
 @dataclass(frozen=True)
 class SkillDirVerification:
-    """``.claude/skills/<name>-*`` compared against the catalog's packaged source (CAP-7).
+    """``.claude/skills/<name>-*`` compared against the catalog's packaged source (CAP-15).
 
     A finding, never a gate: a missing pixi env or a deliberately patched skill
     must not turn a coherent apply red.
@@ -410,7 +410,7 @@ class SkillDirVerification:
 
 @dataclass(frozen=True)
 class CustomModuleReport:
-    """CAP-7 outcome for one catalog custom module during the apply.
+    """CAP-15 outcome for one catalog custom module during the apply.
 
     ``ok`` is own-installer exit 0 AND every config path restored/unchanged; an
     unselected module (catalog names it, manifest does not list it as custom)
@@ -449,7 +449,7 @@ class CustomModuleReport:
 
 @dataclass(frozen=True)
 class ApplyReport:
-    """Outcome of a deliberate CAP-2 apply (review branch + custom check)."""
+    """Outcome of a deliberate CAP-10 apply (review branch + custom check)."""
 
     preflight: PreflightReport
     branch: str
@@ -462,17 +462,17 @@ class ApplyReport:
     changed_paths: tuple[str, ...]
     reconcile: ReconcileReport | None = None
     notes: tuple[str, ...] = ()
-    # CAP-6: strictly ``installer_exit == 0 and not changed_paths`` — the trap-12
+    # CAP-14: strictly ``installer_exit == 0 and not changed_paths`` — the trap-12
     # shape (a cancelled prompt or a no-op). A non-zero exit is already a failure
     # through the exit gate and is never double-reported here. Judged on the
-    # CORE installer's diff, before the CAP-7 custom-module phase runs.
+    # CORE installer's diff, before the CAP-15 custom-module phase runs.
     zero_diff: bool = False
-    # CAP-7 (Story 14.7): one report per catalog custom module; the gate is
+    # CAP-15 (Story 14.7): one report per catalog custom module; the gate is
     # ``all(m.ok for m in custom_modules if m.selected)``.
     custom_modules: tuple[CustomModuleReport, ...] = ()
     custom_modules_ok: bool = True
-    # CAP-8 (Story 14.8): three-way re-apply of pre-flight-flagged local
-    # customizations, run after the CAP-7 custom-module phase.
+    # CAP-16 (Story 14.8): three-way re-apply of pre-flight-flagged local
+    # customizations, run after the CAP-15 custom-module phase.
     local_customizations_reapply: CustomizationReapplyReport | None = None
     local_customizations_ok: bool = True
 
@@ -500,7 +500,7 @@ class ApplyReport:
 
 
 class InstallerRunner(Protocol):
-    """Runs the installer argv in *repo*; ``env`` is the CAP-6 resolved environment."""
+    """Runs the installer argv in *repo*; ``env`` is the CAP-14 resolved environment."""
 
     def __call__(
         self,
@@ -550,7 +550,7 @@ def load_release_catalog(version: str, *, directory: Path | None = None) -> dict
 
 @dataclass(frozen=True)
 class CustomModuleDef:
-    """One release-catalog ``custom_modules`` entry (CAP-7, Story 14.7).
+    """One release-catalog ``custom_modules`` entry (CAP-15, Story 14.7).
 
     The catalog only ANNOTATES: selection comes from the installed manifest.
     ``own_installer`` is the argv steward runs from the repo root after the
@@ -686,7 +686,7 @@ def _manifest_module_entries(data: Any) -> list[tuple[str, str | None]]:
 
 
 def read_installed_module_sources(repo: Path) -> dict[str, str | None]:
-    """``{module name: source}`` from ``_bmad/_config/manifest.yaml`` (CAP-7).
+    """``{module name: source}`` from ``_bmad/_config/manifest.yaml`` (CAP-15).
 
     Never raises for a missing manifest or a missing/empty ``modules:`` —
     both yield ``{}``; the pre-flight is report-only and the apply already
@@ -910,7 +910,7 @@ def _config_migration_finding(catalog: dict[str, Any]) -> ConfigMigrationFinding
 
 
 def _custom_module_findings(repo: Path, catalog: Mapping[str, Any]) -> list[CustomModuleFinding]:
-    """CAP-7 pre-flight: each catalog ``custom_modules`` entry vs the installed manifest.
+    """CAP-15 pre-flight: each catalog ``custom_modules`` entry vs the installed manifest.
 
     Four shapes: matched (catalog + manifest ``source: custom``); catalog names
     a module the manifest does not list; catalog names a module the manifest
@@ -1008,7 +1008,7 @@ def _find_packaged_skill_dir(package_root: Path, name: str) -> Path | None:
     """Locate installer-owned skill dir *name* under bmm-skills/ or core-skills/.
 
     Skips anything under a ``v6-shims`` subtree — those are never scanned or
-    re-applied by CAP-8.
+    re-applied by CAP-16.
     """
     for sub in ("bmm-skills", "core-skills"):
         root = package_root / "src" / sub
@@ -1025,11 +1025,11 @@ def _scripts_package_path(package_root: Path, script_name: str) -> Path:
 
 
 def _is_pycache_noise(relpath: str) -> bool:
-    """True when *relpath* is scan noise CAP-8 itself would otherwise re-flag.
+    """True when *relpath* is scan noise CAP-16 itself would otherwise re-flag.
 
     ``__pycache__`` dirs and ``.pyc``/``.pyo`` files churn on every interpreter
     run and are never a genuine in-place edit. A ``.customization-conflict``
-    sibling is CAP-8's OWN prior-run output artifact — left behind by a
+    sibling is CAP-16's OWN prior-run output artifact — left behind by a
     conflicted re-apply, it has no packaged counterpart either, so without
     this exclusion it would self-pollute the next pre-flight scan as a "new"
     local customization. Neither is a genuine in-place edit.
@@ -1042,9 +1042,9 @@ def _is_pycache_noise(relpath: str) -> bool:
 def _skill_customization_findings(
     repo: Path, installed_package_root: Path, *, exclude: frozenset[str]
 ) -> list[LocalCustomizationFinding]:
-    """CAP-8: every installed skill file that byte-differs from its package copy.
+    """CAP-16: every installed skill file that byte-differs from its package copy.
 
-    *exclude* names paths already governed by CAP-3's marker-based mechanism
+    *exclude* names paths already governed by CAP-11's marker-based mechanism
     (the catalog's ``upstream_touched_paths``) — never double-covered.
     """
     findings: list[LocalCustomizationFinding] = []
@@ -1079,9 +1079,9 @@ def _skill_customization_findings(
 def _scripts_customization_findings(
     repo: Path, installed_package_root: Path, *, exclude: frozenset[str]
 ) -> list[LocalCustomizationFinding]:
-    """CAP-8: every ``_bmad/scripts/*.py`` that byte-differs from its package copy.
+    """CAP-16: every ``_bmad/scripts/*.py`` that byte-differs from its package copy.
 
-    *exclude* names paths already governed by CAP-3's marker-based mechanism
+    *exclude* names paths already governed by CAP-11's marker-based mechanism
     (the catalog's ``upstream_touched_paths``) — never double-covered.
     """
     scripts_dir = repo / "_bmad" / "scripts"
@@ -1111,7 +1111,7 @@ def _looks_like_bmad_method_package(root: Path) -> bool:
     A real, existing directory that lacks all three of ``src/bmm-skills``,
     ``src/core-skills``, and ``src/scripts`` is not a bmad-method package —
     it would otherwise silently scan to zero findings, indistinguishable
-    from a genuinely clean repo (the exact trap-16 false-confidence CAP-8
+    from a genuinely clean repo (the exact trap-16 false-confidence CAP-16
     exists to prevent).
     """
     return any((root / "src" / sub).is_dir() for sub in ("bmm-skills", "core-skills", "scripts"))
@@ -1120,7 +1120,7 @@ def _looks_like_bmad_method_package(root: Path) -> bool:
 def _local_customization_findings(
     repo: Path, installed_package_root: Path | None, catalog: Mapping[str, Any]
 ) -> list[LocalCustomizationFinding]:
-    """CAP-8: report-only scan of every installer-owned file for local edits.
+    """CAP-16: report-only scan of every installer-owned file for local edits.
 
     Returns ``[]`` (never raises) when no installed-package-root is resolvable
     — the scan is always optional.
@@ -1148,7 +1148,7 @@ def build_preflight_report(
 
     Never mutates the filesystem. ``package_root``, when set, contributes a
     live ``removals.txt`` and upstream file comparison — still read-only.
-    ``installed_package_root`` (CAP-8), when set or resolvable from the local
+    ``installed_package_root`` (CAP-16), when set or resolvable from the local
     rattler cache, additionally scans every installer-owned skill/script file
     for local edits — also report-only, and never required.
     """
@@ -1168,7 +1168,7 @@ def build_preflight_report(
     forwarder_changes = _forwarder_findings(catalog)
     config_migration = _config_migration_finding(catalog)
     custom_modules = _custom_module_findings(repo, catalog)
-    # CAP-9 (Story 14.9): preview-only — never a trap (see module docstring's
+    # CAP-17 (Story 14.9): preview-only — never a trap (see module docstring's
     # Design Notes in the story spec). Computed unconditionally, independent
     # of any --no-shims flag, so a plain pre-flight can audit it too.
     shims_to_retire = tuple(
@@ -1339,7 +1339,7 @@ def format_preflight(report: PreflightReport, *, as_json: bool) -> str:
     return "\n".join(lines) + "\n"
 
 
-# ── Story 14.2 / CAP-2 — deliberate apply ──────────────────────────────────
+# ── Story 14.2 / CAP-10 — deliberate apply ─────────────────────────────────
 
 
 def default_apply_branch(target_version: str) -> str:
@@ -1377,7 +1377,7 @@ def assert_clean_tree(repo: Path) -> None:
 def _fingerprint_tree(repo: Path, root: Path) -> dict[str, str]:
     """``{path relative to repo: sha256-hex}`` for every file under *root*.
 
-    Pass ``root`` as *repo* too to key a tree by its own root (CAP-7 compares an
+    Pass ``root`` as *repo* too to key a tree by its own root (CAP-15 compares an
     installed skill dir against the packaged copy that way).
     """
     if not root.is_dir():
@@ -1422,7 +1422,7 @@ def compare_custom_fingerprints(
 
 
 def refuse_legacy_custom(preflight: PreflightReport) -> None:
-    """CAP-2: refuse to start when legacy-name custom would halt shims."""
+    """CAP-10: refuse to start when legacy-name custom would halt shims."""
     if not preflight.legacy_custom:
         return
     named = ", ".join(
@@ -1481,7 +1481,7 @@ def default_installer_runner(
 ) -> subprocess.CompletedProcess[str]:
     """Invoke the real installer; steward never writes ``_bmad/bmm/**`` / ``_bmad/core/**``.
 
-    CAP-6: stdin is closed (``DEVNULL``) so the installer can never sit on a
+    CAP-14: stdin is closed (``DEVNULL``) so the installer can never sit on a
     prompt, and *env* is the environment ``resolve_installer_environment`` built.
     """
     return subprocess.run(
@@ -1545,7 +1545,7 @@ def _call_installer_runner(
     return runner(repo, cmd)  # type: ignore[call-arg]
 
 
-# ── Story 14.7 / CAP-7 — custom modules survive the core apply ─────────────
+# ── Story 14.7 / CAP-15 — custom modules survive the core apply ────────────
 
 # Cap on the reported `[modules.<name>]` unified diff (report payload hygiene).
 _CONFIG_TOML_DIFF_CAP = 4000
@@ -1746,7 +1746,7 @@ def _run_custom_module_phase(
     runner: InstallerRunner | LegacyInstallerRunner,
     spawned_by_steward: bool,
 ) -> tuple[tuple[CustomModuleReport, ...], tuple[str, ...]]:
-    """CAP-7 after the core installer: restore configs, own installer, verify, diff.
+    """CAP-15 after the core installer: restore configs, own installer, verify, diff.
 
     Order matters: the config restore runs FIRST because the own installer
     preserves an existing config file verbatim and only appends its own keys
@@ -2047,12 +2047,12 @@ def _three_way_merge(*, ours: bytes, base: bytes, theirs: bytes) -> tuple[bool, 
 
 
 def snapshot_local_customizations(repo: Path, findings: Sequence[LocalCustomizationFinding]) -> dict[str, bytes | None]:
-    """Pre-apply bytes for every CAP-8-flagged file (``None`` when absent)."""
+    """Pre-apply bytes for every CAP-16-flagged file (``None`` when absent)."""
     return {f.path: ((repo / f.path).read_bytes() if (repo / f.path).is_file() else None) for f in findings}
 
 
 def _installer_owned_package_paths(rel: str, *, old_root: Path, new_root: Path) -> tuple[Path | None, Path | None]:
-    """Map a CAP-8-flagged repo-relative path to its old/new packaged counterparts."""
+    """Map a CAP-16-flagged repo-relative path to its old/new packaged counterparts."""
     parts = Path(rel).parts
     if len(parts) >= 3 and parts[0] == ".claude" and parts[1] == "skills":
         name = parts[2]
@@ -2078,7 +2078,7 @@ def reapply_local_customizations(
     installed_package_root: Path | None,
     package_root: Path | None,
 ) -> CustomizationReapplyReport:
-    """CAP-8: three-way-merge every pre-flight-flagged file after the core installer ran.
+    """CAP-16: three-way-merge every pre-flight-flagged file after the core installer ran.
 
     ``ours`` = the pre-apply snapshot (the repo's customization); ``base`` =
     the old (installed) package's matching copy; ``theirs`` = the new
@@ -2264,7 +2264,7 @@ def reconcile_clobbered_custom_surfaces(
             if bak is not None:
                 detail += f"; installer .bak accounted at {bak_rel}"
 
-        # CAP-8 amendment (Story 14.8): replay the old→new upstream delta onto
+        # CAP-16 amendment (Story 14.8): replay the old→new upstream delta onto
         # the just-restored bytes instead of leaving a bare restore. Either
         # root missing ⇒ byte-identical to pre-14.8 behavior (regression guard).
         if action in ("restored_from_bak", "restored_from_snapshot") and (
@@ -2366,7 +2366,7 @@ def apply_bmad_core_upgrade(
     custom_installer_runner: InstallerRunner | LegacyInstallerRunner | None = None,
     no_shims: bool = False,
 ) -> ApplyReport:
-    """CAP-2+3+6+7+8+9 deliberate apply: preflight → branch → installer → custom modules → custom check → CAP-3 reconcile.
+    """CAP-10+11+14+15+16+17 deliberate apply: preflight → branch → installer → custom modules → custom check → CAP-11 reconcile.
 
     The installer command is always ``bmad-method install --action update -y
     --directory <repo> --modules <every module the manifest lists, core first>
@@ -2375,14 +2375,14 @@ def apply_bmad_core_upgrade(
     that changed nothing is reported as ``zero_diff`` — a refusal, never a
     green (trap 12), judged on the core installer's diff alone.
 
-    CAP-7: each catalog ``custom_modules`` entry the manifest lists with
+    CAP-15: each catalog ``custom_modules`` entry the manifest lists with
     ``source: custom`` has its config paths snapshotted before the core
     installer and restored verbatim after, then its own installer runs from
     the repo root through *custom_installer_runner* (default:
     ``default_installer_runner``); the only bytes steward itself writes in
     that phase are the restored config paths.
 
-    CAP-9: ``no_shims=True`` appends a literal ``--no-shims`` to the installer
+    CAP-17: ``no_shims=True`` appends a literal ``--no-shims`` to the installer
     argv (right after ``--modules``, before any ``--pin`` pair), asking the
     installer to retire the release's deprecation shims (``installShims:
     false``); the sole refusal is the pre-existing trap-2 legacy-custom check
@@ -2398,13 +2398,13 @@ def apply_bmad_core_upgrade(
         package_root=package_root,
         installed_package_root=installed_package_root,
     )
-    # CAP-8: re-derive the same cheap glob rather than growing PreflightReport's
+    # CAP-16: re-derive the same cheap glob rather than growing PreflightReport's
     # shape just to carry a Path through.
     resolved_installed_root = installed_package_root or default_installed_package_root(preflight.installed_version)
     refuse_legacy_custom(preflight)
-    # CAP-6: refuse before any branch exists when the manifest names no modules.
+    # CAP-14: refuse before any branch exists when the manifest names no modules.
     modules = read_installed_modules(repo)
-    # CAP-7: one source of truth for `--modules` — the manifest. Assert every
+    # CAP-15: one source of truth for `--modules` — the manifest. Assert every
     # `source: custom` module is on it rather than adding a second selection path.
     module_sources = read_installed_module_sources(repo)
     unselected_custom = [name for name, source in module_sources.items() if source == "custom" and name not in modules]
@@ -2415,7 +2415,7 @@ def apply_bmad_core_upgrade(
             f"cached custom module (trap {TRAP_CUSTOM_MODULE_DESELECTED}); refuse to apply "
             "before any review branch exists"
         )
-    # CAP-6: resolve the installer environment before any branch exists. When
+    # CAP-14: resolve the installer environment before any branch exists. When
     # steward itself will spawn the installer, an unresolvable binary is a
     # refusal here — not a FileNotFoundError on a freshly switched checkout.
     env, env_note = resolve_installer_environment(repo, installer_bin)
@@ -2429,7 +2429,7 @@ def apply_bmad_core_upgrade(
     review_branch = branch or default_apply_branch(target_version)
     custom_before = fingerprint_custom_tree(repo)
     catalog = load_release_catalog(target_version, directory=catalog_directory)
-    # CAP-7: the catalog annotates; the manifest selects. Validated in the
+    # CAP-15: the catalog annotates; the manifest selects. Validated in the
     # pre-flight already (a malformed entry raised there, before any branch).
     custom_module_defs = load_custom_modules(catalog)
     installed_custom_defs = [
@@ -2438,7 +2438,7 @@ def apply_bmad_core_upgrade(
         if module.name in modules and module_sources.get(module.name) == "custom"
     ]
     surface_snapshots = snapshot_repo_custom_surfaces(repo, catalog)
-    # CAP-8: snapshot every pre-flight-flagged local customization's bytes at
+    # CAP-16: snapshot every pre-flight-flagged local customization's bytes at
     # the same point as the other pre-apply snapshots, before the core
     # installer runs.
     local_customization_pre_snapshots = snapshot_local_customizations(repo, preflight.local_customizations)
@@ -2501,7 +2501,7 @@ def apply_bmad_core_upgrade(
             "still holds any partial diff; custom check follows"
         )
 
-    # CAP-6: zero-diff is judged on the CORE installer's diff, before the CAP-7
+    # CAP-14: zero-diff is judged on the CORE installer's diff, before the CAP-15
     # phase — the own installer must never mask a trap-12 no-op as a "diff".
     core_changed = list_changed_paths(repo)
     zero_diff = result.returncode == 0 and not core_changed
@@ -2513,7 +2513,7 @@ def apply_bmad_core_upgrade(
             "operator to inspect or delete"
         )
 
-    # CAP-7: restore each custom module's config, run its own installer, verify.
+    # CAP-15: restore each custom module's config, run its own installer, verify.
     custom_modules, phase_notes = _run_custom_module_phase(
         repo,
         definitions=custom_module_defs,
@@ -2529,8 +2529,8 @@ def apply_bmad_core_upgrade(
     notes.extend(phase_notes)
     custom_modules_ok = all(module.ok for module in custom_modules if module.selected)
 
-    # CAP-8: three-way re-apply every pre-flight-flagged local customization
-    # after the core installer (and the CAP-7 custom-module phase) ran.
+    # CAP-16: three-way re-apply every pre-flight-flagged local customization
+    # after the core installer (and the CAP-15 custom-module phase) ran.
     local_reapply = reapply_local_customizations(
         repo,
         pre_apply_snapshots=local_customization_pre_snapshots,
@@ -2688,14 +2688,14 @@ def format_apply(report: ApplyReport, *, as_json: bool) -> str:
         for note in report.notes:
             lines.append(f"- {note}")
 
-    # Include the CAP-1 preflight body for the review checklist.
+    # Include the CAP-9 preflight body for the review checklist.
     lines.extend(["", "--- CAP-9 preflight consumed by this apply ---", ""])
     lines.append(format_preflight(report.preflight, as_json=False).rstrip())
     return "\n".join(lines) + "\n"
 
 
 # ---------------------------------------------------------------------------
-# CAP-4 — pin fan-out report (report-only; foreign sites never edited)
+# CAP-12 — pin fan-out report (report-only; foreign sites never edited)
 # ---------------------------------------------------------------------------
 
 
@@ -3234,13 +3234,13 @@ def format_pin_fan_out(report: PinFanOutReport, *, as_json: bool) -> str:
 
 
 # ---------------------------------------------------------------------------
-# CAP-5 — post-apply prove-landed (single verdict)
+# CAP-13 — post-apply prove-landed (single verdict)
 # ---------------------------------------------------------------------------
 
 
 @dataclass(frozen=True)
 class GateResult:
-    """One gate in the CAP-5 prove-landed run."""
+    """One gate in the CAP-13 prove-landed run."""
 
     name: str
     ok: bool
@@ -3254,7 +3254,7 @@ class GateResult:
 
 
 # ---------------------------------------------------------------------------
-# Story 15.4 — CAP-4 dual-path native-class advisory spot-checks (orbit CAP-5)
+# Story 15.4 — CAP-24 dual-path native-class advisory spot-checks (orbit CAP-13)
 # ---------------------------------------------------------------------------
 
 
@@ -3346,7 +3346,7 @@ class NativePathSpotCheck:
     detail: str
     argv: tuple[str, ...] | None = None
     exit_code: int | None = None
-    advisory: bool = True  # spot-checks never hard-gate CAP-5
+    advisory: bool = True  # spot-checks never hard-gate CAP-13
 
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
@@ -3391,7 +3391,7 @@ def run_native_path_spot_checks(
 ) -> tuple[NativePathSpotCheck, ...]:
     """Run ≥1 cited native command (or doc-check) per install-matrix class.
 
-    Failures are advisory only — callers must not fold them into CAP-5
+    Failures are advisory only — callers must not fold them into CAP-13
     ``verdict``. Commands are taken solely from
     ``NATIVE_PATH_SPOT_CHECK_CATALOG`` (install-matrix citations).
     """
@@ -3752,7 +3752,7 @@ def build_prove_landed_report(
     command_runner: CommandRunner | None = None,
     skip_native_spot_checks: bool = False,
 ) -> ProveLandedReport:
-    """Run CAP-5 gates and return a single pass/fail verdict.
+    """Run CAP-13 gates and return a single pass/fail verdict.
 
     Foreign-station trees are not edited beyond the documented ``bmad-loop
     init`` relay refresh when *refresh_relays* is True.
@@ -3991,9 +3991,9 @@ class UpgradeDuty:
             and not apply_report.zero_diff
             and apply_report.custom_identical
             and reconcile_ok
-            # CAP-7: own installer exit 0 + every config path restored, per module.
+            # CAP-15: own installer exit 0 + every config path restored, per module.
             and apply_report.custom_modules_ok
-            # CAP-8: every flagged local customization landed clean or was
+            # CAP-16: every flagged local customization landed clean or was
             # correctly skipped — a conflict never gates a green silently.
             and apply_report.local_customizations_ok
         )

@@ -1,4 +1,4 @@
-"""Story 31.3 — fresh clone class-path is proven (install-class CAP-3)."""
+"""Story 31.3 — fresh clone class-path is proven (install-class CAP-29)."""
 
 from __future__ import annotations
 
@@ -197,7 +197,7 @@ def test_prove_fails_when_playbook_improvises_installer(tmp_path: Path):
         / "_bmad-output/projects/pyforge-steward/planning-artifacts/specs"
         / "spec-pyforge-steward/install-matrix.md"
     )
-    matrix.parent.mkdir(parents=True, exist_ok=True)  # same folder as the playbook since CAP-11
+    matrix.parent.mkdir(parents=True, exist_ok=True)  # the playbook's folder since spec-one-chain-per-station CAP-11
     matrix.write_text("npx bmad-method install\n", encoding="utf-8")
     playbook.write_text(
         "## Fresh-clone class-path (CAP-29)\n\nDrive `new Installer()` from the transcript.\n",

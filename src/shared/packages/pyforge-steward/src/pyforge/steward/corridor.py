@@ -1,5 +1,5 @@
 """Steward's ``load`` duty — corridor transports (Story 61.1,
-spec-work-passports-dated-extracts CAP-1 / spec-pyforge-steward CAP-139).
+spec-pyforge-steward CAP-139).
 
 Vendor and estate lists have no idempotent drop path today. This module is
 the corridor: every transport writes the SAME loader, keyed on batch sha +
@@ -21,9 +21,9 @@ not installed.
 ``LoadDuty`` never calls ``sys.exit`` (AD-8) — it returns a ``DutyResult``
 and ``cli.main`` projects it.
 
-**Since Story 61.4** (spec-work-passports-dated-extracts CAP-4 /
-spec-pyforge-steward CAP-142 — the signed-outbound-slice gate): a dump of
-Jira or factory BMAD can leave unsigned today unless this gate closes it.
+**Since Story 61.4** (spec-pyforge-steward CAP-142, the signed-outbound-slice
+gate): a dump of Jira or factory BMAD can leave unsigned today unless CAP-142
+closes it.
 Default deny — an ``outbound`` load additionally requires a named
 ``slice_name`` and a recorded ``signer`` (the named ``outbound-signer`` role
 on the existing app) before ``load_extract`` will create a new row; both are

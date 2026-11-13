@@ -8,7 +8,7 @@ the live Specs, its decided fields settled by ``modes.md``'s rules, and judged b
 * every row id resolves to a live Spec heading: the id is a live capability, and the row's ``heading`` and ``path``
   are that capability's.
 
-**The one exemption.** ``pyforge-steward:CAP-181``'s building Story 123.1 depends on Story 121.7 (its oracle map names
+**The one exemption.** ``spec-pyforge-steward CAP-181``'s building Story 123.1 depends on Story 121.7 (its oracle map names
 this module), so while 123.1 is not ``done`` the capability's heading reads ``(ready`` and no citing story reads
 ``done``: ``check`` reports ``rebuild-never-built`` on it. It is not a never-built capability (123.1 builds it on A and
 steward Story 122.5 flips its marker to shipped), so its row stays ``rebuild``, and that one finding is excused by id
@@ -55,7 +55,7 @@ def _repo_root() -> Path:
 
 
 def exemptions(sprint_ledger: Path) -> frozenset[tuple[str, str]]:
-    """The ``(code, id)`` findings excused: the CAP-181 one while ``EXEMPT_UNTIL_DONE`` does not read ``done``."""
+    """The ``(code, id)`` findings excused: the spec-pyforge-steward CAP-181 one while ``EXEMPT_UNTIL_DONE`` does not read ``done``."""
     data = yaml.safe_load(sprint_ledger.read_text(encoding="utf-8")) if sprint_ledger.is_file() else None
     entries = data.get("development_status") if isinstance(data, dict) else None
     if isinstance(entries, dict) and entries.get(EXEMPT_UNTIL_DONE) == DONE:

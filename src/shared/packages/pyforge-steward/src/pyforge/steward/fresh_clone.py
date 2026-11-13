@@ -1,4 +1,4 @@
-"""Story 31.3 / install-class CAP-3 — prove the documented fresh-clone class-path.
+"""Story 31.3 / install-class CAP-29 — prove the documented fresh-clone class-path.
 
 A recorded/scripted walk, never a chat transcript driving npm Installer
 classes. Native commands must appear in install-matrix.md. After 30.2 the

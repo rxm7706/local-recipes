@@ -1,6 +1,6 @@
 """Steward Story 74.1 (spec-pyforge-steward CAP-163): the object-store seam's three import rules.
 
-`django_pyforge.object_store` reaches CAP-97's S3 client without either side importing the
+`django_pyforge.object_store` reaches spec-pyforge-steward CAP-97's S3 client without either side importing the
 other's world:
 
 1. `src/platform/` never imports `pyforge.*` (pap:AD-2; Story 10.1's import-linter contract

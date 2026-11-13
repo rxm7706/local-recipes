@@ -70,7 +70,7 @@ def _fixture_registry() -> dict:
                 "state": "paused",
                 "review_by": "2026-11-01",
                 "owner": "pyforge-steward",
-                "trigger": "main",  # Story 117.6 (CAP-175, ruling D1): never on a pull_request
+                "trigger": "main",  # Story 117.6 (spec-pyforge-steward CAP-175, ruling D1): never on a pull_request
             },
             {
                 "id": "pause.platform-container",

@@ -200,7 +200,7 @@ def save_budget(path: str | Path, ceilings: tuple[Ceiling, ...]) -> None:
     """Write `ceilings` to `path` as `.steward/budget.yaml`-shaped YAML.
 
     Creates parent directories as needed. `yaml.safe_dump` only. Writes
-    atomically via `pyforge.core.atomic_write` (Story 14.2, CAP-2 -- the one
+    atomically via `pyforge.core.atomic_write` (Story 14.2, spec-pyforge-core CAP-2 -- the one
     shared temp-file-then-`os.replace` primitive, mkstemp-based) — mirrors
     `keys.py::save_inventory`'s identical rationale: a concurrent reader
     (e.g. `steward budget show` running at the same moment as a `set`) must

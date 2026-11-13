@@ -1,6 +1,6 @@
 """Steward's ``glass`` duty — the as-of glass over the inbound corridor
-(Story 61.3, spec-work-passports-dated-extracts CAP-3 / spec-pyforge-steward
-CAP-141).
+(Story 61.3, spec-pyforge-steward CAP-141; steward's oracle map names this
+module on the CAP-141 row).
 
 Standup asks "any news from the vendor?" — this module answers by reading
 the most recent ``CorridorLoad`` row for a direction (Story 61.1) and

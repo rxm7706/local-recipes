@@ -1,5 +1,5 @@
 """`StaticPanel` + `render_static_index` + `_is_board_output_dir_safe_to_write`
-+ `steward deploy static` — Story 9.7 (CAP-8, AD-10).
++ `steward deploy static` — Story 9.7 (CAP-116, AD-10).
 
 Covers every row of the story spec's I/O & Edge-Case Matrix, plus CLI verb
 dispatch through `DeployDuty.run` -- mirrors `test_deploy_perimeter.py`'s

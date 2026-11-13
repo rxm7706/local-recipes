@@ -1,5 +1,5 @@
 """Steward's ``passport`` duty — vendor Work Passport identity (Story 61.2,
-spec-work-passports-dated-extracts CAP-2 / spec-pyforge-steward CAP-140).
+spec-pyforge-steward CAP-140).
 
 Jira keys and GitHub numbers can collide across rooms, so identity is a
 minted UUID, never a Jira key or GitHub number. Every ``mint`` call creates

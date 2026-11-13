@@ -1,4 +1,4 @@
-# Target-release catalog for CAP-1 pre-flight (Story 14.1).
+# Target-release catalog for CAP-9 pre-flight (Story 14.1).
 # Grounded in the live 2026-08-21 6.10.0→6.11.0 upgrade (failure-modes.md traps).
 version: "6.11.0"
 baseline_pair_from: "6.10.0"

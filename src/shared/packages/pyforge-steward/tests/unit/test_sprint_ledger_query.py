@@ -2,7 +2,7 @@
 
 Every test parses FIXTURE ledgers/epics under `tmp_path`, except the one
 agreement test at the bottom that holds the engine to
-`scripts/fleet_scan.py::parse_sprint_status` over the live tree (CAP-1 success).
+`scripts/fleet_scan.py::parse_sprint_status` over the live tree (CAP-146 success).
 """
 
 from __future__ import annotations
@@ -1251,7 +1251,7 @@ def test_next_reproduces_the_0800z_fleet_scenario(tmp_path: Path) -> None:
     }
 
 
-# --- CAP-1 success: agreement with fleet_scan.parse_sprint_status over the live tree ---
+# --- CAP-146 success: agreement with fleet_scan.parse_sprint_status over the live tree ---
 
 
 def _repo_root() -> Path:

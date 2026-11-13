@@ -922,7 +922,7 @@ def list_linked_github_items(
     only `id`/`updatedAt` are read per node. An item with no linked Jira
     issue is still a candidate here, and is dispatched through `reconcile()`
     like any other -- `reconcile()`'s own `_read_both_sides` re-reads the
-    item fresh and raises `SyncUnlinkedError` (Story 8.5, CAP-4 "fail loud,
+    item fresh and raises `SyncUnlinkedError` (Story 8.5, CAP-60 "fail loud,
     fail alone") the moment it finds no link, which `reconcile_schedule_batch`
     folds into that candidate's own failed entry without aborting the rest
     of the batch. Candidacy is likewise never gated on the baseline (AD-10
@@ -1959,7 +1959,7 @@ def reconcile_schedule_batch(
     This story never builds Jira-side (JQL) candidate discovery (GitHub is
     the authoritative board per AD-4, and `reconcile()` already re-reads
     BOTH sides fresh regardless of entry identifier). The "named, greppable
-    error for the broken item" refinement (FR-30 / Story 8.5, CAP-4 "fail
+    error for the broken item" refinement (FR-30 / Story 8.5, CAP-60 "fail
     loud, fail alone") is closed by `list_linked_github_items` making every
     board item a candidate -- an unlinked candidate's `reconcile()` call
     raises `SyncUnlinkedError`, which `reconcile()` already catches (as any

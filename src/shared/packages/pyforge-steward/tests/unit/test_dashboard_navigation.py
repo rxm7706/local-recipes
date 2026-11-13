@@ -1,4 +1,4 @@
-"""Story 9.2 — `Page` construction-time validation + `build_navigation` (CAP-3)."""
+"""Story 9.2 — `Page` construction-time validation + `build_navigation` (CAP-111)."""
 
 from __future__ import annotations
 

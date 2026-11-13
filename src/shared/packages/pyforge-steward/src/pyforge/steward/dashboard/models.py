@@ -1,7 +1,7 @@
-"""Story 9.3 — `AuditEntry`: CAP-4's durable store.
+"""Story 9.3 — `AuditEntry`: CAP-112's durable store.
 
-CAP-4's contract is "who saw how many rows of what, and when" — this model
-is that record. `AuditAction` names the four request-time actions CAP-4
+CAP-112's contract is "who saw how many rows of what, and when" — this model
+is that record. `AuditAction` names the four request-time actions CAP-112
 requires (`load`/`filter`/`navigate`/`export`) plus `audit_read`, the fifth
 action `audit.py::query_audit_entries` writes for its own invocation per
 AD-7 ("reading the audit trail is itself a recorded act"), and `purge`, the
@@ -35,7 +35,7 @@ from .declarations import AUDIT_IDENTITY_MAX_LENGTH
 
 
 class AuditAction(models.TextChoices):
-    """CAP-4's four request-time actions, plus AD-7's audit-of-the-audit action and retention purge."""
+    """CAP-112's four request-time actions, plus AD-7's audit-of-the-audit action and retention purge."""
 
     LOAD = "load", "Load"
     FILTER = "filter", "Filter"
@@ -46,9 +46,9 @@ class AuditAction(models.TextChoices):
 
 
 class AuditEntry(models.Model):
-    """CAP-4: one durable record of who saw how many rows of what, and when.
+    """CAP-112: one durable record of who saw how many rows of what, and when.
 
-    ``actor`` is required — CAP-4's "who saw" must never be unanswerable by
+    ``actor`` is required — CAP-112's "who saw" must never be unanswerable by
     construction, enforced in Python by `audit.py::record_audit_entry`
     before any row is written, not by a DB-level `NOT NULL` guess. ``role``
     is nullable: `None` is Story 9.1's legitimate "no role established"
@@ -134,12 +134,12 @@ class CorridorDirection(models.TextChoices):
 
 
 class CorridorLoad(models.Model):
-    """CAP-139 (spec-work-passports-dated-extracts CAP-1 / spec-pyforge-steward
-    CAP-139): one durable record of a corridor drop. Idempotent on
+    """CAP-139 (Story 61.1, the extract corridor): one durable record of a drop
+    through the CAP-139 corridor. Idempotent on
     (direction, batch_sha, waybill) -- see dashboard/corridor_load.py.
 
-    ``slice_name``/``signer`` (Story 61.4, spec-work-passports-dated-extracts
-    CAP-4 / spec-pyforge-steward CAP-142 -- the signed-outbound-slice gate)
+    ``slice_name``/``signer`` (Story 61.4, the signed-outbound-slice gate,
+    spec-pyforge-steward CAP-142)
     are the durable record of what was named and who signed it. Both are
     blank (``""``) on every ``inbound`` row: the gate applies to
     ``direction="outbound"`` only. Like ``transport``, they are set ONCE at
@@ -173,7 +173,7 @@ class CorridorLoad(models.Model):
 
 
 class QuarantineShelfRow(models.Model):
-    """Story 61.5 (CAP-5): one inbound row waiting for a human to link nicknames.
+    """Story 61.5 (spec-pyforge-steward CAP-143): one inbound row waiting for a human to link nicknames.
 
     ``title`` is stored for display only — never matched for linking (no
     title-match endpoint). ``passport_id`` is set when the row arrived inside

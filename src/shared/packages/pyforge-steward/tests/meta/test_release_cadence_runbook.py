@@ -1,4 +1,4 @@
-"""Story 46.10 — release-cadence.md is one verified runbook (CAP-8).
+"""Story 46.10 — release-cadence.md is one verified runbook (CAP-37).
 
 Meta gate: every numbered step carries a Verified pass block; the @next rehearsal
 argv matches ``NEXT_REHEARSAL_ARGV`` from Story 14.10; the rehearsal disclaimer

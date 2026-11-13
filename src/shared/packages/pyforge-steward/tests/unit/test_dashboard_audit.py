@@ -250,7 +250,7 @@ def test_record_audit_entry_rejects_a_blank_non_none_role():
 
 
 def test_record_audit_entry_stores_actor_role_target_verbatim():
-    """CAP-4: the trail records what was actually presented, never a
+    """CAP-112: the trail records what was actually presented, never a
     normalized reinterpretation -- no trim, case-fold, or Unicode
     normalization of actor/role/target.
     """

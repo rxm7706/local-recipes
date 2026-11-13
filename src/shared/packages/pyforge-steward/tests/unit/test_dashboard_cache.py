@@ -1,5 +1,5 @@
 """Story 9.1 — `get_master_dataset()` single-flight + no-role-filtered-frame
-invariant (AD-5 / CAP-2), proven by a real threaded race against a real
+invariant (AD-5 / CAP-110), proven by a real threaded race against a real
 Django `LocMemCache` backend, plus direct inspection of that backend's
 contents afterward.
 """

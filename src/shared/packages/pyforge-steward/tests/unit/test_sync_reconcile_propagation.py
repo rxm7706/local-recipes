@@ -295,7 +295,7 @@ def test_jira_changed_github_did_not_pushes_to_github_and_refreshes_both_baselin
     assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "In Progress", "assignee": None}
 
 
-# ── Row (Story 8.6, AD-6/CAP-5): a mapped Jira status translates before writing to GitHub ──
+# ── Row (Story 8.6, AD-6/CAP-61): a mapped Jira status translates before writing to GitHub ──
 
 CONFIG_STATUS_TRANSLATION = SyncConfig(**{**CONFIG.__dict__, "status_mapping": {"Closed": "Done"}})
 
@@ -1010,7 +1010,7 @@ def test_assignee_changed_on_jira_only_translates_and_pushes_to_github():
 
 
 def test_unmapped_github_login_pushed_to_jira_is_a_named_failure_not_a_passthrough():
-    """AD-6/CAP-5's mirror for assignee: an unmapped value crossing into
+    """AD-6/CAP-61's mirror for assignee: an unmapped value crossing into
     Jira is a hard, named failure, never a phantom passthrough. No write
     happens to either side (mirrors
     `test_unmapped_jira_status_pushed_to_github_is_a_named_failure_not_a_passthrough`'s
@@ -1785,7 +1785,7 @@ def test_github_item_with_a_co_assignee_is_refused_named():
 
 # ── Epic 8 Story 8.2: the zero-loop guarantee, proven by N round trips ──────
 #
-# CAP-2 claims propagation "holds by construction" (AD-5 amended/AD-10), but
+# CAP-58 claims propagation "holds by construction" (AD-5 amended/AD-10), but
 # until now no test ever called `reconcile()` more than once against the
 # same stateful transport. These tests seed exactly one human-made change,
 # then call `reconcile()` repeatedly against the SAME `FakeTransport`
@@ -1947,9 +1947,9 @@ def test_zero_loop_survives_a_baseline_refresh_failure():
         assert len(transport.write_calls()) == writes_after_first, f"tick {tick_number}"
 
 
-# ── Epic 8 Story 8.3: idempotent redelivery, proven byte-identical (CAP-3) ──
+# ── Epic 8 Story 8.3: idempotent redelivery, proven byte-identical (CAP-59) ──
 #
-# CAP-3 claims re-processing the same update twice leaves both systems
+# CAP-59 claims re-processing the same update twice leaves both systems
 # byte-identical to a single delivery (AD-9: "redelivery must be a no-op ...
 # out-of-order arrival must not regress state"). 8.2 proved the zero-loop
 # property via N round trips through the SAME identifier, checked by write
@@ -1968,7 +1968,7 @@ def test_zero_loop_survives_a_baseline_refresh_failure():
 
 
 def test_idempotent_redelivery_same_identifier_is_byte_identical():
-    """CAP-3's literal claim: redelivering the identical GH-initiated change
+    """CAP-59's literal claim: redelivering the identical GH-initiated change
     via the SAME identifier that made the first call must leave both sides'
     full field state byte-identical -- not just a write-count check -- to
     the state captured immediately after the first delivery."""
@@ -2307,7 +2307,7 @@ def test_list_linked_github_items_follows_pagination_across_multiple_pages():
 
 
 def test_list_linked_github_items_never_filters_on_link_or_baseline():
-    """Story 8.5 (CAP-4 "fail loud, fail alone"): candidacy is never gated on
+    """Story 8.5 (CAP-60 "fail loud, fail alone"): candidacy is never gated on
     any field value -- not the link field, not the baseline. Every
     deduplicated node the bulk listing returns becomes a candidate,
     regardless of whether it is linked. AD-10 rule 1 (an absent baseline is
@@ -2341,7 +2341,7 @@ def test_list_linked_github_items_malformed_response_is_a_named_failure():
 
 
 def test_schedule_batch_with_all_unlinked_items_fails_every_entry_by_name():
-    """Story 8.5 (CAP-4 "fail loud, fail alone"): an item with no link field
+    """Story 8.5 (CAP-60 "fail loud, fail alone"): an item with no link field
     value is still a candidate and is still dispatched through `reconcile()`
     -- it is `reconcile()`'s own `SyncUnlinkedError` (via `_read_both_sides`)
     that names the failure, not `list_linked_github_items` silently dropping
@@ -2511,7 +2511,7 @@ def test_schedule_batch_one_candidate_failing_does_not_abort_the_others():
 
 
 def test_schedule_batch_with_one_unmapped_status_among_linked_items_fails_only_that_entry():
-    """AD-6/CAP-5's batch-composition guarantee: 3 board items, PROJ-2's
+    """AD-6/CAP-61's batch-composition guarantee: 3 board items, PROJ-2's
     Jira status ("Triage") has no `status_mapping` entry in `CONFIG`.
     ITEM_1/ITEM_3 converge cleanly; ITEM_2's entry is `ok=False` with the
     named, greppable `SyncUnmappedStatusError` summary -- mirrors Story
@@ -2565,7 +2565,7 @@ def test_schedule_batch_with_one_unmapped_status_among_linked_items_fails_only_t
 
 
 # ── Row: mixed batch -- one unlinked item among otherwise-linked items ─────
-# (Story 8.5's own frozen I/O Matrix scenario, CAP-4 "fail loud, fail alone")
+# (Story 8.5's own frozen I/O Matrix scenario, CAP-60 "fail loud, fail alone")
 
 
 def test_schedule_batch_with_one_unlinked_item_among_linked_items_fails_only_that_entry():

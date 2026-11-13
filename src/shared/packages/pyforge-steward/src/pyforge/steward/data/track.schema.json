@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:local-recipes:pyforge-steward:track-schema",
   "title": "Track",
-  "description": "One structured Track per bmad-loop / marshal factory run (Story 53.3, hub:CAP-3). additionalProperties stays open: additive field growth is never a schema break. Frozen required keys are the marshal-relayed TRACK_FIELDS list.",
+  "description": "One structured Track per bmad-loop / marshal factory run (Story 53.3, spec-pyforge-steward CAP-54). additionalProperties stays open: additive field growth is never a schema break. Frozen required keys are the marshal-relayed TRACK_FIELDS list.",
   "type": "object",
   "required": [
     "run_id",

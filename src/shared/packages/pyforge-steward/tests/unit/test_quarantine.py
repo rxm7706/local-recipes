@@ -303,7 +303,7 @@ def test_quarantine_htmx_view_lists_unlinked_rows():
 
 
 def test_quarantine_htmx_view_has_no_title_query_param():
-    """CAP-5: no title-match endpoint — the view ignores request GET keys."""
+    """CAP-143: no title-match endpoint — the view ignores request GET keys."""
     source = quarantine_htmx_view.__doc__ or ""
     assert "title-match" in source or "title" in source
 

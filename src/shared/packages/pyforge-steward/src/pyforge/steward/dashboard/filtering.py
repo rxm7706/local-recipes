@@ -1,9 +1,9 @@
-"""Story 9.2 — CAP-2's filtering half, and AD-6's filter-then-search shape.
+"""Story 9.2 — CAP-110's filtering half, and AD-6's filter-then-search shape.
 
 `filter_by_role` is the only entry point from Story 9.1's `get_master_dataset()`
 return value into a role-scoped view: it consumes the master (unfiltered)
 dataset and produces a `RoleFilteredRows`, never mutating the master and
-never writing its output back into the shared cache — closing the CAP-2
+never writing its output back into the shared cache — closing the CAP-110
 misuse `cache.py`'s own docstring demonstrates (an east-role closure warming
 a shared key, served to a west-role caller).
 
@@ -62,10 +62,10 @@ def filter_by_role(
     declaration: AccessDeclaration,
     role: str | None,
 ) -> RoleFilteredRows:
-    """CAP-2: the rows of `master` that `role` may see, per `declaration`.
+    """CAP-110: the rows of `master` that `role` may see, per `declaration`.
 
     ``role=None`` (no identity established) fails closed to zero rows, never
-    an error — CAP-1's "degrades to a known-unprivileged identity, never an
+    an error — spec-pyforge-steward CAP-109's "degrades to a known-unprivileged identity, never an
     elevated one", the same default `navigation.py`'s `build_navigation`
     shares. A ``role`` outside ``declaration.roles`` is a configuration
     defect, not a no-identity degrade, and raises loudly naming the role.

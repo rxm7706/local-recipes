@@ -312,7 +312,7 @@ def test_rebuild_never_built_reads_a_station_with_no_epics_or_ledger(tmp_path: P
 
 
 def test_rebuild_never_built_reads_only_a_ready_heading(tmp_path: Path) -> None:
-    # CAP-1 reads (shipped and no story cites it: a shipped capability was built.
+    # spec-pyforge-atlas CAP-1 reads (shipped and no story cites it: a shipped capability was built.
     _tree(tmp_path, epics="# Epics\n", rows=[_row(1), _row(2, "B-only"), _row(3, "retire")])
     assert check(tmp_path, LEDGER) == CheckReport()
 

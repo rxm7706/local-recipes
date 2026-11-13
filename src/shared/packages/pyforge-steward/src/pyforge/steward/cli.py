@@ -48,8 +48,8 @@ _ISO_DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 # The eight duties — all real as of this story. `keys` (Epic 1), `deploy`
 # (Epic 2), `provision` (Epic 3), `budget` (Epic 4, complete as of Story 4.3),
 # `sync` (Epic 8, Story 8.1), `workspace` (Epic 13, Stories 13.1–13.2),
-# `upgrade` (Epic 14, Stories 14.1–14.5 — pre-flight + apply + CAP-3 reconcile + CAP-4 pin fan-out + CAP-5 prove-landed),
-# `suite` (Epic 15, Story 15.1 — CAP-1 pipeline-truth report),
+# `upgrade` (Epic 14, Stories 14.1–14.5 — pre-flight + apply + CAP-11 reconcile + CAP-12 pin fan-out + CAP-13 prove-landed),
+# `suite` (Epic 15, Story 15.1 — CAP-21 pipeline-truth report),
 # `init`/`shell-init`/`setup`/`initrepo`/`validate-fast` (Epic 17 — machine bootstrap),
 # `revoke` (Epic 42, Story 42.2 — stop one runaway subject),
 # `catalog` (Epic 60, Story 60.1 — the estate BMAD catalog config),
@@ -60,7 +60,7 @@ _ISO_DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 # `glass` (Epic 61, Story 61.3 — as-of glass over the inbound corridor, standup/shipped + flag-gated export),
 # `quarantine` (Epic 61, Story 61.5 — missing-passport mint-then-reject shelf),
 # `session` (Epic 63, Story 63.4 — one verdict for the session preconditions, run from every entry point).
-# `deck-drift` (Story 59.4 / spec-vocabulary-one-name-one-job CAP-5 — flags silent
+# `deck-drift` (Story 59.4 / spec-pyforge-steward CAP-135 — flags silent
 #   size/etag drift on a pulled Design deck artifact; Herald owns the pull itself).
 # `preflight` (Epic 103, Story 103.6 / CAP-159 — verify-deferred, the catch-up for a touched-scope preflight).
 # `pages` (Epic 102, Story 102.3 / CAP-168 — build/deploy/status of the one Pages workflow; replaced
@@ -229,7 +229,7 @@ _HELP = {
 }
 
 
-# Story 31.1 / spec-bmad-suite-install-class-wiring CAP-1: operator path for
+# Story 31.1 / spec-pyforge-steward CAP-27: operator path for
 # the six non-module suite pieces. Cited from install-class-playbook.md;
 # native commands live there (and in install-matrix.md), never invented here.
 INSTALL_CLASS_PLAYBOOK = (
@@ -1017,10 +1017,10 @@ def _add_guards_subparsers(guards_parser: argparse.ArgumentParser) -> None:
 
 
 def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
-    """Add the `perimeter` and `static` verbs. `perimeter` (Story 9.5, CAP-6)
+    """Add the `perimeter` and `static` verbs. `perimeter` (Story 9.5, CAP-114)
     validates and renders the `pyforge.steward.dashboard` Django app's
     deployment perimeter (AD-5 shareability + daphne/nginx manifests).
-    `static` (Story 9.7, CAP-8/AD-10) writes a board as a self-contained
+    `static` (Story 9.7, CAP-116/AD-10) writes a board as a self-contained
     static export to `docs/dashboard/<board>/index.html`, which lands
     through a pull request like any tracked file. Story 102.3 retired
     `dashboard` and `status` (the Pages artifact is `steward pages`); a call
@@ -1156,7 +1156,7 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
 def _add_provision_subparsers(provision_parser: argparse.ArgumentParser) -> None:
     """Add the `--list-modules`/`--module`/`--env`/`--runner`/`--list`/
     `--json`/`--verify`/`--prove-class-path` flags (Epic 3's four stories, plus Epic 6 Story
-    6.1's `--module` and Story 6.2's `--list-modules`; Story 31.3 CAP-3 proof).
+    6.1's `--module` and Story 6.2's `--list-modules`; Story 31.3 CAP-29 proof).
 
     Unlike `keys`/`deploy`, `provision` has no verb subcommands — every
     action is a flag directly on the `provision` duty parser, matching each
@@ -1278,7 +1278,7 @@ def _add_sync_subparsers(sync_parser: argparse.ArgumentParser) -> None:
 
 
 def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None:
-    """Add `start`/`ls`/`status`/`clean` (Stories 13.1–13.4 / CAP-1..4 + set teardown)."""
+    """Add `start`/`ls`/`status`/`clean` (Stories 13.1–13.4 / CAP-104..107 + set teardown)."""
     workspace_subs = workspace_parser.add_subparsers(dest="workspace_verb", metavar="{start,ls,status,clean}")
 
     start = workspace_subs.add_parser(
@@ -1993,7 +1993,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         if not ns.duty:
             parser.print_help()
             return EXIT_OK
-        # Epic 114 (CAP-7): the invoked duty's kill switches, read before it runs (FlagOff -> EXIT_USAGE below).
+        # Epic 114 (spec-feature-flag-governance CAP-7): the invoked duty's kill switches, read before it runs (FlagOff -> EXIT_USAGE below).
         require_retrofit_flags(ns)
         result: DutyResult = resolve_duty(ns.duty).run(ns)
         # An empty summary prints nothing: a duty that has already delivered its

@@ -2,7 +2,7 @@
 prove it, and every test names a capability.
 
 The map is ``spec-pyforge-steward/oracle-map.md`` beside ``SPEC.md``: one table row per capability or contiguous range
-(``CAP-9..CAP-13``), naming the steward source modules that realize it, where its proof runs and the test files or
+(``spec-pyforge-steward CAP-9..CAP-13``), naming the steward source modules that realize it, where its proof runs and the test files or
 globs that prove it, a second table for the capabilities of other Specs this package realizes, and an *Unmapped* table
 for a test module no capability claims. This module holds the map total and true to the tree, and fails, naming the
 row or the file, when:

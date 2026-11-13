@@ -8,12 +8,12 @@ refusal that guarded the committing verb): the generator they wrapped retired on
 `steward pages build|deploy|status` (`pages_duty.py`) is the duty that speaks to it. They were
 deleted, not deprecated (AD-5's 2026-08-09 rule); no verb here commits or pushes.
 
-Story 9.5 slice (CAP-6, AD-5, AD-8): `DeploymentTopology` + `check_shareable_
+Story 9.5 slice (CAP-114, AD-5, AD-8): `DeploymentTopology` + `check_shareable_
 state` implement AD-5's refusal — "any cross-worker shared state that cannot
 be shared across worker processes is refused when the deployment runs more
 than one worker" — that `dashboard/cache.py`'s own module docstring named as
 explicitly deferred to this story. `render_daphne_unit`/`render_edge_config`
-render CAP-6's "production-shaped runtime" (a daphne worker fleet + an nginx
+render CAP-114's "production-shaped runtime" (a daphne worker fleet + an nginx
 edge doing TLS termination and network-policy restriction) as plain strings
 — no template-file/package-data plumbing exists anywhere in this package, so
 none is invented here (this story's spec, "Design Notes"). All of it lives
@@ -25,7 +25,7 @@ channels`) already forbids this file from importing anything under
 strings (dotted backend class paths, peer addresses, file paths), never a
 real Django/Channels object. Wired as `steward deploy perimeter`.
 
-Story 9.7 slice (CAP-8, AD-10): `StaticPanel` + `render_static_index` +
+Story 9.7 slice (CAP-116, AD-10): `StaticPanel` + `render_static_index` +
 `_run_static` implement AD-10's refusal — "a board that has declared an
 access column may not be delivered by static export... refuses rather than
 warns" — wired as a FOURTH verb, `steward deploy static`. Panels arrive as
@@ -77,7 +77,7 @@ def repo_root() -> Path:
     )
 
 
-# ── Deployment topology + AD-5 shareability refusal (CAP-6, Story 9.5) ─────
+# ── Deployment topology + AD-5 shareability refusal (CAP-114, Story 9.5) ───
 
 
 @dataclass(frozen=True)
@@ -219,7 +219,7 @@ def check_shareable_state(topology: DeploymentTopology) -> None:
         )
 
 
-# ── Deployment manifests: daphne systemd fleet + nginx edge (CAP-6, Story 9.5) ─
+# ── Deployment manifests: daphne systemd fleet + nginx edge (CAP-114, Story 9.5) ──
 #
 # Plain strings built from `DeploymentTopology`'s fields — no Jinja, no
 # `.template` asset files, no new packaging plumbing (this story's spec,
@@ -320,7 +320,7 @@ def render_daphne_unit(
 
     Binds to `bind_host` (localhost by default) — `render_edge_config`'s
     nginx is the only thing meant to reach these ports directly; network
-    policy is the edge's job (CAP-6), not daphne's own.
+    policy is the edge's job (CAP-114), not daphne's own.
     """
     ports = _worker_ports(topology, base_port=base_port)
     enable_cmd = " ".join(f"pyforge-steward-dashboard@{p}.service" for p in ports)
@@ -367,7 +367,7 @@ WantedBy=multi-user.target
 # the original three-character set).
 _UNSAFE_NGINX_VALUE_CHARS = frozenset(";{}#$")
 
-# Story 84.1 — PostgreSQL grants that make CAP-4's audit table append-only for
+# Story 84.1 — PostgreSQL grants that make CAP-112's audit table append-only for
 # the application role while reserving DELETE for the retention runner role.
 _DEFAULT_AUDIT_SCHEMA = "public"
 _DEFAULT_AUDIT_TABLE = "pyforge_steward_dashboard_auditentry"
@@ -731,7 +731,7 @@ def _run_perimeter(ns: argparse.Namespace) -> DutyResult:
     return DutyResult(ok=True, summary=summary)
 
 
-# ── Static export (CAP-8, AD-10, Story 9.7) ─────────────────────────────────
+# ── Static export (CAP-116, AD-10, Story 9.7) ───────────────────────────────
 
 
 @dataclass(frozen=True)

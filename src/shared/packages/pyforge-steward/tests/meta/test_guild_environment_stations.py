@@ -1,6 +1,6 @@
 """Story 72.1 / spec-pyforge-steward CAP-161 -- the Guild environment answers `pyforge mason`.
 
-`pyforge-guild` is the session default (CAP-5); until this story it never installed
+`pyforge-guild` is the session default (spec-pyforge-steward CAP-5); until this story it never installed
 `pyforge-mason`, so `pyforge mason …` failed in the environment every harness runs.
 """
 

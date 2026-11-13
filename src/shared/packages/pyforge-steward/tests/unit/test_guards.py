@@ -1,4 +1,4 @@
-"""Story 53.4 — Guard library without a second verdict (hub:CAP-4)."""
+"""Story 53.4 — Guard library without a second verdict (spec-pyforge-steward CAP-55)."""
 
 from __future__ import annotations
 

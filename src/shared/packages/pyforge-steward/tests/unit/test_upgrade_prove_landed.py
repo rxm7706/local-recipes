@@ -1,4 +1,4 @@
-"""Story 14.5 — CAP-5: one command proves the upgrade landed."""
+"""Story 14.5 — CAP-13: one command proves the upgrade landed."""
 
 from __future__ import annotations
 

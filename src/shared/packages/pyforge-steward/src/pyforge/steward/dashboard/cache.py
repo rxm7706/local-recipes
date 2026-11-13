@@ -4,13 +4,13 @@ A thin wrapper over `django.core.cache`: fetches and caches the MASTER
 (unfiltered) dataset only. Role-filtering is entirely the caller's job,
 applied to what this function returns, after it leaves the cache — this
 module never accepts a role, never filters, and never derives a role-scoped
-key (CAP-2 / AD-5).
+key (CAP-110 / AD-5).
 
 The other half of that invariant is a CALLER CONTRACT this module cannot
 enforce, stated plainly here in review pass 4 rather than claimed away: it
 writes exactly what `fetch()` returned, under exactly the `key` it was
 given, so a caller that passes a role-FILTERING closure (or a per-role key)
-defeats CAP-2 while every assertion in this module's suite still passes.
+defeats CAP-110 while every assertion in this module's suite still passes.
 Demonstrated: an east-role closure warms `key="master"`, and the next caller
 — west role, same key — is served east rows. `fetch` must return the master
 frame. Giving the API a shape that cannot be misused this way (taking the
