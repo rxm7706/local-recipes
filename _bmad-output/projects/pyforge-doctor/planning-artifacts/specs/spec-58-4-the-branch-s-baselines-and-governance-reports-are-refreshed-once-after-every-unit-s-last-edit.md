@@ -178,7 +178,7 @@ The independent review of the first attempt failed the story on four findings. E
      - (b) After CLOSE-LEDGERS, align every station's epics.md `**Status:**` lines with its ledger. The reviewer's counts: atlas 9, doctor 12 (58.4 included), herald 8, marshal 22, mason 8, scribe 9, steward 25 plus 44.4 to 44.6, warden 8.
      - (c) Give the two bare `bmad-dev-auto` mentions in marshal's epics.md a same-line gloss.
      - (d) Write a memlog line before any of these edits moves a governed path, then re-stamp scoped.
-   - AC6 stays red until (a) to (d) land. Its PR does not merge before every AC6 leg re-runs green on the final head. The round 1 re-run of each leg is recorded below.
+   - AC6 stays red until (a) to (d) land. Its PR does not merge before every AC6 leg re-runs green on the final head. The chunk-10 retry's re-run of each leg is recorded in `## Merge-bar evidence (chunk-10 retry, 2026-11-13)` below.
 2. **Major. Where: `scripts/.spec-surface-baseline.json`, the scoped stamps of `pyforge-mason/spec-pyforge-mason`, `pyforge-doctor/spec-pyforge-doctor` and `pyforge-herald/spec-pyforge-herald`.** The stamps accept steward Story 124.2's edits (84fa9d8c13, 2026-11-12) to governed test files. No memlog line written after those edits names them, so each stamp is a stamp without a reconcile (AGENTS.md pre-PR item 5).
    - Mason: `tests/meta/test_adapter_sole_caller.py` and `tests/unit/test_errors.py`. The first attempt's own check listed both (`not-named-on-branch=2`) and stamped anyway.
    - Doctor: `tests/unit/test_sources_writer_lock.py`.
@@ -214,3 +214,20 @@ The integrator stopped the chunk-9 run during fix round 1 and did the items roun
 4. **Finding 4: unchanged.** The promotion stays. AC6 on the final head decides whether the done state holds. A red this story owns rolls the key back through doctor's Tier-3 feed and `sprint-ledger-sync`.
 5. **After the integrator's work:** `detectors-ci` exits 0 on the working tree (head df2a292e18 plus this story's staged diff).
 6. **What the retry does.** Keep the work on disk; it is right. Re-run every AC on the current head. AC1 to AC5 and AC7 to AC12 should be no-ops or idempotent re-runs. Run AC6's full pr-preflight once, alone, after the last edit, with TMPDIR off tmpfs. Read every verdict from its exit code. If a lane is red for a cause outside this story's files, name the failing test and the file, and stop; do not edit outside the files this story owns.
+
+## Merge-bar evidence (chunk-10 retry, 2026-11-13)
+
+AC6 on head df2a292e18 plus this story's staged diff (`git diff HEAD | sha256sum` = `53249fcb4911d00b8974d867eedf7bef311406b84ebf3e2d8555dfd8d6a387bd`). The gate commit f6776ea2fb is that diff. Every leg ran alone, and each verdict below is the leg's exit code.
+
+- Full `pr-preflight` (`TMPDIR=$HOME/.cache/pyforge-preflight-tmp PYFORGE_PREFLIGHT_SCOPE=full pixi run --frozen -e pyforge-guild pr-preflight`), 03:21:14 to 03:29:52 -06:00: exit 0. All 48 lanes ran. The coverage gates passed for atlas, doctor, herald, marshal, mason and steward; scribe and warden had no touched modules.
+- `detectors-ci`: exit 0.
+- `pyforge-station-tests`: exit 0.
+- `test-ci-meta`: exit 0.
+- `platform-ci-local -- --test`: exit 0 (RESULT: PASS).
+- Guild image build: exit 0.
+- `scribe-pg-up`: exit 0. Then `pyforge-scribe-test`: exit 0.
+- Herald's built-site tests: exit 0.
+- `CI=1 pixi run -e pyforge-atlas pyforge-atlas-test`: exit 1 with `PLAYWRIGHT_BROWSERS_PATH` unset, because `test_wasm_smoke.py` found no Chromium under the default `/opt/pw-browsers`. The same command with `PLAYWRIGHT_BROWSERS_PATH=$HOME/.cache/ms-playwright` exited 0. CI's atlas job sets that variable (`pyforge-station-tests.yml`), so the gate is not weakened.
+- The tree, the diff sha and `pixi.lock` were the same before and after the preflight and every leg.
+
+The independent reviewer re-ran `detectors-ci`, `test-ci-meta`, `pyforge-station-tests`, the atlas gate with the browsers path set, and herald's built-site tests: each exited 0. The integrator's own full `pr-preflight` on the branch's final commit is recorded in the PR description.

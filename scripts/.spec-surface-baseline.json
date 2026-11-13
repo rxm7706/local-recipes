@@ -537,7 +537,7 @@
    "docs/how-to/ocp-cluster-bringup.md": "2b545516188b2f07a30ed16864e641e38212994e",
    "docs/how-to/one-chain-station-ops.md": "e16c099d611f8ad0e08d2828036e53a9c6e01868",
    "docs/how-to/pause-ci.md": "ce76067386b90b0d18c661b9c7710a7d5124c1c4",
-   "docs/how-to/pixi-tasks.md": "6de8e15468afe48da85a91b2ca1638912c39f93f",
+   "docs/how-to/pixi-tasks.md": "7aa15df2ec28e12e48fdeb6e9bdcc38168281b51",
    "docs/how-to/presentation-deck.md": "ac1c4758f6eb6c2adce927cef55be4348db43a10",
    "docs/how-to/purge-preserved-refs.md": "145b1fa6ca7c642a8f638c23508efafe9f924581",
    "docs/how-to/reach-a-station-mcp-endpoint.md": "6e30429f0daf9f9ba91e4530cc8b00c6f4a1a726",
@@ -551,7 +551,7 @@
    "docs/how-to/track-upstream-todos.md": "7a014743c99a267591f736aeb0e62f1763b89f9d",
    "docs/how-to/troubleshoot-bmad-agent-loops.md": "35226d71ab0aa713ece20d72a9d6ce3cc7bf146c",
    "docs/how-to/troubleshooting-recipe-builds.md": "74ae1f42e23b84bbdbfbd9e2b5eec92898e6bd96",
-   "docs/map.yaml": "9fcb6cd3b807ef4ef80dbeb51c19d509567deda9",
+   "docs/map.yaml": "4dc6c31f271b0225f12121dcab5713f8006674f3",
    "docs/tutorials/README.md": "a4cf8a6bb251adc83cb88349e2d6803c4269f9d2",
    "docs/tutorials/getting-started.md": "9512c037ee900086236de08a42ec8fa22e3274b2",
    "docs/tutorials/local-platform-development.md": "20f2fd8fd6075686e772250ae612e69cc7f6e2a6",
@@ -803,7 +803,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "80d3a63f10abbc140165ef4fdf3fed30f3968ba4"
+  "memlog": "5d69ea14584caa8f7ce15f689653e9f3bd7c4896"
  },
  "pyforge-herald/spec-pyforge-herald": {
   "files": {
