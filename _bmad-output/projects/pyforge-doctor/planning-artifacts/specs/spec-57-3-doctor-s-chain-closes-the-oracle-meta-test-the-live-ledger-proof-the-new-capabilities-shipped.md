@@ -216,7 +216,16 @@ Inputs the three hand-offs read, for `ROOT_HANDOFF_INPUTS` (`doctor_live`): `doc
 - **Chain currency.** `chain-currency-sweep-check --project pyforge-doctor` asked only for the brief (research newer than brief) and a fresh gate (the 2026-08-10 report past its 90-day shelf). The PRD, the spine and epics.md are not re-stamped: the Spec and brief lead the PRD by two days, inside the sweep's grace, and the check exits 0.
 - **The station closer's rows.** Besides the nine `DW-doctor-cutover-2026-11-10-*` rows (AC10), the ledger gains the rows the planned deferrals of Stories 56.4, 56.5 and 58.1 asked the station closer to write: `DW-doctor-56-4-1`, `DW-doctor-56-5-1` and `DW-doctor-58-1-1`, all open.
 
+## CI fix after the PR opened (integrator, 2026-11-13)
+
+PR #2371's first CI run failed `doctor-live-test (1)` at head ab3496f15c on one test, `test_live_cutover_ledger.py::test_writer_lock_reports_this_checkout_is_the_writer`: the writer lock answered its cannot-evaluate WARN, "no merge base of origin/main and HEAD -- origin/main cannot be resolved here". The local full preflight passed because a full clone has `refs/remotes/origin/main`; a pull request's `fetch-depth: 2` checkout of the merge ref has no remote ref at all. The source is right (an unresolvable `origin/main` is a WARN, spec-pyforge-doctor CAP-100) and so is the test (this live proof asserts OK on A's tree); the CI job lacked the input.
+
+Fix: the `doctor-live-test` job in `.github/workflows/pyforge-station-tests.yml` gains one step, on `pull_request` events whose base is `main`, that names the merge commit's first parent (the base tip, the same base Story 117.11's coverage gates take) as `refs/remotes/origin/main` when that ref is absent. A push checkout already carries `refs/remotes/origin/main`. No test or source changes.
+
+Evidence: a scratch checkout shaped like CI (`git fetch --depth=2 origin +refs/pull/2371/merge`, detached) reproduced the WARN from `writer_lock.gather`; after `git update-ref refs/remotes/origin/main HEAD^1` it answered OK ("this checkout (local-recipes) is the writer ... at the merge base 82a2b18828fc of origin/main and HEAD"). `.github/**` is allowlisted for spec-surface, so no stamp moves.
+
 ## Spec Change Log
 
 - 2026-11-10: minted from the station Dream's 2026-11-10 entry (the cutover readiness audit) and the operator's rulings of 2026-11-10.
 - 2026-11-10: status `blocked` (the branch's one forward-dependency policy: Deps name S-58.1 and S-58.2 of Epic 58); AC11 keeps its title and runs the check that compares doctor's `epics.md` Status lines with the ledger (`tests/meta/test_epics_status_tracks_the_ledger.py -m live_tree`; `story-status-check` judges feed `done` keys against landing evidence, repo-wide, and stays a push check), chain currency staying with AC16.
+- 2026-11-13: CI fix after the PR opened: the doctor-live-test job names the base tip as `refs/remotes/origin/main` on pull requests (section above).

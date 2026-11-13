@@ -917,6 +917,16 @@ jobs:
         with:
           environments: pyforge-doctor
           cache: true
+      # Story 57.3: the live writer-lock proof reads `git merge-base refs/remotes/origin/main HEAD`
+      # (spec-pyforge-doctor CAP-100). A pull request's two-commit checkout has no remote ref, so the merge commit's
+      # first parent (the base tip, the base Story 117.11's gates take) is named as it; a push checkout already has it.
+      - name: Name the base tip as origin/main
+        if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
+        run: |
+          set -euo pipefail
+          if ! git rev-parse -q --verify refs/remotes/origin/main >/dev/null; then
+            git update-ref refs/remotes/origin/main "$(git rev-parse HEAD^1)"
+          fi
       - run: pixi run --frozen -e pyforge-doctor pyforge-doctor-live-test
       # Story 117.4: the live-tree half's report, merged with the package half's by the doctor-gate job.
       - name: Name this shard's coverage report
