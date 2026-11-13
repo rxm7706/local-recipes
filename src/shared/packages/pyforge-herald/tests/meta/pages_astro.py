@@ -36,8 +36,8 @@ SITE_URL = "https://rxm7706.github.io/local-recipes"
 NODE = shutil.which("node")
 RENDER_READY = NODE is not None and ASTRO_BIN.is_file()
 needs_node = pytest.mark.skipif(NODE is None, reason="node is not on PATH")
-#: Story 45.1: CI's herald job runs ``pyforge-herald-test-built`` (``docs-site-install``, then ``pyforge-herald-test``)
-#: with this variable set, and ``pyforge-herald-test-coverage`` sets it beside its own install dependency, so a
+#: Story 45.1: CI's herald-live-test job runs ``docs-site-install``, then ``pyforge-herald-live-test``, with this
+#: variable set (steward Story 124.2; locally ``pyforge-herald-test-built`` runs the install, then both halves), and ``pyforge-herald-test-coverage`` sets it beside its own install dependency, so a
 #: built-site test whose install is missing FAILS there: a lost install is a red test, never a silent skip. Unset (the
 #: plain ``pyforge-herald-test``, which ``pyforge-station-tests`` and the SBOM laptop gate run npm-free; a bare
 #: ``pytest``; CI's coverage leg, which runs its driver), the tests skip.

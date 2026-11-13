@@ -30,7 +30,8 @@ pyforge/<station>/``, proves the scan flags it, then proves the real tree scans 
 
 A second, narrower copy of this check lives in ``pyforge-core``'s own ``tests/meta/`` (see
 ``test_flag_gate_ci_trigger_companion.py``) so CI runs it on a PR that touches only one non-doctor
-station: ``pyforge-core-test`` runs on any single-station change, this package's job does not.
+station: CI's ``core-live-test`` job (``pyforge-core-live-test``, the half that companion runs in) runs on any
+single-station change, this package's jobs do not (steward Story 124.2).
 Keep both copies' ``_defines_gate`` / ``_imports_gate`` bodies in sync when either changes; this
 file stays the canonical, fully-documented, exhaustively-tested contract.
 """

@@ -86,8 +86,10 @@ second, narrower copy of this same check lives in ``pyforge-core``'s own
 ``tests/meta/`` (see that file's docstring) purely so CI runs it on a PR
 that touches only one non-doctor, non-marshal station: this package's own
 CI job triggers on Doctor's own changed path, which such a PR never
-touches; ``pyforge-core-test`` already runs on any single-station change
-(Story 52.2), so it is the only job guaranteed to catch that case. Keep
+touches; CI's ``core-live-test`` job (``pyforge-core-live-test``, the half
+that companion runs in; steward Story 124.2) already runs on any
+single-station change (Story 52.2), so it is the only job guaranteed to
+catch that case. Keep
 both copies' violation-detection logic in sync when either changes; this
 file stays the canonical, fully-documented, exhaustively-tested contract.
 """

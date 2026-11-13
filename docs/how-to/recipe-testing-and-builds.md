@@ -18,9 +18,9 @@ For first-time environment setup, see [Getting started](../tutorials/getting-sta
 > pixi run -e pyforge-mason mason recipe build recipes/<name>
 > ```
 >
-> CI wiring: `.github/workflows/pyforge-station-tests.yml`'s `mason-test` job runs
-> `pixi run -e pyforge-mason pyforge-mason-recipe-build-smoke` after its test suite on PRs
-> that touch `src/shared/packages/pyforge-mason/**`.
+> CI wiring: `.github/workflows/pyforge-station-tests.yml`'s `mason-live-test` job runs
+> `pixi run -e pyforge-mason pyforge-mason-recipe-build-smoke` after the live-tree half of mason's
+> suite (steward Story 124.2 moved it there from `mason-test`).
 
 ## Building a single recipe (targeted workflow)
 
