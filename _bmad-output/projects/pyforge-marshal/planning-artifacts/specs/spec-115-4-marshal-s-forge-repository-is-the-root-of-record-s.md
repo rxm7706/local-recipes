@@ -2,7 +2,7 @@
 title: "115.4: Marshal's forge repository is the root of record's"
 type: 'fix'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

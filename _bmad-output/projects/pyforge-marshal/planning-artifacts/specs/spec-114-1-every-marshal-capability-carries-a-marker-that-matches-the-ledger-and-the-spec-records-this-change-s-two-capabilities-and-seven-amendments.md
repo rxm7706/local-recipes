@@ -2,7 +2,7 @@
 title: "114.1: Every marshal capability carries a marker that matches the ledger, and the Spec records this change's two capabilities and seven amendments"
 type: 'docs'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 retires-flag: pyforge.marshal.context_bundle_digest   # spec-46-2 declared this key and never shipped it; flags.json never held it and no tracked file reads it (BUILD-3 gate)
 review_loop_iteration: 0
 followup_review_recommended: false

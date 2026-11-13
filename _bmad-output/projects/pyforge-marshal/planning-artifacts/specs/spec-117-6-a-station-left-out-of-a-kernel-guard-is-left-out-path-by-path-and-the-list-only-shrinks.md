@@ -2,7 +2,7 @@
 title: "117.6: A station left out of a kernel guard is left out path by path, and the list only shrinks"
 type: 'feature'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

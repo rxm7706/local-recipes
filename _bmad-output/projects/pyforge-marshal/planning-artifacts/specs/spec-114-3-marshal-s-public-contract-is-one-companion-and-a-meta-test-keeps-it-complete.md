@@ -2,7 +2,7 @@
 title: "114.3: Marshal's public contract is one companion, and a meta-test keeps it complete"
 type: 'feature'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

@@ -2,7 +2,7 @@
 title: "114.2: No marshal capability or Constraint names a file, flag, verb or skill that is gone"
 type: 'fix'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

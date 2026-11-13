@@ -2,7 +2,7 @@
 title: "118.2: The testing charter says what was built, and carries Epic 118's capabilities"
 type: 'docs'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

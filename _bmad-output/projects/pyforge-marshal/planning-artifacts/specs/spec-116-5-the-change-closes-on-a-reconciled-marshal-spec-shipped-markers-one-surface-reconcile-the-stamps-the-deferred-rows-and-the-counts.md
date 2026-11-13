@@ -2,7 +2,7 @@
 title: "116.5: The change closes on a reconciled marshal Spec: shipped markers, one surface reconcile, the stamps, the deferred rows and the counts"
 type: 'chore'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

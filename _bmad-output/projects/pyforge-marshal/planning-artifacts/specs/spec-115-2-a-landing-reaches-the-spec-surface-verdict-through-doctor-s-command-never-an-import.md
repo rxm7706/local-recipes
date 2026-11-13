@@ -2,7 +2,7 @@
 title: "115.2: A landing reaches the spec-surface verdict through Doctor's command, never an import"
 type: 'fix'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

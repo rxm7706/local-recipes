@@ -2,7 +2,7 @@
 title: "115.1: Marshal finds the checkout and the loop home through its guarded roots, and the guard that says so can fire"
 type: 'fix'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

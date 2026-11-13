@@ -2,7 +2,7 @@
 title: "116.4: A package-half test that opens a repository file outside the package fails, wherever the package half runs"
 type: 'feature'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

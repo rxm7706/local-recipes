@@ -2,7 +2,7 @@
 title: "115.3: marshal-mcp registers every tool it lists, and a seed failure exits with the code its taxonomy documents"
 type: 'fix'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

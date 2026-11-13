@@ -2,7 +2,7 @@
 title: "117.2: One function answers the root of record and the forge slug"
 type: 'feature'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

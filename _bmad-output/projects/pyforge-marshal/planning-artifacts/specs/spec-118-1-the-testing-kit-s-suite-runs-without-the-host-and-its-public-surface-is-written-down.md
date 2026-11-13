@@ -2,7 +2,7 @@
 title: "118.1: The testing kit's suite runs without the host, and its public surface is written down"
 type: 'feature'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

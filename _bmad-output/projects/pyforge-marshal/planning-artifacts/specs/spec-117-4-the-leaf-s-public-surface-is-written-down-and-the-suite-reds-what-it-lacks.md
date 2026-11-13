@@ -2,7 +2,7 @@
 title: "117.4: The leaf's public surface is written down, and the suite reds what it lacks"
 type: 'feature'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

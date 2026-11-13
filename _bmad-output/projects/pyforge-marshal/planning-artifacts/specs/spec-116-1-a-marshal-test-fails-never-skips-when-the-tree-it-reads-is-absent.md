@@ -2,7 +2,7 @@
 title: "116.1: A marshal test fails, never skips, when the tree it reads is absent"
 type: 'fix'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

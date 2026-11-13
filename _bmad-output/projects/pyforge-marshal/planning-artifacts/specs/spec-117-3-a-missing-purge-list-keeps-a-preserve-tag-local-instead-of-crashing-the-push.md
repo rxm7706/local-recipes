@@ -2,7 +2,7 @@
 title: "117.3: A missing purge list keeps a preserve tag local instead of crashing the push"
 type: 'fix'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

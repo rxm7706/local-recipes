@@ -2,7 +2,7 @@
 title: "117.8: The kernel Specs are reconciled and stamped once, after the last edit on the branch"
 type: 'chore'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

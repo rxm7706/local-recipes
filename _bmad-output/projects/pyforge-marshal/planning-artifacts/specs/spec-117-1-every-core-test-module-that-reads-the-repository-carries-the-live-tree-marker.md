@@ -2,7 +2,7 @@
 title: "117.1: Every core test module that reads the repository carries the live_tree marker"
 type: 'feature'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
