@@ -2,7 +2,7 @@
 title: "50.2: The herald Spec has its Constraints, Non-goals and Assumptions again, and the chain closes on what landed"
 type: 'chore'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 difficulty: medium
 story: '50.2'
 spec: pyforge-herald

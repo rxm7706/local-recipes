@@ -2,7 +2,7 @@
 title: "52.1: Herald's live-tree readers carry the live_tree marker"
 type: 'chore'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 flag-exempt: detector-or-gate   # test markers and a marker registration, as doctor Story 55.4 and steward Story 117.4
 difficulty: medium
 story: '52.1'

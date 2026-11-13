@@ -1,5 +1,5 @@
 # GENERATED — do not hand-edit. Regenerate with:
-#     pixi run -e local-recipes sprint-ledger-sync
+#     pixi run -e pyforge-guild sprint-ledger-sync
 #
 # TRACKED twin of _bmad-output/projects/pyforge-herald/implementation-artifacts/sprint-status.yaml
 # which is gitignored Tier-3 (.gitignore:736) and therefore invisible to CI and
@@ -150,14 +150,14 @@ development_status:
   49-1-herald-s-absorbed-spec-folders-move-to-the-archive-home: done
   5-1-push-regenerated-exports-with-etag-guard: done
   5-2-conflict-refusal-on-export-push: done
-  50-1-every-herald-capability-s-marker-and-text-say-what-is-true: backlog
-  50-2-the-herald-spec-has-its-constraints-non-goals-and-assumptions-again-and-the-chain-closes-on-what-landed: blocked
-  50-3-herald-s-public-contract-is-one-companion-and-a-meta-test-holds-the-code-to-it: blocked
-  50-4-herald-s-source-comments-and-docstrings-cite-the-folded-spec-s-capability-ids: blocked
-  51-1-no-dossier-figure-is-typed-every-stats-band-and-the-scale-table-are-counted-at-build: blocked
-  51-2-the-dossier-s-cutover-claims-herald-section-and-stale-prose-are-true-today-and-a-test-resolves-each-claim: blocked
-  52-1-herald-s-live-tree-readers-carry-the-live-tree-marker: backlog
-  52-2-herald-s-landing-record-names-this-checkout-s-forge-and-its-package-names-python-3-14: backlog
+  50-1-every-herald-capability-s-marker-and-text-say-what-is-true: done
+  50-2-the-herald-spec-has-its-constraints-non-goals-and-assumptions-again-and-the-chain-closes-on-what-landed: done
+  50-3-herald-s-public-contract-is-one-companion-and-a-meta-test-holds-the-code-to-it: done
+  50-4-herald-s-source-comments-and-docstrings-cite-the-folded-spec-s-capability-ids: done
+  51-1-no-dossier-figure-is-typed-every-stats-band-and-the-scale-table-are-counted-at-build: done
+  51-2-the-dossier-s-cutover-claims-herald-section-and-stale-prose-are-true-today-and-a-test-resolves-each-claim: done
+  52-1-herald-s-live-tree-readers-carry-the-live-tree-marker: done
+  52-2-herald-s-landing-record-names-this-checkout-s-forge-and-its-package-names-python-3-14: done
   6-1-implement-herald-cli-dispatcher: done
   6-2-implement-shared-argument-conventions: done
   6-3-implement-cli-authentication-authorization: done
@@ -264,11 +264,11 @@ development_status:
   epic-49-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional
-  epic-50: backlog
+  epic-50: done
   epic-50-retrospective: optional
-  epic-51: backlog
+  epic-51: done
   epic-51-retrospective: optional
-  epic-52: backlog
+  epic-52: done
   epic-52-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional

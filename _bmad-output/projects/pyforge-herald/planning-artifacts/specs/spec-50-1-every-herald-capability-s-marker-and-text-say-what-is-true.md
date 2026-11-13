@@ -2,7 +2,7 @@
 title: "50.1: Every herald capability's marker and text say what is true"
 type: 'chore'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 difficulty: heavy
 story: '50.1'
 spec: pyforge-herald

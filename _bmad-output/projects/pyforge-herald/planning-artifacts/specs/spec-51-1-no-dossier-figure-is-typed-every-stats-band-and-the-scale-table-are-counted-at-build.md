@@ -2,7 +2,7 @@
 title: "51.1: No dossier figure is typed: every stats band and the scale table are counted at build"
 type: 'fix'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 flag-exempt: detector-or-gate   # the measurer and the schema refusal are the build's gate on what the dossier may show; a flag-off path would be the typed-figure path this story ends (spec-feature-flag-governance Q1). Story 43.5 put the measurer behind Epic 43's shared flag, which Story 43.7 retired; no herald flag gates the dossier today
 difficulty: heavy
 story: '51.1'

@@ -2,7 +2,7 @@
 title: "50.4: Herald's source comments and docstrings cite the folded Spec's capability ids"
 type: 'chore'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 difficulty: easy
 story: '50.4'
 spec: pyforge-herald

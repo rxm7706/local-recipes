@@ -2,7 +2,7 @@
 title: "52.2: Herald's landing record names this checkout's forge, and its package names Python 3.14"
 type: 'fix'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 difficulty: easy
 story: '52.2'
 spec: pyforge-herald

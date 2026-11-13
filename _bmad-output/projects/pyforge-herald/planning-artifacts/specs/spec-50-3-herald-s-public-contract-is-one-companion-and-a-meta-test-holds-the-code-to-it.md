@@ -2,7 +2,7 @@
 title: "50.3: Herald's public contract is one companion, and a meta-test holds the code to it"
 type: 'feature'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 flag-exempt: detector-or-gate   # a companion document and the test that judges it (a gated gate reports a silent green); the cli.py edit is citation and help text, no behaviour
 difficulty: heavy
 story: '50.3'

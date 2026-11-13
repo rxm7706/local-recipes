@@ -2,7 +2,7 @@
 title: "51.2: The dossier's cutover claims, herald section and stale prose are true today, and a test resolves each claim"
 type: 'docs'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 flag-exempt: detector-or-gate   # type docs, as Story 26.1 (the story that first made the dossier the cutover's control plane); the new test judges the content, and a gated gate reports a silent green; the agent-surface edit removes machine keys from published text and adds none
 difficulty: heavy
 story: '51.2'
