@@ -2,7 +2,7 @@
 id: SPEC-pyforge-testing-charter
 status: ready
 owner-dream: archive/docs/dreams/pyforge-testing-charter.md
-updated: 2026-11-10
+updated: 2026-11-12
 surface:
   - _bmad/scripts/bmad_tea_playwright.py
   - scripts/fleet_scan.py    # the file doctor loads as pyforge.doctor.sources.fleet_scan (sources/board.py); re-pointed 2026-10-15
@@ -53,7 +53,7 @@ Spec closes those five gaps — it does not re-derive test architecture the flee
   - **intent:** `bmad_tea_playwright.py` is the single generator for a station's test-architecture document, and every station's document was actually produced by running it against that station's real epics and architecture, not hand-typed.
   - **success:** The script's output-filename convention (`test-architecture-tea.md`) is reconciled with the committed convention (`test-architecture.md`); running it against atlas, doctor, mason, scribe, steward, and warden's real epics-with-stories.md produces a document referencing actual story IDs and modules, replacing all six boilerplate stand-ins; a document still containing the literal token "TBD" after a run is a failed run, not a placeholder to fill in later.
 
-- **CAP-3 — Shared test-support package (pyforge-testing-kit)** (ready 2026-11-10)
+- **CAP-3 — Shared test-support package (pyforge-testing-kit)** (shipped 2026-11-12)
   - **intent:** A station author does not hand-roll CLI runner fixtures, DB factories, or mocks another station already wrote.
   - **success:** A `pyforge-testing-kit` package exists under `src/shared/packages/` with five families — CLI runner, web page-object, DB factory and auth/HTTP/time mocks, seeded from Marshal's four already-real mocks (`mock_github_api.py`, `mock_worktree.py`, `mock_supervisor.py`, `mock_runner.py`) rather than rewritten from scratch, and the feature-flag fixture (`flags`, spec-feature-flag-governance:CAP-4) — plus `branch_diff_guard` and `cfe_surface`; its run-dependencies are `pyforge-core` and `openfeature-sdk` (the stdlib-leaf premise was retired 2026-09-30); all eight stations' tests import it instead of a local duplicate; its public surface is written in `contract.md` (CAP-6). The lane runs the package half and the live-tree half of the kit's suite (CAP-7; mechanism spec-pyforge-steward:CAP-175), `pyforge-testing-kit-test` stays the whole suite (`pixi run --frozen -e pyforge-testing-kit pyforge-testing-kit-test` exits 0), and the kit's lane-wired meta-test (`tests/meta/test_testing_kit_lane_wired.py`) reds a wiring that drops a half.
 
@@ -65,11 +65,11 @@ Spec closes those five gaps — it does not re-derive test architecture the flee
   - **intent:** Herald's and Marshal's existing real test-architecture documents do not freeze at today's snapshot while more stories ship.
   - **success:** Re-running `bmad_tea_playwright.py` (or its manual-equivalent process) against Marshal's epics after each epic completes regenerates the story-coverage table without hand-editing; a story that shipped without its test-architecture row updated is a detectable drift, not a silent gap.
 
-- **CAP-6 — the kit's public surface is written down, and its suite reds what it lacks** ← Dream entry 2026-11-10 (The shared floor says what it is: core and the testing kit before the cutover); decision D1 of the 2026-11-10 design pass (ready 2026-11-10)
+- **CAP-6 — the kit's public surface is written down, and its suite reds what it lacks** ← Dream entry 2026-11-10 (The shared floor says what it is: core and the testing kit before the cutover); decision D1 of the 2026-11-10 design pass (shipped 2026-11-12)
   - **intent:** A companion `contract.md` beside this Spec names every module of `pyforge.testing_kit`, every public name (the package's `__all__` and each submodule's), the pytest fixtures and markers it provides, its run-dependencies, its Python floor, and which members are bound to this estate (`cfe_surface`), so a second root can rebuild the kit that eight stations' tests import.
   - **success:** `pixi run --frozen -e pyforge-testing-kit pytest src/shared/packages/pyforge-testing-kit/tests/meta/test_public_contract.py -q` exits 0; that module (marked `live_tree`) exits 1 naming the item when the kit has a module or public name `contract.md` lacks, or `contract.md` names one the kit lacks, proven on synthetic input in the same module.
 
-- **CAP-7 — the kit's own suite runs without the host** ← Dream entry 2026-11-10 (The shared floor says what it is: core and the testing kit before the cutover); decision D2 of the 2026-11-10 design pass; mechanism spec-pyforge-steward:CAP-175 (ready 2026-11-10)
+- **CAP-7 — the kit's own suite runs without the host** ← Dream entry 2026-11-10 (The shared floor says what it is: core and the testing kit before the cutover); decision D2 of the 2026-11-10 design pass; mechanism spec-pyforge-steward:CAP-175 (shipped 2026-11-12)
   - **intent:** The package half of the kit's suite imports no `django` and no `django_pyforge` and reads nothing outside the kit; the portal-and-CLI header contract, the lane wiring, the comparison with the platform flag tree and the contract check are the live-tree half, marked `pytest.mark.live_tree`. (How the lane runs the halves is CAP-3's.)
   - **success:** `pixi run --frozen -e pyforge-testing-kit pytest src/shared/packages/pyforge-testing-kit/tests -q -m "not live_tree" --strict-markers` exits 0 with no django-pyforge on `PYTHONPATH`, and again from a copy of the package alone with the working directory outside the repository; `-m live_tree` exits 0 on the repository with django-pyforge on the path; only live-tree modules name `django`; steward's trigger-map derivation finds no outside read in an unmarked kit module.
 

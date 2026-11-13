@@ -2,7 +2,7 @@
 id: SPEC-pyforge-core
 spec: pyforge-core
 status: ready
-updated: "2026-11-10"   # RE-DERIVED 2026-11-10 (marshal Story 117.5, the cutover-readiness mint; operator rulings of 2026-11-10): every capability carries a dated marker; CAP-12..CAP-14 rendered from the mint's capability entries; CAP-1 and CAP-5..CAP-10 re-derived as built; Q1..Q3 closed; the Non-goals and two Constraints re-worded; owner-dream points at the station Dream; contract.md a companion; the surface: paths unchanged.
+updated: "2026-11-12"   # RE-DERIVED 2026-11-12 (marshal Story 117.8, the cutover-readiness integration; operator ruling (e) of 2026-11-10): CAP-7, CAP-8 and CAP-12..CAP-14 flip from (ready 2026-11-10) to (shipped 2026-11-12). Prior: RE-DERIVED 2026-11-10 (marshal Story 117.5, the cutover-readiness mint; operator rulings of 2026-11-10): every capability carries a dated marker; CAP-12..CAP-14 rendered from the mint's capability entries; CAP-1 and CAP-5..CAP-10 re-derived as built; Q1..Q3 closed; the Non-goals and two Constraints re-worded; owner-dream points at the station Dream; contract.md a companion; the surface: paths unchanged.
 owner-dream: docs/dreams/pyforge-marshal.md
 surface:
   - src/shared/packages/pyforge-core/**            # the leaf itself
@@ -129,7 +129,7 @@ costs two stories of rework; deciding it now costs an epic ordering.
     overridden, and herald, mason and scribe are excluded by discovery; CAP-7 pins all six;
     warden's existing single seam (`engines.py`, already annotated *"the sole seam"*) is
     confirmed conforming rather than "fixed."
-- **CAP-7 — a second implementation cannot appear unnoticed.** (ready 2026-11-10) *(amended 2026-11-10)*
+- **CAP-7 — a second implementation cannot appear unnoticed.** (shipped 2026-11-12) *(amended 2026-11-10)*
   - **intent:** The floor stays a floor.
   - **success:** One sole-ownership meta-test per extracted primitive, following the
     pattern marshal and warden already use; each fails the build when a second
@@ -138,7 +138,7 @@ costs two stories of rework; deciding it now costs an epic ordering.
     (exception roots as `path::Class`, subprocess call sites as files), the leaf's own
     source included and `PyforgeError` excluded by name; the pins only shrink, and a new
     entry and a stale pin both fail the core suite.
-- **CAP-8 — the floor is enforced where the build happens.** (ready 2026-11-10) *(minted 2026-09-19; amended 2026-11-10)*
+- **CAP-8 — the floor is enforced where the build happens.** (shipped 2026-11-12) *(minted 2026-09-19; amended 2026-11-10)*
   - **intent:** The conformance suite — the whole `pyforge-core` `tests/` tree, the four
     sole-ownership meta-tests included — runs on every PR that touches the shared surface or
     any `pyforge-*` package (the set the sole-ownership scan covers; narrowed from
@@ -198,7 +198,7 @@ costs two stories of rework; deciding it now costs an epic ordering.
     `pyforge context …` still aliases to marshal; an installed station still dispatches; the usage
     listing names the three missing roster stations; removing the roster check brings back "unknown
     station 'warden'" (mutation); `pyforge-core-test` green.
-- **CAP-12 — the leaf's public surface is written down, and the suite reds what it lacks.** (ready 2026-11-10) *(minted 2026-11-10)*
+- **CAP-12 — the leaf's public surface is written down, and the suite reds what it lacks.** (shipped 2026-11-12) *(minted 2026-11-10)*
   - **intent:** A companion `contract.md` beside this Spec names every module of
     `pyforge.core` and the capability that governs it (this Spec's, or another's written
     `spec-<x>:CAP-n` or `fnd:CAP-n`), every public name a station may import, every
@@ -211,7 +211,7 @@ costs two stories of rework; deciding it now costs an epic ordering.
     module, public top-level name, environment variable, flag key, exit code or entry point
     `contract.md` lacks, and when `contract.md` names one the source lacks; both directions
     are proven on synthetic input in the same module.
-- **CAP-13 — one function answers the root of record and the forge slug.** (ready 2026-11-10) *(minted 2026-11-10)*
+- **CAP-13 — one function answers the root of record and the forge slug.** (shipped 2026-11-12) *(minted 2026-11-10)*
   - **intent:** `pyforge.core.cutover_root.root_of_record(path=None)` returns the root of
     record (`local-recipes` or `foundry`, read from `pyforge.cutover_root` as the current
     environment renders the tree), that root's forge repository slug, and where the answer
@@ -228,7 +228,7 @@ costs two stories of rework; deciding it now costs an epic ordering.
     `FORGE_SLUGS` equal `CUTOVER_VARIANTS`.
     `git grep -l 'rxm7706/local-recipes\|rxm7706/python-foundry' -- src/shared/packages/pyforge-core/src`
     names `cutover_root.py` alone.
-- **CAP-14 — the core suite has a package half a second root runs from the package alone.** (ready 2026-11-10) *(minted 2026-11-10)*
+- **CAP-14 — the core suite has a package half a second root runs from the package alone.** (shipped 2026-11-12) *(minted 2026-11-10)*
   - **intent:** Every core test module, and the conftest, that reads the repository outside
     `pyforge-core` carries `pytestmark = pytest.mark.live_tree`; the unmarked rest is the
     package half, the oracle a second root runs with no tree but the package. (How the lane
