@@ -22,11 +22,11 @@ name = "pixi-build-python"
 version = "0.*"
 
 [package.host-dependencies]
-python = ">=3.12"          # explicit build-time interpreter for pixi-build-python (matches pyforge-warden/pyforge-doctor)
+python = ">=3.14"          # explicit build-time interpreter for pixi-build-python (matches pyforge-warden/pyforge-doctor)
 hatchling = "*"
 
 [package.run-dependencies]
-python = ">=3.12"
+python = ">=3.14"
 pyyaml = ">=6.0"
 # <0.13.3 matches this repo's own environment cap (root pixi.toml pins
 # tomlkit "<0.13.3" for dagster-dg-core, an unrelated dependency) --

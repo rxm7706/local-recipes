@@ -27,6 +27,7 @@ context:
 warnings: []
 deferred: []
 declared_low_risk: false
+baseline_revision: 'c7756dfce4a3'
 ---
 
 <intent-contract>
@@ -118,3 +119,38 @@ Parent: `spec-pyforge-steward` CAP-153
 - src/platform/uv.lock came from commit 41c3bdd772 ('wip: 94.1 (auto-checkpoint)'); it is not a .py file, so the src/platform import guard does not fire.
 - `$BASE` in the acceptance criteria is the `baseline_revision` the build writes into this spec's frontmatter when it starts (the commit it starts from); it is not set at mint.
 - No build story appends a `Surface reconcile` line to another Spec's memlog or runs `spec_surface_check.py --write-baseline`: each Spec's own closer writes its reconcile event from `git diff --name-only origin/main...HEAD` (steward and host: Story 122.5) and doctor Story 58.4 runs every scoped stamp once, after the last edit.
+
+## Re-lock movement (written at build)
+
+Written 2026-11-12, after a trial re-lock and before the landing re-lock, so AC8's remainder is named with its reason
+before the lock that lands was written (the Approach's fallback clause; no environment block was evicted).
+
+- **Trial.** A `git clone --shared` of `c7756dfce4a3` (this spec's `baseline_revision`) plus this story's working diff,
+  then `PIXI_CACHE_DIR=<empty dir> pixi lock` (pixi 0.81.0). A semantic diff of its output against the base lock: no
+  binary package added, no version moved, no `host_packages` entry moved, no `pypi` record moved, no PostgreSQL,
+  libpq, psycopg or pgvector line moved (fnd:CAP-12 holds). Every source record lost its `python >=3.12` depends line
+  (core, testing-kit, steward, marshal, warden from this story; herald, mason, scribe from herald:S-52.2,
+  mason:S-37.3, scribe:S-33.2), and the three atlas records lost `bokeh >=3.9.2`, `tornado >=6.5.8` and
+  `starlette >=1.6.0` (atlas:S-48.3). The doctor records did not move.
+- **What AC8's filter leaves, by class, with its reason** (counts from the trial; the landing re-lock must match the
+  trial byte for byte, or this section is re-written before it lands):
+  1. 444 `conda_source: pyforge-<x>[<8 hex>] @ src/shared/packages/pyforge-<x>` lines: the id pixi derives over each
+     path package's metadata ("their hashes" in the Approach). It moves for the 36 source records of core,
+     testing-kit, steward, marshal, warden, herald, mason, scribe and atlas, in the record header and in every
+     environment that lists the record.
+  2. 482 `-` and 482 `+` lines that are one multiset (pure moves): pixi.lock sorts source records by that id, so a
+     record whose id moved is written again at its new position with an unchanged body (`variants`, `depends`,
+     `license`, `source_depends`, `host_packages`).
+  3. 32 removed environment entries, bokeh's dependency closure in the ten environment/platform pairs that reached
+     bokeh only through the atlas member (pyforge-atlas on linux-64, osx-arm64-min and win-64; pyforge-container on
+     the same three; pyforge-foundry-full on the same three; pyforge-foundry-full-stack on linux-64): `xyzservices`
+     (10), `contourpy` (6), `lcms2`, `openjpeg`, `pillow`, `zlib-ng` (3 each, pyforge-atlas), `libxcb`,
+     `pthread-stubs`, `xorg-libxau`, `xorg-libxdmcp` (1 each, pyforge-atlas osx-arm64-min). Reason: atlas:S-48.3
+     dropped bokeh, tornado and starlette from the member, so the solver drops what only they pulled in.
+  4. 18 `-` lines, the body of the binary record `bokeh-3.10.0-pyhd8ed1ab_0` (`md5`, `depends` with its eight entries,
+     `constrains`, `license`, `license_family`, `purls`, `run_exports`, `size`, `timestamp`; its `- conda:` header
+     line carries `bokeh`, which AC8 already filters). No environment resolves bokeh 3.10.0 once the atlas member
+     stops requiring it; `local-recipes` keeps bokeh 3.9.2 from the root pixi.toml.
+- `environment.yaml` is exported from the root pixi.toml's `[feature.build]`, which this story does not edit, so the
+  re-lock leaves it unchanged; `pyforge steward estate reconcile` is not run (it also stages and stamps, which no
+  build story does here).
