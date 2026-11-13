@@ -2,7 +2,7 @@
 title: '124.4: The cutover-ledger write kill switch joins the flag tree and every shipped-flag table'
 type: 'chore'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 difficulty: easy
 story: 124.4
 spec: python-foundry-cutover

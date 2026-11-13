@@ -2,7 +2,7 @@
 title: '123.1: Every steward capability names the modules that realize it and the tests that prove it'
 type: 'feature'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 flag-exempt: detector-or-gate
 difficulty: heavy
 story: 123.1

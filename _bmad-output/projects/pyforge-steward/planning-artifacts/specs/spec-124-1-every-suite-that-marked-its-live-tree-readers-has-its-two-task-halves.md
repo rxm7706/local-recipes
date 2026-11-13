@@ -2,7 +2,7 @@
 title: '124.1: Every suite that marked its live-tree readers has its two task halves'
 type: 'feature'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 flag-exempt: detector-or-gate
 difficulty: medium
 story: 124.1

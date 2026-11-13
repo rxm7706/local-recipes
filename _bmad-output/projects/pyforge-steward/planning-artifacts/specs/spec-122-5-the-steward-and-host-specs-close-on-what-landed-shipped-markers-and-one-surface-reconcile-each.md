@@ -2,7 +2,7 @@
 title: '122.5: The steward and host Specs close on what landed: shipped markers and one Surface reconcile each'
 type: 'chore'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 difficulty: medium
 story: 122.5
 spec: pyforge-steward

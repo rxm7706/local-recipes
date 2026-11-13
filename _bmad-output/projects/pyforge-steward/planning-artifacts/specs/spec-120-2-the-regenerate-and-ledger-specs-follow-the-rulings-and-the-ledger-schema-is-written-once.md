@@ -2,7 +2,7 @@
 title: '120.2: The regenerate and ledger Specs follow the rulings, and the ledger schema is written once'
 type: 'docs'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 flag-exempt: docs-only
 difficulty: medium
 story: 120.2

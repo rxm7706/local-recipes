@@ -2,7 +2,7 @@
 title: '124.2: Each split suite runs its live-tree half as its own CI job'
 type: 'feature'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 flag-exempt: detector-or-gate
 difficulty: heavy
 story: 124.2

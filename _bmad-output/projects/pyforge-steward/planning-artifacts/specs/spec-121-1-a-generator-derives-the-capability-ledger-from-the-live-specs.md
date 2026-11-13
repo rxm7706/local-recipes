@@ -2,7 +2,7 @@
 title: '121.1: A generator derives the capability ledger from the live Specs'
 type: 'feature'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 flag:
   key: pyforge.steward.cutover_ledger_write
   provider: openfeature-file

@@ -2,7 +2,7 @@
 title: '120.5: The case list counts itself and covers the Launch slice'
 type: 'chore'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 difficulty: medium
 story: 120.5
 spec: foundry-regenerate-not-fold

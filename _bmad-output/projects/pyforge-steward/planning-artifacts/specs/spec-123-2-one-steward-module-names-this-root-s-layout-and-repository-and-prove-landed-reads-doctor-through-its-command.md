@@ -2,7 +2,7 @@
 title: '123.2: One steward module names this root''s layout and repository, and prove-landed reads doctor through its command'
 type: 'feature'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 flag-exempt: detector-or-gate
 difficulty: medium
 story: 123.2

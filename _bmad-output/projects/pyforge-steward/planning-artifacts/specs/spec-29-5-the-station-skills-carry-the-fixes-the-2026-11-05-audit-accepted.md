@@ -2,7 +2,7 @@
 title: "29.5: The station skills carry the fixes the 2026-11-05 audit accepted"
 type: 'fix'
 created: '2026-11-05'
-status: 'blocked'
+status: 'done'
 baseline_revision: '836a2ee286'
 review_loop_iteration: 0
 followup_review_recommended: false

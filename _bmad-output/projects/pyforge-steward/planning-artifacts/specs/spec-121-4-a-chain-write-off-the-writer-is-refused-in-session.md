@@ -2,7 +2,7 @@
 title: '121.4: A chain write off the writer is refused in session'
 type: 'feature'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 flag-exempt: detector-or-gate
 difficulty: medium
 story: 121.4

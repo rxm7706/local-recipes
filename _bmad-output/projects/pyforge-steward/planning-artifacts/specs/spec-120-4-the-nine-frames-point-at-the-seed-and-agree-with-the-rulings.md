@@ -2,7 +2,7 @@
 title: '120.4: The nine Frames point at the seed and agree with the rulings'
 type: 'docs'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 flag-exempt: docs-only
 difficulty: medium
 story: 120.4

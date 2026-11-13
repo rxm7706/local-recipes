@@ -2,7 +2,7 @@
 title: '122.4: Comments and docstrings in steward''s source and tests cite today''s capability ids'
 type: 'chore'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 difficulty: heavy
 story: 122.4
 spec: pyforge-steward

@@ -2,7 +2,7 @@
 title: '121.3: The capability ledger takes the rulings: archived rows leave, modes and expiries are decided'
 type: 'chore'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 difficulty: heavy
 story: 121.3
 spec: foundry-capability-ledger

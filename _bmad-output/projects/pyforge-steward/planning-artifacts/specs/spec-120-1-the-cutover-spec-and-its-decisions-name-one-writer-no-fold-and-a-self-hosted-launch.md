@@ -2,7 +2,7 @@
 title: '120.1: The cutover Spec and its decisions name one writer, no fold and a self-hosted Launch'
 type: 'docs'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 flag-exempt: docs-only
 difficulty: heavy
 story: 120.1

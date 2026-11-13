@@ -2,7 +2,7 @@
 title: '122.1: The steward Spec''s markers, numbers and names match the tree, and restore and revoke have a capability'
 type: 'docs'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 flag-exempt: docs-only
 difficulty: heavy
 story: 122.1

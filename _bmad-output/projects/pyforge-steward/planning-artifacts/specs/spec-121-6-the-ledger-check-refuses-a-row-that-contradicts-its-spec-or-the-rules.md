@@ -2,7 +2,7 @@
 title: '121.6: The ledger check refuses a row that contradicts its Spec or the rules'
 type: 'feature'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 flag-exempt: detector-or-gate
 difficulty: heavy
 story: 121.6

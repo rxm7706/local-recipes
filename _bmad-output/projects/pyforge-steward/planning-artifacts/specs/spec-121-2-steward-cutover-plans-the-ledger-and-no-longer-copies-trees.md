@@ -2,7 +2,7 @@
 title: '121.2: steward cutover plans the ledger and no longer copies trees'
 type: 'feature'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 flag:
   key: pyforge.steward.cutover_ledger_write
   provider: openfeature-file

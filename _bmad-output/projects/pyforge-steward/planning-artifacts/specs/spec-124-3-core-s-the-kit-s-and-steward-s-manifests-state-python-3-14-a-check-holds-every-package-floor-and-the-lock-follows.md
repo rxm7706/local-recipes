@@ -2,7 +2,7 @@
 title: '124.3: Core''s, the kit''s and steward''s manifests state Python 3.14, a check holds every package floor, and the lock follows'
 type: 'feature'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 flag-exempt: detector-or-gate
 difficulty: medium
 story: 124.3

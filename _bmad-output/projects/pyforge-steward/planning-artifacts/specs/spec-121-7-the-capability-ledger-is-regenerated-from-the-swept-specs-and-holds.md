@@ -2,7 +2,7 @@
 title: '121.7: The capability ledger is regenerated from the swept Specs and holds'
 type: 'chore'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 difficulty: heavy
 story: 121.7
 spec: foundry-capability-ledger

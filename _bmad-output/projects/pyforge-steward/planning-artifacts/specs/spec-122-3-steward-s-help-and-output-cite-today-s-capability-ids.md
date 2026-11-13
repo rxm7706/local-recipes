@@ -2,7 +2,7 @@
 title: '122.3: Steward''s help and output cite today''s capability ids'
 type: 'fix'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 difficulty: medium
 story: 122.3
 spec: pyforge-steward

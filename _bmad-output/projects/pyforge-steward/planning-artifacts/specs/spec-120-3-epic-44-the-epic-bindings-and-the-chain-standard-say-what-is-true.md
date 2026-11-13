@@ -2,7 +2,7 @@
 title: '120.3: Epic 44, the epic bindings and the chain standard say what is true'
 type: 'docs'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 flag-exempt: docs-only
 difficulty: medium
 story: 120.3

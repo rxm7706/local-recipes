@@ -2,7 +2,7 @@
 title: '124.5: Each persona names the MCP tools its station''s face serves, and the host Spec governs the personas and says what Scribe''s graph store is'
 type: 'docs'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 flag-exempt: docs-only
 difficulty: medium
 story: 124.5

@@ -2,7 +2,7 @@
 title: '123.3: Estate plan refuses when its pixi dry run fails, and the share-tree tests say where they run'
 type: 'fix'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 difficulty: medium
 story: 123.3
 spec: pyforge-steward

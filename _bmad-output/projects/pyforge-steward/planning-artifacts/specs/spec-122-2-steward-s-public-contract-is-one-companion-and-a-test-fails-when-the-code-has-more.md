@@ -2,7 +2,7 @@
 title: '122.2: Steward''s public contract is one companion and a test fails when the code has more'
 type: 'feature'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 flag-exempt: detector-or-gate
 difficulty: heavy
 story: 122.2
