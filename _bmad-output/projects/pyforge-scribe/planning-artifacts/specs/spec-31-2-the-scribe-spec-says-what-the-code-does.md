@@ -2,7 +2,7 @@
 title: '31.2: The scribe Spec says what the code does'
 type: 'docs'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 difficulty: 'medium'
 story: 31-2-the-scribe-spec-says-what-the-code-does
 spec: spec-pyforge-scribe

@@ -2,7 +2,7 @@
 title: '33.1: The suite splits on live_tree and postgres, and no test skips the branch it names'
 type: 'fix'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 difficulty: 'medium'
 story: 33-1-the-suite-splits-on-live-tree-and-postgres-and-no-test-skips-the-branch-it-names
 spec: spec-pyforge-scribe

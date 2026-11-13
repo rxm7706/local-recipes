@@ -2,7 +2,7 @@
 title: "31.1: Scribe's public contract is written down, and a meta-test holds it"
 type: 'feature'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 flag-exempt: detector-or-gate   # a contract record and the meta-test that judges it; a gated gate reports a silent green (spec-feature-flag-governance Q2)
 difficulty: 'medium'
 story: 31-1-scribe-s-public-contract-is-written-down-and-a-meta-test-holds-it

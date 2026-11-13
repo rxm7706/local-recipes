@@ -2,7 +2,7 @@
 title: "31.4: Scribe's part of the cutover-readiness change closes at the integration head"
 type: 'chore'
 created: '2026-11-10'
-status: 'blocked'
+status: 'done'
 difficulty: 'medium'
 story: 31-4-scribe-s-part-of-the-cutover-readiness-change-closes-at-the-integration-head
 spec: spec-pyforge-scribe

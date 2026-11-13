@@ -2,7 +2,7 @@
 title: '32.2: A test holds the team-memory index'
 type: 'chore'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 difficulty: 'medium'
 story: 32-2-a-test-holds-the-team-memory-index
 spec: spec-pyforge-scribe

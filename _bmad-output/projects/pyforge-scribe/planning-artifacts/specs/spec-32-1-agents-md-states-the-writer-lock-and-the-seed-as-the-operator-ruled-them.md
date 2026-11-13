@@ -2,7 +2,7 @@
 title: '32.1: AGENTS.md states the writer lock and the seed as the operator ruled them'
 type: 'chore'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 difficulty: 'medium'
 story: 32-1-agents-md-states-the-writer-lock-and-the-seed-as-the-operator-ruled-them
 spec: spec-pyforge-scribe

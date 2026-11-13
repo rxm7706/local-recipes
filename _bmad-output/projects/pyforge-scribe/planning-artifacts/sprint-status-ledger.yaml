@@ -1,5 +1,5 @@
 # GENERATED — do not hand-edit. Regenerate with:
-#     pixi run -e local-recipes sprint-ledger-sync
+#     pixi run -e pyforge-guild sprint-ledger-sync
 #
 # TRACKED twin of _bmad-output/projects/pyforge-scribe/implementation-artifacts/sprint-status.yaml
 # which is gitignored Tier-3 (.gitignore:736) and therefore invisible to CI and
@@ -57,15 +57,15 @@ development_status:
   3-2-transcripts-join-the-compile-sources: done
   3-3-the-nightly-compile-gets-a-schedule-and-a-cost-ceiling: done
   30-1-scribe-s-absorbed-spec-folders-move-to-the-archive-home: done
-  31-1-scribe-s-public-contract-is-written-down-and-a-meta-test-holds-it: backlog
-  31-2-the-scribe-spec-says-what-the-code-does: blocked
-  31-3-the-scribe-planning-chain-follows-the-spec: backlog
-  31-4-scribe-s-part-of-the-cutover-readiness-change-closes-at-the-integration-head: blocked
-  32-1-agents-md-states-the-writer-lock-and-the-seed-as-the-operator-ruled-them: backlog
-  32-2-a-test-holds-the-team-memory-index: backlog
-  32-3-a-spec-that-is-behind-its-memlog-reds-scribe-s-live-tree-suite: backlog
-  33-1-the-suite-splits-on-live-tree-and-postgres-and-no-test-skips-the-branch-it-names: backlog
-  33-2-the-package-s-metadata-and-docs-agree-with-the-estate: backlog
+  31-1-scribe-s-public-contract-is-written-down-and-a-meta-test-holds-it: done
+  31-2-the-scribe-spec-says-what-the-code-does: done
+  31-3-the-scribe-planning-chain-follows-the-spec: done
+  31-4-scribe-s-part-of-the-cutover-readiness-change-closes-at-the-integration-head: done
+  32-1-agents-md-states-the-writer-lock-and-the-seed-as-the-operator-ruled-them: done
+  32-2-a-test-holds-the-team-memory-index: done
+  32-3-a-spec-that-is-behind-its-memlog-reds-scribe-s-live-tree-suite: done
+  33-1-the-suite-splits-on-live-tree-and-postgres-and-no-test-skips-the-branch-it-names: done
+  33-2-the-package-s-metadata-and-docs-agree-with-the-estate: done
   4-1-register-graphstore-as-cap-18-plugins: done
   5-1-skf-skill-ownership-and-bmad-persona-for-scribe: done
   5-2-first-portal-slice-one-recall-query: done
@@ -128,11 +128,11 @@ development_status:
   epic-3-retrospective: optional
   epic-30: done
   epic-30-retrospective: optional
-  epic-31: backlog
+  epic-31: done
   epic-31-retrospective: optional
-  epic-32: backlog
+  epic-32: done
   epic-32-retrospective: optional
-  epic-33: backlog
+  epic-33: done
   epic-33-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional

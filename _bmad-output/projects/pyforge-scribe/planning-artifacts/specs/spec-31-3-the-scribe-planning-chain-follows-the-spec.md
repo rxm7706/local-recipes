@@ -2,7 +2,7 @@
 title: '31.3: The scribe planning chain follows the Spec'
 type: 'docs'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 difficulty: 'medium'
 story: 31-3-the-scribe-planning-chain-follows-the-spec
 spec: spec-pyforge-scribe

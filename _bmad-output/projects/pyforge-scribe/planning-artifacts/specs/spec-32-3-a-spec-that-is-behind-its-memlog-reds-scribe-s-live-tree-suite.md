@@ -2,7 +2,7 @@
 title: "32.3: A Spec that is behind its memlog reds scribe's live-tree suite"
 type: 'feature'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 flag-exempt: detector-or-gate   # a meta-test that judges; a gated gate reports a silent green (spec-feature-flag-governance Q2)
 difficulty: 'medium'
 story: 32-3-a-spec-that-is-behind-its-memlog-reds-scribe-s-live-tree-suite

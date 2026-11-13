@@ -2,7 +2,7 @@
 title: "33.2: The package's metadata and docs agree with the estate"
 type: 'fix'
 created: '2026-11-10'
-status: 'backlog'
+status: 'done'
 difficulty: 'medium'
 story: 33-2-the-package-s-metadata-and-docs-agree-with-the-estate
 spec: spec-pyforge-scribe
