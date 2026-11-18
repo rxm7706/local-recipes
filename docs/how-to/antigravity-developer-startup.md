@@ -53,7 +53,7 @@ On the snapshot workstation the checkout was registered and trusted across all s
 
 ### Repository wiring
 
-- **Agent contract:** [`AGENTS.md`](https://github.com/rxm7706/local-recipes/blob/main/AGENTS.md) at the repo root is the cross-tool contract.
+- **Agent contract:** `AGENTS.md` at the repo root is the cross-tool contract.
 - **Loader:** the checked-in `.gemini/settings.json` sets `context.fileName` to `["AGENTS.md", "GEMINI.md"]`, so Gemini CLI and Antigravity load `AGENTS.md` first.
 - **Addendum:** `GEMINI.md` carries the Gemini-only notes. Confirm the load with `/memory show`; both files must appear.
 
