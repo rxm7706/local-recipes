@@ -202,7 +202,7 @@ def test_agents_md_states_the_session_close_ritual_with_hygiene() -> None:
         "GEMINI.md",
         ".github/copilot-instructions.md",
         ".cursor/rules/trunk-worktree-pr.mdc",
-        ".claude/skills/pyforge-marshal/0.1.0/pyforge-marshal/SKILL.md",
+        ".claude/skills/pyforge-marshal/0.1.1/pyforge-marshal/SKILL.md",
         ".claude/skills/pyforge-scribe/0.1.0/pyforge-scribe/SKILL.md",
     ),
 )

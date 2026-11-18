@@ -1,6 +1,6 @@
 """``steward estate`` — policy-driven pin refresh conductor (Story 100.2 / CAP-167).
 
-Five verbs in v1: ``plan``, ``refresh``, ``reconcile``, ``verify``, ``status``. Every mutating step is a
+Six verbs: ``plan``, ``refresh``, ``reconcile``, ``verify``, ``realize``, ``status``. Every mutating step is a
 subprocess (AD-1); this module never edits ``pixi.toml`` (AD-5). Returns
 ``DutyResult`` only (AD-8).
 """

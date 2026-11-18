@@ -1,0 +1,588 @@
+{
+  "provenance_version": "2.0",
+  "skill_name": "pyforge-steward",
+  "skill_type": "single",
+  "source_repo": "src/shared/packages/pyforge-steward",
+  "source_commit": "424ce69fc2467dfc8c8b8287f40707ab5699b65b",
+  "source_ref": "local",
+  "generated_at": "2026-11-12T00:00:00Z",
+  "grounding": {
+    "date": "2026-11-18",
+    "commit_short": "424ce69fc2",
+    "station": "steward",
+    "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-126-5-the-four-compiled-station-skills-match-their-clis.md",
+    "path_base": "repository root; the tool's own map (gitignored forge data) is relative to source_repo, and this tracked copy is that map with source_repo prefixed to each source_file"
+  },
+  "entries": [
+    {
+      "export_name": "CiDeps",
+      "export_type": "class",
+      "source_library": "pyforge-steward",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/ci.py",
+      "source_line": 57,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "CiDuty",
+      "export_type": "class",
+      "source_library": "pyforge-steward",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/ci.py",
+      "source_line": 1367,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_pause",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [
+        "deps: CiDeps",
+        "target: str",
+        "reason: str",
+        "review_by: str",
+        "yes: bool",
+        "remove_merge_gate: bool"
+      ],
+      "return_type": "DutyResult",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/ci.py",
+      "source_line": 1164,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_resume",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [
+        "deps: CiDeps",
+        "target: str",
+        "yes: bool"
+      ],
+      "return_type": "DutyResult",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/ci.py",
+      "source_line": 1278,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_status",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [
+        "deps: CiDeps",
+        "json_out: bool"
+      ],
+      "return_type": "DutyResult",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/ci.py",
+      "source_line": 918,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_vars",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [
+        "deps: CiDeps",
+        "refresh: bool"
+      ],
+      "return_type": "DutyResult",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/ci.py",
+      "source_line": 991,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "build_parser",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [],
+      "return_type": "argparse.ArgumentParser",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py",
+      "source_line": 331,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [
+        "argv: Sequence[str] | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py",
+      "source_line": 1988,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "require_retrofit_flags",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [
+        "ns: argparse.Namespace"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py",
+      "source_line": 317,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "resolve_duty",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [
+        "name: str"
+      ],
+      "return_type": "Duty",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py",
+      "source_line": 1842,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "retrofit_help",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [
+        "path: tuple[str, ...]",
+        "text: str"
+      ],
+      "return_type": "str",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py",
+      "source_line": 295,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "retrofit_verb_path",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [
+        "ns: argparse.Namespace"
+      ],
+      "return_type": "tuple[str, ...]",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py",
+      "source_line": 308,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "CutoverDuty",
+      "export_type": "class",
+      "source_library": "pyforge-steward",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/cutover.py",
+      "source_line": 212,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "flip_root",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [
+        "flags_path: Path",
+        "target: str",
+        "realization: Path",
+        "loop_home: Path | None = None"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/cutover.py",
+      "source_line": 159,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "loops_running",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [
+        "home: Path | None = None"
+      ],
+      "return_type": "bool",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/cutover.py",
+      "source_line": 144,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "plan",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [
+        "ns: argparse.Namespace",
+        "root: Path"
+      ],
+      "return_type": "DutyResult",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/cutover.py",
+      "source_line": 109,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "EstateDeps",
+      "export_type": "class",
+      "source_library": "pyforge-steward",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/estate.py",
+      "source_line": 46,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "EstateDuty",
+      "export_type": "class",
+      "source_library": "pyforge-steward",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/estate.py",
+      "source_line": 748,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_plan",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [
+        "deps: EstateDeps",
+        "json_out: bool",
+        "due_only: bool"
+      ],
+      "return_type": "DutyResult",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/estate.py",
+      "source_line": 439,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_refresh",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [
+        "deps: EstateDeps",
+        "transitive: bool"
+      ],
+      "return_type": "DutyResult",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/estate.py",
+      "source_line": 603,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_status",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [
+        "deps: EstateDeps",
+        "json_out: bool",
+        "show_all: bool"
+      ],
+      "return_type": "DutyResult",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/estate.py",
+      "source_line": 720,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "Duty",
+      "export_type": "class",
+      "source_library": "pyforge-steward",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/interfaces.py",
+      "source_line": 29,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "DutyResult",
+      "export_type": "class",
+      "source_library": "pyforge-steward",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/interfaces.py",
+      "source_line": 20,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "NullDuty",
+      "export_type": "class",
+      "source_library": "pyforge-steward",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/interfaces.py",
+      "source_line": 39,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "PagesDeps",
+      "export_type": "class",
+      "source_library": "pyforge-steward",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/pages_duty.py",
+      "source_line": 112,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "PagesDuty",
+      "export_type": "class",
+      "source_library": "pyforge-steward",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/pages_duty.py",
+      "source_line": 526,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "ci_registry_verdict",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [
+        "root: Path",
+        "runner: SubprocessRunner"
+      ],
+      "return_type": "tuple[str | None, str]",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/pages_duty.py",
+      "source_line": 160,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "head_commit_time",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [
+        "root: Path"
+      ],
+      "return_type": "str | None",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/pages_duty.py",
+      "source_line": 126,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_build",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [
+        "deps: PagesDeps",
+        "json_out: bool = False",
+        "dry_run: bool = False",
+        "stamp: bool = False",
+        "site_url: str | None = None"
+      ],
+      "return_type": "DutyResult",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/pages_duty.py",
+      "source_line": 248,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_deploy",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [
+        "deps: PagesDeps",
+        "dry_run: bool = False",
+        "wait: bool = False"
+      ],
+      "return_type": "DutyResult",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/pages_duty.py",
+      "source_line": 342,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_status",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [
+        "deps: PagesDeps",
+        "json_out: bool = False",
+        "site_url: str | None = None"
+      ],
+      "return_type": "DutyResult",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/pages_duty.py",
+      "source_line": 501,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "write_fleet_status",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [
+        "root: Path"
+      ],
+      "return_type": "Path",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/pages_duty.py",
+      "source_line": 144,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "Owed",
+      "export_type": "class",
+      "source_library": "pyforge-steward",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_verify.py",
+      "source_line": 52,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "PreflightDuty",
+      "export_type": "class",
+      "source_library": "pyforge-steward",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_verify.py",
+      "source_line": 227,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "VerifyDeps",
+      "export_type": "class",
+      "source_library": "pyforge-steward",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_verify.py",
+      "source_line": 70,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "deferred_runs",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [
+        "path: Path",
+        "since: date | None"
+      ],
+      "return_type": "tuple[list[Owed], list[str]]",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_verify.py",
+      "source_line": 91,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "full_preflight_env",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [
+        "base: Mapping[str, str]"
+      ],
+      "return_type": "dict[str, str]",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_verify.py",
+      "source_line": 166,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "skipped_pushes",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [
+        "path: Path",
+        "since: date | None"
+      ],
+      "return_type": "tuple[list[Owed], list[str]]",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_verify.py",
+      "source_line": 138,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "verify_deferred",
+      "export_type": "function",
+      "source_library": "pyforge-steward",
+      "params": [
+        "deps: VerifyDeps",
+        "since: date | None"
+      ],
+      "return_type": "DutyResult",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_verify.py",
+      "source_line": 173,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    }
+  ],
+  "file_entries": [],
+  "last_update": "2026-11-18T15:13:55Z",
+  "update_type": "incremental",
+  "test_report_run_id": null,
+  "files_changed": 16,
+  "exports_affected": 0,
+  "confidence_tier": "Forge",
+  "manual_sections_preserved": 3
+}
