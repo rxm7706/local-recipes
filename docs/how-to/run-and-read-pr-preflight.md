@@ -42,6 +42,20 @@ The third row holds wherever the environment variable `CI` is unset. The adoptio
 
 The suites probe the host for anything else they need. A test that cannot run here (for example one that needs a file name the filesystem refuses) reports a skip whose reason names the missing capability. It never fails for that, and it never skips by platform name.
 
+### What the preflight cannot see: a lock written by a newer pixi
+
+The preflight runs with the pixi installed on your machine. CI runs the version the workspace pins (`requires-pixi` in `pixi.toml` and the `pixi-version` of each workflow; `pixi run -e pyforge-guild pixi-version-check` lists every site). A `pixi.lock` written by a newer pixi can pass every local lane and still fail CI in seconds with "lock file not up-to-date with the workspace".
+
+When you change dependencies, write the lock with the pinned version and prove it the way CI does:
+
+```bash
+pixi exec --spec "pixi=<pinned version>" pixi lock
+git clone --shared . /tmp/lock-proof && cd /tmp/lock-proof
+pixi exec --spec "pixi=<pinned version>" pixi install -e pyforge-guild --locked
+```
+
+The second command must exit 0 in the clean clone. A check in your working checkout proves nothing here, because a cached environment hides the mismatch.
+
 ## How the pieces fit
 
 | Piece | What it is |

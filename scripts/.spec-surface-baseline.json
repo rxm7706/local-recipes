@@ -553,7 +553,7 @@
    "docs/how-to/refresh-the-estate.md": "1227ef60e31a65fc3f06a14ff270c7896e5cfe1d",
    "docs/how-to/restore-operations.md": "f315756947ad710e286b9511bb1e0e8a6f82a2b8",
    "docs/how-to/rotate-platform-secrets.md": "f5063bc1c6c3bc38413b56aced9e1df58e1544ce",
-   "docs/how-to/run-and-read-pr-preflight.md": "72b39831b76fcadc3bda906ff6e07f4390f843eb",
+   "docs/how-to/run-and-read-pr-preflight.md": "240b1155e79d84e97eefe875ae3a16af7912e2a8",
    "docs/how-to/run-and-understand-detectors.md": "06cf70af56686f8a87ab938efa5f08d3e7f0c317",
    "docs/how-to/run-atlas-pipelines-and-read-datasets.md": "efb5138a9de6d24281b863e09a6a150a32aac2c2",
    "docs/how-to/run-herald-live-backend-locally.md": "fad93d5b4de2bd5c52e4c27be6a45e79fea77402",
@@ -821,7 +821,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "afa02f0405d2e88bd2ca879e6140629f4f25c1c1"
+  "memlog": "6186dd2b4a2cd572514d68f6aa1dc792156f036c"
  },
  "pyforge-herald/spec-pyforge-herald": {
   "files": {
