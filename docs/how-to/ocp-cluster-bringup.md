@@ -6,7 +6,7 @@ sources:
   - src/platform/deploy/charts/platform/templates/NOTES.txt
   - src/platform/deploy/overlays/ocp/README.md
   - src/platform/ingest/github_projects/pipeline.py
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # OpenShift Local cluster bring-up (Story 12.4 / CAP-1)

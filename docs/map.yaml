@@ -96,8 +96,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-11-18T02:53:32-06:00'
-      tree: f9967c04158cff24e2ae0256eb0fa59fc39e9496-dirty
+      derived_at: '2026-11-18T02:54:00-06:00'
+      tree: e488c0fae251ff51c6a86f7f72897958e1b68d69
   - path: how-to/pause-ci.md
     quadrant: how-to
     owner: pyforge-steward
@@ -251,8 +251,8 @@ pages:
       - scripts/detectors.py
       - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
     stamp:
-      derived_at: '2026-11-18T02:53:32-06:00'
-      tree: f9967c04158cff24e2ae0256eb0fa59fc39e9496
+      derived_at: '2026-11-18T02:54:00-06:00'
+      tree: e488c0fae251ff51c6a86f7f72897958e1b68d69
   - path: reference/developer-guide.md
     quadrant: reference
     owner: fleet
@@ -265,8 +265,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-11-18T02:53:32-06:00'
-      tree: f9967c04158cff24e2ae0256eb0fa59fc39e9496-dirty
+      derived_at: '2026-11-18T02:54:00-06:00'
+      tree: e488c0fae251ff51c6a86f7f72897958e1b68d69
   - path: reference/github-workflows.md
     quadrant: reference
     owner: fleet
@@ -275,8 +275,8 @@ pages:
     sources:
       - .github/workflows
     stamp:
-      derived_at: '2026-11-18T02:53:32-06:00'
-      tree: f9967c04158cff24e2ae0256eb0fa59fc39e9496
+      derived_at: '2026-11-18T02:54:00-06:00'
+      tree: e488c0fae251ff51c6a86f7f72897958e1b68d69
   - path: reference/judgement-vocabulary.md
     quadrant: reference
     owner: doctor
@@ -306,8 +306,8 @@ pages:
     sources:
       - .claude/skills
     stamp:
-      derived_at: '2026-11-18T02:53:32-06:00'
-      tree: f9967c04158cff24e2ae0256eb0fa59fc39e9496
+      derived_at: '2026-11-18T02:54:00-06:00'
+      tree: e488c0fae251ff51c6a86f7f72897958e1b68d69
   - path: reference/station-cheat-sheet.md
     quadrant: reference
     owner: fleet
@@ -317,8 +317,8 @@ pages:
       - pixi.toml
       - src/shared/packages
     stamp:
-      derived_at: '2026-11-18T02:53:32-06:00'
-      tree: f9967c04158cff24e2ae0256eb0fa59fc39e9496-dirty
+      derived_at: '2026-11-18T02:54:00-06:00'
+      tree: e488c0fae251ff51c6a86f7f72897958e1b68d69
   - path: reference/station-verify-commands.md
     quadrant: reference
     owner: fleet
@@ -334,8 +334,8 @@ pages:
       - _bmad-output/projects/pyforge-steward/planning-artifacts/marshal-policy.toml
       - _bmad-output/projects/pyforge-warden/planning-artifacts/marshal-policy.toml
     stamp:
-      derived_at: '2026-11-18T02:53:32-06:00'
-      tree: f9967c04158cff24e2ae0256eb0fa59fc39e9496
+      derived_at: '2026-11-18T02:54:00-06:00'
+      tree: e488c0fae251ff51c6a86f7f72897958e1b68d69
   - path: reference/story-spec-flag-block.md
     quadrant: reference
     owner: doctor

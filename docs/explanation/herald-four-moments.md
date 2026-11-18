@@ -4,7 +4,7 @@ sources:
   - src/shared/packages/pyforge-herald/src/pyforge/herald/db.py
   - src/shared/packages/pyforge-herald/src/pyforge/herald/webhook_host.py
   - src/shared/packages/pyforge-herald/web/package.json
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # Herald's Four Moments

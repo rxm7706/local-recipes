@@ -10,7 +10,7 @@ sources:
   - src/shared/packages/django-pyforge/src/django_pyforge/events/constants.py
   - src/shared/packages/django-pyforge/src/django_pyforge/queues.py
   - .github/workflows/platform-deploy.yml
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # Deploying the platform (Story 12.1)

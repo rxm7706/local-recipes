@@ -10,7 +10,7 @@ sources:
   - src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py
   - src/shared/packages/django-atlas/src/django_atlas_portal/mcp_asgi.py
   - src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # MCP Server Architecture for Conda-Forge Recipes
