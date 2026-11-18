@@ -3370,3 +3370,101 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   promoted: 2026-11-12 — doctor Story 57.3 (cutover readiness, branch `cutover-readiness-2026-11-10`)
   reason: a test redesign outside Story 58.1's split; no story of this change carries it.
   status: open
+
+### DW-doctor-59-1-1: A generated page's stamp reads `-dirty` on a case-insensitive checkout, and five generators fail ruff
+
+- source_spec: `planning-artifacts/specs/spec-59-1-every-generated-page-is-regenerated-from-a-clean-tree-and-the-workflow-inventory-is-the-sixth.md`
+  summary: every `tree` stamp in `docs/map.yaml` ends in `-dirty` when written on macOS, and the five older `scripts/docs_*.py` generators fail `ruff check` and `ruff format --check` where the sixth passes.
+  evidence: `recipes/ctranslate2/` and `recipes/CTranslate2/` are both tracked, so a case-insensitive filesystem always shows one modified and the tree is never clean; the stamp is cosmetic (`docs-currency` judges a generated page by its generator's `--check`, not by the stamp). The siblings carry a shebang (EXE001) and unused `# noqa: E402` (RUF100).
+  location: scripts/_docs_gen_common.py; scripts/docs_pixi_tasks.py; scripts/docs_environments.py; scripts/docs_detectors.py; scripts/docs_skills_catalog.py; scripts/docs_station_cli.py
+  origin: doctor Epic 59 (the full documentation refresh, 2026-11-17), found while pages were verified against the tree; written by Story 59.8
+  fix: stamp from `git rev-parse HEAD` with the dirty flag computed over the generator's own sources only, or drop the suffix; bring the five generators to the sixth's lint state. The recipe case collision is mason's (one of the two directories retires).
+  owner: doctor
+  severity: low
+  promoted: 2026-11-17 — doctor Story 59.8 (the full documentation refresh, branch `docs-full-refresh-2026-11-17`)
+  reason: a code, tooling or compiled-skill change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
+  status: open
+
+### DW-doctor-59-3-1: Code and tooling text that the verified pages contradict
+
+- source_spec: `planning-artifacts/specs/spec-59-3-every-unstamped-authored-page-is-verified-and-stamped.md`
+  summary: eight places outside the documentation still state what the verification pass found to be false.
+  evidence: (1) `.claude/skills/conda-forge-expert/scripts/_http.py` `read_pixi_config` reads only the first config file that exists, which here is the tracked `.pixi/config.toml`, so mirrors in `~/.pixi/config.toml` never reach the CFE scripts although pixi itself merges the layers (pixi 0.84.2); (2) `.claude/skills/conda-forge-expert/reference/mcp-tools.md:3` says FastMCP, the server is the SDK's `MCPServer`; (3) `scripts/mirror-channels.py:8-9` docstring shows `--verify`/`--cleanup` flags its subcommand parser rejects; (4) steward `cli.py:188` and `restore.py:43` name `deploy/restore.md`, the runbook is `docs/how-to/restore-operations.md`; (5) the `bmad-preflight` task (`pixi.toml:1287`) runs `scripts/ensure-bmad-preflight.sh`, which does not exist; (6) both `docs/reference/sync-jira-github-workflow-templates/*.template` install steward on Python 3.12 while `pyforge-steward` requires `>=3.14`; (7) `pixi.toml:10` says FIFTEEN places carry the pixi version at 0.77.0 wording while the tree is at 0.80.0 with four Containerfiles, and the `governance-currency` description names an exit 2 the script never returns; (8) `adoption-register.md:21` cites `docs/reference/manticore-studio.md`, a redirect stub.
+  location: .claude/skills/conda-forge-expert/scripts/_http.py; scripts/mirror-channels.py; src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py; pixi.toml; docs/reference/sync-jira-github-workflow-templates/
+  origin: doctor Epic 59 (the full documentation refresh, 2026-11-17), found while pages were verified against the tree; written by Story 59.8
+  fix: one Story per owning Spec: conda-forge-expert (1, 2, with its retro and CHANGELOG), steward (4, 6, 8), the unowned scripts and `pixi.toml` comments under the Spec that governs each (3, 5, 7).
+  owner: doctor
+  severity: medium
+  promoted: 2026-11-17 — doctor Story 59.8 (the full documentation refresh, branch `docs-full-refresh-2026-11-17`)
+  reason: a code, tooling or compiled-skill change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
+  status: open
+
+### DW-doctor-59-3-2: Documentation follow-ups the correctness pass left alone
+
+- source_spec: `planning-artifacts/specs/spec-59-3-every-unstamped-authored-page-is-verified-and-stamped.md`
+  summary: the refresh checked claims and did not restructure pages; five structural items remain.
+  evidence: (1) several pages use GitHub `> [!NOTE]` callouts where `docs/_STYLE_GUIDE.md` asks for admonitions; (2) `docs/tutorials/getting-started.md` does not follow the style guide's tutorial skeleton; (3) `docs/how-to/antigravity-developer-startup.md` is one operator's dated vendor-tool notes and `docs/how-to/manticore-studio.md` is a dated story record, both candidates to archive; (4) the two `docs/how-to/feedstock-*.md` pages are ten-line pointers to Mason skills, candidates for `kind: pointer`; (5) the cross-links from existing pages to the 20 new pages are not all written.
+  location: docs/how-to/; docs/tutorials/getting-started.md
+  origin: doctor Epic 59 (the full documentation refresh, 2026-11-17), found while pages were verified against the tree; written by Story 59.8
+  fix: a `bmad-os-docs-audit` pass scoped to structure; the two archive candidates need the operator's ruling first.
+  owner: doctor
+  severity: low
+  promoted: 2026-11-17 — doctor Story 59.8 (the full documentation refresh, branch `docs-full-refresh-2026-11-17`)
+  reason: a code, tooling or compiled-skill change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
+  status: open
+
+### DW-doctor-59-4-1: Marshal's remedy table names two commands that do not exist, and one Spec path keeps the incident log in its package
+
+- source_spec: `planning-artifacts/specs/spec-59-4-the-package-level-pages-fold-into-the-four-quadrants.md`
+  summary: `REMEDIES` in marshal's seed findings prints `marshal seed adopt --reinstate …` and `marshal doctor check`, neither of which the CLI has; herald's `cli.py` scheduler docstring describes `--repo-root` as the package checkout while every caller uses the repository root; and doctor's detector incident log could not fold into `docs/`.
+  evidence: `src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/findings.py:148,159` (the reference page prints them verbatim because a test pins the table); `spec-pyforge-marshal` SPEC.md:1116 names `src/shared/packages/pyforge-doctor/docs/detector-incident-log.md` inside a capability and `tests/unit/test_detector_incident_log.py` reads it from the package half, so the fold of that one page was reverted.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/findings.py; src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py; src/shared/packages/pyforge-doctor/docs/detector-incident-log.md
+  origin: doctor Epic 59 (the full documentation refresh, 2026-11-17), found while pages were verified against the tree; written by Story 59.8
+  fix: marshal Story: correct the two remedy strings (or ship the verbs); herald Story: the docstring; the incident log folds only when marshal's capability text is re-derived to the new path and the doctor test moves to the live half.
+  owner: doctor
+  severity: low
+  promoted: 2026-11-17 — doctor Story 59.8 (the full documentation refresh, branch `docs-full-refresh-2026-11-17`)
+  reason: a code, tooling or compiled-skill change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
+  status: open
+
+### DW-doctor-59-5-1: Four CLI defects met while the new how-tos were written
+
+- source_spec: `planning-artifacts/specs/spec-59-5-atlas-doctor-warden-and-the-steward-operator-duties-each-have-a-how-to.md`
+  summary: running each documented command surfaced four defects in station code.
+  evidence: (1) `sources/warden.py:45` tells the reader to run doctor from `-e pyforge-guild`, which does not carry warden; (2) `sources/atlas.py:490` reads `result.isError`, the SDK attribute is `is_error`, so `doctor monitor` and `diagnose` print an MCP AttributeError before falling back to the CLI bridge; (3) `pyforge steward shell-init` completes 13 duties (`keys` … `validate-fast`) of the 31 the parser has; (4) the `pr-preflight` task description says lanes run serially and stop on the first red, the runner is concurrent with `--jobs` and `--keep-going`. Also not established: which environment gives the corridor duties (`glass`, `quarantine shelf`) a configured Django project.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/warden.py; src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/atlas.py; src/shared/packages/pyforge-steward/src/pyforge/steward/; pixi.toml
+  origin: doctor Epic 59 (the full documentation refresh, 2026-11-17), found while pages were verified against the tree; written by Story 59.8
+  fix: doctor Story for (1) and (2); steward Story for (3), (4) and the corridor environment.
+  owner: doctor
+  severity: medium
+  promoted: 2026-11-17 — doctor Story 59.8 (the full documentation refresh, branch `docs-full-refresh-2026-11-17`)
+  reason: a code, tooling or compiled-skill change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
+  status: open
+
+### DW-doctor-59-6-1: Four compiled station skills differ from their CLIs
+
+- source_spec: `planning-artifacts/specs/spec-59-6-the-front-doors-describe-the-tree-as-it-is.md`
+  summary: the report-only audit of the eight station skills found doctor, herald, marshal and steward state flags as required that are optional, or omit verbs and flags; atlas, warden, mason and scribe match.
+  evidence: doctor SKILL.md:101-102 (`--head` is for `ledger-regression` only); herald :218-219 (`--template` and, on `pptx-spec`, `-o` are optional); marshal :301 (`--slug` optional), :309 (`--project` optional), and omitted flags at :297, :304, :310-311; steward :321 (`--drill` optional), :232 (the `verify` verb missing), :322 (`--python`), :324 (`ci pause` needs `--reason`, `--review-by` and a target).
+  location: .claude/skills/pyforge-doctor/; .claude/skills/pyforge-herald/; .claude/skills/pyforge-marshal/; .claude/skills/pyforge-steward/
+  origin: doctor Epic 59 (the full documentation refresh, 2026-11-17), found while pages were verified against the tree; written by Story 59.8
+  fix: `skf-update-skill` per station; a compiled skill is never hand-edited.
+  owner: doctor
+  severity: low
+  promoted: 2026-11-17 — doctor Story 59.8 (the full documentation refresh, branch `docs-full-refresh-2026-11-17`)
+  reason: a code, tooling or compiled-skill change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
+  status: open
+
+### DW-doctor-59-7-1: docs-currency trusts git history it may not have
+
+- source_spec: `planning-artifacts/specs/spec-59-7-docs-currency-fails-a-page-that-is-unstamped-stale-or-dead-referenced.md`
+  summary: three edges of the promoted source are stated, not guarded.
+  evidence: (1) on a shallow clone `git log -1 -- <source>` is empty for most sources and every stamped page fails `source not found in git history` (the Detectors workflow checks out with `fetch-depth: 0`, so CI is unaffected); (2) when git cannot answer at all the whole gather degrades to one WARN, which also hides unstamped pages; (3) a generated page with no `generator:` or a generator outside `scripts/docs_*.py` stays WARN.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_currency.py
+  origin: doctor Epic 59 (the full documentation refresh, 2026-11-17), found while pages were verified against the tree; written by Story 59.8
+  fix: detect a shallow repository and degrade to the could-not-measure WARN; report unstamped pages before the git-dependent checks; decide whether a generated row without a generator is a registry defect (FAIL).
+  owner: doctor
+  severity: low
+  promoted: 2026-11-17 — doctor Story 59.8 (the full documentation refresh, branch `docs-full-refresh-2026-11-17`)
+  reason: a code, tooling or compiled-skill change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
+  status: open

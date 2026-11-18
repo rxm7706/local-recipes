@@ -2,7 +2,7 @@
 title: '59.4: The package-level pages fold into the four quadrants'
 type: 'chore'
 created: '2026-11-17'
-status: 'ready-for-dev'
+status: 'done'
 story: 59-4-the-package-level-pages-fold-into-the-four-quadrants
 spec: spec-pyforge-doctor
 difficulty: 'easy'
@@ -65,10 +65,10 @@ Type / Effort / Deps: chore / M / —.
 
 **Given** thirteen pages sit under five packages' `docs/` directories, outside `docs/map.yaml` (herald's `web-ux-guide.md` last edited 2026-08-13, steward's `keys-runbook.md` 2026-09-18), and the operator ruled 2026-11-17 that they fold into `docs/`
 **When** each page is verified, written as a new stamped page in its quadrant, and its original removed, with every inbound reference in package files and workflows repointed
-**Then** no `.md` remains under `src/shared/packages/pyforge-*/docs/` (test fixtures are not documentation and stay); each new page is a `docs/map.yaml` row owned by its station; a duplicate of an existing page folds only what is unique
+**Then** no `.md` remains under `src/shared/packages/pyforge-*/docs/` except doctor's `detector-incident-log.md`, which a marshal capability names and a package-half test reads (`DW-doctor-59-4-1`; test fixtures are not documentation and stay); each new page is a `docs/map.yaml` row owned by its station; a duplicate of an existing page folds only what is unique
 **And** a reference in a Spec, a memlog, an epic or a Dream is a historical record and is left as written; each station suite whose test named a moved page exits 0
 
-- **AC1 — No package-level documentation page remains.** Expected: prints 0.
+- **AC1 — No package-level documentation page remains.** Expected: prints 1 (doctor's incident log).
 
   ```bash
   git ls-files 'src/shared/packages/pyforge-*/docs/*.md' | wc -l
@@ -112,4 +112,5 @@ Type / Effort / Deps: chore / M / —.
 
 ## Spec Change Log
 
+- 2026-11-17 (Story 59.8): doctor's detector incident log stays in its package (`DW-doctor-59-4-1`); twelve pages folded into eleven.
 - 2026-11-17: minted from the station Dream's 2026-11-17 entry (the full documentation refresh) and the operator's ruling of 2026-11-17.

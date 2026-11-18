@@ -2,7 +2,7 @@
 title: '59.7: docs-currency fails a page that is unstamped, stale or dead-referenced'
 type: 'fix'
 created: '2026-11-17'
-status: 'ready-for-dev'
+status: 'done'
 story: 59-7-docs-currency-fails-a-page-that-is-unstamped-stale-or-dead-referenced
 spec: spec-pyforge-doctor
 difficulty: 'heavy'

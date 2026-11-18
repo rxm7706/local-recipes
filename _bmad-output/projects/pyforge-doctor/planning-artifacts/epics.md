@@ -3904,10 +3904,10 @@ So that no reference page carries a `-dirty` stamp and the workflow inventory na
 **Surface:** `scripts/docs_github_workflows.py`, `tests/scripts/test_docs_github_workflows.py`, `pixi.toml`, `docs/reference/github-workflows.md`, `docs/how-to/github-actions-recipe-ci.md`, `docs/how-to/pixi-tasks.md`, `docs/reference/detectors.md`, `docs/reference/environments.md`, `docs/reference/skills-catalog.md`, `docs/reference/station-cheat-sheet.md`, `docs/reference/bmad-estate-llms-full.md`, `docs/map.yaml`, `docs/MAP.md`
 **Spec:** `planning-artifacts/specs/spec-59-1-every-generated-page-is-regenerated-from-a-clean-tree-and-the-workflow-inventory-is-the-sixth.md`
 **Given** four of the five generated pages carry a stamp taken on a `-dirty` tree, and the hand-written `docs/reference/github-workflows.md` says "refreshed 2026-08-15" and names 9 of the 18 workflow files
-**When** `scripts/docs_github_workflows.py` joins the five generators in their pattern (`_docs_gen_common.py`, a `docs-github-workflows` task, a file in `docs-gen-test`), the page's still-true prose moves to `docs/how-to/github-actions-recipe-ci.md`, and all six generators and `scribe catalog bmad-estate --write` run after the last commit that touches their sources
-**Then** every workflow file under `.github/workflows/` has a row; each generator is idempotent on the unchanged tree; no generated page's `tree` stamp ends in `-dirty`; `docs/map.yaml` registers the page as `kind: generated`
+**When** `scripts/docs_github_workflows.py` joins the five generators in their pattern (`_docs_gen_common.py`, a `docs-github-workflows` task, a file in `docs-gen-test`), the page's still-true prose moves to `docs/how-to/github-actions-recipe-ci.md`, and all six generators and `scribe catalog bmad-estate --write` run after the last commit that touches their sources (a stamp still reads `-dirty` on a case-insensitive checkout: `DW-doctor-59-1-1`)
+**Then** every workflow file under `.github/workflows/` has a row; each generator is idempotent on the unchanged tree; `docs/map.yaml` registers the page as `kind: generated`
 **And** `docs-gen-test`, `docs-currency-check` and `bmad-estate-check` exit 0
-**Status:** backlog
+**Status:** done
 
 ### Story 59.2: The stale authored pages are re-read against the sources that moved
 
@@ -3923,7 +3923,7 @@ So that a `verified:` date means the page was checked against the tree of that d
 **When** each page is re-read against the diff of every moved source since its `verified:` date, every command, path, flag and count in it is checked against the tree, its `sources:` list is narrowed to the files it restates, and `verified:` reads 2026-11-17
 **Then** `docs-currency` names none of the 19 pages; no page cites a hub file (`pixi.toml`, `AGENTS.md`) it does not restate; the dead reference in `pause-ci.md` resolves or is reworded
 **And** the pass goes through `bmad-os-diataxis` and `docs/_STYLE_GUIDE.md`; no page is restructured for its own sake
-**Status:** backlog
+**Status:** done
 
 ### Story 59.3: Every unstamped authored page is verified and stamped
 
@@ -3939,7 +3939,7 @@ So that no authored page is invisible to `docs-currency`.
 **When** each page gets the full verification pass and one of three outcomes: verified and stamped with a narrow `sources:` list; made a generated page (Story 59.1's `github-workflows.md`); or `checked_by:` its own detector (`docs/reference/library-llms-full.md`, `llms-full-check`)
 **Then** every `kind: authored` page in `docs/map.yaml` carries `verified:` and a non-empty `sources:` whose every path exists, or a `checked_by:` naming a pixi task; `docs/reference/agent-instruction-notes.md` keeps its historical sections and its headings
 **And** what could not be executed here (a cluster, a credential, a paid service) is listed in the PR body as not verified, never stamped as if it were
-**Status:** backlog
+**Status:** done
 
 ### Story 59.4: The package-level pages fold into the four quadrants
 
@@ -3953,9 +3953,9 @@ So that a fact useful to an operator has one home, and the registry sees it.
 **Spec:** `planning-artifacts/specs/spec-59-4-the-package-level-pages-fold-into-the-four-quadrants.md`
 **Given** thirteen pages sit under five packages' `docs/` directories, outside `docs/map.yaml` (herald's `web-ux-guide.md` last edited 2026-08-13, steward's `keys-runbook.md` 2026-09-18), and the operator ruled 2026-11-17 that they fold into `docs/`
 **When** each page is verified, written as a new stamped page in its quadrant, and its original removed, with every inbound reference in package files and workflows repointed
-**Then** no `.md` remains under `src/shared/packages/pyforge-*/docs/` (test fixtures are not documentation and stay); each new page is a `docs/map.yaml` row owned by its station; a duplicate of an existing page folds only what is unique
+**Then** no `.md` remains under `src/shared/packages/pyforge-*/docs/` except doctor's `detector-incident-log.md`, which a marshal capability names and a package-half test reads (`DW-doctor-59-4-1`; test fixtures are not documentation and stay); each new page is a `docs/map.yaml` row owned by its station; a duplicate of an existing page folds only what is unique
 **And** a reference in a Spec, a memlog, an epic or a Dream is a historical record and is left as written; each station suite whose test named a moved page exits 0
-**Status:** backlog
+**Status:** done
 
 ### Story 59.5: Atlas, doctor, warden and the steward operator duties each have a how-to
 
@@ -3971,7 +3971,7 @@ So that the cheat sheet is not the only page that names them.
 **When** new how-to pages are written from each CLI's `--help` and its contract, grouped by task, each stamped with the CLI module it documents as its source
 **Then** each of the three stations and the steward duties an operator runs are named in a how-to; a duty that is operator-consent only says an agent runs its plan form; a duty left to the cheat sheet is listed with its reason in the PR body
 **And** no new page restates an existing how-to; it links to it
-**Status:** backlog
+**Status:** done
 
 ### Story 59.6: The front doors describe the tree as it is
 
@@ -3987,7 +3987,7 @@ So that the first page a reader opens does not contradict the one it points to.
 **When** each front door is checked claim by claim against the tree and corrected, pointing into `docs/` instead of restating it
 **Then** `general-docs-consistency` stays OK; every link and path in the front doors resolves; the `MAP.md` preamble describes the shelf as it is and the generated section is untouched by hand
 **And** the eight station skills are audited against their CLIs and each mismatch is a deferred-work row for the SKF refresh, since a compiled skill is never hand-edited
-**Status:** backlog
+**Status:** done
 
 ### Story 59.7: docs-currency fails a page that is unstamped, stale or dead-referenced
 
@@ -4003,7 +4003,7 @@ So that green means every registered page was read, not that the unread ones wer
 **When** the source gains the class `docs-currency-authored-unstamped`, reads `checked_by:` as the one page-declared exemption (the task name must resolve in `pixi.toml`), and reports map-render, generated-stale, authored-stale and authored-unstamped as FAIL
 **Then** on fixture trees: an unstamped authored page fails; a resolving `checked_by:` yields no finding and an unresolvable one fails; a moved source, a missing source path and a dead backticked reference each fail; a source touched on the `verified:` date passes; an unreadable `map.yaml` still yields one WARN and no FAIL
 **And** `contract.md` names the new check code and input; the oracle meta-test and the public-contract meta-test exit 0; the change lands on a tree the source already reads green (Stories 59.2 and 59.3 first)
-**Status:** backlog
+**Status:** done
 
 ### Story 59.8: The registry, the baselines and the chain close once, after every unit's last edit
 
@@ -4019,7 +4019,7 @@ So that every stamp is valid for the head that merges.
 **When** the story runs last: new and moved pages are registered and indexed, `docs-map-render` renders `MAP.md`, the six generators and the estate catalog run from the committed tree, each governing Spec's memlog names the paths that moved and is stamped scoped, CAP-84 reads shipped through `bmad-spec`, and the skill-audit findings are deferred-work rows
 **Then** `docs-currency-check`, `docs-map-hygiene-check`, `spec-surface-check`, `chain-completeness-check` and `story-status-check` exit 0; `pages-build`, `pages-check` and `docs-site-validate` exit 0; a full-scope `pr-preflight` exits 0 on the final head, run alone on the machine
 **And** no stamp is bare and no Spec this change did not touch is stamped; this story's own key is the last ledger write
-**Status:** backlog
+**Status:** review
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

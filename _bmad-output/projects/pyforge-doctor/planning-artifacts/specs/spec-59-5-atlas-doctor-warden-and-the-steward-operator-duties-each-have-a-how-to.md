@@ -2,7 +2,7 @@
 title: '59.5: Atlas, doctor, warden and the steward operator duties each have a how-to'
 type: 'chore'
 created: '2026-11-17'
-status: 'ready-for-dev'
+status: 'done'
 story: 59-5-atlas-doctor-warden-and-the-steward-operator-duties-each-have-a-how-to
 spec: spec-pyforge-doctor
 difficulty: 'easy'

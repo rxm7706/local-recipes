@@ -2,7 +2,7 @@
 title: '59.6: The front doors describe the tree as it is'
 type: 'chore'
 created: '2026-11-17'
-status: 'ready-for-dev'
+status: 'done'
 story: 59-6-the-front-doors-describe-the-tree-as-it-is
 spec: spec-pyforge-doctor
 difficulty: 'easy'

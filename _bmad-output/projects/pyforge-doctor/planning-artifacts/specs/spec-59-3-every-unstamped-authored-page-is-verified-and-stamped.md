@@ -2,7 +2,7 @@
 title: '59.3: Every unstamped authored page is verified and stamped'
 type: 'chore'
 created: '2026-11-17'
-status: 'ready-for-dev'
+status: 'done'
 story: 59-3-every-unstamped-authored-page-is-verified-and-stamped
 spec: spec-pyforge-doctor
 difficulty: 'heavy'

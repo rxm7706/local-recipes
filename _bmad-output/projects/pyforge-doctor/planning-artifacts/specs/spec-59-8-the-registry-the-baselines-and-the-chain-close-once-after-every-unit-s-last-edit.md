@@ -2,7 +2,7 @@
 title: '59.8: The registry, the baselines and the chain close once, after every unit''s last edit'
 type: 'chore'
 created: '2026-11-17'
-status: 'ready-for-dev'
+status: 'in-review'
 story: 59-8-the-registry-the-baselines-and-the-chain-close-once-after-every-unit-s-last-edit
 spec: spec-pyforge-doctor
 difficulty: 'heavy'

@@ -2,7 +2,7 @@
 title: '59.2: The stale authored pages are re-read against the sources that moved'
 type: 'chore'
 created: '2026-11-17'
-status: 'ready-for-dev'
+status: 'done'
 story: 59-2-the-stale-authored-pages-are-re-read-against-the-sources-that-moved
 spec: spec-pyforge-doctor
 difficulty: 'easy'
