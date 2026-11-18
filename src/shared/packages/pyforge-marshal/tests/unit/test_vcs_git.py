@@ -563,13 +563,20 @@ def test_is_branch_merged_commit_tree_call_never_depends_on_global_git_identity(
     own author/committer identity and disable GPG signing so it never
     depends on the operator's global git config -- proven against a repo/
     environment carrying NO identity anywhere ELSE git would look (no local
-    repo config, an isolated HOME/XDG_CONFIG_HOME, GIT_CONFIG_GLOBAL/SYSTEM
-    pointed at nonexistent files, no GIT_AUTHOR_*/GIT_COMMITTER_* env vars)."""
+    repo config, an isolated HOME/XDG_CONFIG_HOME, GIT_CONFIG_SYSTEM pointed
+    at a nonexistent file, GIT_CONFIG_GLOBAL at a file holding only
+    ``user.useConfigOnly = true``, no GIT_AUTHOR_*/GIT_COMMITTER_* env vars).
+    ``useConfigOnly`` closes the last source: without it git guesses an
+    identity from the login and host name wherever the host name is fully
+    qualified (a macOS ``.local`` name), so "no identity" would hold on some
+    hosts only."""
     fake_home = tmp_path / "fake-home"
     fake_home.mkdir()
+    no_guessing = fake_home / "gitconfig-no-guessed-identity"
+    no_guessing.write_text("[user]\n\tuseConfigOnly = true\n", encoding="utf-8")
     monkeypatch.setenv("HOME", str(fake_home))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(fake_home / "config"))
-    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(fake_home / "no-such-gitconfig"))
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(no_guessing))
     monkeypatch.setenv("GIT_CONFIG_SYSTEM", str(fake_home / "no-such-system-gitconfig"))
     for var in (
         "GIT_AUTHOR_NAME",

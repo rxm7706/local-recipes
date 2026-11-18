@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pytest
 
+import pyforge.core.process as process_module
 from pyforge.core.process import BytesProcessResult, PosixProcess, ProcessError, ProcessResult
 
 
@@ -365,8 +366,89 @@ def test_process_start_time_none_on_proc_read_failure(process, monkeypatch):
             raise OSError("Permission denied")
         return original_open(path, *args, **kwargs)
 
+    # The /proc reader is the one under test, whatever host runs this.
+    monkeypatch.setattr(process_module.sys, "platform", "linux")
     monkeypatch.setattr(builtins, "open", _mock_open_failure)
     assert process.process_start_time(os.getpid()) is None
+
+
+# --- process_start_time on a host with no /proc (macOS): the kern.proc.pid sysctl ---
+
+
+def _kinfo_proc(seconds: int, microseconds: int) -> bytes:
+    """A ``struct kinfo_proc`` as the macOS kernel returns it: ``p_starttime`` first, 648 bytes in all."""
+    import struct
+
+    return struct.pack("=qi", seconds, microseconds).ljust(648, b"\0")
+
+
+def test_process_start_time_reads_the_kernel_record_where_there_is_no_proc(process, monkeypatch):
+    """With no /proc the start time is the kernel record's ``p_starttime``, and /proc is never opened."""
+    import builtins
+
+    original_open = builtins.open
+    asked: list[int] = []
+
+    def _no_proc(path, *args, **kwargs):
+        assert "/proc/" not in str(path)
+        return original_open(path, *args, **kwargs)
+
+    def _reader(pid):
+        asked.append(pid)
+        return _kinfo_proc(1_800_000_000, 250_000)
+
+    monkeypatch.setattr(process_module.sys, "platform", "darwin")
+    monkeypatch.setattr(builtins, "open", _no_proc)
+    monkeypatch.setattr(process_module, "_darwin_kinfo_proc", _reader)
+    assert process.process_start_time(4242) == 1_800_000_000.25
+    assert process.process_start_time(4242) == process.process_start_time(4242)
+    assert asked == [4242, 4242, 4242]
+
+
+@pytest.mark.parametrize(
+    "record",
+    [
+        pytest.param(None, id="no-such-process"),
+        pytest.param(b"", id="empty-record"),
+        pytest.param(b"\0" * 4, id="truncated-record"),
+        pytest.param(_kinfo_proc(0, 0), id="no-start-time-recorded"),
+    ],
+)
+def test_process_start_time_none_when_the_kernel_record_cannot_answer(process, monkeypatch, record):
+    monkeypatch.setattr(process_module.sys, "platform", "darwin")
+    monkeypatch.setattr(process_module, "_darwin_kinfo_proc", lambda _pid: record)
+    assert process.process_start_time(4242) is None
+
+
+@pytest.mark.parametrize("pid", [0, -1, 2**31, 2**70])
+def test_the_kernel_record_reader_refuses_a_pid_it_cannot_ask_about(pid):
+    """Never raises: a pid outside the positive C ``int`` range is answered ``None`` without a syscall."""
+    assert process_module._darwin_kinfo_proc(pid) is None
+
+
+def test_the_kernel_record_reader_never_raises_where_the_sysctl_is_unavailable(monkeypatch):
+    """A host whose libc cannot be loaded, or has no such sysctl, reads ``None``, never an exception."""
+
+    def _no_libc(*_args, **_kwargs):
+        raise OSError("cannot load libc")
+
+    monkeypatch.setattr(process_module.ctypes, "CDLL", _no_libc)
+    assert process_module._darwin_kinfo_proc(os.getpid()) is None
+
+
+def test_process_start_time_is_stable_and_differs_between_processes(process):
+    """The identity check rests on this: one process answers the same every time, a later one answers later."""
+    own = process.process_start_time(os.getpid())
+    assert own is not None
+    assert process.process_start_time(os.getpid()) == pytest.approx(own, abs=0.05)
+    child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
+    try:
+        started = process.process_start_time(child.pid)
+        assert started is not None
+        assert started >= own - 0.05
+    finally:
+        child.kill()
+        child.wait()
 
 
 # --- _is_thread_group_leader: checks if PID is process leader ------------------

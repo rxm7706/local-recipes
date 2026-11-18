@@ -30,6 +30,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import psutil
 import pytest
 import test_dispatch_supervisor_main_loop as loop
 from pyforge.core.process import ProcessResult
@@ -954,6 +955,13 @@ def _spawn_detached(seconds: float) -> int:
 
 
 def _running(pid: int) -> bool:
+    """Whether ``pid`` is running -- present and not a zombie. ``/proc`` where it exists; elsewhere (macOS) the
+    kernel's process table through psutil, since the session is not this process's child to ``waitpid``."""
+    if not Path("/proc/self/stat").exists():
+        try:
+            return psutil.Process(pid).status() != psutil.STATUS_ZOMBIE
+        except psutil.Error:
+            return False
     try:
         state = Path(f"/proc/{pid}/stat").read_text(encoding="utf-8")
     except OSError:

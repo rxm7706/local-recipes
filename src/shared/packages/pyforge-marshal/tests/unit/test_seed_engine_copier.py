@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import re
 import subprocess
+import tempfile
 from importlib import resources
 from pathlib import Path
 
@@ -216,6 +217,36 @@ def test_update_against_an_existing_answers_file_succeeds(tmp_path):
     assert "v2" in staged_agents.read_text(encoding="utf-8")
     # the live destination is never touched by materialize()
     assert (dst_path / "AGENTS.md").read_text(encoding="utf-8") == old_content
+
+
+def test_update_succeeds_when_the_temp_dir_is_reached_through_a_symlink(tmp_path, monkeypatch):
+    """The stage is created under the host's temp dir, and Copier's update
+    compares that path with git's resolved top level: a temp dir behind a
+    symlink (macOS ``/var`` -> ``/private/var``, a relocated ``TMPDIR``) used
+    to fail with "is not in the subpath of". The stage is named by its real
+    path, so the update succeeds and every staged path is a resolved one."""
+    template_dir = _build_versioned_template_repo(tmp_path)
+    dst_path = tmp_path / "dst"
+    _bootstrap_existing_destination(template_dir, dst_path)
+
+    real_tmp = tmp_path / "real-tmp"
+    real_tmp.mkdir()
+    linked_tmp = tmp_path / "linked-tmp"
+    linked_tmp.symlink_to(real_tmp, target_is_directory=True)
+    monkeypatch.setattr(tempfile, "tempdir", str(linked_tmp))
+
+    result = materialize(
+        MaterializeRequest(
+            verb=MaterializeVerb.UPDATE,
+            dst_path=dst_path,
+            data={"project_name": "demo"},
+        )
+    )
+
+    staged_agents = next(path for path in result.staged_paths if path.name == "AGENTS.md")
+    assert "v2" in staged_agents.read_text(encoding="utf-8")
+    assert staged_agents.is_relative_to(real_tmp.resolve())
+    assert all(path == path.resolve() for path in result.staged_paths)
 
 
 def test_update_omitting_answers_file_would_fail_without_the_wrapper(tmp_path):
