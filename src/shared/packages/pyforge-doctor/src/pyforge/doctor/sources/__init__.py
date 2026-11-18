@@ -566,9 +566,11 @@ REGISTRY: tuple[SourceRegistration, ...] = (
         subject_station="fleet",
         owning_station="doctor",
     ),  # Story 30.2 (spec-pyforge-doctor CAP-84) -- sources/docs_currency.py.
-    # map-render / authored-page-stale / skill-dir-hygiene, beside
-    # DOCS_MAP_HYGIENE above; fleet subject (the general docs layer, same
-    # rationale as GENERAL_DOCS_CONSISTENCY/DOCS_SHELF_OCCUPANCY). Never FAIL.
+    # map-render / generated-stale / authored-stale / authored-unstamped /
+    # skill-dir-hygiene, beside DOCS_MAP_HYGIENE above; fleet subject (the
+    # general docs layer, same rationale as GENERAL_DOCS_CONSISTENCY/
+    # DOCS_SHELF_OCCUPANCY). A measured defect is FAIL since Story 59.7
+    # (CAP-84 amended 2026-11-17); could-not-measure stays WARN.
     SourceRegistration(
         source=Source.FRONTMATTER_DUPLICATE_KEYS,
         scope="repo",

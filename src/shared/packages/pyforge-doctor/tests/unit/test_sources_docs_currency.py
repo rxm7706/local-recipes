@@ -5,6 +5,10 @@ trees + real tmp git repos only -- never the live ``docs/`` tree (mirrors
 ``test_sources_pixi_currency.py``'s / ``test_sources_docs_map_hygiene.py``'s
 own fixture-helper style), plus ``render_map_registry``'s pure round-trip
 and the schema-rejects-a-malformed-file case.
+
+The registry is enforced (2026-11-17): an unstamped ``kind: authored`` page, a
+stale or missing source, a dead reference, a stale generated page and a stale
+MAP.md render each read FAIL; every could-not-measure path stays one WARN.
 """
 
 from __future__ import annotations
@@ -16,7 +20,7 @@ import jsonschema
 import pytest
 import yaml
 
-from pyforge.doctor.models import DoctorStatus, Source
+from pyforge.doctor.models import DoctorStatus, Source, is_gather_failure
 from pyforge.doctor.sources import docs_currency
 
 _LEAKY_GIT_VARS = (
@@ -84,6 +88,10 @@ def _write_map_md(repo: Path, registry_section: str | None) -> None:
     (docs / "MAP.md").write_text(body, encoding="utf-8")
 
 
+#: A current stamp: ``docs/map.yaml`` is committed in every fixture tree and never touched after 2099.
+_STAMP = "sources:\n  - docs/map.yaml\nverified: 2099-01-01\n"
+
+
 def _write_authored_page(repo: Path, rel: str, *, frontmatter: str = "", body: str = "content\n") -> None:
     path = repo / "docs" / rel
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -111,7 +119,7 @@ def test_map_render_matching_registry_contributes_no_finding(tmp_path: Path):
     assert finding.evidence["pages_checked"] == 1
 
 
-def test_map_render_mismatch_emits_one_warn(tmp_path: Path):
+def test_map_render_mismatch_emits_one_fail(tmp_path: Path):
     _init_repo(tmp_path)
     pages = [_POINTER_PAGE]
     _write_map_yaml(tmp_path, pages)
@@ -121,7 +129,7 @@ def test_map_render_mismatch_emits_one_warn(tmp_path: Path):
     findings = docs_currency.gather(tmp_path)
     render_findings = [f for f in findings if f.check == "docs-currency-map-render"]
     assert len(render_findings) == 1
-    assert render_findings[0].status == DoctorStatus.WARN
+    assert render_findings[0].status == DoctorStatus.FAIL
     assert render_findings[0].source == Source.DOCS_CURRENCY
 
 
@@ -135,13 +143,26 @@ def test_map_render_missing_markers_counts_as_mismatch(tmp_path: Path):
     findings = docs_currency.gather(tmp_path)
     render_findings = [f for f in findings if f.check == "docs-currency-map-render"]
     assert len(render_findings) == 1
+    assert render_findings[0].status == DoctorStatus.FAIL
     assert render_findings[0].evidence["markers_present"] is False
+
+
+def test_map_md_missing_stays_one_warn(tmp_path: Path):
+    """No MAP.md to compare is could-not-measure, never a stale render."""
+    _init_repo(tmp_path)
+    pages = [_POINTER_PAGE]
+    _write_map_yaml(tmp_path, pages)
+    _commit_all(tmp_path, "seed")
+
+    finding = _only(docs_currency.gather(tmp_path))
+    assert finding.check == "docs-currency-map-render"
+    assert finding.status == DoctorStatus.WARN
 
 
 # --- authored-page-stale: sources/verified frontmatter -----------------------
 
 
-def test_authored_page_with_stale_source_emits_warn(tmp_path: Path):
+def test_authored_page_with_stale_source_emits_fail(tmp_path: Path):
     _init_repo(tmp_path)
     pages = [
         _POINTER_PAGE,
@@ -168,7 +189,7 @@ def test_authored_page_with_stale_source_emits_warn(tmp_path: Path):
     findings = docs_currency.gather(tmp_path)
     stale = [f for f in findings if f.check == "docs-currency-authored-stale"]
     assert len(stale) == 1
-    assert stale[0].status == DoctorStatus.WARN
+    assert stale[0].status == DoctorStatus.FAIL
     assert stale[0].evidence["page"] == "docs/how-to/example.md"
     assert stale[0].evidence["stale_sources"][0]["source"] == "tracked.txt"
     assert stale[0].evidence["stale_sources"][0]["verified"] == "2020-01-01"
@@ -199,7 +220,7 @@ def test_authored_page_with_current_source_reports_no_stale_finding(tmp_path: Pa
     assert finding.status == DoctorStatus.OK
 
 
-def test_authored_page_with_source_never_in_git_history_emits_warn(tmp_path: Path):
+def test_authored_page_with_missing_source_path_emits_fail(tmp_path: Path):
     _init_repo(tmp_path)
     pages = [
         _POINTER_PAGE,
@@ -215,9 +236,9 @@ def test_authored_page_with_source_never_in_git_history_emits_warn(tmp_path: Pat
     _write_authored_page(
         tmp_path,
         "how-to/example.md",
-        # never-committed.txt is named but never created/committed -- a
-        # typo, or a source that moved. A stronger signal than staleness,
-        # not "silently current".
+        # never-committed.txt is named but never created -- a typo, or a
+        # source that moved. A stronger signal than staleness, not
+        # "silently current".
         frontmatter="sources:\n  - never-committed.txt\nverified: 2020-01-01\n",
     )
     _commit_all(tmp_path, "seed (never-committed.txt does not exist)")
@@ -225,19 +246,207 @@ def test_authored_page_with_source_never_in_git_history_emits_warn(tmp_path: Pat
     findings = docs_currency.gather(tmp_path)
     stale = [f for f in findings if f.check == "docs-currency-authored-stale"]
     assert len(stale) == 1
+    assert stale[0].status == DoctorStatus.FAIL
     assert stale[0].evidence["stale_sources"] == [
         {
             "source": "never-committed.txt",
-            "reason": "source not found in git history",
+            "reason": "source does not exist",
             "verified": "2020-01-01",
         }
     ]
+    assert not [f for f in findings if f.check == "docs-currency-authored-unstamped"]
+
+
+def test_authored_page_with_source_on_disk_but_never_committed_emits_fail(tmp_path: Path):
+    """A source git has no history for (untracked, or ignored) can never be measured against ``verified:``."""
+    _authored_tree(tmp_path, "content\n", frontmatter="sources:\n  - scratch.txt\nverified: 2099-01-01\n")
+    (tmp_path / "scratch.txt").write_text("not committed\n", encoding="utf-8")
+
+    stale = [f for f in docs_currency.gather(tmp_path) if f.check == "docs-currency-authored-stale"]
+    assert len(stale) == 1
+    assert stale[0].status == DoctorStatus.FAIL
+    assert stale[0].evidence["stale_sources"] == [
+        {"source": "scratch.txt", "reason": "source not found in git history", "verified": "2099-01-01"}
+    ]
+
+
+@pytest.mark.parametrize("source", ["../outside.txt", "/etc/hosts"])
+def test_a_source_that_is_not_repo_relative_emits_fail_and_never_reaches_git(tmp_path: Path, source: str):
+    """Such a path would make ``git log`` refuse; it is a FAIL on the page, never a degraded gather."""
+    _authored_tree(tmp_path / "repo", "content\n", frontmatter=f"sources:\n  - {source}\nverified: 2099-01-01\n")
+    (tmp_path / "outside.txt").write_text("x\n", encoding="utf-8")
+
+    finding = _only(docs_currency.gather(tmp_path / "repo"))
+    assert finding.check == "docs-currency-authored-stale"
+    assert finding.status == DoctorStatus.FAIL
+    assert finding.evidence["stale_sources"] == [
+        {"source": source, "reason": "source is not a repo-relative path", "verified": "2099-01-01"}
+    ]
+
+
+def _commit_on(repo: Path, message: str, day: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    stamp = f"{day}T12:00:00+00:00"
+    monkeypatch.setenv("GIT_AUTHOR_DATE", stamp)
+    monkeypatch.setenv("GIT_COMMITTER_DATE", stamp)
+    _commit_all(repo, message)
+
+
+@pytest.mark.parametrize(
+    ("verified", "status"),
+    [("2021-06-15", DoctorStatus.OK), ("2021-06-14", DoctorStatus.FAIL), ("2021-06-16", DoctorStatus.OK)],
+)
+def test_a_source_touched_on_the_verified_date_is_current(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, verified: str, status: DoctorStatus
+):
+    """Same-day edits pass: only a source touched on a LATER date than ``verified:`` is stale."""
+    _init_repo(tmp_path)
+    pages = [
+        _POINTER_PAGE,
+        {"path": "how-to/example.md", "quadrant": "how-to", "owner": "fleet", "kind": "authored"},
+    ]
+    _write_map_yaml(tmp_path, pages)
+    _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
+    (tmp_path / "tracked.txt").write_text("v1\n", encoding="utf-8")
+    _write_authored_page(
+        tmp_path, "how-to/example.md", frontmatter=f"sources:\n  - tracked.txt\nverified: {verified}\n"
+    )
+    _commit_on(tmp_path, "seed", "2021-06-01", monkeypatch)
+    (tmp_path / "tracked.txt").write_text("v2\n", encoding="utf-8")
+    _commit_on(tmp_path, "tracked.txt touched on 2021-06-15", "2021-06-15", monkeypatch)
+
+    finding = _only(docs_currency.gather(tmp_path))
+    assert finding.status == status
+    if status is DoctorStatus.FAIL:
+        assert finding.check == "docs-currency-authored-stale"
+        assert finding.evidence["stale_sources"] == [
+            {"source": "tracked.txt", "source_touched": "2021-06-15", "verified": verified}
+        ]
+
+
+def test_git_that_cannot_be_read_degrades_to_one_warn(tmp_path: Path):
+    """No git history to read is could-not-measure: one WARN for the gather, never a FAIL per source."""
+    pages = [
+        _POINTER_PAGE,
+        {"path": "how-to/example.md", "quadrant": "how-to", "owner": "fleet", "kind": "authored"},
+    ]
+    _write_map_yaml(tmp_path, pages)
+    _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
+    _write_authored_page(tmp_path, "how-to/example.md", frontmatter=_STAMP)
+    (tmp_path / ".git").write_text("gitdir: /nonexistent/not-a-repository\n", encoding="utf-8")
+
+    finding = _only(docs_currency.gather(tmp_path))
+    assert finding.status == DoctorStatus.WARN
+    assert is_gather_failure(finding)
+
+
+# --- authored-unstamped: the registry is enforced ----------------------------
+
+
+@pytest.mark.parametrize(
+    ("frontmatter", "missing"),
+    [
+        ("", ["sources", "verified"]),
+        ("title: Example\n", ["sources", "verified"]),
+        ("verified: 2099-01-01\n", ["sources"]),
+        ("sources: []\nverified: 2099-01-01\n", ["sources"]),
+        ("sources: docs/map.yaml\nverified: 2099-01-01\n", ["sources"]),
+        ("sources:\n  - 7\nverified: 2099-01-01\n", ["sources"]),
+        ("sources:\n  - docs/map.yaml\n", ["verified"]),
+        ("sources:\n  - docs/map.yaml\nverified: last tuesday\n", ["verified"]),
+    ],
+)
+def test_an_authored_page_without_a_stamp_emits_fail(tmp_path: Path, frontmatter: str, missing: list[str]):
+    _authored_tree(tmp_path, "content\n", frontmatter=frontmatter)
+
+    finding = _only(docs_currency.gather(tmp_path))
+    assert finding.check == "docs-currency-authored-unstamped"
+    assert finding.status == DoctorStatus.FAIL
+    assert finding.source == Source.DOCS_CURRENCY
+    assert finding.evidence == {"page": "docs/how-to/example.md", "missing": missing}
+    assert "docs/how-to/example.md" in finding.message
+
+
+def test_an_unstamped_page_with_a_dead_reference_emits_both_findings(tmp_path: Path):
+    _authored_tree(tmp_path, "See `docs/does-not-exist.md`.\n", frontmatter="")
+
+    findings = docs_currency.gather(tmp_path)
+    assert sorted(f.check for f in findings) == ["docs-currency-authored-stale", "docs-currency-authored-unstamped"]
+    assert {f.status for f in findings} == {DoctorStatus.FAIL}
+
+
+def test_a_pointer_or_generated_page_needs_no_stamp(tmp_path: Path):
+    _init_repo(tmp_path)
+    pages = [_POINTER_PAGE]
+    _write_map_yaml(tmp_path, pages)
+    _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
+    _write_authored_page(tmp_path, "tutorials/README.md")
+    _commit_all(tmp_path, "seed")
+
+    assert _only(docs_currency.gather(tmp_path)).status == DoctorStatus.OK
+
+
+_PIXI_WITH_TASKS = (
+    '[tasks]\ninline-check = "python -m x"\n\n'
+    '[feature.guild-tasks.tasks.owner-check]\ncmd = "python -m y"\n\n'
+    '[feature.guild-tasks.tasks]\ntable-check = { cmd = "python -m z" }\n\n'
+    '[dependencies]\nsome-dep = "*"\n'
+)
+
+
+@pytest.mark.parametrize("task", ["owner-check", "inline-check", "table-check"])
+def test_checked_by_naming_a_pixi_task_stands_in_for_the_stamp(tmp_path: Path, task: str):
+    _authored_tree(tmp_path, "content\n", frontmatter=f"checked_by: {task}\n", pixi_toml=_PIXI_WITH_TASKS)
+
+    assert _only(docs_currency.gather(tmp_path)).status == DoctorStatus.OK
+
+
+@pytest.mark.parametrize(
+    ("checked_by", "pixi_toml", "why"),
+    [
+        ("no-such-check", _PIXI_WITH_TASKS, "names no task in pixi.toml"),
+        ("some-dep", _PIXI_WITH_TASKS, "names no task in pixi.toml"),
+        ("owner-check", "", "pixi.toml does not exist"),
+        ("[owner-check]", _PIXI_WITH_TASKS, "is not a task name"),
+        ("''", _PIXI_WITH_TASKS, "is not a task name"),
+    ],
+)
+def test_checked_by_that_does_not_resolve_emits_fail(tmp_path: Path, checked_by: str, pixi_toml: str, why: str):
+    _authored_tree(tmp_path, "content\n", frontmatter=f"checked_by: {checked_by}\n", pixi_toml=pixi_toml)
+
+    finding = _only(docs_currency.gather(tmp_path))
+    assert finding.check == "docs-currency-authored-unstamped"
+    assert finding.status == DoctorStatus.FAIL
+    assert why in finding.message
+    assert finding.evidence["page"] == "docs/how-to/example.md"
+    assert why in finding.evidence["reason"]
+
+
+def test_checked_by_skips_the_stale_source_check_but_not_the_dead_reference_check(tmp_path: Path):
+    _authored_tree(
+        tmp_path,
+        "See `docs/does-not-exist.md`.\n",
+        frontmatter="checked_by: owner-check\nsources:\n  - never-there.txt\nverified: 2000-01-01\n",
+        pixi_toml=_PIXI_WITH_TASKS,
+    )
+
+    finding = _only(docs_currency.gather(tmp_path))
+    assert finding.check == "docs-currency-authored-stale"
+    assert finding.status == DoctorStatus.FAIL
+    assert finding.evidence == {"page": "docs/how-to/example.md", "dead_references": ["docs/does-not-exist.md"]}
+
+
+def test_a_pixi_toml_that_does_not_parse_degrades_to_one_warn(tmp_path: Path):
+    _authored_tree(tmp_path, "content\n", frontmatter="checked_by: owner-check\n", pixi_toml="[tasks\n")
+
+    finding = _only(docs_currency.gather(tmp_path))
+    assert finding.status == DoctorStatus.WARN
+    assert is_gather_failure(finding)
 
 
 # --- authored-page-stale: dead body references --------------------------------
 
 
-def test_authored_page_with_dead_reference_emits_warn(tmp_path: Path):
+def test_authored_page_with_dead_reference_emits_fail(tmp_path: Path):
     _init_repo(tmp_path)
     pages = [
         _POINTER_PAGE,
@@ -253,14 +462,15 @@ def test_authored_page_with_dead_reference_emits_warn(tmp_path: Path):
     _write_authored_page(
         tmp_path,
         "how-to/example.md",
+        frontmatter=_STAMP,
         body="See `docs/does-not-exist.md` for detail.\n",
     )
     _commit_all(tmp_path, "seed")
 
-    findings = docs_currency.gather(tmp_path)
-    stale = [f for f in findings if f.check == "docs-currency-authored-stale"]
-    assert len(stale) == 1
-    assert stale[0].evidence["dead_references"] == ["docs/does-not-exist.md"]
+    stale = _only(docs_currency.gather(tmp_path))
+    assert stale.check == "docs-currency-authored-stale"
+    assert stale.status == DoctorStatus.FAIL
+    assert stale.evidence["dead_references"] == ["docs/does-not-exist.md"]
 
 
 def test_authored_page_dead_reference_inside_ignore_marker_is_skipped(tmp_path: Path):
@@ -279,6 +489,7 @@ def test_authored_page_dead_reference_inside_ignore_marker_is_skipped(tmp_path: 
     _write_authored_page(
         tmp_path,
         "how-to/example.md",
+        frontmatter=_STAMP,
         body=(
             "<!-- governance-currency:ignore-start (historical) -->\n"
             "See `docs/does-not-exist.md` for detail.\n"
@@ -310,6 +521,7 @@ def test_dead_looking_reference_covered_by_gitignore_is_not_flagged(tmp_path: Pa
         "how-to/example.md",
         # Never written to disk, but covered by .gitignore -- a legitimately
         # absent generated artifact, not a dead reference.
+        frontmatter=_STAMP,
         body="See `docs/generated-ignored.md` for detail.\n",
     )
     _commit_all(tmp_path, "seed with .gitignore rule (ignored path never created)")
@@ -395,7 +607,7 @@ def test_generated_page_current_reports_no_finding(tmp_path: Path, monkeypatch: 
     assert not probe.exists()
 
 
-def test_generated_page_stale_emits_warn(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_generated_page_stale_emits_fail(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     checkout = tmp_path / "checkout"
     checkout.mkdir()
     doctor_script = _write_checkout_stub_generator(checkout, "scripts/docs_fixture_tasks.py", exit_code=1)
@@ -429,7 +641,7 @@ def test_generated_page_stale_emits_warn(tmp_path: Path, monkeypatch: pytest.Mon
     findings = docs_currency.gather(tmp_path)
     stale = [f for f in findings if f.check == "docs-currency-generated-stale"]
     assert len(stale) == 1
-    assert stale[0].status == DoctorStatus.WARN
+    assert stale[0].status == DoctorStatus.FAIL
     assert stale[0].source == Source.DOCS_CURRENCY
     assert stale[0].evidence["page"] == "docs/how-to/fixture-tasks.md"
     assert stale[0].evidence["generator"] == "scripts/docs_fixture_tasks.py"
@@ -454,6 +666,7 @@ def test_generated_page_with_no_generator_declared_emits_warn(tmp_path: Path):
     findings = docs_currency.gather(tmp_path)
     stale = [f for f in findings if f.check == "docs-currency-generated-stale"]
     assert len(stale) == 1
+    assert stale[0].status == DoctorStatus.WARN
     assert "declares no" in stale[0].message
 
 
@@ -477,6 +690,7 @@ def test_generated_page_with_disallowed_generator_path_emits_warn(tmp_path: Path
     findings = docs_currency.gather(tmp_path)
     stale = [f for f in findings if f.check == "docs-currency-generated-stale"]
     assert len(stale) == 1
+    assert stale[0].status == DoctorStatus.WARN
     assert "not an allowed" in stale[0].message
 
 
@@ -505,6 +719,7 @@ def test_generated_page_with_parent_segment_in_generator_is_not_executed(tmp_pat
     findings = docs_currency.gather(tmp_path)
     stale = [f for f in findings if f.check == "docs-currency-generated-stale"]
     assert len(stale) == 1
+    assert stale[0].status == DoctorStatus.WARN
     assert "not an allowed" in stale[0].message
     assert not probe.exists()
 
@@ -542,6 +757,7 @@ def test_generated_page_missing_in_doctor_checkout_emits_warn_without_target_fal
     findings = docs_currency.gather(tmp_path)
     stale = [f for f in findings if f.check == "docs-currency-generated-stale"]
     assert len(stale) == 1
+    assert stale[0].status == DoctorStatus.WARN
     assert "could not run generator" in stale[0].message
     assert not probe.exists()
 
@@ -697,6 +913,7 @@ def test_map_yaml_missing_degrades_to_one_warn(tmp_path: Path):
     finding = _only(docs_currency.gather(tmp_path))
     assert finding.status == DoctorStatus.WARN
     assert finding.source == Source.DOCS_CURRENCY
+    assert is_gather_failure(finding)
 
 
 def test_map_yaml_schema_invalid_degrades_to_one_warn(tmp_path: Path):
@@ -808,6 +1025,7 @@ def test_a_generator_exit_1_still_reads_stale(tmp_path: Path, monkeypatch: pytes
     _generated_tree(tmp_path, monkeypatch, exit_code=1)
     findings = [f for f in docs_currency.gather(tmp_path) if f.check == "docs-currency-generated-stale"]
     assert len(findings) == 1
+    assert findings[0].status == DoctorStatus.FAIL
     assert "stale against its generator" in findings[0].message
 
 
@@ -820,11 +1038,14 @@ def test_a_generator_that_crashes_reads_could_not_run_not_stale(tmp_path: Path, 
     assert len(findings) == 1
     assert "could not run generator scripts/docs_fixture_tasks.py" in findings[0].message
     assert "crashed" in findings[0].message
+    assert findings[0].status == DoctorStatus.WARN
     assert "stale against its generator" not in findings[0].message
     assert findings[0].evidence["exit"] == 1
 
 
-def _authored_tree(tmp_path: Path, body: str, *, gitignore: str = "", pixi_toml: str = "") -> None:
+def _authored_tree(
+    tmp_path: Path, body: str, *, gitignore: str = "", pixi_toml: str = "", frontmatter: str = _STAMP
+) -> None:
     _init_repo(tmp_path)
     pages = [
         _POINTER_PAGE,
@@ -836,7 +1057,7 @@ def _authored_tree(tmp_path: Path, body: str, *, gitignore: str = "", pixi_toml:
         (tmp_path / ".gitignore").write_text(gitignore, encoding="utf-8")
     if pixi_toml:
         (tmp_path / "pixi.toml").write_text(pixi_toml, encoding="utf-8")
-    _write_authored_page(tmp_path, "how-to/example.md", body=body)
+    _write_authored_page(tmp_path, "how-to/example.md", frontmatter=frontmatter, body=body)
     _commit_all(tmp_path, "seed")
 
 
