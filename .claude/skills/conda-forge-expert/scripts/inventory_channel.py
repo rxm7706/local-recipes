@@ -197,13 +197,15 @@ def _fallback_configured_enterprise_hosts() -> set[str]:
     half of `_http._configured_enterprise_hosts()`.
 
     Narrower than `_http`'s in one direction: it does NOT read pixi config,
-    which `_http._pixi_configured_hosts()` does. An operator on the
-    pixi-only enterprise setup that `docs/reference/pixi-config-jfrog.example.toml`
-    documents therefore gets no credential from THIS path. That is the safe
-    direction (auth withheld, not leaked) and the path is only reachable when
-    `_http` — a sibling file in this same directory — cannot be imported at
-    all; re-deriving pixi's whole config chain here would be a third
-    standalone copy of logic the retro exists to consolidate.
+    which `_http._pixi_configured_hosts()` does (through
+    `_http.read_pixi_config`, which merges the system, user and project
+    files). An operator on the pixi-only enterprise setup that
+    `docs/reference/pixi-config-jfrog.example.toml` documents therefore gets
+    no credential from THIS path. That is the safe direction (auth withheld,
+    not leaked) and the path is only reachable when `_http` — a sibling file
+    in this same directory — cannot be imported at all; re-deriving pixi's
+    layered config merge here would be a third standalone copy of logic the
+    retro exists to consolidate.
 
     It must NOT be wider in the other direction. `_http` subtracts its own
     public fallback hosts (`_public_default_hosts`) from the env-var half, so

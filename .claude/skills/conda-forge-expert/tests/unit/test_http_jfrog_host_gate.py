@@ -32,8 +32,8 @@ def _clean_enterprise_env(monkeypatch, clean_mirror_env):
     config. The mirror vars are cleared by the shared `clean_mirror_env`.
 
     Stubbing `read_pixi_config` is not optional hygiene: without it the
-    allowlist reads the DEVELOPER'S real pixi config chain (`./.pixi/
-    config.toml`, `~/.pixi/config.toml`, `/etc/pixi/config.toml`), so every
+    allowlist reads the DEVELOPER'S real pixi config layers (`/etc/pixi/
+    config.toml`, `~/.pixi/config.toml`, `./.pixi/config.toml`, merged), so every
     set-equality assertion below would fail on exactly the enterprise machine
     this feature exists for — the suite would be green here and red for the
     operator. Tests that need pixi hosts re-stub it themselves.
@@ -147,7 +147,7 @@ class TestGateShortCircuit:
 
 class TestPixiConfigReadFailure:
     def test_read_pixi_config_raising_does_not_break_every_request(self, monkeypatch):
-        """`read_pixi_config` builds its candidate list with `Path.home()`,
+        """`read_pixi_config` builds its layer list with `Path.home()`,
         which raises RuntimeError when neither HOME nor a passwd entry
         resolves (rootless / arbitrary-UID containers). Before the gate,
         that was confined to the resolver paths; the gate put it on every

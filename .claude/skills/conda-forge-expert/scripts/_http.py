@@ -329,10 +329,12 @@ def _pixi_configured_hosts(config: dict | None = None) -> set[str]:
     """Hosts named in the operator's pixi config (`mirrors`, `default-channels`,
     `pypi-config.index-url`/`extra-index-urls`) — the SAME sources
     `resolve_conda_forge_urls`/`resolve_pypi_simple_urls`/`resolve_pypi_json_urls`
-    read, since `docs/reference/pixi-config-jfrog.example.toml` documents
-    project-local `.pixi/config.toml` (no env vars at all) as the recommended
-    enterprise setup for this repo — an env-var-only allowlist would silently
-    stop attaching JFrog credentials for that documented path. Deliberately
+    read, since `docs/reference/pixi-config-jfrog.example.toml` documents a
+    pixi config file (no env vars at all; in this repo the user-level
+    `~/.pixi/config.toml`, merged with the tracked project file by
+    `read_pixi_config`) as the recommended enterprise setup — an env-var-only
+    allowlist would silently stop attaching JFrog credentials for that
+    documented path. Deliberately
     excludes those resolvers' own public-default fallbacks (repo.prefix.dev,
     pypi.org, ...) — mixing those in would always mark the public host
     "configured" and defeat the allowlist entirely.
@@ -341,7 +343,7 @@ def _pixi_configured_hosts(config: dict | None = None) -> set[str]:
         try:
             cfg = read_pixi_config()
         except Exception as exc:  # noqa: BLE001 — best-effort, never fatal
-            # `read_pixi_config` builds its candidate list with `Path.home()`,
+            # `read_pixi_config` builds its layer list with `Path.home()`,
             # which raises RuntimeError when neither HOME nor a passwd entry
             # resolves (rootless / arbitrary-UID containers). That used to be
             # confined to the resolver paths; this gate put it on EVERY
@@ -662,32 +664,86 @@ _S3_PARQUET_KEY_RE = _re.compile(
 _S3_MONTH_RE = _re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
 
 
-def read_pixi_config() -> dict:
-    """Read pixi config — first existing file in pixi's own priority order wins.
+_PIXI_SYSTEM_CONFIG = Path("/etc/pixi/config.toml")
 
-    Pixi resolves config in this order: project-local → user → system. We
-    follow the same chain so this helper honors whatever the developer set.
-    Silent-on-error: a malformed config doesn't break callers; we return {}
-    and let the public-default fallback paths handle routing.
+# Tables pixi merges key by key instead of replacing whole (see
+# `read_pixi_config`). These are the two tables this module's resolvers and
+# the JFrog host gate read.
+_PIXI_MERGED_TABLES: frozenset[str] = frozenset({"mirrors", "pypi-config"})
+
+
+def _merge_pixi_layer(merged: dict, layer: dict) -> None:
+    """Fold one higher-priority pixi config layer into `merged`, in place."""
+    for key, value in layer.items():
+        current = merged.get(key)
+        if key in _PIXI_MERGED_TABLES and isinstance(value, dict) and isinstance(current, dict):
+            table = dict(current)
+            for sub_key, sub_value in value.items():
+                earlier = table.get(sub_key)
+                if (
+                    key == "pypi-config"
+                    and sub_key == "extra-index-urls"
+                    and isinstance(sub_value, list)
+                    and isinstance(earlier, list)
+                ):
+                    table[sub_key] = earlier + sub_value
+                else:
+                    table[sub_key] = sub_value
+            merged[key] = table
+        else:
+            merged[key] = value
+
+
+def read_pixi_config() -> dict:
+    """Read pixi config — every layer that exists, merged the way pixi merges.
+
+    Layers, lowest priority first: system `/etc/pixi/config.toml`, user
+    `~/.pixi/config.toml`, project `./.pixi/config.toml` (relative to the
+    working directory). A later layer wins per key, as `pixi config list`
+    reports its own merged view (probed on pixi 0.84.2):
+
+    * a top-level key — a scalar, a list such as `default-channels`, or any
+      table not named below — takes the latest layer's value whole;
+    * `mirrors` is a union over its source-URL keys; a source named in two
+      layers takes the later layer's target list whole;
+    * `pypi-config` merges per key (`index-url`: the latest layer that sets
+      one), except `extra-index-urls`, which concatenates, earlier layer
+      first.
+
+    Merging rather than "first file found" is load-bearing in this
+    repository: it tracks a project `.pixi/config.toml` holding one unrelated
+    key, so stopping at the first file hid every mirror an operator set in
+    `~/.pixi/config.toml` from the resolvers and from the JFrog host gate.
+
+    Only these three paths are read; pixi's further user-level locations
+    (`$PIXI_HOME`, `$XDG_CONFIG_HOME/pixi`, the platform config directory)
+    are not.
+
+    Silent-on-error: a malformed layer is logged and skipped, the other
+    layers still apply, and with nothing readable we return {} and let the
+    public-default fallback paths handle routing.
     """
     try:
         import tomllib
     except ImportError:
         return {}
-    candidates = [
-        Path(".pixi") / "config.toml",
+    layers = [
+        _PIXI_SYSTEM_CONFIG,
         Path.home() / ".pixi" / "config.toml",
-        Path("/etc/pixi/config.toml"),
+        Path(".pixi") / "config.toml",
     ]
-    for p in candidates:
+    merged: dict = {}
+    for p in layers:
         try:
-            if p.is_file():
-                with open(p, "rb") as f:
-                    return tomllib.load(f)
+            if not p.is_file():
+                continue
+            with open(p, "rb") as f:
+                layer = tomllib.load(f)
         except Exception as e:
             _log(f"_http: skipping malformed pixi config at {p}: {e}")
             continue
-    return {}
+        _merge_pixi_layer(merged, layer)
+    return merged
 
 
 def _dedup_strip(urls: Iterable[str | None]) -> list[str]:

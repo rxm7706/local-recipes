@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.105.1
+version: 8.105.2
 allowed-tools: [conda_forge_server]
 ---
 
@@ -180,7 +180,7 @@ where `<py-tag>` is the wheel's Python tag (`py3`, `py2.py3`, `cp310`, …). The
 
 **Why fully literal?** The older `${{ name[0] }}` / `${{ name }}` / `${{ name | replace("-", "_") }}` chain was a holdover from `context.name`-style recipes. Now that the distribution name lives only in `package.name`, the URL is just a path — write it as a path. Renames are rare, version bumps are common, and the literal form is more legible and removes a class of jinja-typo bugs.
 
-The `recipe-generator.py` script emits this shape automatically; manual edits and recipe reviews must enforce the same form. See `docs/enterprise-deployment.md` §3 for the full proxy rationale.
+The `recipe-generator.py` script emits this shape automatically; manual edits and recipe reviews must enforce the same form. See `docs/explanation/enterprise-deployment.md` §3 for the full proxy rationale.
 
 ### `build.bat` Must `call` Every `.cmd` Shim (pnpm/npm/yarn)
 On Windows, `pnpm`, `npm`, `yarn`, `npx`, and similar tools ship as `.cmd` wrappers. Invoking a `.cmd` from a `.bat` **without `call`** causes cmd.exe to **transfer control** to the shim — when it returns, the parent script terminates with exit 0 instead of continuing. The build appears to succeed but later steps never run, and rattler-build emits misleading errors like `× No license files were copied`.
@@ -297,11 +297,27 @@ the JFrog branches are gated on `_configured_enterprise_hosts()`, a set **derive
 operator's pixi config (`_pixi_configured_hosts()` — `mirrors`/`default-channels`/
 `pypi-config.index-url`+`extra-index-urls`, deliberately excluding those resolvers'
 own public-default fallbacks). Both sources matter:
-`docs/reference/pixi-config-jfrog.example.toml` documents project-local
-`.pixi/config.toml` — no env vars at all — as **this repo's recommended enterprise
-setup**, so an env-var-only allowlist would have silently dropped JFrog auth for the
-documented path, a functional regression the same-pass adversarial review caught
-before it shipped. The gate is host-level, not repo-scoped or resolver-scoped — a
+`docs/reference/pixi-config-jfrog.example.toml` documents a pixi config file — no env
+vars at all — as **this repo's recommended enterprise setup**, so an env-var-only
+allowlist would have silently dropped JFrog auth for the documented path, a functional
+regression the same-pass adversarial review caught before it shipped. The file to edit
+is the **user-level** `~/.pixi/config.toml`, never the project's `.pixi/config.toml`:
+that one is tracked here (it carries `run-post-link-scripts = "insecure"`).
+
+**`read_pixi_config` merges the layers; it does not stop at the first file.** It reads
+`/etc/pixi/config.toml`, `~/.pixi/config.toml` and `./.pixi/config.toml` in that order,
+the later layer winning — pixi's own rule, taken from `pixi config list` on 0.84.2 in a
+scratch workspace, not from memory: a top-level key (a list such as `default-channels`
+included) is replaced whole; `mirrors` is a union over its source URLs, a source named
+twice taking the later layer's targets; `pypi-config` merges per key, and
+`extra-index-urls` concatenates, earlier layer first. Until v8.105.2 the function
+returned the first file that existed, and because this repository tracks a project
+config file, a mirror in `~/.pixi/config.toml` never reached the resolvers or this gate
+while pixi itself honoured it (mason Story 40.1). The lesson: **when a helper mimics
+another tool's config lookup, test it with every layer present at once** — the
+single-file tests were green for months because no test put a project file beside a
+user file. A malformed layer is logged and skipped; the other layers still apply. Only
+those three paths are read (`$PIXI_HOME` and `$XDG_CONFIG_HOME/pixi` are not). The gate is host-level, not repo-scoped or resolver-scoped — a
 JFrog instance fronting several ecosystems under one credential is expected to receive
 that credential for all of them — but it closes the leak that mattered: a public
 fallback host the operator never configured anything for used to receive the header
@@ -4708,6 +4724,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.105.2** (Nov 18, 2026) — **mason Story 40.1 Rule-2 retro: `_http.read_pixi_config` merges the system, user and project pixi config files the way pixi does, where it used to return the first file found (PATCH; script fix, no new gotcha).** See `CHANGELOG.md`.
 - **v8.105.1** (Nov 5, 2026) — **mason Story 25.23 Rule-2 retro: `reactpy-django` retires on the operator's ruling (PATCH; no script or test change, no new gotcha).** See `CHANGELOG.md`.
 - **v8.105.0** (Nov 5, 2026) — **mason Stories 25.21 and 25.22 Rule-2 retro: `refresh-wave` keeps each build's log, `--render-check` reports what cannot render before a build is spent, and a URL expression renders as rattler-build renders it; G130 (the identity snapshot lost patches and dependencies) (MINOR).** The helper matches rattler-build on all 810 in-scope recipes it can compare.
 - **v8.104.0** (Nov 5, 2026) — **mason Stories 25.19 and 25.20 Rule-2 retro: the first tracked Track A run. `refresh-wave` records what a build did (G95 from rattler-build's own wording; 0 outputs is `skipped`, never `success`); G126 (a stale mirror's open run deps rot, by class), G127 (`<3.11` at the 3.11 floor is G95, never a lower `python_min`), G128 (keep host-bound recipes off a Linux `--rebuild`), G129 (`git describe` sees this repo) (MINOR).** 621 recipes through the driver: 601 `success`, 12 `build-clean-test-blocked`, 5 `not-attempted`, 1 `failed`, 1 `needs-review`, 1 `blocked`.
