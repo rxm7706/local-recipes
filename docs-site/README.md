@@ -3,7 +3,8 @@
 The one generator of the GitHub Pages artifact (herald Story 43.7, spec-pyforge-herald CAP-61; AD-21, AD-23):
 Astro + Starlight build the Diátaxis shelf under `docs/` in place via a symlink, herald's dossier, gallery and deck
 families under `/herald/`, the status pages under `/status/`, the changes page and the machine surfaces, and mount
-the dashboard exports under `/dashboard/` -- one build, `docs-site/build/site/`, deployed by `pages.yml`. Herald's
+the dashboard exports under `/dashboard/` and, with `pyforge.steward.marketplace_pages` on, the BMAD marketplace
+under `/marketplace/` (from `docs/foundry/marketplace/`) -- one build, `docs-site/build/site/`, deployed by `pages.yml`. Herald's
 second generator, `docsite/` (Jinja), retired in Story 43.7; its still-true content is below.
 
 ## Upstream vendoring (MIT)
@@ -147,8 +148,9 @@ PYFORGE_STATUS_PAGES=1 pixi run -e site pages-check
 ```
 
 A PR touching the four Diátaxis quadrants under `docs/`, `docs/index.md`, `docs/404.md`, `docs/map.yaml`,
-`docs/dashboard/**`, `docs-site/**`, `presentations/**` or the build's own `scripts/pages_*.py` runs `pages-check` and
-`docs-site-validate` in CI (the `build` job of `.github/workflows/pages.yml`); `pixi run -e pyforge-guild
+`docs/dashboard/**`, `docs/foundry/marketplace/**`, `docs-site/**`, `presentations/**`, the build's own
+`scripts/pages_*.py`, steward's `pages.py` and `marketplace_pages.py`, herald's `pages_env.py` or `pages.yml` itself
+runs `pages-check` and the legs of `docs-site-validate` in CI (the `build` job of `.github/workflows/pages.yml`); `pixi run -e pyforge-guild
 pr-preflight` selects the same two from the same paths.
 
 ## Editing the dossier
@@ -181,7 +183,7 @@ typed value:
 ```yaml
 - value: "30,847"          # ignored on the page: the measured value shows
   label: Lines · 115 files # the file count is the measured one
-  check: src_lines         # src_lines | test_lines | python_floor (fleet_src_lines for the hero's total)
+  check: src_lines         # src_lines | test_lines | python_floor | stories_epics (fleet_* for the hero's totals)
 ```
 
 Stats without a `check:` key show their typed value: inferring which stats were checkable from their labels was tried

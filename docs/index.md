@@ -1,6 +1,6 @@
 # PyForge documentation shelf
 
-This site publishes the Diátaxis shelf from the repository's `docs/` tree: task-oriented how-to guides, tutorials, reference material, and explanatory notes. The shelf is authored in Markdown at the repo root and built here with Astro and Starlight without moving or renaming existing pages.
+This site publishes the Diátaxis shelf from the repository's `docs/` tree: task-oriented how-to guides, tutorials, reference material, and explanatory notes. The shelf is authored in Markdown under `docs/` and built by `docs-site/` with Astro and Starlight.
 
 ## Quadrants
 
@@ -11,7 +11,11 @@ This site publishes the Diátaxis shelf from the repository's `docs/` tree: task
 
 ## Related sites on Pages
 
+The top menu and the doors above list the parts this build carries. A part appears only when it is published:
+
 - [Herald dossier and deck families](herald/) — infographics, dossier, and presentation tooling
-- Kedro-Viz pipelines — the pyforge-atlas Kedro pipeline graph, exported from the DAG as atlas's
-  `kedro-viz-export` artifact; when an export is mounted it is in the top menu and the Herald sidebar
-  group, and its overview tile names the commit and date it was exported from
+- Status — the fleet board, CI surfaces and runs
+- Kedro-Viz — the pyforge-atlas Kedro pipeline graph, from atlas's `kedro-viz-export` artifact
+- Dashboards — atlas's static Vizro boards, from its `vizro-static-export` artifact
+- Marketplace — the BMAD marketplace
+- Changes — what changed, with an RSS feed

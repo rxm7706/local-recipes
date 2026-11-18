@@ -11,146 +11,71 @@
 [![Test Windows](https://github.com/rxm7706/local-recipes/actions/workflows/test-windows.yml/badge.svg)](https://github.com/rxm7706/local-recipes/actions/workflows/test-windows.yml)
 [![Test macOS](https://github.com/rxm7706/local-recipes/actions/workflows/test-macos.yml/badge.svg)](https://github.com/rxm7706/local-recipes/actions/workflows/test-macos.yml)
 
-A local conda-forge style staged-recipes workspace for building and testing Conda/Rattler Build recipes on your machine. This repo lets you:
-- Author recipes in either legacy conda-build format (`meta.yaml`) or modern Rattler Build format (`recipe.yaml`).
-- Bootstrap a minimal build environment and build all recipes locally with pinned variants.
-- Run the lightweight tests embedded in each recipe as part of the build.
+This repository is the PyForge control plane and the host of its BMAD-driven development process. It holds three things:
 
-Note: Do not mix `meta.yaml` and `recipe.yaml` recipes in the same build run. The tooling will reject mixed-mode runs.
+- **The planning chain.** Dreams in `docs/dreams/`, and the Specs, epics and ledgers BMAD derives from them under `_bmad-output/projects/<station>/planning-artifacts/`.
+- **The code.** A Django + Wagtail host at `src/platform/`, and the eight station packages (`pyforge-atlas`, `-doctor`, `-herald`, `-marshal`, `-mason`, `-scribe`, `-steward`, `-warden`) with their kernel (`pyforge-core`, `pyforge-testing-kit`) and `django-*` portals under `src/shared/packages/`. Python 3.14, managed by pixi.
+- **The conda-forge recipe factory.** A staged-recipes style workspace in `recipes/`, driven by the `conda-forge-expert` skill. It is one part of the repository, not the whole of it.
 
-## Stack and tooling
-- Language: Python (tooling and scripts)
-- Package managers/build tools:
-  - Conda + libmamba solver (`conda`, `conda-libmamba-solver`)
-  - conda-build (for `meta.yaml` recipes)
-  - Rattler Build with conda-compat shim (for `recipe.yaml` recipes)
-  - conda-index (local channel indexing)
-- CI/Orchestration helpers:
-  - `.ci_support/build_all.py` (determines build mode, order, variants)
-  - Platform scripts under `.scripts/` (Windows, Linux, macOS)
-  - Cross-platform dispatcher: `build-locally.py`
-- Global pinning/variants: `conda_build_config.yaml` and `.ci_support/<platform>.yaml`
-- Bootstrap env spec: `environment.yaml`
-- Primary task runner: `pixi.toml` / `pixi.lock` — see [Pixi tasks](docs/how-to/pixi-tasks.md) for the full list.
+[`AGENTS.md`](AGENTS.md) is the contract every contributor and coding agent follows. It is the authority where this page and it differ.
 
-## Quick start
+## Start here
 
-See [`docs/tutorials/getting-started.md`](docs/tutorials/getting-started.md) for requirements, Windows fast path, cross-platform dispatch, and your first build.
+| You want to | Read |
+|---|---|
+| Set up and run your first recipe build | [`docs/tutorials/getting-started.md`](docs/tutorials/getting-started.md) |
+| Find any other page | [`docs/MAP.md`](docs/MAP.md), the documentation map |
+| See what each station's CLI does | [`docs/reference/station-cheat-sheet.md`](docs/reference/station-cheat-sheet.md) |
+| Pick a pixi environment | [`docs/reference/environments.md`](docs/reference/environments.md) |
+| Look up a pixi task | [`docs/how-to/pixi-tasks.md`](docs/how-to/pixi-tasks.md) |
+| Build and test recipes | [`docs/how-to/recipe-testing-and-builds.md`](docs/how-to/recipe-testing-and-builds.md) |
+| Understand the recipe CI behind the badges | [`docs/how-to/github-actions-recipe-ci.md`](docs/how-to/github-actions-recipe-ci.md) |
 
-## Building and testing recipes
+Two pixi environments cover most work: `pyforge-guild` is the default for station code, detectors and docs; `local-recipes` is the recipe factory.
 
-See [`docs/how-to/recipe-testing-and-builds.md`](docs/how-to/recipe-testing-and-builds.md) for targeted builds, `test-recipes.py`, and platform matrix.
+## Recipes
+
+Recipes are written in either the modern Rattler Build format (`recipe.yaml`) or the legacy conda-build format (`meta.yaml`). Do not mix the two formats in one build run: the tooling rejects it.
+
+The build helpers at the repository root (`build-locally.py`, `test-recipes.py`, `.ci_support/build_all.py`, `.scripts/`, `conda_build_config.yaml`, `environment.yaml`) are explained in the tutorial and the how-to guide linked above.
 
 ## Project structure (selected)
+
 ```
 local-recipes/
-├─ LICENSE, LICENSE.txt
-├─ README.md                       # This file
-├─ CHANGELOG.md                    # Repo-level change log (Keep a Changelog format)
-├─ CLAUDE.md                       # Claude Code project context
-├─ environment.yaml                # Bootstrap environment for build tooling
-├─ conda_build_config.yaml         # Global pinning and variants
-├─ test-recipes.py                 # Direct recipe testing script
-├─ .ci_support/
-│  ├─ build_all.py                # Build orchestration (mode detection, graph, variants)
-│  ├─ linux64.yaml                # Linux x86_64 variant config
-│  ├─ linux_aarch64.yaml          # Linux ARM64 variant config
-│  ├─ win64.yaml                  # Windows x64 variant config
-│  ├─ osx64.yaml                  # macOS x86_64 variant config
-│  └─ osxarm64.yaml               # macOS ARM64 variant config
-├─ .github/workflows/
-│  ├─ test-all.yml                # Orchestrates all platform builds
-│  ├─ test-linux.yml              # Linux builds (Docker)
-│  ├─ test-windows.yml            # Windows builds (native)
-│  └─ test-macos.yml              # macOS builds (x86_64 + ARM64)
-├─ .scripts/
-│  └─ run_win_build.bat           # Windows provisioning/build runner
-├─ scripts/
-│  ├─ bmad-switch                 # Active-project switcher for the BMAD multi-project layout
-│  └─ ...                         # Other repo-level helper scripts (sync-upstream-conda-forge, submit_pr, ...)
-├─ build-locally.py                # Cross-platform dispatcher
+├─ AGENTS.md                       # Cross-tool contract for contributors and agents
+├─ CLAUDE.md, GEMINI.md            # Per-tool addenda that point at AGENTS.md
+├─ pixi.toml, pixi.lock            # Environments, dependencies and tasks
+├─ pyforge.toml                    # PyForge workspace settings
+├─ docs/
+│  ├─ MAP.md                       # Documentation map
+│  ├─ tutorials/, how-to/, reference/, explanation/
+│  ├─ dreams/                      # Dreams: the starting point of every effort
+│  ├─ governance/, foundry/        # Fleet standards; the capability ledger
+│  └─ intake/, dashboard/          # Brownfield intake; generated publish root
+├─ docs-site/                      # Astro Starlight build of docs/
+├─ _bmad/                          # BMAD installation and custom overrides
+├─ _bmad-output/
+│  ├─ PROJECTS.md                  # Project index
+│  └─ projects/<slug>/             # Planning and implementation artifacts per station
+├─ src/
+│  ├─ platform/                    # Django + Wagtail host
+│  └─ shared/packages/             # pyforge-* station and kernel packages, django-* portals
 ├─ recipes/
-│  ├─ <recipe>/recipe.yaml        # Rattler Build format (modern)
-│  └─ <recipe>/meta.yaml          # conda-build format (legacy)
-├─ docs/                           # General docs (see docs/MAP.md for the Diátaxis map)
-│  ├─ MAP.md                       # Four-quadrant documentation map
-│  ├─ tutorials/                   # Getting started (see docs/tutorials/README.md)
-│  ├─ how-to/                      # Task-oriented guides (see docs/how-to/README.md)
-│  ├─ reference/                   # CLI/config/schema reference
-│  ├─ explanation/                 # Architecture rationale ("why")
-│  ├─ dreams/                      # Tier-0 Dreams (BMAD intake)
-│  └─ specs/                       # Legacy Tier-1 intake specs
-├─ archive/
-│  └─ docs/bmad-setup-plan.md      # BMAD installation + multi-project layout plan
-├─ _bmad/                          # BMAD configuration (installer-managed + custom overrides)
-├─ _bmad-output/                   # BMAD artifacts, organized by project (see PROJECTS.md)
-│  ├─ PROJECTS.md                  # Multi-project index + add-a-project guide
-│  └─ projects/<slug>/             # Per-project planning + implementation artifacts
-├─ setup.cfg                       # flake8 / Python style config
-├─ conda-forge.yml                 # conda-forge configuration
-├─ pixi.toml                       # Pixi environment configuration
+│  ├─ <recipe>/recipe.yaml         # Rattler Build format (modern)
+│  └─ <recipe>/meta.yaml           # conda-build format (legacy)
+├─ .ci_support/                    # build_all.py and per-platform variant configs
+├─ .scripts/                       # Platform build runners (Linux, macOS, Windows)
+├─ build-locally.py                # Cross-platform build dispatcher
+├─ test-recipes.py                 # Direct recipe testing script
+├─ environment.yaml                # Bootstrap environment, generated from pixi.toml
+├─ conda_build_config.yaml         # Global pinning and variants
+├─ scripts/                        # Detectors, generators and repo helpers
+├─ presentations/                  # Decks rendered from Dreams
+├─ archive/                        # Retired documents, kept for history
+└─ .github/workflows/              # CI: recipe builds, station tests, detectors, Pages
 ```
-
-## BMAD multi-project layout (this repo hosts more than just conda recipes)
-
-This repository's primary purpose is conda-forge recipe authoring, but it also hosts other projects driven by [BMAD Method](https://docs.bmad-method.org/) under a single shared installation. Each BMAD project has its own subtree at `_bmad-output/projects/<slug>/`. The full layout, config-resolution order, and "adding a new project" guide live in:
-
-- **`_bmad-output/PROJECTS.md`** — project index and operational reference.
-- **`archive/docs/bmad-setup-plan.md`** — installation history + multi-project setup plan (Phase 8).
-- **`CLAUDE.md` § "Multi-Project Pattern"** — quick-reference for AI agents and human contributors.
-
-Quick commands:
-
-```bash
-scripts/bmad-switch --list             # list known projects
-scripts/bmad-switch --current          # print active project
-scripts/bmad-switch <slug>             # set active project
-```
-
-**Active-project resolution priority** — see **`CLAUDE.md` § "Multi-Project Pattern"** for the complete resolution order, two-symlink mechanism, and parallel-agent guidance (`_bmad/scripts/resolve_config.py`).
-
-## Style and linting
-- Python: `setup.cfg` configures flake8 with `max-line-length = 88`. Mirror nearby code style when editing helper scripts.
-- YAML: Follow existing patterns in recipes. For Rattler Build, include the schema header:
-  ```
-  # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-  ```
-
-## Examples
-- Verified minimal sanity check for a Rattler recipe file structure:
-  ```python
-  from pathlib import Path
-  recipe = Path(r"recipes/py-key-value/recipe.yaml")
-  text = recipe.read_text(encoding="utf-8")
-  required = ["schema_version:", "build:", "outputs:", "tests:"]
-  missing = [m for m in required if m not in text]
-  assert not missing, f"Missing markers: {missing}"
-  print("Sanity test passed")
-  ```
-  Run from repo root: save as `temp_test_recipe_yaml.py` and execute with `python temp_test_recipe_yaml.py`.
-
-## GitHub Actions and Pixi tasks
-
-- Recipe CI workflows: [`docs/how-to/github-actions-recipe-ci.md`](docs/how-to/github-actions-recipe-ci.md)
-- Full pixi task surface: [`docs/how-to/pixi-tasks.md`](docs/how-to/pixi-tasks.md)
-- Developer reference (formats, config): [`docs/reference/developer-guide.md`](docs/reference/developer-guide.md)
-- AI tooling architecture: [`docs/explanation/mcp-server-architecture.md`](docs/explanation/mcp-server-architecture.md)
-- Enterprise / air-gap: [`docs/explanation/enterprise-deployment.md`](docs/explanation/enterprise-deployment.md)
-
-Documentation map: [`docs/MAP.md`](docs/MAP.md)
-
-## Known limitations and tips
-- Do not mix `meta.yaml` and `recipe.yaml` recipes in a single run.
-- Use `noarch: python` only for pure-Python packages that do not need compiled artifacts and don’t have OS-conditional install logic.
-- When using `pin_subpackage(...)`, prefer `exact=True` if outputs are co-versioned in a multi-output recipe.
-- Prefer `run_constraints` for optional extras to keep the solver flexible.
-- For Python packages, ensure tests include `pip_check: true` where feasible to catch metadata issues early.
-- Some dependencies referenced by example recipes may not exist on conda-forge yet; these are typically commented with notes and links in the recipe files.
 
 ## License
-This repository is licensed under the terms found in `LICENSE` (and/or `LICENSE.txt`). Refer to those files for details.
 
-## TODOs
-- Add short contributor guidelines for adding new recipes and expected review checklist.
-- If CI is enabled for this repo, add a section describing how CI picks up and builds recipes (e.g., Azure Pipelines config in `azure-pipelines.yml`).
-- Add examples for Linux/macOS runners using `.scripts/run_docker_build.sh` and `.scripts/run_osx_build.sh`.
+See `LICENSE` and `LICENSE.txt`.
