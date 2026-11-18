@@ -2,7 +2,7 @@
 title: '125.2: Marshal''s and core''s suites and the seed update run on a macOS laptop'
 type: 'fix'
 created: '2026-11-17'
-status: 'ready-for-dev'
+status: 'done'
 story: 125-2-marshal-s-and-core-s-suites-and-the-seed-update-run-on-a-macos-laptop
 spec: spec-pyforge-steward
 difficulty: 'easy'

@@ -2,7 +2,7 @@
 title: '125.1: Steward''s suite and the preflight module run on a macOS laptop'
 type: 'fix'
 created: '2026-11-17'
-status: 'ready-for-dev'
+status: 'in-review'
 story: 125-1-steward-s-suite-and-the-preflight-module-run-on-a-macos-laptop
 spec: spec-pyforge-steward
 difficulty: 'easy'

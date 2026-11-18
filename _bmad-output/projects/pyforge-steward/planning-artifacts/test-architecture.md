@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 2e410cc9a51574c7
-story_count: 471
-test_file_count: 158
+source_fingerprint: b56162dafc96ba72
+story_count: 475
+test_file_count: 166
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 471
-- **Epics parsed:** 124
-- **Test files inventoried:** 158 under `src/shared/packages/pyforge-steward/tests/`
+- **Stories parsed:** 475
+- **Epics parsed:** 125
+- **Test files inventoried:** 166 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `2e410cc9a51574c7`
+- **Source fingerprint:** `b56162dafc96ba72`
 
 ## Risk Assessment
 
@@ -80,21 +80,21 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 41: Data safety (CAP-9 / CAP-10 / CAP-19)
 - Epic 43: Contracts and the document (CAP-6 / CAP-10 / Dream)
 - Epic 45: eval-quality joins the suite and the reviewer gets measured (spec-bmad-eval-quality CAP-1 CAP-2)
-- Epic 46: The bmad-suite is wielded by the fleet (spec-bmad-suite-lifecycle CAP-1..145)
+- Epic 46: The bmad-suite is wielded by the fleet (spec-bmad-suite-lifecycle CAP-1..8)
 - Epic 47: The BMAD estate is cutover-ready (spec-bmad-suite-lifecycle CAP-9)
 - Epic 48: The chain tells the truth (spec-pyforge-unifying-strategy Residual 2026-09-09)
 - Epic 49: Shipped becomes in effect (spec-pyforge-unifying-strategy — the realization gate)
 - Epic 50: Object storage is consumable, without pyforge operating it (spec-platform-object-storage-kind)
 - Epic 51: PostgreSQL and Redis become consumable, without pyforge mandating self-hosting
-- Epic 53: Intelligence Hub realization (spec-intelligence-hub hub:CAP-1..145)
-- Epic 54: Foundry kernel regenerate (spec-foundry-regenerate-not-fold fnr:CAP-1..145 / fnd:CAP-11)
-- Epic 55: Foundry capability ledger (spec-foundry-capability-ledger fcl:CAP-1..145)
+- Epic 53: Intelligence Hub realization (spec-intelligence-hub hub:CAP-1..4)
+- Epic 54: Foundry kernel regenerate (spec-foundry-regenerate-not-fold fnr:CAP-1..5 / fnd:CAP-11)
+- Epic 55: Foundry capability ledger (spec-foundry-capability-ledger fcl:CAP-1..3)
 - Epic 56: platform-dev boots the local leaf (spec-platform-dev-boots-local pdl:CAP-1)
 - Epic 58: The mcp-host sidecar hosts real station tools (spec-mcp-host-real-station-tools)
-- Epic 59: One name, one job (spec-vocabulary-one-name-one-job CAP-1..145)
-- Epic 60: Estate BMAD catalog (spec-self-hosted-bmad-marketplace CAP-1..145)
-- Epic 61: Work passports and dated extracts (spec-work-passports-dated-extracts CAP-1..145)
-- Epic 62: Published measure catalog (spec-build-league-scorecard CAP-1..145)
+- Epic 59: One name, one job (spec-vocabulary-one-name-one-job CAP-1..8)
+- Epic 60: Estate BMAD catalog (spec-self-hosted-bmad-marketplace CAP-1..7)
+- Epic 61: Work passports and dated extracts (spec-work-passports-dated-extracts CAP-1..7)
+- Epic 62: Published measure catalog (spec-build-league-scorecard CAP-1..4)
 - Epic 63: The Guild environment — `pyforge-guild` is the default for every agent (spec-pyforge-steward CAP-5)
 - Epic 65: The estate sprint-ledger query engine (spec-pyforge-steward CAP-146..149; partially CAP-140)
 - Epic 66: Lint, types and the pre-push gate are checks, not prose (spec-pyforge-steward CAP-153..154)
@@ -160,6 +160,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 105: The preflight never runs two docs-site lanes at once (fix under spec-pyforge-steward CAP-159; no CAP)
 - Epic 122: The steward Spec says what the code does (spec-pyforge-steward CAP-179, CAP-180; the markers and text of existing capabilities)
 - Epic 123: The steward suite is an oracle a second root can run (spec-pyforge-steward CAP-181, CAP-182)
+- Epic 125: The preflight answers on the laptop it is documented for (spec-pyforge-steward CAP-175)
 
 ## Test Inventory
 
@@ -170,7 +171,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/integration/test_nkp_landing_signin.py` | integration | none observed |
 | `src/shared/packages/pyforge-steward/tests/integration/test_nkp_probes_offline.py` | integration | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_cap_citations.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_capability_ledger_live.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_cfe_regression_net_paths.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_cutover_case_list.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_first_portal_slice_provision_list.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_five_tier_check.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_guild_environment_stations.py` | meta | none observed |
@@ -180,9 +184,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/meta/test_marp_in_guild_env_story_63_8.py` | meta | 63.8 |
 | `src/shared/packages/pyforge-steward/tests/meta/test_no_station_assumes_local_recipes.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_object_store_seam_boundaries.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_oracle_map.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_pages_workflow.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_portability.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_pr_preflight_lanes_resolve_under_pixi.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_preflight_docs_site_lanes.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_public_contract.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_pull_request_exempt_surfaces.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_release_cadence_runbook.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_session_check_entry_points.py` | meta | none observed |
@@ -208,6 +215,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_cli.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_corridor.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_cutover.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_cutover_ledger.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_cutover_ledger_check.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_dashboard_admin_and_htmx.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_dashboard_audit.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_dashboard_cache.py` | unit | none observed |
@@ -799,6 +808,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 124.3 | Core's, the kit's and steward's manifests state Python 3.14, a check holds ev... | none observed |
 | 124.4 | The cutover-ledger write kill switch joins the flag tree and every shipped-fl... | none observed |
 | 124.5 | Each persona names the MCP tools its station's face serves, and the host Spec... | none observed |
+| 125.1 | Steward's suite and the preflight module run on a macOS laptop | none observed |
+| 125.2 | Marshal's and core's suites and the seed update run on a macOS laptop | none observed |
+| 125.3 | Doctor's, mason's, scribe's and the scripts suites run on a macOS laptop | none observed |
+| 125.4 | The laptop preflight's local prerequisites are written down, and the prefligh... | none observed |
 
 ## Quality Gates
 

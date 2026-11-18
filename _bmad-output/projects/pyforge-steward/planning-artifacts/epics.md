@@ -8798,7 +8798,7 @@ So that a red lane on my machine means a defect in my change.
 **When** the preflight module reads the core count without a Linux-only attribute, each test that needs a host capability probes for it, and the lock in `scripts/platform-ci-local.sh` works where `flock` is absent or the tests say the host lacks it
 **Then** `pyforge-steward-test`, `pyforge-steward-live-test` and both `mypy` lanes exit 0 on macOS and are unchanged on Linux; no test is skipped by platform name
 **And** every guard is a capability probe with a reason that names the missing capability
-**Status:** backlog
+**Status:** review
 
 ### Story 125.2: Marshal's and core's suites and the seed update run on a macOS laptop
 
@@ -8814,7 +8814,7 @@ So that a red lane on my machine means a defect in my change.
 **When** the seed engine compares resolved paths, core answers a process's start time on macOS as well, and the two tests state what they need of git
 **Then** `pyforge-marshal-test`, `pyforge-marshal-live-test`, `pyforge-core-package-test` and `pyforge-core-live-test` exit 0 on macOS and are unchanged on Linux; `pyforge.core` stays mypy strict
 **And** every guard is a capability probe with a reason that names the missing capability
-**Status:** backlog
+**Status:** done
 
 ### Story 125.3: Doctor's, mason's, scribe's and the scripts suites run on a macOS laptop
 
@@ -8830,7 +8830,7 @@ So that a red lane on my machine means a defect in my change.
 **When** each test sets the identity it commits under, compares resolved paths, and probes the host for what it needs
 **Then** `pyforge-doctor-test`, `pyforge-doctor-live-test`, `pyforge-mason-test`, `pyforge-scribe-test` and `pyforge-doctor-scripts-test` exit 0 on macOS and are unchanged on Linux
 **And** every guard is a capability probe with a reason that names the missing capability
-**Status:** backlog
+**Status:** done
 
 ### Story 125.4: The laptop preflight's local prerequisites are written down, and the preflight is green
 
@@ -8846,4 +8846,4 @@ So that a red lane on my machine means a defect in my change.
 **When** the preflight how-to names both prerequisites, each governing Spec's memlog names the moved paths and is stamped scoped, and the full preflight is run alone on the final head
 **Then** `PYFORGE_PREFLIGHT_SCOPE=full pixi run -e pyforge-guild pr-preflight` exits 0 on the macOS laptop with the two prerequisites met; `spec-surface-check` and `docs-currency-check` exit 0
 **And** every guard is a capability probe with a reason that names the missing capability
-**Status:** backlog
+**Status:** review

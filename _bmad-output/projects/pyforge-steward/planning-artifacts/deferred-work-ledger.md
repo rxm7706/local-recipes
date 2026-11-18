@@ -7287,3 +7287,59 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   reason: named blocker: neither file was in any story's files in this change's parallel waves.
   status: open
   verified: 2026-11-13 — still-open — src/shared/packages/pyforge-steward/tests/meta/test_portability.py:46-49 lists both files; `pixi run --frozen -e pyforge-steward env PYTHONPATH=src/shared/packages/pyforge-steward/src:scripts pytest src/shared/packages/pyforge-steward/tests/meta/test_portability.py -q` exit 0 (37 passed).
+
+### DW-steward-125-1-1: The adoption register's `bmad-manticore` row fails the live suite on a host without the studio
+
+- source_spec: `planning-artifacts/specs/spec-125-1-steward-s-suite-and-the-preflight-module-run-on-a-macos-laptop.md`
+  summary: `tests/meta/test_adoption_register.py::test_wired_column_agrees_with_live_pipeline_truth_for_every_row` is the one test left red in `pyforge-steward-live-test` on the operator's macOS laptop.
+  evidence: the register says `bmad-manticore` is `wired (this machine, 2026-09-07 …)`, the studio at `~/pyforge-studio` (or `PYFORGE_STUDIO_ROOT`) exists only on the Linux workstation, and the test exempts the row only when `CI` is set, by design, so local drift is caught.
+  location: src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py; _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/adoption-register.md
+  origin: steward Epic 125 (the laptop preflight, 2026-11-17), found while the suites were made to run on macOS; written by Story 125.4
+  fix: the operator rules one of: provision the studio on each machine that runs the preflight, record the row's host in the register so the test judges it only there, or accept the red on other hosts.
+  owner: steward
+  severity: medium
+  promoted: 2026-11-17 — steward Story 125.4 (the laptop preflight, branch `docs-full-refresh-2026-11-17`)
+  reason: behaviour or an operator decision outside the surface of the story that met it; each needs its own Story under the owning Spec.
+  status: open
+
+### DW-steward-125-1-2: Three steward paths still assume a GNU userland or bash 4
+
+- source_spec: `planning-artifacts/specs/spec-125-1-steward-s-suite-and-the-preflight-module-run-on-a-macos-laptop.md`
+  summary: the touched-scope preflight cannot cut its lane set on stock macOS, and two `platform-ci-local.sh` stages are untested there.
+  evidence: `preflight_ci` runs the workflows' `changes` steps with the `bash` on PATH, and those steps use `declare -A`, so on bash 3.2 every guarded lane is 'cannot evaluate, so it runs' (35 tests probe for bash 4 and skip here); `stage_container` checks port 8000 with `ss -ltn` and `export_context` uses GNU `tar --ignore-failed-read`; the Story 101.1 leak guard (`_marked_pids`) reads `/proc/<pid>/environ` and proves nothing where there is no `/proc`.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_ci.py; scripts/platform-ci-local.sh; src/shared/packages/pyforge-steward/tests/unit/
+  origin: steward Epic 125 (the laptop preflight, 2026-11-17), found while the suites were made to run on macOS; written by Story 125.4
+  fix: evaluate the `changes` steps with a bash the estate provides or rewrite them without associative arrays; give the two stages portable fallbacks as `_listener_on_port` now has; find a leak-guard marker macOS can read.
+  owner: steward
+  severity: low
+  promoted: 2026-11-17 — steward Story 125.4 (the laptop preflight, branch `docs-full-refresh-2026-11-17`)
+  reason: behaviour or an operator decision outside the surface of the story that met it; each needs its own Story under the owning Spec.
+  status: open
+
+### DW-steward-125-1-3: Every pixi environment runs git through pixi's global trampoline, which aborts on non-UTF-8 arguments
+
+- source_spec: `planning-artifacts/specs/spec-125-1-steward-s-suite-and-the-preflight-module-run-on-a-macos-laptop.md`
+  summary: no station environment carries `git`, so `git` resolves to `~/.pixi/bin/git`, a trampoline that panics when an argument is not UTF-8; twelve steward tests probe for it and skip on this laptop.
+  evidence: `which git` inside `pixi run -e pyforge-steward` is `/Users/<user>/.pixi/bin/git`; `git remote add` with a `\xff` byte dies with SIGABRT in the trampoline's argument handling; `/usr/bin/git` is the Xcode stub with no developer tools installed, and a test that builds `env=` without `PATH` falls through to it.
+  location: pixi.toml (no `git` in the station features)
+  origin: steward Epic 125 (the laptop preflight, 2026-11-17), found while the suites were made to run on macOS; written by Story 125.4
+  fix: add `git` to the station environments (an operator `pixi add`, which also makes the tested git version one the lock names), and report the trampoline panic upstream to pixi.
+  owner: steward
+  severity: low
+  promoted: 2026-11-17 — steward Story 125.4 (the laptop preflight, branch `docs-full-refresh-2026-11-17`)
+  reason: behaviour or an operator decision outside the surface of the story that met it; each needs its own Story under the owning Spec.
+  status: open
+
+### DW-steward-125-2-1: Marshal's zombie check reads `/proc` only
+
+- source_spec: `planning-artifacts/specs/spec-125-2-marshal-s-and-core-s-suites-and-the-seed-update-run-on-a-macos-laptop.md`
+  summary: `dispatch_verify.py::_is_zombie` returns False on any read error, so on macOS an exited but unreaped dispatch session leader reads as alive.
+  evidence: the function reads `/proc/<pid>/stat` and nothing else (about line 1184); no test fails on it; core's `_is_thread_group_leader` is `/proc`-only too and degrades to True, which is harmless on macOS.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py
+  origin: steward Epic 125 (the laptop preflight, 2026-11-17), found while the suites were made to run on macOS; written by Story 125.4
+  fix: a marshal Story: read the process state from the process table where there is no `/proc` (the fallback `test_harness_bmadbuild.py` already uses), with a test on a real zombie.
+  owner: steward
+  severity: medium
+  promoted: 2026-11-17 — steward Story 125.4 (the laptop preflight, branch `docs-full-refresh-2026-11-17`)
+  reason: behaviour or an operator decision outside the surface of the story that met it; each needs its own Story under the owning Spec.
+  status: open

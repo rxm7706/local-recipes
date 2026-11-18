@@ -2,7 +2,7 @@
 title: '125.3: Doctor''s, mason''s, scribe''s and the scripts suites run on a macOS laptop'
 type: 'fix'
 created: '2026-11-17'
-status: 'ready-for-dev'
+status: 'done'
 story: 125-3-doctor-s-mason-s-scribe-s-and-the-scripts-suites-run-on-a-macos-laptop
 spec: spec-pyforge-steward
 difficulty: 'easy'
