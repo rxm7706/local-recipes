@@ -298,8 +298,9 @@ def main() -> int:
     args = parser.parse_args()
 
     root = common.resolve_root(args)
-    stamp = common.head_stamp(root)
-    content = render(root, stamp)
+    stamp, content = common.stamped_render(
+        root, PAGE_REL, lambda stamp: render(root, stamp)
+    )
     return common.write_generated_page(
         root, PAGE_REL, content, check=args.check, stamp=stamp
     )

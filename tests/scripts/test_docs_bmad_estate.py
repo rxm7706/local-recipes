@@ -16,7 +16,7 @@ _SCRIPTS_DIR = REPO_ROOT / "scripts"
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
-import docs_bmad_estate as m  # noqa: E402
+import docs_bmad_estate as m
 
 
 def test_check_is_bmad_estate_checks_own_verdict(monkeypatch, capsys, tmp_path):
@@ -35,10 +35,14 @@ def test_check_is_bmad_estate_checks_own_verdict(monkeypatch, capsys, tmp_path):
 def test_check_reads_a_scribe_cli_that_cannot_start_as_could_not_run(monkeypatch):
     """The false drift bmad_estate_check guards: the package is found, but `-m pyforge.scribe.cli`
     exits 1 because a module cannot be imported. The door must say could-not-run (2), never stale."""
-    monkeypatch.setattr(m.bmad_estate_check.importlib.util, "find_spec", lambda name: object())
+    monkeypatch.setattr(
+        m.bmad_estate_check.importlib.util, "find_spec", lambda name: object()
+    )
 
     def fake_run(command, **kwargs):
-        return subprocess.CompletedProcess(command, 1, stdout="", stderr="ModuleNotFoundError: No module named 'typer'")
+        return subprocess.CompletedProcess(
+            command, 1, stdout="", stderr="ModuleNotFoundError: No module named 'typer'"
+        )
 
     monkeypatch.setattr(m.bmad_estate_check.subprocess, "run", fake_run)
     assert m.main(["--check"]) == 2
@@ -54,14 +58,29 @@ def test_write_mode_calls_the_scribe_cli_entry(monkeypatch, tmp_path):
 
     monkeypatch.setattr(m.subprocess, "run", fake_run)
     assert m.main(["--root", str(tmp_path)]) == 0
-    assert seen == [[sys.executable, "-m", "pyforge.scribe.cli", "catalog", "bmad-estate", "--write", "--root", str(tmp_path)]]
+    assert seen == [
+        [
+            sys.executable,
+            "-m",
+            "pyforge.scribe.cli",
+            "catalog",
+            "bmad-estate",
+            "--write",
+            "--root",
+            str(tmp_path),
+        ]
+    ]
 
 
 @pytest.mark.parametrize("scribe_exit", [1, 2, -9])
 def test_a_failed_write_is_could_not_run(monkeypatch, scribe_exit):
     monkeypatch.setattr(m.importlib.util, "find_spec", lambda name: object())
     monkeypatch.setattr(
-        m.subprocess, "run", lambda command, **kwargs: subprocess.CompletedProcess(command, scribe_exit, "", "")
+        m.subprocess,
+        "run",
+        lambda command, **kwargs: subprocess.CompletedProcess(
+            command, scribe_exit, "", ""
+        ),
     )
     assert m.main([]) == 2
 

@@ -21,8 +21,8 @@ _SCRIPTS_DIR = REPO_ROOT / "scripts"
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
-import _docs_gen_common as common  # noqa: E402
-import docs_station_cli as m  # noqa: E402
+import _docs_gen_common as common
+import docs_station_cli as m
 
 _STAMP = {"derived_at": "2026-01-01T00:00:00", "tree": "deadbeef"}
 
@@ -32,19 +32,28 @@ def _write_station(root: Path, name: str, *, scripts: dict[str, str]) -> None:
     package_dir.mkdir(parents=True)
     script_lines = "\n".join(f'{key} = "{value}"' for key, value in scripts.items())
     (package_dir / "pyproject.toml").write_text(
-        f"[project]\nname = \"pyforge-{name}\"\n\n[project.scripts]\n{script_lines}\n",
+        f'[project]\nname = "pyforge-{name}"\n\n[project.scripts]\n{script_lines}\n',
         encoding="utf-8",
     )
 
 
 def _write_pixi_toml(root: Path, *, guild_hosted: list[str]) -> None:
-    deps = "\n".join(f'pyforge-{name} = {{ path = "src/shared/packages/pyforge-{name}" }}' for name in guild_hosted)
-    (root / "pixi.toml").write_text(f"[feature.pyforge-guild.dependencies]\n{deps}\n", encoding="utf-8")
+    deps = "\n".join(
+        f'pyforge-{name} = {{ path = "src/shared/packages/pyforge-{name}" }}'
+        for name in guild_hosted
+    )
+    (root / "pixi.toml").write_text(
+        f"[feature.pyforge-guild.dependencies]\n{deps}\n", encoding="utf-8"
+    )
 
 
 def test_render_marks_guild_hosted_vs_own_environment(tmp_path: Path):
-    _write_station(tmp_path, "doctor", scripts={"doctor": "pyforge.doctor.__main__:main"})
-    _write_station(tmp_path, "atlas", scripts={"pyforge-atlas": "pyforge.atlas.__main__:main"})
+    _write_station(
+        tmp_path, "doctor", scripts={"doctor": "pyforge.doctor.__main__:main"}
+    )
+    _write_station(
+        tmp_path, "atlas", scripts={"pyforge-atlas": "pyforge.atlas.__main__:main"}
+    )
     _write_pixi_toml(tmp_path, guild_hosted=["doctor"])
 
     content = m.render(tmp_path, _STAMP, help_capture=lambda script: None)
@@ -58,7 +67,9 @@ def test_render_marks_guild_hosted_vs_own_environment(tmp_path: Path):
 def test_render_excludes_core_and_testing_kit_packages(tmp_path: Path):
     _write_station(tmp_path, "core", scripts={"pyforge": "pyforge.core.dispatch:main"})
     _write_station(tmp_path, "testing-kit", scripts={})
-    _write_station(tmp_path, "doctor", scripts={"doctor": "pyforge.doctor.__main__:main"})
+    _write_station(
+        tmp_path, "doctor", scripts={"doctor": "pyforge.doctor.__main__:main"}
+    )
     _write_pixi_toml(tmp_path, guild_hosted=["doctor"])
 
     content = m.render(tmp_path, _STAMP, help_capture=lambda script: None)
@@ -69,10 +80,14 @@ def test_render_excludes_core_and_testing_kit_packages(tmp_path: Path):
 
 
 def test_render_embeds_captured_help_text_verbatim(tmp_path: Path):
-    _write_station(tmp_path, "doctor", scripts={"doctor": "pyforge.doctor.__main__:main"})
+    _write_station(
+        tmp_path, "doctor", scripts={"doctor": "pyforge.doctor.__main__:main"}
+    )
     _write_pixi_toml(tmp_path, guild_hosted=["doctor"])
 
-    content = m.render(tmp_path, _STAMP, help_capture=lambda script: "usage: doctor [-h] ...")
+    content = m.render(
+        tmp_path, _STAMP, help_capture=lambda script: "usage: doctor [-h] ..."
+    )
 
     assert "```text" in content
     assert "usage: doctor [-h] ..." in content
@@ -81,7 +96,9 @@ def test_render_embeds_captured_help_text_verbatim(tmp_path: Path):
 # --- capture_help itself: the REAL subprocess path, not the injected seam --
 
 
-def test_capture_help_returns_none_when_the_script_exits_nonzero(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_capture_help_returns_none_when_the_script_exits_nonzero(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     # Reproduces the live bug: marshal-mcp --help crashes (ModuleNotFoundError:
     # No module named 'fastmcp') and exited non-zero, but the old code returned
     # stderr's traceback anyway -- embedding it, absolute filesystem paths and
@@ -120,19 +137,27 @@ def test_render_notes_a_station_with_no_console_script(tmp_path: Path):
 
 
 def test_render_is_deterministic(tmp_path: Path):
-    _write_station(tmp_path, "doctor", scripts={"doctor": "pyforge.doctor.__main__:main"})
+    _write_station(
+        tmp_path, "doctor", scripts={"doctor": "pyforge.doctor.__main__:main"}
+    )
     _write_pixi_toml(tmp_path, guild_hosted=["doctor"])
 
     render_a = m.render(tmp_path, _STAMP, help_capture=lambda script: "fixed help text")
-    render_b = m.render(tmp_path, dict(_STAMP), help_capture=lambda script: "fixed help text")
+    render_b = m.render(
+        tmp_path, dict(_STAMP), help_capture=lambda script: "fixed help text"
+    )
     assert render_a == render_b
 
 
-def test_main_write_then_check_roundtrip(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    _write_station(tmp_path, "doctor", scripts={"doctor": "pyforge.doctor.__main__:main"})
+def test_main_write_then_check_roundtrip(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    _write_station(
+        tmp_path, "doctor", scripts={"doctor": "pyforge.doctor.__main__:main"}
+    )
     _write_pixi_toml(tmp_path, guild_hosted=["doctor"])
     monkeypatch.setattr(common, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(common, "head_stamp", lambda root: dict(_STAMP))
+    monkeypatch.setattr(common, "head_stamp", lambda root, *scope: dict(_STAMP))
     monkeypatch.setattr(m, "capture_help", lambda script: "fixed help text")
 
     monkeypatch.setattr(sys, "argv", ["docs_station_cli.py"])
@@ -143,11 +168,15 @@ def test_main_write_then_check_roundtrip(tmp_path: Path, monkeypatch: pytest.Mon
 
     # A station CLI gains a verb (its captured help text changes), not yet
     # regenerated -> --check reds it.
-    monkeypatch.setattr(m, "capture_help", lambda script: "fixed help text plus a new verb")
+    monkeypatch.setattr(
+        m, "capture_help", lambda script: "fixed help text plus a new verb"
+    )
     assert m.main() == 1
 
 
-def test_capture_help_scrubs_terminal_forcing_variables_and_pins_columns(monkeypatch: pytest.MonkeyPatch):
+def test_capture_help_scrubs_terminal_forcing_variables_and_pins_columns(
+    monkeypatch: pytest.MonkeyPatch,
+):
     """Marshal Story 103.1 (AC9): with the caller's environment forcing a terminal
     (FORCE_COLOR, PY_COLORS, GITHUB_ACTIONS, ...), rich wraps at 80 under a dumb
     TERM or pollutes the capture with escape codes otherwise, and PYTHON_COLORS=1

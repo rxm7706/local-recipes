@@ -1,22 +1,32 @@
-#!/usr/bin/env python3
 """Shared helpers for the Story 30.3 doc generators (spec-pyforge-doctor
 CAP-84): ``scripts/docs_pixi_tasks.py``, ``docs_station_cli.py``,
-``docs_detectors.py``, ``docs_skills_catalog.py``, ``docs_environments.py``.
+``docs_detectors.py``, ``docs_skills_catalog.py``, ``docs_environments.py``,
+and the two that followed them, ``docs_github_workflows.py`` (Story 59.1)
+and ``docs_station_verify.py`` (Story 60.2).
 
 Not itself a pixi task or a detector -- no ``DETECTOR`` marker, no
 ``_check.py`` suffix, so ``scripts/detectors.py``'s ``discover()`` never
 scans it (mirrors ``docs_map_render.py``'s own plain-mutator status). The
-pieces genuinely shared across all five generators: the ``derived_at``/
+pieces genuinely shared across all of them: the ``derived_at``/
 ``tree`` stamp (herald ``facts.yaml``'s shape, ported from
 ``scripts/deck_facts.py``'s own ``head_info``), a minimal frontmatter
 reader, and the write+stamp+``--check`` plumbing every generator's
 ``main()`` drives identically.
 
-Determinism (mirrors ``deck_facts.py`` verbatim): ``tree`` is the HEAD sha
-(suffixed ``-dirty`` when tracked files are uncommitted) and ``derived_at``
-is the HEAD commit DATE -- never wall-clock generation time -- so re-running
-a generator on an unchanged tree writes byte-identical output no matter
-when it is run.
+Determinism: ``tree`` is the HEAD sha and ``derived_at`` is the HEAD commit
+DATE -- never wall-clock generation time -- so re-running a generator on an
+unchanged tree writes byte-identical output no matter when it is run.
+
+The ``-dirty`` suffix is scoped to the page (doctor Story 60.2). A generator
+stamps through :func:`stamped_render`, and ``tree`` reads ``<sha>-dirty``
+only when what the page derives from is uncommitted: a path the page's
+``docs/map.yaml`` row declares under ``sources:`` is modified or untracked,
+or the rendered body is not the body HEAD holds for the page. Any other
+modified file -- ``docs/map.yaml`` itself, which every write updates,
+included -- leaves the stamp clean. Before that story the flag covered the
+whole working tree, so every stamp written on a branch with any edit at all
+read ``-dirty``, and a second write on a clean tree did too (the first had
+just modified ``docs/map.yaml``).
 
 Deliberately does not import ``pyforge.doctor``: these generators must run
 correctly in whichever environment invokes their own pixi task, without
@@ -32,6 +42,7 @@ import argparse
 import re
 import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 import yaml
@@ -56,6 +67,7 @@ def resolve_root(args: argparse.Namespace) -> Path:
     if args.root is not None:
         return args.root.resolve()
     return REPO_ROOT
+
 
 # A top-level, single-line `description:` value -- the one field a failed
 # frontmatter parse most needs to recover (see parse_frontmatter's fallback).
@@ -82,16 +94,100 @@ def git(root: Path, *args: str) -> str:
     ).stdout.strip()
 
 
-def head_stamp(root: Path) -> dict[str, str]:
+def _declared_sources(root: Path, page_rel: str) -> list[str]:
+    """The ``sources:`` the page's ``docs/map.yaml`` row declares, or ``[]`` when the map is missing or
+    unreadable, carries no row for the page, or the row declares none."""
+    map_yaml = root / "docs" / "map.yaml"
+    if not map_yaml.is_file():
+        return []
+    try:
+        data = yaml.safe_load(map_yaml.read_text(encoding="utf-8"))
+    except yaml.YAMLError:
+        return []
+    pages = data.get("pages") if isinstance(data, dict) else None
+    for page in pages if isinstance(pages, list) else []:
+        if isinstance(page, dict) and page.get("path") == page_rel:
+            sources = page.get("sources")
+            if not isinstance(sources, list):
+                return []
+            return [
+                source
+                for source in sources
+                if isinstance(source, str) and source.strip()
+            ]
+    return []
+
+
+def _head_page_body(root: Path, page_rel: str) -> str | None:
+    """The page's body as HEAD holds it, stamp header stripped; ``None`` when HEAD does not hold the page."""
+    result = subprocess.run(
+        ["git", "show", f"HEAD:docs/{page_rel}"],
+        cwd=root,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return None
+    return _strip_stamp_header(result.stdout)
+
+
+def _is_dirty(root: Path, page_rel: str | None, body: str | None) -> bool:
+    sources = _declared_sources(root, page_rel) if page_rel is not None else []
+    if not sources:
+        # No page, or a row that declares no sources: nothing narrower to read than the whole tree.
+        return bool(git(root, "status", "--porcelain", "--untracked-files=no"))
+    # An untracked file under a declared source is read by the generator too, so it counts.
+    if git(root, "status", "--porcelain", "--untracked-files=all", "--", *sources):
+        return True
+    return (
+        body is not None
+        and page_rel is not None
+        and _head_page_body(root, page_rel) != body
+    )
+
+
+def head_stamp(
+    root: Path, page_rel: str | None = None, body: str | None = None
+) -> dict[str, str]:
     """``{"derived_at": ..., "tree": ...}`` -- HEAD commit date (ISO-8601,
-    ``%cI``) and HEAD sha, ``-dirty``-suffixed when tracked files carry
-    uncommitted changes. Both come from the commit, not the clock, so two
-    runs against the same tree state produce the identical pair."""
-    dirty = bool(git(root, "status", "--porcelain", "--untracked-files=no"))
+    ``%cI``) and HEAD sha, ``-dirty``-suffixed when what the page derives
+    from is uncommitted. Both come from the commit, not the clock, so two
+    runs against the same tree state produce the identical pair.
+
+    ``page_rel`` (the ``docs/``-relative page) scopes the dirty flag to the
+    ``sources:`` its ``docs/map.yaml`` row declares, and ``body`` (a fresh
+    render with its stamp header stripped) adds the page itself, compared
+    with the body HEAD holds -- the stamp lines are never compared, since a
+    committed page can never carry its own commit's sha. Without
+    ``page_rel``, or for a row that declares no sources, the flag covers
+    every tracked file, as it did before Story 60.2."""
     return {
         "derived_at": git(root, "log", "-1", "--format=%cI"),
-        "tree": git(root, "rev-parse", "HEAD") + ("-dirty" if dirty else ""),
+        "tree": git(root, "rev-parse", "HEAD")
+        + ("-dirty" if _is_dirty(root, page_rel, body) else ""),
     }
+
+
+# Stand-ins for the two stamp values while the body is rendered (see stamped_render).
+_PENDING_STAMP = {"derived_at": "@@docs-gen:derived_at@@", "tree": "@@docs-gen:tree@@"}
+
+
+def stamped_render(
+    root: Path, page_rel: str, render: Callable[[dict[str, str]], str]
+) -> tuple[dict[str, str], str]:
+    """``(stamp, content)`` for one generated page: ``render(stamp)`` is the generator's own render, called
+    ONCE, and ``stamp`` is :func:`head_stamp` scoped to this page and to the body that render produced.
+
+    The stamp depends on the body (is it what HEAD holds?) and the content embeds the stamp, so the body is
+    rendered first with stand-in stamp values, which are then replaced in the header. A render that embeds no
+    stamp comes back unchanged."""
+    pending = render(dict(_PENDING_STAMP))
+    stamp = head_stamp(root, page_rel, _strip_stamp_header(pending))
+    content = pending
+    for key, placeholder in _PENDING_STAMP.items():
+        content = content.replace(placeholder, stamp[key], 1)
+    return stamp, content
 
 
 def render_header(generator_rel: str, task: str, stamp: dict[str, str]) -> str:
@@ -241,7 +337,9 @@ def write_generated_page(
     current = page_path.read_text(encoding="utf-8") if page_path.is_file() else None
 
     if check:
-        if current is not None and _strip_stamp_header(current) == _strip_stamp_header(content):
+        if current is not None and _strip_stamp_header(current) == _strip_stamp_header(
+            content
+        ):
             print(f"[{page_rel}] current")
             return 0
         print(
@@ -255,5 +353,7 @@ def write_generated_page(
     page_path.write_text(content, encoding="utf-8")
     if stamp is not None:
         update_map_stamp(root, page_rel, stamp)
-    print(f"[{page_rel}] {'wrote' if changed else 'unchanged'} ({'changed' if changed else 'no content change'})")
+    print(
+        f"[{page_rel}] {'wrote' if changed else 'unchanged'} ({'changed' if changed else 'no content change'})"
+    )
     return 0

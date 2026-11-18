@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Generator: ``docs/reference/station-cheat-sheet.md`` from each PyForge
 station's own ``pyproject.toml`` ``[project.scripts]`` entry, its live
 ``--help`` text, and whether ``pixi.toml``'s ``feature.pyforge-guild``
@@ -41,7 +40,7 @@ import tomllib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import _docs_gen_common as common  # noqa: E402
+import _docs_gen_common as common
 
 PAGE_REL = "reference/station-cheat-sheet.md"
 GENERATOR_REL = "scripts/docs_station_cli.py"
@@ -105,7 +104,9 @@ def _console_scripts(pyproject: Path) -> dict[str, str]:
 def _guild_hosted_packages(root: Path) -> set[str]:
     data = tomllib.loads((root / "pixi.toml").read_text(encoding="utf-8"))
     deps = data.get("feature", {}).get("pyforge-guild", {}).get("dependencies", {})
-    return {name for name, spec in deps.items() if isinstance(spec, dict) and "path" in spec}
+    return {
+        name for name, spec in deps.items() if isinstance(spec, dict) and "path" in spec
+    }
 
 
 # Variables that make rich (and typer, which builds its console on rich) treat
@@ -143,7 +144,11 @@ def _help_env() -> dict[str, str]:
     ``COLUMNS=100`` -- the child's stdout is a pipe, so with nothing forcing a
     terminal, argparse, click and rich all read COLUMNS and wrap identically
     wherever the generator runs."""
-    env = {key: value for key, value in os.environ.items() if key not in _TERMINAL_FORCING_VARS}
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if key not in _TERMINAL_FORCING_VARS
+    }
     env["NO_COLOR"] = "1"
     env["COLUMNS"] = "100"
     return env
@@ -201,7 +206,9 @@ def render(root: Path, stamp: dict[str, str], *, help_capture=capture_help) -> s
         station = package_dir.name.removeprefix("pyforge-")
         display = station.capitalize()
         scripts = _console_scripts(package_dir / "pyproject.toml")
-        host_env = "pyforge-guild" if package_dir.name in guild_hosted else package_dir.name
+        host_env = (
+            "pyforge-guild" if package_dir.name in guild_hosted else package_dir.name
+        )
 
         lines.append(f"## {display}")
         lines.append("")
@@ -233,17 +240,22 @@ def render(root: Path, stamp: dict[str, str], *, help_capture=capture_help) -> s
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--check", action="store_true", help="report staleness; never write")
+    parser.add_argument(
+        "--check", action="store_true", help="report staleness; never write"
+    )
     common.configure_root_argument(parser)
     args = parser.parse_args()
 
     root = common.resolve_root(args)
-    stamp = common.head_stamp(root)
     # `capture_help` referenced by name (not via render()'s bound default) so
     # a caller -- or a test -- that monkeypatches the module-level function
     # is honored; render()'s own default is for direct callers of render().
-    content = render(root, stamp, help_capture=capture_help)
-    return common.write_generated_page(root, PAGE_REL, content, check=args.check, stamp=stamp)
+    stamp, content = common.stamped_render(
+        root, PAGE_REL, lambda stamp: render(root, stamp, help_capture=capture_help)
+    )
+    return common.write_generated_page(
+        root, PAGE_REL, content, check=args.check, stamp=stamp
+    )
 
 
 if __name__ == "__main__":

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Generator: ``docs/reference/detectors.md`` from ``scripts/detectors.py``'s
 own registry (Story 30.3, spec-pyforge-doctor CAP-84) -- the SAME
 ``discover()`` scan and ``_DOCTOR_SOURCE_TASKS`` pairing that
@@ -29,8 +28,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import _docs_gen_common as common  # noqa: E402
-import detectors as detectors_registry  # noqa: E402
+import _docs_gen_common as common
+import detectors as detectors_registry
 
 PAGE_REL = "reference/detectors.md"
 GENERATOR_REL = "scripts/docs_detectors.py"
@@ -71,22 +70,31 @@ def render(root: Path, stamp: dict[str, str]) -> str:
         common.render_header(GENERATOR_REL, TASK_NAME, stamp),
         "",
         _INTRO,
-        f"{len(scanned)} scanned scripts, {len(detectors_registry._DOCTOR_SOURCE_TASKS)} "
-        "doctor-owned sources, as of this render.\n",
+        (
+            f"{len(scanned)} scanned scripts, {len(detectors_registry._DOCTOR_SOURCE_TASKS)} "
+            "doctor-owned sources, as of this render.\n"
+        ),
         "## Registry gaps",
         "",
     ]
     if registry_findings:
         lines += [f"- {finding}" for finding in registry_findings]
     else:
-        lines.append("None -- every scanned script declares a valid `DETECTOR` and has a pixi task.")
+        lines.append(
+            "None -- every scanned script declares a valid `DETECTOR` and has a pixi task."
+        )
     lines.append("")
 
-    lines += ["## Scanned scripts (`scripts/*_check.py`, `docs/dashboard/check_*.py`)", ""]
+    lines += [
+        "## Scanned scripts (`scripts/*_check.py`, `docs/dashboard/check_*.py`)",
+        "",
+    ]
     lines += ["| Name | Scope | Pixi task | Script |", "|---|---|---|---|"]
     for row in sorted(scanned, key=lambda r: r["name"]):
         task = f"`{row['task']}`" if row["task"] else "*(none)*"
-        lines.append(f"| `{row['name']}` | `{row['scope']}` | {task} | `{row['path']}` |")
+        lines.append(
+            f"| `{row['name']}` | `{row['scope']}` | {task} | `{row['path']}` |"
+        )
     lines.append("")
 
     lines += ["## Doctor-owned sources (`pyforge.doctor.sources`, no file to scan)", ""]
@@ -101,14 +109,19 @@ def render(root: Path, stamp: dict[str, str]) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--check", action="store_true", help="report staleness; never write")
+    parser.add_argument(
+        "--check", action="store_true", help="report staleness; never write"
+    )
     common.configure_root_argument(parser)
     args = parser.parse_args()
 
     root = common.resolve_root(args)
-    stamp = common.head_stamp(root)
-    content = render(root, stamp)
-    return common.write_generated_page(root, PAGE_REL, content, check=args.check, stamp=stamp)
+    stamp, content = common.stamped_render(
+        root, PAGE_REL, lambda stamp: render(root, stamp)
+    )
+    return common.write_generated_page(
+        root, PAGE_REL, content, check=args.check, stamp=stamp
+    )
 
 
 if __name__ == "__main__":

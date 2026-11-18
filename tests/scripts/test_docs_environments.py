@@ -17,8 +17,8 @@ _SCRIPTS_DIR = REPO_ROOT / "scripts"
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
-import _docs_gen_common as common  # noqa: E402
-import docs_environments as m  # noqa: E402
+import _docs_gen_common as common
+import docs_environments as m
 
 _STAMP = {"derived_at": "2026-01-01T00:00:00", "tree": "deadbeef"}
 
@@ -50,8 +50,12 @@ def test_render_marks_no_default_feature(tmp_path: Path):
 
     content = m.render(tmp_path, _STAMP)
 
-    lean_row = next(line for line in content.splitlines() if line.startswith("| `lean` |"))
-    fat_row = next(line for line in content.splitlines() if line.startswith("| `fat` |"))
+    lean_row = next(
+        line for line in content.splitlines() if line.startswith("| `lean` |")
+    )
+    fat_row = next(
+        line for line in content.splitlines() if line.startswith("| `fat` |")
+    )
     assert lean_row.endswith("| yes |")
     assert fat_row.endswith("|  |")
 
@@ -62,10 +66,12 @@ def test_render_is_deterministic(tmp_path: Path):
     assert m.render(tmp_path, _STAMP) == m.render(tmp_path, dict(_STAMP))
 
 
-def test_main_write_then_check_roundtrip(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_main_write_then_check_roundtrip(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     _write_pixi_toml(tmp_path)
     monkeypatch.setattr(common, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(common, "head_stamp", lambda root: dict(_STAMP))
+    monkeypatch.setattr(common, "head_stamp", lambda root, *scope: dict(_STAMP))
 
     monkeypatch.setattr(sys, "argv", ["docs_environments.py"])
     assert m.main() == 0
@@ -74,5 +80,7 @@ def test_main_write_then_check_roundtrip(tmp_path: Path, monkeypatch: pytest.Mon
     assert m.main() == 0
 
     # A new environment, not yet regenerated -> --check reds it.
-    (tmp_path / "pixi.toml").write_text(_PIXI_TOML + '\nnewenv = ["python"]\n', encoding="utf-8")
+    (tmp_path / "pixi.toml").write_text(
+        _PIXI_TOML + '\nnewenv = ["python"]\n', encoding="utf-8"
+    )
     assert m.main() == 1

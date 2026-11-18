@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Mutator: regenerate docs/MAP.md's generated "## Page registry" section
 from docs/map.yaml (Story 30.2, spec-pyforge-doctor CAP-84).
 
@@ -34,9 +33,11 @@ import jsonschema
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "src" / "shared" / "packages" / "pyforge-doctor" / "src"))
+sys.path.insert(
+    0, str(REPO_ROOT / "src" / "shared" / "packages" / "pyforge-doctor" / "src")
+)
 
-from pyforge.doctor.sources.docs_currency import (  # noqa: E402
+from pyforge.doctor.sources.docs_currency import (
     load_map_yaml,
     render_map_registry,
     splice_registry_section,
@@ -50,7 +51,10 @@ def main() -> int:
     try:
         data = load_map_yaml(REPO_ROOT)
     except (ValueError, yaml.YAMLError, jsonschema.ValidationError) as exc:
-        print(f"[docs-map-render] {_MAP_YAML} is missing or invalid: {exc}", file=sys.stderr)
+        print(
+            f"[docs-map-render] {_MAP_YAML} is missing or invalid: {exc}",
+            file=sys.stderr,
+        )
         return 1
     pages = data["pages"]
 

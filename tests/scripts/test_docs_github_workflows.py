@@ -237,7 +237,7 @@ def test_main_write_then_check_roundtrip(
 ):
     _write_workflows(tmp_path)
     monkeypatch.setattr(common, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(common, "head_stamp", lambda root: dict(_STAMP))
+    monkeypatch.setattr(common, "head_stamp", lambda root, *scope: dict(_STAMP))
 
     monkeypatch.setattr(sys, "argv", ["docs_github_workflows.py"])
     assert m.main() == 0

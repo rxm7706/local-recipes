@@ -448,7 +448,7 @@ paths; `<p>` is `_bmad-output/projects/<p>/planning-artifacts`).
 | `fold-complete` | `archive/docs/dreams/`; the station Dreams `docs/dreams/pyforge-*.md`; `docs/governance/fold-complete-baseline.json` |
 | `docs-map-hygiene` | `docs/MAP.md`; `docs/tutorials/`, `docs/how-to/`, `docs/reference/`, `docs/explanation/`; `docs/map.yaml` against `data/docs-map-schema.json` |
 | `live-proof-surface` | this Spec folder's `live-proof-surfaces.md` (CAP-77's catalog); the paths the change touched |
-| `docs-currency` | `docs/map.yaml`, `docs/MAP.md`; each mapped `kind: authored` page's frontmatter (`sources:`, `verified:`, or `checked_by:` naming a pixi task) and body, and the `git log` of each path its `sources:` names; `pixi.toml` (its task names, and the identifiers a backticked token may resolve to); the `scripts/docs_*.py` generators (Doctor's checkout); `.claude/skills/` |
+| `docs-currency` | `docs/map.yaml`, `docs/MAP.md`; each mapped `kind: authored` page's frontmatter (`sources:`, `verified:`, or `checked_by:` naming a pixi task) and body, and the `git log` of each path its `sources:` names (after `git rev-parse --is-shallow-repository`: a shallow clone is could-not-measure); `pixi.toml` (its task names, and the identifiers a backticked token may resolve to); the `scripts/docs_*.py` generators (Doctor's checkout); `.claude/skills/` |
 | `frontmatter-duplicate-keys` | every tracked story spec `_bmad-output/projects/*/planning-artifacts/specs/spec-*.md` (`git ls-files`) |
 | `writer-lock` | `src/platform/config/flags.json` and `flag-overlays.json` at the merge base (`git show`); `docs/governance/guild-roster.json` (`roots.this`, the `chain-write-off-the-writer` session denial); the changed paths |
 

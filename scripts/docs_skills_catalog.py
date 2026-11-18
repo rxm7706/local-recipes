@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Generator: ``docs/reference/skills-catalog.md`` from every
 ``.claude/skills/*/`` directory's own frontmatter (Story 30.3,
 spec-pyforge-doctor CAP-84).
@@ -30,7 +29,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import _docs_gen_common as common  # noqa: E402
+import _docs_gen_common as common
 
 PAGE_REL = "reference/skills-catalog.md"
 GENERATOR_REL = "scripts/docs_skills_catalog.py"
@@ -115,7 +114,9 @@ def render(root: Path, stamp: dict[str, str]) -> str:
     by_category: dict[str, int] = {}
     for skill in skills:
         by_category[skill["category"]] = by_category.get(skill["category"], 0) + 1
-    counts = ", ".join(f"{count} {category}" for category, count in sorted(by_category.items()))
+    counts = ", ".join(
+        f"{count} {category}" for category, count in sorted(by_category.items())
+    )
 
     lines = [
         common.render_header(GENERATOR_REL, TASK_NAME, stamp),
@@ -135,14 +136,19 @@ def render(root: Path, stamp: dict[str, str]) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--check", action="store_true", help="report staleness; never write")
+    parser.add_argument(
+        "--check", action="store_true", help="report staleness; never write"
+    )
     common.configure_root_argument(parser)
     args = parser.parse_args()
 
     root = common.resolve_root(args)
-    stamp = common.head_stamp(root)
-    content = render(root, stamp)
-    return common.write_generated_page(root, PAGE_REL, content, check=args.check, stamp=stamp)
+    stamp, content = common.stamped_render(
+        root, PAGE_REL, lambda stamp: render(root, stamp)
+    )
+    return common.write_generated_page(
+        root, PAGE_REL, content, check=args.check, stamp=stamp
+    )
 
 
 if __name__ == "__main__":

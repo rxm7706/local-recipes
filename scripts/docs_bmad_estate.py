@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Generator door: ``docs/reference/bmad-estate-llms-full.md`` (doctor Story 30.4,
 spec-pyforge-doctor CAP-84; the catalog itself is scribe Story 24.1/24.2, spec-pyforge-scribe CAP-32).
 
@@ -29,7 +28,7 @@ from pathlib import Path
 # PYTHONSAFEPATH / -P / -I; the other docs_*.py generators guard the same way.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import bmad_estate_check  # noqa: E402
+import bmad_estate_check
 
 ROOT = Path(__file__).resolve().parent.parent
 PREFIX = "[docs-bmad-estate]"
@@ -37,13 +36,29 @@ PREFIX = "[docs-bmad-estate]"
 
 def write_command(root: Path) -> list[str]:
     """The scribe CLI call that regenerates the page, run by this interpreter."""
-    return [sys.executable, "-m", "pyforge.scribe.cli", "catalog", "bmad-estate", "--write", "--root", str(root)]
+    return [
+        sys.executable,
+        "-m",
+        "pyforge.scribe.cli",
+        "catalog",
+        "bmad-estate",
+        "--write",
+        "--root",
+        str(root),
+    ]
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--check", action="store_true", help="Report staleness without writing.")
-    parser.add_argument("--root", type=Path, default=ROOT, help="Repository root (default: this checkout).")
+    parser.add_argument(
+        "--check", action="store_true", help="Report staleness without writing."
+    )
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=ROOT,
+        help="Repository root (default: this checkout).",
+    )
     args = parser.parse_args(argv)
     if args.check:
         code, lines = bmad_estate_check.run_check(args.root)
@@ -51,10 +66,14 @@ def main(argv: list[str] | None = None) -> int:
             print(line)
         return code
     if importlib.util.find_spec("pyforge.scribe") is None:
-        print(f"{PREFIX} could-not-run: `pyforge.scribe` is not importable here ({sys.executable})")
+        print(
+            f"{PREFIX} could-not-run: `pyforge.scribe` is not importable here ({sys.executable})"
+        )
         return 2
     try:
-        proc = subprocess.run(write_command(args.root), capture_output=True, text=True, check=False)
+        proc = subprocess.run(
+            write_command(args.root), capture_output=True, text=True, check=False
+        )
     except OSError as exc:
         print(f"{PREFIX} could-not-run: {exc}")
         return 2

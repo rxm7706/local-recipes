@@ -21,8 +21,8 @@ _SCRIPTS_DIR = REPO_ROOT / "scripts"
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
-import _docs_gen_common as common  # noqa: E402
-import docs_pixi_tasks as m  # noqa: E402
+import _docs_gen_common as common
+import docs_pixi_tasks as m
 
 _STAMP = {"derived_at": "2026-01-01T00:00:00", "tree": "deadbeef"}
 
@@ -48,7 +48,9 @@ def _write_pixi_toml(root: Path) -> None:
     (root / "pixi.toml").write_text(_PIXI_TOML, encoding="utf-8")
 
 
-def test_render_groups_tasks_by_feature_and_lists_composing_environments(tmp_path: Path):
+def test_render_groups_tasks_by_feature_and_lists_composing_environments(
+    tmp_path: Path,
+):
     _write_pixi_toml(tmp_path)
 
     content = m.render(tmp_path, _STAMP)
@@ -122,7 +124,7 @@ def test_main_writes_then_check_agrees_then_a_pixi_toml_edit_reds_check(
 ):
     _write_pixi_toml(tmp_path)
     monkeypatch.setattr(common, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(common, "head_stamp", lambda root: dict(_STAMP))
+    monkeypatch.setattr(common, "head_stamp", lambda root, *scope: dict(_STAMP))
     monkeypatch.setattr(sys, "argv", ["docs_pixi_tasks.py"])
 
     assert m.main() == 0
@@ -134,7 +136,8 @@ def test_main_writes_then_check_agrees_then_a_pixi_toml_edit_reds_check(
 
     # A task added to pixi.toml, not yet regenerated -> --check reds it.
     (tmp_path / "pixi.toml").write_text(
-        _PIXI_TOML + '\n[feature.alpha-feature.tasks.new-task]\ndescription = "new"\ncmd = "echo new"\n',
+        _PIXI_TOML
+        + '\n[feature.alpha-feature.tasks.new-task]\ndescription = "new"\ncmd = "echo new"\n',
         encoding="utf-8",
     )
     assert m.main() == 1

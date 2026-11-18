@@ -106,6 +106,10 @@ def test_pyforge_warden_absent_returns_one_fail_finding_no_exception(monkeypatch
     # DW-FU-1-2: warden is not on PyPI; the hint names the pixi envs that carry it.
     assert "pip install" not in finding.message
     assert "pixi run -e pyforge-doctor" in finding.message
+    # Story 60.1: the hint names only environments that carry warden; the
+    # guild env does not (`pixi.toml`: no `pyforge-warden` feature in it).
+    assert "pyforge-guild" not in finding.message
+    assert "-e pyforge-foundry-full" in finding.message
 
 
 # --- warden installed but unimportable --------------------------------------
@@ -164,6 +168,10 @@ def test_genuine_absence_shape_names_parent_and_gets_install_hint(monkeypatch, t
     # DW-FU-1-2: warden is not on PyPI; the hint names the pixi envs that carry it.
     assert "pip install" not in finding.message
     assert "pixi run -e pyforge-doctor" in finding.message
+    # Story 60.1: the hint names only environments that carry warden; the
+    # guild env does not (`pixi.toml`: no `pyforge-warden` feature in it).
+    assert "pyforge-guild" not in finding.message
+    assert "-e pyforge-foundry-full" in finding.message
 
 
 def test_transitive_module_not_found_reports_broken_not_absent(monkeypatch, tmp_path: Path):

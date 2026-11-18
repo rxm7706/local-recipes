@@ -18,22 +18,37 @@ _SCRIPTS_DIR = REPO_ROOT / "scripts"
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
-import _docs_gen_common as common  # noqa: E402
-import detectors as detectors_registry  # noqa: E402
-import docs_detectors as m  # noqa: E402
+import _docs_gen_common as common
+import detectors as detectors_registry
+import docs_detectors as m
 
 _STAMP = {"derived_at": "2026-01-01T00:00:00", "tree": "deadbeef"}
 
 
-def _patch_registry(monkeypatch: pytest.MonkeyPatch, *, scanned=None, findings=None, doctor_tasks=None) -> None:
-    monkeypatch.setattr(detectors_registry, "discover", lambda: (scanned or [], findings or []))
-    monkeypatch.setattr(detectors_registry, "_DOCTOR_SOURCE_TASKS", tuple(doctor_tasks or ()))
+def _patch_registry(
+    monkeypatch: pytest.MonkeyPatch, *, scanned=None, findings=None, doctor_tasks=None
+) -> None:
+    monkeypatch.setattr(
+        detectors_registry, "discover", lambda: (scanned or [], findings or [])
+    )
+    monkeypatch.setattr(
+        detectors_registry, "_DOCTOR_SOURCE_TASKS", tuple(doctor_tasks or ())
+    )
 
 
-def test_render_lists_scanned_scripts_and_doctor_sources(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_render_lists_scanned_scripts_and_doctor_sources(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     _patch_registry(
         monkeypatch,
-        scanned=[{"path": "scripts/foo_check.py", "name": "foo_check", "scope": "repo", "task": "foo-check"}],
+        scanned=[
+            {
+                "path": "scripts/foo_check.py",
+                "name": "foo_check",
+                "scope": "repo",
+                "task": "foo-check",
+            }
+        ],
         doctor_tasks=[("docs-currency", "docs-currency-check")],
     )
 
@@ -47,8 +62,13 @@ def test_render_lists_scanned_scripts_and_doctor_sources(tmp_path: Path, monkeyp
     assert "None -- every scanned script" in content
 
 
-def test_render_surfaces_registry_findings_when_present(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    _patch_registry(monkeypatch, findings=["scripts/bad_check.py: looks like a detector but declares nothing"])
+def test_render_surfaces_registry_findings_when_present(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    _patch_registry(
+        monkeypatch,
+        findings=["scripts/bad_check.py: looks like a detector but declares nothing"],
+    )
 
     content = m.render(tmp_path, _STAMP)
 
@@ -56,10 +76,19 @@ def test_render_surfaces_registry_findings_when_present(tmp_path: Path, monkeypa
     assert "None -- every scanned script" not in content
 
 
-def test_render_marks_a_task_less_scanned_detector(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_render_marks_a_task_less_scanned_detector(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     _patch_registry(
         monkeypatch,
-        scanned=[{"path": "scripts/foo_check.py", "name": "foo_check", "scope": "repo", "task": None}],
+        scanned=[
+            {
+                "path": "scripts/foo_check.py",
+                "name": "foo_check",
+                "scope": "repo",
+                "task": None,
+            }
+        ],
     )
 
     content = m.render(tmp_path, _STAMP)
@@ -80,7 +109,9 @@ def test_scope_lookup_degrades_to_unknown_when_doctor_is_unimportable(
         return real_import(name, *args, **kwargs)
 
     monkeypatch.setattr(builtins, "__import__", _blocked_import)
-    _patch_registry(monkeypatch, doctor_tasks=[("docs-currency", "docs-currency-check")])
+    _patch_registry(
+        monkeypatch, doctor_tasks=[("docs-currency", "docs-currency-check")]
+    )
 
     content = m.render(tmp_path, _STAMP)
 
@@ -90,20 +121,36 @@ def test_scope_lookup_degrades_to_unknown_when_doctor_is_unimportable(
 def test_render_is_deterministic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     _patch_registry(
         monkeypatch,
-        scanned=[{"path": "scripts/foo_check.py", "name": "foo_check", "scope": "repo", "task": "foo-check"}],
+        scanned=[
+            {
+                "path": "scripts/foo_check.py",
+                "name": "foo_check",
+                "scope": "repo",
+                "task": "foo-check",
+            }
+        ],
         doctor_tasks=[("docs-currency", "docs-currency-check")],
     )
 
     assert m.render(tmp_path, _STAMP) == m.render(tmp_path, dict(_STAMP))
 
 
-def test_main_write_then_check_roundtrip(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_main_write_then_check_roundtrip(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     _patch_registry(
         monkeypatch,
-        scanned=[{"path": "scripts/foo_check.py", "name": "foo_check", "scope": "repo", "task": "foo-check"}],
+        scanned=[
+            {
+                "path": "scripts/foo_check.py",
+                "name": "foo_check",
+                "scope": "repo",
+                "task": "foo-check",
+            }
+        ],
     )
     monkeypatch.setattr(common, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(common, "head_stamp", lambda root: dict(_STAMP))
+    monkeypatch.setattr(common, "head_stamp", lambda root, *scope: dict(_STAMP))
 
     monkeypatch.setattr(sys, "argv", ["docs_detectors.py"])
     assert m.main() == 0
@@ -115,8 +162,18 @@ def test_main_write_then_check_roundtrip(tmp_path: Path, monkeypatch: pytest.Mon
     _patch_registry(
         monkeypatch,
         scanned=[
-            {"path": "scripts/foo_check.py", "name": "foo_check", "scope": "repo", "task": "foo-check"},
-            {"path": "scripts/bar_check.py", "name": "bar_check", "scope": "repo", "task": "bar-check"},
+            {
+                "path": "scripts/foo_check.py",
+                "name": "foo_check",
+                "scope": "repo",
+                "task": "foo-check",
+            },
+            {
+                "path": "scripts/bar_check.py",
+                "name": "bar_check",
+                "scope": "repo",
+                "task": "bar-check",
+            },
         ],
     )
     assert m.main() == 1

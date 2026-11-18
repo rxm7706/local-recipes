@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Generator: ``docs/how-to/pixi-tasks.md`` from ``pixi.toml``'s own task
 tables and ``[environments]`` table (Story 30.3, spec-pyforge-doctor
 CAP-84).
@@ -32,7 +31,7 @@ import tomllib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import _docs_gen_common as common  # noqa: E402
+import _docs_gen_common as common
 
 PAGE_REL = "how-to/pixi-tasks.md"
 GENERATOR_REL = "scripts/docs_pixi_tasks.py"
@@ -94,14 +93,16 @@ def _feature_tasks(data: dict) -> dict[str, dict[str, dict]]:
     top_level = data.get("tasks") or {}
     if top_level:
         out["(top-level)"] = {
-            name: (spec if isinstance(spec, dict) else {"cmd": spec}) for name, spec in top_level.items()
+            name: (spec if isinstance(spec, dict) else {"cmd": spec})
+            for name, spec in top_level.items()
         }
     for feature_name, feature_body in data.get("feature", {}).items():
         tasks = feature_body.get("tasks") or {}
         if not tasks:
             continue
         out[feature_name] = {
-            name: (spec if isinstance(spec, dict) else {"cmd": spec}) for name, spec in tasks.items()
+            name: (spec if isinstance(spec, dict) else {"cmd": spec})
+            for name, spec in tasks.items()
         }
     return out
 
@@ -135,7 +136,11 @@ def render(root: Path, stamp: dict[str, str]) -> str:
     for feature_name in sorted(feature_tasks):
         tasks = feature_tasks[feature_name]
         envs = feature_envs.get(feature_name, [])
-        env_note = ", ".join(f"`{e}`" for e in envs) if envs else "*(not composed by any environment)*"
+        env_note = (
+            ", ".join(f"`{e}`" for e in envs)
+            if envs
+            else "*(not composed by any environment)*"
+        )
         lines.append(f"## Feature: `{feature_name}`")
         lines.append("")
         lines.append(f"Environments: {env_note}")
@@ -144,7 +149,11 @@ def render(root: Path, stamp: dict[str, str]) -> str:
         lines.append("|---|---|")
         for task_name in sorted(tasks):
             description = tasks[task_name].get("description")
-            cell = description.replace("|", "\\|").replace("\n", " ") if description else "*(no description)*"
+            cell = (
+                description.replace("|", "\\|").replace("\n", " ")
+                if description
+                else "*(no description)*"
+            )
             missing = _missing_script_refs(root, tasks[task_name].get("cmd"))
             if missing:
                 refs = ", ".join(f"`{ref}`" for ref in missing)
@@ -157,14 +166,19 @@ def render(root: Path, stamp: dict[str, str]) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--check", action="store_true", help="report staleness; never write")
+    parser.add_argument(
+        "--check", action="store_true", help="report staleness; never write"
+    )
     common.configure_root_argument(parser)
     args = parser.parse_args()
 
     root = common.resolve_root(args)
-    stamp = common.head_stamp(root)
-    content = render(root, stamp)
-    return common.write_generated_page(root, PAGE_REL, content, check=args.check, stamp=stamp)
+    stamp, content = common.stamped_render(
+        root, PAGE_REL, lambda stamp: render(root, stamp)
+    )
+    return common.write_generated_page(
+        root, PAGE_REL, content, check=args.check, stamp=stamp
+    )
 
 
 if __name__ == "__main__":

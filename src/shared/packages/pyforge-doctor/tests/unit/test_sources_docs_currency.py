@@ -336,7 +336,107 @@ def test_git_that_cannot_be_read_degrades_to_one_warn(tmp_path: Path):
 
     finding = _only(docs_currency.gather(tmp_path))
     assert finding.status == DoctorStatus.WARN
+    assert finding.check == "docs-currency-authored-stale"
     assert is_gather_failure(finding)
+
+
+def test_git_that_cannot_be_read_does_not_hide_an_unstamped_page(tmp_path: Path):
+    """An unstamped page needs no git to be seen (Story 60.2): it still FAILs beside the one could-not-measure
+    WARN, and is reported before it."""
+    pages = [
+        _POINTER_PAGE,
+        {"path": "how-to/a-stamped.md", "quadrant": "how-to", "owner": "fleet", "kind": "authored"},
+        {"path": "how-to/b-unstamped.md", "quadrant": "how-to", "owner": "fleet", "kind": "authored"},
+        {"path": "how-to/c-stamped.md", "quadrant": "how-to", "owner": "fleet", "kind": "authored"},
+    ]
+    _write_map_yaml(tmp_path, pages)
+    _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
+    _write_authored_page(tmp_path, "how-to/a-stamped.md", frontmatter=_STAMP)
+    _write_authored_page(tmp_path, "how-to/b-unstamped.md")
+    _write_authored_page(tmp_path, "how-to/c-stamped.md", frontmatter=_STAMP)
+    (tmp_path / ".git").write_text("gitdir: /nonexistent/not-a-repository\n", encoding="utf-8")
+
+    findings = docs_currency.gather(tmp_path)
+    assert [(f.check, f.status) for f in findings] == [
+        ("docs-currency-authored-unstamped", DoctorStatus.FAIL),
+        ("docs-currency-authored-stale", DoctorStatus.WARN),
+    ]
+    assert findings[0].evidence["page"] == "docs/how-to/b-unstamped.md"
+    assert is_gather_failure(findings[1])
+
+
+def test_git_that_cannot_be_read_still_reports_a_source_that_does_not_exist(tmp_path: Path):
+    """A missing source path is read from the tree, not from git: it FAILs whether or not git answers."""
+    pages = [
+        _POINTER_PAGE,
+        {"path": "how-to/example.md", "quadrant": "how-to", "owner": "fleet", "kind": "authored"},
+    ]
+    _write_map_yaml(tmp_path, pages)
+    _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
+    _write_authored_page(
+        tmp_path, "how-to/example.md", frontmatter="sources:\n  - docs/map.yaml\n  - gone.txt\nverified: 2099-01-01\n"
+    )
+    (tmp_path / ".git").write_text("gitdir: /nonexistent/not-a-repository\n", encoding="utf-8")
+
+    findings = docs_currency.gather(tmp_path)
+    assert [(f.check, f.status) for f in findings] == [
+        ("docs-currency-authored-stale", DoctorStatus.FAIL),
+        ("docs-currency-authored-stale", DoctorStatus.WARN),
+    ]
+    assert findings[0].evidence["stale_sources"] == [
+        {"source": "gone.txt", "reason": "source does not exist", "verified": "2099-01-01"}
+    ]
+
+
+def _shallow_clone(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, extra_pages: tuple[str, ...] = ()) -> Path:
+    """A depth-1 clone of a two-commit repository whose stamped page cites a source last touched in the FIRST
+    commit, before the page's ``verified:`` date. Full history reads it current; the shallow clone cannot."""
+    origin = tmp_path / "origin"
+    _init_repo(origin)
+    pages = [
+        _POINTER_PAGE,
+        {"path": "how-to/example.md", "quadrant": "how-to", "owner": "fleet", "kind": "authored"},
+        *({"path": rel, "quadrant": "how-to", "owner": "fleet", "kind": "authored"} for rel in extra_pages),
+    ]
+    _write_map_yaml(origin, pages)
+    _write_map_md(origin, docs_currency.render_map_registry(pages))
+    (origin / "tracked.txt").write_text("v1\n", encoding="utf-8")
+    _write_authored_page(origin, "how-to/example.md", frontmatter="sources:\n  - tracked.txt\nverified: 2021-06-10\n")
+    for rel in extra_pages:
+        _write_authored_page(origin, rel)
+    _commit_on(origin, "seed", "2021-06-01", monkeypatch)
+    (origin / "unrelated.txt").write_text("later\n", encoding="utf-8")
+    _commit_on(origin, "an unrelated later commit", "2021-07-01", monkeypatch)
+    if not extra_pages:
+        assert _only(docs_currency.gather(origin)).status == DoctorStatus.OK  # full history: current
+
+    clone = tmp_path / "clone"
+    _git(tmp_path, "clone", "-q", "--depth", "1", origin.as_uri(), str(clone))
+    assert _git(clone, "rev-parse", "--is-shallow-repository").strip() == "true"
+    return clone
+
+
+def test_a_shallow_repository_is_could_not_measure_not_a_fail_per_page(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """A shallow clone has no last-touch history to read (git attributes every path to the graft boundary, or
+    to nothing), so the stale-source check reads one WARN, never a FAIL per stamped page (Story 60.2)."""
+    clone = _shallow_clone(tmp_path, monkeypatch)
+
+    finding = _only(docs_currency.gather(clone))
+    assert finding.check == "docs-currency-authored-stale"
+    assert finding.status == DoctorStatus.WARN
+    assert "shallow" in finding.message
+    assert is_gather_failure(finding)
+
+
+def test_a_shallow_repository_does_not_hide_an_unstamped_page(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    clone = _shallow_clone(tmp_path, monkeypatch, extra_pages=("how-to/unstamped.md",))
+
+    findings = docs_currency.gather(clone)
+    assert [(f.check, f.status) for f in findings] == [
+        ("docs-currency-authored-unstamped", DoctorStatus.FAIL),
+        ("docs-currency-authored-stale", DoctorStatus.WARN),
+    ]
+    assert findings[0].evidence["page"] == "docs/how-to/unstamped.md"
 
 
 # --- authored-unstamped: the registry is enforced ----------------------------
@@ -647,7 +747,8 @@ def test_generated_page_stale_emits_fail(tmp_path: Path, monkeypatch: pytest.Mon
     assert stale[0].evidence["generator"] == "scripts/docs_fixture_tasks.py"
 
 
-def test_generated_page_with_no_generator_declared_emits_warn(tmp_path: Path):
+def test_generated_page_with_no_generator_declared_emits_fail(tmp_path: Path):
+    """A registry defect, not could-not-measure (Story 60.2): the row can never be checked until it is fixed."""
     _init_repo(tmp_path)
     pages = [
         _POINTER_PAGE,
@@ -666,11 +767,12 @@ def test_generated_page_with_no_generator_declared_emits_warn(tmp_path: Path):
     findings = docs_currency.gather(tmp_path)
     stale = [f for f in findings if f.check == "docs-currency-generated-stale"]
     assert len(stale) == 1
-    assert stale[0].status == DoctorStatus.WARN
+    assert stale[0].status == DoctorStatus.FAIL
     assert "declares no" in stale[0].message
 
 
-def test_generated_page_with_disallowed_generator_path_emits_warn(tmp_path: Path):
+def test_generated_page_with_disallowed_generator_path_emits_fail(tmp_path: Path):
+    """A generator outside ``scripts/docs_*.py`` is a registry defect too, and is never run."""
     _init_repo(tmp_path)
     pages = [
         _POINTER_PAGE,
@@ -690,7 +792,7 @@ def test_generated_page_with_disallowed_generator_path_emits_warn(tmp_path: Path
     findings = docs_currency.gather(tmp_path)
     stale = [f for f in findings if f.check == "docs-currency-generated-stale"]
     assert len(stale) == 1
-    assert stale[0].status == DoctorStatus.WARN
+    assert stale[0].status == DoctorStatus.FAIL
     assert "not an allowed" in stale[0].message
 
 
@@ -719,7 +821,7 @@ def test_generated_page_with_parent_segment_in_generator_is_not_executed(tmp_pat
     findings = docs_currency.gather(tmp_path)
     stale = [f for f in findings if f.check == "docs-currency-generated-stale"]
     assert len(stale) == 1
-    assert stale[0].status == DoctorStatus.WARN
+    assert stale[0].status == DoctorStatus.FAIL
     assert "not an allowed" in stale[0].message
     assert not probe.exists()
 

@@ -454,6 +454,15 @@ def _normalize_version_downloads_rows(rows: list[Any], *, package: str) -> tuple
 
 # --- MCP transport -----------------------------------------------------
 
+#: The field of the SDK's ``mcp.types.CallToolResult`` that says the tool
+#: itself reported an error. The SDK renamed it from ``isError``; reading the
+#: old name raised ``AttributeError`` on every call, so the MCP leg always
+#: failed and fell back to the CLI bridge (Story 60.1). Read with a bare
+#: ``getattr`` -- no default -- so a future rename raises rather than reading
+#: as "no error"; ``tests/unit/test_sources_atlas.py`` pins this name against
+#: the SDK's own result type.
+_MCP_RESULT_ERROR_FIELD = "is_error"
+
 
 async def _call_mcp_async(
     server_script_path: Path,
@@ -487,7 +496,7 @@ async def _call_mcp_async(
                 await session.initialize()
                 result = await session.call_tool(tool_name, arguments)
         text = "".join(block.text for block in result.content if getattr(block, "type", "") == "text")
-        if result.isError:
+        if getattr(result, _MCP_RESULT_ERROR_FIELD):
             raise RuntimeError(f"{tool_name} MCP tool returned an error: {text}")
         return text
 

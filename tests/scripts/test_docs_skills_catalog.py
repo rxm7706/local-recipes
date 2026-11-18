@@ -19,8 +19,8 @@ _SCRIPTS_DIR = REPO_ROOT / "scripts"
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
-import _docs_gen_common as common  # noqa: E402
-import docs_skills_catalog as m  # noqa: E402
+import _docs_gen_common as common
+import docs_skills_catalog as m
 
 _STAMP = {"derived_at": "2026-01-01T00:00:00", "tree": "deadbeef"}
 
@@ -29,16 +29,20 @@ def _write_plain_skill(root: Path, name: str, description: str) -> None:
     skill_dir = root / ".claude" / "skills" / name
     skill_dir.mkdir(parents=True)
     (skill_dir / "SKILL.md").write_text(
-        f"---\nname: {name}\ndescription: {description}\n---\n\nbody\n", encoding="utf-8"
+        f"---\nname: {name}\ndescription: {description}\n---\n\nbody\n",
+        encoding="utf-8",
     )
 
 
-def _write_skf_exported_skill(root: Path, name: str, version: str, description: str) -> None:
+def _write_skf_exported_skill(
+    root: Path, name: str, version: str, description: str
+) -> None:
     skill_dir = root / ".claude" / "skills" / name
     nested = skill_dir / version / name
     nested.mkdir(parents=True)
     (nested / "SKILL.md").write_text(
-        f"---\nname: {name}\ndescription: {description}\n---\n\nbody\n", encoding="utf-8"
+        f"---\nname: {name}\ndescription: {description}\n---\n\nbody\n",
+        encoding="utf-8",
     )
     (skill_dir / "active").symlink_to(version, target_is_directory=True)
 
@@ -59,7 +63,9 @@ def _write_non_skill_dir(root: Path, name: str) -> None:
 
 def test_discover_skills_reads_all_three_layouts_and_skips_support_dirs(tmp_path: Path):
     _write_plain_skill(tmp_path, "bmad-example", "a bmad skill")
-    _write_skf_exported_skill(tmp_path, "pyforge-example", "0.1.0", "a pyforge station skill")
+    _write_skf_exported_skill(
+        tmp_path, "pyforge-example", "0.1.0", "a pyforge station skill"
+    )
     _write_skill_brief_only(tmp_path, "pyforge-brief-only", "brief-only fallback")
     _write_non_skill_dir(tmp_path, "shared")
 
@@ -104,10 +110,12 @@ def test_render_is_deterministic(tmp_path: Path):
     assert m.render(tmp_path, _STAMP) == m.render(tmp_path, dict(_STAMP))
 
 
-def test_main_write_then_check_roundtrip(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_main_write_then_check_roundtrip(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     _write_plain_skill(tmp_path, "bmad-example", "d")
     monkeypatch.setattr(common, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(common, "head_stamp", lambda root: dict(_STAMP))
+    monkeypatch.setattr(common, "head_stamp", lambda root, *scope: dict(_STAMP))
 
     monkeypatch.setattr(sys, "argv", ["docs_skills_catalog.py"])
     assert m.main() == 0

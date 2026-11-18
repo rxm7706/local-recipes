@@ -300,3 +300,82 @@ def test_non_dict_row_degrades_to_a_fail_finding_not_a_crash():
     findings = gather("staleness", mcp_caller=_mcp_ok(rows=["not-a-dict"]))
     assert len(findings) == 1
     assert findings[0].status is DoctorStatus.FAIL
+
+
+# --- the SDK's own result type (Story 60.1) ------------------------------
+
+
+def _patch_mcp_session(monkeypatch, result) -> None:
+    """Replace the stdio transport and the client session with in-process
+    fakes that hand back ``result`` -- a REAL ``mcp.types.CallToolResult`` --
+    so the REAL ``_call_mcp_async`` reads the SDK's own type."""
+    import mcp
+    import mcp.client.stdio as stdio_module
+
+    class _FakeStdioClient:
+        def __init__(self, params):
+            pass
+
+        async def __aenter__(self):
+            return (object(), object())
+
+        async def __aexit__(self, *exc_info):
+            return False
+
+    class _FakeSession:
+        def __init__(self, read_stream, write_stream):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *exc_info):
+            return False
+
+        async def initialize(self):
+            return None
+
+        async def call_tool(self, tool_name, arguments):
+            return result
+
+    monkeypatch.setattr(stdio_module, "stdio_client", _FakeStdioClient)
+    monkeypatch.setattr(mcp, "ClientSession", _FakeSession)
+
+
+def test_mcp_error_attribute_name_is_the_sdk_result_types_own_field():
+    """The SDK renamed ``CallToolResult.isError`` to ``.is_error``; reading
+    the old name raised ``AttributeError`` on every call, so the MCP leg
+    never worked and every fleet run silently fell back to the CLI bridge.
+    Pins the name ``sources.atlas`` reads against the SDK's own result
+    type: a future rename reds here."""
+    from mcp.types import CallToolResult
+
+    from pyforge.doctor.sources.atlas import _MCP_RESULT_ERROR_FIELD
+
+    assert _MCP_RESULT_ERROR_FIELD in CallToolResult.model_fields
+
+
+def test_mcp_transport_returns_the_text_of_a_real_sdk_result(monkeypatch):
+    from mcp.types import CallToolResult, TextContent
+
+    result = CallToolResult(content=[TextContent(type="text", text="[]")])
+    _patch_mcp_session(monkeypatch, result)
+
+    text = asyncio.run(_call_mcp_async(Path("/nonexistent"), "staleness_report", {}, timeout=5))
+
+    assert text == "[]"
+
+
+def test_mcp_transport_raises_the_tool_error_of_a_real_sdk_result(monkeypatch):
+    from mcp.types import CallToolResult, TextContent
+
+    from pyforge.doctor.sources.atlas import _MCP_RESULT_ERROR_FIELD
+
+    result = CallToolResult(
+        content=[TextContent(type="text", text="boom")],
+        **{_MCP_RESULT_ERROR_FIELD: True},
+    )
+    _patch_mcp_session(monkeypatch, result)
+
+    with pytest.raises(RuntimeError, match="staleness_report MCP tool returned an error: boom"):
+        asyncio.run(_call_mcp_async(Path("/nonexistent"), "staleness_report", {}, timeout=5))
