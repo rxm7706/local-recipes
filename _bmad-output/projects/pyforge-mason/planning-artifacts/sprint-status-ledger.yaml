@@ -138,7 +138,7 @@ development_status:
   4-3-mason-environment-lock: done
   4-4-mason-environment-check: done
   4-5-a-repeated-platform-keeps-every-value: done
-  40-1-the-cfe-scripts-merge-the-pixi-config-layers-and-the-mcp-reference-names-the-server-it-is: backlog
+  40-1-the-cfe-scripts-merge-the-pixi-config-layers-and-the-mcp-reference-names-the-server-it-is: done
   5-1-cfe-independence-test: done
   5-2-governance-test: done
   5-3-delegation-fidelity-test: done
@@ -221,7 +221,7 @@ development_status:
   epic-39-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional
-  epic-40: backlog
+  epic-40: done
   epic-40-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional

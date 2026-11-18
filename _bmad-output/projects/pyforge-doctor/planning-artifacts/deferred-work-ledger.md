@@ -3383,7 +3383,8 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: low
   promoted: 2026-11-17 — doctor Story 59.8 (the full documentation refresh, branch `docs-full-refresh-2026-11-17`)
   reason: a code, tooling or compiled-skill change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
-  status: open
+  resolution: 2026-11-18, PR #2373 — `recipes/CTranslate2` and its warden corpus twin are removed (steward Story 126.1, commit 73fe665ba3's parent series), so a macOS checkout is clean; a generated stamp's dirty flag now covers the generator's own sources and the page body, and all generators pass ruff (doctor Story 60.2, commit f25cf73ed2). No stamp in `docs/map.yaml` carries `-dirty`.
+  status: resolved
 
 ### DW-doctor-59-3-1: Code and tooling text that the verified pages contradict
 
@@ -3397,7 +3398,8 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: medium
   promoted: 2026-11-17 — doctor Story 59.8 (the full documentation refresh, branch `docs-full-refresh-2026-11-17`)
   reason: a code, tooling or compiled-skill change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
-  status: open
+  resolution: 2026-11-18, PR #2373 — (1) and (2) conda-forge-expert v8.105.2 merges the pixi config layers and its reference names `MCPServer` (mason Story 40.1, commit ded8971009); (3) the `mirror-channels.py` docstring matches its parser (doctor Story 60.3, commit 2a9b3f160c); (4) steward's `restore` text names the runbook where it is, (6) the sync templates install on Python 3.14 from a checkout, (8) the adoption register names the manticore page where it is (steward Story 126.3, commit b798f289b6); (5) `bmad-preflight` calls `pyforge steward session check`, (7) the pixi floor comment points at the registry and `pixi-version-check` says four Containerfiles; the `governance-currency` description was correct as written (steward Story 126.2, commit 3abad607ba).
+  status: resolved
 
 ### DW-doctor-59-3-2: Documentation follow-ups the correctness pass left alone
 
@@ -3411,7 +3413,8 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: low
   promoted: 2026-11-17 — doctor Story 59.8 (the full documentation refresh, branch `docs-full-refresh-2026-11-17`)
   reason: a code, tooling or compiled-skill change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
-  status: open
+  resolution: 2026-11-18, PR #2373 (doctor Story 60.3, commits 2a9b3f160c and f9967c0415) — (1) GitHub callouts are admonitions on every quadrant page; (2) `getting-started.md` follows the tutorial skeleton; (3) operator ruling 2026-11-18, 'we should continue to support manticore and antigravity': both stay registered authored pages, the manticore page rewritten as a how-to around the lock's installer and the antigravity page around what the repository wires; (4) the two feedstock pages are registered `kind: pointer`; (5) the cross-links to the twenty new pages are written.
+  status: resolved
 
 ### DW-doctor-59-4-1: Marshal's remedy table names two commands that do not exist, and one Spec path keeps the incident log in its package
 
@@ -3425,7 +3428,8 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: low
   promoted: 2026-11-17 — doctor Story 59.8 (the full documentation refresh, branch `docs-full-refresh-2026-11-17`)
   reason: a code, tooling or compiled-skill change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
-  status: open
+  resolution: 2026-11-18, PR #2373 — every marshal remedy names a command the parser accepts, in the form that applies the plan, and a test walks each through argparse; herald's scheduler docstring names the repository root (steward Story 126.4, commit bfa5fe8db8). The incident log's home is settled as its package: `spec-pyforge-marshal` names that path in a capability and a doctor package-half test reads it, so it is package data, not a shelf page; the documentation currency capability's as-built text records the exception.
+  status: resolved
 
 ### DW-doctor-59-5-1: Four CLI defects met while the new how-tos were written
 
@@ -3439,7 +3443,8 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: medium
   promoted: 2026-11-17 — doctor Story 59.8 (the full documentation refresh, branch `docs-full-refresh-2026-11-17`)
   reason: a code, tooling or compiled-skill change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
-  status: open
+  resolution: 2026-11-18, PR #2373 — (1) the warden hint names only environments that carry warden and (2) `sources/atlas.py` reads `is_error`, pinned against the SDK's result type (doctor Story 60.1, commit f25cf73ed2); (3) `shell-init` completes every duty the parser has and (4) the `pr-preflight` description says the runner is concurrent (steward Stories 126.3 and 126.2, commits b798f289b6 and 3abad607ba). The corridor duties: `quarantine admit` and `shelf` now accept a configured Django project and the how-to gives a setup that works; that no environment ships one is `DW-steward-126-3-1`.
+  status: resolved
 
 ### DW-doctor-59-6-1: Four compiled station skills differ from their CLIs
 
@@ -3453,6 +3458,7 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: low
   promoted: 2026-11-17 — doctor Story 59.8 (the full documentation refresh, branch `docs-full-refresh-2026-11-17`)
   reason: a code, tooling or compiled-skill change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
+  resolution: 2026-11-18, PR #2373 (steward Story 126.5, commit 35b270d358) — every mismatch the audit listed is corrected in the four `SKILL.md` files against live `--help`. PARTIAL: these are hand corrections. `skf-update-skill` cannot run headlessly (it needs the Tier-3 forge data of the machine that compiled the skills and mints a new version), so `metadata.json` and `provenance-map.json` still describe the 2026-11-12 compile. What is left is one operator-attended `skf-update-skill` run per station.
   status: open
 
 ### DW-doctor-59-7-1: docs-currency trusts git history it may not have
@@ -3467,4 +3473,5 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: low
   promoted: 2026-11-17 — doctor Story 59.8 (the full documentation refresh, branch `docs-full-refresh-2026-11-17`)
   reason: a code, tooling or compiled-skill change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
-  status: open
+  resolution: 2026-11-18, PR #2373 (doctor Story 60.2, commit f25cf73ed2) — a shallow repository reads as one could-not-measure WARN; unstamped pages, missing sources and dead references are reported before any git-dated check and still fail when git cannot answer; a generated row with no usable generator fails. Each has a unit test (the shallow one on a real depth-1 clone).
+  status: resolved

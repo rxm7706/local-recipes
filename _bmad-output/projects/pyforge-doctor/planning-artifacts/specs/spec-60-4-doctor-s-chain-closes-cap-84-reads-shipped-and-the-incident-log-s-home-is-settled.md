@@ -2,7 +2,7 @@
 title: '60.4: Doctor''s chain closes: CAP-84 reads shipped and the incident log''s home is settled'
 type: 'fix'
 created: '2026-11-18'
-status: 'ready-for-dev'
+status: 'in-review'
 story: 60-4-doctor-s-chain-closes-cap-84-reads-shipped-and-the-incident-log-s-home-is-settled
 spec: spec-pyforge-doctor
 difficulty: 'easy'

@@ -4043,7 +4043,7 @@ So that doctor's items of `DW-doctor-59-5-1` closes in this change.
 **When** the atlas source reads the attribute the installed SDK has (a test pins it against the SDK's own result type) and the warden message names only environments that carry warden
 **Then** `doctor monitor --fleet` prints no MCP AttributeError, the message names `pyforge-doctor` alone, and both doctor lanes exit 0
 **And** doctor's items of `DW-doctor-59-5-1` reads resolved in its ledger with the commit that closed it
-**Status:** backlog
+**Status:** done
 
 ### Story 60.2: docs-currency measures before it trusts git, and the generators stamp what they read
 
@@ -4059,7 +4059,7 @@ So that `DW-doctor-59-7-1` and the generator half of `DW-doctor-59-1-1` closes i
 **When** the source reports unstamped pages before any git-dependent check, reads a shallow repository as could-not-measure, fails a generated row with no generator, and the stamp's dirty flag is computed over the generator's own sources
 **Then** the unit tests cover a shallow clone, an unreadable git with an unstamped page present, and a generator-less generated row; the six generators pass `ruff check` and `ruff format --check`; no stamp in `docs/map.yaml` ends in `-dirty` on a clean tree
 **And** `DW-doctor-59-7-1` and the generator half of `DW-doctor-59-1-1` reads resolved in its ledger with the commit that closed it
-**Status:** backlog
+**Status:** done
 
 ### Story 60.3: The shelf follows its own style guide, and the manticore and antigravity pages are supported pages
 
@@ -4075,7 +4075,7 @@ So that `DW-doctor-59-3-2` and the documentation items of `DW-doctor-59-3-1` clo
 **When** each is corrected: admonitions, the tutorial skeleton, a manticore how-to written from the install that worked on 2026-11-18 (the lock's `bmad-method`), an antigravity how-to cut to what this repository wires and can check, pointers registered as pointers, cross-links, the purge list as the record of a purge, and the docstring matching the parser
 **Then** `docs-currency-check`, `docs-map-hygiene-check` and `docs-site-validate` exit 0; both the manticore and the antigravity pages stay registered authored pages (operator ruling: both stay supported)
 **And** `DW-doctor-59-3-2` and the documentation items of `DW-doctor-59-3-1` reads resolved in its ledger with the commit that closed it
-**Status:** backlog
+**Status:** done
 
 ### Story 60.4: Doctor's chain closes: CAP-84 reads shipped and the incident log's home is settled
 
@@ -4091,7 +4091,7 @@ So that `DW-doctor-59-4-1`'s incident-log half and Story 59.8 closes in this cha
 **When** the operator runs the one re-derive script the session prepared (or allows the write), the doctor ledger's rows read resolved, and the incident log's package home is recorded as the decision it is
 **Then** CAP-84 reads shipped, Story 59.8 done, and `chain-completeness-check` and `story-status-check` exit 0
 **And** `DW-doctor-59-4-1`'s incident-log half and Story 59.8 reads resolved in its ledger with the commit that closed it
-**Status:** backlog
+**Status:** review
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

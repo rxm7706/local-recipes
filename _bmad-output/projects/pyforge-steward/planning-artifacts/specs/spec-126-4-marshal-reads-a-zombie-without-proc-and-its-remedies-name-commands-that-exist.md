@@ -2,7 +2,7 @@
 title: '126.4: Marshal reads a zombie without /proc, and its remedies name commands that exist'
 type: 'fix'
 created: '2026-11-18'
-status: 'ready-for-dev'
+status: 'done'
 story: 126-4-marshal-reads-a-zombie-without-proc-and-its-remedies-name-commands-that-exist
 spec: spec-pyforge-steward
 difficulty: 'easy'

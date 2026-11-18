@@ -2,7 +2,7 @@
 title: '60.3: The shelf follows its own style guide, and the manticore and antigravity pages are supported pages'
 type: 'fix'
 created: '2026-11-18'
-status: 'ready-for-dev'
+status: 'done'
 story: 60-3-the-shelf-follows-its-own-style-guide-and-the-manticore-and-antigravity-pages-are-supported-pages
 spec: spec-pyforge-doctor
 difficulty: 'easy'

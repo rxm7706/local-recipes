@@ -2,7 +2,7 @@
 title: '60.2: docs-currency measures before it trusts git, and the generators stamp what they read'
 type: 'fix'
 created: '2026-11-18'
-status: 'ready-for-dev'
+status: 'done'
 story: 60-2-docs-currency-measures-before-it-trusts-git-and-the-generators-stamp-what-they-read
 spec: spec-pyforge-doctor
 difficulty: 'easy'

@@ -2,7 +2,7 @@
 title: '126.5: The four compiled station skills match their CLIs'
 type: 'fix'
 created: '2026-11-18'
-status: 'ready-for-dev'
+status: 'in-review'
 story: 126-5-the-four-compiled-station-skills-match-their-clis
 spec: spec-pyforge-steward
 difficulty: 'easy'

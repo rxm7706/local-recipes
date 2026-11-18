@@ -8870,7 +8870,7 @@ So that `DW-doctor-59-1-1`'s case-collision half closes in this change.
 **When** the uppercase directory and its warden corpus twin are removed and the warden Spec is reconciled and stamped
 **Then** `git status` is clean after a fresh checkout on macOS, `spec-surface-check` exits 0 on Linux and macOS, and warden's corpus regression still passes
 **And** `DW-doctor-59-1-1`'s case-collision half reads resolved in its ledger with the commit that closed it
-**Status:** backlog
+**Status:** done
 
 ### Story 126.2: Every environment carries git, and macOS carries bash 4 and GNU find
 
@@ -8886,7 +8886,7 @@ So that `DW-steward-125-1-3` and the bash 4 half of `DW-steward-125-1-2` closes 
 **When** `git` joins every environment on every platform, `bash` and `findutils` join them on osx-arm64, the lock is re-solved without moving an unrelated pin, and the derived surfaces are regenerated
 **Then** inside any `pixi run` on macOS `git`, `bash` and `find` resolve inside the environment, the git-argument, GNU-find and bash-4 probes pass, and only tests that need a file name APFS refuses still skip
 **And** `DW-steward-125-1-3` and the bash 4 half of `DW-steward-125-1-2` reads resolved in its ledger with the commit that closed it
-**Status:** backlog
+**Status:** done
 
 ### Story 126.3: Steward's remaining Linux assumptions and stale operator text are corrected
 
@@ -8902,7 +8902,7 @@ So that `DW-steward-125-1-1`, the rest of `DW-steward-125-1-2`, and steward's it
 **When** each is corrected at its source and the studio joins the preflight how-to's prerequisites
 **Then** `shell-init` completes every duty the parser has (a test derives the list); the named texts match the code; the two stages have portable fallbacks; the corridor how-to names a working environment or says plainly that none exists
 **And** `DW-steward-125-1-1`, the rest of `DW-steward-125-1-2`, and steward's items of `DW-doctor-59-3-1` and `DW-doctor-59-5-1` reads resolved in its ledger with the commit that closed it
-**Status:** backlog
+**Status:** done
 
 ### Story 126.4: Marshal reads a zombie without /proc, and its remedies name commands that exist
 
@@ -8918,7 +8918,7 @@ So that `DW-steward-125-2-1` and marshal's and herald's items of `DW-doctor-59-4
 **When** the zombie check reads the process table where there is no `/proc` (proved on a real zombie), the two remedy strings name what an operator can run, and the docstring says what the callers do
 **Then** marshal's two lanes exit 0 on macOS and Linux; the remedy reference page and its sync test agree; no test is skipped by platform name
 **And** `DW-steward-125-2-1` and marshal's and herald's items of `DW-doctor-59-4-1` reads resolved in its ledger with the commit that closed it
-**Status:** backlog
+**Status:** done
 
 ### Story 126.5: The four compiled station skills match their CLIs
 
@@ -8934,7 +8934,7 @@ So that `DW-doctor-59-6-1` closes in this change.
 **When** each of the four is updated through `skf-update-skill` against the live CLI and the skills catalog is regenerated
 **Then** each mismatch the audit listed is gone, no other skill directory changes, and the scribe instruction-surface parity test passes
 **And** `DW-doctor-59-6-1` reads resolved in its ledger with the commit that closed it
-**Status:** backlog
+**Status:** review
 
 ### Story 126.6: Every row this change opened is closed, and the preflight is green with fewer skips
 
@@ -8950,4 +8950,4 @@ So that every row of `DW-doctor-59-*` and `DW-steward-125-*` closes in this chan
 **When** each row reads resolved with its commit (or names the one operator act left), every governing Spec is reconciled and stamped, and the full preflight is run on the final head
 **Then** `PYFORGE_PREFLIGHT_SCOPE=full pixi run -e pyforge-guild pr-preflight` exits 0 on macOS and PR #2373's CI is green
 **And** every row of `DW-doctor-59-*` and `DW-steward-125-*` reads resolved in its ledger with the commit that closed it
-**Status:** backlog
+**Status:** done

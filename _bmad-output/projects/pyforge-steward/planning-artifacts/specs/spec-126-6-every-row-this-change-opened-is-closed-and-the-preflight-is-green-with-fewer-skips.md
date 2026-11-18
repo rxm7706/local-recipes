@@ -2,7 +2,7 @@
 title: '126.6: Every row this change opened is closed, and the preflight is green with fewer skips'
 type: 'fix'
 created: '2026-11-18'
-status: 'ready-for-dev'
+status: 'done'
 story: 126-6-every-row-this-change-opened-is-closed-and-the-preflight-is-green-with-fewer-skips
 spec: spec-pyforge-steward
 difficulty: 'easy'

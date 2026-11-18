@@ -2,7 +2,7 @@
 title: '126.2: Every environment carries git, and macOS carries bash 4 and GNU find'
 type: 'fix'
 created: '2026-11-18'
-status: 'ready-for-dev'
+status: 'done'
 story: 126-2-every-environment-carries-git-and-macos-carries-bash-4-and-gnu-find
 spec: spec-pyforge-steward
 difficulty: 'easy'

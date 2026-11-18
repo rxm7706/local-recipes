@@ -2,7 +2,7 @@
 title: '126.1: The checkout is clean on a case-insensitive filesystem'
 type: 'fix'
 created: '2026-11-18'
-status: 'ready-for-dev'
+status: 'done'
 story: 126-1-the-checkout-is-clean-on-a-case-insensitive-filesystem
 spec: spec-pyforge-steward
 difficulty: 'easy'

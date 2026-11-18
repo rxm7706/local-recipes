@@ -2,7 +2,7 @@
 title: '60.1: doctor monitor, diagnose and check say only what is true'
 type: 'fix'
 created: '2026-11-18'
-status: 'ready-for-dev'
+status: 'done'
 story: 60-1-doctor-monitor-diagnose-and-check-say-only-what-is-true
 spec: spec-pyforge-doctor
 difficulty: 'easy'

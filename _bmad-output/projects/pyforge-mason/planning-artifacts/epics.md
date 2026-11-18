@@ -4379,4 +4379,4 @@ So that the conda-forge-expert items of `DW-doctor-59-3-1` closes in this change
 **When** the reader merges system, user and project layers the way pixi does (later layer wins per key), its tests cover the three-layer case, the reference says `MCPServer`, and the skill's CHANGELOG carries the retro entry and semver bump
 **Then** a mirror set only in a user-level config reaches `auth_headers_for`'s host gate and the resolver; the CFE meta and unit suites exit 0; the enterprise deployment page and the JFrog template say what the scripts now do
 **And** the conda-forge-expert items of `DW-doctor-59-3-1` reads resolved in its ledger with the commit that closed it
-**Status:** backlog
+**Status:** done

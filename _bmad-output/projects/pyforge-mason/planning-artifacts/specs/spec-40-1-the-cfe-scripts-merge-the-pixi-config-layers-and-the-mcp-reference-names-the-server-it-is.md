@@ -2,7 +2,7 @@
 title: '40.1: The CFE scripts merge the pixi config layers, and the MCP reference names the server it is'
 type: 'fix'
 created: '2026-11-18'
-status: 'ready-for-dev'
+status: 'done'
 story: 40-1-the-cfe-scripts-merge-the-pixi-config-layers-and-the-mcp-reference-names-the-server-it-is
 spec: spec-pyforge-mason
 difficulty: 'easy'

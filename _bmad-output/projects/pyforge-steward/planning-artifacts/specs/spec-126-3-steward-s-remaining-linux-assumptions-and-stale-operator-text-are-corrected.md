@@ -2,7 +2,7 @@
 title: '126.3: Steward''s remaining Linux assumptions and stale operator text are corrected'
 type: 'fix'
 created: '2026-11-18'
-status: 'ready-for-dev'
+status: 'done'
 story: 126-3-steward-s-remaining-linux-assumptions-and-stale-operator-text-are-corrected
 spec: spec-pyforge-steward
 difficulty: 'easy'
