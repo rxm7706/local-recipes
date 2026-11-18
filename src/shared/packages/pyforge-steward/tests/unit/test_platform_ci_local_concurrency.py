@@ -126,6 +126,12 @@ def _prepare_stub_root(root: Path) -> Path:
         log="${PLATFORM_CI_STUB_LOG:-/dev/null}"
         lock="${PLATFORM_CI_LOCAL_LOCK:-}"
         name="$(basename "$0")"
+        # Story 125.1: setsid(1) where the host has it; where it has none, the same call from python.
+        # Either way the pid the caller reads from $! is the session leader the stand-in becomes.
+        new_session() {
+          if command -v setsid >/dev/null 2>&1; then exec setsid "$@"; fi
+          exec python3 -c 'import os, sys; os.setsid(); os.execv(sys.argv[1], sys.argv[1:])' "$@"
+        }
         work=""
         pgdata=""
         action=""
@@ -143,6 +149,8 @@ def _prepare_stub_root(root: Path) -> Path:
             target="$(readlink "$fd" 2>/dev/null || true)"
             [ "$target" = "$lock" ] && held=yes
           done
+          # Story 125.1: a host with no /proc answers the same question through lsof.
+          if [ ! -d /proc/self/fd ] && lsof -a -p $$ -t -- "$lock" >/dev/null 2>&1; then held=yes; fi
         fi
         echo "$name $* pid=$$ lock_fd=${held:-no}" >> "$log"
         case "$name" in
@@ -168,7 +176,7 @@ def _prepare_stub_root(root: Path) -> Path:
         exec -a "$0 $*" sleep 999999
         STIN
                 chmod +x "$pgdata/postgres"
-                setsid "$pgdata/postgres" -D "$pgdata" >> "$log" 2>&1 &
+                new_session "$pgdata/postgres" -D "$pgdata" >> "$log" 2>&1 &
                 echo $! > "$pgdata/postmaster.pid"
                 echo "spawned postgres pid=$! marker=${PLATFORM_CI_STUB_MARKER:-none}" >> "$log"
                 if [ -n "$work" ]; then echo "$!" > "$work/.active"; fi
@@ -198,7 +206,7 @@ def _prepare_stub_root(root: Path) -> Path:
         exec -a "$0 $*" sleep 999999
         STIN
               chmod +x "$rdir/redis-server"
-              setsid "$rdir/redis-server" --port "${rport:-0}" >> "$log" 2>&1 &
+              new_session "$rdir/redis-server" --port "${rport:-0}" >> "$log" 2>&1 &
               [ -n "$pidfile" ] && echo $! > "$pidfile"
               echo "spawned redis-server pid=$! marker=${PLATFORM_CI_STUB_MARKER:-none}" >> "$log"
             fi
@@ -266,10 +274,20 @@ def _prepare_stub_root(root: Path) -> Path:
             target="$(readlink "$fd" 2>/dev/null || true)"
             [ "$target" = "$lock" ] && held=yes
           done
+          # Story 125.1: a host with no /proc answers the same question through lsof.
+          if [ ! -d /proc/self/fd ] && lsof -a -p $$ -t -- "$lock" >/dev/null 2>&1; then held=yes; fi
         fi
         echo "pixi $* pid=$$ lock_fd=${held:-no}" >> "$log"
         if [[ " $* " == *" install "* ]]; then
-          if flock -n "$lock" true 2>/dev/null; then
+          # Story 125.1: flock(1) where the host has it; where it has none, the same flock(2) probe from python.
+          try_lock() {
+            if command -v flock >/dev/null 2>&1; then
+              flock -n "$1" true 2>/dev/null
+              return
+            fi
+            python3 -c 'import fcntl, sys; fcntl.flock(open(sys.argv[1]), fcntl.LOCK_EX | fcntl.LOCK_NB)' "$1" 2>/dev/null
+          }
+          if try_lock "$lock"; then
             echo "pixi flock_n=held" >> "$log"
           else
             echo "pixi flock_n=blocked" >> "$log"

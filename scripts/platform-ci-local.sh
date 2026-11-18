@@ -61,6 +61,31 @@ done
 # services (steward Story 63.7). Only this shell holds the flock; children run
 # with fd 9 closed (Story 89.1). A waiter that exceeds PLATFORM_CI_LOCAL_LOCK_WAIT
 # exits 2 and names the live holder(s).
+#
+# _flock_fd9 takes the lock on fd 9 within $1 seconds: flock(1) where the host has it; where it has
+# none (macOS ships no flock), the same flock(2) lock taken on the same descriptor by a helper that
+# inherits fd 9 and exits. The lock belongs to the open file, so it stays with this shell, is
+# released when this shell dies, and is one lock with flock(1)'s (Story 125.1).
+_flock_fd9() {
+  if command -v flock >/dev/null 2>&1; then
+    flock -w "$1" 9
+    return
+  fi
+  python3 -c '
+import fcntl, sys, time
+deadline = time.monotonic() + float(sys.argv[1])
+while True:
+    try:
+        fcntl.flock(9, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        if time.monotonic() >= deadline:
+            sys.exit(1)
+        time.sleep(0.1)
+    else:
+        sys.exit(0)
+' "$1"
+}
+
 acquire_run_lock() {
   [ "${PLATFORM_CI_LOCAL_NO_LOCK:-0}" = 1 ] && return 0
   local lock_file="${PLATFORM_CI_LOCAL_LOCK:-${TMPDIR:-/tmp}/platform-ci-local.lock}"
@@ -68,7 +93,7 @@ acquire_run_lock() {
   local wait_sec="${PLATFORM_CI_LOCAL_LOCK_WAIT:-7200}"
   mkdir -p "$(dirname "$lock_file")"
   exec 9>"$lock_file"
-  if ! flock -w "$wait_sec" 9; then
+  if ! _flock_fd9 "$wait_sec"; then
     # Close the lock fd first, so the holder scan never lists this waiter or its
     # own helpers (Story 101.1).
     exec 9>&-
@@ -117,7 +142,12 @@ _report_lock_contention() {
   fi
 }
 
+# A process's command line: /proc where the host has one, ps where it has none (Story 125.1).
 _proc_cmdline() {
+  if [ ! -d /proc/self ]; then
+    ps -o command= -p "$1" 2>/dev/null || true
+    return 0
+  fi
   [ -r "/proc/$1/cmdline" ] || return 0
   tr '\0' ' ' <"/proc/$1/cmdline" 2>/dev/null || true
 }
@@ -155,8 +185,15 @@ _wait_pid_exit() {
   return 0
 }
 
+# The pid listening on TCP port $1: ss where the host has it, lsof where it has none (Story 125.1).
 _listener_on_port() {
   local port="$1" line pid
+  if ! command -v ss >/dev/null 2>&1; then
+    pid="$(lsof -nP -iTCP:"$port" -sTCP:LISTEN -t 2>/dev/null | head -1)"
+    [ -n "$pid" ] || return 1
+    echo "$pid"
+    return 0
+  fi
   while IFS= read -r line; do
     case "$line" in
       *":${port} "*) ;;
@@ -454,4 +491,12 @@ PY
 }
 
 acquire_run_lock
-run_platform_ci_local 9>&-
+# bash before 4 (macOS ships 3.2 as /bin/bash) leaves the copy of fd 9 it saves across a redirected
+# function call open in every child, as fd 10: a killed run's services then kept the lock. On that
+# bash the function runs without the redirect, and the commands it starts close fd 9 themselves
+# (Story 125.1).
+if [ "${BASH_VERSINFO[0]}" -ge 4 ]; then
+  run_platform_ci_local 9>&-
+else
+  run_platform_ci_local
+fi

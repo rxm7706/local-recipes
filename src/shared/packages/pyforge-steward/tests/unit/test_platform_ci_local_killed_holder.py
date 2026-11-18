@@ -289,7 +289,12 @@ def test_lock_wait_names_live_holder_and_stale_record(stub_root: tuple[Path, Pat
             f"""\
             #!/usr/bin/env bash
             exec 9>"{lock}"
-            flock 9
+            # Story 125.1: flock(1) where the host has it; where it has none, the same flock(2) lock from python.
+            if command -v flock >/dev/null 2>&1; then
+              flock 9
+            else
+              python3 -c 'import fcntl; fcntl.flock(9, fcntl.LOCK_EX)'
+            fi
             exec sleep 999999
             """
         ),

@@ -2271,7 +2271,7 @@ MARSHAL_PLANNING_EDIT = "_bmad-output/projects/pyforge-marshal/planning-artifact
 
 
 @pytest.fixture(scope="module")
-def fan_out(workflow_text: str) -> dict[str, set[str]]:
+def fan_out(workflow_text: str, workflow_changes_bash: None) -> dict[str, set[str]]:
     """The outputs the ``changes`` step sets ``true`` for each one-file fixture diff."""
     paths = (STEWARD_SRC_EDIT, DOCTOR_SRC_EDIT, DOCTOR_PLANNING_EDIT, MARSHAL_PLANNING_EDIT)
     outputs = run_changes(workflow_text, paths)
@@ -2310,6 +2310,7 @@ def test_a_planning_only_edit_runs_live_halves_and_no_split_package_half(
 # --- AC3: every read fires its job ------------------------------------------
 
 
+@pytest.mark.usefixtures("workflow_changes_bash")
 def test_every_read_and_declared_glob_fires_its_job(workflow_text: str) -> None:
     targets = real_targets()
     assert len(targets) > 300, f"only {len(targets)} targets: the derivation went blind"
@@ -2320,6 +2321,7 @@ def test_every_read_and_declared_glob_fires_its_job(workflow_text: str) -> None:
 # --- AC1: the portal packages -----------------------------------------------
 
 
+@pytest.mark.usefixtures("workflow_changes_bash")
 def test_every_django_package_fires_steward_and_its_own_station(workflow_text: str) -> None:
     packages = sorted({p.split("/")[3] for p in tracked_files() if p.startswith(f"{PACKAGES}/django-")})
     assert {f"django-{s}" for s in STATIONS} <= set(packages)
@@ -2388,6 +2390,7 @@ def _targets(job: str, read: str) -> list[Target]:
     return found
 
 
+@pytest.mark.usefixtures("workflow_changes_bash")
 def test_dropping_lint_types_from_steward_fails_the_meta_test(workflow_text: str) -> None:
     mutant = without_array_entry(workflow_text, "steward_live", "scripts/lint_types.py")
     failures = fire_failures(mutant, _targets("steward_live", "scripts/lint_types.py"))
@@ -2395,12 +2398,14 @@ def test_dropping_lint_types_from_steward_fails_the_meta_test(workflow_text: str
     assert "left output `steward_live` false" in failures[0]
 
 
+@pytest.mark.usefixtures("workflow_changes_bash")
 def test_dropping_django_herald_from_heralds_list_fails_the_meta_test(workflow_text: str) -> None:
     mutant = without_array_entry(workflow_text, "herald_live", "src/shared/packages/django-herald")
     failures = fire_failures(mutant, _targets("herald_live", "src/shared/packages/django-herald"))
     assert failures and all(f.startswith("herald_live: read `src/shared/packages/django-herald`") for f in failures)
 
 
+@pytest.mark.usefixtures("workflow_changes_bash")
 def test_dropping_the_django_glob_from_the_trigger_paths_fails_the_paths_half(workflow_text: str) -> None:
     mutant = without_trigger(workflow_text, "src/shared/packages/django-*/**")
     failures = fire_failures(mutant, _targets("steward_live", "src/shared/packages/django-*"))
@@ -2408,12 +2413,14 @@ def test_dropping_the_django_glob_from_the_trigger_paths_fails_the_paths_half(wo
     assert failures[0].startswith("steward_live: read `src/shared/packages/django-*`")
 
 
+@pytest.mark.usefixtures("workflow_changes_bash")
 def test_dropping_docs_dreams_from_doctors_list_fails_the_meta_test(workflow_text: str) -> None:
     mutant = without_array_entry(workflow_text, "doctor_live", "docs/dreams")
     failures = fire_failures(mutant, _targets("doctor_live", "docs/dreams"))
     assert failures and all(f.startswith("doctor_live: read `docs/dreams`") for f in failures)
 
 
+@pytest.mark.usefixtures("workflow_changes_bash")
 def test_dropping_the_planning_glob_from_marshals_list_fails_the_meta_test(workflow_text: str) -> None:
     glob = "_bmad-output/projects/*/planning-artifacts/**"
     mutant = without_array_entry(workflow_text, "marshal_live", to_pathspec(glob_parts(glob)))
@@ -2468,6 +2475,7 @@ PRESERVED: dict[str, set[str]] = {
 }
 
 
+@pytest.mark.usefixtures("workflow_changes_bash")
 def test_no_trigger_the_workflow_had_before_is_lost(workflow_text: str) -> None:
     outputs = run_changes(workflow_text, PRESERVED)
     patterns = trigger_paths(workflow_text)

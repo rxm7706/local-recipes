@@ -447,8 +447,37 @@ def _run_step_lines(lines: list[str], env: dict[str, str]) -> subprocess.Complet
     )
 
 
+def _has_printf(find: str, cwd: Path) -> bool:
+    done = subprocess.run([find, ".", "-maxdepth", "0", "-printf", ""], cwd=cwd, capture_output=True, check=False)
+    return done.returncode == 0
+
+
+@pytest.fixture
+def gnu_find_path(tmp_path: Path) -> str:
+    """A PATH whose ``find`` has ``-printf``, which the step's folder-cap line calls (Story 125.1).
+
+    The runner's ``find`` is GNU find. Where the host's is not, a ``gfind`` on PATH stands in for it; with neither,
+    a test whose run reaches that line skips: the line cannot run on this host.
+    """
+    path = os.environ.get("PATH", "")
+    find = shutil.which("find")
+    if find and _has_printf(find, tmp_path):
+        return path
+    gfind = shutil.which("gfind")
+    if gfind and _has_printf(gfind, tmp_path):
+        shim = tmp_path / "gnu-find-bin"
+        shim.mkdir()
+        (shim / "find").symlink_to(gfind)
+        return f"{shim}{os.pathsep}{path}"
+    pytest.skip("no find with -printf (GNU find) on PATH, as find or gfind")
+
+
+# The refusals the step makes before its folder-cap line: a run that ends on one never calls find -printf.
+_REFUSED_BEFORE_THE_FOLDER_CAP = ("a symlink in the skill folder", "a file over 1 MiB")
+
+
 @pytest.mark.skipif(shutil.which("zip") is None or shutil.which("unzip") is None, reason="zip and unzip on PATH")
-def test_the_workflows_zip_lines_ship_the_folder_and_only_the_allowlist(tmp_path: Path) -> None:
+def test_the_workflows_zip_lines_ship_the_folder_and_only_the_allowlist(tmp_path: Path, gnu_find_path: str) -> None:
     """Loop 2, row 24; loop 3, row 50: the workflow's own refusal, zip and checksum lines, run over a planted folder,
     hold ``<scope>-<slug>/`` at the root with the shipped files, carry nested ``references/``, drop a stray file
     and a dot entry, and the checksum line verifies."""
@@ -459,7 +488,7 @@ def test_the_workflows_zip_lines_ship_the_folder_and_only_the_allowlist(tmp_path
     stage = _plant_stage(tmp_path)
     outdir = tmp_path / "out"
     outdir.mkdir()
-    env = {**os.environ, "stage": str(stage), "name": name, "outdir": str(outdir)}
+    env = {**os.environ, "PATH": gnu_find_path, "stage": str(stage), "name": name, "outdir": str(outdir)}
     done = _run_step_lines([*_refusal_lines(), zipped, checksum], env)
     assert done.returncode == 0, done.stderr + done.stdout
     listed = subprocess.run(
@@ -482,7 +511,9 @@ def test_the_workflows_zip_lines_ship_the_folder_and_only_the_allowlist(tmp_path
 
 
 @pytest.mark.skipif(shutil.which("zip") is None or shutil.which("unzip") is None, reason="zip and unzip on PATH")
-def test_the_workflows_zip_lines_run_clean_over_the_committed_shape_with_no_references(tmp_path: Path) -> None:
+def test_the_workflows_zip_lines_run_clean_over_the_committed_shape_with_no_references(
+    tmp_path: Path, gnu_find_path: str
+) -> None:
     """Loop 4, row 71: the three committed skills carry no ``references/``; the refusal, zip and checksum lines run
     clean over that shape and the zip holds exactly the three files."""
     lines = _zip_step_lines()
@@ -492,7 +523,7 @@ def test_the_workflows_zip_lines_run_clean_over_the_committed_shape_with_no_refe
     stage = _plant_stage(tmp_path, references=False)
     outdir = tmp_path / "out"
     outdir.mkdir()
-    env = {**os.environ, "stage": str(stage), "name": name, "outdir": str(outdir)}
+    env = {**os.environ, "PATH": gnu_find_path, "stage": str(stage), "name": name, "outdir": str(outdir)}
     done = _run_step_lines([*_refusal_lines(), zipped, checksum], env)
     assert done.returncode == 0, done.stderr + done.stdout
     listed = subprocess.run(
@@ -532,7 +563,7 @@ def test_the_workflows_zip_lines_run_clean_over_the_committed_shape_with_no_refe
     ],
 )
 def test_the_workflow_refuses_a_symlink_an_oversized_file_and_a_binary_reference_before_zip(
-    tmp_path: Path, plant, message: str
+    tmp_path: Path, plant, message: str, request: pytest.FixtureRequest
 ) -> None:
     """Loop 3, rows 48 and 50; loop 4, row 75: the zip step fails, naming the breach, rather than storing a link
     entry, an oversized file, an over-cap folder or a binary under ``references/``; nothing is zipped."""
@@ -546,6 +577,8 @@ def test_the_workflow_refuses_a_symlink_an_oversized_file_and_a_binary_reference
     outdir = tmp_path / "out"
     outdir.mkdir()
     env = {**os.environ, "stage": str(stage), "name": name, "outdir": str(outdir)}
+    if message not in _REFUSED_BEFORE_THE_FOLDER_CAP:
+        env["PATH"] = request.getfixturevalue("gnu_find_path")
     done = _run_step_lines([*_refusal_lines(), zipped], env)
     assert done.returncode == 1, done.stderr + done.stdout
     assert f"::error::{name}: {message}" in done.stdout

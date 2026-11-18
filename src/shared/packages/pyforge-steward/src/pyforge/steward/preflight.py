@@ -538,10 +538,14 @@ def _print_scope(scope: str, source: str, cut: TouchedCut | None) -> None:
 
 
 def _logical_core_count() -> int:
-    try:
-        return len(os.sched_getaffinity(0))
-    except AttributeError, NotImplementedError:
-        return os.cpu_count() or 1
+    # os.sched_getaffinity is Linux's; a host without it (macOS) answers through os.cpu_count.
+    affinity = getattr(os, "sched_getaffinity", None)
+    if affinity is not None:
+        try:
+            return len(affinity(0))
+        except NotImplementedError:
+            pass
+    return os.cpu_count() or 1
 
 
 def _git_head(repo_root: Path) -> tuple[str, str]:
