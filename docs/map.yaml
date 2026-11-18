@@ -265,8 +265,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-11-18T02:54:00-06:00'
-      tree: e488c0fae251ff51c6a86f7f72897958e1b68d69
+      derived_at: '2026-11-18T03:09:28-06:00'
+      tree: 929c4c29b5e17238e051518a85347460c7be6869-dirty
   - path: reference/github-workflows.md
     quadrant: reference
     owner: fleet
