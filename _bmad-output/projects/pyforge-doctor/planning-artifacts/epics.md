@@ -4019,7 +4019,7 @@ So that every stamp is valid for the head that merges.
 **When** the story runs last: new and moved pages are registered and indexed, `docs-map-render` renders `MAP.md`, the six generators and the estate catalog run from the committed tree, each governing Spec's memlog names the paths that moved and is stamped scoped, CAP-84 reads shipped through `bmad-spec`, and the skill-audit findings are deferred-work rows
 **Then** `docs-currency-check`, `docs-map-hygiene-check`, `spec-surface-check`, `chain-completeness-check` and `story-status-check` exit 0; `pages-build`, `pages-check` and `docs-site-validate` exit 0; a full-scope `pr-preflight` exits 0 on the final head, run alone on the machine
 **And** no stamp is bare and no Spec this change did not touch is stamped; this story's own key is the last ledger write
-**Status:** review
+**Status:** done
 
 ## Epic 60: The documentation refresh's deferred rows close (spec-pyforge-doctor CAP-84, CAP-2, CAP-3)
 
@@ -4091,7 +4091,7 @@ So that `DW-doctor-59-4-1`'s incident-log half and Story 59.8 closes in this cha
 **When** the operator runs the one re-derive script the session prepared (or allows the write), the doctor ledger's rows read resolved, and the incident log's package home is recorded as the decision it is
 **Then** CAP-84 reads shipped, Story 59.8 done, and `chain-completeness-check` and `story-status-check` exit 0
 **And** `DW-doctor-59-4-1`'s incident-log half and Story 59.8 reads resolved in its ledger with the commit that closed it
-**Status:** review
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

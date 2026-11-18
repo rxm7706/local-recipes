@@ -577,6 +577,7 @@
    "scripts/detectors.py": "f0f09ba479d14fe6c3f60c3083ba70533ad00af9",
    "scripts/docs_github_workflows.py": "65f62b3c647b6f29fa851bdcc06af42f6bf59e16",
    "scripts/docs_map_render.py": "3f44596a48c79104a7ebe4d7e2bd79742c4a6e76",
+   "scripts/docs_station_verify.py": "fe65a063cac65a20023a49032164898719c53d55",
    "src/shared/packages/pyforge-doctor/.gitignore": "4c9f2f038d1f42f7b52051b78522f27be8fb5f79",
    "src/shared/packages/pyforge-doctor/README.md": "6a283dc2af5da7965ea7b6ab42d82a27ebdd8eac",
    "src/shared/packages/pyforge-doctor/docs/detector-incident-log.md": "c2e9f2e78afcb33003505463cf9d0f5f632421cf",
@@ -820,7 +821,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "9febefeb4897b2d5caabe90fd082b211d7698c96"
+  "memlog": "afa02f0405d2e88bd2ca879e6140629f4f25c1c1"
  },
  "pyforge-herald/spec-pyforge-herald": {
   "files": {

@@ -177,7 +177,7 @@ development_status:
   59-5-atlas-doctor-warden-and-the-steward-operator-duties-each-have-a-how-to: done
   59-6-the-front-doors-describe-the-tree-as-it-is: done
   59-7-docs-currency-fails-a-page-that-is-unstamped-stale-or-dead-referenced: done
-  59-8-the-registry-the-baselines-and-the-chain-close-once-after-every-unit-s-last-edit: review
+  59-8-the-registry-the-baselines-and-the-chain-close-once-after-every-unit-s-last-edit: done
   6-1-profile-doctor-check-and-bring-it-inside-its-budget: done
   6-10-independence-is-structural-for-every-source: done
   6-11-the-classifier-recognizes-a-spike-report: done
@@ -194,7 +194,7 @@ development_status:
   60-1-doctor-monitor-diagnose-and-check-say-only-what-is-true: done
   60-2-docs-currency-measures-before-it-trusts-git-and-the-generators-stamp-what-they-read: done
   60-3-the-shelf-follows-its-own-style-guide-and-the-manticore-and-antigravity-pages-are-supported-pages: done
-  60-4-doctor-s-chain-closes-cap-84-reads-shipped-and-the-incident-log-s-home-is-settled: review
+  60-4-doctor-s-chain-closes-cap-84-reads-shipped-and-the-incident-log-s-home-is-settled: done
   7-1-the-emitter-mints-identity-at-defer-time: done
   7-2-grandfather-the-470-at-a-dated-cut-off: done
   7-3-the-detector-sees-anonymous-tier-3-entries: done
@@ -316,11 +316,11 @@ development_status:
   epic-57-retrospective: optional
   epic-58: done
   epic-58-retrospective: optional
-  epic-59: in-progress
+  epic-59: done
   epic-59-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional
-  epic-60: in-progress
+  epic-60: done
   epic-60-retrospective: optional
   epic-7: done
   epic-7-retrospective: optional
