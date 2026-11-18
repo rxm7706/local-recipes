@@ -737,6 +737,7 @@ cmd = "bash scripts/guild_image_ci.sh"
 # target, even though the environment currently resolves there too; this is
 # a documentation-level statement, not a platform-list removal.
 [feature.pyforge-marshal.dependencies]
+git = ">=2.55.0"                  # steward Story 126.2: the git marshal shells to, named by the lock. Declared here, not through the host-tools feature the other stations use, because AD-65 holds this environment to its one feature (tests/meta/test_ad65_lean_env_conda_forge.py).
 pyforge-marshal = { path = "src/shared/packages/pyforge-marshal" }  # -> built conda pkg
 mcp = ">=2.2.0"  # Story 103.1: marshal-mcp MCPServer; pixi does not rehash path-dep manifests
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: fs_local.py/harness_bmadloop.py/cli/config.py's mandatory run-dep (atomic_write*)
@@ -773,6 +774,8 @@ tmux = ">=3.8_"                  # tmux is a terminal multiplexer. It lets you s
 #psmux = ">=3.3.8"                 # The Native tmux for Windows. Built in Rust. Zero WSL. Full tmux compatibility.
 
 [feature.pyforge-marshal.target.osx-arm64.dependencies]
+bash = ">=5.2"                    # steward Story 126.2: bash 4+ on macOS (see feature.host-tools)
+findutils = ">=4.10.0"            # steward Story 126.2: GNU find on macOS (see feature.host-tools)
 tmux = ">=3.8_"                  # tmux is a terminal multiplexer. It lets you switch easily between several programs in one terminal, detach them (they keep running in the background) and reattach them to a different terminal.
 #psmux = ">=3.3.8"                 # The Native tmux for Windows. Built in Rust. Zero WSL. Full tmux compatibility.
 
@@ -1194,7 +1197,7 @@ pyforge-steward = { features = ["pyforge-steward", "openfeature-file-eval", "hos
 # Lean marshal env (Story 1.1, pyforge-warden mirror): no-default-feature,
 # so it carries only the built pyforge-marshal package + its conda
 # run-deps + pytest + import-linter.
-pyforge-marshal = { features = ["pyforge-marshal", "host-tools"], no-default-feature = true }
+pyforge-marshal = { features = ["pyforge-marshal"], no-default-feature = true }
 # pyforge-container (Story 7.1, "one build, whole Guild"): the whole-Guild
 # image env -- composes all eight lean per-station features into ONE
 # environment, same no-default-feature shape as pyforge-ci, so the

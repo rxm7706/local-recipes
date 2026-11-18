@@ -89,3 +89,66 @@ def test_restore_drill_mismatch_exits_failed(tmp_path: Path):
         result = duty.run(ns)
     assert result.ok is False
     assert "mismatch" in result.summary
+
+
+def test_restore_drill_reports_a_failure_of_the_drill_as_data(tmp_path: Path):
+    """A drill that raises is refused as evidence, never as an exception (AD-8)."""
+
+    class _Raises:
+        @staticmethod
+        def run_restore_drill(*, backup_path: Path):
+            raise RuntimeError(f"pg_restore not on PATH for {backup_path.name}")
+
+    ns = build_parser().parse_args(["restore", "--drill", "--backup-path", str(tmp_path / "backup")])
+    with patch("pyforge.steward.restore._load_postgres_backup_module", return_value=_Raises):
+        result = RestoreDuty().run(ns)
+    assert result.ok is False
+    assert result.summary.startswith("restore drill failed: pg_restore not on PATH")
+    assert result.details["backup_path"] == str((tmp_path / "backup").resolve())
+    assert "pg_restore" in result.details["error"]
+
+
+def test_the_backup_module_is_loaded_from_the_checkout_by_file_path(tmp_path: Path):
+    """The loader reads src/platform/db/postgres_backup.py under the repo root it is given, by path,
+    so the duty never imports the host package."""
+    import sys
+
+    from pyforge.steward import restore
+
+    module_dir = tmp_path / "src" / "platform" / "db"
+    module_dir.mkdir(parents=True)
+    (module_dir / "postgres_backup.py").write_text(
+        "def run_restore_drill(*, backup_path):\n    return {'ok': True, 'backup_path': str(backup_path)}\n",
+        encoding="utf-8",
+    )
+    sys.modules.pop("platform_postgres_backup", None)
+    try:
+        with patch("pyforge.steward.restore.repo_root", return_value=tmp_path):
+            module = restore._load_postgres_backup_module()
+            assert module.__file__ == str(module_dir / "postgres_backup.py")
+            ns = build_parser().parse_args(["restore", "--drill", "--backup-path", str(tmp_path / "b")])
+            result = RestoreDuty().run(ns)
+    finally:
+        sys.modules.pop("platform_postgres_backup", None)
+    assert result.ok is True
+    assert result.summary == "restore drill: counts match manifest"
+    assert result.details["backup_path"] == str((tmp_path / "b").resolve())
+
+
+def test_a_backup_module_with_no_loader_is_a_named_error(tmp_path: Path):
+    from pyforge.steward import restore
+
+    with (
+        patch("pyforge.steward.restore.repo_root", return_value=tmp_path),
+        patch("pyforge.steward.restore.importlib.util.spec_from_file_location", return_value=None),
+    ):
+        ns = build_parser().parse_args(["restore", "--drill", "--backup-path", str(tmp_path / "b")])
+        result = RestoreDuty().run(ns)
+        try:
+            restore._load_postgres_backup_module()
+        except RuntimeError as exc:
+            assert "could not load postgres backup module" in str(exc)
+        else:  # pragma: no cover - the assertion above is the point
+            raise AssertionError("a missing loader must raise")
+    assert result.ok is False
+    assert "could not load postgres backup module" in result.summary
