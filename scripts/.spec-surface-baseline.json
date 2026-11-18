@@ -4107,7 +4107,7 @@
    "evals/review-catches-planted-defect/probes/mutated-probe.json": "9c3cce3d62357f08ef5fd76a625312997778f7ad",
    "evals/review-catches-planted-defect/scoring-policy.json": "18b8ff32419ccef507e68c659ed789fca0461102",
    "evals/review-catches-planted-defect/test_driver.py": "385da3656b300393ec549ff40377bb1df25540b0",
-   "pixi.lock": "bdb39207ae1487ba453dd598596f4326d9f739a4",
+   "pixi.lock": "ba72980e75af5b8944b588bd24c6c344b63f5d4d",
    "pixi.toml": "1fc50c1db5493415a00c9f25b736f0119a1d4067",
    "recipes/bmad-eval-quality/LICENSE": "55625f964b7ddb4580e8e3612d553a6cada606f7",
    "recipes/bmad-eval-quality/build.bat": "79dcc2ecf4d78df61c2799cc5fb9be9fb988eae8",
@@ -4492,7 +4492,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "9984dd7501ba415fc62796096ae14cd1ebf2c24f"
+  "memlog": "7b4fc3ab4072ee8b2044dc61754074a938cf9538"
  },
  "pyforge-steward/spec-pyforge-unifying-strategy": {
   "files": {

@@ -2,7 +2,7 @@ version: 7
 platforms:
 - name: linux-64
   virtual-packages:
-  - __unix=0
+  - __unix=0=0
   - __linux=4.18
   - __glibc=2.28
   - __archspec=0=x86_64
@@ -10,7 +10,7 @@ platforms:
   subdir: osx-arm64
   virtual-packages:
   - __osx=14.5
-  - __unix=0
+  - __unix=0=0
   - __archspec=0=m1
 - name: win-64
   virtual-packages:
@@ -2424,14 +2424,14 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/virtualenv-20.39.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/xlsxwriter-3.2.9-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - conda_source: pyforge-core[79ea6a29] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-doctor[4a132516] @ src/shared/packages/pyforge-doctor
-      - conda_source: pyforge-herald[81685836] @ src/shared/packages/pyforge-herald
-      - conda_source: pyforge-marshal[ba5aea37] @ src/shared/packages/pyforge-marshal
-      - conda_source: pyforge-mason[3bce6dfb] @ src/shared/packages/pyforge-mason
-      - conda_source: pyforge-scribe[77015a7d] @ src/shared/packages/pyforge-scribe
-      - conda_source: pyforge-steward[c628e2f8] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[925c0be3] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[b2b0c75f] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-doctor[e327f752] @ src/shared/packages/pyforge-doctor
+      - conda_source: pyforge-herald[e0015f58] @ src/shared/packages/pyforge-herald
+      - conda_source: pyforge-marshal[cec8d493] @ src/shared/packages/pyforge-marshal
+      - conda_source: pyforge-mason[1a69fe5a] @ src/shared/packages/pyforge-mason
+      - conda_source: pyforge-scribe[1e9bccfe] @ src/shared/packages/pyforge-scribe
+      - conda_source: pyforge-steward[88b13f24] @ src/shared/packages/pyforge-steward
+      - conda_source: pyforge-testing-kit[6d81a677] @ src/shared/packages/pyforge-testing-kit
       - pypi: https://files.pythonhosted.org/packages/6f/ad/6afd073b0f817b3e03f9e37ad626ae341805891f23c74b5292818f49ac63/sqlite_vec-0.1.9-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux1_x86_64.whl
       osx-arm64-min:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
@@ -2723,14 +2723,14 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zlib-ng-2.3.3-h31dac16_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstandard-0.25.0-py314hd98292b_4.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - conda_source: pyforge-core[187a7856] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-doctor[9e586b75] @ src/shared/packages/pyforge-doctor
-      - conda_source: pyforge-herald[8d9bb04d] @ src/shared/packages/pyforge-herald
-      - conda_source: pyforge-marshal[1fd09a81] @ src/shared/packages/pyforge-marshal
-      - conda_source: pyforge-mason[738aa688] @ src/shared/packages/pyforge-mason
-      - conda_source: pyforge-scribe[d43fcc8f] @ src/shared/packages/pyforge-scribe
-      - conda_source: pyforge-steward[4c43cfa3] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[4553a2c7] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[2c738eec] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-doctor[2093e2ba] @ src/shared/packages/pyforge-doctor
+      - conda_source: pyforge-herald[6595c651] @ src/shared/packages/pyforge-herald
+      - conda_source: pyforge-marshal[6dffc240] @ src/shared/packages/pyforge-marshal
+      - conda_source: pyforge-mason[01e0f605] @ src/shared/packages/pyforge-mason
+      - conda_source: pyforge-scribe[e77a39d7] @ src/shared/packages/pyforge-scribe
+      - conda_source: pyforge-steward[6cb7f159] @ src/shared/packages/pyforge-steward
+      - conda_source: pyforge-testing-kit[08ea3472] @ src/shared/packages/pyforge-testing-kit
       - pypi: https://files.pythonhosted.org/packages/a4/3d/3677e0cd2f92e5ebc43cd29fbf565b75582bff1ccfa0b8327c7508e1084f/sqlite_vec-0.1.9-py3-none-macosx_11_0_arm64.whl
       win-64:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
@@ -2997,14 +2997,14 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-ng-2.3.3-h0261ad2_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstandard-0.25.0-py314hc5dbbe4_4.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - conda_source: pyforge-core[85d00fad] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-doctor[0ba223cc] @ src/shared/packages/pyforge-doctor
-      - conda_source: pyforge-herald[58c59345] @ src/shared/packages/pyforge-herald
-      - conda_source: pyforge-marshal[554c3dfc] @ src/shared/packages/pyforge-marshal
-      - conda_source: pyforge-mason[bf323b38] @ src/shared/packages/pyforge-mason
-      - conda_source: pyforge-scribe[75623477] @ src/shared/packages/pyforge-scribe
-      - conda_source: pyforge-steward[f1a5ebbb] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[a3e3db7d] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[9fc844d6] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-doctor[03df662a] @ src/shared/packages/pyforge-doctor
+      - conda_source: pyforge-herald[ca4938cc] @ src/shared/packages/pyforge-herald
+      - conda_source: pyforge-marshal[25eb6eb8] @ src/shared/packages/pyforge-marshal
+      - conda_source: pyforge-mason[6aeb33cb] @ src/shared/packages/pyforge-mason
+      - conda_source: pyforge-scribe[1c98607d] @ src/shared/packages/pyforge-scribe
+      - conda_source: pyforge-steward[ea996a78] @ src/shared/packages/pyforge-steward
+      - conda_source: pyforge-testing-kit[c720d63f] @ src/shared/packages/pyforge-testing-kit
       - pypi: https://files.pythonhosted.org/packages/42/89/81b2907cda14e566b9bf215e2ad82fc9b349edf07d2010756ffdb902f328/sqlite_vec-0.1.9-py3-none-win_amd64.whl
   detectors:
     channels:
@@ -10765,10 +10765,10 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/yarl-1.24.5-pyh7db6752_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/yaspin-3.5.1-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - conda_source: pyforge-atlas[24c1057a] @ src/shared/packages/pyforge-atlas
-      - conda_source: pyforge-core[79ea6a29] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-testing-kit[925c0be3] @ src/shared/packages/pyforge-testing-kit
-      - conda_source: pyforge-warden[5df36761] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-atlas[d1d7e30e] @ src/shared/packages/pyforge-atlas
+      - conda_source: pyforge-core[b2b0c75f] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-testing-kit[6d81a677] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-warden[95261c63] @ src/shared/packages/pyforge-warden
       osx-arm64-min:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
@@ -11193,10 +11193,10 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yaml-0.2.5-h74c22ad_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zlib-1.3.2-h8088a28_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - conda_source: pyforge-atlas[0554bf09] @ src/shared/packages/pyforge-atlas
-      - conda_source: pyforge-core[187a7856] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-testing-kit[4553a2c7] @ src/shared/packages/pyforge-testing-kit
-      - conda_source: pyforge-warden[8e9ffc7a] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-atlas[ee78dec3] @ src/shared/packages/pyforge-atlas
+      - conda_source: pyforge-core[2c738eec] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-testing-kit[08ea3472] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-warden[d7ffe6e9] @ src/shared/packages/pyforge-warden
       win-64:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
@@ -11615,10 +11615,10 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/yaml-0.2.5-h6a83c73_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-1.3.2-hfd05255_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - conda_source: pyforge-atlas[85496907] @ src/shared/packages/pyforge-atlas
-      - conda_source: pyforge-core[85d00fad] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-testing-kit[a3e3db7d] @ src/shared/packages/pyforge-testing-kit
-      - conda_source: pyforge-warden[92e725b1] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-atlas[98513e54] @ src/shared/packages/pyforge-atlas
+      - conda_source: pyforge-core[9fc844d6] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-testing-kit[c720d63f] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-warden[f018d6c2] @ src/shared/packages/pyforge-warden
   pyforge-ci:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -12591,16 +12591,16 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/yarl-1.24.5-pyh7db6752_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/yaspin-3.5.1-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - conda_source: pyforge-atlas[24c1057a] @ src/shared/packages/pyforge-atlas
-      - conda_source: pyforge-core[79ea6a29] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-doctor[4a132516] @ src/shared/packages/pyforge-doctor
-      - conda_source: pyforge-herald[81685836] @ src/shared/packages/pyforge-herald
-      - conda_source: pyforge-marshal[ba5aea37] @ src/shared/packages/pyforge-marshal
-      - conda_source: pyforge-mason[97f9d201] @ src/shared/packages/pyforge-mason
-      - conda_source: pyforge-scribe[77015a7d] @ src/shared/packages/pyforge-scribe
-      - conda_source: pyforge-steward[c628e2f8] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[925c0be3] @ src/shared/packages/pyforge-testing-kit
-      - conda_source: pyforge-warden[5df36761] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-atlas[d1d7e30e] @ src/shared/packages/pyforge-atlas
+      - conda_source: pyforge-core[b2b0c75f] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-doctor[e327f752] @ src/shared/packages/pyforge-doctor
+      - conda_source: pyforge-herald[e0015f58] @ src/shared/packages/pyforge-herald
+      - conda_source: pyforge-marshal[cec8d493] @ src/shared/packages/pyforge-marshal
+      - conda_source: pyforge-mason[df977264] @ src/shared/packages/pyforge-mason
+      - conda_source: pyforge-scribe[1e9bccfe] @ src/shared/packages/pyforge-scribe
+      - conda_source: pyforge-steward[88b13f24] @ src/shared/packages/pyforge-steward
+      - conda_source: pyforge-testing-kit[6d81a677] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-warden[95261c63] @ src/shared/packages/pyforge-warden
       osx-arm64-min:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-4.3.0-h98f672e_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
@@ -13221,16 +13221,16 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zope.interface-8.6-py314haae224a_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstandard-0.25.0-py314hd98292b_4.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - conda_source: pyforge-atlas[0554bf09] @ src/shared/packages/pyforge-atlas
-      - conda_source: pyforge-core[187a7856] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-doctor[9e586b75] @ src/shared/packages/pyforge-doctor
-      - conda_source: pyforge-herald[8d9bb04d] @ src/shared/packages/pyforge-herald
-      - conda_source: pyforge-marshal[1fd09a81] @ src/shared/packages/pyforge-marshal
-      - conda_source: pyforge-mason[ecebe7dc] @ src/shared/packages/pyforge-mason
-      - conda_source: pyforge-scribe[d43fcc8f] @ src/shared/packages/pyforge-scribe
-      - conda_source: pyforge-steward[4c43cfa3] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[4553a2c7] @ src/shared/packages/pyforge-testing-kit
-      - conda_source: pyforge-warden[8e9ffc7a] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-atlas[ee78dec3] @ src/shared/packages/pyforge-atlas
+      - conda_source: pyforge-core[2c738eec] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-doctor[2093e2ba] @ src/shared/packages/pyforge-doctor
+      - conda_source: pyforge-herald[6595c651] @ src/shared/packages/pyforge-herald
+      - conda_source: pyforge-marshal[6dffc240] @ src/shared/packages/pyforge-marshal
+      - conda_source: pyforge-mason[5d96215f] @ src/shared/packages/pyforge-mason
+      - conda_source: pyforge-scribe[e77a39d7] @ src/shared/packages/pyforge-scribe
+      - conda_source: pyforge-steward[6cb7f159] @ src/shared/packages/pyforge-steward
+      - conda_source: pyforge-testing-kit[08ea3472] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-warden[d7ffe6e9] @ src/shared/packages/pyforge-warden
       win-64:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-4.3.0-h2fd06db_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
@@ -13831,16 +13831,16 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zope.interface-8.6-py314hc5dbbe4_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstandard-0.25.0-py314hc5dbbe4_4.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - conda_source: pyforge-atlas[85496907] @ src/shared/packages/pyforge-atlas
-      - conda_source: pyforge-core[85d00fad] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-doctor[0ba223cc] @ src/shared/packages/pyforge-doctor
-      - conda_source: pyforge-herald[58c59345] @ src/shared/packages/pyforge-herald
-      - conda_source: pyforge-marshal[554c3dfc] @ src/shared/packages/pyforge-marshal
-      - conda_source: pyforge-mason[2ecc0e05] @ src/shared/packages/pyforge-mason
-      - conda_source: pyforge-scribe[75623477] @ src/shared/packages/pyforge-scribe
-      - conda_source: pyforge-steward[f1a5ebbb] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[a3e3db7d] @ src/shared/packages/pyforge-testing-kit
-      - conda_source: pyforge-warden[92e725b1] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-atlas[98513e54] @ src/shared/packages/pyforge-atlas
+      - conda_source: pyforge-core[9fc844d6] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-doctor[03df662a] @ src/shared/packages/pyforge-doctor
+      - conda_source: pyforge-herald[ca4938cc] @ src/shared/packages/pyforge-herald
+      - conda_source: pyforge-marshal[25eb6eb8] @ src/shared/packages/pyforge-marshal
+      - conda_source: pyforge-mason[22648f4c] @ src/shared/packages/pyforge-mason
+      - conda_source: pyforge-scribe[1c98607d] @ src/shared/packages/pyforge-scribe
+      - conda_source: pyforge-steward[ea996a78] @ src/shared/packages/pyforge-steward
+      - conda_source: pyforge-testing-kit[c720d63f] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-warden[f018d6c2] @ src/shared/packages/pyforge-warden
   pyforge-core:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -13903,7 +13903,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/typing_extensions-4.16.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - conda_source: pyforge-core[79ea6a29] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-core[b2b0c75f] @ src/shared/packages/pyforge-core
       osx-arm64-min:
       - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/colorama-0.4.6-pyhd8ed1ab_1.conda
@@ -13957,7 +13957,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/readline-8.3-h8b90a29_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hbeba79b_4.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - conda_source: pyforge-core[187a7856] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-core[2c738eec] @ src/shared/packages/pyforge-core
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-h4c7d964_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/colorama-0.4.6-pyhd8ed1ab_1.conda
@@ -13997,7 +13997,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/vc14_runtime-14.51.36247-habf1de7_41.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36247-habf1de7_41.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - conda_source: pyforge-core[85d00fad] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-core[9fc844d6] @ src/shared/packages/pyforge-core
   pyforge-doctor:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -14120,10 +14120,10 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-0.54.0-pyh53cf698_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - conda_source: pyforge-core[79ea6a29] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-doctor[4a132516] @ src/shared/packages/pyforge-doctor
-      - conda_source: pyforge-testing-kit[925c0be3] @ src/shared/packages/pyforge-testing-kit
-      - conda_source: pyforge-warden[5df36761] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-core[b2b0c75f] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-doctor[e327f752] @ src/shared/packages/pyforge-doctor
+      - conda_source: pyforge-testing-kit[6d81a677] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-warden[95261c63] @ src/shared/packages/pyforge-warden
       osx-arm64-min:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
@@ -14236,10 +14236,10 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hbeba79b_4.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yaml-0.2.5-h74c22ad_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - conda_source: pyforge-core[187a7856] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-doctor[9e586b75] @ src/shared/packages/pyforge-doctor
-      - conda_source: pyforge-testing-kit[4553a2c7] @ src/shared/packages/pyforge-testing-kit
-      - conda_source: pyforge-warden[8e9ffc7a] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-core[2c738eec] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-doctor[2093e2ba] @ src/shared/packages/pyforge-doctor
+      - conda_source: pyforge-testing-kit[08ea3472] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-warden[d7ffe6e9] @ src/shared/packages/pyforge-warden
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
@@ -14339,10 +14339,10 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36247-habf1de7_41.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/yaml-0.2.5-h6a83c73_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - conda_source: pyforge-core[85d00fad] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-doctor[0ba223cc] @ src/shared/packages/pyforge-doctor
-      - conda_source: pyforge-testing-kit[a3e3db7d] @ src/shared/packages/pyforge-testing-kit
-      - conda_source: pyforge-warden[92e725b1] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-core[9fc844d6] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-doctor[03df662a] @ src/shared/packages/pyforge-doctor
+      - conda_source: pyforge-testing-kit[c720d63f] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-warden[f018d6c2] @ src/shared/packages/pyforge-warden
   pyforge-foundry-full:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -15781,16 +15781,16 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zope.interface-8.6-py314haae224a_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstandard-0.25.0-py314hd98292b_4.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - conda_source: pyforge-atlas[0554bf09] @ src/shared/packages/pyforge-atlas
-      - conda_source: pyforge-core[187a7856] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-doctor[9e586b75] @ src/shared/packages/pyforge-doctor
-      - conda_source: pyforge-herald[8d9bb04d] @ src/shared/packages/pyforge-herald
-      - conda_source: pyforge-marshal[1fd09a81] @ src/shared/packages/pyforge-marshal
-      - conda_source: pyforge-mason[ecebe7dc] @ src/shared/packages/pyforge-mason
-      - conda_source: pyforge-scribe[d43fcc8f] @ src/shared/packages/pyforge-scribe
-      - conda_source: pyforge-steward[4c43cfa3] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[4553a2c7] @ src/shared/packages/pyforge-testing-kit
-      - conda_source: pyforge-warden[8e9ffc7a] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-atlas[ee78dec3] @ src/shared/packages/pyforge-atlas
+      - conda_source: pyforge-core[2c738eec] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-doctor[2093e2ba] @ src/shared/packages/pyforge-doctor
+      - conda_source: pyforge-herald[6595c651] @ src/shared/packages/pyforge-herald
+      - conda_source: pyforge-marshal[6dffc240] @ src/shared/packages/pyforge-marshal
+      - conda_source: pyforge-mason[5d96215f] @ src/shared/packages/pyforge-mason
+      - conda_source: pyforge-scribe[e77a39d7] @ src/shared/packages/pyforge-scribe
+      - conda_source: pyforge-steward[6cb7f159] @ src/shared/packages/pyforge-steward
+      - conda_source: pyforge-testing-kit[08ea3472] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-warden[d7ffe6e9] @ src/shared/packages/pyforge-warden
       - pypi: https://files.pythonhosted.org/packages/a4/3d/3677e0cd2f92e5ebc43cd29fbf565b75582bff1ccfa0b8327c7508e1084f/sqlite_vec-0.1.9-py3-none-macosx_11_0_arm64.whl
       win-64:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
@@ -16545,16 +16545,16 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zope.interface-8.6-py314hc5dbbe4_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstandard-0.25.0-py314hc5dbbe4_4.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - conda_source: pyforge-atlas[85496907] @ src/shared/packages/pyforge-atlas
-      - conda_source: pyforge-core[85d00fad] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-doctor[0ba223cc] @ src/shared/packages/pyforge-doctor
-      - conda_source: pyforge-herald[58c59345] @ src/shared/packages/pyforge-herald
-      - conda_source: pyforge-marshal[554c3dfc] @ src/shared/packages/pyforge-marshal
-      - conda_source: pyforge-mason[2ecc0e05] @ src/shared/packages/pyforge-mason
-      - conda_source: pyforge-scribe[75623477] @ src/shared/packages/pyforge-scribe
-      - conda_source: pyforge-steward[f1a5ebbb] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[a3e3db7d] @ src/shared/packages/pyforge-testing-kit
-      - conda_source: pyforge-warden[92e725b1] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-atlas[98513e54] @ src/shared/packages/pyforge-atlas
+      - conda_source: pyforge-core[9fc844d6] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-doctor[03df662a] @ src/shared/packages/pyforge-doctor
+      - conda_source: pyforge-herald[ca4938cc] @ src/shared/packages/pyforge-herald
+      - conda_source: pyforge-marshal[25eb6eb8] @ src/shared/packages/pyforge-marshal
+      - conda_source: pyforge-mason[22648f4c] @ src/shared/packages/pyforge-mason
+      - conda_source: pyforge-scribe[1c98607d] @ src/shared/packages/pyforge-scribe
+      - conda_source: pyforge-steward[ea996a78] @ src/shared/packages/pyforge-steward
+      - conda_source: pyforge-testing-kit[c720d63f] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-warden[f018d6c2] @ src/shared/packages/pyforge-warden
       - pypi: https://files.pythonhosted.org/packages/42/89/81b2907cda14e566b9bf215e2ad82fc9b349edf07d2010756ffdb902f328/sqlite_vec-0.1.9-py3-none-win_amd64.whl
   pyforge-foundry-full-stack:
     channels:
@@ -17623,14 +17623,14 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/virtualenv-20.39.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/xlsxwriter-3.2.9-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - conda_source: pyforge-core[79ea6a29] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-doctor[4a132516] @ src/shared/packages/pyforge-doctor
-      - conda_source: pyforge-herald[81685836] @ src/shared/packages/pyforge-herald
-      - conda_source: pyforge-marshal[ba5aea37] @ src/shared/packages/pyforge-marshal
-      - conda_source: pyforge-mason[3bce6dfb] @ src/shared/packages/pyforge-mason
-      - conda_source: pyforge-scribe[77015a7d] @ src/shared/packages/pyforge-scribe
-      - conda_source: pyforge-steward[c628e2f8] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[925c0be3] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[b2b0c75f] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-doctor[e327f752] @ src/shared/packages/pyforge-doctor
+      - conda_source: pyforge-herald[e0015f58] @ src/shared/packages/pyforge-herald
+      - conda_source: pyforge-marshal[cec8d493] @ src/shared/packages/pyforge-marshal
+      - conda_source: pyforge-mason[1a69fe5a] @ src/shared/packages/pyforge-mason
+      - conda_source: pyforge-scribe[1e9bccfe] @ src/shared/packages/pyforge-scribe
+      - conda_source: pyforge-steward[88b13f24] @ src/shared/packages/pyforge-steward
+      - conda_source: pyforge-testing-kit[6d81a677] @ src/shared/packages/pyforge-testing-kit
       - pypi: https://files.pythonhosted.org/packages/6f/ad/6afd073b0f817b3e03f9e37ad626ae341805891f23c74b5292818f49ac63/sqlite_vec-0.1.9-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux1_x86_64.whl
       osx-arm64-min:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
@@ -17933,14 +17933,14 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zlib-ng-2.3.3-h31dac16_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstandard-0.25.0-py314hd98292b_4.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - conda_source: pyforge-core[187a7856] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-doctor[9e586b75] @ src/shared/packages/pyforge-doctor
-      - conda_source: pyforge-herald[8d9bb04d] @ src/shared/packages/pyforge-herald
-      - conda_source: pyforge-marshal[1fd09a81] @ src/shared/packages/pyforge-marshal
-      - conda_source: pyforge-mason[738aa688] @ src/shared/packages/pyforge-mason
-      - conda_source: pyforge-scribe[d43fcc8f] @ src/shared/packages/pyforge-scribe
-      - conda_source: pyforge-steward[4c43cfa3] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[4553a2c7] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[2c738eec] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-doctor[2093e2ba] @ src/shared/packages/pyforge-doctor
+      - conda_source: pyforge-herald[6595c651] @ src/shared/packages/pyforge-herald
+      - conda_source: pyforge-marshal[6dffc240] @ src/shared/packages/pyforge-marshal
+      - conda_source: pyforge-mason[01e0f605] @ src/shared/packages/pyforge-mason
+      - conda_source: pyforge-scribe[e77a39d7] @ src/shared/packages/pyforge-scribe
+      - conda_source: pyforge-steward[6cb7f159] @ src/shared/packages/pyforge-steward
+      - conda_source: pyforge-testing-kit[08ea3472] @ src/shared/packages/pyforge-testing-kit
       - pypi: https://files.pythonhosted.org/packages/a4/3d/3677e0cd2f92e5ebc43cd29fbf565b75582bff1ccfa0b8327c7508e1084f/sqlite_vec-0.1.9-py3-none-macosx_11_0_arm64.whl
       win-64:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
@@ -18220,14 +18220,14 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-ng-2.3.3-h0261ad2_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstandard-0.25.0-py314hc5dbbe4_4.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - conda_source: pyforge-core[85d00fad] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-doctor[0ba223cc] @ src/shared/packages/pyforge-doctor
-      - conda_source: pyforge-herald[58c59345] @ src/shared/packages/pyforge-herald
-      - conda_source: pyforge-marshal[554c3dfc] @ src/shared/packages/pyforge-marshal
-      - conda_source: pyforge-mason[bf323b38] @ src/shared/packages/pyforge-mason
-      - conda_source: pyforge-scribe[75623477] @ src/shared/packages/pyforge-scribe
-      - conda_source: pyforge-steward[f1a5ebbb] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[a3e3db7d] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[9fc844d6] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-doctor[03df662a] @ src/shared/packages/pyforge-doctor
+      - conda_source: pyforge-herald[ca4938cc] @ src/shared/packages/pyforge-herald
+      - conda_source: pyforge-marshal[25eb6eb8] @ src/shared/packages/pyforge-marshal
+      - conda_source: pyforge-mason[6aeb33cb] @ src/shared/packages/pyforge-mason
+      - conda_source: pyforge-scribe[1c98607d] @ src/shared/packages/pyforge-scribe
+      - conda_source: pyforge-steward[ea996a78] @ src/shared/packages/pyforge-steward
+      - conda_source: pyforge-testing-kit[c720d63f] @ src/shared/packages/pyforge-testing-kit
       - pypi: https://files.pythonhosted.org/packages/42/89/81b2907cda14e566b9bf215e2ad82fc9b349edf07d2010756ffdb902f328/sqlite_vec-0.1.9-py3-none-win_amd64.whl
   pyforge-herald:
     channels:
@@ -18439,9 +18439,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-standard-0.54.0-h6c8c7fd_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/xlsxwriter-3.2.9-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - conda_source: pyforge-core[79ea6a29] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-herald[81685836] @ src/shared/packages/pyforge-herald
-      - conda_source: pyforge-testing-kit[925c0be3] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[b2b0c75f] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-herald[e0015f58] @ src/shared/packages/pyforge-herald
+      - conda_source: pyforge-testing-kit[6d81a677] @ src/shared/packages/pyforge-testing-kit
       osx-arm64-min:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-plus-4.2.1-h59285b8_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
@@ -18639,9 +18639,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zlib-ng-2.3.3-h31dac16_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zope.interface-8.6-py314haae224a_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - conda_source: pyforge-core[187a7856] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-herald[8d9bb04d] @ src/shared/packages/pyforge-herald
-      - conda_source: pyforge-testing-kit[4553a2c7] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[2c738eec] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-herald[6595c651] @ src/shared/packages/pyforge-herald
+      - conda_source: pyforge-testing-kit[08ea3472] @ src/shared/packages/pyforge-testing-kit
       win-64:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-plus-4.2.1-h59285b8_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
@@ -18824,9 +18824,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-ng-2.3.3-h0261ad2_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zope.interface-8.6-py314hc5dbbe4_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - conda_source: pyforge-core[85d00fad] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-herald[58c59345] @ src/shared/packages/pyforge-herald
-      - conda_source: pyforge-testing-kit[a3e3db7d] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[9fc844d6] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-herald[ca4938cc] @ src/shared/packages/pyforge-herald
+      - conda_source: pyforge-testing-kit[c720d63f] @ src/shared/packages/pyforge-testing-kit
   pyforge-marshal:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -18985,9 +18985,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-0.54.0-pyh53cf698_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-standard-0.54.0-h6c8c7fd_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - conda_source: pyforge-core[79ea6a29] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-marshal[ba5aea37] @ src/shared/packages/pyforge-marshal
-      - conda_source: pyforge-testing-kit[925c0be3] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[b2b0c75f] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-marshal[cec8d493] @ src/shared/packages/pyforge-marshal
+      - conda_source: pyforge-testing-kit[6d81a677] @ src/shared/packages/pyforge-testing-kit
       osx-arm64-min:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
@@ -19140,9 +19140,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/websockets-17.2-py315hae80670_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yaml-0.2.5-h74c22ad_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - conda_source: pyforge-core[187a7856] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-marshal[1fd09a81] @ src/shared/packages/pyforge-marshal
-      - conda_source: pyforge-testing-kit[4553a2c7] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[2c738eec] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-marshal[6dffc240] @ src/shared/packages/pyforge-marshal
+      - conda_source: pyforge-testing-kit[08ea3472] @ src/shared/packages/pyforge-testing-kit
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
@@ -19277,9 +19277,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/websockets-17.2-py315ha7c7e88_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/yaml-0.2.5-h6a83c73_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - conda_source: pyforge-core[85d00fad] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-marshal[554c3dfc] @ src/shared/packages/pyforge-marshal
-      - conda_source: pyforge-testing-kit[a3e3db7d] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[9fc844d6] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-marshal[25eb6eb8] @ src/shared/packages/pyforge-marshal
+      - conda_source: pyforge-testing-kit[c720d63f] @ src/shared/packages/pyforge-testing-kit
   pyforge-mason:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -19438,9 +19438,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/urllib3-2.8.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/virtualenv-20.39.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - conda_source: pyforge-core[79ea6a29] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-mason[97f9d201] @ src/shared/packages/pyforge-mason
-      - conda_source: pyforge-testing-kit[925c0be3] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[b2b0c75f] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-mason[df977264] @ src/shared/packages/pyforge-mason
+      - conda_source: pyforge-testing-kit[6d81a677] @ src/shared/packages/pyforge-testing-kit
       osx-arm64-min:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-types-0.8.0-pyhd8ed1ab_0.conda
@@ -19585,9 +19585,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yaml-0.2.5-h74c22ad_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstandard-0.25.0-py314hd98292b_4.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - conda_source: pyforge-core[187a7856] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-mason[ecebe7dc] @ src/shared/packages/pyforge-mason
-      - conda_source: pyforge-testing-kit[4553a2c7] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[2c738eec] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-mason[5d96215f] @ src/shared/packages/pyforge-mason
+      - conda_source: pyforge-testing-kit[08ea3472] @ src/shared/packages/pyforge-testing-kit
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-types-0.8.0-pyhd8ed1ab_0.conda
@@ -19719,9 +19719,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/yaml-0.2.5-h6a83c73_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstandard-0.25.0-py314hc5dbbe4_4.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - conda_source: pyforge-core[85d00fad] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-mason[2ecc0e05] @ src/shared/packages/pyforge-mason
-      - conda_source: pyforge-testing-kit[a3e3db7d] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[9fc844d6] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-mason[22648f4c] @ src/shared/packages/pyforge-mason
+      - conda_source: pyforge-testing-kit[c720d63f] @ src/shared/packages/pyforge-testing-kit
   pyforge-scribe:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -19856,9 +19856,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzlocal-5.4.4-pyh8f84b5b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - conda_source: pyforge-core[79ea6a29] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-scribe[77015a7d] @ src/shared/packages/pyforge-scribe
-      - conda_source: pyforge-testing-kit[925c0be3] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[b2b0c75f] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-scribe[1e9bccfe] @ src/shared/packages/pyforge-scribe
+      - conda_source: pyforge-testing-kit[6d81a677] @ src/shared/packages/pyforge-testing-kit
       osx-arm64-min:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
@@ -19987,9 +19987,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/watchdog-6.0.0-py314haae224a_4.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yaml-0.2.5-h74c22ad_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - conda_source: pyforge-core[187a7856] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-scribe[d43fcc8f] @ src/shared/packages/pyforge-scribe
-      - conda_source: pyforge-testing-kit[4553a2c7] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[2c738eec] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-scribe[e77a39d7] @ src/shared/packages/pyforge-scribe
+      - conda_source: pyforge-testing-kit[08ea3472] @ src/shared/packages/pyforge-testing-kit
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
@@ -20106,9 +20106,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/watchdog-6.0.0-py314hb821551_4.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/yaml-0.2.5-h6a83c73_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - conda_source: pyforge-core[85d00fad] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-scribe[75623477] @ src/shared/packages/pyforge-scribe
-      - conda_source: pyforge-testing-kit[a3e3db7d] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[9fc844d6] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-scribe[1c98607d] @ src/shared/packages/pyforge-scribe
+      - conda_source: pyforge-testing-kit[c720d63f] @ src/shared/packages/pyforge-testing-kit
   pyforge-scribe-pg:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -20250,9 +20250,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzlocal-5.4.4-pyh8f84b5b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - conda_source: pyforge-core[79ea6a29] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-scribe[77015a7d] @ src/shared/packages/pyforge-scribe
-      - conda_source: pyforge-testing-kit[925c0be3] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[b2b0c75f] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-scribe[1e9bccfe] @ src/shared/packages/pyforge-scribe
+      - conda_source: pyforge-testing-kit[6d81a677] @ src/shared/packages/pyforge-testing-kit
       osx-arm64-min:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
@@ -20388,9 +20388,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/watchdog-6.0.0-py314haae224a_4.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yaml-0.2.5-h74c22ad_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - conda_source: pyforge-core[187a7856] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-scribe[d43fcc8f] @ src/shared/packages/pyforge-scribe
-      - conda_source: pyforge-testing-kit[4553a2c7] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[2c738eec] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-scribe[e77a39d7] @ src/shared/packages/pyforge-scribe
+      - conda_source: pyforge-testing-kit[08ea3472] @ src/shared/packages/pyforge-testing-kit
   pyforge-steward:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -20526,9 +20526,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/typing_extensions-4.16.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - conda_source: pyforge-core[79ea6a29] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-steward[c628e2f8] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[925c0be3] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[b2b0c75f] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-steward[88b13f24] @ src/shared/packages/pyforge-steward
+      - conda_source: pyforge-testing-kit[6d81a677] @ src/shared/packages/pyforge-testing-kit
       osx-arm64-min:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-4.3.0-h98f672e_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
@@ -20651,9 +20651,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yaml-0.2.5-h74c22ad_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zope.interface-8.6-py314haae224a_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - conda_source: pyforge-core[187a7856] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-steward[4c43cfa3] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[4553a2c7] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[2c738eec] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-steward[6cb7f159] @ src/shared/packages/pyforge-steward
+      - conda_source: pyforge-testing-kit[08ea3472] @ src/shared/packages/pyforge-testing-kit
       win-64:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-4.3.0-h2fd06db_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
@@ -20764,9 +20764,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/yaml-0.2.5-h6a83c73_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zope.interface-8.6-py314hc5dbbe4_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - conda_source: pyforge-core[85d00fad] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-steward[f1a5ebbb] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[a3e3db7d] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[9fc844d6] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-steward[ea996a78] @ src/shared/packages/pyforge-steward
+      - conda_source: pyforge-testing-kit[c720d63f] @ src/shared/packages/pyforge-testing-kit
   pyforge-testing-kit:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -20840,8 +20840,8 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/typing_extensions-4.16.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - conda_source: pyforge-core[79ea6a29] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-testing-kit[925c0be3] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[b2b0c75f] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-testing-kit[6d81a677] @ src/shared/packages/pyforge-testing-kit
       osx-arm64-min:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/asgiref-3.12.1-pyhcf101f3_0.conda
@@ -20905,8 +20905,8 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/readline-8.3-h8b90a29_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hbeba79b_4.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - conda_source: pyforge-core[187a7856] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-testing-kit[4553a2c7] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[2c738eec] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-testing-kit[08ea3472] @ src/shared/packages/pyforge-testing-kit
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/asgiref-3.12.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-h4c7d964_0.conda
@@ -20954,8 +20954,8 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/vc14_runtime-14.51.36247-habf1de7_41.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36247-habf1de7_41.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - conda_source: pyforge-core[85d00fad] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-testing-kit[a3e3db7d] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-core[9fc844d6] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-testing-kit[c720d63f] @ src/shared/packages/pyforge-testing-kit
   pyforge-warden:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -21136,9 +21136,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/unearth-0.18.3-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/urllib3-2.8.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - conda_source: pyforge-core[79ea6a29] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-testing-kit[925c0be3] @ src/shared/packages/pyforge-testing-kit
-      - conda_source: pyforge-warden[5df36761] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-core[b2b0c75f] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-testing-kit[6d81a677] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-warden[95261c63] @ src/shared/packages/pyforge-warden
       osx-arm64-min:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-types-0.8.0-pyhd8ed1ab_0.conda
@@ -21319,9 +21319,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yaml-cpp-0.8.0-h784d473_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstandard-0.25.0-py314hd98292b_4.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - conda_source: pyforge-core[187a7856] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-testing-kit[4553a2c7] @ src/shared/packages/pyforge-testing-kit
-      - conda_source: pyforge-warden[8e9ffc7a] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-core[2c738eec] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-testing-kit[08ea3472] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-warden[d7ffe6e9] @ src/shared/packages/pyforge-warden
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-types-0.8.0-pyhd8ed1ab_0.conda
@@ -21486,9 +21486,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/yaml-cpp-0.8.0-h5112557_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstandard-0.25.0-py314hc5dbbe4_4.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - conda_source: pyforge-core[85d00fad] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-testing-kit[a3e3db7d] @ src/shared/packages/pyforge-testing-kit
-      - conda_source: pyforge-warden[92e725b1] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-core[9fc844d6] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-testing-kit[c720d63f] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-warden[f018d6c2] @ src/shared/packages/pyforge-warden
   python-agent-platform:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -68826,159 +68826,34 @@ packages:
     - zstd >=1.5.7,<1.6.0a0
   size: 387535
   timestamp: 1786599623274
-- conda_source: pyforge-atlas[0554bf09] @ src/shared/packages/pyforge-atlas
+- conda_source: pyforge-atlas[98513e54] @ src/shared/packages/pyforge-atlas
   variants:
     target_platform: noarch
   depends:
-  - a2a-sdk >=1.1.2
-  - attrs >=26.1.0
-  - beautifulsoup4 >=4.15.0
-  - brotli-python >=1.2
-  - dagster >=1.13.15
-  - duckdb >=1.5.5
-  - filelock >=3.32.0
-  - ibis-framework >=12.0.0
+  - python >=3.14
+  - python *
   - kedro >=1.5.0
-  - kedro-dagster >=0.7.0
   - kedro-datasets >=9.5.0
+  - kedro-dagster >=0.7.0
+  - pandas >=3.0.3
+  - pyarrow >=24.0.0
   - numpy >=2.5.3
+  - pyyaml >=6.0.3
+  - pydantic >=2.13.4
+  - attrs >=26.1.0
+  - duckdb >=1.5.5
+  - ibis-framework >=12.0.0
+  - pandera >=0.32.1
+  - filelock >=3.32.0
+  - vizro >=0.1.59
+  - dagster >=1.13.15
   - openlineage-python >=1.52.0
   - opentelemetry-api >=1.44.0
   - opentelemetry-sdk >=1.44.0
-  - pandas >=3.0.3
-  - pandera >=0.32.1
-  - pyarrow >=24.0.0
-  - pydantic >=2.13.4
-  - pyforge-core
-  - python *
-  - python >=3.14
-  - pyyaml >=6.0.3
-  - vizro >=0.1.59
-  license: MIT
-  source_depends:
-    pyforge-core:
-      path: ../pyforge-core
-  host_packages:
-  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/bzip2-1.0.8-h4e30115_10.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/icu-78.3-py310h579977c_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-23.1.2-h55c6f16_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libexpat-2.8.5-h6111c0a_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libffi-3.7.0-h47dc5ef_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/liblzma-5.8.3-h8088a28_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libmpdec-4.0.0-h84a0fba_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libpython-3.14.7-h4311e70_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libsqlite-3.53.4-hca69786_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libzlib-1.3.2-h8088a28_3.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/ncurses-6.6-he64c551_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/openssl-3.6.4-h55eecbc_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/python-3.14.7-h0ae1c2c_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/readline-8.3-h8b90a29_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hbeba79b_4.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/uv-0.12.19-h3207ac5_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-- conda_source: pyforge-atlas[24c1057a] @ src/shared/packages/pyforge-atlas
-  variants:
-    target_platform: noarch
-  depends:
   - a2a-sdk >=1.1.2
-  - attrs >=26.1.0
   - beautifulsoup4 >=4.15.0
-  - brotli-python >=1.2
-  - dagster >=1.13.15
-  - duckdb >=1.5.5
-  - filelock >=3.32.0
-  - ibis-framework >=12.0.0
-  - kedro >=1.5.0
-  - kedro-dagster >=0.7.0
-  - kedro-datasets >=9.5.0
-  - numpy >=2.5.3
-  - openlineage-python >=1.52.0
-  - opentelemetry-api >=1.44.0
-  - opentelemetry-sdk >=1.44.0
-  - pandas >=3.0.3
-  - pandera >=0.32.1
-  - pyarrow >=24.0.0
-  - pydantic >=2.13.4
   - pyforge-core
-  - python *
-  - python >=3.14
-  - pyyaml >=6.0.3
-  - vizro >=0.1.59
-  license: MIT
-  source_depends:
-    pyforge-core:
-      path: ../pyforge-core
-  host_packages:
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-hda65f42_10.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/icu-78.3-py310h44b86e0_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/ld_impl_linux-64-2.46.1-default_hbd61a6d_102.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libexpat-2.8.5-hd2095e1_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libffi-3.7.0-h81df57d_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libgcc-16.2.0-ha9f2e26_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libgomp-16.2.0-he0feb66_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/liblzma-5.8.3-hb03c661_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libmpdec-4.0.0-hb03c661_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libpython-3.14.7-hdc7f604_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libsqlite-3.53.4-h13e7031_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libstdcxx-16.2.0-h934c35e_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libuuid-2.42.4-hcfc3c73_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libzlib-1.3.2-h25fd6f3_3.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/ncurses-6.6-hdb14827_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/openssl-3.6.4-h781a0a9_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/python-3.14.7-hcd007b5_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/readline-8.3-hd6e31c0_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/tk-8.6.13-noxft_h1df4ec4_4.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/uv-0.12.19-h841d291_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.7-hb78ec9c_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-- conda_source: pyforge-atlas[85496907] @ src/shared/packages/pyforge-atlas
-  variants:
-    target_platform: noarch
-  depends:
-  - a2a-sdk >=1.1.2
-  - attrs >=26.1.0
-  - beautifulsoup4 >=4.15.0
   - brotli-python >=1.2
-  - dagster >=1.13.15
-  - duckdb >=1.5.5
-  - filelock >=3.32.0
-  - ibis-framework >=12.0.0
-  - kedro >=1.5.0
-  - kedro-dagster >=0.7.0
-  - kedro-datasets >=9.5.0
-  - numpy >=2.5.3
-  - openlineage-python >=1.52.0
-  - opentelemetry-api >=1.44.0
-  - opentelemetry-sdk >=1.44.0
-  - pandas >=3.0.3
-  - pandera >=0.32.1
-  - pyarrow >=24.0.0
-  - pydantic >=2.13.4
-  - pyforge-core
-  - python *
-  - python >=3.14
-  - pyyaml >=6.0.3
-  - vizro >=0.1.59
   license: MIT
   source_depends:
     pyforge-core:
@@ -69076,13 +68951,38 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-- conda_source: pyforge-core[187a7856] @ src/shared/packages/pyforge-core
+- conda_source: pyforge-atlas[ee78dec3] @ src/shared/packages/pyforge-atlas
   variants:
     target_platform: noarch
   depends:
-  - python *
   - python >=3.14
+  - python *
+  - kedro >=1.5.0
+  - kedro-datasets >=9.5.0
+  - kedro-dagster >=0.7.0
+  - pandas >=3.0.3
+  - pyarrow >=24.0.0
+  - numpy >=2.5.3
+  - pyyaml >=6.0.3
+  - pydantic >=2.13.4
+  - attrs >=26.1.0
+  - duckdb >=1.5.5
+  - ibis-framework >=12.0.0
+  - pandera >=0.32.1
+  - filelock >=3.32.0
+  - vizro >=0.1.59
+  - dagster >=1.13.15
+  - openlineage-python >=1.52.0
+  - opentelemetry-api >=1.44.0
+  - opentelemetry-sdk >=1.44.0
+  - a2a-sdk >=1.1.2
+  - beautifulsoup4 >=4.15.0
+  - pyforge-core
+  - brotli-python >=1.2
   license: MIT
+  source_depends:
+    pyforge-core:
+      path: ../pyforge-core
   host_packages:
   - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
@@ -69146,46 +69046,6 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hbeba79b_4.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/uv-0.12.19-h3207ac5_0.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-- conda_source: pyforge-core[79ea6a29] @ src/shared/packages/pyforge-core
-  variants:
-    target_platform: noarch
-  depends:
-  - python *
-  - python >=3.14
-  license: MIT
-  host_packages:
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-hda65f42_10.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/icu-78.3-py310h44b86e0_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/ld_impl_linux-64-2.46.1-default_hbd61a6d_102.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libexpat-2.8.5-hd2095e1_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libffi-3.7.0-h81df57d_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libgcc-16.2.0-ha9f2e26_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libgomp-16.2.0-he0feb66_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/liblzma-5.8.3-hb03c661_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libmpdec-4.0.0-hb03c661_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libpython-3.14.7-hdc7f604_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libsqlite-3.53.4-h13e7031_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libstdcxx-16.2.0-h934c35e_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libuuid-2.42.4-hcfc3c73_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libzlib-1.3.2-h25fd6f3_3.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/ncurses-6.6-hdb14827_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/openssl-3.6.4-h781a0a9_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/python-3.14.7-hcd007b5_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/readline-8.3-hd6e31c0_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/tk-8.6.13-noxft_h1df4ec4_4.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/uv-0.12.19-h841d291_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.7-hb78ec9c_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
 - conda_source: pyforge-core[7a6e3fe9] @ src/shared/packages/pyforge-core
   variants:
     target_platform: noarch
@@ -69224,41 +69084,6 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-- conda_source: pyforge-core[85d00fad] @ src/shared/packages/pyforge-core
-  variants:
-    target_platform: noarch
-  depends:
-  - python *
-  - python >=3.14
-  license: MIT
-  host_packages:
-  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-h4c7d964_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/bzip2-1.0.8-h0ad9c76_10.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libexpat-2.8.5-hac47afa_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libffi-3.7.0-h3d046cb_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/liblzma-5.8.3-hfd05255_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libmpdec-4.0.0-hfd05255_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libpython-3.14.7-h4f90d01_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libsqlite-3.53.4-hf5d6505_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libzlib-1.3.2-hfd05255_3.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/openssl-3.6.4-hf411b9b_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/python-3.14.7-h53f6dd8_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/tk-8.6.13-h967ab96_4.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/ucrt-10.0.26100.0-h57928b3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/uv-0.12.19-h8a923dc_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/vc-14.5-ha367084_41.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/vc14_runtime-14.51.36247-habf1de7_41.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36247-habf1de7_41.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
 - conda_source: pyforge-core[9fc844d6] @ src/shared/packages/pyforge-core
   variants:
     target_platform: noarch
@@ -69376,48 +69201,6 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/win-64/vc14_runtime-14.51.36247-habf1de7_41.conda
   - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36247-habf1de7_41.conda
   - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-- conda_source: pyforge-doctor[0ba223cc] @ src/shared/packages/pyforge-doctor
-  variants:
-    target_platform: noarch
-  depends:
-  - jsonschema
-  - mcp >=1.28.1
-  - pyforge-core
-  - python *
-  - python >=3.14
-  - pyyaml >=6.0
-  license: MIT
-  source_depends:
-    pyforge-core:
-      path: ../pyforge-core
-  host_packages:
-  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-h4c7d964_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/bzip2-1.0.8-h0ad9c76_10.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libexpat-2.8.5-hac47afa_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libffi-3.7.0-h3d046cb_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/liblzma-5.8.3-hfd05255_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libmpdec-4.0.0-hfd05255_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libpython-3.14.7-h4f90d01_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libsqlite-3.53.4-hf5d6505_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libzlib-1.3.2-hfd05255_3.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/openssl-3.6.4-hf411b9b_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/python-3.14.7-h53f6dd8_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/tk-8.6.13-h967ab96_4.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/ucrt-10.0.26100.0-h57928b3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/uv-0.13.0-hf7a7c96_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/vc-14.5-ha367084_41.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/vc14_runtime-14.51.36247-habf1de7_41.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36247-habf1de7_41.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
 - conda_source: pyforge-doctor[2093e2ba] @ src/shared/packages/pyforge-doctor
   variants:
     target_platform: noarch
@@ -69428,95 +69211,6 @@ packages:
   - pyyaml >=6.0
   - mcp >=1.28.1
   - pyforge-core
-  license: MIT
-  source_depends:
-    pyforge-core:
-      path: ../pyforge-core
-  host_packages:
-  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/bzip2-1.0.8-h4e30115_10.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/icu-78.3-py310h579977c_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-23.1.2-h55c6f16_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libexpat-2.8.5-h6111c0a_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libffi-3.7.0-h47dc5ef_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/liblzma-5.8.3-h8088a28_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libmpdec-4.0.0-h84a0fba_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libpython-3.14.7-h4311e70_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libsqlite-3.53.4-hca69786_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libzlib-1.3.2-h8088a28_3.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/ncurses-6.6-he64c551_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/openssl-3.6.4-h55eecbc_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/python-3.14.7-h0ae1c2c_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/readline-8.3-h8b90a29_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hbeba79b_4.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/uv-0.13.0-hfc06f74_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-- conda_source: pyforge-doctor[4a132516] @ src/shared/packages/pyforge-doctor
-  variants:
-    target_platform: noarch
-  depends:
-  - jsonschema
-  - mcp >=1.28.1
-  - pyforge-core
-  - python *
-  - python >=3.14
-  - pyyaml >=6.0
-  license: MIT
-  source_depends:
-    pyforge-core:
-      path: ../pyforge-core
-  host_packages:
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-hda65f42_10.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/icu-78.3-py310h44b86e0_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/ld_impl_linux-64-2.46.1-default_hbd61a6d_102.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libexpat-2.8.5-hd2095e1_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libffi-3.7.0-h81df57d_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libgcc-16.2.0-ha9f2e26_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libgomp-16.2.0-he0feb66_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/liblzma-5.8.3-hb03c661_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libmpdec-4.0.0-hb03c661_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libpython-3.14.7-hdc7f604_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libsqlite-3.53.4-h13e7031_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libstdcxx-16.2.0-h934c35e_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libuuid-2.42.4-hcfc3c73_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libzlib-1.3.2-h25fd6f3_3.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/ncurses-6.6-hdb14827_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/openssl-3.6.4-h781a0a9_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/python-3.14.7-hcd007b5_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/readline-8.3-hd6e31c0_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/tk-8.6.13-noxft_h1df4ec4_4.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/uv-0.13.0-h535ca38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.7-hb78ec9c_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-- conda_source: pyforge-doctor[9e586b75] @ src/shared/packages/pyforge-doctor
-  variants:
-    target_platform: noarch
-  depends:
-  - jsonschema
-  - mcp >=1.28.1
-  - pyforge-core
-  - python *
-  - python >=3.14
-  - pyyaml >=6.0
   license: MIT
   source_depends:
     pyforge-core:
@@ -69596,123 +69290,22 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-- conda_source: pyforge-herald[58c59345] @ src/shared/packages/pyforge-herald
+- conda_source: pyforge-herald[6595c651] @ src/shared/packages/pyforge-herald
   variants:
     target_platform: noarch
   depends:
-  - asgiref >=3.8.0
-  - boto3 >=1.43.75
-  - fastapi >=0.141.1
-  - httpx2 >=2.5.0
+  - python >=3.14
+  - python *
   - mcp >=2.2.0
-  - pillow >=12.3.0
+  - httpx2 >=2.5.0
+  - pyforge-core
   - playwright >=1.62.1
   - playwright-python >=1.62.0
-  - pyforge-core
-  - python *
-  - python >=3.14
+  - pillow >=12.3.0
   - python-pptx >=1.0.2
-  license: MIT
-  source_depends:
-    pyforge-core:
-      path: ../pyforge-core
-  host_packages:
-  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-h4c7d964_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/bzip2-1.0.8-h0ad9c76_10.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libexpat-2.8.5-hac47afa_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libffi-3.7.0-h3d046cb_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/liblzma-5.8.3-hfd05255_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libmpdec-4.0.0-hfd05255_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libpython-3.14.7-h4f90d01_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libsqlite-3.53.4-hf5d6505_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libzlib-1.3.2-hfd05255_3.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/openssl-3.6.4-hf411b9b_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/python-3.14.7-h53f6dd8_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/tk-8.6.13-h967ab96_4.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/ucrt-10.0.26100.0-h57928b3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/uv-0.13.0-hf7a7c96_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/vc-14.5-ha367084_41.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/vc14_runtime-14.51.36247-habf1de7_41.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36247-habf1de7_41.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-- conda_source: pyforge-herald[81685836] @ src/shared/packages/pyforge-herald
-  variants:
-    target_platform: noarch
-  depends:
-  - asgiref >=3.8.0
   - boto3 >=1.43.75
   - fastapi >=0.141.1
-  - httpx2 >=2.5.0
-  - mcp >=2.2.0
-  - pillow >=12.3.0
-  - playwright >=1.62.1
-  - playwright-python >=1.62.0
-  - pyforge-core
-  - python *
-  - python >=3.14
-  - python-pptx >=1.0.2
-  license: MIT
-  source_depends:
-    pyforge-core:
-      path: ../pyforge-core
-  host_packages:
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-hda65f42_10.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/icu-78.3-py310h44b86e0_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/ld_impl_linux-64-2.46.1-default_hbd61a6d_102.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libexpat-2.8.5-hd2095e1_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libffi-3.7.0-h81df57d_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libgcc-16.2.0-ha9f2e26_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libgomp-16.2.0-he0feb66_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/liblzma-5.8.3-hb03c661_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libmpdec-4.0.0-hb03c661_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libpython-3.14.7-hdc7f604_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libsqlite-3.53.4-h13e7031_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libstdcxx-16.2.0-h934c35e_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libuuid-2.42.4-hcfc3c73_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libzlib-1.3.2-h25fd6f3_3.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/ncurses-6.6-hdb14827_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/openssl-3.6.4-h781a0a9_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/python-3.14.7-hcd007b5_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/readline-8.3-hd6e31c0_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/tk-8.6.13-noxft_h1df4ec4_4.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/uv-0.13.0-h535ca38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.7-hb78ec9c_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-- conda_source: pyforge-herald[8d9bb04d] @ src/shared/packages/pyforge-herald
-  variants:
-    target_platform: noarch
-  depends:
   - asgiref >=3.8.0
-  - boto3 >=1.43.75
-  - fastapi >=0.141.1
-  - httpx2 >=2.5.0
-  - mcp >=2.2.0
-  - pillow >=12.3.0
-  - playwright >=1.62.1
-  - playwright-python >=1.62.0
-  - pyforge-core
-  - python *
-  - python >=3.14
-  - python-pptx >=1.0.2
   license: MIT
   source_depends:
     pyforge-core:
@@ -69745,6 +69338,54 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hbeba79b_4.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/uv-0.13.0-hfc06f74_0.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
+- conda_source: pyforge-herald[ca4938cc] @ src/shared/packages/pyforge-herald
+  variants:
+    target_platform: noarch
+  depends:
+  - python >=3.14
+  - python *
+  - mcp >=2.2.0
+  - httpx2 >=2.5.0
+  - pyforge-core
+  - playwright >=1.62.1
+  - playwright-python >=1.62.0
+  - pillow >=12.3.0
+  - python-pptx >=1.0.2
+  - boto3 >=1.43.75
+  - fastapi >=0.141.1
+  - asgiref >=3.8.0
+  license: MIT
+  source_depends:
+    pyforge-core:
+      path: ../pyforge-core
+  host_packages:
+  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-h4c7d964_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/bzip2-1.0.8-h0ad9c76_10.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libexpat-2.8.5-hac47afa_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libffi-3.7.0-h3d046cb_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/liblzma-5.8.3-hfd05255_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libmpdec-4.0.0-hfd05255_2.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libpython-3.14.7-h4f90d01_106_cp314.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libsqlite-3.53.4-hf5d6505_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libzlib-1.3.2-hfd05255_3.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/openssl-3.6.4-hf411b9b_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/python-3.14.7-h53f6dd8_106_cp314.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/tk-8.6.13-h967ab96_4.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/ucrt-10.0.26100.0-h57928b3_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/uv-0.13.0-hf7a7c96_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/vc-14.5-ha367084_41.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/vc14_runtime-14.51.36247-habf1de7_41.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36247-habf1de7_41.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
 - conda_source: pyforge-herald[e0015f58] @ src/shared/packages/pyforge-herald
   variants:
     target_platform: noarch
@@ -69849,68 +69490,21 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-- conda_source: pyforge-marshal[1fd09a81] @ src/shared/packages/pyforge-marshal
+- conda_source: pyforge-marshal[25eb6eb8] @ src/shared/packages/pyforge-marshal
   variants:
     target_platform: noarch
   depends:
-  - bmad-loop >=0.11.0,<0.13
-  - copier >=9.17,<10
-  - jsonschema >=4.25
-  - mcp >=2.2.0
-  - packaging >=24.0
-  - psutil >=7.2.2
-  - pyforge-core
-  - python *
   - python >=3.14
+  - python *
   - pyyaml >=6.0
   - tomlkit >=0.13,<0.13.3
-  license: MIT
-  source_depends:
-    pyforge-core:
-      path: ../pyforge-core
-  host_packages:
-  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/bzip2-1.0.8-h4e30115_10.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/icu-78.3-py310h579977c_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-23.1.2-h55c6f16_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libexpat-2.8.5-h6111c0a_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libffi-3.7.0-h47dc5ef_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/liblzma-5.8.3-h8088a28_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libmpdec-4.0.0-h84a0fba_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libpython-3.14.7-h4311e70_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libsqlite-3.53.4-hca69786_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libzlib-1.3.2-h8088a28_3.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/ncurses-6.6-he64c551_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/openssl-3.6.4-h55eecbc_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/python-3.14.7-h0ae1c2c_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/readline-8.3-h8b90a29_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hbeba79b_4.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/uv-0.13.0-hfc06f74_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-- conda_source: pyforge-marshal[554c3dfc] @ src/shared/packages/pyforge-marshal
-  variants:
-    target_platform: noarch
-  depends:
-  - bmad-loop >=0.11.0,<0.13
-  - copier >=9.17,<10
-  - jsonschema >=4.25
-  - mcp >=2.2.0
-  - packaging >=24.0
   - psutil >=7.2.2
+  - jsonschema >=4.25
+  - bmad-loop >=0.11.0,<0.13
   - pyforge-core
-  - python *
-  - python >=3.14
-  - pyyaml >=6.0
-  - tomlkit >=0.13,<0.13.3
+  - copier >=9.17,<10
+  - packaging >=24.0
+  - mcp >=2.2.0
   license: MIT
   source_depends:
     pyforge-core:
@@ -69943,48 +69537,26 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/win-64/vc14_runtime-14.51.36247-habf1de7_41.conda
   - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36247-habf1de7_41.conda
   - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-- conda_source: pyforge-marshal[ba5aea37] @ src/shared/packages/pyforge-marshal
+- conda_source: pyforge-marshal[6dffc240] @ src/shared/packages/pyforge-marshal
   variants:
     target_platform: noarch
   depends:
-  - bmad-loop >=0.11.0,<0.13
-  - copier >=9.17,<10
-  - jsonschema >=4.25
-  - mcp >=2.2.0
-  - packaging >=24.0
-  - psutil >=7.2.2
-  - pyforge-core
-  - python *
   - python >=3.14
+  - python *
   - pyyaml >=6.0
   - tomlkit >=0.13,<0.13.3
+  - psutil >=7.2.2
+  - jsonschema >=4.25
+  - bmad-loop >=0.11.0,<0.13
+  - pyforge-core
+  - copier >=9.17,<10
+  - packaging >=24.0
+  - mcp >=2.2.0
   license: MIT
   source_depends:
     pyforge-core:
       path: ../pyforge-core
   host_packages:
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-hda65f42_10.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/icu-78.3-py310h44b86e0_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/ld_impl_linux-64-2.46.1-default_hbd61a6d_102.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libexpat-2.8.5-hd2095e1_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libffi-3.7.0-h81df57d_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libgcc-16.2.0-ha9f2e26_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libgomp-16.2.0-he0feb66_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/liblzma-5.8.3-hb03c661_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libmpdec-4.0.0-hb03c661_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libpython-3.14.7-hdc7f604_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libsqlite-3.53.4-h13e7031_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libstdcxx-16.2.0-h934c35e_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libuuid-2.42.4-hcfc3c73_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libzlib-1.3.2-h25fd6f3_3.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/ncurses-6.6-hdb14827_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/openssl-3.6.4-h781a0a9_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/python-3.14.7-hcd007b5_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/readline-8.3-hd6e31c0_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/tk-8.6.13-noxft_h1df4ec4_4.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/uv-0.13.0-h535ca38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.7-hb78ec9c_7.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
@@ -69995,6 +69567,23 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/bzip2-1.0.8-h4e30115_10.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/icu-78.3-py310h579977c_2.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-23.1.2-h55c6f16_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libexpat-2.8.5-h6111c0a_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libffi-3.7.0-h47dc5ef_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/liblzma-5.8.3-h8088a28_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libmpdec-4.0.0-h84a0fba_2.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libpython-3.14.7-h4311e70_106_cp314.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libsqlite-3.53.4-hca69786_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libzlib-1.3.2-h8088a28_3.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/ncurses-6.6-he64c551_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/openssl-3.6.4-h55eecbc_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/python-3.14.7-h0ae1c2c_106_cp314.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/readline-8.3-h8b90a29_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hbeba79b_4.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/uv-0.13.0-hfc06f74_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
 - conda_source: pyforge-marshal[cec8d493] @ src/shared/packages/pyforge-marshal
   variants:
     target_platform: noarch
@@ -70047,26 +69636,26 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-- conda_source: pyforge-mason[2ecc0e05] @ src/shared/packages/pyforge-mason
+- conda_source: pyforge-mason[01e0f605] @ src/shared/packages/pyforge-mason
   variants:
     target_platform: noarch
   depends:
-  - conda-lock >=4.0.2
-  - gh >=2.97.0
-  - packaging
-  - pixi >=0.80.0
-  - pyforge-core
-  - python *
   - python >=3.14
-  - python-build >=1.6.0
+  - python *
+  - packaging
   - pyyaml >=6.0.3
+  - pixi >=0.80.0
   - twine >=7.0.0
+  - conda-lock >=4.0.2
+  - python-build >=1.6.0
+  - gh >=2.97.0
+  - pyforge-core
   license: MIT
   source_depends:
     pyforge-core:
       path: ../pyforge-core
   host_packages:
-  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-h4c7d964_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
@@ -70076,37 +69665,36 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/bzip2-1.0.8-h0ad9c76_10.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libexpat-2.8.5-hac47afa_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libffi-3.7.0-h3d046cb_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/liblzma-5.8.3-hfd05255_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libmpdec-4.0.0-hfd05255_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libpython-3.14.7-h4f90d01_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libsqlite-3.53.4-hf5d6505_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libzlib-1.3.2-hfd05255_3.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/openssl-3.6.4-hf411b9b_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/python-3.14.7-h53f6dd8_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/tk-8.6.13-h967ab96_4.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/ucrt-10.0.26100.0-h57928b3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/uv-0.13.0-hf7a7c96_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/vc-14.5-ha367084_41.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/vc14_runtime-14.51.36247-habf1de7_41.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36247-habf1de7_41.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-- conda_source: pyforge-mason[3bce6dfb] @ src/shared/packages/pyforge-mason
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/bzip2-1.0.8-h4e30115_10.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-23.1.3-h55c6f16_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libexpat-2.8.5-h6111c0a_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libffi-3.7.0-h47dc5ef_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/liblzma-5.8.3-h8088a28_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libmpdec-4.0.0-h84a0fba_2.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libpython-3.14.8-h4311e70_101_cp314.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libsqlite-3.53.4-h34a968b_103.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libzlib-1.3.2-h8088a28_3.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/ncurses-6.6-he64c551_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/openssl-3.6.5-h55eecbc_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/python-3.14.8-h0ae1c2c_101_cp314.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/readline-8.3-h8b90a29_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hbeba79b_4.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/uv-0.13.0-hfc06f74_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
+- conda_source: pyforge-mason[1a69fe5a] @ src/shared/packages/pyforge-mason
   variants:
     target_platform: noarch
   depends:
-  - conda-lock >=4.0.2
-  - gh >=2.97.0
-  - packaging
-  - pixi >=0.80.0
-  - pyforge-core
-  - python *
   - python >=3.14
-  - python-build >=1.6.0
+  - python *
+  - packaging
   - pyyaml >=6.0.3
+  - pixi >=0.80.0
   - twine >=7.0.0
+  - conda-lock >=4.0.2
+  - python-build >=1.6.0
+  - gh >=2.97.0
+  - pyforge-core
   license: MIT
   source_depends:
     pyforge-core:
@@ -70143,20 +69731,66 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-- conda_source: pyforge-mason[738aa688] @ src/shared/packages/pyforge-mason
+- conda_source: pyforge-mason[22648f4c] @ src/shared/packages/pyforge-mason
   variants:
     target_platform: noarch
   depends:
-  - conda-lock >=4.0.2
-  - gh >=2.97.0
-  - packaging
-  - pixi >=0.80.0
-  - pyforge-core
-  - python *
   - python >=3.14
-  - python-build >=1.6.0
+  - python *
+  - packaging
   - pyyaml >=6.0.3
+  - pixi >=0.80.0
   - twine >=7.0.0
+  - conda-lock >=4.0.2
+  - python-build >=1.6.0
+  - gh >=2.97.0
+  - pyforge-core
+  license: MIT
+  source_depends:
+    pyforge-core:
+      path: ../pyforge-core
+  host_packages:
+  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-h4c7d964_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/bzip2-1.0.8-h0ad9c76_10.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libexpat-2.8.5-hac47afa_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libffi-3.7.0-h3d046cb_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/liblzma-5.8.3-hfd05255_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libmpdec-4.0.0-hfd05255_2.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libpython-3.14.7-h4f90d01_106_cp314.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libsqlite-3.53.4-hf5d6505_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libzlib-1.3.2-hfd05255_3.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/openssl-3.6.4-hf411b9b_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/python-3.14.7-h53f6dd8_106_cp314.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/tk-8.6.13-h967ab96_4.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/ucrt-10.0.26100.0-h57928b3_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/uv-0.13.0-hf7a7c96_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/vc-14.5-ha367084_41.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/vc14_runtime-14.51.36247-habf1de7_41.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36247-habf1de7_41.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
+- conda_source: pyforge-mason[5d96215f] @ src/shared/packages/pyforge-mason
+  variants:
+    target_platform: noarch
+  depends:
+  - python >=3.14
+  - python *
+  - packaging
+  - pyyaml >=6.0.3
+  - pixi >=0.80.0
+  - twine >=7.0.0
+  - conda-lock >=4.0.2
+  - python-build >=1.6.0
+  - gh >=2.97.0
+  - pyforge-core
   license: MIT
   source_depends:
     pyforge-core:
@@ -70173,86 +69807,36 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/bzip2-1.0.8-h4e30115_10.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-23.1.3-h55c6f16_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/icu-78.3-py310h579977c_2.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-23.1.2-h55c6f16_0.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libexpat-2.8.5-h6111c0a_0.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libffi-3.7.0-h47dc5ef_1.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/liblzma-5.8.3-h8088a28_1.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libmpdec-4.0.0-h84a0fba_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libpython-3.14.8-h4311e70_101_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libsqlite-3.53.4-h34a968b_103.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libpython-3.14.7-h4311e70_106_cp314.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libsqlite-3.53.4-hca69786_1.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libzlib-1.3.2-h8088a28_3.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/ncurses-6.6-he64c551_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/openssl-3.6.5-h55eecbc_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/python-3.14.8-h0ae1c2c_101_cp314.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/openssl-3.6.4-h55eecbc_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/python-3.14.7-h0ae1c2c_106_cp314.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/readline-8.3-h8b90a29_1.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hbeba79b_4.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/uv-0.13.0-hfc06f74_0.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-- conda_source: pyforge-mason[97f9d201] @ src/shared/packages/pyforge-mason
+- conda_source: pyforge-mason[6aeb33cb] @ src/shared/packages/pyforge-mason
   variants:
     target_platform: noarch
   depends:
-  - conda-lock >=4.0.2
-  - gh >=2.97.0
-  - packaging
-  - pixi >=0.80.0
-  - pyforge-core
-  - python *
   - python >=3.14
-  - python-build >=1.6.0
-  - pyyaml >=6.0.3
-  - twine >=7.0.0
-  license: MIT
-  source_depends:
-    pyforge-core:
-      path: ../pyforge-core
-  host_packages:
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-hda65f42_10.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/icu-78.3-py310h44b86e0_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/ld_impl_linux-64-2.46.1-default_hbd61a6d_102.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libexpat-2.8.5-hd2095e1_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libffi-3.7.0-h81df57d_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libgcc-16.2.0-ha9f2e26_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libgomp-16.2.0-he0feb66_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/liblzma-5.8.3-hb03c661_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libmpdec-4.0.0-hb03c661_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libpython-3.14.7-hdc7f604_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libsqlite-3.53.4-h13e7031_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libstdcxx-16.2.0-h934c35e_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libuuid-2.42.4-hcfc3c73_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libzlib-1.3.2-h25fd6f3_3.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/ncurses-6.6-hdb14827_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/openssl-3.6.4-h781a0a9_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/python-3.14.7-hcd007b5_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/readline-8.3-hd6e31c0_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/tk-8.6.13-noxft_h1df4ec4_4.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/uv-0.13.0-h535ca38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.7-hb78ec9c_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-- conda_source: pyforge-mason[bf323b38] @ src/shared/packages/pyforge-mason
-  variants:
-    target_platform: noarch
-  depends:
-  - conda-lock >=4.0.2
-  - gh >=2.97.0
-  - packaging
-  - pixi >=0.80.0
-  - pyforge-core
   - python *
-  - python >=3.14
-  - python-build >=1.6.0
+  - packaging
   - pyyaml >=6.0.3
+  - pixi >=0.80.0
   - twine >=7.0.0
+  - conda-lock >=4.0.2
+  - python-build >=1.6.0
+  - gh >=2.97.0
+  - pyforge-core
   license: MIT
   source_depends:
     pyforge-core:
@@ -70336,52 +69920,6 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-- conda_source: pyforge-mason[ecebe7dc] @ src/shared/packages/pyforge-mason
-  variants:
-    target_platform: noarch
-  depends:
-  - conda-lock >=4.0.2
-  - gh >=2.97.0
-  - packaging
-  - pixi >=0.80.0
-  - pyforge-core
-  - python *
-  - python >=3.14
-  - python-build >=1.6.0
-  - pyyaml >=6.0.3
-  - twine >=7.0.0
-  license: MIT
-  source_depends:
-    pyforge-core:
-      path: ../pyforge-core
-  host_packages:
-  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/bzip2-1.0.8-h4e30115_10.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/icu-78.3-py310h579977c_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-23.1.2-h55c6f16_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libexpat-2.8.5-h6111c0a_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libffi-3.7.0-h47dc5ef_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/liblzma-5.8.3-h8088a28_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libmpdec-4.0.0-h84a0fba_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libpython-3.14.7-h4311e70_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libsqlite-3.53.4-hca69786_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libzlib-1.3.2-h8088a28_3.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/ncurses-6.6-he64c551_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/openssl-3.6.4-h55eecbc_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/python-3.14.7-h0ae1c2c_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/readline-8.3-h8b90a29_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hbeba79b_4.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/uv-0.13.0-hfc06f74_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
 - conda_source: pyforge-scribe[16195398] @ src/shared/packages/pyforge-scribe
   variants:
     target_platform: noarch
@@ -70428,6 +69966,47 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
+- conda_source: pyforge-scribe[1c98607d] @ src/shared/packages/pyforge-scribe
+  variants:
+    target_platform: noarch
+  depends:
+  - python >=3.14
+  - python *
+  - typer >=0.27.0
+  - pydantic >=2.13.4
+  - pyforge-core
+  license: MIT
+  source_depends:
+    pyforge-core:
+      path: ../pyforge-core
+  host_packages:
+  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-h4c7d964_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/bzip2-1.0.8-h0ad9c76_10.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libexpat-2.8.5-hac47afa_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libffi-3.7.0-h3d046cb_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/liblzma-5.8.3-hfd05255_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libmpdec-4.0.0-hfd05255_2.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libpython-3.14.7-h4f90d01_106_cp314.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libsqlite-3.53.4-hf5d6505_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libzlib-1.3.2-hfd05255_3.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/openssl-3.6.4-hf411b9b_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/python-3.14.7-h53f6dd8_106_cp314.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/tk-8.6.13-h967ab96_4.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/ucrt-10.0.26100.0-h57928b3_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/uv-0.13.0-hf7a7c96_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/vc-14.5-ha367084_41.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/vc14_runtime-14.51.36247-habf1de7_41.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36247-habf1de7_41.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
 - conda_source: pyforge-scribe[1e9bccfe] @ src/shared/packages/pyforge-scribe
   variants:
     target_platform: noarch
@@ -70515,93 +70094,6 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hbeba79b_4.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/uv-0.12.20-h3207ac5_0.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-- conda_source: pyforge-scribe[75623477] @ src/shared/packages/pyforge-scribe
-  variants:
-    target_platform: noarch
-  depends:
-  - pydantic >=2.13.4
-  - pyforge-core
-  - python *
-  - python >=3.14
-  - typer >=0.27.0
-  license: MIT
-  source_depends:
-    pyforge-core:
-      path: ../pyforge-core
-  host_packages:
-  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-h4c7d964_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/bzip2-1.0.8-h0ad9c76_10.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libexpat-2.8.5-hac47afa_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libffi-3.7.0-h3d046cb_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/liblzma-5.8.3-hfd05255_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libmpdec-4.0.0-hfd05255_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libpython-3.14.7-h4f90d01_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libsqlite-3.53.4-hf5d6505_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libzlib-1.3.2-hfd05255_3.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/openssl-3.6.4-hf411b9b_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/python-3.14.7-h53f6dd8_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/tk-8.6.13-h967ab96_4.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/ucrt-10.0.26100.0-h57928b3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/uv-0.13.0-hf7a7c96_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/vc-14.5-ha367084_41.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/vc14_runtime-14.51.36247-habf1de7_41.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36247-habf1de7_41.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-- conda_source: pyforge-scribe[77015a7d] @ src/shared/packages/pyforge-scribe
-  variants:
-    target_platform: noarch
-  depends:
-  - pydantic >=2.13.4
-  - pyforge-core
-  - python *
-  - python >=3.14
-  - typer >=0.27.0
-  license: MIT
-  source_depends:
-    pyforge-core:
-      path: ../pyforge-core
-  host_packages:
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-hda65f42_10.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/icu-78.3-py310h44b86e0_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/ld_impl_linux-64-2.46.1-default_hbd61a6d_102.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libexpat-2.8.5-hd2095e1_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libffi-3.7.0-h81df57d_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libgcc-16.2.0-ha9f2e26_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libgomp-16.2.0-he0feb66_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/liblzma-5.8.3-hb03c661_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libmpdec-4.0.0-hb03c661_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libpython-3.14.7-hdc7f604_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libsqlite-3.53.4-h13e7031_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libstdcxx-16.2.0-h934c35e_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libuuid-2.42.4-hcfc3c73_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libzlib-1.3.2-h25fd6f3_3.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/ncurses-6.6-hdb14827_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/openssl-3.6.4-h781a0a9_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/python-3.14.7-hcd007b5_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/readline-8.3-hd6e31c0_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/tk-8.6.13-noxft_h1df4ec4_4.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/uv-0.13.0-h535ca38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.7-hb78ec9c_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
 - conda_source: pyforge-scribe[826d9a8b] @ src/shared/packages/pyforge-scribe
   variants:
     target_platform: noarch
@@ -70643,56 +70135,15 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/win-64/vc14_runtime-14.51.36247-habf1de7_41.conda
   - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36247-habf1de7_41.conda
   - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-- conda_source: pyforge-scribe[d43fcc8f] @ src/shared/packages/pyforge-scribe
+- conda_source: pyforge-scribe[e77a39d7] @ src/shared/packages/pyforge-scribe
   variants:
     target_platform: noarch
   depends:
+  - python >=3.14
+  - python *
+  - typer >=0.27.0
   - pydantic >=2.13.4
   - pyforge-core
-  - python *
-  - python >=3.14
-  - typer >=0.27.0
-  license: MIT
-  source_depends:
-    pyforge-core:
-      path: ../pyforge-core
-  host_packages:
-  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/bzip2-1.0.8-h4e30115_10.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/icu-78.3-py310h579977c_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-23.1.2-h55c6f16_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libexpat-2.8.5-h6111c0a_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libffi-3.7.0-h47dc5ef_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/liblzma-5.8.3-h8088a28_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libmpdec-4.0.0-h84a0fba_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libpython-3.14.7-h4311e70_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libsqlite-3.53.4-hca69786_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libzlib-1.3.2-h8088a28_3.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/ncurses-6.6-he64c551_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/openssl-3.6.4-h55eecbc_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/python-3.14.7-h0ae1c2c_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/readline-8.3-h8b90a29_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hbeba79b_4.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/uv-0.13.0-hfc06f74_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-- conda_source: pyforge-steward[4c43cfa3] @ src/shared/packages/pyforge-steward
-  variants:
-    target_platform: noarch
-  depends:
-  - age >=1.3.1,<1.4
-  - pyforge-core
-  - python *
-  - python >=3.14
-  - pyyaml
   license: MIT
   source_depends:
     pyforge-core:
@@ -70812,61 +70263,15 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-- conda_source: pyforge-steward[c628e2f8] @ src/shared/packages/pyforge-steward
+- conda_source: pyforge-steward[ea996a78] @ src/shared/packages/pyforge-steward
   variants:
     target_platform: noarch
   depends:
-  - age >=1.3.1,<1.4
-  - pyforge-core
-  - python *
   - python >=3.14
-  - pyyaml
-  license: MIT
-  source_depends:
-    pyforge-core:
-      path: ../pyforge-core
-  host_packages:
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-hda65f42_10.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/icu-78.3-py310h44b86e0_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/ld_impl_linux-64-2.46.1-default_hbd61a6d_102.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libexpat-2.8.5-hd2095e1_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libffi-3.7.0-h81df57d_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libgcc-16.2.0-ha9f2e26_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libgomp-16.2.0-he0feb66_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/liblzma-5.8.3-hb03c661_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libmpdec-4.0.0-hb03c661_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libpython-3.14.7-hdc7f604_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libsqlite-3.53.4-h13e7031_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libstdcxx-16.2.0-h934c35e_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libuuid-2.42.4-hcfc3c73_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libzlib-1.3.2-h25fd6f3_3.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/ncurses-6.6-hdb14827_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/openssl-3.6.4-h781a0a9_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/python-3.14.7-hcd007b5_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/readline-8.3-hd6e31c0_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/tk-8.6.13-noxft_h1df4ec4_4.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/uv-0.13.0-h535ca38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.7-hb78ec9c_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-- conda_source: pyforge-steward[f1a5ebbb] @ src/shared/packages/pyforge-steward
-  variants:
-    target_platform: noarch
-  depends:
-  - age >=1.3.1,<1.4
-  - pyforge-core
   - python *
-  - python >=3.14
+  - age >=1.3.1,<1.4
   - pyyaml
+  - pyforge-core
   license: MIT
   source_depends:
     pyforge-core:
@@ -70899,14 +70304,14 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/win-64/vc14_runtime-14.51.36247-habf1de7_41.conda
   - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36247-habf1de7_41.conda
   - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-- conda_source: pyforge-testing-kit[4553a2c7] @ src/shared/packages/pyforge-testing-kit
+- conda_source: pyforge-testing-kit[08ea3472] @ src/shared/packages/pyforge-testing-kit
   variants:
     target_platform: noarch
   depends:
+  - python >=3.14
+  - python *
   - openfeature-sdk >=0.10.0
   - pyforge-core
-  - python *
-  - python >=3.14
   license: MIT
   source_depends:
     pyforge-core:
@@ -70984,59 +70389,14 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-- conda_source: pyforge-testing-kit[925c0be3] @ src/shared/packages/pyforge-testing-kit
+- conda_source: pyforge-testing-kit[c720d63f] @ src/shared/packages/pyforge-testing-kit
   variants:
     target_platform: noarch
   depends:
+  - python >=3.14
+  - python *
   - openfeature-sdk >=0.10.0
   - pyforge-core
-  - python *
-  - python >=3.14
-  license: MIT
-  source_depends:
-    pyforge-core:
-      path: ../pyforge-core
-  host_packages:
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-hda65f42_10.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/icu-78.3-py310h44b86e0_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/ld_impl_linux-64-2.46.1-default_hbd61a6d_102.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libexpat-2.8.5-hd2095e1_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libffi-3.7.0-h81df57d_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libgcc-16.2.0-ha9f2e26_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libgomp-16.2.0-he0feb66_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/liblzma-5.8.3-hb03c661_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libmpdec-4.0.0-hb03c661_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libpython-3.14.7-hdc7f604_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libsqlite-3.53.4-h13e7031_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libstdcxx-16.2.0-h934c35e_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libuuid-2.42.4-hcfc3c73_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libzlib-1.3.2-h25fd6f3_3.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/ncurses-6.6-hdb14827_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/openssl-3.6.4-h781a0a9_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/python-3.14.7-hcd007b5_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/readline-8.3-hd6e31c0_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/tk-8.6.13-noxft_h1df4ec4_4.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/uv-0.12.19-h841d291_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.7-hb78ec9c_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-- conda_source: pyforge-testing-kit[a3e3db7d] @ src/shared/packages/pyforge-testing-kit
-  variants:
-    target_platform: noarch
-  depends:
-  - openfeature-sdk >=0.10.0
-  - pyforge-core
-  - python *
-  - python >=3.14
   license: MIT
   source_depends:
     pyforge-core:
@@ -71120,153 +70480,6 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-- conda_source: pyforge-warden[5df36761] @ src/shared/packages/pyforge-warden
-  variants:
-    target_platform: noarch
-  depends:
-  - cyclonedx-python-lib
-  - deptry >=0.25.1,<0.26
-  - jsonschema
-  - license-expression
-  - opengrep >=1.30.2,<1.31
-  - osv-scanner >=2.4.0,<2.5
-  - packageurl-python
-  - packaging
-  - pyforge-core
-  - python *
-  - python >=3.14
-  - pyyaml
-  license: MIT
-  source_depends:
-    pyforge-core:
-      path: ../pyforge-core
-  host_packages:
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-hda65f42_10.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/icu-78.3-py310h44b86e0_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/ld_impl_linux-64-2.46.1-default_hbd61a6d_102.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libexpat-2.8.5-hd2095e1_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libffi-3.7.0-h81df57d_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libgcc-16.2.0-ha9f2e26_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libgomp-16.2.0-he0feb66_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/liblzma-5.8.3-hb03c661_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libmpdec-4.0.0-hb03c661_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libpython-3.14.7-hdc7f604_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libsqlite-3.53.4-h13e7031_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libstdcxx-16.2.0-h934c35e_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libuuid-2.42.4-hcfc3c73_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/libzlib-1.3.2-h25fd6f3_3.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/ncurses-6.6-hdb14827_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/openssl-3.6.4-h781a0a9_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/python-3.14.7-hcd007b5_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/readline-8.3-hd6e31c0_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/tk-8.6.13-noxft_h1df4ec4_4.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/uv-0.12.19-h841d291_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.7-hb78ec9c_7.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-- conda_source: pyforge-warden[8e9ffc7a] @ src/shared/packages/pyforge-warden
-  variants:
-    target_platform: noarch
-  depends:
-  - cyclonedx-python-lib
-  - deptry >=0.25.1,<0.26
-  - jsonschema
-  - license-expression
-  - osv-scanner >=2.4.0,<2.5
-  - packageurl-python
-  - packaging
-  - pyforge-core
-  - python *
-  - python >=3.14
-  - pyyaml
-  license: MIT
-  source_depends:
-    pyforge-core:
-      path: ../pyforge-core
-  host_packages:
-  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/bzip2-1.0.8-h4e30115_10.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/icu-78.3-py310h579977c_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-23.1.2-h55c6f16_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libexpat-2.8.5-h6111c0a_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libffi-3.7.0-h47dc5ef_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/liblzma-5.8.3-h8088a28_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libmpdec-4.0.0-h84a0fba_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libpython-3.14.7-h4311e70_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libsqlite-3.53.4-hca69786_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libzlib-1.3.2-h8088a28_3.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/ncurses-6.6-he64c551_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/openssl-3.6.4-h55eecbc_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/python-3.14.7-h0ae1c2c_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/readline-8.3-h8b90a29_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hbeba79b_4.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/uv-0.12.19-h3207ac5_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-- conda_source: pyforge-warden[92e725b1] @ src/shared/packages/pyforge-warden
-  variants:
-    target_platform: noarch
-  depends:
-  - cyclonedx-python-lib
-  - deptry >=0.25.1,<0.26
-  - jsonschema
-  - license-expression
-  - osv-scanner >=2.4.0,<2.5
-  - packageurl-python
-  - packaging
-  - pyforge-core
-  - python *
-  - python >=3.14
-  - pyyaml
-  license: MIT
-  source_depends:
-    pyforge-core:
-      path: ../pyforge-core
-  host_packages:
-  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-h4c7d964_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/bzip2-1.0.8-h0ad9c76_10.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libexpat-2.8.5-hac47afa_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libffi-3.7.0-h3d046cb_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/liblzma-5.8.3-hfd05255_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libmpdec-4.0.0-hfd05255_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libpython-3.14.7-h4f90d01_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libsqlite-3.53.4-hf5d6505_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libzlib-1.3.2-hfd05255_3.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/openssl-3.6.4-hf411b9b_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/python-3.14.7-h53f6dd8_106_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/tk-8.6.13-h967ab96_4.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/ucrt-10.0.26100.0-h57928b3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/uv-0.12.19-h8a923dc_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/vc-14.5-ha367084_41.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/vc14_runtime-14.51.36247-habf1de7_41.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36247-habf1de7_41.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
 - conda_source: pyforge-warden[95261c63] @ src/shared/packages/pyforge-warden
   variants:
     target_platform: noarch
@@ -71367,6 +70580,53 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hbeba79b_4.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/uv-0.12.19-h3207ac5_0.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
+- conda_source: pyforge-warden[f018d6c2] @ src/shared/packages/pyforge-warden
+  variants:
+    target_platform: noarch
+  depends:
+  - python >=3.14
+  - python *
+  - deptry >=0.25.1,<0.26
+  - osv-scanner >=2.4.0,<2.5
+  - pyyaml
+  - packaging
+  - cyclonedx-python-lib
+  - jsonschema
+  - packageurl-python
+  - license-expression
+  - pyforge-core
+  license: MIT
+  source_depends:
+    pyforge-core:
+      path: ../pyforge-core
+  host_packages:
+  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-h4c7d964_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/bzip2-1.0.8-h0ad9c76_10.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libexpat-2.8.5-hac47afa_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libffi-3.7.0-h3d046cb_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/liblzma-5.8.3-hfd05255_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libmpdec-4.0.0-hfd05255_2.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libpython-3.14.7-h4f90d01_106_cp314.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libsqlite-3.53.4-hf5d6505_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libzlib-1.3.2-hfd05255_3.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/openssl-3.6.4-hf411b9b_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/python-3.14.7-h53f6dd8_106_cp314.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/tk-8.6.13-h967ab96_4.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/ucrt-10.0.26100.0-h57928b3_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/uv-0.12.19-h8a923dc_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/vc-14.5-ha367084_41.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/vc14_runtime-14.51.36247-habf1de7_41.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36247-habf1de7_41.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
 - pypi: https://files.pythonhosted.org/packages/42/89/81b2907cda14e566b9bf215e2ad82fc9b349edf07d2010756ffdb902f328/sqlite_vec-0.1.9-py3-none-win_amd64.whl
   name: sqlite-vec
   version: 0.1.9
