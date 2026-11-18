@@ -96,8 +96,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-11-13T04:36:16-06:00'
-      tree: f6776ea2fb7e8bee45e74a91f58e7253faefe33b
+      derived_at: '2026-11-17T20:38:40-06:00'
+      tree: 6348b63a67aff72829a6bb8331c7a557ab47812d-dirty
   - path: how-to/pause-ci.md
     quadrant: how-to
     owner: pyforge-steward
@@ -251,8 +251,8 @@ pages:
       - scripts/detectors.py
       - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
     stamp:
-      derived_at: '2026-11-11T14:58:14-06:00'
-      tree: 1c9cb4ade3ba259ca99923df295303f2afadde45-dirty
+      derived_at: '2026-11-17T20:38:40-06:00'
+      tree: 6348b63a67aff72829a6bb8331c7a557ab47812d-dirty
   - path: reference/developer-guide.md
     quadrant: reference
     owner: fleet
@@ -265,8 +265,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-10-31T13:47:28-05:00'
-      tree: c258695e071f7a1e3aac3d756803008eef5ddfee-dirty
+      derived_at: '2026-11-17T20:38:40-06:00'
+      tree: 6348b63a67aff72829a6bb8331c7a557ab47812d-dirty
   - path: reference/github-workflows.md
     quadrant: reference
     owner: fleet
@@ -274,6 +274,9 @@ pages:
     generator: scripts/docs_github_workflows.py
     sources:
       - .github/workflows
+    stamp:
+      derived_at: '2026-11-17T20:38:40-06:00'
+      tree: 6348b63a67aff72829a6bb8331c7a557ab47812d-dirty
   - path: reference/judgement-vocabulary.md
     quadrant: reference
     owner: doctor
@@ -303,8 +306,8 @@ pages:
     sources:
       - .claude/skills
     stamp:
-      derived_at: '2026-11-12T22:43:21-06:00'
-      tree: b69fd81eb812eb0a2de4580c4b04d9af41259ef8-dirty
+      derived_at: '2026-11-17T20:38:40-06:00'
+      tree: 6348b63a67aff72829a6bb8331c7a557ab47812d-dirty
   - path: reference/station-cheat-sheet.md
     quadrant: reference
     owner: fleet
@@ -314,8 +317,8 @@ pages:
       - pixi.toml
       - src/shared/packages
     stamp:
-      derived_at: '2026-11-12T03:07:29-06:00'
-      tree: 7b6286bd7b506960e6cdc0a477ef2c32e2acf96c-dirty
+      derived_at: '2026-11-17T20:38:40-06:00'
+      tree: 6348b63a67aff72829a6bb8331c7a557ab47812d-dirty
   - path: reference/station-verify-commands.md
     quadrant: reference
     owner: fleet
@@ -396,7 +399,6 @@ pages:
     quadrant: explanation
     owner: herald
     kind: authored
-
 sections:
   - key: herald
     label: Herald
