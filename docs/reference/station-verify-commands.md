@@ -9,7 +9,7 @@ sources:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/marshal-policy.toml
   - _bmad-output/projects/pyforge-warden/planning-artifacts/marshal-policy.toml
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/spec_binding.py
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # Station verify commands

@@ -2,7 +2,6 @@
 sources:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py
   - scripts/spec_surface_check.py
-  - scripts/.spec-surface-baseline.json
   - _bmad/scripts/memlog.py
   - .claude/memory/feedback/spec-surface-check-py-s-write-baseline-reads-git-ls-files-so.md
 verified: 2026-11-17

@@ -548,7 +548,7 @@
    "docs/how-to/reach-a-station-mcp-endpoint.md": "4135a339a7e96bcc33fa6cbb83d0e41be45e4cfc",
    "docs/how-to/read-steward-registers.md": "d739da43b0c2e3158dc5c11ec6429a1018a884e6",
    "docs/how-to/recipe-testing-and-builds.md": "d7495537c3038b19f6df52fca6efa399d750ee6f",
-   "docs/how-to/reconcile-spec-surface.md": "d31f90ee00e03b0f423196a540d544c3ad998519",
+   "docs/how-to/reconcile-spec-surface.md": "a88777d6fbb48f6252a2d6a1e05e6c98d16caf45",
    "docs/how-to/record-progress-claims-and-notices-with-herald.md": "586c97d5d61d0b6a6b7096ae028185320045ee9a",
    "docs/how-to/refresh-the-estate.md": "ba233a2af2e2a3f686f38dfa881c6cde9749f912",
    "docs/how-to/restore-operations.md": "813c53c6b5710545bd6e1e7d4784f116afa412eb",
@@ -820,7 +820,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "b0822ef33d3a868aaeb16c813f91ec1ab67b434e"
+  "memlog": "14f03b85d732129fc3010de7035313b36d79705a"
  },
  "pyforge-herald/spec-pyforge-herald": {
   "files": {
