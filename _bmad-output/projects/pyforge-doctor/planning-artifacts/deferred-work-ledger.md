@@ -3458,8 +3458,8 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: low
   promoted: 2026-11-17 — doctor Story 59.8 (the full documentation refresh, branch `docs-full-refresh-2026-11-17`)
   reason: a code, tooling or compiled-skill change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
-  resolution: 2026-11-18, PR #2373 (steward Story 126.5, commit 35b270d358) — every mismatch the audit listed is corrected in the four `SKILL.md` files against live `--help`. PARTIAL: these are hand corrections. `skf-update-skill` cannot run headlessly (it needs the Tier-3 forge data of the machine that compiled the skills and mints a new version), so `metadata.json` and `provenance-map.json` still describe the 2026-11-12 compile. What is left is one operator-attended `skf-update-skill` run per station.
-  status: open
+  resolution: 2026-11-18, commit 4e0e7da035 (steward Story 126.5) — one operator-attended `skf-update-skill` run per station rebuilt the four skills at 0.1.1 (full re-extraction, Forge tier, ast-grep 0.45.3, source at 424ce69fc2), so `metadata.json` and `provenance-map.json` describe a real tool run; every [MANUAL] block is byte-identical to 0.1.0; an independent verifier checked each skill against live `--help` and the source and its findings are applied; `skf-export-skill` moved the `AGENTS.md` block and the export manifest to 0.1.1. The hand corrections of PR #2373 (commit 35b270d358) are carried in the rebuilt text.
+  status: resolved
 
 ### DW-doctor-59-7-1: docs-currency trusts git history it may not have
 

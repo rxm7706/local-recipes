@@ -8934,7 +8934,7 @@ So that `DW-doctor-59-6-1` closes in this change.
 **When** each of the four is updated through `skf-update-skill` against the live CLI and the skills catalog is regenerated
 **Then** each mismatch the audit listed is gone, no other skill directory changes, and the scribe instruction-surface parity test passes
 **And** `DW-doctor-59-6-1` reads resolved in its ledger with the commit that closed it
-**Status:** review
+**Status:** done
 
 ### Story 126.6: Every row this change opened is closed, and the preflight is green with fewer skips
 

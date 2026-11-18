@@ -2,7 +2,7 @@
 title: '126.5: The four compiled station skills match their CLIs'
 type: 'fix'
 created: '2026-11-18'
-status: 'in-review'
+status: 'done'
 story: 126-5-the-four-compiled-station-skills-match-their-clis
 spec: spec-pyforge-steward
 difficulty: 'easy'
@@ -78,3 +78,4 @@ Ledger key: `126-5-the-four-compiled-station-skills-match-their-clis`.
 ## Spec Change Log
 
 - 2026-11-18: minted from the station Dream's 2026-11-18 entry and the operator's rulings of the same date.
+- 2026-11-18 (later): closed. The operator attended one `skf-update-skill` run per station (module copy `_bmad/skf/skf-update-skill`, full re-extraction, Forge tier), commit 4e0e7da035: each skill is at 0.1.1 with its [MANUAL] blocks byte-identical, an independent verifier checked each against live `--help` and the source and its findings are applied, `skf-export-skill` moved the `AGENTS.md` block and the export manifest, and the catalog is regenerated. Operator rulings of the run: seed from the tracked map; full re-extraction; rebuild from the module copy; station source is not a bundled script or asset (`scripts_intent: none`, `assets_intent: none`). Outside the declared surface, each named in the governing memlogs: `_bmad/skf/config.yaml` (`sidecar_path`), the marshal skill path in the scribe parity test, the station-tests trigger map and marshal's policy, and `estate.py`'s docstring.

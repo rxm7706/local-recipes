@@ -145,7 +145,7 @@ development_status:
   126-2-every-environment-carries-git-and-macos-carries-bash-4-and-gnu-find: done
   126-3-steward-s-remaining-linux-assumptions-and-stale-operator-text-are-corrected: done
   126-4-marshal-reads-a-zombie-without-proc-and-its-remedies-name-commands-that-exist: done
-  126-5-the-four-compiled-station-skills-match-their-clis: review
+  126-5-the-four-compiled-station-skills-match-their-clis: done
   126-6-every-row-this-change-opened-is-closed-and-the-preflight-is-green-with-fewer-skips: done
   13-1-workspace-verbs-over-git-worktree: done
   13-2-status-and-the-feed-mirror-decision: done
@@ -555,7 +555,7 @@ development_status:
   epic-124-retrospective: optional
   epic-125: done
   epic-125-retrospective: optional
-  epic-126: in-progress
+  epic-126: done
   epic-126-retrospective: optional
   epic-13: done
   epic-13-retrospective: optional
