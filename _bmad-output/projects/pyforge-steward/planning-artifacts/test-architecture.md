@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: b56162dafc96ba72
-story_count: 475
+source_fingerprint: cc6875d50f9e63fe
+story_count: 481
 test_file_count: 166
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 475
-- **Epics parsed:** 125
+- **Stories parsed:** 481
+- **Epics parsed:** 126
 - **Test files inventoried:** 166 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `b56162dafc96ba72`
+- **Source fingerprint:** `cc6875d50f9e63fe`
 
 ## Risk Assessment
 
@@ -148,6 +148,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 120: The cutover contract says what the operator ruled on 2026-11-10 (spec-python-foundry-cutover fnd:CAP-2..5 fnd:CAP-8 fnd:CAP-9 fnd:CAP-11 fnd:CAP-14 / spec-foundry-regenerate-not-fold fnr:CAP-1..5 / spec-foundry-capability-ledger fcl:CAP-1..3)
 - Epic 121: The cutover control plane tells the truth: one generated ledger, one writer lock (spec-python-foundry-cutover fnd:CAP-8 fnd:CAP-9 / spec-foundry-capability-ledger fcl:CAP-1 fcl:CAP-2)
 - Epic 124: The shared surfaces carry what every station's cutover-readiness work needs (spec-pyforge-steward CAP-153, CAP-175; spec-pyforge-unifying-strategy CAP-4, CAP-14, CAP-16)
+- Epic 126: macOS is a first-class development host (spec-pyforge-steward CAP-175, CAP-5)
 
 ### Low-risk epics
 
@@ -812,6 +813,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 125.2 | Marshal's and core's suites and the seed update run on a macOS laptop | none observed |
 | 125.3 | Doctor's, mason's, scribe's and the scripts suites run on a macOS laptop | none observed |
 | 125.4 | The laptop preflight's local prerequisites are written down, and the prefligh... | none observed |
+| 126.1 | The checkout is clean on a case-insensitive filesystem | none observed |
+| 126.2 | Every environment carries git, and macOS carries bash 4 and GNU find | none observed |
+| 126.3 | Steward's remaining Linux assumptions and stale operator text are corrected | none observed |
+| 126.4 | Marshal reads a zombie without /proc, and its remedies name commands that exist | none observed |
+| 126.5 | The four compiled station skills match their CLIs | none observed |
+| 126.6 | Every row this change opened is closed, and the preflight is green with fewer... | none observed |
 
 ## Quality Gates
 

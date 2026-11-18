@@ -5797,8 +5797,6 @@
    "src/shared/packages/pyforge-warden/tests/fixtures/corpus/adversarial/upstream/nanoarrow/recipe.yaml": "5f6a9e427f11de44132c13feb19ca1844198a47b",
    "src/shared/packages/pyforge-warden/tests/fixtures/corpus/adversarial/upstream/numpy/recipe.yaml": "9f1c34379147a7d84db8512efffa9ac06956ece7",
    "src/shared/packages/pyforge-warden/tests/fixtures/corpus/adversarial/upstream/pillow/recipe.yaml": "9a75760d78ffa6c43bccc2686981bc6d0bd98f1f",
-   "src/shared/packages/pyforge-warden/tests/fixtures/corpus/recipes/CTranslate2/meta.yaml": "64f0e3769d39414a048a66bcd7f3cf4e415d8fde",
-   "src/shared/packages/pyforge-warden/tests/fixtures/corpus/recipes/CTranslate2/recipe.yaml": "94d2e8ff5a113b1cbb28e6d45f8dae41d779540c",
    "src/shared/packages/pyforge-warden/tests/fixtures/corpus/recipes/Django-Enterprise-Maintenance-Suite/recipe.yaml": "b3489ba36aed1146fc2cead421e37fb6ababda75",
    "src/shared/packages/pyforge-warden/tests/fixtures/corpus/recipes/Docs2Static/recipe.yaml": "dd435bf7dc8b7bb2ff5fefdc9dfc0c11cab74443",
    "src/shared/packages/pyforge-warden/tests/fixtures/corpus/recipes/Flake8-pyproject/meta.yaml": "96412040d7ecf1aef9c0937b0be7ca7dff15d944",
@@ -8000,6 +7998,6 @@
    "src/shared/packages/pyforge-warden/tests/unit/test_vuln.py": "b538f20c90b16709694b0dd8391c87f6d80ce7d8",
    "src/shared/packages/pyforge-warden/tests/unit/test_waiver.py": "7fe1a886458dd61ba73fb6c41c51b1eb99df09bd"
   },
-  "memlog": "93a3ad952c1300db5a1bacd08d16bafa04870a5b"
+  "memlog": "49b9f2f167ae56849ac0ab3af51b7d8b669eba19"
  }
 }

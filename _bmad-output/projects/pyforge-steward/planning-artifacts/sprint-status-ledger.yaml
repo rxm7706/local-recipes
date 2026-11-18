@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 725
+# stories: 733
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -141,6 +141,12 @@ development_status:
   125-2-marshal-s-and-core-s-suites-and-the-seed-update-run-on-a-macos-laptop: done
   125-3-doctor-s-mason-s-scribe-s-and-the-scripts-suites-run-on-a-macos-laptop: done
   125-4-the-laptop-preflight-s-local-prerequisites-are-written-down-and-the-preflight-is-green: done
+  126-1-the-checkout-is-clean-on-a-case-insensitive-filesystem: backlog
+  126-2-every-environment-carries-git-and-macos-carries-bash-4-and-gnu-find: backlog
+  126-3-steward-s-remaining-linux-assumptions-and-stale-operator-text-are-corrected: backlog
+  126-4-marshal-reads-a-zombie-without-proc-and-its-remedies-name-commands-that-exist: backlog
+  126-5-the-four-compiled-station-skills-match-their-clis: backlog
+  126-6-every-row-this-change-opened-is-closed-and-the-preflight-is-green-with-fewer-skips: backlog
   13-1-workspace-verbs-over-git-worktree: done
   13-2-status-and-the-feed-mirror-decision: done
   13-3-a-repo-set-opens-as-one-workspace: done
@@ -549,6 +555,8 @@ development_status:
   epic-124-retrospective: optional
   epic-125: done
   epic-125-retrospective: optional
+  epic-126: backlog
+  epic-126-retrospective: optional
   epic-13: done
   epic-13-retrospective: optional
   epic-14: done

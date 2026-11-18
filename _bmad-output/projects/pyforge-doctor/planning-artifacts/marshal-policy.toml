@@ -656,6 +656,27 @@ verify_commands = [
   "src/shared/packages/pyforge-steward/docs/**",
   "tests/scripts/test_docs_github_workflows.py",
 ]
+"60" = [  # The documentation refresh's deferred rows close (spec-pyforge-doctor CAP-84, CAP-2, CAP-3), added 2026-11-18.
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/.memlog.md",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/contract.md",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
+  "docs/MAP.md",
+  "docs/explanation/**",
+  "docs/how-to/**",
+  "docs/map.yaml",
+  "docs/reference/**",
+  "docs/tutorials/**",
+  "scripts/_docs_gen_common.py",
+  "scripts/docs_*.py",
+  "scripts/mirror-channels.py",
+  "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/atlas.py",
+  "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_currency.py",
+  "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/warden.py",
+  "src/shared/packages/pyforge-doctor/tests/**",
+  "tests/scripts/test_docs_*.py",
+]
 
 # dispatch (Story 102.1 / spec-pyforge-marshal CAP-161), added 2026-10-15: a re-landing reuses this station's own
 # verified verdict when only merges of main and planning-only commits moved the branch since the head it judged,

@@ -8141,3 +8141,11 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   suites; and the laptop's local prerequisites written where the preflight how-to is. A test is made to pass
   where the host can do what it asks; where the host cannot (a file name APFS refuses), the test says so by
   probing the capability, never by naming a platform.
+- **2026-11-18 (macOS is a first-class development host) — Ruled** (operator ruling of 2026-11-18: "THIS MACHINE WILL BE A FIRST CLASS DEVELOPMENT HOST -- JUST FIX ALL THE DEFERRED ROW ITEMS NOW.. AND NOT LEAVE ANYTHING FOR LATER", "JUST USE ctranslate2 and remove the other one", "we should continue to support manticore and antigravity", "we still want to do everything in this session as one PR"): the operator will dispatch marshal
+  work from the macOS laptop, so what Epic 125 left as deferred work and capability-probed skips is fixed now, in the
+  same PR (#2373). **For steward:** this entry binds `spec-pyforge-steward` (the preflight and environment
+  capabilities, no text change) and decomposes as Epic 126, six stories: the checkout is clean on a case-insensitive
+  filesystem (`recipes/CTranslate2` and its warden corpus twin are removed; `recipes/ctranslate2` stays); every
+  environment carries `git`, and macOS carries bash 4 and GNU find; steward's remaining Linux assumptions and stale
+  operator text; marshal's zombie check and remedy strings; the four compiled station skills; and the close, in which
+  every row Epics 59 and 125 opened reads resolved. Doctor Epic 60 and mason Epic 40 carry the rows those stations own.

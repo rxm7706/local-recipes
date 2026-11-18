@@ -835,6 +835,13 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   are open ledger rows (`DW-mason-37-1`, `DW-mason-37-2`, `DW-mason-37-4`, `DW-mason-37-4-2`, `DW-mason-38-3`,
   `DW-mason-39-1` to `DW-mason-39-1-3`); `DW-mason-25-2-3` closed on its commits, and Story 5.4's first spec reads
   superseded. The ledger keys move to `done` in the change's ledger close. Owner `spec-pyforge-mason`.
+- **2026-11-18 (the CFE scripts read the pixi configuration pixi reads) — Found:** doctor's documentation refresh
+  (doctor Epic 59, PR #2373) verified `docs/explanation/enterprise-deployment.md` against the code and found that
+  `_http.read_pixi_config` returns the first pixi config file that exists. The tracked project `.pixi/config.toml`
+  always exists, so a mirror an operator sets in `~/.pixi/config.toml` never reaches the conda-forge-expert scripts,
+  although pixi 0.84.2 merges the layers. **Ruled** (operator ruling of 2026-11-18: "THIS MACHINE WILL BE A FIRST CLASS DEVELOPMENT HOST -- JUST FIX ALL THE DEFERRED ROW ITEMS NOW.. AND NOT LEAVE ANYTHING FOR LATER", "JUST USE ctranslate2 and remove the other one", "we should continue to support manticore and antigravity", "we still want to do everything in this session as one PR"). **For mason:** this entry binds
+  `spec-pyforge-mason` (the CFE seam, no text change) and decomposes as Epic 40, one story, with the skill's retro and
+  CHANGELOG entry.
 
 ## One-chain fold — 2026-09-17
 

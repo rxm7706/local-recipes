@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: 020e5a045d424342
-story_count: 192
+source_fingerprint: b4676611e0245ba1
+story_count: 196
 test_file_count: 131
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 192
-- **Epics parsed:** 58
+- **Stories parsed:** 196
+- **Epics parsed:** 59
 - **Test files inventoried:** 131 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `020e5a045d424342`
+- **Source fingerprint:** `b4676611e0245ba1`
 
 ## Risk Assessment
 
@@ -94,6 +94,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 56: The cutover's detectors read the real ledger and the writer lock, and a source that measured nothing is never a pass (spec-pyforge-doctor CAP-93, CAP-94, CAP-95, CAP-100)
 - Epic 57: The doctor Spec says what the code does, and its public contract is written once (spec-pyforge-doctor CAP-96..CAP-99; decisions D1 and D4)
 - Epic 58: The package-local half is the rebuild oracle, and the branch's baselines name only live Specs (spec-pyforge-doctor CAP-97, CAP-59)
+- Epic 60: The documentation refresh's deferred rows close (spec-pyforge-doctor CAP-84, CAP-2, CAP-3)
 
 ## Test Inventory
 
@@ -427,6 +428,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 59.6 | The front doors describe the tree as it is | none observed |
 | 59.7 | docs-currency fails a page that is unstamped, stale or dead-referenced | none observed |
 | 59.8 | The registry, the baselines and the chain close once, after every unit's last... | none observed |
+| 60.1 | doctor monitor, diagnose and check say only what is true | none observed |
+| 60.2 | docs-currency measures before it trusts git, and the generators stamp what th... | none observed |
+| 60.3 | The shelf follows its own style guide, and the manticore and antigravity page... | none observed |
+| 60.4 | Doctor's chain closes: CAP-84 reads shipped and the incident log's home is se... | none observed |
 
 ## Quality Gates
 

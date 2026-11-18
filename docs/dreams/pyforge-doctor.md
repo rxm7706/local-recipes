@@ -790,6 +790,13 @@ Folded Dreams: [[bmad-drift-new-artifact-shape]], [[bmad-method-version-drift]],
   how-tos are written; the front doors (`README.md`, `src/platform/README.md`, the package READMEs, the `MAP.md`
   preamble) are refreshed; and the detector change lands last, on a tree it already reads green. A page another
   station owns is refreshed here as documentation only: no station's code, CLI or capability moves.
+- **2026-11-18 (the refresh's deferred rows close) — Ruled** (operator ruling of 2026-11-18: "THIS MACHINE WILL BE A FIRST CLASS DEVELOPMENT HOST -- JUST FIX ALL THE DEFERRED ROW ITEMS NOW.. AND NOT LEAVE ANYTHING FOR LATER", "JUST USE ctranslate2 and remove the other one", "we should continue to support manticore and antigravity", "we still want to do everything in this session as one PR"): the seven rows Epic 59 opened are fixed in
+  the same PR (#2373), none left for later, and the manticore and antigravity pages stay supported pages instead of
+  being archived. **For doctor:** this entry binds `spec-pyforge-doctor` (no capability minted) and decomposes as
+  Epic 60, four stories: `monitor`, `diagnose` and `check` say only what is true; `docs-currency` measures before it
+  trusts git and the generators stamp what they read; the shelf follows its own style guide; and the chain closes
+  with the documentation currency capability shipped. Steward Epic 126 and mason Epic 40 carry the rows those
+  stations own.
 
 ## 2026-10-26 — A spike report is not a corrupt file, and the classifier can't yet tell the difference (folded from bmad-drift-new-artifact-shape)
 
