@@ -26,6 +26,17 @@ Use the `pr-preflight` task to run, on your machine, the lanes CI would run for 
 > [!NOTE]
 > **Prerequisites.** Run from the repository root with your changes committed or in the working tree. Run one full preflight at a time per machine: every run's scribe lane uses the one shared Postgres cluster on `127.0.0.1:5433`, so two runs fail each other.
 
+### What a full run needs on your machine
+
+A full-scope run includes two lanes that need something a fresh checkout does not have. Without them the lane is red for a reason that is not your change.
+
+| Lane | Needs | Get it |
+| --- | --- | --- |
+| `pyforge-scribe-live-test` | The per-user PostgreSQL + pgvector cluster on `127.0.0.1:5433` | `pixi run -e pyforge-scribe-pg scribe-pg-up` (stop it with `scribe-pg-down`, check it with `scribe-pg-status`) |
+| `pyforge-atlas-test` (its two dashboard tests) | Playwright's Chromium for the atlas environment | `pixi run -e pyforge-atlas python -m playwright install chromium`, once per Playwright version |
+
+The suites probe the host for anything else they need. A test that cannot run here (for example one that needs a file name the filesystem refuses) reports a skip whose reason names the missing capability. It never fails for that, and it never skips by platform name.
+
 ## How the pieces fit
 
 | Piece | What it is |
