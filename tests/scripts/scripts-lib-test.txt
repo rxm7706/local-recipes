@@ -11,6 +11,7 @@ tests/scripts/test_docs_bmad_estate.py
 tests/scripts/test_docs_detectors.py
 tests/scripts/test_docs_environments.py
 tests/scripts/test_docs_gen_common.py
+tests/scripts/test_docs_github_workflows.py
 tests/scripts/test_docs_map_render.py
 tests/scripts/test_docs_pixi_tasks.py
 tests/scripts/test_docs_skills_catalog.py
