@@ -7,9 +7,9 @@ preview = ["pixi-build"]  # enable the pixi build backend for the ./src/shared/p
 # NOTE: Gemini PR#49 suggested a `[workspace] members = [...]` key, but pixi
 # (through 0.72.2) has no such key — workspace members are declared via path
 # dependencies (see [feature.pyforge-warden.dependencies]).
-requires-pixi = ">=0.80.0"  # single pixi floor for the workspace. FIFTEEN places carry a pixi version and must be kept in step. COUNT THE LIST, DO NOT TRUST THE NUMERAL — two earlier revisions of this comment stated a total its own enumeration contradicted (see below), so the enumeration is the authority: (1) this key (floor), (2) the `"$schema"` URL two lines above (EXACT), (3-5) feature.python/local-recipes/build `pixi = ">=0.77.0"` (3 floors), (6) `environment.yaml`'s `pixi >=0.77.0` (floor, DERIVED — regenerate, never hand-edit), (7) the `pixi-version` pin in .github/workflows/pages.yml (EXACT), (8) the same pin in .github/workflows/kedro-viz-publish.yml (EXACT), (9-11) THREE such pins in .github/workflows/herald-live-demo.yml (EXACT), (12) the same pin in .github/actions/sync-pypi-mappings/action.yml (EXACT), (13) the root Containerfile's builder-stage `ghcr.io/prefix-dev/pixi:` image tag (EXACT, Story 7.1), (14) `src/platform/Containerfile`'s builder-stage image tag (EXACT, Story 10.3), and (15) `src/platform/compose/dbgpt/Containerfile`'s builder-stage image tag (EXACT, Story 10.5 -- the site this same 2026-08-21 pass discovered had NEVER been registered here at all, see below). (Former item 13, staged-recipes-linter.yml, retired Story 99.7.) AS OF 2026-08-21, ALL FIFTEEN ARE 0.77.0, and for the first time this is ENFORCED, not just asserted: `scripts/pixi_version_registry.py` is now the single source of truth for every site (this comment is a narrative pointer to it, not the registry), `pixi run -e local-recipes pixi-version-check` (repo-scope, CI-safe) fails on any drift, and `pixi run -e local-recipes bump-pixi-version -- <version>` rewrites every site plus regenerates environment.yaml in one pass. Read the rest of this comment as history, not as an instruction to hand-edit anything below the requires-pixi key above -- the registry is authoritative now.
+requires-pixi = ">=0.80.0"  # single pixi floor for the workspace. The sites that carry a pixi version are listed in ONE place: SITES in scripts/pixi_version_registry.py. This comment states no total as a rule, because every total written here went stale; run `pixi run -e pyforge-guild pixi-version-check` for the live count (counted 2026-11-18: 18 registered sites carrying 24 pins, all at 0.80.0). pixi-version-check fails on any drift; `pixi run -e local-recipes bump-pixi-version -- <version>` rewrites every site and regenerates environment.yaml.
 
-# The road to that registry, preserved as motivation for why it exists.
+# History, superseded by the registry (the two comment lines below describe earlier states, not the present):
 # Read that sentence as the CURRENT STATE, not as history: an earlier revision said "NINE places … ALL NINE ARE 0.76.1", the state DW-7-1-2 recorded and resolved on 2026-08-09, and everything except the root Containerfile has since moved to 0.76.2. The TOTAL has now been wrong three times: it omitted herald-live-demo.yml's three pins, then Story 10.3 added a site of its own, then a revision numbered the list correctly while leaving the headline at THIRTEEN — the numeral is the part that rots, which is why counting the enumeration beats reading the total. DW-7-1-2 itself is RESOLVED (see the pyforge-steward deferred-work ledger); what survives it is its residual, restated here: the four-plus EXACT sites are the sharp ones — any one below this floor installs a pixi that refuses to parse this manifest, which is exactly the failure `sync-pypi-mappings` shipped at 0.73.0. 0.71+ is a hard floor regardless: the named platform entry `osx-arm64-min` ({ name, platform, macos }) replaced the deprecated [system-requirements] table and older pixi cannot read it. The pin sites should follow the LOCK'S PRODUCER, the rule pages.yml states for itself ("pixi-version stays pinned to the lock's producer... Bump it in step with pixi.lock"). NOTHING ENFORCES ANY OF THIS — the equality is comment-maintained, which is how it drifted three ways before, how the herald pins and the root Containerfile went unnoticed, and how this very sentence's own total went stale three times; a detector is the durable fix -- and, as of the dbgpt-sidecar Containerfile's discovery (a FOURTH drift, an entire unregistered site rather than a stale numeral), finally exists: see the requires-pixi comment above.
 description = "The entry point to conda-forge"
 version = "0.2.0"
@@ -1067,6 +1067,19 @@ depends-on = [{ task = "docs-site-install", environment = "site" }, { task = "do
 description = "Story 27.4: vendored BMAD doc link + sidebar validators and the docs/map.yaml check."
 depends-on = [{ task = "docs-site-validate-links", environment = "site" }, { task = "docs-site-validate-sidebar", environment = "site" }]
 
+# host-tools (steward Story 126.2, spec-pyforge-steward CAP-175, CAP-5; operator ruling 2026-11-18: macOS is a
+# first-class development host). No station environment carried `git`, so inside `pixi run` it resolved to
+# whatever the host had: on a macOS laptop pixi's global trampoline, which aborts on a non-UTF-8 argument, or the
+# Xcode stub. Every station and Guild environment now carries the git the lock names. Stock macOS ships bash 3.2
+# and BSD find; the workflows' `changes` steps the preflight evaluates need bash 4 (`declare -A`) and the tests
+# that run workflow lines need GNU `find -printf`, so osx-arm64 carries both. Linux runners already have them.
+[feature.host-tools.dependencies]
+git = ">=2.55.0,<2.56"            # the git every station suite and the preflight run; one version, named by the lock. Held to the 2.55 line local-recipes already locks: 2.56 needs pcre2 10.49 and libexpat 2.9, which moved 72 unrelated pins and downgraded graphviz when tried (2026-11-18); the estate refresh lifts it.
+
+[feature.host-tools.target.osx-arm64.dependencies]
+bash = ">=5.2"                    # bash 4+ for the workflows' `declare -A` changes steps (stock macOS ships 3.2)
+findutils = ">=4.10.0"            # GNU find (`-printf`) for the workflow lines the steward suite executes
+
 [environments]
 # default-env: pyforge-guild
 # ^ Story 63.1 (CAP-5): the Guild's session environment is the default; `local-recipes` is Mason's.
@@ -1082,8 +1095,8 @@ build = ["python", "spec-kit", "build"]
 grayskull = ["python", "spec-kit", "grayskull", "crm"]
 conda-smithy = ["python", "spec-kit", "conda-smithy", "shellcheck"]
 local-recipes = ["python", "spec-kit", "build", "grayskull", "conda-smithy", "local-recipes", "guild-tasks"]  # guild-tasks (tasks only, no deps) so every moved Guild task still resolves here (Story 63.1)
-pyforge-guild = { features = ["python", "spec-kit", "pyforge-guild", "guild-tasks", "openfeature-file-eval"], no-default-feature = true }
-default = { features = ["python", "spec-kit", "pyforge-guild", "guild-tasks"], no-default-feature = true }  # ALIAS of pyforge-guild (operator 2026-09-16, Story 63.1): pixi resolves a bare `pixi run <task>` that several envs provide to the env NAMED `default`, and bare `pixi shell` activates it -- so the Guild env is the default by the tool, not by a doc. Keep the two feature lists identical; `pyforge-guild` stays the name every surface uses.  # THE session default for agents/harnesses (steward Story 63.1, CAP-5); python feature = python, pixi, gh, gitpython, nodejs, pnpm, bmad-method, truststore; the spec-kit feature follows it (steward Story 103.3)
+pyforge-guild = { features = ["python", "spec-kit", "pyforge-guild", "guild-tasks", "openfeature-file-eval", "host-tools"], no-default-feature = true }
+default = { features = ["python", "spec-kit", "pyforge-guild", "guild-tasks", "host-tools"], no-default-feature = true }  # ALIAS of pyforge-guild (operator 2026-09-16, Story 63.1): pixi resolves a bare `pixi run <task>` that several envs provide to the env NAMED `default`, and bare `pixi shell` activates it -- so the Guild env is the default by the tool, not by a doc. Keep the two feature lists identical; `pyforge-guild` stays the name every surface uses.  # THE session default for agents/harnesses (steward Story 63.1, CAP-5); python feature = python, pixi, gh, gitpython, nodejs, pnpm, bmad-method, truststore; the spec-kit feature follows it (steward Story 103.3)
 vuln-db = ["python", "spec-kit", "vuln-db"]
 gcloud = ["python", "spec-kit", "gcloud-sdk"]
 # pyforge-ci — the LEAN CI environment. feature.python gives pixi, bmad-method,
@@ -1125,28 +1138,28 @@ gcloud = ["python", "spec-kit", "gcloud-sdk"]
 # build/publish surface without the 9.8 GB.
 #
 # Named to match the eight sibling pyforge-* envs so it sorts with the family.
-pyforge-ci = { features = ["python", "pyforge-ci"], no-default-feature = true }
+pyforge-ci = { features = ["python", "pyforge-ci", "host-tools"], no-default-feature = true }
 # Lean standalone-tool env (NFR1/NFR2): no-default-feature excludes the fat
 # default [dependencies] (python 3.14 + pixi + conda + pip + uv), so this env
 # carries only the built pyforge-warden package + its conda run-deps + pytest.
-pyforge-warden = { features = ["pyforge-warden"], no-default-feature = true }
+pyforge-warden = { features = ["pyforge-warden", "host-tools"], no-default-feature = true }
 # Lean atlas env (Story A1, AD-16/§ 2.5): no-default-feature excludes the fat
 # default [dependencies]; loop worktrees materialize THIS env, never the fat
 # local-recipes env — this is the worktree-affordability claim A3 measures.
-pyforge-atlas = { features = ["pyforge-atlas"], no-default-feature = true }
+pyforge-atlas = { features = ["pyforge-atlas", "host-tools"], no-default-feature = true }
 # Lean doctor env (Story 1.1): no-default-feature excludes the fat default
 # [dependencies]; carries only the built pyforge-doctor package + its conda
 # run-deps + pytest — mirrors pyforge-warden's/pyforge-atlas's lean shape.
-pyforge-doctor = { features = ["pyforge-doctor"], no-default-feature = true }
+pyforge-doctor = { features = ["pyforge-doctor", "host-tools"], no-default-feature = true }
 detectors = { features = ["detectors"], no-default-feature = true }  # the Detectors workflow's locked env (pixi first, pip fallback) -- PR #1043
 # Lean scribe env (Story 1.1, pyforge-warden mirror): no-default-feature
 # excludes the fat default [dependencies], so this env carries only the
 # built pyforge-scribe package + its runtime deps (typer, pydantic) + pytest.
-pyforge-scribe = { features = ["pyforge-scribe"], no-default-feature = true }
+pyforge-scribe = { features = ["pyforge-scribe", "host-tools"], no-default-feature = true }
 # pyforge-scribe-pg: the scribe env PLUS the local PostgreSQL+pgvector server.
 # Separate because pgvector has no win-64 build; installing this env is how a
 # developer gets the database the durable GraphStore tests demand.
-pyforge-scribe-pg = { features = ["pyforge-scribe", "scribe-pg"], no-default-feature = true }
+pyforge-scribe-pg = { features = ["pyforge-scribe", "scribe-pg", "host-tools"], no-default-feature = true }
 # Standalone local object-storage server (Story 50.2) -- Silo (default) or
 # Garage, chosen at runtime via PYFORGE_OBJECT_STORAGE_BACKEND. Separate from
 # any station env: it carries no pyforge package, only the two server binaries.
@@ -1154,11 +1167,11 @@ platform-object-storage = { features = ["platform-object-storage"], no-default-f
 # Lean core env (Story 14.1, pyforge-scribe mirror): no-default-feature
 # excludes the fat default [dependencies], so this env carries only the
 # built pyforge-core package (stdlib only -- no third-party run-dep) + pytest.
-pyforge-core = { features = ["pyforge-core"], no-default-feature = true }
+pyforge-core = { features = ["pyforge-core", "host-tools"], no-default-feature = true }
 # Lean testing-kit env (Story 19.2 / FR-130, pyforge-core mirror): its own
 # package (Q-26, not pyforge.core.testing) that declares pyforge-core and
 # openfeature-sdk (Story 74.1); no-default-feature keeps it lean.
-pyforge-testing-kit = { features = ["pyforge-testing-kit"], no-default-feature = true }
+pyforge-testing-kit = { features = ["pyforge-testing-kit", "host-tools"], no-default-feature = true }
 # BMad Method UI dashboards (docs/specs/bmad-loop-adoption.md W4): consumes the
 # LOCALLY-BUILT bmad-dashboard + mybmad-dashboard packages (consume-not-submit
 # mirrors of conda-forge/staged-recipes#33513) from ./build_artifacts/linux64.
@@ -1172,16 +1185,16 @@ bmad-suite-full = { features = ["bmad-suite-full"], no-default-feature = true }
 # excludes the fat default [dependencies]; carries only the built
 # pyforge-herald package + pytest. Spec:
 # _bmad-output/projects/pyforge-herald/planning-artifacts/.
-pyforge-herald = { features = ["pyforge-herald"], no-default-feature = true }
+pyforge-herald = { features = ["pyforge-herald", "host-tools"], no-default-feature = true }
 # Lean mason env (Story 1.1): no-default-feature, so it carries only the built
 # pyforge-mason package + pytest + the two build frontends.
-pyforge-mason = { features = ["pyforge-mason"], no-default-feature = true }
+pyforge-mason = { features = ["pyforge-mason", "host-tools"], no-default-feature = true }
 # Lean steward env (Story 1.1, pyforge-warden mirror): same lean shape.
-pyforge-steward = { features = ["pyforge-steward", "openfeature-file-eval"], no-default-feature = true }
+pyforge-steward = { features = ["pyforge-steward", "openfeature-file-eval", "host-tools"], no-default-feature = true }
 # Lean marshal env (Story 1.1, pyforge-warden mirror): no-default-feature,
 # so it carries only the built pyforge-marshal package + its conda
 # run-deps + pytest + import-linter.
-pyforge-marshal = { features = ["pyforge-marshal"], no-default-feature = true }
+pyforge-marshal = { features = ["pyforge-marshal", "host-tools"], no-default-feature = true }
 # pyforge-container (Story 7.1, "one build, whole Guild"): the whole-Guild
 # image env -- composes all eight lean per-station features into ONE
 # environment, same no-default-feature shape as pyforge-ci, so the
@@ -1189,7 +1202,7 @@ pyforge-marshal = { features = ["pyforge-marshal"], no-default-feature = true }
 # `pixi install -e pyforge-container`. Features are referenced BY NAME (not
 # copied pins), so this tracks each station's deps automatically; it does
 # not curate or split any feature -- it only composes what already exists.
-pyforge-container = { features = ["pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe"], no-default-feature = true }
+pyforge-container = { features = ["pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe", "host-tools"], no-default-feature = true }
 # pyforge-foundry-full (steward Story 63.5, 2026-09-20, operator ruling): the UNION of every PyForge
 # feature -- the eight stations, pyforge-core, pyforge-testing-kit, the Guild default and its tasks.
 # Not a runtime env (that is pyforge-guild, the bare minimum every harness gets) and not the recipe
@@ -1204,13 +1217,13 @@ pyforge-container = { features = ["pyforge-marshal", "pyforge-steward", "pyforge
 # conda-smithy capping py-rattler <0.26 / conda <26.3. grayskull's own unversioned dependency still
 # brings conda-recipe-manager in, resolved to 0.5.0 (the last with no click cap); current crm and
 # feedrattler stay in the `grayskull` env.
-pyforge-foundry-full = { features = ["python", "spec-kit", "pyforge-guild", "guild-tasks", "pyforge-core", "pyforge-testing-kit", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe", "build", "grayskull"], no-default-feature = true }
+pyforge-foundry-full = { features = ["python", "spec-kit", "pyforge-guild", "guild-tasks", "pyforge-core", "pyforge-testing-kit", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe", "build", "grayskull", "host-tools"], no-default-feature = true }
 # pyforge-foundry-full-stack (Story 67.1): the SBOM plus the platform's local stack -- the
 # platform-limited pieces (`platform-dev`'s PostgreSQL 17 / pgvector / redis-server,
 # `platform-object-storage`) layered on top, the way `pyforge-scribe-pg` layers `scribe-pg`. It
 # solves on linux-64 only, the one platform `platform-object-storage` declares (macOS laptops get
 # no layer env yet); the SBOM itself keeps osx-arm64 and win-64.
-pyforge-foundry-full-stack = { features = ["python", "spec-kit", "pyforge-guild", "guild-tasks", "pyforge-core", "pyforge-testing-kit", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe", "build", "grayskull", "platform-dev", "platform-object-storage"], no-default-feature = true }
+pyforge-foundry-full-stack = { features = ["python", "spec-kit", "pyforge-guild", "guild-tasks", "pyforge-core", "pyforge-testing-kit", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe", "build", "grayskull", "platform-dev", "platform-object-storage", "host-tools"], no-default-feature = true }
 # platform-dev (AD-16, Story 11.1): composes `platform-dev` (postgresql/
 # pgvector/redis-server/k8s CLIs) ONTO `python-agent-platform` (langflow/
 # dbgpt/django) so this ONE env is the full local Tier-1 dev baseline --
@@ -1283,8 +1296,8 @@ cmd = "python .claude/scripts/conda-forge-expert/my_feedstocks.py"
 # Interleaved with the factory tasks on purpose -- the move is a header rename, so
 # `git blame` on every description survives.
 [feature.guild-tasks.tasks.bmad-preflight]
-description = "Verify local-recipes env, BMAD installation, and active project before BMAD workflows"
-cmd = "bash scripts/ensure-bmad-preflight.sh"
+description = "Verify the session before BMAD workflows: environment, BMAD installation and active project, through `pyforge steward session check` (steward Story 126.3: the script this task used to call, scripts/ensure-bmad-preflight.sh, never existed)."
+cmd = "pyforge steward session check"
 
 [feature.guild-tasks.tasks.sprint-ledger-query]
 description = "Pluggable estate sprint ledger query CLI duty (Story 65.1, spec-pyforge-steward CAP-146..149). Reads each station's TRACKED planning-artifacts/sprint-status-ledger.yaml + epics.md; counts agree with fleet_scan.parse_sprint_status. --format: markdown (default), summary, json, table; flag-gated integrations read the one flagd tree (Story 76.3): sync-matrix/jira-csv/github-json (pyforge.steward.ledger_query_jira_github_matrix), herald-facts (pyforge.steward.ledger_query_herald_facts), atlas-dataset (pyforge.steward.ledger_query_vizro_dataset), static-dossier (pyforge.steward.ledger_query_dossier_export) -- open one with `-- --flag <short-or-tree-key>=true` or flag-overlays.json. stdout carries the payload only; `--output PATH` writes it to that file instead (stdout empty). Writes into no other station's tree by default."
@@ -1332,7 +1345,7 @@ cmd = "python scripts/platform_ci_test_requirements_check.py"
 
 
 [feature.guild-tasks.tasks.pixi-version-check]
-description = "Detector: every pixi-version pin site (CI workflows, both Containerfiles, environment.yaml, pixi.toml's own feature floors) agrees with pixi.toml's requires-pixi floor. Registry lives in scripts/pixi_version_registry.py, not a hand-maintained comment — that comment drifted three times before this existed, most recently 2026-08-21 when a pixi upgrade left 10 external sites stale and one (src/platform/compose/dbgpt/Containerfile) unregistered entirely, breaking container-dbgpt CI. Reconciler: bump-pixi-version. Pass -- --json for machine output."
+description = "Detector: every pixi-version pin site (CI workflows, the four Containerfiles, environment.yaml, pixi.toml's own feature floors) agrees with pixi.toml's requires-pixi floor. Registry lives in scripts/pixi_version_registry.py, not a hand-maintained comment — that comment drifted three times before this existed, most recently 2026-08-21 when a pixi upgrade left 10 external sites stale and one (src/platform/compose/dbgpt/Containerfile) unregistered entirely, breaking container-dbgpt CI. Reconciler: bump-pixi-version. Pass -- --json for machine output."
 cmd = "python scripts/pixi_version_check.py"
 
 [feature.local-recipes.tasks.bump-pixi-version]
@@ -1413,9 +1426,13 @@ cmd = "python scripts/docs_station_cli.py"
 description = "Generator: regenerates docs/reference/github-workflows.md from the workflow files under .github/workflows/ — every workflow's name, triggers (with push/pull_request path filters listed), job ids, and the gating its own file states: path-gated, manual only, and the PAUSE_* switches its expressions read (doctor Story 59.1, spec-pyforge-doctor CAP-84; the Story 30.3 generator pattern). -- --check reports staleness (exit 1) without writing."
 cmd = "python scripts/docs_github_workflows.py"
 
+[feature.guild-tasks.tasks.docs-station-verify]
+description = "Generator: regenerates docs/reference/station-verify-commands.md from each station's _bmad-output/projects/pyforge-<station>/planning-artifacts/marshal-policy.toml — every station's verify_commands, verbatim and in order (doctor Story 60.2, spec-pyforge-doctor CAP-84; the Story 30.3 generator pattern). -- --check reports staleness (exit 1) without writing."
+cmd = "python scripts/docs_station_verify.py"
+
 [feature.guild-tasks.tasks.docs-gen-test]
-description = "tests/scripts/test_docs_{gen_common,pixi_tasks,environments,detectors,skills_catalog,station_cli,github_workflows}.py — the five Story 30.3 doc generators and the sixth, github-workflows (doctor Story 59.1), plus their shared _docs_gen_common.py plumbing (spec-pyforge-doctor CAP-84). Lives here, not folded into pyforge-doctor-scripts-test (pyforge-ci), similar reason as docs-map-render-test: these import PyYAML (via _docs_gen_common), which pyforge-ci, stdlib-only, does not carry (each file skips cleanly there via pytest.importorskip; scripts-lib-test runs them in CI)."
-cmd = "pytest tests/scripts/test_docs_gen_common.py tests/scripts/test_docs_pixi_tasks.py tests/scripts/test_docs_environments.py tests/scripts/test_docs_detectors.py tests/scripts/test_docs_skills_catalog.py tests/scripts/test_docs_station_cli.py tests/scripts/test_docs_github_workflows.py -q"
+description = "tests/scripts/test_docs_{gen_common,pixi_tasks,environments,detectors,skills_catalog,station_cli,github_workflows}.py — the five Story 30.3 doc generators, the sixth, github-workflows (doctor Story 59.1), and the seventh, station-verify (doctor Story 60.2), plus their shared _docs_gen_common.py plumbing (spec-pyforge-doctor CAP-84). Lives here, not folded into pyforge-doctor-scripts-test (pyforge-ci), similar reason as docs-map-render-test: these import PyYAML (via _docs_gen_common), which pyforge-ci, stdlib-only, does not carry (each file skips cleanly there via pytest.importorskip; scripts-lib-test runs them in CI)."
+cmd = "pytest tests/scripts/test_docs_gen_common.py tests/scripts/test_docs_pixi_tasks.py tests/scripts/test_docs_environments.py tests/scripts/test_docs_detectors.py tests/scripts/test_docs_skills_catalog.py tests/scripts/test_docs_station_cli.py tests/scripts/test_docs_github_workflows.py tests/scripts/test_docs_station_verify.py -q"
 
 # steward Story 103.3 (spec-pyforge-steward CAP-5): the tests/scripts files that need a library `pyforge-ci` does
 # not carry. `pyforge-ci` is stdlib-only (the definition is the comment above `pyforge-ci = …` in [environments]), so
@@ -1755,7 +1772,7 @@ Runs from `-e pyforge-guild` (the session default) as well as `-e local-recipes`
 depends-on = ["lint-types", { task = "mypy", environment = "pyforge-foundry-full" }, "detectors-ci", "test-ci-meta", { task = "pyforge-doctor-scripts-test", environment = "pyforge-ci" }, { task = "pyforge-doctor-aggregate-scripts-test", environment = "pyforge-doctor" }, "docs-map-render-test", "docs-gen-test", "scripts-lib-test", { task = "pyforge-deps-test", environment = "pyforge-ci" }, { task = "docs-site-install", environment = "site" }, "pyforge-station-tests", "pyforge-station-coverage-gates", { task = "pages-check", environment = "site" }, { task = "docs-site-validate", environment = "site" }]
 
 [feature.guild-tasks.tasks.pr-preflight]
-description = "Story 71.1 (spec-pyforge-steward CAP-159): run pr-preflight-lanes serially, journal each lane's wall time and exit code to .steward/preflight-runs.jsonl, stop on the first red leg — same lanes and verdict as pr-preflight-lanes. The pre-push hook still calls pixi run --frozen -e pyforge-guild pr-preflight."
+description = "Stories 71.1-71.3, 103.5, 103.6 (spec-pyforge-steward CAP-159): select the pr-preflight-lanes lanes CI would run for the diff and run them concurrently (-- --jobs N, default the logical CPU count; lanes that share a CI service or the docs-site tree never run at once), journaling each lane's wall time and exit code to .steward/preflight-runs.jsonl. A red lane stops the lanes that have not finished unless -- --keep-going; -- --ignore-ci-pauses runs lanes paused in CI. Scope: PYFORGE_PREFLIGHT_SCOPE=full|touched; unset follows the flag pyforge.steward.preflight_ci_arbitrates. Exit 0 every selected lane passed / 1 a lane failed / 2 the lane graph or scope could not be read / 130 interrupted. The pre-push hook calls pixi run --frozen -e pyforge-guild pr-preflight."
 cmd = "python -m pyforge.steward.preflight"
 
 [feature.guild-tasks.tasks.preflight-budget]
@@ -3173,6 +3190,7 @@ description = "Report whether the selected backend's local object-storage server
 cmd = "python scripts/platform_object_storage.py status"
 
 [feature.pyforge-herald.dependencies]
+uv = ">=0.13.0"                  # the SKF validators herald's skill meta-test runs call `uv` (steward Story 126.2)
 pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # -> built conda pkg
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: claims.py/deck_pipeline.py/notices.py/progress.py/registry.py/state.py's mandatory run-dep
 pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # retro-2026-09-04 action item 11: branch_diff_guard.py shared by tests/meta/*.py (test-time only; not a package run-dep)
