@@ -741,7 +741,9 @@ def test_the_opted_out_message_carries_the_key_its_own_remedy_asks_for():
     ``--reinstate <artifact>#<region>`` with the OTHER, and the obvious
     copy-paste was the wrong token. The contract-mandated
     ``f"{path}#{region}: ..."`` prefix is unchanged; the key is spelled in
-    the tail, where the remedy can be acted on."""
+    the tail. Steward Story 126.4 replaced that remedy (``adopt`` never had
+    the flag) with one that takes no key; the message still names the key,
+    the entry ``.marshal/seed-state.yml`` records the opt-out under."""
     entry = _hybrid("agents-md", "AGENTS.md", "tiers")
     state = _state(opted_out=("agents-md#tiers",))
 
@@ -749,7 +751,6 @@ def test_the_opted_out_message_carries_the_key_its_own_remedy_asks_for():
 
     assert opted.message.startswith("AGENTS.md#tiers: ")
     assert "agents-md#tiers" in opted.message
-    assert "<artifact>#<region>" in REMEDIES[FindingType.OPTED_OUT]
 
 
 def test_the_opted_out_message_does_not_promise_a_durability_it_cannot_know():
@@ -783,7 +784,7 @@ def test_findings_carry_their_types_documented_remedy():
 
     assert opted.remedy == REMEDIES[FindingType.OPTED_OUT]
     assert missing.remedy == REMEDIES[FindingType.MANAGED_REGION_MISSING]
-    assert "--reinstate" in opted.remedy
+    assert "`marshal seed update --run`" in opted.remedy
 
 
 def test_the_missing_finding_message_claims_only_what_is_known():

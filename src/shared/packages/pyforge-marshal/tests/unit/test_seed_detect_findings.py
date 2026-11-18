@@ -7,12 +7,17 @@ matching ``test_seed_model_artifact.py``'s own house style.
 
 Story 8.5 pins the corrected ``REMEDIES[FindingType.OPTED_OUT]`` text: the
 shipped string pointed at ``state.skips``' glob mechanism rather than the
-opt-out's own ``--reinstate`` move.
+opt-out's own move. Steward Story 126.4 holds every remedy to the CLI: a
+``marshal ...`` command a remedy names must parse -- the ``opted-out`` and
+``referenced-dep-missing`` remedies named a flag and a verb that never existed.
 """
 
 from __future__ import annotations
 
+import argparse
 import dataclasses
+import re
+import shlex
 
 import pytest
 
@@ -100,13 +105,82 @@ def test_the_opted_out_remedy_names_the_real_reinstate_mechanism():
     """Story 8.5 correction: this remedy used to say "remove the skip glob
     from state", which pointed at the unrelated ``state.skips`` mechanism
     (PRD J4 lists opt-out and ``skips[]`` as DISTINCT moves) and described a
-    glob that does not exist. The real move is
-    ``marshal seed adopt --reinstate <artifact>#<region>``, the flag S-10.6
-    wires onto ``state.clear_opt_out``."""
+    glob that does not exist. Steward Story 126.4: it then named
+    ``marshal seed adopt --reinstate <artifact>#<region>``, a flag ``adopt``
+    never had. The move that works is the one
+    ``test_update_records_a_region_whose_markers_were_restored_by_hand``
+    proves: put the markers back by hand, then ``marshal seed update --run``
+    records the region."""
     remedy = REMEDIES[FindingType.OPTED_OUT]
-    assert "--reinstate" in remedy
-    assert "<artifact>#<region>" in remedy
+    assert "restore the region's begin and end markers by hand" in remedy
+    assert "`marshal seed update --run`" in remedy
+    assert "--reinstate" not in remedy
     assert "skip glob" not in remedy
+
+
+def test_the_referenced_dep_remedy_never_names_a_marshal_doctor_verb():
+    """Steward Story 126.4: marshal has no ``doctor`` verb, and nothing in
+    Genesis or Doctor installs a referenced dependency
+    (``detect/referenced_deps.py``: verify only). The remedy says who installs
+    it -- the operator -- and names the command that confirms it."""
+    remedy = REMEDIES[FindingType.REFERENCED_DEP_MISSING]
+    assert "marshal doctor" not in remedy
+    assert "never installs" in remedy
+    assert "`marshal seed check`" in remedy
+
+
+def _marshal_commands(remedy: str) -> list[list[str]]:
+    """Every backticked ``marshal ...`` command a remedy names, tokenised."""
+    return [shlex.split(span) for span in re.findall(r"`(marshal [^`]+)`", remedy)]
+
+
+def _subcommands(parser: argparse.ArgumentParser) -> dict[str, argparse.ArgumentParser]:
+    for action in parser._actions:
+        if isinstance(action, argparse._SubParsersAction):
+            return dict(action.choices)
+    return {}
+
+
+@pytest.mark.parametrize("finding_type", list(FindingType), ids=lambda member: member.value)
+def test_every_marshal_command_a_remedy_names_exists_in_the_cli(finding_type):
+    """Steward Story 126.4: a remedy is the one line an operator acts on, so
+    each ``marshal ...`` command it names is walked through the real parser --
+    every verb must be a subcommand and every ``--flag`` an option of the verb
+    it is written on. Placeholders (``<artifact-id>``) and quoted values are
+    arguments, not grammar, and are skipped."""
+    from pyforge.marshal.cli.main import _build_parser
+
+    for tokens in _marshal_commands(REMEDIES[finding_type]):
+        parser = _build_parser()
+        spelled = "marshal"
+        for token in tokens[1:]:
+            if token.startswith("--"):
+                options = {option for action in parser._actions for option in action.option_strings}
+                assert token in options, f"{finding_type.value}: `{spelled}` has no {token} option"
+                continue
+            choices = _subcommands(parser)
+            if token in choices:
+                parser = choices[token]
+                spelled = f"{spelled} {token}"
+                continue
+            assert not choices, f"{finding_type.value}: `{spelled}` has no `{token}` subcommand"
+
+
+def test_the_remedy_command_walk_can_fail():
+    """The walk above must reject what it exists to catch: the two spellings
+    Story 126.4 removed."""
+    assert _marshal_commands("run `marshal seed adopt --reinstate <artifact>#<region>` now") == [
+        ["marshal", "seed", "adopt", "--reinstate", "<artifact>#<region>"]
+    ]
+    from pyforge.marshal.cli.main import _build_parser
+
+    root = _subcommands(_build_parser())
+    assert "doctor" not in root
+    adopt = _subcommands(root["seed"])["adopt"]
+    assert "--reinstate" not in {option for action in adopt._actions for option in action.option_strings}
+    assert "--run" in {
+        option for action in _subcommands(root["seed"])["update"]._actions for option in action.option_strings
+    }
 
 
 def test_the_opted_out_remedy_hedges_exactly_as_its_finding_message_does():

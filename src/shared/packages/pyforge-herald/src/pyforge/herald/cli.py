@@ -1835,18 +1835,22 @@ def _run_scheduler_run(args: argparse.Namespace) -> int:
     validate``'s own ungated behavior (AD-16) -- neither job creates or
     modifies claim/progress content, only refreshes derived state.
 
-    ``--out-dir`` defaults to ``<repo-root>/web/public`` -- the same
-    location ``scripts/export_progress_snapshot.py``'s own default
-    resolves to for a normal checkout (where ``--repo-root`` is this
-    package's own directory), without this command needing to locate its
-    own installed package path the way that dev-only script does (this
-    command also runs from a real, installed conda package, where that
-    trick would resolve to nothing meaningful). This default only lands
-    at the web dashboard's real ``web/public/`` when ``--repo-root`` IS
-    this package's own checkout, matching the documented crontab recipe
-    (``docs/how-to/record-progress-claims-and-notices-with-herald.md``) -- a caller pointing ``--repo-root``
-    somewhere else (e.g. an isolated test directory) and still wanting
-    the real dashboard updated must pass ``--out-dir`` explicitly."""
+    ``--repo-root`` (default: the working directory) is the root holding
+    the store both jobs read, ``<repo-root>/.herald/herald.db`` -- the
+    repository root the operator runs ``herald`` from, which is what
+    ``web/package.json``'s ``sync-progress`` and the how-tos pass. It is
+    NOT this package's own directory.
+
+    ``--out-dir`` defaults to ``<repo-root>/web/public``, joined onto that
+    same root. The web dashboard reads its snapshot from this package's
+    own ``web/public/`` (``scripts/export_progress_snapshot.py``'s default,
+    which that dev-only script finds from its own file path -- a trick that
+    resolves to nothing meaningful from an installed conda package, so
+    this command does not use it). With ``--repo-root`` at the repository
+    root the default is therefore a ``web/public`` directly under the
+    repository, not the dashboard's: a caller who wants the dashboard
+    updated passes ``--out-dir`` explicitly, as the crontab recipe in
+    ``docs/how-to/record-progress-claims-and-notices-with-herald.md`` does."""
     repo_root = args.repo_root if args.repo_root is not None else Path.cwd()
     out_dir = args.out_dir if args.out_dir is not None else repo_root / "web" / "public"
     claims_path = repo_root / claims.DEFAULT_CLAIMS_PATH

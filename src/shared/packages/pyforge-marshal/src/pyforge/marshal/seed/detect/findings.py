@@ -112,40 +112,41 @@ class FindingType(StrEnum):
 REMEDIES: Mapping[FindingType, str] = MappingProxyType(
     {
         FindingType.ARTIFACT_MISSING: (
-            "Run `marshal seed adopt` (or `init`, for a first-ever install) to materialize it."
+            "Run `marshal seed adopt --apply` (or `init`, for a first-ever install) to materialize it."
         ),
         FindingType.MANAGED_FILE_MODIFIED: (
             "The file is tool-owned -- revert the local edit, run `marshal seed "
             'accept <artifact-id> --apply --reason "..."` to record an intended '
-            "edit as the new baseline, or run `marshal seed update --force` to "
+            "edit as the new baseline, or run `marshal seed update --run --force` to "
             "discard the edit."
         ),
         FindingType.MANAGED_REGION_MODIFIED: (
             "Revert edits inside the managed region, run `marshal seed accept "
             '<artifact-id>#<region> --apply --reason "..."` to record an intended '
-            "edit as the new baseline, or run `marshal seed update --force` to "
+            "edit as the new baseline, or run `marshal seed update --run --force` to "
             "discard the edit and overwrite the region; content outside the "
             "markers is untouched."
         ),
         FindingType.MANAGED_REGION_MISSING: (
-            "Run `marshal seed update` to re-insert the region at its declared anchor."
+            "Run `marshal seed update --run` to re-insert the region at its declared anchor."
         ),
         FindingType.DERIVED_STALE: (
-            "Run `marshal seed update` to recompute it; this class is always safe to regenerate."
+            "Run `marshal seed update --run` to recompute it; this class is always safe to regenerate."
         ),
         FindingType.MODEL_BEHIND: (
-            "Run `marshal seed update` to upgrade the repo to the currently installed model version."
+            "Run `marshal seed update --run` to upgrade the repo to the currently installed model version."
         ),
         FindingType.STATE_INVALID: (
             "Restore `.marshal/seed-state.yml` from version control, or run "
-            "`marshal seed adopt` to rebuild it; never hand-edit state."
+            "`marshal seed adopt --apply` to rebuild it; never hand-edit state."
         ),
         FindingType.NEVER_WRITE_VIOLATION: (
             "No repo action needed -- this names a bug in the plan builder or manifest; file an issue against Genesis."
         ),
         FindingType.REFERENCED_DEP_MISSING: (
-            "Install the missing dependency at or above its declared floor "
-            "(`marshal doctor check` can do this where available)."
+            "Install the missing dependency at or above its declared floor, then "
+            "run `marshal seed check` again to confirm it; Genesis verifies "
+            "referenced dependencies and never installs them."
         ),
         FindingType.UNCOVERED: (
             "Fix the manifest entry -- give it a valid `class`, or `unclassified-deferred` with a `rationale`."
@@ -155,8 +156,9 @@ REMEDIES: Mapping[FindingType, str] = MappingProxyType(
         ),
         FindingType.OPTED_OUT: (
             "Informational -- while this opt-out stands the tool will not "
-            "re-insert this region. To bring it back under management, run "
-            "`marshal seed adopt --reinstate <artifact>#<region>`."
+            "re-insert this region. To bring it back under management, restore "
+            "the region's begin and end markers by hand, then run `marshal seed "
+            "update --run` to record it."
         ),
         FindingType.KIT_ITEM_MISSING: (
             "Run `marshal seed kit --apply` in the loop home to provision it, "

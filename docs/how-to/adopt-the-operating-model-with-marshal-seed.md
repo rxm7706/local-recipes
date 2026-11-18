@@ -5,7 +5,9 @@ sources:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/kit.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/templates/manifest.yaml
   - src/shared/packages/pyforge-marshal/tests/meta/test_seed_accept_remedy_surfaces.py
-verified: 2026-11-17
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/findings.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/referenced_deps.py
+verified: 2026-11-18
 ---
 
 # How to adopt the operating model in another repository with `marshal seed`
@@ -21,7 +23,7 @@ Use the `marshal seed` verbs to deliver this repository's operating model into a
 - You are wiring the conformance check into CI.
 
 > [!NOTE]
-> **Prerequisites.** A **git** repository (non-git targets forfeit the update story). **pixi** (or another conda environment) with `pyforge-marshal` installed: in this repository, `pixi run -e pyforge-guild marshal …`. Optional: `doctor` on `PATH` for richer referenced-dependency checks.
+> **Prerequisites.** A **git** repository (non-git targets forfeit the update story). **pixi** (or another conda environment) with `pyforge-marshal` installed: in this repository, `pixi run -e pyforge-guild marshal …`. Referenced dependencies (such as pixi, copier, tmux, bmad-loop and the BMAD install) are verified, never installed: `check` reports one that is absent or below its floor as `referenced-dep-missing`, and installing it is yours to do.
 
 ## Two version numbers
 
@@ -73,7 +75,7 @@ When the plan looks correct:
 marshal seed adopt --repo-root . --agents claude,cursor --apply --yes
 ```
 
-Use `--skip <glob>` to exclude specific manifest paths. The pattern is recorded in state and honoured on every later `adopt` and `update` run as well (FR-87), so a skipped artifact stays skipped without repeating the flag. Bringing a previously opted-out managed region back under management has no flag yet; see [Marshal seed managed regions](../reference/marshal-seed-managed-regions.md).
+Use `--skip <glob>` to exclude specific manifest paths. The pattern is recorded in state and honoured on every later `adopt` and `update` run as well (FR-87), so a skipped artifact stays skipped without repeating the flag. To bring a previously opted-out managed region back under management, restore its begin and end markers by hand and run `marshal seed update --run`; there is no flag for it. See [Marshal seed managed regions](../reference/marshal-seed-managed-regions.md).
 
 ### 3. Upgrade later
 
@@ -114,7 +116,7 @@ marshal seed kit --repo-root <loop-home> --apply    # provision
 
 Three things worth knowing before enabling a layer:
 
-- **It never blocks.** No kit finding is HARD, and `marshal seed kit` exits `0` on every completed run. An instrument that is not installed (caveman and codegraph are linux-64 only) skips its layer with a named `kit-instrument-unavailable` finding at **INFO** — advisory even under `--strict`.
+- **It never blocks.** No kit finding is HARD, and `marshal seed kit` exits `0` on every completed run. An instrument that is not installed in the running environment (`caveman-install`, `codegraph`) skips its layer with a named `kit-instrument-unavailable` finding at **INFO** — advisory even under `--strict`.
 - **A first index build is slow.** With the `structure-graph` layer enabled and no index yet, this runs a real `codegraph init` unattended; the ceiling is 900s (an incremental resync, 300s). A timeout degrades into a named finding, never a hang.
 - **`marshal seed check` verifies it.** The kit's three checks appear in the report (text and `--json`) whenever the target's `[context]` resolves, including the passing and declared-off ones.
 

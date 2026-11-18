@@ -4,7 +4,10 @@ sources:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/regions/parse.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/templates/manifest.yaml
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py
-verified: 2026-11-17
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/findings.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/optout.py
+  - src/shared/packages/pyforge-marshal/tests/unit/test_seed_verbs_region_opt_out.py
+verified: 2026-11-18
 ---
 
 # Marshal seed managed regions
@@ -40,7 +43,7 @@ If markers are **absent** but the region was never opted out, `managed-region-mi
 
 1. Genesis records the pair in `state.opted_out` on the next mutating run (`adopt` / `update`).
 2. While opted out, the tool will **not** re-insert that region (`opted-out`, **INFO**).
-3. To restore management, restore the markers by hand and run `marshal seed update --run` (see the last paragraph of this section). The `opted-out` remedy names `marshal seed adopt --reinstate <artifact-id>#<region>`, but `adopt` has no such flag (checked against `--help`, 2026-11-17).
+3. To restore management, restore the markers by hand and run `marshal seed update --run` (see the last paragraph of this section). The `opted-out` remedy names the same two steps.
 
 Removing markers is the supported way to say "this repo owns this section now." Do not delete markers casually — the opt-out is durable until reinstated.
 
@@ -50,7 +53,7 @@ Two conditions bound that. The per-region claim holds for state written by this 
 
 State written by this release is not readable by an older marshal. The seed-state schema is closed and the package version is unchanged, so `seed_model_version` cannot tell the two apart, and an older marshal reports `state-invalid` for it. The remedy is to upgrade that marshal: restoring `.marshal/seed-state.yml` from version control helps only if you also restore the older marshal's own write of it, and re-running `marshal seed adopt` does not recover it (`adopt` reads state without downgrading `state-invalid`).
 
-There is no reinstate verb or flag (the `--reinstate` spelling above is only the one the remedy string names). Restoring the markers by hand makes the region present again, and the two verbs treat it differently. `update --run` records the region on its next run. `adopt` refuses an artifact whose other regions are recorded, with "present in the file but never recorded", until `--force`; and `adopt --apply --force` then plans nothing, because every declared region is in the file, so it writes no state and the region stays unrecorded. Use `update --run` to record it. The `opted_out` key stays in state either way.
+There is no reinstate verb or flag. Restoring the markers by hand makes the region present again, and the two verbs treat it differently. `update --run` records the region on its next run. `adopt` refuses an artifact whose other regions are recorded, with "present in the file but never recorded", until `--force`; and `adopt --apply --force` then plans nothing, because every declared region is in the file, so it writes no state and the region stays unrecorded. Use `update --run` to record it. The `opted_out` key stays in state either way.
 
 ## What Genesis never does
 

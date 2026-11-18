@@ -18,7 +18,7 @@ import psutil
 import pytest
 
 from pyforge.marshal.adapters import session_group_psutil
-from pyforge.marshal.adapters.session_group_psutil import PsutilSessionGroup, process_cmdline
+from pyforge.marshal.adapters.session_group_psutil import PsutilSessionGroup, process_cmdline, process_is_zombie
 from pyforge.marshal.ports.session_group import SessionGroupMember, SessionGroupReadError
 
 #: Linux never hands out a pid above ``PID_MAX_LIMIT`` (2**22), whatever ``pid_max`` is set to.
@@ -191,3 +191,55 @@ def test_process_cmdline_reads_a_real_process_and_none_for_a_pid_that_cannot_exi
     assert cmdline is not None
     assert "python" in cmdline.lower()
     assert process_cmdline(_NEVER_A_PID) is None
+
+
+# -- process_is_zombie (steward Story 126.4): the zombie read for a host with no /proc -------------------------
+
+
+class _StatusProcess:
+    """``psutil.Process`` stand-in whose construction or ``status()`` answers from ``outcome``."""
+
+    outcome: object = None
+
+    def __init__(self, pid: int) -> None:
+        self.pid = pid
+
+    def status(self) -> str:
+        if isinstance(self.outcome, BaseException):
+            raise self.outcome
+        assert isinstance(self.outcome, str)
+        return self.outcome
+
+
+@pytest.mark.parametrize(
+    ("outcome", "expected"),
+    [
+        (psutil.STATUS_ZOMBIE, True),
+        (psutil.STATUS_RUNNING, False),
+        (psutil.STATUS_SLEEPING, False),
+        (psutil.ZombieProcess(7), True),
+        (psutil.NoSuchProcess(7), False),
+        (psutil.AccessDenied(7), False),
+        (OSError("boom"), False),
+    ],
+)
+def test_process_is_zombie_maps_the_status_read(
+    monkeypatch: pytest.MonkeyPatch, outcome: object, expected: bool
+) -> None:
+    monkeypatch.setattr(_StatusProcess, "outcome", outcome)
+    monkeypatch.setattr(session_group_psutil.psutil, "Process", _StatusProcess)
+
+    assert process_is_zombie(7) is expected
+
+
+def test_process_is_zombie_on_a_real_exited_unreaped_child_then_reaped() -> None:
+    """The shipped reader on this host's psutil against a REAL zombie: exited, held unreaped by this parent."""
+    child = subprocess.Popen([sys.executable, "-c", "pass"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        os.waitid(os.P_PID, child.pid, os.WEXITED | os.WNOWAIT)  # exited, and left unreaped
+        assert process_is_zombie(child.pid) is True
+    finally:
+        child.wait(timeout=10)
+    assert process_is_zombie(child.pid) is False
+    assert process_is_zombie(os.getpid()) is False
+    assert process_is_zombie(_NEVER_A_PID) is False
