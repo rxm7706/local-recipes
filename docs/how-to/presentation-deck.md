@@ -11,7 +11,7 @@ sources:
   - src/shared/packages/pyforge-herald/src/pyforge/herald/pptx_pipeline.py
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/infographic-standard.md
   - presentations/agentic-sdlc/package.json
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # Tech Spec: Design-to-Deck — reusable React/Vite presentation workflow (parameterized)
@@ -43,6 +43,8 @@ verified: 2026-11-17
 > binary `deck-export` runs live in `pyforge-guild`, the session default (steward Stories 63.6
 > and 63.8) — `pixi install -e pyforge-guild` is all they need. `local-recipes` still carries
 > them for back-compat, but a Guild task run as `-e local-recipes` is refused by the session hook.
+
+Decks are one of Herald's jobs. For its Progress, Success and Operations records, see [Herald's Four Moments](../explanation/herald-four-moments.md), [How to record progress, claims and notices with Herald](record-progress-claims-and-notices-with-herald.md), [How to troubleshoot them](troubleshoot-herald-moments.md), [Herald web dashboard](../reference/herald-web-dashboard.md) and [Herald webhook endpoint](../reference/herald-webhook-endpoint.md).
 
 ## Genesis — The Dream & the PyForge Guild
 

@@ -8,7 +8,7 @@ sources:
   - scripts/platform-ci-local.sh
   - .github/workflows/platform-ci.yml
   - .github/workflows/pyforge-station-tests.yml
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # Recipe testing and builds
@@ -140,8 +140,9 @@ pixi run -e build python test-recipes.py --filter "aws-*" --platform linux-64
 | osx-64 | Native (macOS Intel) |
 | osx-arm64 | Native (macOS Apple Silicon) |
 
-> [!NOTE]
-> macOS builds require a Mac, and `test-recipes.py` warns when `OSX_SDK_DIR` is unset. Linux builds from Windows prefer WSL for `recipe.yaml` (rattler-build) and Docker for `meta.yaml` (conda-build).
+:::note
+macOS builds require a Mac, and `test-recipes.py` warns when `OSX_SDK_DIR` is unset. Linux builds from Windows prefer WSL for `recipe.yaml` (rattler-build) and Docker for `meta.yaml` (conda-build).
+:::
 
 ### Platform build methods
 

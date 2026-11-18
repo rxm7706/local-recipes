@@ -5,7 +5,7 @@ sources:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_currency.py
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/verdict.py
   - docs/reference/judgement-vocabulary.md
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # How to run and understand Detectors
@@ -13,6 +13,8 @@ verified: 2026-11-17
 PyForge's detectors form the core of our CI pipeline (`detectors-ci`) and continuous governance. They are small, offline, deterministic checks that enforce invariants across the codebase.
 
 This guide explains how to run the detector suite locally and how to interpret the results. For architecture rationale, see [The Detector Framework](../explanation/the-detector-framework.md).
+
+The `pyforge doctor` CLI is a separate front door, for pre-flight checks and feedstock prescriptions: see [How to diagnose with doctor](diagnose-with-doctor.md).
 
 ## Running the Detectors
 
@@ -52,8 +54,9 @@ The detector registry adheres strictly to a three-tier exit code system:
 | `1` | **FINDINGS** | At least one detector reported a violation of an invariant. |
 | `2` | **UNKNOWN** | At least one detector **could not run** (e.g., timed out, threw an exception, or a dependency like `pyforge.doctor` was unimportable), and no detector reported findings. |
 
-> [!WARNING]
-> **Exit code 2 is not a softer 0.** A detector that cannot run reports `unknown`, which is never green. The dashboard status strip will not claim "green" if it could not measure the metric.
+:::caution
+**Exit code 2 is not a softer 0.** A detector that cannot run reports `unknown`, which is never green. The dashboard status strip will not claim "green" if it could not measure the metric.
+:::
 
 ### A row that reads `unmeasured`
 
@@ -61,8 +64,9 @@ A Doctor source row reads `unmeasured` (marked `○`) when the source ran but me
 
 - **Fix:** run the source alone (its `*-check` task) and read its warning, which says what it could not evaluate (a cannot-evaluate warning names the subject; a `degrade_on_exception` warning names the exception). Restore the subject, or run the source where its subject exists.
 
-> [!WARNING]
-> **A single Doctor-sourced task uses a different exit domain.** `spec-surface-check`, `story-status-check`, `docs-map-hygiene-check` and the other `python -m pyforge.doctor.sources <name>` tasks project through `pyforge.doctor.verdict.exit_code_for`: any `fail` finding exits `2`, and a `warn` finding never changes the exit code (`0`). So `2` from the registry means "could not run" while `2` from one source means "failed" — read the finding rows, and always read the exit code directly, never through a pipe (a pipe reports the last command's status). The full domain table is in [`judgement-vocabulary.md`](../reference/judgement-vocabulary.md) § *Severity and exit codes*.
+:::caution
+**A single Doctor-sourced task uses a different exit domain.** `spec-surface-check`, `story-status-check`, `docs-map-hygiene-check` and the other `python -m pyforge.doctor.sources <name>` tasks project through `pyforge.doctor.verdict.exit_code_for`: any `fail` finding exits `2`, and a `warn` finding never changes the exit code (`0`). So `2` from the registry means "could not run" while `2` from one source means "failed" — read the finding rows, and always read the exit code directly, never through a pipe (a pipe reports the last command's status). The full domain table is in [`judgement-vocabulary.md`](../reference/judgement-vocabulary.md) § *Severity and exit codes*.
+:::
 
 ## Remediating Common Findings
 
@@ -89,7 +93,7 @@ A page under `docs/tutorials`, `docs/how-to`, `docs/reference` or `docs/explanat
 - **Fix:** Add the page to the right quadrant table in `docs/MAP.md`, or repoint/remove the dead link.
 
 ### Docs currency (`docs-currency-check`)
-Five checks over `docs/map.yaml` (the registry) and `docs/MAP.md` (its render): `map-render` (the generated `## Page registry` section is stale against a fresh render of `docs/map.yaml`), `generated-stale` (a `kind: generated` page differs from a `--check` run of its declared `scripts/docs_*.py` generator, declares no `generator:` in `docs/map.yaml`, or declares one outside `scripts/docs_*.py`, which is never run; a generator whose `--check` exits other than 0 or 1, or crashes with a traceback, is reported as could-not-run rather than stale), `authored-unstamped` (a `kind: authored` page whose own frontmatter lacks an ISO-date `verified:` or a non-empty `sources:` list; a page whose currency its own detector owns carries `checked_by: <pixi task>` instead), `authored-page-stale` (a `sources:` entry whose git last-touch is later than `verified:`, does not exist, or has no git history, or the page body cites a backticked skill/script/path token that no longer resolves), `skill-dir-hygiene` (a stray `README.md` inside a managed `bmad-*`/`pyforge-*`/`skf-*` skill directory). Since 2026-11-17 a check that measured a real defect fails: a stale render, a stale generated page, an unstamped page, a stale or missing source, a dead reference. A check that could not measure (no `docs/MAP.md`, a generator that cannot run, git or the map unreadable) stays a warning, and so does `skill-dir-hygiene`.
+Five checks over `docs/map.yaml` (the registry) and `docs/MAP.md` (its render): `map-render` (the generated `## Page registry` section is stale against a fresh render of `docs/map.yaml`), `generated-stale` (a `kind: generated` page differs from a `--check` run of its declared `scripts/docs_*.py` generator, declares no `generator:` in `docs/map.yaml`, or declares one outside `scripts/docs_*.py`, which is never run; a generator whose `--check` exits other than 0 or 1, or crashes with a traceback, is reported as could-not-run rather than stale), `authored-unstamped` (a `kind: authored` page whose own frontmatter lacks an ISO-date `verified:` or a non-empty `sources:` list; a page whose currency its own detector owns carries `checked_by: <pixi task>` instead), `authored-page-stale` (a `sources:` entry whose git last-touch is later than `verified:`, does not exist, or has no git history, or the page body cites a backticked skill/script/path token that no longer resolves), `skill-dir-hygiene` (a stray `README.md` inside a managed `bmad-*`/`pyforge-*`/`skf-*` skill directory). Since 2026-11-17 a check that measured a real defect fails: a stale render, a stale generated page, a `kind: generated` row with no usable `generator:`, an unstamped page, a stale or missing source, a dead reference. A check that could not measure (no `docs/MAP.md`, a generator that cannot run, the map unreadable, git unreadable or a shallow clone) stays a warning, and so does `skill-dir-hygiene`.
 - **Fix (map-render):** run `pixi run -e pyforge-guild docs-map-render` to regenerate the section from `docs/map.yaml`.
 - **Fix (generated-stale):** rerun the page's generator task (for example `pixi run -e pyforge-guild docs-skills-catalog`); never hand-edit a generated page. A page with no `generator:` gets one: a `scripts/docs_*.py` script that `--check` can run, even when the real generator is a station CLI (`scripts/docs_bmad_estate.py` hands both modes to `scribe catalog bmad-estate`). When the finding says the generator could not run, regenerating in the same environment will not help: run its `--check` by hand and read the output kept in the finding's evidence (for `scripts/docs_bmad_estate.py`, exit 2 means `pyforge.scribe` is not importable there).
 - **Fix (authored-unstamped):** verify the page against the tree, then add `sources:` (the specific files it restates, not a hub file such as `pixi.toml`) and `verified:` to its frontmatter.

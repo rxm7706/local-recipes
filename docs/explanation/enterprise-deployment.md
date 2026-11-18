@@ -9,7 +9,7 @@ sources:
   - src/platform/deploy/charts/platform/values.yaml
   - src/platform/deploy/overlays/eso
   - docs/how-to/rotate-platform-secrets.md
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # Enterprise Deployment & Air-Gapped Environments
@@ -296,7 +296,13 @@ Other locations:
 - `/etc/pixi/config.toml` — system-wide (needs root).
 - `.pixi/config.toml` — the tracked project file; leave it as it is.
 
-Pixi **merges** the layers, `system → user → project`, with the later layer winning per key (checked on pixi 0.84.2 with `pixi config list`: a user file's keys appear beside the project file's `run-post-link-scripts`). The `_http.py` runtime layer is narrower: its `read_pixi_config()` reads only the **first** file that exists, and in this repo that is always the tracked project file. A mirror set in `~/.pixi/config.toml` therefore reaches pixi and uv but not the conda-forge-expert scripts; give those the `*_BASE_URL` env vars (§ 6).
+Pixi **merges** the layers, `system → user → project`, with the later layer winning per key (checked on pixi 0.84.2 with `pixi config list`: a user file's keys appear beside the project file's `run-post-link-scripts`). The `_http.py` runtime layer follows the same rule: `read_pixi_config()` reads `/etc/pixi/config.toml`, `~/.pixi/config.toml` and `./.pixi/config.toml` (relative to the working directory, so run from the repo root) and merges them in that order. A mirror set in `~/.pixi/config.toml` therefore reaches pixi, uv **and** the conda-forge-expert scripts, beside the tracked project file's own key. The merge, as `pixi config list` shows it on 0.84.2:
+
+- a top-level key, including a list such as `default-channels`, takes the latest layer's value whole;
+- `[mirrors]` is a union over its source URLs, and a source named in two layers takes the later layer's target list whole;
+- `[pypi-config]` merges per key, except `extra-index-urls`, which concatenates, earlier layer first.
+
+Two limits. `_http.py` reads those three paths only; pixi's other user-level locations (`$PIXI_HOME/config.toml`, `$XDG_CONFIG_HOME/pixi/config.toml`) reach pixi but not the scripts. And the scripts use only `mirrors`, `default-channels` and `pypi-config` from the file (conda-forge and PyPI routing, plus the JFrog host gate of § 2); every other upstream is routed by its `*_BASE_URL` env var (§ 6).
 
 ### Verified pixi 0.84.2 config schema
 
@@ -379,8 +385,8 @@ When Stage 1 returns any error, `fetch_repodata_build_matrix` walks `_http.resol
 | Priority | Source | Notes |
 |---------:|--------|-------|
 | 1 | `CONDA_FORGE_BASE_URL` env var | Set this to your JFrog conda-forge mirror |
-| 2 | Pixi `mirrors["https://conda.anaconda.org/conda-forge"][*]` | From the first that exists of `.pixi/config.toml`, `~/.pixi/config.toml`, `/etc/pixi/config.toml`; in this repo that is the tracked project file (§ 4) |
-| 3 | Pixi `default-channels` containing `"conda-forge"` | Same single file as row 2 |
+| 2 | Pixi `mirrors["https://conda.anaconda.org/conda-forge"][*]` | From `/etc/pixi/config.toml`, `~/.pixi/config.toml` and `.pixi/config.toml`, merged in that order, the later file winning per source URL (§ 4) |
+| 3 | Pixi `default-channels` containing `"conda-forge"` | Same merged config as row 2; the latest file that sets the key supplies the whole list |
 | 4 | `https://repo.prefix.dev/conda-forge` | Public CDN mirror |
 | 5 | `https://conda.anaconda.org/conda-forge` | Last-resort default |
 
@@ -439,8 +445,10 @@ Every outbound HTTP call made by the `conda-forge-expert` scripts flows through
 `_http.py`, which resolves each upstream through an **ordered chain**: an
 env-var override first, then public CDN mirrors, then the canonical public host
 last. Set the override to your JFrog (or other) mirror and the whole toolchain —
-generators, atlas phases, CVE refresh, name-mapping — routes through it. All are
-env-vars only; **nothing is ever committed**.
+generators, atlas phases, CVE refresh, name-mapping — routes through it. The
+conda-forge and PyPI chains also read the merged pixi config (§ 4) after their
+env var; every other chain is env-var only. Either way **nothing is ever
+committed**.
 
 Each `resolve_*_urls()` helper in `_http.py` reads one env var. `ANACONDA_API_BASE_URL` is the exception: `conda_forge_atlas.py` reads it directly (§ 5).
 

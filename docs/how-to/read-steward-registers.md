@@ -6,7 +6,7 @@ sources:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/track.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/deck_integrity.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # How to read steward's registers
@@ -25,8 +25,9 @@ Use steward's `budget`, `measure`, `guards`, `track` and `deck-drift` duties to 
 
 - You want story status across stations. That is `steward ledger-query`; see [How to Monitor the Fleet](monitor-the-fleet.md) § *Done / Running / Next in one call*.
 
-> [!NOTE]
-> **Prerequisites.** Run from the repository root in `-e pyforge-guild`. None of these duties is a detector or a PR gate: each reports, and none decides whether a change may merge.
+:::note
+**Prerequisites.** Run from the repository root in `-e pyforge-guild`. None of these duties is a detector or a PR gate: each reports, and none decides whether a change may merge.
+:::
 
 ## Steps
 

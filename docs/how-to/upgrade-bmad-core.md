@@ -4,7 +4,7 @@ sources:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py
   - .claude/memory/feedback/upgrade-bmad-core-and-the-skf-custom-module-only-through-pix.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/failure-modes.md
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # How to upgrade BMAD core
@@ -23,11 +23,13 @@ Use the `pyforge steward upgrade` duty to move this repository's installed BMAD-
 - You want to refresh ordinary dependency pins. See [How to refresh the estate](refresh-the-estate.md).
 - You only want to know which BMAD version and modules are installed. Read the generated `docs/reference/bmad-estate-llms-full.md`.
 
-> [!CAUTION]
-> Never upgrade with a raw `bmad-method install` or `bmad-module-skill-forge update`. A raw update of the skf module once dropped local edits to installer-owned files; the steward apply re-applies them. Never run `bmad-module-skill-forge uninstall`: its manifest lists every file under the skills directory.
+:::caution
+Never upgrade with a raw `bmad-method install` or `bmad-module-skill-forge update`. A raw update of the skf module once dropped local edits to installer-owned files; the steward apply re-applies them. Never run `bmad-module-skill-forge uninstall`: its manifest lists every file under the skills directory.
+:::
 
-> [!NOTE]
-> **Prerequisites.** Run from the repository root. The target release needs a curated catalog file, `<version>.yaml`, under `src/shared/packages/pyforge-steward/src/pyforge/steward/data/bmad_core_releases/`. Without one the duty cannot report on that target; adding the catalog is its own story.
+:::note
+**Prerequisites.** Run from the repository root. The target release needs a curated catalog file, `<version>.yaml`, under `src/shared/packages/pyforge-steward/src/pyforge/steward/data/bmad_core_releases/`. Without one the duty cannot report on that target; adding the catalog is its own story.
+:::
 
 ## Steps
 

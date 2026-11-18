@@ -5,7 +5,7 @@ sources:
   - src/shared/packages/pyforge-herald/src/pyforge/herald/db.py
   - src/shared/packages/pyforge-herald/src/pyforge/herald/evidence.py
   - src/shared/packages/pyforge-herald/tests/unit/test_auth.py
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # How to troubleshoot Herald's progress, claims and notices
@@ -20,8 +20,9 @@ Use this page to diagnose a `herald progress`, `herald success`, `herald notice`
 - The dashboard still shows the previous state after a write.
 - A landing or a scheduled run you expected is not in your store.
 
-> [!NOTE]
-> **Prerequisites.** Run `herald` through its pixi environment from the repo root, as in [How to record progress, claims and notices with Herald](record-progress-claims-and-notices-with-herald.md). For failures of the local webhook host and sidecar (a `401`, `404`, `502`, `503`, or DW-13-6-2's repeated timeouts), start from the Troubleshooting table in [Run Herald's live backend locally](run-herald-live-backend-locally.md) instead.
+:::note
+**Prerequisites.** Run `herald` through its pixi environment from the repo root, as in [How to record progress, claims and notices with Herald](record-progress-claims-and-notices-with-herald.md). For failures of the local webhook host and sidecar (a `401`, `404`, `502`, `503`, or DW-13-6-2's repeated timeouts), start from the Troubleshooting table in [Run Herald's live backend locally](run-herald-live-backend-locally.md) instead.
+:::
 
 ## Operator-role refusal
 

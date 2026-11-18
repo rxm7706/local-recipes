@@ -1,11 +1,6 @@
 ---
 status: workflow
 spec_updated: 2026-06-20
-sources:
-  - .claude/skills/mason-feedstock-failure-remediation/SKILL.md
-  - .claude/skills/mason-feedstock-failure-remediation/references/worked-examples.md
-  - archive/docs/specs/feedstock-failure-remediation.md
-verified: 2026-11-17
 ---
 
 # Feedstock failure remediation

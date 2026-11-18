@@ -178,10 +178,14 @@ index-url = "https://artifactory.example.com/artifactory/api/pypi/pypi/simple"
 #     1. system         /etc/pixi/config.toml
 #     2. user           ~/.pixi/config.toml
 #     3. project-local  ./.pixi/config.toml
-#   (checked on pixi 0.84.2 with `pixi config list`). The conda-forge-expert
-#   scripts are different: they read only the first file that exists, which
-#   in this repository is the tracked project file, so set the `*_BASE_URL`
-#   environment variables for them (docs/explanation/enterprise-deployment.md).
+#   (checked on pixi 0.84.2 with `pixi config list`). `[mirrors]` merges per
+#   source URL and `[pypi-config]` per key (`extra-index-urls` concatenates);
+#   any other key takes the latest layer's value whole. The
+#   conda-forge-expert scripts merge the same three files the same way and
+#   read `mirrors`, `default-channels` and `pypi-config` from the result, so
+#   a mirror set in ~/.pixi/config.toml reaches them too. Their other
+#   upstreams are routed by `*_BASE_URL` environment variables
+#   (docs/explanation/enterprise-deployment.md).
 #
 # - To verify pixi picked up your config:
 #     pixi config list default-channels

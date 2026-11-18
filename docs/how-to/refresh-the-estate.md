@@ -10,7 +10,7 @@ sources:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/estate_verify.py
   - scripts/pin_policy_check.py
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/release-cadence.md
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # How to refresh the estate
@@ -22,6 +22,7 @@ path is retired: one policy file, one steward duty, and six verbs in order.
 This guide is the operator and agent entry point. For BMAD core releases after a refresh, continue
 with `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/release-cadence.md`
 (steps 1–9); step 7 already hands pixi floor bumps to `estate refresh` and `estate realize`.
+The duty that applies a BMAD core release is in [How to upgrade BMAD core](upgrade-bmad-core.md).
 
 ## When a refresh is due
 

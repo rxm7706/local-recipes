@@ -4,7 +4,7 @@ sources:
   - scripts/spec_surface_check.py
   - _bmad/scripts/memlog.py
   - .claude/memory/feedback/spec-surface-check-py-s-write-baseline-reads-git-ls-files-so.md
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # How to Reconcile Spec Surface Drift
@@ -72,8 +72,9 @@ python scripts/spec_surface_check.py --write-baseline --spec pyforge-doctor/spec
 
 A scoped stamp accepts a changed, added or removed path only when the spec's memlog moved since the baseline **and** names that path (Step 2). Any other differing path refuses the whole stamp: it exits 1, leaves the baseline untouched, and lists each path with the command that accepts it explicitly (`--accept PATH`, repeatable). Prefer fixing the memlog entry; use `--accept` only for a path you have checked yourself.
 
-> [!CAUTION]
-> **Never run a bare `--write-baseline` without `--spec`.** A bare stamp covers every spec in the repository, accepting all pending drift — including undocumented changes your colleagues are working on in parallel worktrees — as correct.
+:::caution
+**Never run a bare `--write-baseline` without `--spec`.** A bare stamp covers every spec in the repository, accepting all pending drift — including undocumented changes your colleagues are working on in parallel worktrees — as correct.
+:::
 
 A stamp is only valid until the next edit of any file in that spec's surface. If you touch a governed file again after stamping, repeat Steps 2–4.
 

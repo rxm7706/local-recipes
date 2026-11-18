@@ -6,7 +6,7 @@ sources:
   - src/platform/deploy/charts/platform/values.yaml
   - src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # PyForge Estate Overview
@@ -22,8 +22,9 @@ PyForge operates as an Agentic Software Development Life Cycle (SDLC) driven ent
 3. **Execution:** Autonomous agents execute the Stories to generate implementation artifacts and source code.
 4. **Verification:** Independent stations gate quality and compliance. Agents cannot judge their own work.
 
-> [!NOTE]
-> **Governed Execution:** Because code is mechanically generated and governed by Specs, you should never hand-edit a `SPEC.md` or a `sprint-status-ledger.yaml`. They are managed via `bmad-spec` (after a memlog append) and `pixi run -e pyforge-guild sprint-ledger-sync -- --project <station>`. For operational instructions on running these commands, see [One-Chain Station Ops](../how-to/one-chain-station-ops.md).
+:::note
+**Governed Execution:** Because code is mechanically generated and governed by Specs, you should never hand-edit a `SPEC.md` or a `sprint-status-ledger.yaml`. They are managed via `bmad-spec` (after a memlog append) and `pixi run -e pyforge-guild sprint-ledger-sync -- --project <station>`. For operational instructions on running these commands, see [One-Chain Station Ops](../how-to/one-chain-station-ops.md).
+:::
 
 ## The Eight Stations of the PyForge Guild
 

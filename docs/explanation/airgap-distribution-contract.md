@@ -2,7 +2,7 @@
 sources:
   - src/shared/packages/pyforge-mason/src/pyforge/mason/airgap_contract.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # Air-gap distribution contract (mason Story 9.2)
@@ -14,6 +14,8 @@ registry (`pyforge.mason.airgap_contract.SUPPORTED_DISTRIBUTABLES`).
 
 Coordinated with steward Story 12.3's air-gap parity run — that story
 **consumes** this contract; it does not redefine it.
+
+For Marshal's own offline path, see [How to use Marshal's seed and substrate bootstrap in an air-gapped site](../how-to/use-marshal-in-an-air-gapped-site.md).
 
 ## Required capabilities
 

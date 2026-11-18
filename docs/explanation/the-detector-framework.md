@@ -4,7 +4,7 @@ sources:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
   - docs/reference/judgement-vocabulary.md
   - archive/docs/dreams/fidelity-enforcement.md
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # The Detector Framework
@@ -12,6 +12,8 @@ verified: 2026-11-17
 PyForge maintains continuous estate governance via its **Detector Framework**. Detectors are standalone, offline, deterministic checks that enforce invariants on both the codebase and the operator's runtime environment.
 
 This document explains the architectural rationale behind the framework. For instructions on running them, see [How to run and understand Detectors](../how-to/run-and-understand-detectors.md).
+
+For the `pyforge doctor` CLI itself, see [How to diagnose with doctor](../how-to/diagnose-with-doctor.md).
 
 ## Dynamic Registry Discovery
 

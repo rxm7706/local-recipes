@@ -2,15 +2,16 @@
 sources:
   - src/shared/packages/pyforge-herald/src/pyforge/herald/webhook.py
   - src/shared/packages/pyforge-herald/src/pyforge/herald/webhook_host.py
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # Herald webhook endpoint
 
 This page lists the routes, authentication, payload rules and responses of Herald's webhook: the machine-triggered path onto the same storage `herald progress --update` and `herald success create` write (Stories 13.4, 13.6 and 19.1).
 
-> [!NOTE]
-> There is no publicly reachable URL, by the operator's ruling. The persistent path is local: the platform host on `127.0.0.1:8001` forwards these two routes to steward's mcp-host sidecar, which serves the `webhook_host` application against `<primary checkout>/.herald/herald.db`. To run it and deliver a real landing with `herald-ship-local`, follow [Run Herald's live backend locally](../how-to/run-herald-live-backend-locally.md).
+:::note
+There is no publicly reachable URL, by the operator's ruling. The persistent path is local: the platform host on `127.0.0.1:8001` forwards these two routes to steward's mcp-host sidecar, which serves the `webhook_host` application against `<primary checkout>/.herald/herald.db`. To run it and deliver a real landing with `herald-ship-local`, follow [Run Herald's live backend locally](../how-to/run-herald-live-backend-locally.md).
+:::
 
 ## Overview
 
@@ -41,8 +42,9 @@ Every request must carry an `X-Hub-Signature-256: sha256=<hex>` header AND an `X
 
 The secret comes from the `HERALD_WEBHOOK_SECRET` env var, read once at mount time (`webhook.resolve_webhook_secret`): never a literal or a default fallback, and never provisioned by this package.
 
-> [!CAUTION]
-> That secret is a privilege boundary, not just a spam filter. The CLI's `herald progress --update` runs behind `auth.require_operator_role` (AD-16); the webhook deliberately does not, because a machine caller authenticates by proof rather than by an operator identity it does not have (AD-9). Anything holding `HERALD_WEBHOOK_SECRET` gets progress-write access the CLI grants only to a verified operator. Scope it accordingly.
+:::caution
+That secret is a privilege boundary, not just a spam filter. The CLI's `herald progress --update` runs behind `auth.require_operator_role` (AD-16); the webhook deliberately does not, because a machine caller authenticates by proof rather than by an operator identity it does not have (AD-9). Anything holding `HERALD_WEBHOOK_SECRET` gets progress-write access the CLI grants only to a verified operator. Scope it accordingly.
+:::
 
 ## Responses
 

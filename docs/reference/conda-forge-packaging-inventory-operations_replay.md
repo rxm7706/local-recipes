@@ -5,13 +5,14 @@ sources:
   - scripts/conda-forge-packaging-inventory-operations_priority.py
   - scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py
   - conf/conda-forge-packaging-inventory-operations_curated_groups.json
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # MASTER PROMPT V3.0 — Consolidated Inventory Replay (Reusable)
 
-> [!NOTE]
-> Story numbers on this page (21.x, 23.x) are the ones the quartet scripts print. Atlas's `epics.md` was re-keyed on 2026-09-17 (`_bmad-output/projects/pyforge-atlas/planning-artifacts/rekey-2026-09-17.md`): Epics 12 to 25 moved down one, so Story 21.7 is now 20.7, Story 23.4 is 22.4, and Stories 23.8 and 23.9 are 22.8 and 22.9. Story 27.1 is unchanged.
+:::note
+Story numbers on this page (21.x, 23.x) are the ones the quartet scripts print. Atlas's `epics.md` was re-keyed on 2026-09-17 (`_bmad-output/projects/pyforge-atlas/planning-artifacts/rekey-2026-09-17.md`): Epics 12 to 25 moved down one, so Story 21.7 is now 20.7, Story 23.4 is 22.4, and Stories 23.8 and 23.9 are 22.8 and 22.9. Story 27.1 is unchanged.
+:::
 
 **Canonical runner script:** [`scripts/conda-forge-packaging-inventory-operations_metrics.py`](https://github.com/rxm7706/local-recipes/blob/main/scripts/conda-forge-packaging-inventory-operations_metrics.py)  
 **Prompt:** [`docs/reference/conda-forge-packaging-inventory-operations_prompt.md`](conda-forge-packaging-inventory-operations_prompt.md)  

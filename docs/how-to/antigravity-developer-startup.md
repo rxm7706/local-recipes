@@ -2,108 +2,105 @@
 sources:
   - .gemini/settings.json
   - GEMINI.md
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
-# Antigravity 2.0 Developer Startup Guide & Gist
+# Antigravity developer startup
 
-Use this page to launch the Antigravity CLI, desktop app or IDE against this repository.
+Use the Antigravity CLI (`agy`) to open an agent session on this repository that starts from the same contract as every other coding agent here. Antigravity is a supported harness: the repository wires it through two checked-in files, and you set nothing per machine.
 
-> [!NOTE]
-> This is one operator's snapshot, generated 2026-08-23 on a Linux workstation with the checkout at
-> `/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes`. Executable paths, the model list,
-> quotas and prices below are that snapshot and were not re-checked; they change with every
-> Antigravity release. Re-checked 2026-11-17: the `agy` subcommands and flags named here, and the
-> repository wiring in section 4.
+## When to Use This
 
-## 1. Antigravity 2.0 Ecosystem & Versioning Overview
+- You are starting your first Antigravity or Gemini CLI session in this checkout.
+- A session does not seem to know the rules in `AGENTS.md`.
+- You need the `agy` flags for a one-shot prompt, a reasoning effort or a permission mode.
 
-The Antigravity platform consists of three integrated user surfaces that share the same underlying AI agent engine:
+:::note[Prerequisites]
+- The Antigravity CLI installed and on `PATH`. This repository does not install it and no pixi environment carries it.
+- A checkout of this repository. Work in your own worktree and land through a PR, as `AGENTS.md` § *Trunk, worktrees, PRs* says.
+:::
 
-1. **Antigravity 2.0 Platform**: The overall generation/brand name for the suite (Desktop App v2.1.x, IDE, CLI v1.x, and SDK).
-2. **Antigravity CLI (`agy`)**: The terminal-bound command-line interface. It carries its own version number, separate from the 2.0 platform name: `1.1.19` when this page was written, `1.5.10` on 2026-11-17.
-3. **Antigravity Desktop Application**: Standalone operations hub for agent management, scheduled tasks, and artifact rendering.
-4. **Antigravity IDE**: Standalone AI-first code editor (built on VS Code) featuring inline completions, code lenses, visual diff overlays, and linter auto-fixing.
+## What this repository wires
 
-> [!NOTE]
-> Seeing **`Antigravity CLI 1.x`** on startup is expected. The CLI's `1.x` releases belong to the Antigravity 2.0 platform.
+| File | What it does |
+| --- | --- |
+| `AGENTS.md` | The one cross-tool contract. Every rule an agent follows here is in it. |
+| `.gemini/settings.json` | Sets `context.fileName` to `["AGENTS.md", "GEMINI.md"]`, so Gemini CLI and Antigravity load `AGENTS.md` first. Without it they never read `AGENTS.md`. |
+| `GEMINI.md` | The Gemini-only addendum. It points back at `AGENTS.md` and must not repeat it. |
 
-## 2. Launch Commands Quick Reference
+[How to configure your coding agent](configure-your-coding-agent.md) covers the other harnesses.
 
-| Surface | Terminal Command | Launch Description |
-| :--- | :--- | :--- |
-| **Antigravity CLI** | `agy` | Launches interactive TUI agent session in current terminal |
-| **Antigravity Desktop App** | `antigravity &` | Opens standalone Desktop App (runs in background) |
-| **Antigravity IDE (Current Folder)** | `antigravity-ide . &` | Opens the current directory in Antigravity IDE |
-| **Antigravity IDE (Specific Path)** | `antigravity-ide /path/to/project &` | Opens specified repository in Antigravity IDE |
+:::caution[Instruction-only rules]
+The session hook that denies certain commands for Claude Code and Cursor has no verified deny surface for Gemini CLI or Antigravity. The rules in `AGENTS.md` § *Session guardrails* still apply to you, but nothing enforces them in this harness.
+:::
 
-## 3. Surface Decision Guide: Desktop vs. IDE vs. CLI
+## Steps
 
-| Use Case / Workflow | Best Surface | Why |
-| :--- | :---: | :--- |
-| **Hands-on Coding & Editing** | **Antigravity IDE** | Active tab autocomplete, inline `Ctrl+I` refactoring, and line-by-line visual diffs. |
-| **Compiler & Lint Error Auto-fixing** | **Antigravity IDE** | Click-to-fix diagnostic integrations directly inside open code tabs. |
-| **Background Cron / Scheduled Tasks** | **Desktop App** | Configure recurring background jobs and one-shot timer tasks. |
-| **Multi-Project & Agent Orchestration** | **Desktop App** | HTML Auxiliary Pane for Artifact previews, Subagent trees, and project switching. |
-| **Terminal & Headless Environments** | **Antigravity CLI** | Fast, keyboard-first TUI workflow directly inside shell sessions. |
+### 1. Check the CLI
 
-## 4. System Installation & Primary Workspace Setup
+```bash
+agy --version
+```
 
-On the snapshot workstation the checkout was registered and trusted across all surfaces.
+On 2026-11-18 this printed `1.5.10` on the operator's macOS laptop.
 
-### Repository wiring
+### 2. Start a session from the repository root
 
-- **Agent contract:** `AGENTS.md` at the repo root is the cross-tool contract.
-- **Loader:** the checked-in `.gemini/settings.json` sets `context.fileName` to `["AGENTS.md", "GEMINI.md"]`, so Gemini CLI and Antigravity load `AGENTS.md` first.
-- **Addendum:** `GEMINI.md` carries the Gemini-only notes. Confirm the load with `/memory show`; both files must appear.
+```bash
+cd <your worktree of this repository>
+agy
+```
 
-### Executable and config paths (Linux snapshot)
+Start from the root so the checked-in `.gemini/settings.json` is the project's settings file.
 
-- **CLI Executable:** `~/.local/bin/agy`
-- **Desktop Executable:** `/usr/local/bin/antigravity`
-- **IDE Executable:** `/usr/local/bin/antigravity-ide`
-- **Global Config Directory:** `~/.gemini/`
-- **Project Registration File:** `~/.gemini/projects.json`
-- **Trusted Workspaces File:** `~/.gemini/antigravity-cli/settings.json`
+### 3. Confirm the contract loaded
 
-## 5. Helpful CLI Commands
+In the session, run `/memory show`. Both `AGENTS.md` and `GEMINI.md` must appear. After you edit either file, run `/memory reload`.
 
-- **Check CLI Version:** `agy --version`
-- **Update CLI to Latest Patch:** `agy update`
-- **View Recent CLI Changelog:** `agy changelog`
-- **List Installed Models:** `agy models`
-- **List Active Plugins:** `agy plugin list`
+### 4. Close the session
 
-## 6. Model Availability & Quota Comparison
+Before you end a session, run `scribe capture`, the session-close step for every harness (`AGENTS.md` § *Team memory*).
 
-### Available Models (`agy models`, as of 2026-08-23)
-- **Google Gemini Series:** `Gemini 3.7 Flash` (High/Med/Low), `Gemini 3.6 Flash`, `Gemini 3.5 Flash`, `Gemini 3.1 Pro` (High/Low)
-- **Anthropic Claude Series:** `Claude Sonnet 4.6 (Thinking)`, `Claude Opus 4.6 (Thinking)`
-- **Open Source Models:** `GPT-OSS 120B`
+## CLI flags and subcommands
 
-### Quota Structure (`agy -p "/quota"`)
-Antigravity features **dual rolling 5-hour quota pools** (separate pools for Gemini and Claude/GPT models) that continuously refresh every 5 hours, supported by a weekly safety cap.
+From `agy --help` in `1.5.10`, checked 2026-11-18. The table lists the ones this page's readers reach for; `agy --help` prints them all.
 
-### Comparison: Antigravity vs. Cursor ($20/mo) vs. Claude ($200/mo), as of 2026-08-23
+| Form | What it does |
+| --- | --- |
+| `agy -p "<prompt>"` (`--print`) | Runs one prompt without the interactive session and prints the response. |
+| `agy -i "<prompt>"` (`--prompt-interactive`) | Runs an initial prompt, then continues the session. |
+| `agy -c` (`--continue`) | Continues the most recent conversation. |
+| `agy --effort <level>` | Sets reasoning effort: `low`, `medium`, `high`, `xhigh` or `max`. |
+| `agy --mode <mode>` | Sets the execution mode: `accept-edits`, `auto` or `plan`. |
+| `agy --model <model>` | Chooses the model for the session. |
+| `agy --add-dir <dir>` | Adds a directory to the workspace; repeatable. |
+| `agy --sandbox` | Runs with terminal restrictions enabled. |
+| `agy --settings <json or path>` | Applies settings for this session only; never saved. |
+| `agy models` | Lists available models. |
+| `agy agents` | Lists available agents. |
+| `agy plugin list` | Lists installed plugins. |
+| `agy mcp` | Manages MCP servers (add, remove, list, enable, disable). |
+| `agy changelog` | Shows the changelog and release notes. |
+| `agy update` | Updates the CLI. |
 
-| Feature / Metric | **Antigravity (Google Tier)** | **Cursor Pro ($20/mo)** | **Claude Team / Max ($200/mo)** |
-| :--- | :--- | :--- | :--- |
-| **Model Selection** | **Gemini 3.7 Flash, 3.1 Pro** + **Claude Sonnet 4.6 & Opus 4.6 (Thinking)** + **GPT-OSS 120B** | Claude Sonnet 3.5/3.7, GPT-4o, o1 / o3-mini | Claude 3.5/3.7 Sonnet & Opus only |
-| **Quota Structure** | **Dual Rolling 5-Hour Pools** (continuous 5-hour refresh for Gemini & Claude/GPT) | **500 fast requests / month** total across premium models (throttled afterwards) | Shared organization message limits (refreshes every 5 hours) |
-| **Context Window Size** | **Up to 1M – 2M tokens** (Gemini 3.x series) | ~128k – 200k tokens | ~200k tokens |
-| **Agent Capabilities** | Full terminal execution, subagent orchestration, background tasks, artifacts, IDE & CLI integration | Cursor Agent (in-editor terminal & edits) | Web/Desktop Chat canvas & Artifacts (no background subagents or native CLI loops) |
-| **Effective Cost Value** | Included in your Google AI / Antigravity tier | $20 / month per user | $200 / month per user |
+:::caution
+`--dangerously-skip-permissions` approves every tool request without asking. With no deny hook in this harness, do not use it on this repository.
+:::
 
-## 7. Quota Expansion & BMAD-Method Optimization Strategies
+## What You Get
 
-### 1. Direct Quota Expansion
-- **G1 Plan Upgrade & Credits:** Upgrade your plan or purchase G1 compute credits at [`https://antigravity.google/g1-upgrade`](https://antigravity.google/g1-upgrade).
-- **In-CLI Credits Manager:** Run `agy -p "/credits"` to view credit balance and link automatic credit spillover.
-- **Enable Credit Buffer:** Set `UseG1Credits: true` in settings so autonomous agent loops continue seamlessly when standard 5-hour quota dips.
+A session whose context holds `AGENTS.md` and `GEMINI.md`, shown by `/memory show`. From there the agent works under the same Dream-first workflow, tier rules and pre-PR checklist as any other harness.
 
-### 2. High-Efficiency BMAD & PyForge Development
-- **Dual Pool Model Switching:** Alternate between **Gemini** (`Gemini 3.7 Flash`) and **Claude** (`Claude Sonnet 4.6 Thinking`) pools since each has its own independent 5-hour rolling limit.
-- **Subagent Model Scoping:** Configure subagents to inherit `'flash'` or `'flash_lite'` for routine file searches, keeping your high-reasoning quota focused on architecture and verification.
-- **Reasoning Effort Tuning:** Use `--effort medium` for standard story coding and reserve `--effort high` for complex spec decomposition (`agy --effort` takes `low`, `medium`, `high`, `xhigh` or `max`).
+## Vendor notes as of 2026-08-23, not verified by this repository
 
+One operator recorded the notes below on a Linux workstation on 2026-08-23. Nothing in this repository can check them, and they change with Antigravity releases. Treat them as a starting point and confirm against the vendor's own documentation.
 
+**Surfaces.** The platform has three surfaces that share one agent engine: the CLI (`agy`), a desktop application for agent management and scheduled tasks, and an IDE built on VS Code. The CLI carries its own `1.x` version number, separate from the "Antigravity 2.0" platform name.
+
+**Launch commands and paths on that workstation.** The desktop app started with `antigravity &` and the IDE with `antigravity-ide . &`. The CLI was at `~/.local/bin/agy`, the desktop and IDE executables under `/usr/local/bin/`, and the global configuration under `~/.gemini/`.
+
+**Models.** `agy models` listed Gemini 3.7 Flash, 3.6 Flash, 3.5 Flash and 3.1 Pro; Claude Sonnet 4.6 and Opus 4.6 (Thinking); and GPT-OSS 120B. Run `agy models` for today's list.
+
+**Quota.** Usage drew on two rolling 5-hour pools, one for Gemini models and one for Claude and GPT models, under a weekly cap. `agy -p "/quota"` showed the pools and `agy -p "/credits"` the credit balance. Because the pools are separate, switching between a Gemini and a Claude model spread the load.
+
+**Upgrades.** Plan upgrades and compute credits were sold at `https://antigravity.google/g1-upgrade`.

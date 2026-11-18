@@ -9,7 +9,7 @@ sources:
   - src/platform/compose/compose.yml
   - .github/workflows/platform-ci.yml
   - scripts/platform-ci-local.sh
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # Local Platform Development
@@ -36,8 +36,9 @@ cd src/platform
 pixi run -e platform-dev python manage.py migrate
 ```
 
-> [!NOTE]
-> Production DDL is owned by Liquibase (`src/platform/db/changelog/`), not by `migrate`. If you add first-party models, generate the Django migration with `makemigrations`, keep `makemigrations --check` green, and add the matching Liquibase changeset — the CI step `python -m db.sqlmigrate_extraction` fails on a production migration with no changeset. Station dashboards live in `src/shared/packages/pyforge-<station>/src/pyforge/<station>/dashboard/`, behind each package's `[dashboard]` extra.
+:::note
+Production DDL is owned by Liquibase (`src/platform/db/changelog/`), not by `migrate`. If you add first-party models, generate the Django migration with `makemigrations`, keep `makemigrations --check` green, and add the matching Liquibase changeset — the CI step `python -m db.sqlmigrate_extraction` fails on a production migration with no changeset. Station dashboards live in `src/shared/packages/pyforge-<station>/src/pyforge/<station>/dashboard/`, behind each package's `[dashboard]` extra.
+:::
 
 ## Step 3: Mint a Local Identity
 Identity is OIDC-delegated: there is no local password login and no `createsuperuser` path — staff and superuser derive from IdP group claims. For local development without Keycloak, mint a persona JWT:
@@ -75,5 +76,6 @@ pixi run -e platform-ci-test python -m pytest -v -n 4 --dist loadgroup
 
 To replay both jobs step for step (Ruff, mypy and the sqlmigrate extraction included), run the local twin from the repo root: `pixi run -e pyforge-guild platform-ci-local -- --test`.
 
-> [!IMPORTANT]
-> The `dashboard/` extra is the only place Django lives in a station package. Never import `django` or `channels` at the module level in the base `pyforge-<station>` packages. The base packages must be capable of importing and running their CLI without the `[dashboard]` extra installed.
+:::caution[Important]
+The `dashboard/` extra is the only place Django lives in a station package. Never import `django` or `channels` at the module level in the base `pyforge-<station>` packages. The base packages must be capable of importing and running their CLI without the `[dashboard]` extra installed.
+:::

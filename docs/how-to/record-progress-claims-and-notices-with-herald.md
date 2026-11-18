@@ -5,7 +5,7 @@ sources:
   - src/shared/packages/pyforge-herald/src/pyforge/herald/scheduler.py
   - src/shared/packages/pyforge-herald/scripts
   - src/shared/packages/pyforge-herald/web/package.json
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # How to record progress, claims and notices with Herald
@@ -20,8 +20,9 @@ Use the `herald progress`, `herald success` and `herald notice` commands to reco
 - The web dashboard must show what you just wrote.
 - You want evidence revalidated on a schedule.
 
-> [!NOTE]
-> **Prerequisites.** `herald` is not on `PATH` in a bare shell: it is a console script inside the `pyforge-herald` pixi environment (the `pyforge-guild` environment carries it too). Run every command from the repo root as `pixi run --frozen -e pyforge-herald herald <subcommand> ...`, or open `pixi shell -e pyforge-herald` for a whole session. A bare `herald` that returns "command not found" is almost always this.
+:::note
+**Prerequisites.** `herald` is not on `PATH` in a bare shell: it is a console script inside the `pyforge-herald` pixi environment (the `pyforge-guild` environment carries it too). Run every command from the repo root as `pixi run --frozen -e pyforge-herald herald <subcommand> ...`, or open `pixi shell -e pyforge-herald` for a whole session. A bare `herald` that returns "command not found" is almost always this.
+:::
 
 The example output below was captured by running the built `herald` binary in a scratch directory on 2026-08-08.
 

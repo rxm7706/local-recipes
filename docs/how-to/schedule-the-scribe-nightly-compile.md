@@ -5,7 +5,7 @@ sources:
   - scripts/scribe_graph_freshness_check.py
   - src/shared/packages/pyforge-scribe/src/pyforge/scribe/transcripts.py
   - src/shared/packages/pyforge-scribe/ops/systemd
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # How to schedule the Scribe nightly compile
@@ -22,10 +22,11 @@ for the compile, Story 8.1 for its trigger).
 - A nightly run printed a warning and you need to know whether it is a failure.
 - `scribe-graph-freshness-check` reports a missing or stale graph store.
 
-> [!NOTE]
-> **Prerequisites.** `scribe` is not on `PATH` in a bare shell: run it through the pixi env
-> (`pixi run -e pyforge-scribe scribe ...`) from the **repo root**. The CLI resolves
-> `.claude/memory/` and `.claude/data/` relative to the current working directory.
+:::note
+**Prerequisites.** `scribe` is not on `PATH` in a bare shell: run it through the pixi env
+(`pixi run -e pyforge-scribe scribe ...`) from the **repo root**. The CLI resolves
+`.claude/memory/` and `.claude/data/` relative to the current working directory.
+:::
 
 Everything `scribe graph compile` reads and writes is **operator-local**: the checked-in
 `.claude/memory/` tree of *your* checkout, *your* per-user session transcripts

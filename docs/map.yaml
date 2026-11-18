@@ -51,11 +51,11 @@ pages:
   - path: how-to/feedstock-failure-remediation.md
     quadrant: how-to
     owner: fleet
-    kind: authored
+    kind: pointer
   - path: how-to/feedstock-platform-expansion.md
     quadrant: how-to
     owner: fleet
-    kind: authored
+    kind: pointer
   - path: how-to/github-actions-recipe-ci.md
     quadrant: how-to
     owner: fleet

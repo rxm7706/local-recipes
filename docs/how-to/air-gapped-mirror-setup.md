@@ -5,12 +5,14 @@ sources:
   - docs/explanation/enterprise-deployment.md
   - docs/reference/pixi-config-jfrog.example.toml
   - .scripts/build_steps.sh
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # Air-gapped mirror setup
 
 Procedural steps for mirroring conda-forge packages and building offline. For architecture rationale and JFrog integration design, see [`docs/explanation/enterprise-deployment.md`](../explanation/enterprise-deployment.md).
+
+To adopt the operating model and fill a clone's shared substrate on the same site, see [How to use Marshal's seed and substrate bootstrap in an air-gapped site](use-marshal-in-an-air-gapped-site.md).
 
 Air-gapped environments require:
 

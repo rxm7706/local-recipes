@@ -3,18 +3,19 @@ sources:
   - .claude/skills/conda-forge-expert/reference/jinja-functions.md
   - .claude/scripts/conda-forge-expert/native-build.sh
   - .github/workflows/test-all.yml
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # Troubleshooting recipe builds
 
 Task-oriented fixes for common local build failures.
 
-> [!NOTE]
-> Install `pixi install -e pyforge-foundry-full` for everyday PyForge work, and
-> `pixi install -e local-recipes` when you need rattler-build and the recipe factory tasks.
-> This page assumes the `local-recipes` env is installed. Task names are listed in
-> [pixi-tasks.md](pixi-tasks.md).
+:::note
+Install `pixi install -e pyforge-foundry-full` for everyday PyForge work, and
+`pixi install -e local-recipes` when you need rattler-build and the recipe factory tasks.
+This page assumes the `local-recipes` env is installed. Task names are listed in
+[pixi-tasks.md](pixi-tasks.md).
+:::
 
 ## "rattler-build not found"
 

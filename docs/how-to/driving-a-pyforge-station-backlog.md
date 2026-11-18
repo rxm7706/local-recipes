@@ -4,7 +4,7 @@ sources:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py
   - scripts/promote_sprint_status.py
   - scripts/deck_facts.py
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # Driving a PyForge station backlog forward
@@ -21,6 +21,8 @@ Use this workflow to move a PyForge Guild station's BMAD backlog forward: checki
 :::note[Prerequisites]
 An active BMAD project (`scripts/bmad-switch --current`) and familiarity with this repo's Dream → Spec → Story chain (see `AGENTS.md` § *Dream-first workflow*). This guide assumes stories already exist in `epics.md`; it doesn't cover minting them.
 :::
+
+A repository that does not have this operating model yet gets it first: see [How to adopt the operating model in another repository with `marshal seed`](adopt-the-operating-model-with-marshal-seed.md), with [Marshal seed findings and their remedies](../reference/marshal-seed-findings.md) and [Marshal seed managed regions](../reference/marshal-seed-managed-regions.md).
 
 ## How do I check status without spending anything?
 

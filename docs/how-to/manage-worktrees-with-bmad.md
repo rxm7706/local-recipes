@@ -5,7 +5,7 @@ sources:
   - scripts/worktree_sweep.py
   - scripts/bmad-switch
   - _bmad/scripts/resolve_config.py
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # How to Manage Worktrees with BMAD
@@ -28,8 +28,9 @@ pixi run -e pyforge-guild marshal factory dispatch <slug> <story-key>
 pixi run -e pyforge-guild steward workspace start <slug>
 ```
 
-> [!CAUTION]
-> **Never run `scripts/bmad-switch` from a parallel agent session.** The switch is per-working-tree global state (a marker file plus two gitignored symlinks) that concurrent agents will silently re-point under each other. Address projects by physical path (`_bmad-output/projects/<slug>/planning-artifacts/…`) or pass `BMAD_ACTIVE_PROJECT=<slug>` per invocation, which outranks the marker in `_bmad/scripts/resolve_config.py` and mutates nothing shared. The one exception is inside a bmad-loop run worktree, which has its own copy of that state.
+:::caution
+**Never run `scripts/bmad-switch` from a parallel agent session.** The switch is per-working-tree global state (a marker file plus two gitignored symlinks) that concurrent agents will silently re-point under each other. Address projects by physical path (`_bmad-output/projects/<slug>/planning-artifacts/…`) or pass `BMAD_ACTIVE_PROJECT=<slug>` per invocation, which outranks the marker in `_bmad/scripts/resolve_config.py` and mutates nothing shared. The one exception is inside a bmad-loop run worktree, which has its own copy of that state.
+:::
 
 Before any broad `git add` or push in a shared checkout, check whether another session is already working there: [Detecting concurrent agent activity](detect-concurrent-agent-activity.md).
 

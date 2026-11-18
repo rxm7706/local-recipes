@@ -3,7 +3,7 @@ sources:
   - src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py
   - src/shared/packages/pyforge-warden/src/pyforge/warden/verdict.py
   - _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/contract.md
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # How to scan for compliance with warden
@@ -21,11 +21,13 @@ Use the `warden scan` CLI to check a project's Python, conda and pixi manifests 
 
 - You want to know whether engines and feeds are present across a checkout, with other pre-flight checks. `pyforge doctor check` wraps warden's self-check; see [How to diagnose with doctor](diagnose-with-doctor.md).
 
-> [!NOTE]
-> **Prerequisites.** Run from the repository root, in warden's own environment, `-e pyforge-warden`; the session default `pyforge-guild` does not carry it. `warden scan …` and `pyforge warden scan …` are the same command. Warden scans offline: the OSV database and the KEV, EPSS and end-of-life feeds must already be on disk for their axes to be assessed.
+:::note
+**Prerequisites.** Run from the repository root, in warden's own environment, `-e pyforge-warden`; the session default `pyforge-guild` does not carry it. `warden scan …` and `pyforge warden scan …` are the same command. Warden scans offline: the OSV database and the KEV, EPSS and end-of-life feeds must already be on disk for their axes to be assessed.
+:::
 
-> [!IMPORTANT]
-> The CLI is the only publisher of the verdict. Relay its status and exit code as printed; do not import `pyforge.warden` or recompute a status yourself.
+:::caution[Important]
+The CLI is the only publisher of the verdict. Relay its status and exit code as printed; do not import `pyforge.warden` or recompute a status yourself.
+:::
 
 ## Steps
 
@@ -78,8 +80,9 @@ pixi run -e pyforge-warden pyforge warden scan <path> --warn-only
 
 `--warn-only` downgrades every still-blocking status (`policy-violation`, `indeterminate`) to `warn` before the verdict is composed, so findings are reported and the run exits `0`.
 
-> [!CAUTION]
-> A green `--warn-only` run is not a clean vulnerability verdict. With no OSV database, the vulnerability axis composes `indeterminate` findings, and `--warn-only` downgrades those like any other, leaving the axis silently unassessed. That is why step 1 comes first. An operational error still exits `2` under `--warn-only`: a manifest that cannot be parsed, or a missing engine, is never downgraded.
+:::caution
+A green `--warn-only` run is not a clean vulnerability verdict. With no OSV database, the vulnerability axis composes `indeterminate` findings, and `--warn-only` downgrades those like any other, leaving the axis silently unassessed. That is why step 1 comes first. An operational error still exits `2` under `--warn-only`: a manifest that cannot be parsed, or a missing engine, is never downgraded.
+:::
 
 ### 5. Get the report as JSON, or an SBOM
 

@@ -11,8 +11,8 @@ Task-oriented documentation: "how do I do X?" operational instructions.
 | [`pixi-tasks.md`](pixi-tasks.md) | Generated list of every pixi task and the environments that run it |
 | [`troubleshooting-recipe-builds.md`](troubleshooting-recipe-builds.md) | Common build failure fixes |
 | [`air-gapped-mirror-setup.md`](air-gapped-mirror-setup.md) | Offline mirror and Artifactory setup (procedural) |
-| [`antigravity-developer-startup.md`](antigravity-developer-startup.md) | Antigravity 2.0 developer startup |
-| [`manticore-studio.md`](manticore-studio.md) | Herald manticore studio install and render |
+| [`antigravity-developer-startup.md`](antigravity-developer-startup.md) | Start an Antigravity (`agy`) session on this repository: what the repo wires, the CLI flags, dated vendor notes |
+| [`manticore-studio.md`](manticore-studio.md) | Install Herald's manticore video studio outside the repo with the lock's `bmad-method`; record of the first render |
 | [`driving-a-pyforge-station-backlog.md`](driving-a-pyforge-station-backlog.md) | Dispatching, verifying, and landing BMAD station work |
 | [`detect-concurrent-agent-activity.md`](detect-concurrent-agent-activity.md) | Checking for other agents/sessions before you dispatch |
 | [`deploy-the-docs-site-to-github-enterprise-pages.md`](deploy-the-docs-site-to-github-enterprise-pages.md) | Internal GitHub Enterprise Pages deploy for the unified docs artifact (`configure-pages` host values + the `pages-site` release zip) |

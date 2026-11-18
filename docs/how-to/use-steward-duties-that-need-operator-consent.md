@@ -6,7 +6,7 @@ sources:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py
   - docs/governance/guild-roster.json
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # How to use steward duties that need operator consent
@@ -26,8 +26,9 @@ Use the read-only or dry-run form of `cutover`, `pages`, `sync` and `revoke` to 
 - You want to refresh dependency pins: [How to refresh the estate](refresh-the-estate.md).
 - You want to bring up Nebari on kind: [Host Nebari](host-nebari.md).
 
-> [!NOTE]
-> **Prerequisites.** Run from the repository root in `-e pyforge-guild`. The forms marked "operator" below reach GitHub, Jira or the platform host and need the operator's credentials.
+:::note
+**Prerequisites.** Run from the repository root in `-e pyforge-guild`. The forms marked "operator" below reach GitHub, Jira or the platform host and need the operator's credentials.
+:::
 
 ## Who runs which form
 

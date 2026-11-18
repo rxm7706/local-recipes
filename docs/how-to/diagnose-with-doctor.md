@@ -3,7 +3,7 @@ sources:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/__main__.py
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/verdict.py
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/contract.md
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # How to diagnose with doctor
@@ -22,11 +22,13 @@ Use the `pyforge doctor` CLI to check that a checkout can run its scanners, watc
 - You want the planning detectors (`spec-surface-check`, `story-status-check` and the rest). They are Doctor sources run one at a time; see [How to run and understand Detectors](run-and-understand-detectors.md).
 - You want a compliance verdict on dependencies. That is warden's; see [How to scan for compliance with warden](scan-for-compliance-with-warden.md).
 
-> [!NOTE]
-> **Prerequisites.** Run from the repository root. `pyforge-guild` carries doctor, but not warden, so the engine checks need `-e pyforge-doctor`. `monitor` and `diagnose` read conda-forge-expert's `cf_atlas.db`; on a checkout that has never built it (the `build-cf-atlas` task), both report that the signal is unavailable.
+:::note
+**Prerequisites.** Run from the repository root. `pyforge-guild` carries doctor, but not warden, so the engine checks need `-e pyforge-doctor`. `monitor` and `diagnose` read conda-forge-expert's `cf_atlas.db`; on a checkout that has never built it (the `build-cf-atlas` task), both report that the signal is unavailable.
+:::
 
-> [!IMPORTANT]
-> Doctor reports whether things can run, not whether a change may merge. Its findings are advisory. A Doctor exit code is never a second PR verdict.
+:::caution[Important]
+Doctor reports whether things can run, not whether a change may merge. Its findings are advisory. A Doctor exit code is never a second PR verdict.
+:::
 
 ## Steps
 

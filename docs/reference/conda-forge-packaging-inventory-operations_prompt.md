@@ -3,13 +3,14 @@ sources:
   - scripts/conda-forge-packaging-inventory-operations_metrics.py
   - scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py
   - src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/nodes.py
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # Revised Master Prompt — Consolidated Verified Package Inventory (Standalone)
 
-> [!NOTE]
-> Story numbers on this page (21.x, 23.x) are the ones the quartet scripts print. Atlas's `epics.md` was re-keyed on 2026-09-17 (`_bmad-output/projects/pyforge-atlas/planning-artifacts/rekey-2026-09-17.md`): Epics 12 to 25 moved down one, so Story 21.7 is now 20.7, Story 23.4 is 22.4, and Stories 23.8 and 23.9 are 22.8 and 22.9. Story 27.1 is unchanged.
+:::note
+Story numbers on this page (21.x, 23.x) are the ones the quartet scripts print. Atlas's `epics.md` was re-keyed on 2026-09-17 (`_bmad-output/projects/pyforge-atlas/planning-artifacts/rekey-2026-09-17.md`): Epics 12 to 25 moved down one, so Story 21.7 is now 20.7, Story 23.4 is 22.4, and Stories 23.8 and 23.9 are 22.8 and 22.9. Story 27.1 is unchanged.
+:::
 
 You are an **Expert Python Ecosystem Analyst and Open Source Packaging Specialist**.
 

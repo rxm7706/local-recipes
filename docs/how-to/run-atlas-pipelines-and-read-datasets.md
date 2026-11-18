@@ -5,7 +5,7 @@ sources:
   - src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/tools.py
   - src/shared/packages/pyforge-atlas/tools/bootstrap.py
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/contract.md
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # How to run the atlas pipelines and read their datasets
@@ -23,8 +23,9 @@ Use the `pyforge atlas` CLI to build atlas's conda-forge intelligence datasets o
 - You want the legacy `cf_atlas.db` that `pyforge doctor monitor` reads. That is a different store, built by the `build-cf-atlas` task; see [How to diagnose with doctor](diagnose-with-doctor.md).
 - You are changing atlas's code. Read `src/shared/packages/pyforge-atlas/AGENTS.md` first; it holds the subtree's own rules.
 
-> [!NOTE]
-> **Prerequisites.** Run every command from the repository root. Atlas lives in its own pixi environment, `-e pyforge-atlas`; the session default `pyforge-guild` does not carry it. A pipeline run writes under the data root and may fetch public sources, so run one in your own worktree, not as a read-only check.
+:::note
+**Prerequisites.** Run every command from the repository root. Atlas lives in its own pixi environment, `-e pyforge-atlas`; the session default `pyforge-guild` does not carry it. A pipeline run writes under the data root and may fetch public sources, so run one in your own worktree, not as a read-only check.
+:::
 
 ## Steps
 
@@ -59,8 +60,9 @@ pixi run -e pyforge-atlas pyforge atlas run                       # the whole __
 
 Kedro's other `run` options (`--from-nodes`, `--to-outputs`, `--tags`, `--only-missing-outputs` and the rest) are listed by `pyforge atlas run --help`.
 
-> [!NOTE]
-> Each command runs with the atlas package directory as its working directory. A relative path you pass to `run` (`--config`, `--conf-source`) or put in a `PYFORGE_ATLAS_*` variable resolves against that directory, not your shell's. Pass absolute paths.
+:::note
+Each command runs with the atlas package directory as its working directory. A relative path you pass to `run` (`--config`, `--conf-source`) or put in a `PYFORGE_ATLAS_*` variable resolves against that directory, not your shell's. Pass absolute paths.
+:::
 
 ### 4. Refresh the dataset index
 

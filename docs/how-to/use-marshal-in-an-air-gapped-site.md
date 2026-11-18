@@ -5,7 +5,7 @@ sources:
   - src/shared/packages/pyforge-marshal/tests/meta/test_ad65_no_network_stack_imports.py
   - src/shared/packages/pyforge-marshal/tests/meta/test_ad65_default_template_never_remote.py
   - .github/workflows/substrate-nightly.yml
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # How to use Marshal's seed and substrate bootstrap in an air-gapped site
@@ -19,8 +19,9 @@ Use `marshal seed` and `marshal context bootstrap --from` to adopt the operating
 - You are carrying the published substrate pair across an air gap.
 - You are rebuilding the substrate with no pair and no network.
 
-> [!NOTE]
-> **Prerequisites.** A conda mirror that carries `pyforge-marshal` and its run-dependencies. Mirror setup itself is in [air-gapped mirror setup](air-gapped-mirror-setup.md); the wider enterprise profile is in [enterprise deployment](../explanation/enterprise-deployment.md).
+:::note
+**Prerequisites.** A conda mirror that carries `pyforge-marshal` and its run-dependencies. Mirror setup itself is in [air-gapped mirror setup](air-gapped-mirror-setup.md); the wider enterprise profile is in [enterprise deployment](../explanation/enterprise-deployment.md).
+:::
 
 ## What ships in the package
 
@@ -75,8 +76,9 @@ marshal context bootstrap --from substrate-pack
 
 Prefer the published pair. Its CI runner has no session transcripts, so its `graph.json` carries none.
 
-> [!CAUTION]
-> `marshal context pack --out substrate-pack` on a working checkout ships `graph.json` exactly as that host compiled it. That includes session-transcript nodes and absolute home-directory paths. Use `pack` only when no published pair exists, and review what it carries before it leaves the host.
+:::caution
+`marshal context pack --out substrate-pack` on a working checkout ships `graph.json` exactly as that host compiled it. That includes session-transcript nodes and absolute home-directory paths. Use `pack` only when no published pair exists, and review what it carries before it leaves the host.
+:::
 
 `context pack` writes deterministic bytes: packing the same substrate twice on one host gives the same archive sha256. A carried copy of the published pair verifies against its own manifest. With no pair and no network, `--offline` rebuilds each member from the checkout, provided the rebuild tools (`codegraph`, and `scribe` with its graph extras) are installed from your mirror.
 

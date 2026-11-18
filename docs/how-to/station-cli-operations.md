@@ -5,7 +5,7 @@ sources:
   - src/shared/packages/pyforge-steward/tests/unit/test_cli.py
   - src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py
   - src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # Station CLI Operations
@@ -44,6 +44,8 @@ pixi run -e pyforge-<station> pyforge <station> --help    # atlas, warden
 ```
 
 For example, `pixi run -e pyforge-guild pyforge mason --help` lists `recipe` (new / validate / build / diagnose / optimize / scan / submit / update, wrapping `conda-forge-expert`), `package`, `environment` and `doctor`.
+
+Herald's record-keeping commands have their own pages: [How to record progress, claims and notices with Herald](record-progress-claims-and-notices-with-herald.md), [How to troubleshoot them](troubleshoot-herald-moments.md), [Herald's Four Moments](../explanation/herald-four-moments.md), [Herald web dashboard](../reference/herald-web-dashboard.md) and [Herald webhook endpoint](../reference/herald-webhook-endpoint.md).
 
 ## Scribe Data Recall
 

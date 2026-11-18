@@ -5,7 +5,7 @@ sources:
   - src/platform/deploy/overlays/eso/externalsecret-platform-secrets.example.yaml
   - src/shared/packages/django-pyforge/src/django_pyforge/assertion/schema.py
   - src/shared/packages/django-pyforge/src/django_pyforge/assertion/verify.py
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # How to rotate platform secrets and age identities
@@ -19,8 +19,9 @@ Use the `steward keys` duty and the steps below to rotate the platform's secrets
 - The assertion signing keypair is being replaced without an outage.
 - Vault is the upstream and you need to know which cluster steps still apply.
 
-> [!NOTE]
-> **Prerequisites.** `kubectl` access to the platform namespace (the examples use `platform`) and the name of the pre-created Secret (`values.existingSecret`, default `platform-secrets`). The dev (age + manual Secret) and enterprise (Vault + ESO) profiles are described in [enterprise deployment](../explanation/enterprise-deployment.md), § 7. The Secret's keys are listed in [platform deployment architecture](../explanation/platform-deployment-architecture.md).
+:::note
+**Prerequisites.** `kubectl` access to the platform namespace (the examples use `platform`) and the name of the pre-created Secret (`values.existingSecret`, default `platform-secrets`). The dev (age + manual Secret) and enterprise (Vault + ESO) profiles are described in [enterprise deployment](../explanation/enterprise-deployment.md), § 7. The Secret's keys are listed in [platform deployment architecture](../explanation/platform-deployment-architecture.md).
+:::
 
 All `steward keys …` examples assume the repo root and the pyforge-steward pixi env:
 

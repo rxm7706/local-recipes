@@ -3,15 +3,16 @@ sources:
   - src/shared/packages/pyforge-herald/web/package.json
   - src/shared/packages/pyforge-herald/web/src
   - src/shared/packages/pyforge-herald/scripts
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # Herald web dashboard
 
 This page lists what Herald's web dashboard (`src/shared/packages/pyforge-herald/web/`) shows an operator: its snapshot files and the exporter behind each, its tabs, filters, empty and error states, and its breakpoints (herald Stories 7.1, 7.2 and 12.2).
 
-> [!CAUTION]
-> The dashboard is a static snapshot, not a live app. No exporter runs when you run a `herald` write command, so the dashboard keeps showing whatever it last had, with no error and no warning banner. This is the number one cause of "I ran the command but the dashboard didn't update."
+:::caution
+The dashboard is a static snapshot, not a live app. No exporter runs when you run a `herald` write command, so the dashboard keeps showing whatever it last had, with no error and no warning banner. This is the number one cause of "I ran the command but the dashboard didn't update."
+:::
 
 ## Snapshot files
 

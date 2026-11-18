@@ -5,7 +5,7 @@ sources:
   - src/shared/packages/django-pyforge/src/django_pyforge/sidecar_forward.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/deploy.py
   - archive/.github/workflows/herald-live-demo.yml
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # Run Herald's live backend locally
@@ -26,6 +26,8 @@ them to the host. The host has no herald, so a `201` can only have come through 
 forward, its flag and the sidecar are steward's: see
 [platform deployment architecture](../explanation/platform-deployment-architecture.md), the
 *mcp-host sidecar (Story 87.3)* bullet.
+
+The webhook's routes, authentication and responses are in [Herald webhook endpoint](../reference/herald-webhook-endpoint.md). What the records are is in [Herald's Four Moments](../explanation/herald-four-moments.md).
 
 Run every command from the root of the **primary checkout**, never from a `.worktrees/` path: a
 worktree is swept, and the store, the secret and the logs must outlive it.
@@ -303,6 +305,8 @@ Never copy the secret value into it.
 ## Troubleshooting
 
 The caller prints the status and body for each request and exits non-zero unless both are `201`.
+
+For a `herald` command that refused, or a dashboard that shows old data, see [How to troubleshoot Herald's progress, claims and notices](troubleshoot-herald-moments.md). To write the same records by hand, see [How to record progress, claims and notices with Herald](record-progress-claims-and-notices-with-herald.md). What the dashboard shows is in [Herald web dashboard](../reference/herald-web-dashboard.md).
 
 | What you see | Cause | Fix |
 |---|---|---|
