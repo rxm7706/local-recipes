@@ -1,11 +1,22 @@
 {
   "skill": "skf-export-skill",
   "status": "success",
-  "timestamp": "2026-10-05T17:25:17Z",
   "outputs": [
     {
       "type": "skill",
-      "path": ".claude/skills/pyforge-mason/0.1.0/pyforge-mason/context-snippet.md"
+      "path": ".claude/skills/pyforge-doctor/0.1.1/pyforge-doctor/context-snippet.md"
+    },
+    {
+      "type": "skill",
+      "path": ".claude/skills/pyforge-herald/0.1.1/pyforge-herald/context-snippet.md"
+    },
+    {
+      "type": "skill",
+      "path": ".claude/skills/pyforge-marshal/0.1.1/pyforge-marshal/context-snippet.md"
+    },
+    {
+      "type": "skill",
+      "path": ".claude/skills/pyforge-steward/0.1.1/pyforge-steward/context-snippet.md"
     },
     {
       "type": "config",
@@ -18,28 +29,20 @@
   ],
   "summary": {
     "skills": [
-      "pyforge-mason"
+      "pyforge-doctor",
+      "pyforge-herald",
+      "pyforge-marshal",
+      "pyforge-steward"
     ],
-    "always_on_tokens": 1200,
-    "on_trigger_tokens": 3887,
-    "managed_section_tokens": 1200,
-    "managed_section_skill_count": 8,
-    "context_files": [
-      "AGENTS.md"
-    ],
-    "headless_decisions": [
-      {
-        "gate": "step-1 confirm",
-        "default_action": "C",
-        "taken_action": "C",
-        "reason": "headless: auto-continue past skill confirmation"
-      },
-      {
-        "gate": "step-4 confirm",
-        "default_action": "C",
-        "taken_action": "C",
-        "reason": "headless: auto-approve context file update"
-      }
-    ]
-  }
+    "always_on_tokens": 1571,
+    "on_trigger_tokens": {
+      "pyforge-doctor": 3010,
+      "pyforge-herald": 6699,
+      "pyforge-marshal": 14188,
+      "pyforge-steward": 7005
+    }
+  },
+  "timestamp": "2026-11-18T15:38:52Z",
+  "headless_decisions": [],
+  "warnings": []
 }

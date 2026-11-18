@@ -27,4 +27,10 @@ snippet_skill_root_override: .claude/skills/
 # The 6.11 regeneration dropped it; skf-refine-architecture halts with
 # "forge_data_folder unconfigured" without it.
 forge_data_folder: _bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data
+# Forger sidecar (machine state, gitignored under _bmad/_memory/). The installer
+# leaves this prompt:false key out, and skf-preflight.py then hard-halts every
+# SKF workflow with SIDECAR_UNDEFINED (found 2026-11-18, steward Story 126.5,
+# the first skf-update-skill run on this estate). Same value as the pin in
+# _bmad/custom/config.toml [modules.skf]; re-apply after an installer regeneration.
+sidecar_path: _bmad/_memory/forger-sidecar
 health_check_repo: armelhbobdad/bmad-module-skill-forge

@@ -15,7 +15,7 @@
       }
     },
     "pyforge-doctor": {
-      "active_version": "0.1.0",
+      "active_version": "0.1.1",
       "versions": {
         "0.1.0": {
           "ides": [
@@ -23,12 +23,19 @@
             "other"
           ],
           "last_exported": "2026-08-26",
+          "status": "archived"
+        },
+        "0.1.1": {
+          "ides": [
+            "other"
+          ],
+          "last_exported": "2026-11-18",
           "status": "active"
         }
       }
     },
     "pyforge-herald": {
-      "active_version": "0.1.0",
+      "active_version": "0.1.1",
       "versions": {
         "0.1.0": {
           "ides": [
@@ -36,12 +43,19 @@
             "other"
           ],
           "last_exported": "2026-08-26",
+          "status": "archived"
+        },
+        "0.1.1": {
+          "ides": [
+            "other"
+          ],
+          "last_exported": "2026-11-18",
           "status": "active"
         }
       }
     },
     "pyforge-marshal": {
-      "active_version": "0.1.0",
+      "active_version": "0.1.1",
       "versions": {
         "0.1.0": {
           "ides": [
@@ -49,6 +63,13 @@
             "other"
           ],
           "last_exported": "2026-08-26",
+          "status": "archived"
+        },
+        "0.1.1": {
+          "ides": [
+            "other"
+          ],
+          "last_exported": "2026-11-18",
           "status": "active"
         }
       }
@@ -67,7 +88,7 @@
       }
     },
     "pyforge-steward": {
-      "active_version": "0.1.0",
+      "active_version": "0.1.1",
       "versions": {
         "0.1.0": {
           "ides": [
@@ -75,6 +96,13 @@
             "other"
           ],
           "last_exported": "2026-08-26",
+          "status": "archived"
+        },
+        "0.1.1": {
+          "ides": [
+            "other"
+          ],
+          "last_exported": "2026-11-18",
           "status": "active"
         }
       }
@@ -105,5 +133,5 @@
       }
     }
   },
-  "updated_at": "2026-10-05T17:24:59.347798+00:00"
+  "updated_at": "2026-11-18T15:36:24.015080+00:00"
 }

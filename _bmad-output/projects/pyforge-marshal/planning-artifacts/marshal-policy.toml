@@ -163,7 +163,7 @@ verify_commands = [
   "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml",
   # Story 28.3: the two operator-facing surfaces that describe the seed verb
   # set. Nothing else would catch a seventh verb going undocumented.
-  ".claude/skills/pyforge-marshal/0.1.0/pyforge-marshal/SKILL.md",
+  ".claude/skills/pyforge-marshal/0.1.1/pyforge-marshal/SKILL.md",
   "src/shared/packages/pyforge-marshal/docs/adoption-guide.md",
   "src/shared/packages/pyforge-marshal/docs/finding-remedy-reference.md",
   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py",
