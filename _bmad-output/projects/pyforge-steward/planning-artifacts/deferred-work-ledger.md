@@ -7287,3 +7287,77 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   reason: named blocker: neither file was in any story's files in this change's parallel waves.
   status: open
   verified: 2026-11-13 — still-open — src/shared/packages/pyforge-steward/tests/meta/test_portability.py:46-49 lists both files; `pixi run --frozen -e pyforge-steward env PYTHONPATH=src/shared/packages/pyforge-steward/src:scripts pytest src/shared/packages/pyforge-steward/tests/meta/test_portability.py -q` exit 0 (37 passed).
+
+### DW-steward-125-1-1: The adoption register's `bmad-manticore` row fails the live suite on a host without the studio
+
+- source_spec: `planning-artifacts/specs/spec-125-1-steward-s-suite-and-the-preflight-module-run-on-a-macos-laptop.md`
+  summary: `tests/meta/test_adoption_register.py::test_wired_column_agrees_with_live_pipeline_truth_for_every_row` is the one test left red in `pyforge-steward-live-test` on the operator's macOS laptop.
+  evidence: the register says `bmad-manticore` is `wired (this machine, 2026-09-07 …)`, the studio at `~/pyforge-studio` (or `PYFORGE_STUDIO_ROOT`) exists only on the Linux workstation, and the test exempts the row only when `CI` is set, by design, so local drift is caught.
+  location: src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py; _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/adoption-register.md
+  origin: steward Epic 125 (the laptop preflight, 2026-11-17), found while the suites were made to run on macOS; written by Story 125.4
+  fix: the operator rules one of: provision the studio on each machine that runs the preflight, record the row's host in the register so the test judges it only there, or accept the red on other hosts.
+  owner: steward
+  severity: medium
+  promoted: 2026-11-17 — steward Story 125.4 (the laptop preflight, branch `docs-full-refresh-2026-11-17`)
+  reason: behaviour or an operator decision outside the surface of the story that met it; each needs its own Story under the owning Spec.
+  resolution: 2026-11-18, PR #2373 — the studio is provisioned on the operator's macOS laptop at `~/pyforge-studio` with the lock's `bmad-method` 6.12.2, the register records both machines, and the preflight how-to names the studio as a prerequisite of a full run on any machine where `CI` is unset (steward Story 126.3, commit b798f289b6). The test is unchanged: it still catches a lost studio.
+  status: resolved
+
+### DW-steward-125-1-2: Three steward paths still assume a GNU userland or bash 4
+
+- source_spec: `planning-artifacts/specs/spec-125-1-steward-s-suite-and-the-preflight-module-run-on-a-macos-laptop.md`
+  summary: the touched-scope preflight cannot cut its lane set on stock macOS, and two `platform-ci-local.sh` stages are untested there.
+  evidence: `preflight_ci` runs the workflows' `changes` steps with the `bash` on PATH, and those steps use `declare -A`, so on bash 3.2 every guarded lane is 'cannot evaluate, so it runs' (35 tests probe for bash 4 and skip here); `stage_container` checks port 8000 with `ss -ltn` and `export_context` uses GNU `tar --ignore-failed-read`; the Story 101.1 leak guard (`_marked_pids`) reads `/proc/<pid>/environ` and proves nothing where there is no `/proc`.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_ci.py; scripts/platform-ci-local.sh; src/shared/packages/pyforge-steward/tests/unit/
+  origin: steward Epic 125 (the laptop preflight, 2026-11-17), found while the suites were made to run on macOS; written by Story 125.4
+  fix: evaluate the `changes` steps with a bash the estate provides or rewrite them without associative arrays; give the two stages portable fallbacks as `_listener_on_port` now has; find a leak-guard marker macOS can read.
+  owner: steward
+  severity: low
+  promoted: 2026-11-17 — steward Story 125.4 (the laptop preflight, branch `docs-full-refresh-2026-11-17`)
+  reason: behaviour or an operator decision outside the surface of the story that met it; each needs its own Story under the owning Spec.
+  resolution: 2026-11-18, PR #2373 — osx-arm64 environments carry bash 5 and GNU findutils, so the workflows' `changes` steps evaluate and a touched-scope preflight cuts its lane set on macOS (steward Story 126.2, commit 3abad607ba); `stage_container` and `export_context` have portable fallbacks, each branch proved under a PATH holding only that branch's tools, and the leak guard reads a working-directory marker where there is no `/proc`, proved on a stand-in left behind (steward Story 126.3, commit b798f289b6). Not proved: the container stage end to end on macOS.
+  status: resolved
+
+### DW-steward-125-1-3: Every pixi environment runs git through pixi's global trampoline, which aborts on non-UTF-8 arguments
+
+- source_spec: `planning-artifacts/specs/spec-125-1-steward-s-suite-and-the-preflight-module-run-on-a-macos-laptop.md`
+  summary: no station environment carries `git`, so `git` resolves to `~/.pixi/bin/git`, a trampoline that panics when an argument is not UTF-8; twelve steward tests probe for it and skip on this laptop.
+  evidence: `which git` inside `pixi run -e pyforge-steward` is `/Users/<user>/.pixi/bin/git`; `git remote add` with a `\xff` byte dies with SIGABRT in the trampoline's argument handling; `/usr/bin/git` is the Xcode stub with no developer tools installed, and a test that builds `env=` without `PATH` falls through to it.
+  location: pixi.toml (no `git` in the station features)
+  origin: steward Epic 125 (the laptop preflight, 2026-11-17), found while the suites were made to run on macOS; written by Story 125.4
+  fix: add `git` to the station environments (an operator `pixi add`, which also makes the tested git version one the lock names), and report the trampoline panic upstream to pixi.
+  owner: steward
+  severity: low
+  promoted: 2026-11-17 — steward Story 125.4 (the laptop preflight, branch `docs-full-refresh-2026-11-17`)
+  reason: behaviour or an operator decision outside the surface of the story that met it; each needs its own Story under the owning Spec.
+  resolution: 2026-11-18, PR #2373 (steward Story 126.2, commit 3abad607ba) — a `host-tools` feature puts `git` (held to the 2.55 line the lock already carried) in every station and Guild environment on every platform. Left for the operator alone, because it is outward: reporting the pixi global trampoline's abort on a non-UTF-8 argument upstream.
+  status: resolved
+
+### DW-steward-125-2-1: Marshal's zombie check reads `/proc` only
+
+- source_spec: `planning-artifacts/specs/spec-125-2-marshal-s-and-core-s-suites-and-the-seed-update-run-on-a-macos-laptop.md`
+  summary: `dispatch_verify.py::_is_zombie` returns False on any read error, so on macOS an exited but unreaped dispatch session leader reads as alive.
+  evidence: the function reads `/proc/<pid>/stat` and nothing else (about line 1184); no test fails on it; core's `_is_thread_group_leader` is `/proc`-only too and degrades to True, which is harmless on macOS.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py
+  origin: steward Epic 125 (the laptop preflight, 2026-11-17), found while the suites were made to run on macOS; written by Story 125.4
+  fix: a marshal Story: read the process state from the process table where there is no `/proc` (the fallback `test_harness_bmadbuild.py` already uses), with a test on a real zombie.
+  owner: steward
+  severity: medium
+  promoted: 2026-11-17 — steward Story 125.4 (the laptop preflight, branch `docs-full-refresh-2026-11-17`)
+  reason: behaviour or an operator decision outside the surface of the story that met it; each needs its own Story under the owning Spec.
+  resolution: 2026-11-18, PR #2373 (steward Story 126.4, commit bfa5fe8db8) — `_is_zombie` falls back to the process table through `psutil` where `/proc` cannot be read, proved on a real exited, unreaped child; marshal's `src/` holds no other `/proc` read.
+  status: resolved
+
+### DW-steward-126-3-1: No environment ships a configured Django project for the corridor duties
+
+- source_spec: `planning-artifacts/specs/spec-126-3-steward-s-remaining-linux-assumptions-and-stale-operator-text-are-corrected.md`
+  summary: `steward load`, `passport`, `quarantine` and `glass` need a Django settings module that installs `pyforge.steward.dashboard` and a migrated database; no pixi environment provides one.
+  evidence: `pyforge-guild` has no Django; `pyforge-steward` has Django but no settings module and no PostgreSQL driver (`import psycopg` and `import psycopg2` both fail); `src/platform/config/settings/base.py` installs `django_steward_portal`, not `pyforge.steward.dashboard`, and nothing under `src/platform/` creates the corridor tables. Proved on 2026-11-18: `-e pyforge-steward` with a user-written settings module, a SQLite database and `python -m django migrate` runs all four duties (four subprocess tests in `tests/unit/test_corridor.py`); `docs/how-to/move-vendor-extracts-through-the-corridor.md` gives that setup.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/; src/platform/config/settings/base.py; pixi.toml
+  origin: steward Story 126.3 (macOS is a first-class development host, 2026-11-18), found while the corridor how-to was verified
+  fix: a product decision: ship a settings module and a PostgreSQL driver in the steward environment for these duties, or install `pyforge.steward.dashboard` and its migrations in the platform host. Either is a new capability on `spec-pyforge-steward`, so it needs its Dream entry and the operator's choice between the two.
+  owner: steward
+  severity: medium
+  promoted: 2026-11-18 — steward Story 126.6 (branch `docs-full-refresh-2026-11-17`, PR #2373)
+  reason: it is a capability to design, not a defect to correct; the operator chooses the shape.
+  status: open

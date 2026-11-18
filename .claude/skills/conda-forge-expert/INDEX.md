@@ -158,7 +158,7 @@ CI/issues/PRs).
 
 | Surface | Path |
 |---|---|
-| MCP server (FastMCP, 30+ tools) | `.claude/tools/conda_forge_server.py` |
+| MCP server (official SDK `MCPServer`, 46 tools) | `.claude/tools/conda_forge_server.py` |
 | Canonical Python implementations | `.claude/skills/conda-forge-expert/scripts/` |
 | Public CLI wrapper layer | `.claude/scripts/conda-forge-expert/` |
 | Pixi tasks (preferred shell entrypoint) | repo `pixi.toml` § `[feature.local-recipes.tasks.*]` and `[feature.vuln-db.tasks.*]` |

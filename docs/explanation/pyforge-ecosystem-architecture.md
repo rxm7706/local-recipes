@@ -1,11 +1,8 @@
 ---
 sources:
-  - src/platform/config/urls.py
   - src/platform/compose/compose.yml
   - src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py
-  - src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py
-  - pixi.toml
-verified: 2026-10-24
+verified: 2026-11-17
 ---
 
 # PyForge Ecosystem Architecture

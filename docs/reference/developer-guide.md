@@ -1,3 +1,12 @@
+---
+sources:
+  - conda_build_config.yaml
+  - .ci_support
+  - test-recipes.py
+  - .github/workflows/test-linux.yml
+verified: 2026-11-17
+---
+
 # Local-Recipes Developer Guide
 
 CI workflows: [Test All Platforms](https://github.com/rxm7706/local-recipes/actions/workflows/test-all.yml) · [Test Linux](https://github.com/rxm7706/local-recipes/actions/workflows/test-linux.yml) · [Test Windows](https://github.com/rxm7706/local-recipes/actions/workflows/test-windows.yml) · [Test macOS](https://github.com/rxm7706/local-recipes/actions/workflows/test-macos.yml)
@@ -9,7 +18,7 @@ CI workflows: [Test All Platforms](https://github.com/rxm7706/local-recipes/acti
 > - [Recipe testing and builds](../how-to/recipe-testing-and-builds.md) — local builds and `test-recipes.py`
 > - [GitHub Actions recipe CI](../how-to/github-actions-recipe-ci.md) — on-demand workflow dispatch
 > - [Troubleshooting recipe builds](../how-to/troubleshooting-recipe-builds.md) — common failure fixes
-> - [Pixi tasks](../how-to/pixi-tasks.md) — full `local-recipes` task surface
+> - [Pixi tasks](../how-to/pixi-tasks.md) — the full task surface
 
 ## Table of Contents
 
@@ -18,8 +27,6 @@ CI workflows: [Test All Platforms](https://github.com/rxm7706/local-recipes/acti
 3. [Platform Support](#platform-support)
 4. [Configuration Reference](#configuration-reference)
 5. [Best Practices](#best-practices)
-
----
 
 ## Overview
 
@@ -40,6 +47,8 @@ local-recipes/
 │       └── recipe.yaml        # Modern format (rattler-build)
 ├── .ci_support/               # Build variant configurations
 │   ├── linux64.yaml
+│   ├── linux_aarch64.yaml
+│   ├── linux64_cuda*.yaml     # one file per CUDA version
 │   ├── win64.yaml
 │   ├── osx64.yaml
 │   └── osxarm64.yaml
@@ -52,8 +61,6 @@ local-recipes/
 ├── conda_build_config.yaml    # Global pinning configuration
 └── pixi.toml                  # Pixi environment configuration
 ```
-
----
 
 ## Recipe Formats
 
@@ -172,8 +179,6 @@ extra:
 | Speed | Slower | Faster |
 | Format | Legacy | Modern (recommended) |
 
----
-
 ## Platform Support
 
 ### Build Matrix
@@ -182,79 +187,85 @@ extra:
 |----------|--------------|--------------|--------------|
 | linux-64 | Docker | `quay.io/condaforge/linux-anvil-x86_64:alma9` | x86_64 |
 | linux-aarch64 | Docker + QEMU | `quay.io/condaforge/linux-anvil-aarch64:alma9` | ARM64 |
-| linux-64-cuda | Docker | `quay.io/condaforge/linux-anvil-cuda:12.9` | x86_64 + CUDA |
+| linux-64-cuda | Docker | `quay.io/condaforge/linux-anvil-x86_64:alma9` (CUDA 12.9, `.ci_support/linux64_cuda129.yaml`) | x86_64 + CUDA |
 | win-64 | Native | N/A | x86_64 |
 | osx-64 | Native | N/A | x86_64 (Intel) |
 | osx-arm64 | Native | N/A | ARM64 (Apple Silicon) |
 
----
+`alma9` is the default Linux base in `test-recipes.py` and in `test-linux.yml`; both take another base (`alma8`, `cos7`) as an option.
 
 ## Configuration Reference
 
 ### conda_build_config.yaml
 
-Global pinning configuration derived from conda-forge-pinning.
+Global pinning configuration, a local copy of conda-forge-pinning's `conda_build_config.yaml` for local testing.
 
 Key settings:
 
 ```yaml
-# Python versions (zip_keys: python, is_python_min; win-arm64 only supports 3.14+)
+# Python versions (zip_keys: python, is_python_min; win-arm64 and linux-riscv64 only support 3.14+)
 python:
-  - 3.10.* *_cpython   # [not (win and arm64)]
-  - 3.11.* *_cpython   # [not (win and arm64)]
-  - 3.12.* *_cpython   # [not (win and arm64)]
-  - 3.13.* *_cp313     # [not (win and arm64)]
-  - 3.14.* *_cp314     # [win and arm64]
+  - 3.11.* *_cpython   # [not ((win and arm64) or riscv64)]
+  - 3.12.* *_cpython   # [not ((win and arm64) or riscv64)]
+  - 3.13.* *_cp313     # [not ((win and arm64) or riscv64)]
+  - 3.14.* *_cp314
 
 python_min:
-  - '3.10'             # CFEP-25 minimum [not (win and arm64)]
-  - '3.14'             # [win and arm64]
+  - '3.11'             # CFEP-25 minimum [not ((win and arm64) or riscv64)]
+  - '3.14'             # [(win and arm64) or riscv64]
 
 # Compilers
 c_compiler_version:
-  - 14          # [linux]
-  - 19          # [osx]
+  - 15          # [linux]
+  - 21          # [osx]
+  - 14          # [linux and (x86_64 or aarch64) and CF_CUDA_ENABLED]
 
-# macOS targets — the explicit override is commented out in this repo; the
-# conda-forge-pinning defaults apply unless you uncomment it.
-#MACOSX_DEPLOYMENT_TARGET:      # [osx]
+# macOS deployment target, through the C standard library pin
+c_stdlib_version:
+  - 11.0        # [osx]
 
 # CUDA (gated on CF_CUDA_ENABLED=True)
 cuda_compiler_version:
   - None
-  - 12.9        # [((linux and not ppc64le) or win64) and CF_CUDA_ENABLED]
+  - 12.9        # [((linux and (x86_64 or aarch64)) or win64) and CF_CUDA_ENABLED]
 ```
+
+The excerpt abbreviates the selectors; the file is the authority, and it changes with every re-copy from conda-forge-pinning.
 
 ### .ci_support/*.yaml
 
 Platform-specific variant configurations:
 
 - `linux64.yaml` - Linux x86_64 settings
+- `linux_aarch64.yaml` - Linux ARM64 settings
+- `linux64_cuda102.yaml` through `linux64_cuda130.yaml` - Linux x86_64 with one CUDA version each
 - `win64.yaml` - Windows x64 settings
 - `osx64.yaml` - macOS x86_64 settings
-- `osxarm64.yaml` - macOS ARM64 settings
+- `osxarm64.yaml` (and its twin `osx_arm64.yaml`) - macOS ARM64 settings
+- `local_testing_overrides.yaml` - overrides for local runs
 
 ### pixi.toml Environments
 
+The environments recipe work uses. The repository has many more (one per station, the platform, the docs site); the generated [`environments.md`](environments.md) lists every one.
+
 | Environment | Purpose | Features |
 |-------------|---------|----------|
-| `build` | Minimal `meta.yaml` builds | python + build (`conda-build` only — **no** rattler-build) |
-| `linux` | Linux builds via Docker | linux + python |
-| `win` | Windows builds | win + python + build |
-| `osx` | macOS builds | osx + python + build |
-| `local-recipes` | **Default / full development** | python + build + grayskull + conda-smithy + local-recipes (incl. rattler-build, recipe-build tasks, data/ML/agent stack) |
-| `grayskull` | Recipe generation only | python + grayskull (`pypi`, `cran` tasks) |
-| `conda-smithy` | Recipe linting only | python + conda-smithy + shellcheck (`lint` task) |
-| `vuln-db` | CVE DB / SBOM work | python + vuln-db (AppThreat multi-source; `vdb-refresh`, `build-cf-atlas`, `atlas-phase`) |
-| `gcloud` | One-time GCP auth | python + gcloud-sdk (linux/macOS only) |
+| `local-recipes` | **Recipe factory, full development** | python + spec-kit + build + grayskull + conda-smithy + local-recipes + guild-tasks (incl. rattler-build, recipe-build tasks, data/ML/agent stack) |
+| `build` | Minimal `meta.yaml` builds | python + spec-kit + build (`conda-build` only — **no** rattler-build) |
+| `linux` | Linux builds via Docker | linux + python + spec-kit |
+| `win` | Windows builds | win + python + spec-kit + build |
+| `osx` | macOS builds | osx + python + spec-kit + build |
+| `grayskull` | Recipe generation only | python + spec-kit + grayskull + crm (`pypi`, `cran` tasks) |
+| `conda-smithy` | Recipe linting only | python + spec-kit + conda-smithy + shellcheck (`lint` task) |
+| `vuln-db` | CVE DB / SBOM work | python + spec-kit + vuln-db (AppThreat multi-source; `vdb-refresh`, `build-cf-atlas`, `atlas-phase`) |
+| `gcloud` | One-time GCP auth | python + spec-kit + gcloud-sdk (linux-64 and osx-arm64 only) |
+| `pyforge-guild` | Session default for everything outside recipe work | station CLIs and the Guild tasks; a bare `pixi run <task>` resolves here (`default` is its alias) |
 | `pyforge-warden` | Warden compliance gate | pyforge-warden member (`warden` CLI, `pyforge-warden-test`) |
 | `pyforge-atlas` | Kedro atlas pipeline | pyforge-atlas member (kedro/kedro-dagster/kedro-viz; `kedro-test`, `dagster-dryrun`, `viz`) |
 | `bmad-ui` | BMad Method UI dashboards | bmad-ui member (**linux-64 only**; `bmad-dashboard-install`, `mybmad`) |
 
 > The full per-library breakdown of every environment lives in
 > [`library-llms-full.md`](library-llms-full.md).
-
----
 
 ## Best Practices
 

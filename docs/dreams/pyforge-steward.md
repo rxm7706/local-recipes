@@ -8124,3 +8124,28 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   DW-steward-cutover-2026-11-10-1 (resolved by Story 123.3) to DW-steward-cutover-2026-11-10-12, DW-steward-121-6-1,
   DW-steward-121-6-2, DW-steward-122-4-1 and DW-steward-123-2-2. The ledger keys move to `done` in the change's
   ledger close. Owner `spec-pyforge-steward`.
+- **2026-11-17 (the laptop preflight) — Found:** on the operator's macOS laptop (osx-arm64, the default install of
+  fnd:CAP-12) a full-scope `pr-preflight` at main `33c96fd0bb` is red on 13 lanes and about 45 tests, none of them
+  a defect CI's Linux runners see. Five causes: `git` resolves to pixi's global trampoline, which panics on non-UTF-8
+  arguments, and no git identity is configured, so tests that commit without setting one fail and one test that
+  expects a commit without identity to fail passes instead; APFS refuses a non-UTF-8 file name; `/tmp` is a symlink
+  to `/private/tmp`, which two tests and `marshal seed update` compare unresolved; four places assume Linux
+  (`os.sched_getaffinity` in the preflight module, `/proc` in core's process start time, GNU `find -printf` in a
+  workflow snippet the tests run, `flock` in `scripts/platform-ci-local.sh`); and two lanes need a local service or
+  binary nobody names (scribe's PostgreSQL on 5433, Playwright's Chromium). **Ruled** (2026-11-17, operator: "dont
+  want to skip preflight skip - why cant we fix all the underlying issues?", then "Same PR"): the causes are fixed,
+  not skipped, on the documentation refresh's branch `docs-full-refresh-2026-11-17`. **For steward:** this entry
+  binds one chain, `spec-pyforge-steward`, and realizes the preflight capability's own promise that the preflight
+  answers: no capability text moves. It decomposes as Epic 125, four stories: steward's suite and the preflight
+  module; marshal's and core's suites and the seed update path; doctor's, mason's, scribe's and the scripts
+  suites; and the laptop's local prerequisites written where the preflight how-to is. A test is made to pass
+  where the host can do what it asks; where the host cannot (a file name APFS refuses), the test says so by
+  probing the capability, never by naming a platform.
+- **2026-11-18 (macOS is a first-class development host) — Ruled** (operator ruling of 2026-11-18: "THIS MACHINE WILL BE A FIRST CLASS DEVELOPMENT HOST -- JUST FIX ALL THE DEFERRED ROW ITEMS NOW.. AND NOT LEAVE ANYTHING FOR LATER", "JUST USE ctranslate2 and remove the other one", "we should continue to support manticore and antigravity", "we still want to do everything in this session as one PR"): the operator will dispatch marshal
+  work from the macOS laptop, so what Epic 125 left as deferred work and capability-probed skips is fixed now, in the
+  same PR (#2373). **For steward:** this entry binds `spec-pyforge-steward` (the preflight and environment
+  capabilities, no text change) and decomposes as Epic 126, six stories: the checkout is clean on a case-insensitive
+  filesystem (`recipes/CTranslate2` and its warden corpus twin are removed; `recipes/ctranslate2` stays); every
+  environment carries `git`, and macOS carries bash 4 and GNU find; steward's remaining Linux assumptions and stale
+  operator text; marshal's zombie check and remedy strings; the four compiled station skills; and the close, in which
+  every row Epics 59 and 125 opened reads resolved. Doctor Epic 60 and mason Epic 40 carry the rows those stations own.

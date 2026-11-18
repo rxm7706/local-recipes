@@ -2,12 +2,13 @@
 sources:
   - scripts/fleet_picture.py
   - scripts/fleet-poll-hourly.sh
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py
+  - scripts/fleet_poll_sync.sh
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/watch.py
   - .claude/memory/reference/fleet-landing-pass-liveness.md
   - src/shared/packages/pyforge-steward/src/pyforge/steward/sprint_ledger_query.py
   - .claude/skills/bmad-sprint-ledger-query/SKILL.md
-  - pixi.toml
-verified: 2026-10-24
+verified: 2026-11-18
 ---
 
 # How to Monitor the Fleet
@@ -15,6 +16,8 @@ verified: 2026-10-24
 The PyForge ecosystem consists of 8 autonomous stations (e.g. `pyforge-steward`, `pyforge-marshal`, `pyforge-mason`). Operating the platform requires constant visibility into the state of each station, the active sprint ledgers, and any pending or blocked tasks.
 
 This guide explains how to use the fleet monitoring tools to gain situational awareness.
+
+Three neighbouring reads have their own pages: package health in [How to diagnose with doctor](diagnose-with-doctor.md), dependency compliance in [How to scan for compliance with warden](scan-for-compliance-with-warden.md), and steward's cost and track registers in [How to read steward's registers](read-steward-registers.md).
 
 ## Generate a Fleet Picture
 

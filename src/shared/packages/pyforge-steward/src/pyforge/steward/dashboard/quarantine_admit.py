@@ -7,6 +7,7 @@ can reach this without the ``[dashboard]`` extra being a base dependency.
 
 from __future__ import annotations
 
+import os
 import uuid
 from datetime import datetime, timezone
 from typing import Any
@@ -58,11 +59,15 @@ def record_quarantine_admit(
     except ImportError as exc:
         return _refused(vendor_id, exc)
 
-    if not getattr(settings, "configured", False):
+    # Story 126.3: `settings.configured` is false until the settings are first read, so a fresh CLI process with
+    # DJANGO_SETTINGS_MODULE set was refused here; the variable is accepted, as `load`, `passport` and `glass` do.
+    if not getattr(settings, "configured", False) and not os.environ.get("DJANGO_SETTINGS_MODULE"):
         return {"status": "refused", "vendor_id": vendor_id, "message": _SETTINGS_UNSET}
 
     try:
         if not apps.ready:
+            # The CLI path: DJANGO_SETTINGS_MODULE names a project nobody has
+            # set up yet in this process (a test module's `django.setup()` has).
             django.setup()
         from django.db import DataError, IntegrityError, OperationalError, ProgrammingError
 
@@ -136,7 +141,8 @@ def list_quarantine_shelf_rows(*, include_linked: bool = False) -> dict[str, Any
     except ImportError as exc:
         return {"status": "refused", "message": f"Django ORM unavailable ({type(exc).__name__}: {exc})"}
 
-    if not getattr(settings, "configured", False):
+    # Story 126.3: the same rule as `record_quarantine_admit` above.
+    if not getattr(settings, "configured", False) and not os.environ.get("DJANGO_SETTINGS_MODULE"):
         return {"status": "refused", "message": _SETTINGS_UNSET}
 
     try:

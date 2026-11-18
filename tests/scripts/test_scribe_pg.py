@@ -72,7 +72,9 @@ def test_a_relative_override_is_made_absolute(scribe_pg, monkeypatch, short) -> 
     """The server resolves a relative -k against its data dir, not the caller's cwd."""
     monkeypatch.chdir(short)
     monkeypatch.setenv("SCRIBE_PG_SOCKET_DIR", "sock")
-    assert scribe_pg._socket_dir() == (short / "sock", True)
+    # Made absolute against the cwd, which the OS reports resolved (`/tmp` is a
+    # symlink on some hosts).
+    assert scribe_pg._socket_dir() == (short.resolve() / "sock", True)
 
 
 def test_xdg_runtime_dir_is_next(scribe_pg, monkeypatch, short) -> None:
@@ -129,9 +131,16 @@ def test_an_existing_chosen_dir_keeps_its_mode(scribe_pg, monkeypatch, short) ->
     shared = short / "shared"
     shared.mkdir()
     shared.chmod(0o2775)
+    # Read back what the host kept: it drops setgid when the caller is not in
+    # the directory's group, and the group-write bit alone still tells a kept
+    # mode from a re-moded 0700.
+    before = stat.S_IMODE(shared.stat().st_mode)
+    assert before & 0o775 == 0o775
     monkeypatch.setenv("SCRIBE_PG_SOCKET_DIR", str(shared))
     assert scribe_pg._prepare_socket_dir() == shared
-    assert stat.S_IMODE(shared.stat().st_mode) == 0o2775
+    assert stat.S_IMODE(shared.stat().st_mode) == before
+    if shared.stat().st_gid in {os.getgid(), *os.getgroups()}:
+        assert before == 0o2775
 
 
 def test_a_chosen_path_that_is_a_file_is_refused(

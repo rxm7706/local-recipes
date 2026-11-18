@@ -68,7 +68,8 @@ pixi run -e pyforge-atlas pyforge-atlas-build            # all three artifacts
 The `pyforge-atlas` environment is lean by design (`no-default-feature`): loop
 worktrees materialize THIS env, never the fat `local-recipes` env. It carries
 the built package plus its conda run-dependencies (`kedro`, `kedro-datasets`,
-`kedro-dagster`), with `pyforge-warden` and the test tooling (`pytest`,
+`kedro-dagster`, `dagster`, `duckdb`, `vizro` and the rest of the package's own
+`pixi.toml` list), with `pyforge-warden` and the test tooling (`pytest`,
 `hatchling`, `python-build`) added at feature level by the root pixi.toml —
 warden is default-installed in-repo without becoming a hard run-dep of the
 built conda artifact (the `[gate]` extra stays genuinely optional externally).
@@ -77,7 +78,7 @@ The Python package is the dotted namespace package `pyforge.atlas`
 (`src/pyforge/atlas/`, **no** `src/pyforge/__init__.py`) — Kedro resolves it via
 `[tool.kedro] package_name = "pyforge.atlas"`. `conf/local/` is gitignored;
 `conf/base/catalog.yml` declares every API source + persisted output of the
-seven pipelines (Story A2), with endpoint bases in `conf/base/globals.yml`
+pipelines (Story A2 began it with seven), with endpoint bases in `conf/base/globals.yml`
 and per-dataset TTLs in `conf/base/parameters.yml`. `conf/base/seeds/` holds
 the git-tracked JSON seeds behind the air-gap "tracked seed" fetch mode
 (Story 21.4: `discovery_aoss_free_python_seed.json`, the Google AOSS free-tier
@@ -209,14 +210,14 @@ changes to committed files.
 
 `pixi install`/`pixi lock` (conda + the PyPI-exception deps) resolve **before**
 any project code runs, so they are routed by pixi's own config, not by code.
-Follow **`docs/enterprise-deployment.md` § 4** (single source of truth) — it
+Follow **`docs/explanation/enterprise-deployment.md` § 4** (single source of truth) — it
 covers the JFrog PyPI index (`pypi-config.index-url` /
 `extra-index-urls`), corporate CA roots (`tls-root-certs = "native"`),
 disabling sharded repodata against JFrog remotes, and why hashed
 `files.pythonhosted.org` URLs bypass the standard `pypi.org` proxy (§ 3).
 
 ```bash
-cp docs/pixi-config-jfrog.example.toml .pixi/config.toml   # from the repo root
+cp docs/reference/pixi-config-jfrog.example.toml .pixi/config.toml   # from the repo root
 $EDITOR .pixi/config.toml                                  # set JFrog URL + auth
 ```
 
@@ -230,13 +231,14 @@ host; truststore + JFrog/GitHub/`.netrc` auth are injected per request. Set the
 `*_BASE_URL` vars to your internal mirrors — env vars only, never committed
 config. Reference implementation:
 `.claude/skills/conda-forge-expert/scripts/_http.py` and
-`docs/enterprise-deployment.md` § 2/§ 5.
+`docs/explanation/enterprise-deployment.md` § 2/§ 6.
 
 Since Story A2 the convention is **catalog-level** (the `resolve_*_urls`
 successor): `conf/base/globals.yml` declares every override point as
-`${env_or:<HOST>_BASE_URL,<public-default>}` — the 20 `endpoint_bases`
-(19 live helpers + the reserved `BASILISK_BASE_URL`), the `extra_overrides`
-(`ANACONDA_API_BASE_URL`, `OSV_VULNS_BUCKET_URL`, `BIGQUERY_BASE_URL`), the
+`${env_or:<HOST>_BASE_URL,<public-default>}` — the 27 `endpoint_bases`
+(26 live + the reserved `BASILISK_BASE_URL`), the five `extra_overrides`
+(`ANACONDA_API_BASE_URL`, `OSV_VULNS_BUCKET_URL`, `BIGQUERY_BASE_URL`,
+`PURL_ASSOCIATOR_BASE_URL`, `CLICKHOUSE_PYPI_BASE_URL`), the
 three vulnerability `fetcher_urls`, and the store/seed `paths`. Catalog
 entries reference `${globals:...}` and never hardcode a host; an explicit
 env var always beats the public default (`env_or` resolver registered in
@@ -267,7 +269,7 @@ deployment must add the `credentials: jfrog` reference to the specific
 mirrored entries (the scoping test then requires the entry's hostname to
 suffix-match an Artifactory host). The dynamic per-host attachment
 mechanism is an **OPEN item** owned by Story B5 (external-refresh /
-enterprise routing — see `deferred-work.md`); until it lands, per-entry
+enterprise routing — `DW-B5-3` in the station's `deferred-work-ledger.md`); until it lands, per-entry
 static references are the only supported route.
 
 `netrc` remains a per-host runtime fallback, never catalog config. Nothing
@@ -285,8 +287,8 @@ endpoint.
 
 | Task (root workspace) | What it does |
 |---|---|
-| `kedro-test` | Wave A deterministic gate (AD-11): `pytest src/shared/packages/pyforge-atlas/tests -q` — `pyforge.atlas` + `pyforge.warden` + `kedro_dagster` import smokes, the Kedro bootstrap/session seam on the dotted package, scaffold-layout invariants (also collects `tests/catalog/`) |
-| `kedro-catalog-check` | Wave A gate 2 (Story A2, AD-11): `pytest src/shared/packages/pyforge-atlas/tests/catalog -q` — offline catalog resolution w/ stub credentials, no-inline-IO + AD-1 meta-tests, naming/layer/TTL/path conventions, 22 override points (19 live + 1 reserved + 2 Story 21.4; +`ANACONDA_API_BASE_URL` extra), per-host credential scoping |
+| `kedro-test` | Wave A deterministic gate (AD-11): runs both halves of the suite, `pyforge-atlas-test` and `pyforge-atlas-live-test` — `pyforge.atlas` + `pyforge.warden` + `kedro_dagster` import smokes, the Kedro bootstrap/session seam on the dotted package, scaffold-layout invariants (also collects `tests/unit/catalog/`) |
+| `kedro-catalog-check` | Wave A gate 2 (Story A2, AD-11): `pytest src/shared/packages/pyforge-atlas/tests/unit/catalog -q` — offline catalog resolution w/ stub credentials, no-inline-IO + AD-1 meta-tests, naming/layer/TTL/path conventions, the 27 override points (26 live + 1 reserved), per-host credential scoping |
 | `pyforge-atlas-bootstrap` | Story 21.1 (CAP-1): fresh-clone Kedro bootstrap — creates the `stores/{vdb,osv}` dirs + a credentials stub, then runs nine pipelines (Story 38.1: with `semantic_packages`) as one combined `kedro run --pipelines <list>` under `PYFORGE_ATLAS_DATA_ROOT` (see the section above) |
 | `pyforge-atlas-build-conda` | conda package via `pixi build` (pixi-build-python wraps the hatchling wheel) |
 | `pyforge-atlas-build-dist` | wheel + sdist via `python -m build --no-isolation` |

@@ -1827,7 +1827,9 @@ def test_submit_computes_cfe_recipes_root_from_the_recipe_paths_parent_for_an_ou
         )
 
     env = mock_submit_pr.call_args.kwargs["env"]
-    assert env["CFE_RECIPES_ROOT"] == "/tmp/out-of-tree-gen"
+    # `submit()` resolves the recipe path (its docstring), so the exported root
+    # is the resolved parent: `/tmp` is a symlink on some hosts.
+    assert env["CFE_RECIPES_ROOT"] == str(Path("/tmp/out-of-tree-gen").resolve())
     # The caller-supplied environ is passed through in full, plus the one
     # added key -- no credential is read, filtered, or added (AD-14).
     assert env["PATH"] == "/usr/bin"
@@ -1863,7 +1865,9 @@ def test_submit_overrides_a_pre_existing_cfe_recipes_root_in_environ():
         )
 
     env = mock_submit_pr.call_args.kwargs["env"]
-    assert env["CFE_RECIPES_ROOT"] == "/tmp/out-of-tree-gen"
+    # `submit()` resolves the recipe path (its docstring), so the exported root
+    # is the resolved parent: `/tmp` is a symlink on some hosts.
+    assert env["CFE_RECIPES_ROOT"] == str(Path("/tmp/out-of-tree-gen").resolve())
     assert env["PATH"] == "/usr/bin"
 
 

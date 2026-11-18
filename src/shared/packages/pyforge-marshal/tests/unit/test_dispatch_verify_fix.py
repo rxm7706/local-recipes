@@ -802,6 +802,56 @@ def test_fix_session_alive_reads_a_zombie_as_exited(monkeypatch, tmp_path):
     assert dispatch_verify._is_zombie(4343) is False
 
 
+def _wait_until_exited_unreaped(child: subprocess.Popen[bytes]) -> None:
+    """Block until ``child`` has exited, WITHOUT reaping it: ``waitid(WNOWAIT)`` leaves the zombie in place."""
+    os.waitid(os.P_PID, child.pid, os.WEXITED | os.WNOWAIT)
+
+
+def test_is_zombie_reads_a_real_exited_unreaped_child_on_this_host():
+    """Story 126.4: a REAL zombie, on whatever host runs this -- one with ``/proc`` or one without (macOS).
+
+    The child exits and this process (its parent) does not reap it, so it holds its pid as a zombie:
+    ``ProcessPort.is_alive`` counts it alive, and ``_is_zombie`` must say it has exited. Once reaped, the pid is
+    gone and is no zombie."""
+    from pyforge.marshal import dispatch_verify
+
+    child = subprocess.Popen([sys.executable, "-c", "pass"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        _wait_until_exited_unreaped(child)
+        assert PosixProcess().is_alive(child.pid) is True, "an unreaped child still holds its pid"
+        assert dispatch_verify._is_zombie(child.pid) is True
+        assert dispatch_verify.fix_session_alive(PosixProcess(), child.pid, launched_at=None) is False
+    finally:
+        child.wait(timeout=10)
+    assert dispatch_verify._is_zombie(child.pid) is False
+
+
+def test_is_zombie_reads_a_real_running_process_as_not_a_zombie():
+    from pyforge.marshal import dispatch_verify
+
+    assert dispatch_verify._is_zombie(os.getpid()) is False
+
+
+def test_is_zombie_without_proc_asks_the_process_table(monkeypatch):
+    """With no readable ``/proc/<pid>/stat`` the answer comes from the process table, never a silent ``False``."""
+    from pyforge.marshal import dispatch_verify
+
+    def no_proc(self, *args, **kwargs):
+        raise FileNotFoundError(str(self))
+
+    asked: list[int] = []
+
+    def fake_process_is_zombie(pid: int) -> bool:
+        asked.append(pid)
+        return pid == 4242
+
+    monkeypatch.setattr(Path, "read_text", no_proc)
+    monkeypatch.setattr(dispatch_verify, "process_is_zombie", fake_process_is_zombie)
+    assert dispatch_verify._is_zombie(4242) is True
+    assert dispatch_verify._is_zombie(4343) is False
+    assert asked == [4242, 4343]
+
+
 def test_wait_for_process_os_error_in_loop(monkeypatch):
     def fake_waitpid(_pid: int, _opts: int):
         raise OSError

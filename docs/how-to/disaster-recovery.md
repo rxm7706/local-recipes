@@ -1,6 +1,20 @@
-# Disaster recovery contract (Story 41.1)
+---
+sources:
+  - src/platform/deploy/charts/platform/templates/postgres-backup-cronjob.yaml
+  - src/platform/deploy/charts/platform/templates/postgres-statefulset.yaml
+  - src/platform/deploy/charts/platform/templates/redis-broker-pvc.yaml
+  - src/platform/deploy/charts/platform/templates/redis-deployment.yaml
+  - src/platform/deploy/charts/platform/templates/media-pvc.yaml
+  - src/platform/deploy/charts/platform/templates/sidecar-pvc.yaml
+  - src/platform/deploy/charts/platform/templates/liquibase-job.yaml
+  - src/platform/deploy/charts/platform/templates/migrate-job.yaml
+  - src/platform/db/postgres_backup.py
+verified: 2026-11-17
+---
 
-One-page contract for the platform Helm release. Every store names RPO, RTO,
+# Disaster recovery contract (steward Story 41.1)
+
+One-page contract for the platform Helm release (`src/platform/deploy/charts/platform/`). Every store names RPO, RTO,
 mechanism, owner and drill cadence. Standby replica or a PostgreSQL operator
 (CloudNativePG, Crunchy) is a **sizing** choice documented in the Dream — not
 proof of recoverability without backups.
@@ -9,7 +23,7 @@ proof of recoverability without backups.
 
 | Store | RPO | RTO | Mechanism | Owner | Drill cadence |
 |-------|-----|-----|-----------|-------|---------------|
-| **PostgreSQL** (canonical anchor) | 24 h base + continuous WAL (`archive_mode=on`) | 4 h | Helm CronJob on the platform image: `pg_basebackup` to the RWX backup PVC; WAL archived via `archive_command` to the same volume (object-store destination via steward deploy-profile is a profile plugin, not required here) | Platform SRE / release captain | Monthly: `pyforge steward restore --drill` against the latest base backup |
+| **PostgreSQL** (canonical anchor) | 24 h base + continuous WAL (`archive_mode=on`) | 4 h | Helm CronJob on the platform image (default schedule `0 2 * * *`): `pg_basebackup` to the RWX backup PVC; WAL archived via `archive_command` to the same volume (object-store destination via steward deploy-profile is a profile plugin, not required here) | Platform SRE / release captain | Monthly: `pyforge steward restore --drill` against the latest base backup |
 | **redis-broker** | Last AOF fsync (`appendfsync everysec` → ≤1 s under normal load) | 30 min | RWO PVC + AOF (`redis.broker.persistence`); rebuild Celery queues from supervisor reconciliation after broker loss | Platform SRE | Quarterly: restore broker PVC snapshot or accept queue replay from PostgreSQL `run_state` reconciliation |
 | **redis-cache** | None (ephemeral) | 0 (cold) | `emptyDir`; sessions and HTMX partials re-warm on miss | Platform SRE | N/A — verify cache miss degrades gracefully |
 | **media RWX** | 24 h (same cadence as Postgres file references) | 4 h | RWX PVC (`media.persistence`); copy/snapshot at storage-class layer; Wagtail metadata lives in PostgreSQL | Content ops / Platform SRE | Quarterly: restore PVC snapshot into scratch namespace; spot-check file hashes against DB references |
@@ -37,7 +51,7 @@ may write authoritative state first):
    read model only).
 7. **Mason boot reconcile** — upsert index rows from PostgreSQL (+ RWX scan
    when files exist); no object-store scan (canopy:AD-13 / parent AD-1).
-8. **Application smoke** — `/api/health`, `/ht/`, steward `validate-fast`.
+8. **Application smoke** — `/api/health`, `/ht/`, `pyforge steward validate-fast`.
 
 ## Explicit non-goals (this contract)
 

@@ -53,8 +53,8 @@ vendored `vizro/assets/plotly.min.js` (copied from the env's plotly, never a
 CDN) and `vizro/manifest.json` (`exported_at`, `export_commit`, and `boards[]`
 with each board's `id`, `title`, `path` and `data_build_timestamp`). CI's
 `vizro` job on `.github/workflows/kedro-viz-publish.yml` uploads that tree as
-the workflow artifact **`vizro-static-export`** (90 days). Pages mounts it at
-`/dashboard/vizro/` once the consumer lands (steward 102.4's download step and
-herald Story 43.3's mount; neither is on `main` as of 2026-10-15). The live
+the workflow artifact **`vizro-static-export`** (90 days). `pages.yml` downloads
+it into `vizro/` the same way as the Kedro-Viz export, and the Pages build mounts
+it at `/dashboard/vizro/`; with no artifact there is no mount and no menu entry. The live
 Vizro server stays on Lane 1; the static boards carry no filters and no scan
 controls.

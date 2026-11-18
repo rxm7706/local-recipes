@@ -1,6 +1,6 @@
 # Python Agent Platform
 
-Django host for the python-agent-platform — Langflow and DB-GPT join as pluggable apps
+Django + Wagtail host for the python-agent-platform — Langflow and DB-GPT join as pluggable apps
 
 [![Built with Cookiecutter Django](https://img.shields.io/badge/built%20with-Cookiecutter%20Django-ff69b4.svg?logo=cookiecutter)](https://github.com/cookiecutter/cookiecutter-django/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
@@ -51,27 +51,27 @@ token, so its roles are denied until the user signs in again. The userinfo and t
 endpoints are derived from the issuer as `<issuer>/protocol/openid-connect/userinfo`
 and `<issuer>/protocol/openid-connect/token` (the Keycloak layout).
 
-### Type checks
+### Lint, type checks and tests
 
-Running type checks with mypy:
+The local twin of the `platform-ci` workflow runs the system checks, ruff, mypy, the
+policy suite and the full pytest suite. Run it from the repository root:
 
-    $ mypy platformapp
+    $ pixi run -e pyforge-guild platform-ci-local -- --test
+
+The individual commands it and CI run, from `src/platform`:
+
+    $ ruff check .
+    $ ruff format --check .
+    $ mypy platformapp config tests
+    $ python -m pytest -n 4 --dist loadgroup
 
 ### Test coverage
 
-To run the tests, check your test coverage, and generate an HTML coverage report:
+To check test coverage and generate an HTML report:
 
     $ coverage run -m pytest
     $ coverage html
     $ open htmlcov/index.html
-
-#### Running tests with pytest
-
-    $ pytest
-
-### Live reloading and Sass CSS compilation
-
-Moved to [Live reloading and SASS compilation](https://cookiecutter-django.readthedocs.io/en/latest/2-local-development/developing-locally.html#using-webpack-or-gulp).
 
 ### Celery
 
@@ -80,7 +80,7 @@ This app comes with Celery.
 To run a celery worker:
 
 ```bash
-cd platform
+cd src/platform
 celery -A config.celery_app worker -l info
 ```
 
@@ -89,17 +89,21 @@ Please note: For Celery's import magic to work, it is important _where_ the cele
 To run [periodic tasks](https://docs.celeryq.dev/en/stable/userguide/periodic-tasks.html), you'll need to start the celery beat scheduler service. You can start it as a standalone process:
 
 ```bash
-cd platform
+cd src/platform
 celery -A config.celery_app beat
 ```
 
 or you can embed the beat service inside a worker with the `-B` option (not recommended for production use):
 
 ```bash
-cd platform
+cd src/platform
 celery -A config.celery_app worker -B -l info
 ```
 
 ## Deployment
 
-The following details how to deploy this application.
+The Helm chart is `deploy/charts/platform/`, with overlays under `deploy/overlays/`
+and the local Nebari config under `deploy/nic/`. The design is explained in
+[`docs/explanation/platform-deployment-architecture.md`](../../docs/explanation/platform-deployment-architecture.md);
+the local stack walkthrough is
+[`docs/tutorials/local-platform-development.md`](../../docs/tutorials/local-platform-development.md).

@@ -803,16 +803,19 @@ export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 # machine artifactory.example.com login alice password ...
 ```
 
-See `docs/enterprise-deployment.md` for the full air-gapped setup.
+See `docs/explanation/enterprise-deployment.md` for the full air-gapped setup.
 
 ### Pixi/uv install layer (separate from `_http.py`)
 
 `pixi install -e vuln-db` resolves PyPI deps via uv **before** any conda-forge-expert script runs, so `_http.py`'s auth chain doesn't apply. If install fails on `files.pythonhosted.org` behind your firewall, point uv at JFrog's PyPI Simple index:
 
 ```bash
-# Option A: project-local pixi config (gitignored)
-cp docs/pixi-config-jfrog.example.toml .pixi/config.toml
-$EDITOR .pixi/config.toml      # set JFrog URL + auth + tls-root-certs
+# Option A: user-level pixi config. Never copy over the project's
+# .pixi/config.toml: that file is tracked. Pixi and the CFE scripts
+# (_http.read_pixi_config) both merge system -> user -> project.
+mkdir -p ~/.pixi
+cp docs/reference/pixi-config-jfrog.example.toml ~/.pixi/config.toml
+$EDITOR ~/.pixi/config.toml    # set JFrog URL + auth + tls-root-certs
 pixi install -e vuln-db
 
 # Option B: env vars (one-shot)
@@ -822,4 +825,4 @@ export UV_KEYRING_PROVIDER=subprocess
 pixi install -e vuln-db
 ```
 
-Diagnose with `pixi install -e vuln-db -vvv`. See `docs/enterprise-deployment.md` § 4 for the full schema, auth methods, and JFrog admin alternative.
+Diagnose with `pixi install -e vuln-db -vvv`. See `docs/explanation/enterprise-deployment.md` § 4 for the full schema, auth methods, and JFrog admin alternative.

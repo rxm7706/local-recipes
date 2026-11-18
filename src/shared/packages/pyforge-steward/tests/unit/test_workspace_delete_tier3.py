@@ -334,6 +334,7 @@ def test_a_fifo_holds_no_data_and_goes_with_the_worktree(repo: Path, tmp_path: P
     assert not wt.exists()
 
 
+@pytest.mark.usefixtures("non_utf8_file_names")
 def test_a_non_utf8_name_is_shown_escaped_and_the_report_prints(repo: Path, tmp_path: Path):
     bookkeeping = repo / ".steward" / "workspaces.yaml"
     wt = _landed(repo, tmp_path, bookkeeping)

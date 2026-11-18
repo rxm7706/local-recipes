@@ -72,7 +72,6 @@ carries `pytestmark = pytest.mark.live_tree`. The package half runs with no host
 package on the path; the live-tree half needs django-pyforge on `PYTHONPATH`:
 
 ```bash
-pixi run -e pyforge-testing-kit pytest src/shared/packages/pyforge-testing-kit/tests -q -m "not live_tree"
-pixi run -e pyforge-testing-kit env PYTHONPATH=src/shared/packages/django-pyforge/src:src/shared/packages/pyforge-core/src \
-  pytest src/shared/packages/pyforge-testing-kit/tests -q -m live_tree
+pixi run -e pyforge-testing-kit pyforge-testing-kit-package-test
+pixi run -e pyforge-testing-kit pyforge-testing-kit-live-test
 ```

@@ -14,6 +14,7 @@ dataclass -- matching ``test_policy.py``'s own convention.
 
 from __future__ import annotations
 
+import os
 import tomllib
 
 import pytest
@@ -978,7 +979,13 @@ def test_preserve_keep_zero_means_never_prune_in_installed_bmad_loop(tmp_path):
 
     repo = tmp_path / "repo"
     repo.mkdir()
-    env = {"GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_SYSTEM": "/dev/null"}
+    # PATH is carried over: with none, ``git`` resolves through ``os.defpath`` to ``/usr/bin/git`` rather than the
+    # environment's own git -- on a macOS host without the developer tools that is a stub that exits 1.
+    env = {
+        "PATH": os.environ.get("PATH", os.defpath),
+        "GIT_CONFIG_GLOBAL": "/dev/null",
+        "GIT_CONFIG_SYSTEM": "/dev/null",
+    }
     subprocess.run(["git", "init", "-q", "-b", "main", str(repo)], check=True, env=env)
     subprocess.run(["git", "-C", str(repo), "config", "user.email", "t@example.com"], check=True, env=env)
     subprocess.run(["git", "-C", str(repo), "config", "user.name", "T"], check=True, env=env)

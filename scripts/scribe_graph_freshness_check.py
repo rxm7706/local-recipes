@@ -88,7 +88,7 @@ def check_freshness(
             "missing",
             f"no compiled graph store at {graph_path} -- the nightly trigger "
             "has never run on this machine (or was never installed; see "
-            "docs/cli-runbooks.md 'Installing the nightly trigger')",
+            "docs/how-to/schedule-the-scribe-nightly-compile.md 'Install the nightly trigger')",
             None,
         )
 

@@ -40,7 +40,7 @@ hiding it.
 
 SCOPE. Linux only, all four backends. A macOS `launchd` backend is a
 natural follow-up, deliberately out of scope here (see
-docs/cli-runbooks.md's "Scope note": ONE default trigger mechanism, proven
+docs/how-to/schedule-the-scribe-nightly-compile.md's "Scope note": ONE default trigger mechanism, proven
 to actually run, beats several half-verified ones).
 """
 from __future__ import annotations
@@ -133,7 +133,7 @@ def _check_linger(user: str, *, which=shutil.which, run=subprocess.run) -> None:
             "scribe-install-nightly-trigger: linger is not enabled for "
             f"{user!r} -- {_UNIT_NAME}.timer only fires while you have an "
             "active session; run `loginctl enable-linger $USER` so it also "
-            "fires while fully logged out (see docs/cli-runbooks.md)",
+            "fires while fully logged out (see docs/how-to/schedule-the-scribe-nightly-compile.md)",
             file=sys.stderr,
         )
 
@@ -143,7 +143,7 @@ def _install_systemd(*, home: Path, which=shutil.which, run=subprocess.run) -> i
         print(
             "scribe-install-nightly-trigger: `systemctl` is not on PATH -- "
             "the `systemd` backend targets Linux systemd-user only (see "
-            "docs/cli-runbooks.md's Scope note); try the `crontab` backend "
+            "docs/how-to/schedule-the-scribe-nightly-compile.md's Scope note); try the `crontab` backend "
             f"instead ({_BACKEND_ENV}=crontab, the default)",
             file=sys.stderr,
         )

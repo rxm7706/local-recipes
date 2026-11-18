@@ -242,7 +242,7 @@ def test_never_signals_reused_pid(stub_root: tuple[Path, Path]) -> None:
     work.mkdir(parents=True)
     pgdir = work / "pg"
     pgdir.mkdir()
-    sleeper = subprocess.Popen(["sleep", "999999"], env={**os.environ, **_marker_env(root)})
+    sleeper = subprocess.Popen(["sleep", "999999"], env={**os.environ, **_marker_env(root)}, cwd=root)
     try:
         (pgdir / "postmaster.pid").write_text(f"{sleeper.pid}\n", encoding="utf-8")
         proc = _run_platform_ci_local(
@@ -259,7 +259,7 @@ def test_never_signals_reused_pid(stub_root: tuple[Path, Path]) -> None:
 
     redis_dir = work / "redis"
     redis_dir.mkdir(exist_ok=True)
-    sleeper2 = subprocess.Popen(["sleep", "999999"], env={**os.environ, **_marker_env(root)})
+    sleeper2 = subprocess.Popen(["sleep", "999999"], env={**os.environ, **_marker_env(root)}, cwd=root)
     try:
         (work / "redis.pid").write_text(str(sleeper2.pid), encoding="utf-8")
         proc2 = _run_platform_ci_local(
@@ -289,7 +289,12 @@ def test_lock_wait_names_live_holder_and_stale_record(stub_root: tuple[Path, Pat
             f"""\
             #!/usr/bin/env bash
             exec 9>"{lock}"
-            flock 9
+            # Story 125.1: flock(1) where the host has it; where it has none, the same flock(2) lock from python.
+            if command -v flock >/dev/null 2>&1; then
+              flock 9
+            else
+              python3 -c 'import fcntl; fcntl.flock(9, fcntl.LOCK_EX)'
+            fi
             exec sleep 999999
             """
         ),

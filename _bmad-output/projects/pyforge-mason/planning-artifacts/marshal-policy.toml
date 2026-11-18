@@ -417,6 +417,12 @@ verify_commands = [
   "_bmad-output/projects/pyforge-mason/implementation-artifacts/**",
   "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
 ]
+"40" = [  # The conda-forge-expert scripts read the pixi configuration pixi reads (spec-pyforge-mason CAP-1), added 2026-11-18.
+  ".claude/scripts/conda-forge-expert/**",
+  ".claude/skills/conda-forge-expert/**",
+  "docs/explanation/enterprise-deployment.md",
+  "docs/reference/pixi-config-jfrog.example.toml",
+]
 
 "19" = [  # Mason has its own skills, and conda-forge-expert is one of them (spec-pyforge-mason CAP-29), added 2026-09-28
   "src/shared/packages/pyforge-mason/**",

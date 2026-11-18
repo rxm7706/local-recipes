@@ -10,14 +10,14 @@
 > from steward's adoption register (AD-2), and a version the sources disagree on is shown
 > as a disagreement, never resolved here.
 >
-> Generated: 2026-11-01. Regenerate: `pixi run -e pyforge-guild scribe catalog bmad-estate --write`.
+> Generated: 2026-11-18. Regenerate: `pixi run -e pyforge-guild scribe catalog bmad-estate --write`.
 > Drift detector: `pixi run -e pyforge-guild bmad-estate-check` (structured: a section reds when
 > its derived facts move, prose is exempt).
 
 <!-- bmad-estate-digest: installed=2a8aac8d7467 -->
 <!-- bmad-estate-digest: skills=781de936eb78 -->
 <!-- bmad-estate-digest: phases=b74a30513e46 -->
-<!-- bmad-estate-digest: suite=864b88633031 -->
+<!-- bmad-estate-digest: suite=dbc85dd78eb2 -->
 <!-- bmad-estate-digest: pins=a16daebabc88 -->
 <!-- bmad-estate-digest: harness=c35ae088e6fe -->
 <!-- bmad-estate-digest: cadence=bd38c415273d -->
@@ -310,7 +310,7 @@ never re-decided) and each member's `recipes/<member>/recipe.yaml`. 13 active me
 | `bmad-utility-skills` | 2.0.0 @HEAD | module | **wield** | herald, doctor, warden, scribe, marshal, steward (§ 2) | `steward provision --module utility-skills` | no upstream tags; no LICENSE file upstream (recipe vendors MIT text; conda-forge submission held) | 2.0.0 |
 | `bmad-labs-skills` | 1.0.0.dev0 @HEAD | plugin-path (consent) | **wield — skill-by-skill** | atlas (`mcp-builder`), herald (`slides-generator`), marshal (`multi-repo-git-ops`), steward (`release-please`) | `steward provision --plugin labs --skill <name>` (the one wrapped, pinned writer — AD-1; 46.5) | third-party (thuantan2060); `bmad-skills` on npm is unrelated (bacoco) | 1.0.0.dev0 |
 | `bmad-module-template` | 0.1.0 @HEAD | scaffold | wield (authoring tool only) | steward / `bmad-builder` | none (never `steward provision --module` into `.claude/skills/`) | placeholder LICENSE is not a reason to copy it into the live skill tree | 0.1.0 |
-| `bmad-manticore` | 3.1.0.dev0 @c9bcf759 | module (`--custom-source`) | **wield — Herald studio** | herald | native: `npx bmad-method install --directory $PYFORGE_STUDIO_ROOT --custom-source https://github.com/bmad-code-org/bmad-manticore --yes --tools <full tool-id list>` in `$PYFORGE_STUDIO_ROOT` (default `~/pyforge-studio/`, declared once per machine — AD-3); `--directory` and `--yes --tools <ids>` are REQUIRED for a non-interactive run (the bare command hangs on an unanswerable `Installation directory:` prompt, proven across 3 attempts) — full command in `docs/reference/manticore-studio.md` (this cell cites, never restates) | 3.0 upgrade wipes the studio's `_bmad/` + `_bmad-output/`; G109 renumber (tag 1.0.1 vs 3.1.0.dev0); needs uv, ffmpeg, node, git (ffmpeg confirmed absent on this machine, 46.6); the installed module tracks `main`/`next` (unpinned, floating) — unlike every other custom module in this register (skf pinned v2.1.0, this same package's OWN conda recipe pinned @c9bcf759) — so re-running the sanctioned command later can silently install a different Manticore version with no lockfile or version-check anywhere (review finding, 46.6, recorded as an open reproducibility risk, not resolved here) | 3.1.0.dev0 |
+| `bmad-manticore` | 3.1.0.dev0 @c9bcf759 | module (`--custom-source`) | **wield — Herald studio** | herald | native: `npx bmad-method install --directory $PYFORGE_STUDIO_ROOT --custom-source https://github.com/bmad-code-org/bmad-manticore --yes --tools <full tool-id list>` in `$PYFORGE_STUDIO_ROOT` (default `~/pyforge-studio/`, declared once per machine — AD-3); `--directory` and `--yes --tools <ids>` are REQUIRED for a non-interactive run (the bare command hangs on an unanswerable `Installation directory:` prompt, proven across 3 attempts) — full command in `docs/how-to/manticore-studio.md` (this cell cites, never restates) | 3.0 upgrade wipes the studio's `_bmad/` + `_bmad-output/`; G109 renumber (tag 1.0.1 vs 3.1.0.dev0); needs uv, ffmpeg, node, git (ffmpeg confirmed absent on this machine, 46.6); the installed module tracks `main`/`next` (unpinned, floating) — unlike every other custom module in this register (skf pinned v2.1.0, this same package's OWN conda recipe pinned @c9bcf759) — so re-running the sanctioned command later can silently install a different Manticore version with no lockfile or version-check anywhere (review finding, 46.6, recorded as an open reproducibility risk, not resolved here) | 3.1.0.dev0 |
 | `bmad-dashboard` | 1.2.2.dev0 | vscode-extension | wield (opt-in dev surface) | marshal | `bmad-dashboard-install` pixi task | npm `bmad-dashboard` is an unrelated collision; never the console (`retired-console-check`) | 1.2.2.dev0 |
 | `mybmad-dashboard` | 0.1.0.dev0 | vscode-extension (a Next.js app) | wield (sidecar: estate Postgres schema mybmad + estate OIDC) | steward (host chrome tile) | `mybmad` launcher; Prisma `?schema=mybmad` on estate `DATABASE_URL`; Keycloak `COMPONENT_OIDC_*` | consume sidecar — not `/console/`, not station nine, not Better Auth on the wielded path; launcher `pg_ctl` + Better Auth is DEV FALLBACK ONLY | 0.1.0.dev0 |
 

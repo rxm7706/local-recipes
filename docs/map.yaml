@@ -51,11 +51,11 @@ pages:
   - path: how-to/feedstock-failure-remediation.md
     quadrant: how-to
     owner: fleet
-    kind: authored
+    kind: pointer
   - path: how-to/feedstock-platform-expansion.md
     quadrant: how-to
     owner: fleet
-    kind: authored
+    kind: pointer
   - path: how-to/github-actions-recipe-ci.md
     quadrant: how-to
     owner: fleet
@@ -96,8 +96,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-11-13T04:36:16-06:00'
-      tree: f6776ea2fb7e8bee45e74a91f58e7253faefe33b
+      derived_at: '2026-11-18T02:54:00-06:00'
+      tree: e488c0fae251ff51c6a86f7f72897958e1b68d69
   - path: how-to/pause-ci.md
     quadrant: how-to
     owner: pyforge-steward
@@ -154,6 +154,66 @@ pages:
     quadrant: how-to
     owner: fleet
     kind: authored
+  - path: how-to/adopt-the-operating-model-with-marshal-seed.md
+    quadrant: how-to
+    owner: marshal
+    kind: authored
+  - path: how-to/bootstrap-a-machine-with-steward.md
+    quadrant: how-to
+    owner: steward
+    kind: authored
+  - path: how-to/diagnose-with-doctor.md
+    quadrant: how-to
+    owner: doctor
+    kind: authored
+  - path: how-to/move-vendor-extracts-through-the-corridor.md
+    quadrant: how-to
+    owner: steward
+    kind: authored
+  - path: how-to/read-steward-registers.md
+    quadrant: how-to
+    owner: steward
+    kind: authored
+  - path: how-to/record-progress-claims-and-notices-with-herald.md
+    quadrant: how-to
+    owner: herald
+    kind: authored
+  - path: how-to/rotate-platform-secrets.md
+    quadrant: how-to
+    owner: steward
+    kind: authored
+  - path: how-to/run-and-read-pr-preflight.md
+    quadrant: how-to
+    owner: steward
+    kind: authored
+  - path: how-to/run-atlas-pipelines-and-read-datasets.md
+    quadrant: how-to
+    owner: atlas
+    kind: authored
+  - path: how-to/scan-for-compliance-with-warden.md
+    quadrant: how-to
+    owner: warden
+    kind: authored
+  - path: how-to/schedule-the-scribe-nightly-compile.md
+    quadrant: how-to
+    owner: scribe
+    kind: authored
+  - path: how-to/troubleshoot-herald-moments.md
+    quadrant: how-to
+    owner: herald
+    kind: authored
+  - path: how-to/upgrade-bmad-core.md
+    quadrant: how-to
+    owner: steward
+    kind: authored
+  - path: how-to/use-marshal-in-an-air-gapped-site.md
+    quadrant: how-to
+    owner: marshal
+    kind: authored
+  - path: how-to/use-steward-duties-that-need-operator-consent.md
+    quadrant: how-to
+    owner: steward
+    kind: authored
   - path: reference/README.md
     quadrant: reference
     owner: fleet
@@ -191,8 +251,8 @@ pages:
       - scripts/detectors.py
       - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
     stamp:
-      derived_at: '2026-11-11T14:58:14-06:00'
-      tree: 1c9cb4ade3ba259ca99923df295303f2afadde45-dirty
+      derived_at: '2026-11-18T02:54:00-06:00'
+      tree: e488c0fae251ff51c6a86f7f72897958e1b68d69
   - path: reference/developer-guide.md
     quadrant: reference
     owner: fleet
@@ -205,12 +265,18 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-10-31T13:47:28-05:00'
-      tree: c258695e071f7a1e3aac3d756803008eef5ddfee-dirty
+      derived_at: '2026-11-18T03:11:26-06:00'
+      tree: df88fc05649bdcf1a8cc99e777f3e811df66888b
   - path: reference/github-workflows.md
     quadrant: reference
     owner: fleet
-    kind: authored
+    kind: generated
+    generator: scripts/docs_github_workflows.py
+    sources:
+      - .github/workflows
+    stamp:
+      derived_at: '2026-11-18T02:54:00-06:00'
+      tree: e488c0fae251ff51c6a86f7f72897958e1b68d69
   - path: reference/judgement-vocabulary.md
     quadrant: reference
     owner: doctor
@@ -240,8 +306,8 @@ pages:
     sources:
       - .claude/skills
     stamp:
-      derived_at: '2026-11-12T22:43:21-06:00'
-      tree: b69fd81eb812eb0a2de4580c4b04d9af41259ef8-dirty
+      derived_at: '2026-11-18T02:54:00-06:00'
+      tree: e488c0fae251ff51c6a86f7f72897958e1b68d69
   - path: reference/station-cheat-sheet.md
     quadrant: reference
     owner: fleet
@@ -251,12 +317,25 @@ pages:
       - pixi.toml
       - src/shared/packages
     stamp:
-      derived_at: '2026-11-12T03:07:29-06:00'
-      tree: 7b6286bd7b506960e6cdc0a477ef2c32e2acf96c-dirty
+      derived_at: '2026-11-18T02:54:00-06:00'
+      tree: e488c0fae251ff51c6a86f7f72897958e1b68d69
   - path: reference/station-verify-commands.md
     quadrant: reference
     owner: fleet
-    kind: authored
+    kind: generated
+    generator: scripts/docs_station_verify.py
+    sources:
+      - _bmad-output/projects/pyforge-atlas/planning-artifacts/marshal-policy.toml
+      - _bmad-output/projects/pyforge-doctor/planning-artifacts/marshal-policy.toml
+      - _bmad-output/projects/pyforge-herald/planning-artifacts/marshal-policy.toml
+      - _bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml
+      - _bmad-output/projects/pyforge-mason/planning-artifacts/marshal-policy.toml
+      - _bmad-output/projects/pyforge-scribe/planning-artifacts/marshal-policy.toml
+      - _bmad-output/projects/pyforge-steward/planning-artifacts/marshal-policy.toml
+      - _bmad-output/projects/pyforge-warden/planning-artifacts/marshal-policy.toml
+    stamp:
+      derived_at: '2026-11-18T02:54:00-06:00'
+      tree: e488c0fae251ff51c6a86f7f72897958e1b68d69
   - path: reference/story-spec-flag-block.md
     quadrant: reference
     owner: doctor
@@ -268,6 +347,22 @@ pages:
   - path: reference/test-charter.md
     quadrant: reference
     owner: fleet
+    kind: authored
+  - path: reference/herald-web-dashboard.md
+    quadrant: reference
+    owner: herald
+    kind: authored
+  - path: reference/herald-webhook-endpoint.md
+    quadrant: reference
+    owner: herald
+    kind: authored
+  - path: reference/marshal-seed-findings.md
+    quadrant: reference
+    owner: marshal
+    kind: authored
+  - path: reference/marshal-seed-managed-regions.md
+    quadrant: reference
+    owner: marshal
     kind: authored
   - path: explanation/README.md
     quadrant: explanation
@@ -312,6 +407,10 @@ pages:
   - path: explanation/the-tier-model-and-data-flow.md
     quadrant: explanation
     owner: fleet
+    kind: authored
+  - path: explanation/herald-four-moments.md
+    quadrant: explanation
+    owner: herald
     kind: authored
 sections:
   - key: herald

@@ -924,6 +924,7 @@ def test_the_note_lists_at_most_200_ignored_paths_and_counts_the_rest(repo: Path
 # --- Story 69.1 review 2 ---
 
 
+@pytest.mark.usefixtures("non_utf8_file_names")
 def test_a_non_utf8_ignored_name_neither_crashes_the_sweep_nor_goes_unnamed(repo: Path, tmp_path: Path):
     """It crashed the whole sweep with a UnicodeDecodeError (CAP-155: one bad record never stops it)."""
     import os

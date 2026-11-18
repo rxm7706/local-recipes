@@ -1,3 +1,13 @@
+---
+sources:
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/verdict.py
+  - src/shared/packages/pyforge-warden/src/pyforge/warden/verdict.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py
+  - scripts/detectors.py
+  - tests/scripts/test_exit_code_domains_are_declared.py
+verified: 2026-11-17
+---
+
 # The judgement vocabulary — what each word means, positively
 
 Every word here names something that *judges* work in this estate. Until 2026-09-14 four of
@@ -7,8 +17,6 @@ a rule they were not violating. This page states each one positively.
 
 Constitutional authority is `docs/dreams/pyforge-charter.md` § The Lexicon and § Execution
 Doctrine; where this page and the Charter disagree, the Charter wins and this page is wrong.
-
----
 
 ## The two that carry constitutional weight
 
@@ -29,8 +37,6 @@ The second sense is why `detectors-ci` failing CI has never been a violation: §
 Doctrine already places CI verify gates in the **harness**, the unit of governance. Governance
 gates; stations judge.
 
----
-
 ## The operational four
 
 **detector** — a bounded, deterministic reader that produces `Finding`s and declares its own
@@ -45,7 +51,7 @@ are load-bearing in different layers. Say which when it is not obvious from cont
 - the `Finding.check` **field** — which check produced this finding
 - `marshal check` — a **CLI verb** that relays the detector registry
 - a **scope check** — one of marshal's three gate kinds
-- the `*-check` **filename suffix** — ~30 pixi tasks that are detectors
+- the `*-check` **task-name suffix** — about 70 pixi tasks, most of them detectors
 
 **preflight** — a check that runs **before** the thing it guards, and whose failure means "do not
 proceed", not "this is broken". `frame-preflight` is the exemplar: it is explicitly **not** a
@@ -59,8 +65,6 @@ human*. Doctor's findings are advisory by design — Doctor reports operability,
 **lens** — a named point of view a reviewer or review agent applies to the same artifact, so that
 two passes over one diff look for different things. Used by `bmad-review` and the Guard library.
 A lens produces findings; it never produces a verdict.
-
----
 
 ## Severity and exit codes
 
@@ -76,11 +80,13 @@ trap, and it has caused at least one real misread:
 | `pyforge-warden` | `{0, 1, 2, 130}` | error |
 | `pyforge-marshal` | `{0, 1, 2, 3, 4, 130}` | scope-violation (`3` is gate-failed) |
 | argparse, on any of them | `2` | invalid arguments |
-| script-based detectors (`governance_currency_check.py` and friends) | `{0, 1}` | n/a — this domain has no `2` at all |
+| script-based detectors (`scripts/*_check.py`) | `{0, 1}` or `{0, 1, 2}` | **could not run**, where the script has a `2` (`flag_gate_check.py`, `pixi_version_check.py`); `governance_currency_check.py` returns only `0` or `1` |
 
-Doctor's subset of warden's domain is deliberate and documented (`doctor/verdict.py:4-7`: it
+Doctor's subset of warden's domain is deliberate and documented (the module docstring of Doctor's `verdict.py`: it
 omits warden's policy rung `1` because Doctor reports operability, not policy). The collision
-with the aggregator's `2` is **not** deliberate and is tracked as `DW-VOCAB-2026-09-14-8`.
+with the aggregator's `2` is **not** deliberate and is tracked as `DW-VOCAB-2026-09-14-8`
+(steward's deferred-work ledger, `partially-fixed`: `tests/scripts/test_exit_code_domains_are_declared.py`
+pins the domains against this page; the unification is open).
 
 **The aggregator's four row words.** `scripts/detectors.py` reads each row as `pass`,
 `FINDINGS` (exit `1`), `unknown` (could not run, exit `2`) or **`unmeasured`**. A Doctor row is
@@ -95,8 +101,6 @@ measured.
 **Never read a detector's result through a pipe.** `cmd | grep x | head -5` then `echo $?`
 reports *`head`'s* status, not the detector's, and `head` truncates findings out of view.
 Redirect to a file, check the exit code directly, then read the whole list.
-
----
 
 ## What this page deliberately does not do
 

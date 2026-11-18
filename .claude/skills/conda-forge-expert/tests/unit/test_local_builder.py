@@ -353,6 +353,9 @@ class TestLocalBuilder:
         sdks = tmp_path / "SDKs"
         (sdks / "MacOSX11.0.sdk").mkdir(parents=True)
         monkeypatch.setenv("OSX_SDK_DIR", str(sdks))
+        # The SDK note is the CROSS-build note; on a macOS host the native
+        # osx row reads "native" instead, so pin the host platform.
+        monkeypatch.setattr(mod, "detect_native_platform", lambda: "linux-64")
         report = mod.diagnose_environment("11.0")
         assert report["osx_sdk_detected"] == str(sdks)
         for plat in ("osx-64", "osx-arm64"):
@@ -368,6 +371,8 @@ class TestLocalBuilder:
         # Move the working dir to a place with no SDKs folder so the
         # repo-root candidate doesn't accidentally find one.
         monkeypatch.chdir(tmp_path)
+        # Cross-build note, as above: pin the host platform.
+        monkeypatch.setattr(mod, "detect_native_platform", lambda: "linux-64")
         report = mod.diagnose_environment("11.0")
         # When no SDK is found AND no env var, the note should hint at
         # running --setup-osx-sdk

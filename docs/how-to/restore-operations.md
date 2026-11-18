@@ -1,4 +1,14 @@
-# PostgreSQL restore runbook (Story 41.1)
+---
+sources:
+  - src/platform/db/postgres_backup.py
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/restore.py
+  - src/platform/deploy/charts/platform/templates/NOTES.txt
+  - src/platform/deploy/charts/platform/templates/postgres-statefulset.yaml
+  - src/platform/deploy/charts/platform/templates/postgres-backup-cronjob.yaml
+verified: 2026-11-18
+---
+
+# PostgreSQL restore runbook (steward Story 41.1)
 
 Operator steps for restoring the platform PostgreSQL database from chart
 backups. Pair with [disaster-recovery.md](disaster-recovery.md) for RPO/RTO and reconciliation order.
@@ -25,9 +35,10 @@ kubectl exec -it statefulset/<release>-postgres -- \
   cat /var/lib/postgresql/backup/base/latest/manifest.json
 ```
 
-Each `manifest.json` records `run_state_count`, `wagtail_page_count`, and
-the backup timestamp — the same fields `pyforge steward restore --drill`
-asserts.
+Each `manifest.json` records `run_state_count`, `wagtail_page_count`, the
+backup timestamp and `drill_dump`, the path of the custom-format `pg_dump`
+taken beside the base backup. `pyforge steward restore --drill` restores that
+dump and asserts the two counts.
 
 ## Automated restore drill (monthly)
 
@@ -39,14 +50,20 @@ pixi run -e pyforge-steward pyforge steward restore --drill \
   --backup-path /var/lib/postgresql/backup/base/latest
 ```
 
-The duty restores into a scratch database (`platform_drill_<timestamp>`),
-compares row counts to the manifest, drops the scratch database, and exits
-non-zero on mismatch. Crash exits use steward exit code 70 (AD-8).
+`--backup-path` is required and names the directory holding `manifest.json`.
+`--drill` is required too: the duty only ever runs the drill. Without it the
+duty exits `1` with `restore: --drill is required (full operator restore is
+docs/how-to/restore-operations.md)`, which points at the full restore below.
+The duty restores the drill dump into a scratch database
+(`platform_drill_<timestamp>`), compares row counts to the manifest, drops the
+scratch database, and exits non-zero on mismatch. It needs `pg_restore` on
+`PATH` and a role that may create databases. Crash exits use steward exit code 70 (AD-8).
 
 ## Full restore (operator — production)
 
-**Warning:** destructive to the live data directory. Scale web/worker to zero
-first.
+:::caution
+Destructive to the live data directory. Scale web/worker to zero first.
+:::
 
 1. Scale platform Deployments to zero replicas.
 2. Delete the postgres pod (StatefulSet recreates it).
@@ -64,6 +81,6 @@ release with restored PVC clones and run the drill there first.
 
 ## Disabling backup
 
-Set `postgres.backup.enabled: false` in Helm values. The chart renders a loud
+Set `postgres.backup.enabled: false` in Helm values (the chart default is `true`). The chart renders a loud
 warning in `NOTES.txt` — backup disabled is never silent. WAL archiving is
 not configured when backup is disabled.

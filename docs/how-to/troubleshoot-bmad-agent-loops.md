@@ -1,16 +1,16 @@
 ---
 sources:
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_stale.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_verify_fix.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verification_journal.py
   - scripts/promote_sprint_status.py
   - scripts/loop_stall_check.py
-  - scripts/bmad_loop_baseline_drift_check.py
+  - .claude/skills/bmad-loop-resolve/SKILL.md
   - .claude/memory/reference/bmad-loop-escalation-and-landing-traps.md
   - .claude/memory/reference/fleet-landing-pass-liveness.md
-  - docs/how-to/driving-a-pyforge-station-backlog.md
-verified: 2026-10-24
+verified: 2026-11-18
 ---
 
 # Troubleshoot BMAD Agent Loops
@@ -77,8 +77,9 @@ A common failure mode is an agent operating against a stale `sprint-status-ledge
    pixi run -e pyforge-guild sprint-ledger-sync -- --project <station>
    ```
    Then commit the twin and run `story-status-check` again.
-   > [!WARNING]
-   > A plain sync repairs feed-behind-twin drift (restores twin `done` / story `blocked` rows the feed lost, naming each key) and then promotes. `--allow-regression` is the one way to move a key *out of* `done` instead, naming every affected key. `--repair-feed` means the same as a bare sync.
+   :::caution
+   A plain sync repairs feed-behind-twin drift (restores twin `done` / story `blocked` rows the feed lost, naming each key) and then promotes. `--allow-regression` is the one way to move a key *out of* `done` instead, naming every affected key. `--repair-feed` means the same as a bare sync.
+   :::
 
 ## Step 5: Validate the "One Chain" Governance
 Check that the station still has one active Dream, one Spec, one PRD, one spine, and one epic chain. A second Dream file or Spec folder minted without a `fold-exemption:` is what `chain-sprawl-check` reports; agents do not refuse to run on it, so it surfaces as a detector finding, not a stall:

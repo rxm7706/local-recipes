@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: 68895a8bdc0d8eef
-story_count: 138
-test_file_count: 43
+source_fingerprint: 236684b90c3adc9c
+story_count: 139
+test_file_count: 47
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 138
-- **Epics parsed:** 39
-- **Test files inventoried:** 43 under `src/shared/packages/pyforge-mason/tests/`
+- **Stories parsed:** 139
+- **Epics parsed:** 40
+- **Test files inventoried:** 47 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `68895a8bdc0d8eef`
+- **Source fingerprint:** `236684b90c3adc9c`
 
 ## Risk Assessment
 
@@ -71,6 +71,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 36: The absorbed mason Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
 - Epic 38: Mason's oracle travels: a written public contract and a suite split by what it reads (spec-pyforge-mason CAP-5, CAP-7; relay of spec-pyforge-steward:CAP-175)
 - Epic 39: Mason's cutover seam: the native factory-island build is a capability, and conda-forge-expert waits for its own Spec (spec-pyforge-mason CAP-36)
+- Epic 40: The conda-forge-expert scripts read the pixi configuration pixi reads (spec-pyforge-mason CAP-1)
 
 ### Low-risk epics
 
@@ -85,18 +86,21 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-mason/tests/integration/test_package_ship.py` | integration | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_adapter_sole_caller.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_capability_tiers.py` | meta | none observed |
+| `src/shared/packages/pyforge-mason/tests/meta/test_cfe_adapter_argv_live.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_cfe_import_floor_env_sync.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_cfe_independence.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_credential_isolation.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_dependency_direction.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_engine_version_range_sync.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_exit_code_ownership.py` | meta | none observed |
+| `src/shared/packages/pyforge-mason/tests/meta/test_live_tree_split.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_mason_skills.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_namespace_is_implicit.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_no_config_file.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_no_recipe_knowledge.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_persona_consults_cfe.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_portal_last_diagnose.py` | meta | none observed |
+| `src/shared/packages/pyforge-mason/tests/meta/test_public_contract.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_render_ownership.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_skf_mason_skill.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/unit/test_airgap_contract.py` | unit | none observed |
@@ -121,6 +125,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-mason/tests/unit/test_package.py` | unit | none observed |
 | `src/shared/packages/pyforge-mason/tests/unit/test_pypi_index.py` | unit | none observed |
 | `src/shared/packages/pyforge-mason/tests/unit/test_recipe.py` | unit | none observed |
+| `src/shared/packages/pyforge-mason/tests/unit/test_recipe_update_help.py` | unit | none observed |
 | `src/shared/packages/pyforge-mason/tests/unit/test_render.py` | unit | none observed |
 | `src/shared/packages/pyforge-mason/tests/unit/test_resolve.py` | unit | none observed |
 
@@ -266,6 +271,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 38.3 | Mason's adapters pass only what the wrapped scripts declare | none observed |
 | 39.1 | The factory-island build is a mason capability, and its error names only what... | none observed |
 | 39.2 | conda-forge-expert gets its own Spec after the root of record flips | none observed |
+| 40.1 | The CFE scripts merge the pixi config layers, and the MCP reference names the... | none observed |
 
 ## Quality Gates
 

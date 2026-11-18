@@ -1,7 +1,16 @@
+---
+sources:
+  - scripts/platform_ci_test_requirements_check.py
+  - src/platform/Containerfile
+  - .github/workflows/platform-ci.yml
+verified: 2026-11-17
+---
+
 # Platform Python dependencies — pixi is the sole authority
 
-The former `base.txt` / `production.txt` / `local.txt` install chains were retired
-by steward Story 16.1 (CAP-5 / `spec-platform-fifteen-factors`).
+The former `base.txt` / `production.txt` / `local.txt` install chains in the
+platform host's `requirements/` directory were retired by steward Story 16.1 (CAP-5 of
+`spec-platform-fifteen-factors`, a Spec since archived). That directory no longer exists.
 
 | Need | Use |
 |------|-----|
@@ -9,5 +18,5 @@ by steward Story 16.1 (CAP-5 / `spec-platform-fifteen-factors`).
 | Local platform host + engines | env `platform-dev` (composes `python-agent-platform` + `platform-dev`) |
 | Container image (same env as host) | `[feature.python-agent-platform.dependencies]` |
 
-Do **not** reintroduce `*.txt` requirement files here as an install source.
-`pixi run -e local-recipes platform-ci-test-requirements-check` fails if they return.
+Do **not** reintroduce `*.txt` requirement files there as an install source.
+`pixi run -e pyforge-guild platform-ci-test-requirements-check` fails if they return.

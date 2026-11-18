@@ -1,3 +1,13 @@
+---
+sources:
+  - src/platform/deploy/nic/my-nebari-local.yaml
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_nic.py
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_nic_packs.py
+  - src/shared/packages/pyforge-steward/tests/integration/nkp_probes.py
+  - src/shared/packages/pyforge-steward/tests/integration/conftest.py
+verified: 2026-11-17
+---
+
 # Host Nebari (NKP on kind)
 
 Bring up a local Nebari Kubernetes Platform cluster with the steward `deploy nic` verb (CAP-176, Stories 118.1 and 118.4).

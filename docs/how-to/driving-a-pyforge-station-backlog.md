@@ -1,3 +1,12 @@
+---
+sources:
+  - docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py
+  - scripts/promote_sprint_status.py
+  - scripts/deck_facts.py
+verified: 2026-11-18
+---
+
 # Driving a PyForge station backlog forward
 
 Use this workflow to move a PyForge Guild station's BMAD backlog forward: checking what's ready, dispatching the right stories through the right mechanism, and landing the result without trusting a green check you haven't looked behind.
@@ -10,8 +19,10 @@ Use this workflow to move a PyForge Guild station's BMAD backlog forward: checki
 - A PR you're merging touches `sprint-status-ledger.yaml` alongside other open PRs.
 
 :::note[Prerequisites]
-An active BMAD project (`scripts/bmad-switch --current`) and familiarity with this repo's Dream → Spec → Story chain (see `AGENTS.md` and the `CLAUDE.md` § Dream-first section). This guide assumes stories already exist in `epics.md`; it doesn't cover minting them.
+An active BMAD project (`scripts/bmad-switch --current`) and familiarity with this repo's Dream → Spec → Story chain (see `AGENTS.md` § *Dream-first workflow*). This guide assumes stories already exist in `epics.md`; it doesn't cover minting them.
 :::
+
+A repository that does not have this operating model yet gets it first: see [How to adopt the operating model in another repository with `marshal seed`](adopt-the-operating-model-with-marshal-seed.md), with [Marshal seed findings and their remedies](../reference/marshal-seed-findings.md) and [Marshal seed managed regions](../reference/marshal-seed-managed-regions.md).
 
 ## How do I check status without spending anything?
 
@@ -21,7 +32,7 @@ Don't assume a story marked `backlog` still needs full work, and don't assume on
 
 ## How do I choose a dispatch mechanism?
 
-Three options, picked by story size and blast radius:
+Three options, picked by story size and blast radius. Whichever you pick, the measured way to launch it is `marshal factory dispatch` (one story) or `marshal factory spin` (several); invoking a skill bare is allowed but leaves no journal entry or benchmark (`AGENTS.md` § *Dream-first workflow* item 3).
 
 | Mechanism | Use when |
 |---|---|
@@ -49,20 +60,18 @@ Three checks catch most of what a summary hides:
 
 This discipline mirrors what you'd apply to your own work before calling it done, and it catches real defects: this pattern found corrupted content that had already been pushed to two live external projects, sitting behind a fully green `deck-facts --check`.
 
-## How do I resolve a `ledger-regression-check` false positive?
+## How do I read a `ledger-regression-check` failure?
 
-The detector walks every commit between `origin/main` and your branch's head, checking each one's ledger diff for a `done → not-done` transition on any key. It doesn't just compare the two endpoints. So a two-commit sequence (one commit that accidentally introduces a regression, a second that fixes it) trips the check even though the net result matches main exactly, because the *first* commit's diff still shows the bad transition.
+The detector compares two points: the tracked ledgers at the merge-base of `origin/main` and your branch, and the same ledgers at your branch's head. It fails when a key that was `done` at the merge-base is not `done` at the head. It does not walk the commits in between, so a regression that a later commit on the same branch repairs does not trip it, and a story a sibling PR finished on `main` after you branched is not counted against you.
 
-Fix it by removing the bad transition from history rather than papering over it with a corrective commit:
+A failure therefore means the head itself un-finishes a key. Put the key back to `done` in the Tier-3 feed, then regenerate the tracked ledger:
 
 ```bash
-git reset --soft origin/main
-# working tree now holds every real change from both commits; recommit as one
-git commit -m "..."
-git push --force-with-lease
+pixi run -e pyforge-guild sprint-ledger-sync -- --project <station>
+pixi run -e pyforge-guild ledger-regression-check
 ```
 
-This is safe on a single-purpose, not-yet-merged feature branch that only you are working on. Never do it on `main` or a branch someone else depends on.
+`<station>` is the short key (`doctor`, not `pyforge-doctor`). A key that only changed its name needs a re-key map and `sprint-ledger-sync`'s `--rekey`, not a drop and an add.
 
 ## How do I land several PRs that all touch the same tracked ledger file?
 

@@ -24,4 +24,4 @@ pixi run -e pyforge-doctor doctor --version     # console-script smoke test
 
 The `pyforge-doctor` environment is lean by design (`no-default-feature`): it
 carries only the built package plus its conda run-dependencies (`python`,
-`jsonschema`) and a test runner.
+`jsonschema`, `pyyaml`, `mcp`, `pyforge-core`) and a test runner.

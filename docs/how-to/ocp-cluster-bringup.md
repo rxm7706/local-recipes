@@ -1,3 +1,14 @@
+---
+sources:
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/cluster-bringup-facts.md
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py
+  - src/platform/deploy/charts/platform/values.yaml
+  - src/platform/deploy/charts/platform/templates/NOTES.txt
+  - src/platform/deploy/overlays/ocp/README.md
+  - src/platform/ingest/github_projects/pipeline.py
+verified: 2026-11-18
+---
+
 # OpenShift Local cluster bring-up (Story 12.4 / CAP-1)
 
 Reproducible bring-up for the local OCP hybrid environment. Ground truth:
@@ -15,8 +26,6 @@ supported host or a VM that matches the list.
 Every command below is copy-pasteable. Do not improvise steps outside this doc
 and the linked deploy READMEs.
 
----
-
 ## 1. Choose a bring-up path
 
 | Path | When to use |
@@ -29,8 +38,6 @@ extension can drive the cluster — the extension does not bundle `crc`. Install
 from the [CRC release](https://github.com/crc-org/crc/releases/tag/v2.63.0) or
 use this repo's client recipes (`recipes/openshift-client/`,
 `recipes/podman-desktop/`) as packaging references.
-
----
 
 ## 2. Path A — Podman Desktop + OpenShift Local extension
 
@@ -47,8 +54,6 @@ use this repo's client recipes (`recipes/openshift-client/`,
 
 The extension wraps the same `crc` lifecycle as path B; the CLI remains usable
 alongside (`crc setup`, `crc start`, `crc stop`, `crc delete`).
-
----
 
 ## 3. Path B — Linux with `crc` on PATH
 
@@ -75,8 +80,6 @@ crc console --credentials
 
 Alternatively, use the web console **Copy login command** flow (session token).
 
----
-
 ## 4. Pull secret (required once per cluster)
 
 1. Download from [Red Hat OpenShift Local](https://console.redhat.com/openshift/create/local)
@@ -86,8 +89,6 @@ Alternatively, use the web console **Copy login command** flow (session token).
 3. Record metadata in `.steward/keys-inventory.yaml` per §5 (`crc-pull-secret`).
 
 Steward records **provenance only** — it cannot revoke upstream pull secrets.
-
----
 
 ## 5. Keys discipline (inventory, never secrets in git)
 
@@ -231,8 +232,6 @@ only marks the local row retired.
 Deployed pods carry secret **references** only (canopy:AD-19); the chart wiring
 belongs to the story that deploys the fleet scan.
 
----
-
 ## 6. Authenticate `oc`
 
 After the cluster is Running:
@@ -245,8 +244,6 @@ oc whoami             # kubeadmin
 oc project default    # or create/switch to your deploy namespace
 ```
 
----
-
 ## 7. Build the platform image (host)
 
 From the **repository root** (build context must include `pixi.toml` /
@@ -258,8 +255,6 @@ podman build -f src/platform/Containerfile -t platform:local .
 ```
 
 This is the same image Story 10.3 / Platform CI build; no separate OCP image.
-
----
 
 ## 8. Push via the internal registry (canonical image path)
 
@@ -301,7 +296,7 @@ pixi run -e platform-dev helm install platform src/platform/deploy/charts/platfo
 `flags.environment` (`dev` here; `staging` or `production` for those releases) is required: the chart
 mounts the flag tree rendered for it (`docs/explanation/platform-deployment-architecture.md`).
 
-Then install the Route overlay per `README.md` in this directory.
+Then install the Route overlay per `src/platform/deploy/overlays/ocp/README.md`.
 
 **Known gotcha (not native Linux):** pushing from inside a Podman *machine* VM
 can fail DNS for the registry route (`crc#3897`). On native Linux, use the
@@ -309,12 +304,11 @@ commands above from the host shell. Alternatives (binary build, extension
 "Push image…") are documented in `cluster-bringup-facts.md` for completeness but
 are **not** the IaC path for this fleet.
 
----
-
 ## 9. Deploy the chart (after registry push)
 
 Full Secret contract, two-release OCP shape, and limitations:
-`docs/explanation/platform-deployment-architecture.md` and `overlays/ocp/README.md`.
+`docs/explanation/platform-deployment-architecture.md` and
+`src/platform/deploy/overlays/ocp/README.md`.
 
 Minimal sequence (namespace + Secret + both releases):
 
@@ -347,8 +341,6 @@ pixi run -e platform-dev helm install platform-ocp src/platform/deploy/overlays/
 Compose `DATABASE_URL` from `helm install` NOTES output — the chart never
 renders passwords into manifests (AD-12).
 
----
-
 ## 10. Verification checklist
 
 Run in order after deploy:
@@ -366,15 +358,13 @@ oc get route -n platform
 ImageStream present, web pods pull the internal-registry image without
 `ImagePullBackOff`.
 
-**mcp-host (spec-mcp-era-isolation CAP-4):** a `mcp-host` Deployment and
+**mcp-host (the archived `spec-mcp-era-isolation`, CAP-4):** a `mcp-host` Deployment and
 ClusterIP must be Ready. Web/worker must have `MCP_HOST_SIDECAR_BASE_URL`
 pointing at that Service. Helm refuses an empty `mcpHost.image.repository`.
 Sidecar not Ready is HTTP 502 on `/stations/<name>/mcp`, not a web CrashLoop.
 
 Attended proof of Route admission, SCC enforcement, PVC binding, and
 postgres/redis under arbitrary UID is **Story 12.7** — not claimed here.
-
----
 
 ## 11. What this doc deliberately excludes
 
@@ -385,10 +375,8 @@ postgres/redis under arbitrary UID is **Story 12.7** — not claimed here.
   maxmemory → Story 40.2 (`redis.broker.persistence`, `/data` mount)
 - Live Tier-3 verification record → Story 12.7
 - GKE/kind CI profiles → Stories 12.2 / 12.3 (unchanged)
-- `--docker-image` / host-socket deploy shortcuts → struck in
-  `reconciliation-and-corrections.md`
-
----
+- `--docker-image` / host-socket deploy shortcuts → struck in the archived
+  `archive/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-local-ocp-hybrid-environment/reconciliation-and-corrections.md`
 
 ## 12. GitHub Projects V2 → `github_metrics` (Story 12.8)
 
@@ -400,7 +388,7 @@ Quick path:
 
 1. Create/link the board: `gh project create` + `gh project link … --repo rxm7706/local-recipes`
 2. Export a **classic** PAT with `read:project` as `GITHUB_TOKEN`
-3. Port-forward Postgres: `oc port-forward -n platform svc/platform-postgresql 5432:5432`
+3. Port-forward Postgres: `oc port-forward -n platform svc/platform-postgres 5432:5432`
 4. Set `GITHUB_METRICS_DATABASE_URL=postgresql://…`
 5. Run: `pixi run -e python-agent-platform github-metrics-dlt -- PVT_yourProjectId`
 

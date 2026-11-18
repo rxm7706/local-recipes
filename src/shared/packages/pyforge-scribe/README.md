@@ -9,8 +9,8 @@ teammate and every agent session from then on (fixing the duplicated
 -rediscovery pain that motivated this project; see
 `d43899c1cb`).
 
-**Status:** capture, `scribe graph compile` and `scribe recall` are
-implemented; each story's state is the ledger,
+**Status:** capture, `scribe graph compile`, `scribe recall`, `scribe index`
+and `scribe catalog bmad-estate` are implemented; each story's state is the ledger,
 [`sprint-status-ledger.yaml`](../../../../_bmad-output/projects/pyforge-scribe/planning-artifacts/sprint-status-ledger.yaml),
 and the contract is the Spec `spec-pyforge-scribe` beside it.
 

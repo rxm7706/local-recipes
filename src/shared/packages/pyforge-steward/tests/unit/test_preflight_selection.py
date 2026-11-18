@@ -321,6 +321,7 @@ def test_step_matches_task_closure_or_own_command_line(task: str, lane_env: str,
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.usefixtures("workflow_changes_bash")
 def test_marshal_only_branch_selects_marshal_core_and_always_on_lanes(tmp_path: Path) -> None:
     repo = make_repo(tmp_path, {"src/shared/packages/pyforge-marshal/src/x.py": "x = 1\n"})
     selection = select(repo)
@@ -340,6 +341,7 @@ def test_marshal_only_branch_selects_marshal_core_and_always_on_lanes(tmp_path: 
     assert selection.all_reason is None
 
 
+@pytest.mark.usefixtures("workflow_changes_bash")
 def test_marshal_selection_journals_the_workflow_and_rule_that_skipped_each_lane(tmp_path: Path) -> None:
     repo = make_repo(tmp_path, {"src/shared/packages/pyforge-marshal/src/x.py": "x = 1\n"})
     journal = select(repo).to_journal()
@@ -374,6 +376,7 @@ def test_pixi_toml_triggers_lint_and_station_lanes_not_pages(tmp_path: Path) -> 
     assert chosen & GATES == gates_of(chosen)
 
 
+@pytest.mark.usefixtures("workflow_changes_bash")
 def test_cfe_only_branch_selects_the_lanes_station_tests_reads(tmp_path: Path) -> None:
     repo = make_repo(tmp_path, {".claude/skills/conda-forge-expert/scripts/x.py": "x = 1\n"})
     chosen = selected_tasks(select(repo))
@@ -391,6 +394,7 @@ def test_cfe_only_branch_selects_the_lanes_station_tests_reads(tmp_path: Path) -
     assert not chosen & {suite(s) for s in STATIONS}  # no package half reads .claude/
 
 
+@pytest.mark.usefixtures("workflow_changes_bash")
 def test_dream_only_branch_selects_the_always_on_lanes(tmp_path: Path) -> None:
     repo = make_repo(tmp_path, {"docs/dreams/a-dream.md": "# dream\n"})
     chosen = selected_tasks(select(repo))
@@ -415,6 +419,7 @@ def test_pages_check_leaves_carry_dependency_edges_from_pixi() -> None:
     assert set(by_task["pages-build"].depends_on) == {("docs-site-install", "site")}
 
 
+@pytest.mark.usefixtures("workflow_changes_bash")
 def test_docs_site_branch_selects_the_docs_site_validators_and_the_always_on_lanes(tmp_path: Path) -> None:
     """herald Story 43.7: ``docs-site/`` is the one generator (``docsite/`` retired), so a change there is the one that
     fires the Pages lanes and the herald suite."""
@@ -428,6 +433,7 @@ def test_docs_site_branch_selects_the_docs_site_validators_and_the_always_on_lan
     )
 
 
+@pytest.mark.usefixtures("workflow_changes_bash")
 def test_django_pyforge_branch_selects_kit_steward_doctor_marshal_and_core(tmp_path: Path) -> None:
     repo = make_repo(tmp_path, {"src/shared/packages/django-pyforge/src/x.py": "x = 1\n"})
     selection = select(repo)
@@ -601,6 +607,7 @@ def oracle_selection(repo: Path, tmp_path: Path) -> set[str]:
         "lint-types",
     ],
 )
+@pytest.mark.usefixtures("workflow_changes_bash")
 def test_selection_equals_the_lanes_the_workflows_own_rules_select(tmp_path: Path, files: dict[str, str]) -> None:
     repo = make_repo(tmp_path, files)
     selection = select(repo)
@@ -643,6 +650,7 @@ def test_unrecognised_paths_ignore_runs_that_workflows_lane_and_names_the_rule(t
     assert "cfe-regression-net.yml" in verdict(selection, "test-ci-meta").reason
 
 
+@pytest.mark.usefixtures("workflow_changes_bash")
 def test_unrecognised_job_if_runs_that_job_s_lane_and_names_the_rule(tmp_path: Path) -> None:
     repo = make_repo(
         tmp_path,
@@ -696,6 +704,7 @@ def test_a_failing_changes_step_runs_its_workflow_s_lanes(tmp_path: Path) -> Non
     assert GATES <= selected_tasks(selection)
 
 
+@pytest.mark.usefixtures("workflow_changes_bash")
 def test_unreadable_changes_output_runs_its_workflow_s_lanes(tmp_path: Path) -> None:
     repo = make_repo(
         tmp_path,
@@ -756,6 +765,7 @@ def _dirty_unstaged(repo: Path) -> None:
 @pytest.mark.parametrize(
     "dirty", [_dirty_untracked, _dirty_staged, _dirty_unstaged], ids=["untracked", "staged", "unstaged"]
 )
+@pytest.mark.usefixtures("workflow_changes_bash")
 def test_dirty_steward_file_adds_the_steward_lanes(tmp_path: Path, dirty: Callable[[Path], None]) -> None:
     repo = make_repo(tmp_path, MARSHAL_ONLY)
     clean = selected_tasks(select(repo))

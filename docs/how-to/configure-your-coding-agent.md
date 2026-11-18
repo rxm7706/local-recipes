@@ -1,13 +1,14 @@
 ---
 sources:
-  - AGENTS.md
   - CLAUDE.md
+  - GEMINI.md
+  - .github/copilot-instructions.md
   - .gemini/settings.json
   - .vscode/settings.json
   - scripts/claude_instruction_mode_check.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/claude.toml
   - src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py
-verified: 2026-10-24
+verified: 2026-11-17
 ---
 
 # How to Configure Your Coding Agent for This Repo
@@ -90,4 +91,4 @@ Cursor, the GitHub Copilot cloud agent and CLI, Devin, Codex, Jules, Zed, Warp, 
 - Every harness on the machine starts from the same `AGENTS.md` contract.
 - Claude Code sessions, interactive and dispatched, load nested `AGENTS.md` files.
 - A one-line host check that tells you when a Claude Code upgrade or a settings change is due.
-- The scribe parity meta-tests (`pixi run -e pyforge-scribe pyforge-scribe-test`) keep the pointers, the settings and the harness table honest in CI.
+- The scribe parity meta-tests (`pixi run -e pyforge-scribe pyforge-scribe-live-test`, the live-tree half of scribe's suite) keep the pointers, the settings and the harness table honest in CI.

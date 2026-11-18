@@ -1,6 +1,6 @@
 # MCP Tools Reference
 
-The conda-forge-expert skill exposes 46+ tools via a FastMCP server at `.claude/tools/conda_forge_server.py`. Full schemas (parameters, defaults, return types) are surfaced at tool-call time; this file is a navigable index by purpose.
+The conda-forge-expert skill exposes 46 tools through an MCP server at `.claude/tools/conda_forge_server.py`, built on the official MCP Python SDK (`MCPServer("conda-forge-expert")` from `mcp.server.mcpserver`). Full schemas (parameters, defaults, return types) are surfaced at tool-call time; this file is a navigable index by purpose.
 
 The tools fall into three layers:
 1. **Recipe authoring** (the original v6.x tooling) — generate / validate / edit / build / migrate / submit.
@@ -102,4 +102,4 @@ These tools wrap the cf_atlas data layer (~16 schema versions, 15 pipeline phase
 ## See also
 
 - **Lifecycle integration** — The 9-step Autonomous Loop (Generate → Validate → Edit → Security Scan → Optimize → Check Deps → Trigger Build → Monitor → Submit PR) in `SKILL.md` § "Primary Workflow: The Autonomous Loop" specifies success criteria and pre-conditions for each tool.
-- **Server source** — `.claude/tools/conda_forge_server.py` (FastMCP) for canonical signatures and implementation.
+- **Server source** — `.claude/tools/conda_forge_server.py` (the SDK's `MCPServer`) for canonical signatures and implementation.

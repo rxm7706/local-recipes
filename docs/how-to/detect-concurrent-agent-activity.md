@@ -1,3 +1,12 @@
+---
+sources:
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/supervisor/__main__.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_fleet_supervisor/__main__.py
+  - .claude/memory/reference/fleet-landing-pass-liveness.md
+verified: 2026-11-17
+---
+
 # Detecting concurrent agent activity
 
 Use this check to tell whether another agent or session is already working on the same files you're about to touch, before you duplicate work, race a shared file, or dispatch a background agent that collides with one already running.
@@ -9,7 +18,7 @@ Use this check to tell whether another agent or session is already working on th
 - You're planning a broad `git add` or a push to a shared branch.
 - Work in this repo has felt slower or stranger than expected and you suspect you're not the only one touching it.
 
-This repo runs heavy concurrent automation by design: multiple BMAD loop supervisors, dispatched background agents, and separate human-driven sessions (including non-Claude tooling) can all be active in the same checkout at once, which is expected here, so don't assume you're working alone.
+This repo runs heavy concurrent automation by design: multiple BMAD loop supervisors, dispatched background agents, and separate human-driven sessions (including non-Claude tooling) can all be active in this repository at once, each in its own worktree. That is expected here, so don't assume you're working alone.
 
 ## How do I check for other active work?
 
@@ -19,13 +28,13 @@ Three checks, in order of how fast they answer the question:
 git worktree list
 ```
 
-Shows every checked-out branch, including ones set up by a background agent's isolated worktree. A branch name matching a story or task you're about to dispatch is a strong signal someone else already owns it.
+Shows every checked-out branch, including ones set up by a background agent's isolated worktree. A branch name matching a story or task you're about to dispatch is a strong signal someone else already owns it. `pixi run -e pyforge-guild pyforge steward workspace ls` lists the scratch worktrees steward created, and `pixi run -e pyforge-guild marshal homes` lists every `loop/<slug>` loop home.
 
 ```bash
-ps aux | grep -i "bmad-loop\|marshal.supervisor\|bmad-build-auto"
+ps aux | grep -iE '[b]mad-loop|pyforge\.marshal\.[a-z_]*supervisor|[b]mad-build-auto'
 ```
 
-Lists live orchestrator and dev-session processes. An empty result means nothing is currently running, but check the worktree's git log too, since a process can finish and leave a clean, committed worktree behind with no PR yet opened.
+Lists live orchestrator and dev-session processes: `bmad-loop` engines, marshal's three supervisor modules (`supervisor`, `dispatch_supervisor`, `dispatch_fleet_supervisor`) and `bmad-build-auto` sessions. For one run's liveness, `bmad-loop status <run_id> --json` is the primary check; the process list is the quick sweep. An empty result means nothing is currently running, but check the worktree's git log too, since a process can finish and leave a clean, committed worktree behind with no PR yet opened.
 
 ```bash
 gh pr list --repo rxm7706/local-recipes --search "<story-or-topic> in:title" --state all

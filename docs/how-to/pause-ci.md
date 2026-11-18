@@ -5,7 +5,8 @@ sources:
   - scripts/ci_surface_gates.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/ci.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_ci.py
-verified: 2026-10-25
+  - .github/workflows/ci-canary.yml
+verified: 2026-11-17
 ---
 
 # How to pause and resume CI surfaces
@@ -85,7 +86,7 @@ pixi run -e pyforge-steward pyforge steward ci resume <surface-id|switch>
 Add `--yes` to apply: sets the repo variable (operator-only outward action), updates the registry
 row, appends `.steward/ci-pauses.log`, and runs `scribe capture --type project`.
 
-Pausing a row with `gate: true` (for example `detectors` or `lint-types`) requires
+Pausing a row with `gate: true` (today only `cfe-regression-net.cfe-meta`) requires
 `--i-am-removing-a-merge-gate` after reading the warning — you are turning off a merge gate.
 
 Disabling a workflow in the GitHub UI without a matching `paused-manually` or `retired` registry row
@@ -129,4 +130,4 @@ pixi run -e pyforge-guild ci-surface-gates-check
 python scripts/ci_surface_gates.py --check --live   # operator, after landing
 ```
 
-Intake background: `docs/intake/ci-pause-control-plane/PLAN-2026-10-12.md`.
+Intake background (archived): `archive/docs/intake/ci-pause-control-plane/PLAN-2026-10-12.md`.

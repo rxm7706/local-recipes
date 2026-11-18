@@ -1,3 +1,7 @@
+---
+checked_by: llms-full-check
+---
+
 # local-recipes — Library Catalog for LLMs & Agents (library-llms-full.md)
 
 > Purpose: give any LLM or coding agent a complete, self-contained picture of every
@@ -758,6 +762,13 @@ in `CLAUDE.md` and `_bmad-output/`.
   one-pin section.
 - **tmux** (>=3.8) — terminal multiplexer; **linux-64 + osx-arm64 only**; required by
   bmad-loop session spawning.
+- **git** (>=2.55.0) — the `git` every station suite, detector and the preflight run inside `pixi run`;
+  carried by the `host-tools` feature in every station and Guild environment so the lock names the git under
+  test (before 2026-11-18 it resolved to whatever the host had).
+- **bash** (>=5.2) — GNU bash 5; **osx-arm64 only** (`host-tools`). The workflows' `changes` steps the preflight
+  evaluates use `declare -A`, which stock macOS bash 3.2 cannot run. Linux runners ship bash 5.
+- **findutils** (>=4.10.0) — GNU `find` and `xargs`; **osx-arm64 only** (`host-tools`). The steward suite executes
+  workflow lines that call `find -printf`, which BSD find lacks.
 
 ---
 

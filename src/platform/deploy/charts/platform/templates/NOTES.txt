@@ -68,7 +68,7 @@ Reloader or flagd sidecar.
 
 *** WARNING: postgres.backup.enabled is false — PostgreSQL has NO base backup,
 NO WAL archive, and NO point-in-time recovery. Data loss on PVC failure is
-permanent. See src/platform/deploy/DR.md and restore.md before disabling. ***
+permanent. See docs/how-to/disaster-recovery.md and docs/how-to/restore-operations.md before disabling. ***
 {{- else }}
 
 PostgreSQL backup (Story 41.1): CronJob {{ include "platform.postgresBackup.fullname" . }}

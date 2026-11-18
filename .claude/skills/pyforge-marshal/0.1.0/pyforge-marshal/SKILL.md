@@ -294,21 +294,21 @@ repository, hand-edited managed content) · `4` `NeverWriteViolation` · `5`
 
 ```text
 marshal --version
-marshal status [--project SLUG] [--run RUN_ID]
+marshal status [--project SLUG] [--run RUN_ID] [--escalations] [--reconcile-ledger] [--format text|json]
 marshal homes [--format text|json]
 marshal check [--scope repo|runtime|all] [--project SLUG]
 marshal seed check --repo-root .
-marshal seed init <PATH> --slug <SLUG>
+marshal seed init <PATH> [--slug <SLUG>]
 marshal seed adopt --repo-root . [--apply --yes]
 marshal seed accept <ARTIFACT-ID>[#<REGION>] --repo-root . [--apply --reason TEXT]
-marshal seed kit --repo-root <LOOP-HOME> [--apply]
+marshal seed kit --repo-root <LOOP-HOME> [--apply] [--project SLUG] [--dry-run] [--json] [--quiet]
 marshal factory dispatch <SLUG> [<STORY>] [--stories K1,K2] [--harness H] [--hold-landing] [--format text|json]
 marshal factory spin <SLUG> [--epic N] [--story KEY] [--max-count N] [--foreground]
 marshal factory attach|resume|dispatch-attach|dispatch-resume|drain|checkpoint …
 marshal factory challenge [--project P] [--stage mint|decompose|readiness|drift|rules] [--target PATH] [--section SELECTOR] [--dream-section SELECTOR] [--epic N] [--audit [--force]] [--format text|json]
-marshal factory challenge resolve --project P --report REPORT [--accept ID[:NOTE]] [--reject ID[:REASON]]
-marshal context advisory [--project SLUG] [--format text|json]
-marshal context retrieve [--project SLUG] --epic N [--story M] [--format text|json]
+marshal factory challenge resolve [--project P] --report REPORT [--accept ID[:NOTE]] [--reject ID[:REASON]]
+marshal context advisory [--project SLUG] [--root PATH] [--format text|json]
+marshal context retrieve [--project SLUG] --epic N [--story M] [--root PATH] [--format text|json]
 marshal context refresh|bundle|bootstrap|pack …
 marshal config|init|preflight|teardown|gate|deploy|land|retire|watch|adapters|upstream|refresh|planning|login|benchmark|preserve …
 ```

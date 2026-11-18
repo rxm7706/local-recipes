@@ -2,11 +2,12 @@
 """
 Mirror conda channels for air-gapped environments.
 
-Usage:
-    python mirror-channels.py --source conda-forge --dest /path/to/mirror --packages numpy pandas
-    python mirror-channels.py --source conda-forge --dest /path/to/mirror --packages-file packages.txt
-    python mirror-channels.py --verify /path/to/mirror
-    python mirror-channels.py --cleanup /path/to/mirror --keep-versions 2
+Usage (run from the repository root; ``mirror``, ``verify``, ``cleanup`` and ``index`` are subcommands):
+    python scripts/mirror-channels.py mirror --source conda-forge --dest /path/to/mirror --packages numpy pandas
+    python scripts/mirror-channels.py mirror --source conda-forge --dest /path/to/mirror --packages-file packages.txt
+    python scripts/mirror-channels.py verify /path/to/mirror
+    python scripts/mirror-channels.py cleanup /path/to/mirror --keep-versions 2
+    python scripts/mirror-channels.py index /path/to/mirror
 """
 
 from __future__ import annotations

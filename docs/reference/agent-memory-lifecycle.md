@@ -1,13 +1,10 @@
 ---
 sources:
   - .claude/memory/README.md
-  - .claude/memory/MEMORY.md
   - src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py
-  - src/shared/packages/pyforge-scribe/README.md
+  - src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py
   - CLAUDE.md
-  - AGENTS.md
-  - docs/how-to/configure-your-coding-agent.md
-verified: 2026-10-24
+verified: 2026-11-18
 ---
 
 # Agent Memory Lifecycle
@@ -46,6 +43,8 @@ This scans the user-local auto-memory, classifies each entry, and proposes team-
 
 ### Recall
 `scribe recall "<question>"` answers from the compiled graph with a resolvable citation, or reports no grounded coverage — it never invents an uncited answer. By default it leaves out code (AST) nodes; `--mode planning`, `--mode memory` or `--mode code` picks one surface (or `--kind` names the node kinds; the two are exclusive), and `--scope <slug>` limits it to one project. For a team decision, `AGENTS.md` names `--mode planning`. `scribe graph compile` rebuilds that graph from `.claude/memory/`, the Spec memlogs, git history, retros and CHANGELOGs; with its heavy extras it runs in `-e pyforge-scribe`.
+
+To rebuild that graph every night, see [How to schedule the Scribe nightly compile](../how-to/schedule-the-scribe-nightly-compile.md).
 
 ## Integration Requirements for New Agents
 If you are building a new agent loop to run against PyForge:

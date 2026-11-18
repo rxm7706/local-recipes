@@ -892,6 +892,7 @@ def test_moving_a_locked_worktree_aside_never_unregisters_a_sibling(repo: Path, 
     assert f"HEAD {detached}" in _git("worktree", "list", "--porcelain", cwd=repo).stdout
 
 
+@pytest.mark.usefixtures("non_utf8_file_names", "non_utf8_git_arguments")
 def test_a_name_that_is_not_utf8_never_crashes_the_sweep(repo: Path, tmp_path: Path) -> None:
     """Review 9: a worktree pointer or per-worktree ref git stores as non-UTF-8 bytes is read, never a crash."""
     bookkeeping = repo / ".steward" / "workspaces.yaml"
@@ -906,6 +907,7 @@ def test_a_name_that_is_not_utf8_never_crashes_the_sweep(repo: Path, tmp_path: P
     assert result["skipped"] == []
 
 
+@pytest.mark.usefixtures("non_utf8_git_arguments")
 def test_a_remote_named_in_non_utf8_never_crashes_a_landing_check(repo: Path, tmp_path: Path) -> None:
     """Review 10: ``git remote`` is read as bytes."""
     bookkeeping = repo / ".steward" / "workspaces.yaml"
@@ -918,6 +920,7 @@ def test_a_remote_named_in_non_utf8_never_crashes_a_landing_check(repo: Path, tm
     assert [r["slug"] for r in result["deleted"]] == ["plain"]
 
 
+@pytest.mark.usefixtures("non_utf8_file_names", "non_utf8_git_arguments")
 def test_delete_of_a_pruned_non_utf8_workspace_never_crashes(repo: Path, tmp_path: Path) -> None:
     """Review 10: ``worktree remove`` echoes a path git no longer lists; its output is never decoded."""
     bookkeeping = repo / ".steward" / "workspaces.yaml"
@@ -944,6 +947,7 @@ def test_a_damaged_sibling_pointer_never_crashes_a_trunk_landing(repo: Path, tmp
     assert [r["slug"] for r in result["archived"]] == ["stacked"]
 
 
+@pytest.mark.usefixtures("non_utf8_file_names", "non_utf8_git_arguments")
 @pytest.mark.parametrize("mode", ["merged-only", "delete"])
 def test_a_non_utf8_git_directory_never_crashes_a_trunk_landing(tmp_path: Path, mode: str) -> None:
     """Review 11: ``rev-parse --git-common-dir`` prints an absolute path for a separated git dir; it is read as bytes."""
@@ -997,6 +1001,7 @@ def test_a_nul_in_a_recorded_path_never_crashes_the_sweep(repo: Path, tmp_path: 
     assert len(result["archived"]) + len(result["deleted"]) + len(result["skipped"]) == 1
 
 
+@pytest.mark.usefixtures("non_utf8_file_names", "non_utf8_git_arguments")
 @pytest.mark.parametrize("mode", ["status", "merged-only", "delete", "default"])
 def test_a_non_utf8_source_deleted_after_landing_never_crashes(repo: Path, tmp_path: Path, mode: str) -> None:
     """Review 12: git's "Not a valid object name" echoes a non-UTF-8 source; git output is never decoded strictly."""
@@ -1024,6 +1029,7 @@ def test_a_non_utf8_source_deleted_after_landing_never_crashes(repo: Path, tmp_p
     assert len(result["archived"]) + len(result["deleted"]) + len(result["skipped"]) == 1
 
 
+@pytest.mark.usefixtures("non_utf8_file_names", "non_utf8_git_arguments")
 def test_a_pruned_present_workspace_in_a_non_utf8_repository_never_crashes(tmp_path: Path) -> None:
     """Review 12: with the registration pruned, HEAD is read inside the worktree, whose git error names a non-UTF-8
     path; the default clean answers."""

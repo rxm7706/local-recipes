@@ -4,7 +4,7 @@ sources:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
   - docs/reference/judgement-vocabulary.md
   - archive/docs/dreams/fidelity-enforcement.md
-verified: 2026-10-24
+verified: 2026-11-18
 ---
 
 # The Detector Framework
@@ -12,6 +12,8 @@ verified: 2026-10-24
 PyForge maintains continuous estate governance via its **Detector Framework**. Detectors are standalone, offline, deterministic checks that enforce invariants on both the codebase and the operator's runtime environment.
 
 This document explains the architectural rationale behind the framework. For instructions on running them, see [How to run and understand Detectors](../how-to/run-and-understand-detectors.md).
+
+For the `pyforge doctor` CLI itself, see [How to diagnose with doctor](../how-to/diagnose-with-doctor.md).
 
 ## Dynamic Registry Discovery
 
@@ -36,10 +38,12 @@ This split is intentional. It represents the factory's missing observation plane
 
 PyForge's detector registry exit codes obey a strict rule regarding failure to run.
 
-* Exit `0` means every selected detector ran and passed.
+* Exit `0` means every selected detector ran and passed, or ran and measured nothing (an `unmeasured` row, below).
 * Exit `1` means at least one detector ran and reported findings.
 * Exit `2` means at least one detector **could not run**, and none reported findings.
 
 Exit code 2 is not a softer 0. If a detector crashes, times out, or fails to import a dependency, it reports `unknown`. The framework never treats a failure to measure as a clean bill of health. This ensures the dashboard status strip (and CI gates) never claim "green" for an invariant they didn't actually verify.
+
+A Doctor source that ran but measured nothing (no `fail`, and every finding a gather failure) reads `unmeasured`, never `pass`. The text summary counts those rows, and the exit code stays `0`: it is a warning the merge bar does not fail on (operator ruling of 2026-11-10; spec-pyforge-doctor AD-15).
 
 Note that a *single* Doctor source run on its own (`python -m pyforge.doctor.sources <name>`, which is what the per-detector pixi tasks call) projects through a different exit-code domain — `pyforge.doctor.verdict.exit_code_for`, where any `fail` finding exits `2` and `warn` never changes the exit code. The aggregate reads that projection, so a Doctor source whose findings are all `warn` (the warn-only sources, such as `dreams-hygiene` and `bmad-output-hygiene`) shows `pass` in the registry run, never `FINDINGS`. The two domains and the `2`-inversion trap are tabled in [`judgement-vocabulary.md`](../reference/judgement-vocabulary.md) § *Severity and exit codes*.

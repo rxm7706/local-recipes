@@ -376,7 +376,11 @@ def materialize(request: MaterializeRequest) -> MaterializeResult:
             "confirmation) -- refusing before invoking Copier"
         )
 
-    stage_root = Path(tempfile.mkdtemp(prefix="marshal-seed-stage-"))
+    # Resolved at creation: Copier's update compares the stage path it was given
+    # with git's own (resolved) top level, so a temp dir reached through a
+    # symlink (macOS ``/var`` -> ``/private/var``, a relocated ``TMPDIR``) must
+    # be named by its real path from the start.
+    stage_root = Path(tempfile.mkdtemp(prefix="marshal-seed-stage-")).resolve()
     stage_path = stage_root / "stage"
     try:
         answers = _stage_and_render(request, stage_path)

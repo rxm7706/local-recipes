@@ -1,21 +1,54 @@
 """Documentation currency gather (Story 30.2, ``spec-pyforge-doctor`` CAP-84).
 
-Three read-only checks over ``docs/map.yaml`` (the new machine registry) and
-``docs/MAP.md`` (its render):
+Read-only checks over ``docs/map.yaml`` (the machine registry) and
+``docs/MAP.md`` (its render). The registry is enforced (2026-11-17): every
+check that measured a real defect reads FAIL -- an unstamped authored page, a
+stale or missing source, a dead reference, a stale generated page, a stale
+MAP.md render, a ``kind: generated`` row with no usable ``generator:``.
+A check that could not measure (no MAP.md to compare, a generator that cannot
+run, git unreadable or a shallow clone, ``pixi.toml`` unreadable, the map
+itself unreadable) stays WARN, and ``skill-dir-hygiene`` stays WARN.
+
+Order (Story 60.2): the checks that need no git history are reported first --
+``map-render``, ``authored-unstamped``, ``generated-page-stale``,
+``skill-dir-hygiene`` -- and ``authored-page-stale``, the one check that dates
+a path against git, last. Git that cannot answer therefore never hides an
+unstamped page.
 
 * ``map-render`` (``docs-currency-map-render``) -- ``docs/MAP.md``'s
   generated ``## Page registry`` section (bounded by the
   ``docs-map:registry:begin``/``docs-map:registry:end`` markers)
   byte-matches a fresh :func:`render_map_registry` of ``docs/map.yaml``'s
-  pages. Markers absent from MAP.md counts as a mismatch too.
+  pages. Markers absent from MAP.md counts as a mismatch too. A mismatch
+  is FAIL; a missing MAP.md (nothing to compare) is one WARN.
+* ``authored-unstamped`` (``docs-currency-authored-unstamped``) -- every
+  ``kind: authored`` page carries a stamp in its OWN frontmatter:
+  ``verified:`` (an ISO date) and a non-empty ``sources:`` list of
+  repo-relative paths. A page missing either is one FAIL naming the page
+  and what is missing. One exemption, declared on the page and never
+  here: a page whose currency its own detector owns carries
+  ``checked_by: <pixi task name>`` instead (``docs/reference/library-llms-full.md``,
+  owned by ``llms-full-check``). The name must be a task ``pixi.toml``
+  declares (``[tasks]`` or any ``[feature.<f>.tasks]``); one that is not is
+  the same FAIL, saying why. A ``checked_by`` page is not read for stale
+  sources; its body still gets the dead-reference scan.
 * ``authored-page-stale`` (``docs-currency-authored-stale``) -- for each
-  ``kind: authored`` page: (a) when the page's OWN frontmatter declares
-  ``sources:``/``verified:`` (the convention Story 30.1 seeded on 14
-  pages), a named source whose git last-touch date postdates ``verified:``
-  is stale, and a named source with NO git history at all (never
-  committed -- a typo, or a path that moved) is flagged too, with a
-  distinct ``reason: "source not found in git history"`` rather than
-  being silently treated as current; (b) the page body is scanned for
+  ``kind: authored`` page, one FAIL carrying either or both evidence
+  kinds: (a) a ``sources:`` entry whose git last-touch date is LATER than
+  ``verified:`` is stale (a source touched on the ``verified:`` date
+  itself is current); an entry that does not exist in the tree
+  (``reason: "source does not exist"`` -- a typo, or a path that moved),
+  one that is not a repo-relative path, and one git has no history for
+  (``reason: "source not found in git history"`` -- untracked or ignored,
+  so it can never be measured) are flagged too, never silently treated
+  as current. When git cannot date a source at all -- not a repository, no
+  commits, a timeout, or a SHALLOW clone
+  (``git rev-parse --is-shallow-repository``; its truncated history
+  attributes a path to the graft boundary or to nothing, so every stamped
+  page would read stale or unmeasurable) -- the dating is could-not-measure:
+  exactly one WARN on this check for the whole run, never a FAIL per page.
+  The two reasons read from the tree (does not exist, not repo-relative)
+  and evidence kind (b) need no history and still FAIL; (b) the page body is scanned for
   backticked ``bmad-*``/
   ``skf-*`` skill names, ``scripts/``/``_bmad/``-rooted ``.py`` paths, and
   repo-relative paths under a real top-level directory that no longer
@@ -27,10 +60,7 @@ Three read-only checks over ``docs/map.yaml`` (the new machine registry) and
   ``<!-- governance-currency:ignore-end -->`` escape hatch honored
   (reused verbatim, not a second marker convention -- ``test-charter.md``
   already carries live instances of it for exactly this class of
-  deliberate historical citation, predating this story). One Finding per
-  page that triggers either/both evidence kinds; a page with neither
-  frontmatter nor a dead reference is silently fine (coverage grows
-  incrementally, per the story's own Design Notes).
+  deliberate historical citation, predating this story).
 * ``generated-page-stale`` (``docs-currency-generated-stale``, Story 30.3,
   ``spec-pyforge-doctor`` CAP-84; generator trust Story 40.2) -- for each
   ``kind: generated`` page that declares a ``generator:`` (a repo-relative
@@ -38,20 +68,21 @@ Three read-only checks over ``docs/map.yaml`` (the new machine registry) and
   copy** of that script via :func:`.locate_checkout_script` (Story 40.1's
   pattern -- never ``target / generator``) with ``--check --root <target>``
   so the judged tree supplies only data. The exit code is the verdict: 0
-  means current, 1 is one stale WARN naming the page, and any other exit,
+  means current, 1 is one stale FAIL naming the page, and any other exit,
   or an exit 1 whose output carries a Python traceback (a crash), is one
   could-not-run WARN on the same check (Story 30.5; only
   ``scripts/docs_bmad_estate.py`` exits 2 by design, and argparse exits 2
-  on a usage error). Declared paths
-  outside ``scripts/docs_*.py`` or carrying ``..`` are one WARN and never
-  run. When Doctor's checkout lacks the script, one WARN reports it and
-  nothing falls back to the target's copy. A page with no ``generator:``
-  declared is ALSO one WARN (a registry gap, not silently skipped); a
-  missing PAGE (not yet ever generated) is skipped here --
-  ``docs-map-hygiene``'s territory.
+  on a usage error). A declared path
+  outside ``scripts/docs_*.py`` or carrying ``..`` is one FAIL and is never
+  run, and a page with no ``generator:`` declared is one FAIL too (Story
+  60.2): each is a registry defect -- the row can never be checked until
+  ``docs/map.yaml`` is fixed -- not could-not-measure. When Doctor's
+  checkout lacks the script, one WARN reports it and nothing falls back to
+  the target's copy. A missing PAGE (not yet ever generated) is skipped
+  here -- ``docs-map-hygiene``'s territory.
 * ``skill-dir-hygiene`` (``docs-currency-skill-dir-hygiene``) -- a stray
   file inside a managed ``bmad-*``/``pyforge-*``/``skf-*`` skill
-  directory.
+  directory. WARN.
 
   Design deviation (recorded here, not silently): the story's Code Map
   describes this check's allowed top-level entries as ``{SKILL.md (file),
@@ -77,13 +108,20 @@ Three read-only checks over ``docs/map.yaml`` (the new machine registry) and
 
 Fail-open by design (CAP-62): ``docs/map.yaml`` missing, unreadable, or
 schema-invalid degrades the WHOLE gather to exactly one WARN via
-:func:`.degrade_on_exception` -- never a FAIL, never a crash.
+:func:`.degrade_on_exception` -- never a FAIL, never a crash. The same holds
+when ``pixi.toml`` does not parse while a page names a ``checked_by`` task:
+the gather could not measure, so it reads one WARN rather than one FAIL per
+page. Git that cannot date a source degrades only the stale-source dating
+(one WARN on ``docs-currency-authored-stale``), never the other checks.
 """
 
 from __future__ import annotations
 
 import json
 import re
+import tomllib
+from collections.abc import Callable
+from datetime import date, datetime
 from importlib import resources
 from pathlib import Path
 
@@ -91,7 +129,7 @@ import jsonschema
 import yaml
 
 from ..cli_bridge import CliBridgeError, run_check_script, run_git
-from ..models import DoctorStatus, Finding, Source
+from ..models import UNEVALUABLE_EVIDENCE_KEY, DoctorStatus, Finding, Source
 from . import degrade_on_exception, locate_checkout_script
 
 __all__ = (
@@ -103,6 +141,7 @@ __all__ = (
 
 _CHECK_MAP_RENDER = "docs-currency-map-render"
 _CHECK_AUTHORED_STALE = "docs-currency-authored-stale"
+_CHECK_AUTHORED_UNSTAMPED = "docs-currency-authored-unstamped"
 _CHECK_GENERATED_STALE = "docs-currency-generated-stale"
 _CHECK_SKILL_DIR_HYGIENE = "docs-currency-skill-dir-hygiene"
 _CHECK_MAP_UNREADABLE = "docs-currency-map-unreadable"
@@ -143,6 +182,8 @@ _QUADRANT_TITLES: dict[str, str] = {
 }
 
 _FRONTMATTER_FENCE = "---"
+_CHECKED_BY_KEY = "checked_by"
+_PIXI_TOML_REL = "pixi.toml"
 
 # Mirrors scripts/governance_currency_check.py's three regexes exactly --
 # duplicated deliberately (pyforge.doctor cannot import scripts/).
@@ -268,7 +309,7 @@ def _check_map_render(target: Path, pages: list[dict]) -> Finding | None:
     return Finding(
         source=Source.DOCS_CURRENCY,
         check=_CHECK_MAP_RENDER,
-        status=DoctorStatus.WARN,
+        status=DoctorStatus.FAIL,
         message=(
             f"{_MAP_MD_REL}'s '## Page registry' section is stale against a "
             f"fresh render of {_MAP_YAML_REL} -- run `pixi run -e "
@@ -299,40 +340,124 @@ def _parse_page_frontmatter(text: str) -> dict:
 
 
 def _git_last_touch_date(target: Path, rel: str) -> str | None:
-    try:
-        output = run_git(target, ["log", "-1", "--format=%cs", "--", rel])
-    except CliBridgeError:
-        return None
-    date = output.strip()
-    return date or None
+    """The committer date (``YYYY-MM-DD``) of the last commit touching ``rel``, or ``None`` when git has no
+    history for it. Raises :class:`CliBridgeError` when git cannot answer at all (not a repository, no commits,
+    a timeout): that is could-not-measure, and :class:`_SourceDating` holds it as one WARN."""
+    output = run_git(target, ["log", "-1", "--format=%cs", "--", rel])
+    return output.strip() or None
 
 
-def _stale_sources(target: Path, frontmatter: dict) -> list[dict]:
-    verified = frontmatter.get("verified")
+class _SourceDating:
+    """Dates ``sources:`` entries against git, and remembers why it could not (Story 60.2).
+
+    ``problem`` stays ``None`` while git answers. It is set -- once, and no further git call is made -- when the
+    repository is a shallow clone, or when git cannot be read at all. Probed lazily: a tree with nothing to
+    date never asks git anything."""
+
+    def __init__(self, target: Path) -> None:
+        self._target = target
+        self._probed = False
+        self.problem: str | None = None
+
+    def _probe(self) -> None:
+        self._probed = True
+        try:
+            shallow = run_git(self._target, ["rev-parse", "--is-shallow-repository"]).strip()
+        except CliBridgeError as exc:
+            self.problem = f"git cannot be read ({exc})"
+            return
+        if shallow == "true":
+            self.problem = (
+                "the repository is a shallow clone, whose truncated history cannot say when a path was last "
+                "touched -- fetch the full history (`git fetch --unshallow`, or a checkout with fetch-depth 0)"
+            )
+
+    def last_touch(self, rel: str) -> tuple[bool, str | None]:
+        """``(measured, date)``: ``measured`` is False when git could not date ``rel`` (see ``problem``)."""
+        if not self._probed:
+            self._probe()
+        if self.problem is not None:
+            return False, None
+        try:
+            return True, _git_last_touch_date(self._target, rel)
+        except CliBridgeError as exc:
+            self.problem = f"git cannot be read ({exc})"
+            return False, None
+
+
+def _verified_date(value: object) -> str | None:
+    """``verified:`` as an ISO date string, or ``None`` when it is absent or not a date."""
+    if isinstance(value, datetime):
+        return value.date().isoformat()
+    if isinstance(value, date):
+        return value.isoformat()
+    if isinstance(value, str):
+        try:
+            return date.fromisoformat(value.strip()).isoformat()
+        except ValueError:
+            return None
+    return None
+
+
+def _declared_sources(frontmatter: dict) -> list[str]:
     sources = frontmatter.get("sources")
-    if not verified or not isinstance(sources, list):
+    if not isinstance(sources, list):
         return []
-    verified_s = str(verified)
+    return [source for source in sources if isinstance(source, str) and source.strip()]
+
+
+def _stale_sources(target: Path, sources: list[str], verified: str, dating: _SourceDating) -> list[dict]:
     stale: list[dict] = []
     for source in sources:
-        if not isinstance(source, str):
+        path = Path(source)
+        if path.is_absolute() or ".." in path.parts:
+            stale.append({"source": source, "reason": "source is not a repo-relative path", "verified": verified})
             continue
-        touched = _git_last_touch_date(target, source)
+        if not (target / source).exists():
+            # A typo, or a path that moved: a STRONGER signal than mere staleness.
+            stale.append({"source": source, "reason": "source does not exist", "verified": verified})
+            continue
+        measured, touched = dating.last_touch(source)
+        if not measured:
+            continue  # could-not-measure: one WARN for the run (`dating.problem`), never a finding per source
         if touched is None:
-            # A source with no git history at all (never committed -- a
-            # typo, or a path that moved) is a STRONGER signal than mere
-            # staleness; flag it too, rather than silently treating "we
-            # cannot prove it's stale" as "it's current".
-            stale.append(
-                {
-                    "source": source,
-                    "reason": "source not found in git history",
-                    "verified": verified_s,
-                }
-            )
-        elif touched > verified_s:
-            stale.append({"source": source, "source_touched": touched, "verified": verified_s})
+            # On disk but untracked or ignored: git can never say it moved past the stamp, so it is flagged
+            # rather than "we cannot prove it's stale" being read as "it's current".
+            stale.append({"source": source, "reason": "source not found in git history", "verified": verified})
+        elif touched > verified:
+            # Strictly later: a source touched on the verified date itself is current.
+            stale.append({"source": source, "source_touched": touched, "verified": verified})
     return stale
+
+
+def _pixi_task_names(target: Path) -> frozenset[str] | None:
+    """Every task ``pixi.toml`` declares (``[tasks]`` and each ``[feature.<f>.tasks]``), or ``None`` when the
+    file does not exist. A file that does not parse raises (``tomllib.TOMLDecodeError``): could-not-measure."""
+    toml_path = target / _PIXI_TOML_REL
+    if not toml_path.is_file():
+        return None
+    data = tomllib.loads(toml_path.read_text(encoding="utf-8"))
+    names: set[str] = set()
+    tables = [data, *(feature for feature in _as_dict(data.get("feature")).values())]
+    for table in tables:
+        names.update(_as_dict(_as_dict(table).get("tasks")))
+    return frozenset(names)
+
+
+def _as_dict(value: object) -> dict:
+    return value if isinstance(value, dict) else {}
+
+
+def _checked_by_problem(checked_by: object, task_names: Callable[[], frozenset[str] | None]) -> str | None:
+    """Why ``checked_by:`` does not name a pixi task, or ``None`` when it does."""
+    if not isinstance(checked_by, str) or not checked_by.strip():
+        return f"`{_CHECKED_BY_KEY}: {checked_by!r}` is not a task name"
+    names = task_names()
+    if names is None:
+        return f"`{_CHECKED_BY_KEY}: {checked_by}` cannot resolve -- {_PIXI_TOML_REL} does not exist"
+    if checked_by.strip() not in names:
+        return f"`{_CHECKED_BY_KEY}: {checked_by}` names no task in {_PIXI_TOML_REL}"
+    return None
 
 
 def _pixi_identifiers(target: Path) -> frozenset[str]:
@@ -422,42 +547,132 @@ def _dead_references(target: Path, text: str) -> list[str]:
     return dead
 
 
-def _check_authored_page(target: Path, page: dict) -> Finding | None:
+def _unstamped_finding(rel: str, message: str, evidence: dict) -> Finding:
+    return Finding(
+        source=Source.DOCS_CURRENCY,
+        check=_CHECK_AUTHORED_UNSTAMPED,
+        status=DoctorStatus.FAIL,
+        message=f"{rel}: {message}",
+        evidence={"page": rel, **evidence},
+    )
+
+
+class _AuthoredPage:
+    """What the no-git pass read from one authored page, held for the git-dependent pass."""
+
+    def __init__(self, rel: str, sources: list[str], verified: str | None, dead: list[str]) -> None:
+        self.rel = rel
+        self.sources = sources
+        self.verified = verified
+        self.dead = dead
+
+
+def _read_authored_page(
+    target: Path, page: dict, task_names: Callable[[], frozenset[str] | None]
+) -> tuple[list[Finding], _AuthoredPage | None]:
+    """The half of an authored page's checks that needs no git history: its stamp (``authored-unstamped``)
+    and its body's dead references (carried to the stale finding)."""
     rel = f"docs/{page['path']}"
     page_path = target / rel
     if not page_path.is_file():
-        return None  # a missing page is docs-map-hygiene's territory
+        return [], None  # a missing page is docs-map-hygiene's territory
     text = page_path.read_text(encoding="utf-8")
-    stale = _stale_sources(target, _parse_page_frontmatter(text))
-    dead = _dead_references(target, text)
-    if not stale and not dead:
+    frontmatter = _parse_page_frontmatter(text)
+    findings: list[Finding] = []
+    sources: list[str] = []
+    verified: str | None = None
+
+    if _CHECKED_BY_KEY in frontmatter:
+        # The page declares its own detector owns its currency: no stamp to read, no source to date.
+        problem = _checked_by_problem(frontmatter[_CHECKED_BY_KEY], task_names)
+        if problem is not None:
+            findings.append(
+                _unstamped_finding(
+                    rel,
+                    f"kind: authored page is unstamped -- {problem}",
+                    {"reason": problem, _CHECKED_BY_KEY: str(frontmatter[_CHECKED_BY_KEY])},
+                )
+            )
+    else:
+        sources = _declared_sources(frontmatter)
+        verified = _verified_date(frontmatter.get("verified"))
+        missing = [name for name, held in (("sources", sources), ("verified", verified)) if not held]
+        if missing:
+            findings.append(
+                _unstamped_finding(
+                    rel,
+                    "kind: authored page is unstamped -- its frontmatter needs a non-empty `sources:` list and "
+                    f"an ISO-date `verified:` (missing or malformed: {', '.join(missing)}); verify the page "
+                    f"and stamp it, or declare `{_CHECKED_BY_KEY}: <pixi task>` when a detector owns its currency",
+                    {"missing": missing},
+                )
+            )
+
+    return findings, _AuthoredPage(rel, sources, verified, _dead_references(target, text))
+
+
+def _stale_finding(target: Path, read: _AuthoredPage, dating: _SourceDating) -> Finding | None:
+    stale = _stale_sources(target, read.sources, read.verified, dating) if read.sources and read.verified else []
+    if not stale and not read.dead:
         return None
-    evidence: dict = {"page": rel}
+    evidence: dict = {"page": read.rel}
     parts: list[str] = []
     if stale:
         evidence["stale_sources"] = stale
         parts.append(f"{len(stale)} stale source(s)")
-    if dead:
-        evidence["dead_references"] = dead
-        parts.append(f"{len(dead)} dead reference(s)")
+    if read.dead:
+        evidence["dead_references"] = read.dead
+        parts.append(f"{len(read.dead)} dead reference(s)")
     return Finding(
         source=Source.DOCS_CURRENCY,
         check=_CHECK_AUTHORED_STALE,
-        status=DoctorStatus.WARN,
-        message=f"{rel}: " + ", ".join(parts),
+        status=DoctorStatus.FAIL,
+        message=f"{read.rel}: " + ", ".join(parts),
         evidence=evidence,
     )
 
 
-def _check_authored_pages(target: Path, pages: list[dict]) -> list[Finding]:
-    findings: list[Finding] = []
+def _check_authored_pages(target: Path, pages: list[dict]) -> tuple[list[Finding], Callable[[], list[Finding]]]:
+    """``(unstamped, stale)``: the ``authored-unstamped`` findings, which need no git, and a callable that runs
+    the git-dependent ``authored-page-stale`` pass. :func:`_gather_all` reports the first before it calls the
+    second, so git that cannot answer never hides an unstamped page (Story 60.2)."""
+    cache: list[frozenset[str] | None] = []
+
+    def task_names() -> frozenset[str] | None:
+        # pixi.toml is parsed once, and only when a page names a `checked_by` task.
+        if not cache:
+            cache.append(_pixi_task_names(target))
+        return cache[0]
+
+    unstamped: list[Finding] = []
+    reads: list[_AuthoredPage] = []
     for page in pages:
         if page["kind"] != "authored":
             continue
-        finding = _check_authored_page(target, page)
-        if finding is not None:
-            findings.append(finding)
-    return findings
+        findings, read = _read_authored_page(target, page, task_names)
+        unstamped.extend(findings)
+        if read is not None:
+            reads.append(read)
+
+    def stale() -> list[Finding]:
+        dating = _SourceDating(target)
+        findings = [finding for read in reads if (finding := _stale_finding(target, read, dating)) is not None]
+        if dating.problem is not None:
+            findings.append(
+                Finding(
+                    source=Source.DOCS_CURRENCY,
+                    check=_CHECK_AUTHORED_STALE,
+                    status=DoctorStatus.WARN,
+                    message=(
+                        "could not date any page's `sources:` against git, so no page was checked for a "
+                        f"source edited after its `verified:` date -- {dating.problem}"
+                    ),
+                    evidence={"reason": dating.problem, UNEVALUABLE_EVIDENCE_KEY: True},
+                )
+            )
+        return findings
+
+    return unstamped, stale
 
 
 def _check_generated_page(target: Path, page: dict) -> Finding | None:
@@ -471,15 +686,19 @@ def _check_generated_page(target: Path, page: dict) -> Finding | None:
         return Finding(
             source=Source.DOCS_CURRENCY,
             check=_CHECK_GENERATED_STALE,
-            status=DoctorStatus.WARN,
-            message=(f"{rel}: kind: generated page declares no `generator:` in {_MAP_YAML_REL}"),
+            # A registry defect, not could-not-measure (Story 60.2): the row can never be checked as written.
+            status=DoctorStatus.FAIL,
+            message=(
+                f"{rel}: kind: generated page declares no `generator:` in {_MAP_YAML_REL} -- name the "
+                "scripts/docs_*.py that writes it, or change the row's kind"
+            ),
             evidence={"page": rel},
         )
     if not _is_allowed_docs_generator_decl(generator):
         return Finding(
             source=Source.DOCS_CURRENCY,
             check=_CHECK_GENERATED_STALE,
-            status=DoctorStatus.WARN,
+            status=DoctorStatus.FAIL,
             message=(f"{rel}: declared generator {generator} is not an allowed scripts/docs_*.py path -- not executed"),
             evidence={"page": rel, "generator": generator},
         )
@@ -530,7 +749,7 @@ def _check_generated_page(target: Path, page: dict) -> Finding | None:
     return Finding(
         source=Source.DOCS_CURRENCY,
         check=_CHECK_GENERATED_STALE,
-        status=DoctorStatus.WARN,
+        status=DoctorStatus.FAIL,
         message=(
             f"{rel}: stale against its generator ({generator}) -- a hand "
             "edit, or a source it derives from moved past its stamp; "
@@ -588,12 +807,16 @@ def _gather_all(target: Path) -> tuple[Finding, ...]:
     if render_finding is not None:
         findings.append(render_finding)
 
-    findings.extend(_check_authored_pages(target, pages))
+    # No-git checks first; the one check that dates a path against git runs last (module docstring).
+    unstamped, stale = _check_authored_pages(target, pages)
+    findings.extend(unstamped)
     findings.extend(_check_generated_pages(target, pages))
 
     hygiene_finding = _check_skill_dir_hygiene(target)
     if hygiene_finding is not None:
         findings.append(hygiene_finding)
+
+    findings.extend(stale())
 
     if findings:
         return tuple(findings)
@@ -605,9 +828,10 @@ def _gather_all(target: Path) -> tuple[Finding, ...]:
             status=DoctorStatus.OK,
             message=(
                 f"{_MAP_MD_REL}'s Page registry matches {_MAP_YAML_REL}'s "
-                "render; every authored page's declared sources/body "
-                "references resolve; no stray files in managed skill "
-                "directories"
+                "render; every authored page is stamped (or names its "
+                "detector) and its declared sources/body references "
+                "resolve; every generated page matches its generator; no "
+                "stray files in managed skill directories"
             ),
             evidence={"pages_checked": len(pages)},
         ),
@@ -617,9 +841,11 @@ def _gather_all(target: Path) -> tuple[Finding, ...]:
 def gather(target: Path) -> tuple[Finding, ...]:
     """Documentation currency gather -- Story 30.2 / spec-pyforge-doctor CAP-84.
 
-    Fail-open: a missing/unreadable/schema-invalid docs/map.yaml degrades
-    to exactly one WARN (never FAIL, never a crash) via
-    degrade_on_exception.
+    A measured defect is FAIL (module docstring). Fail-open: a
+    missing/unreadable/schema-invalid docs/map.yaml or an unparseable
+    pixi.toml degrades to exactly one WARN (never FAIL, never a crash) via
+    degrade_on_exception; git that cannot date a source (unreadable, or a
+    shallow clone) is one WARN on the stale-source check alone.
     """
     return degrade_on_exception(
         Source.DOCS_CURRENCY,

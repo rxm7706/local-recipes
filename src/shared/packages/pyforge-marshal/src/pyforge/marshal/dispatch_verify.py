@@ -25,7 +25,7 @@ from pyforge.core.flags import FlagConfigError, read_boolean
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort, ProcessResult
 
 from .adapters.harness_bmadloop import _SURFACE_RECONCILE_COMMAND
-from .adapters.session_group_psutil import PsutilSessionGroup, process_cmdline
+from .adapters.session_group_psutil import PsutilSessionGroup, process_cmdline, process_is_zombie
 from .adapters.vcs_git import VcsCommandError
 from .core import dispatch as dispatch_core
 from .core import gate, journal, policy, spec_binding
@@ -1182,11 +1182,15 @@ def landing_ci_pauses_enabled(*, repo_root: Path) -> tuple[bool, str | None]:
 
 
 def _is_zombie(pid: int) -> bool:
-    """``True`` when ``/proc`` reports ``pid`` exited and awaiting its parent's reap (state ``Z``)."""
+    """``True`` when ``pid`` has exited and awaits its parent's reap (state ``Z``).
+
+    ``/proc/<pid>/stat`` where the host has one; where that read fails -- a host with no ``/proc`` (macOS), or a
+    pid that has gone -- the process table answers through psutil (steward Story 126.4), so an exited, unreaped
+    session leader never reads as running for want of ``/proc``."""
     try:
         stat = Path(f"/proc/{pid}/stat").read_text(encoding="utf-8", errors="replace")
     except OSError:
-        return False
+        return process_is_zombie(pid)
     # The state follows the parenthesised command name, which may itself hold spaces or parentheses.
     close = stat.rfind(")")
     return close != -1 and stat[close + 2 : close + 3] == "Z"

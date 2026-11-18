@@ -185,7 +185,7 @@ _HELP = {
     "validate-fast": ("fast green gate — prereqs, environment.yaml sync, steward CLI smoke (Story 17.2)"),
     "restore": (
         "PostgreSQL restore drill — scratch DB + manifest count assertions "
-        "(Story 41.1; operator full restore is deploy/restore.md)"
+        "(Story 41.1; operator full restore is docs/how-to/restore-operations.md)"
     ),
     "revoke": (
         "stop one runaway subject — revoke its queued Celery tasks and cancel its live supervisor runs (Story 42.2)"
@@ -415,7 +415,7 @@ def build_parser() -> argparse.ArgumentParser:
                     "--env",
                     default=None,
                     metavar="NAME",
-                    help="pixi environment to materialize (default: local-recipes)",
+                    help="pixi environment to materialize (default: pyforge-guild)",
                 )
             if name in ("initrepo", "validate-fast"):
                 duty_parser.add_argument(
@@ -428,7 +428,7 @@ def build_parser() -> argparse.ArgumentParser:
                     "--env",
                     default=None,
                     metavar="NAME",
-                    help="pixi environment for CLI smoke (default: local-recipes)",
+                    help="pixi environment for CLI smoke (default: pyforge-guild)",
                 )
     return parser
 

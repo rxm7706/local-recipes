@@ -229,7 +229,7 @@ Registered duties [SRC:src/pyforge/steward/cli.py:L68-L100], one line each from
 | `budget` | cost budgeting and enforcement (`set` / `show` / `check`) |
 | `sync` | GitHub Projects V2 ⇄ Jira Cloud reconciliation |
 | `workspace` | story-scoped scratch worktrees — `start` / `ls` / `status` / `clean` |
-| `upgrade` | BMAD-METHOD core upgrade — pre-flight, deliberate `--apply`, clobber re-apply, pin fan-out, prove-landed |
+| `upgrade` | BMAD-METHOD core upgrade — pre-flight, deliberate `--apply`, clobber re-apply, pin fan-out, prove-landed (`bmad-core` / `pin-fan-out` / `prove-landed` / `verify`) |
 | `suite` | bmad-suite channel product — `pipeline-truth`, `advance` |
 | `init` | machine bootstrap — report pixi/git/gh/podman prerequisites with named remedies |
 | `shell-init` | emit an idempotent PATH/completions/env shell snippet |
@@ -315,13 +315,13 @@ steward provision --list-modules [--json]
 steward budget {set,show,check}
 steward sync …
 steward workspace {start,ls,status,clean}
-steward upgrade …
+steward upgrade {bmad-core,pin-fan-out,prove-landed,verify}
 steward suite …
 steward init|shell-init|setup|initrepo|validate-fast [--json]
-steward restore --drill --backup-path PATH
-steward revoke --sub ID
+steward restore [--drill] --backup-path PATH
+steward revoke --sub ID [--python BIN]
 steward estate {plan [--json] [--due],refresh,reconcile,verify,realize,status}
-steward ci {status [--json],vars [--refresh],pause,resume}
+steward ci {status [--json],vars [--refresh],pause --reason REASON --review-by YYYY-MM-DD <target>,resume <target>}
 steward preflight verify-deferred [--since YYYY-MM-DD]
 steward pages {build,deploy,status}
 steward cutover {plan [--regenerate|--append|--check] [--ledger PATH] [--json],flip --to {local-recipes,foundry} [--flags PATH]}

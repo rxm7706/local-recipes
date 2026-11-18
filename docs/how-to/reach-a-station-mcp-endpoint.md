@@ -15,7 +15,7 @@ sources:
   - src/shared/packages/django-pyforge/src/django_pyforge/roles.py
   - src/shared/packages/django-pyforge/src/django_pyforge/station_cli.py
   - src/shared/packages/django-pyforge/src/django_pyforge/rate_limit.py
-verified: 2026-11-06
+verified: 2026-11-17
 ---
 
 # Reach a station's MCP endpoint

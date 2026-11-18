@@ -1,100 +1,77 @@
+---
+sources:
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/suite.py
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-46-6-heralds-manticore-studio-has-a-root-and-a-proven-native-path.md
+  - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-18-1-the-first-station-video-renders-from-heralds-studio.md
+  - presentations/pyforge-warden/src/marp/warden-deck-narration-2026-07-31.md
+verified: 2026-11-18
+---
+
 # Herald's manticore studio
 
-Herald's video-production tool, `bmad-manticore`, is adopted for exactly one
-purpose: turning a station deck's speaker notes into a rendered `.mp4`. It
-lives in its own studio ROOT, entirely **outside** this repo's git tree —
-never provisioned into `.claude/skills/`, never touching this repo's `_bmad/`
-or `_bmad-output/`. This doc records the exact, proven procedure (Story
-46.6). The first actual render is herald 18.1's job, not this doc's.
+Use the lock's `bmad-method` installer to set up Herald's video studio, `bmad-manticore`, in a studio root outside this repository. Manticore is adopted for one purpose: turning a station deck's speaker notes into a rendered `.mp4`.
 
-## Studio root
+## When to Use This
 
-Declared once per machine by `$PYFORGE_STUDIO_ROOT` (default
-`~/pyforge-studio/`, per spine decision AD-3, 2026-09-06). On this machine
-the env var is unset, so the default resolves to `/home/rxm7706/pyforge-studio`.
-The directory is a plain filesystem path with its own independent `_bmad`
-tree — nothing under it is ever added to this repo's `.gitignore` or tracked
-by this repo's git.
+- You are setting up a machine that will render a station video.
+- `steward suite pipeline-truth` reports `bmad-manticore` as `studio-module | unwired` and you want it wired.
+- You are re-running the install to pick up a newer manticore.
 
-## Prerequisites (verify before installing)
+## When to Skip This
 
-Check with `which <tool>` on the studio machine:
+Skip it on a machine that never renders video. One other thing reads it: steward's live suite checks the adoption register's `wired` row against this install on any machine where `CI` is unset ([How to run and read the pre-push preflight](run-and-read-pr-preflight.md)). Otherwise nothing from it is provisioned into this repository's `.claude/skills/`, `_bmad/` or `_bmad-output/`.
 
-- `uv` — required
-- `node` — required
-- `git` — required
-- `ffmpeg` — required for the actual render step (herald 18.1); **not**
-  required for the install itself
+:::note[Prerequisites]
+- The `pyforge-guild` pixi environment, installed from this repository's lock. Its `bmad-method` is 6.12.2 (`pixi run -e pyforge-guild bmad-method --version`).
+- `uv`, `node` and `git` on `PATH` on the studio machine.
+- `ffmpeg`, for the render only. The install does not need it. `ffmpeg` is in no pixi environment and `pixi.toml` does not declare it, so install it yourself on the machine that renders.
+- Network access to GitHub: the installer fetches `bmad-code-org/bmad-manticore`.
+:::
 
-Live result on this machine (2026-09-07): `uv`, `node`, and `git` all
-resolved (via the pixi `local-recipes` env's `bin/`, on PATH for this shell).
-**`ffmpeg` was absent from PATH entirely** — not merely missing from a pixi
-env, and not declared anywhere in `pixi.toml`. This is a documented gap, not
-something this story installs: the render step (herald 18.1, out of this
-story's scope) will need `ffmpeg` installed separately, by the operator, on
-whatever machine actually renders.
+## Steps
 
-## The one sanctioned install command
+### 1. Choose the studio root
 
-```
-npx bmad-method install --directory $PYFORGE_STUDIO_ROOT --custom-source https://github.com/bmad-code-org/bmad-manticore --yes --tools claude-code,codex,cursor,github-copilot,adal,antigravity-cli,auggie,goose,cline,codebuddy,codewhale,command-code,crush,droid,firebender,gemini,antigravity,grok,hermes,bob,iflow,junie,kilo,kimi-code,kiro,kode,mistral-vibe,mux,neovate,ona,openclaw,opencode,openhands,pi,pochi,polytoken,qoder,qwen,replit,roo,rovo-dev,cortex,amp,trae,warp,windsurf,zcode,zencoder
+The studio root is declared once per machine by `$PYFORGE_STUDIO_ROOT`; unset or empty, it is `~/pyforge-studio`. Steward's probe reads the same variable and the same default, so install where the probe will look. The root is a plain directory with its own `_bmad` tree, outside this repository's git tree.
+
+### 2. Run the installer from the lock
+
+From the repository root:
+
+```bash
+pixi run -e pyforge-guild bmad-method install --directory "$HOME/pyforge-studio" --custom-source https://github.com/bmad-code-org/bmad-manticore --yes --tools claude-code,codex,cursor,github-copilot,adal,antigravity-cli,auggie,goose,cline,codebuddy,codewhale,command-code,crush,droid,firebender,gemini,antigravity,grok,hermes,bob,iflow,junie,kilo,kimi-code,kiro,kode,mistral-vibe,mux,neovate,ona,openclaw,opencode,openhands,pi,pochi,polytoken,qoder,qwen,replit,roo,rovo-dev,cortex,amp,trae,warp,windsurf,zcode,zencoder
 ```
 
-**Both `--directory` and `--yes --tools <id[,id...]>` are required** to
-complete non-interactively. This was empirically discovered the hard way
-across three attempts at this story:
+If you set `$PYFORGE_STUDIO_ROOT`, pass that path to `--directory` instead. The command runs without prompts and exits `0`.
 
-- Attempt 1 (bare command, no flags, cwd = studio root): hit an
-  unanswerable `◆ Installation directory:` interactive prompt and exited
-  without writing anything.
-- Attempt 2 (`--yes --tools claude-code,...` added, still no `--directory`,
-  cwd = studio root): hit the **identical** `Installation directory:` prompt
-  — `--yes` does not suppress that specific first prompt on its own, even
-  with `--tools` present.
-- Attempt 3 (this run — `--directory $PYFORGE_STUDIO_ROOT` added on top of
-  `--yes --tools <48 ids>`): completed cleanly, non-interactively, with cwd
-  irrelevant. All 48 tool integrations succeeded.
+:::caution
+Use the installer the lock carries, as shown. The Node package-runner form of the same command is an ad hoc install, and this repository's session hook denies it.
+:::
 
-`--tools` takes the full list of tool IDs from the installer's own
-`--list-tools` output — no subset is "the sanctioned command" once `--yes`
-is used (the installer's own `--help` documents `--tools` as **required**
-for non-interactive `--yes` installs).
+### 3. Check that it worked
 
-## What the install actually writes (real observed shape)
+```bash
+ls -d "$HOME"/pyforge-studio/.claude/skills/mc-*
+grep -A4 'name: manticore' "$HOME/pyforge-studio/_bmad/_config/manifest.yaml"
+pixi run -e pyforge-guild pyforge steward suite pipeline-truth
+```
 
-The install writes a `BMad Manticore v3.1.0` module (from the
-`bmad-code-org/bmad-manticore` repo's `main` branch / `next` channel — a
-different pin from the conda `bmad-manticore` package's own frozen
-`3.1.0.dev0` recipe version; the two are separate paths by design, per
-AD-3) alongside the BMad Core module (`v6.12.0`), entirely under
-`$PYFORGE_STUDIO_ROOT/_bmad/`:
+The first command lists fifteen `mc-*` directories. The second shows the manifest entry with `version: main` and `source: custom`. In the third, the `bmad-manticore` block reads `wired:            studio-module | wired`.
 
-- `_bmad/manticore/config.yaml` — the module's own per-module config
-  (`user_name`, `project_name`, `communication_language`,
-  `document_output_language`, `output_folder`).
-- `_bmad/manticore/module-help.csv` — the module's help-catalog entries.
-- `_bmad/config.toml` — gains an `[agents.mc-agent]` section (the studio's
-  front-door agent, "Manny," the Visionary Director).
-- `_bmad/_config/manifest.yaml` — the actual install-registration record:
-  a `modules:` list entry `{name: manticore, version: main, source: custom,
-  repoUrl: https://github.com/bmad-code-org/bmad-manticore, channel: next}`,
-  plus an `ides:` list naming all 48 configured tool IDs.
+Steward reads "wired" when the studio root has a `_bmad/` directory and at least one `.claude/skills/mc-*` directory; either one missing reads `unwired`. Run `pipeline-truth` without `--baseline`: that flag replays a recorded matrix, and on 2026-11-18 it still printed `unwired` for a studio the live probe read as wired.
 
-**Divergence from the epic's literal phrasing:** the epic/spec text
-expected `mc-setup` to write `[modules.manticore]` into the studio's
-`_bmad/custom/config.toml`. That file exists but is untouched — it is the
-empty team-override template the installer explicitly never writes to (its
-own header says so: "Those files are never touched by the installer.").
-There is no `[modules.manticore]` TOML table anywhere in the studio's
-`_bmad/` tree. The real "module installed" record is the
-`_bmad/_config/manifest.yaml` `modules:` array entry described above.
+### 4. Install `ffmpeg` before you render
 
-**Skills land per-tool, not in one place.** `claude-code` gets 23 skills
-under `$PYFORGE_STUDIO_ROOT/.claude/skills/` — 8 shared BMad Core skills
-(`bmad-advanced-elicitation`, `bmad-brainstorming`, `bmad-customize`,
-`bmad-deep-recon`, `bmad-forge-idea`, `bmad-help`, `bmad-party-mode`,
-`bmad-review`) plus exactly the fifteen `mc-*` manticore skills the epic
-named:
+The render step needs `ffmpeg` on `PATH`. Install it yourself on the machine that renders.
+
+## What You Get
+
+On the operator's macOS laptop on 2026-11-18 the install wrote 55 MB under `~/pyforge-studio`:
+
+- `_bmad/manticore/config.yaml`, the module's own config.
+- `_bmad/config.toml`, with an `[agents.mc-agent]` section for the studio's front-door agent.
+- `_bmad/_config/manifest.yaml`, the install record: a `modules:` entry with `name: manticore`, `version: main`, `source: custom` and `channel: next`, and an `ides:` list of the 48 tool ids.
+- `.claude/skills/`, holding 23 skills: eight BMad Core skills and the fifteen manticore skills below.
 
 ```
 mc-agent  mc-assets  mc-audio      mc-beats    mc-braindump
@@ -102,112 +79,50 @@ mc-cut    mc-graphics mc-new       mc-outline  mc-package
 mc-pipeline mc-retro  mc-script    mc-setup    mc-stream-pack
 ```
 
-Every one of the other 47 tool IDs gets its own copy of the same 23 skills
-in its own tool-specific directory (`.agents/skills`, `.cline/skills`,
-`.factory/skills`, `.kiro/skills`, ... — several tool IDs share the common
-`.agents/skills` target). All 48 tools reported `✓ <tool> (23 skills →
-<target-dir>)` and the run ended `Installed to:
-$PYFORGE_STUDIO_ROOT/_bmad`.
+Every other tool id gets its skills in its own directory (`.agents/skills`, `.cline/skills`, `.kiro/skills` and so on).
 
-## The isolation guarantee (checksum-proven)
+The install record is the manifest entry. The 2026-09-07 run found no `[modules.manticore]` table anywhere in the studio, and the installer does not write to the studio's `_bmad/custom/config.toml`.
 
-Digest command (run from this repo's worktree root):
+:::caution[Unpinned]
+The module tracks `main` on the `next` channel, with no lockfile. Re-running the command later can install a different manticore. The conda `bmad-manticore` package is a separate path with its own recipe version.
+:::
+
+## Why these flags
+
+Both `--directory` and `--yes --tools <ids>` are required for a run without prompts. Steward Story 46.6 found this over three attempts on Linux on 2026-09-07:
+
+1. The bare command, run from the studio root, stopped at an `Installation directory:` prompt and wrote nothing.
+2. With `--yes --tools …` but no `--directory`, it stopped at the same prompt. `--yes` does not suppress it.
+3. With `--directory` added, it completed with all 48 tool integrations.
+
+`--tools` takes the full id list from the installer's own `--list-tools` output; its `--help` marks `--tools` as required for a fresh `--yes` install. The list above matched `--list-tools` in bmad-method 6.12.2 on 2026-11-18.
+
+## Record of the first render
+
+This section is a dated record, not a procedure. Both runs below were on the operator's Linux workstation on 2026-09-07, and the render figures can be checked only on that machine, against the real file with `ffprobe`.
+
+### Isolation (steward Story 46.6)
+
+A digest of this repository's `_bmad/` and `_bmad-output/` was taken immediately before and after the install:
 
 ```
 find "$REPO_ROOT/_bmad" "$REPO_ROOT/_bmad-output" -type f | sort | xargs -r sha256sum | sha256sum
 ```
 
-Snapshot A (captured immediately before the one install invocation) and
-snapshot B (captured immediately after it returned, with no other edit to
-this repo in between) were **byte-identical**:
+Both snapshots were `d6619ecbb6b081f9b4ad2e5cd06fe02df525730e547700e10ca377aa762cecea`. The install wrote two modules and 48 tool integrations under the studio root and nothing into this repository, whose `.claude/skills/` held no `mc-*` directory before or after. That run installed `BMad Manticore v3.1.0` beside BMad Core `v6.12.0`.
 
-```
-d6619ecbb6b081f9b4ad2e5cd06fe02df525730e547700e10ca377aa762cecea
-```
+### The render (herald Story 18.1)
 
-Unlike the two prior (blocked) attempts at this story — where the bracket
-technically matched but was a trivial pass because the install never wrote
-anything — this is a **meaningful** isolation proof: the install genuinely
-wrote a large tree (2 modules × 48 tool integrations × 23 skills, plus
-`_bmad/_config/*`) entirely under `$PYFORGE_STUDIO_ROOT`, and none of it
-leaked into this repo's own `_bmad/` or `_bmad-output/`.
+The pipeline ran end to end on project `warden-never-false-green` (format `voiceover-explainer`), narrating the Warden deck's speaker notes, `presentations/pyforge-warden/src/marp/warden-deck-narration-2026-07-31.md`. `ffmpeg` was supplied on that machine by hand.
 
-This repo's own `.claude/skills/` also stayed at zero `mc-*` directories,
-before and after — the native install never targets this repo.
+| Stage | What happened |
+| --- | --- |
+| Narration | No human recorded, so `mc-audio`'s `kokoro-local` lane synthesized 512.23s (voice `af_heart`, speed 1.0). Its audio venv is several GB: torch, `diffusers==0.31.0`, `transformers==4.43.4`, `kokoro-onnx==0.5.0`. |
+| Video stream | `mc-cut`'s `preflight.py` requires a video stream and has no audio-only lane. The narration was muxed onto a plain brand-canvas base video (`color=c=0xf3f2f2`). |
+| Cutplan | Transcribed with `onnx-asr`. `verify_transcript.py` failed once on a 3.18s dropped phrase, fixed by re-transcribing that region. 149 silence trims were applied and 4 candidates rejected. |
+| Beats | 16 beats, each anchor derived from the transcript through the EDL. `verify_anchors.py` failed once on an anchor astride a trim boundary, fixed by choosing another anchor word. |
+| Final | 16 graphics rendered as HTML/SVG comps with Playwright and Chromium. A frame-quantization rounding bug added 0.93s over 150 segments; it was fixed before the final render. |
 
-## Next step
+The result was `renders/final.mp4`: h264 1920x1080 at 30 fps with aac 48 kHz stereo, 473.40s, 16,643,022 bytes, loudness normalized from -20.6 LUFS to the -14.0 LUFS target. The 39s between the narration and the render is the 149 silence trims.
 
-Herald's first actual render using this studio is **Story herald 18.1's**
-job — this doc only proves the studio exists, is reachable, and is
-isolated. `ffmpeg` will need to be installed on whatever machine runs that
-story before a render can succeed. (That render is the one recorded
-immediately below, completed 2026-09-07.)
-
-## Story 18.1: the first real render (2026-09-07)
-
-`ffmpeg` was resolved via the `ffmpeg` pixi env on this machine (the gap the
-section above flagged). The full pipeline walked for real, end to end, on
-project `warden-never-false-green` (format `voiceover-explainer`), narrating
-the real Warden deck's speaker notes
-(`presentations/pyforge-warden/src/marp/warden-deck-narration-2026-07-31.md`
-in this repo):
-
-- **Narration:** no human creator was recording, so `mc-audio`'s
-  `kokoro-local` TTS lane produced it. `ensure_workspace.py` built the
-  shared audio-lab venv for real (torch, accelerate, scipy,
-  `diffusers==0.31.0`, `transformers==4.43.4`, `kokoro-onnx==0.5.0`,
-  `soundfile` — several GB, including CUDA runtime packages the default
-  Linux PyPI `torch` wheel bundles even with no GPU present) and downloaded
-  the real `kokoro-v1.0.onnx` + `voices-v1.0.bin`. `farm_audio.py` then
-  synthesized 512.23s of narration (voice `af_heart`, speed 1.0) from the
-  spoken-only text of `script.md` (the ~39s gap to the 473.40s final render
-  below is the 149 mechanical silence trims applied at the cutplan gate,
-  not lost or unaccounted-for content).
-- **The video-stream gap:** `mc-cut`'s `preflight.py` unconditionally
-  requires a video stream and has no audio-only lane, a real gap for a
-  no-camera format with no human recording video either. Resolved by muxing
-  the narration onto a plain brand-canvas base video (`color=c=0xf3f2f2`,
-  the real Modernist token, at the delivery resolution/fps) — a mechanical
-  necessity, not fabricated content, since the format's actual visual track
-  is 100% wall-to-wall graphics overlays regardless.
-- **Gates walked, all four, all self-approved** by the operating agent
-  (bmad-build-auto's no-human-interaction rule; no separate human creator
-  present — a limitation of this walkthrough, not a general policy: a real
-  production render should have an independent human approve at least gate
-  2 and gate 4) — full provenance in the project's own `project.json.notes`:
-  - **outline** (gate 1, 2026-09-07, prior session)
-  - **cutplan**: transcribed via `onnx-asr` (this machine's `auto` lane);
-    `verify_transcript.py` genuinely failed once (a real 3.18s dropped
-    phrase, the exact windowing defect class `mc-cut/SKILL.md` documents)
-    and was fixed by re-transcribing the region in isolation and splicing
-    the recovery in; 149 mechanical silence trims applied, 4 candidates
-    (2 ASR token-splits, 2 deliberate rhetorical repeats) checked against
-    the real script and rejected.
-  - **beats**: 16 beats, every anchor time derived from the real transcript
-    remapped through the EDL (never estimated); `verify_anchors.py` also
-    failed once for real (an anchor word landing astride a silence-trim
-    boundary) and was fixed by choosing an unambiguous anchor word for the
-    same moment.
-  - **final**: all 16 graphics rendered as real HTML/SVG comps (Playwright
-    + Chromium, real Archivo brand font embedded) — no HyperFrames engine
-    workspace built, per this story's own scope. Compositing the graphics
-    overlays surfaced a genuine precision bug in this story's own EDL
-    frame-quantization (rounding to 4 decimals landed just past the true
-    frame boundary, so ffmpeg's trim included one extra frame per affected
-    segment, accumulating to +0.93s over 150 segments); fixed by keeping
-    full float precision and re-verified before the final render.
-- **Result:** `renders/final.mp4` — h264 1920x1080 30fps + aac 48kHz
-  stereo, 473.40s, loudnorm applied (measured -20.6 LUFS -> -14.0 LUFS
-  target), `ffprobe`-valid, 16,643,022 bytes. These figures (durations, byte
-  size, LUFS, beat/trim counts) are only checkable on the machine that ran
-  the render, against the real file with `ffprobe`; nothing in this repo's
-  own tooling can independently confirm them, since the studio and its
-  render live entirely outside this repo by design.
-- **Isolation re-proven:** this repo's `_bmad` + `_bmad-output` checksum was
-  captured before the render and again after every stage completed,
-  byte-identical throughout, despite the multi-GB TTS install, transcription
-  model download, and Chromium install all happening in the same session.
-
-The installed Manticore module still tracks `main`/`next` (unpinned, the
-open reproducibility risk 46.6 already recorded); this render used whatever
-resolved on 2026-09-07 and records no new pin.
+All four gates (outline, cutplan, beats, final) were approved by the operating agent, because no human creator was present. That is a limit of this walkthrough: a production render should have a person approve at least the cutplan gate and the final gate. The repository digest was taken again after every stage and never changed.

@@ -6,9 +6,13 @@ regression.
 
 ## Mandatory-entry rule
 
-**Any change that fixes a detector wrong-claim MUST add a row to this log in
-the same commit** — date, detector, wrong claim, true value, root cause, fixing
-commit, and pinning fixture. A detector fix without a log entry is incomplete.
+> [!NOTE]
+> Any change that fixes a detector wrong-claim MUST add an entry to this log in the same commit: date,
+> detector, wrong claim, true value, root cause, fixing commit and pinning fixture. A detector fix
+> without a log entry is incomplete.
+
+`src/shared/packages/pyforge-doctor/tests/unit/test_detector_incident_log.py` reads this page and reds
+when a section or a schema field goes missing.
 
 ## Schema
 
@@ -19,7 +23,7 @@ commit, and pinning fixture. A detector fix without a log entry is incomplete.
 | **wrong claim** | What the detector reported |
 | **true value** | What was actually true |
 | **root cause** | Why the detector lied |
-| **fixing commit** | Full git SHA that corrected the detector |
+| **fixing commit** | Git SHA (or the story port) that corrected the detector |
 | **pinning fixture** | Test that fails if the bug returns |
 
 ## Entries
@@ -34,7 +38,7 @@ commit, and pinning fixture. A detector fix without a log entry is incomplete.
 | true value | 11 — ten Specs lacked `owner-dream:`; one Spec had unparseable frontmatter silently treated as absent |
 | root cause | `frontmatter()` used `except Exception: return {}`, converting parse failures into "no metadata" |
 | fixing commit | `208093926d3` (PR #661) |
-| pinning fixture | `tests/unit/test_sources_chain_dream_chain.py::test_spec_unparseable_frontmatter_does_not_report_spec_without_owner_dream` |
+| pinning fixture | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_dream_chain.py::test_spec_unparseable_frontmatter_does_not_report_spec_without_owner_dream` |
 
 ### 2026-08-02 — bmad-drift coverage gap (PR #181)
 
@@ -45,8 +49,8 @@ commit, and pinning fixture. A detector fix without a log entry is incomplete.
 | wrong claim | Silent pass on archive hygiene / pin drift the live tree had |
 | true value | Misplaced archive artifacts and missing pins should FAIL |
 | root cause | Only live-repo smoke tests; no fixture pins for deterministic finding kinds |
-| fixing commit | Story 6.8 port (`sources/factory.py`) |
-| pinning fixture | `tests/unit/test_sources_factory.py::{test_pin_missing_reports_fail,test_archive_misplaced_and_stray_file_are_flagged,test_spec_status_stale_reports_warn_when_a_matching_retro_exists}` |
+| fixing commit | Story 6.8 port (`src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py`) |
+| pinning fixture | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_factory.py::{test_pin_missing_reports_fail,test_archive_misplaced_and_stray_file_are_flagged,test_spec_status_stale_reports_warn_when_a_matching_retro_exists}` |
 
 ### 2026-08-08 — dream-chain satellite-consolidation blind spot
 
@@ -58,7 +62,7 @@ commit, and pinning fixture. A detector fix without a log entry is incomplete.
 | true value | 10 — six Dreams were covered via `covers-dreams:` / `## Satellite:` consolidation |
 | root cause | INV-1 ignored the 2026-08-02 satellite-consolidation convention until `covers-dreams:` landed |
 | fixing commit | `e3171bdcc6` |
-| pinning fixture | `tests/unit/test_sources_chain_dream_chain.py::test_satellite_consolidation_via_covers_dreams_frontmatter_covers_the_dream` |
+| pinning fixture | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_dream_chain.py::test_satellite_consolidation_via_covers_dreams_frontmatter_covers_the_dream` |
 
 ### 2026-08-23 — dream-chain body-embedded fence silent degrade (FR-144 residual)
 
@@ -70,9 +74,9 @@ commit, and pinning fixture. A detector fix without a log entry is incomplete.
 | true value | Malformed frontmatter — metadata never readable from a non-leading fence |
 | root cause | `_frontmatter` returned `{}` when `text.startswith("---")` was false, even if a fence existed later in the body |
 | fixing commit | `208093926d3` (PR #661) |
-| pinning fixture | `tests/unit/test_sources_chain_dream_chain.py::test_markdown_without_a_leading_frontmatter_fence_surfaces_unparseable` |
+| pinning fixture | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_dream_chain.py::test_markdown_without_a_leading_frontmatter_fence_is_absent_not_unparseable` (named `…_surfaces_unparseable` until Story 28.1) |
 
-Superseded 2026-09-19 for the displaced-block shape by Story 28.1 (next entry): a complete `---`/YAML/`---` block below prose is absent metadata, so the verdict is now `dream-without-spec` with owner `(none)` — a finding, not silence; the fixture is renamed `…_is_absent_not_unparseable`. The refusal semantics survive for an unclosed fence and for an attempted-but-unbounded opener (glued `---title:`, ` ---`, `----`).
+Superseded 2026-09-19 for the displaced-block shape by Story 28.1 (next entry): a complete `---`/YAML/`---` block below prose is absent metadata, so the verdict is now `dream-without-spec` with owner `(none)` — a finding, not silence; the fixture was renamed to the `…_is_absent_not_unparseable` name the table above carries. The refusal semantics survive for an unclosed fence and for an attempted-but-unbounded opener (glued `---title:`, ` ---`, `----`).
 
 ### 2026-09-19 — chain frontmatter reader split at the first dashes, not the fence (CAP-81 / Story 28.1)
 
@@ -83,5 +87,5 @@ Superseded 2026-09-19 for the displaced-block shape by Story 28.1 (next entry): 
 | wrong claim | One deferral with no `location:` (fingerprint `fdd6bce25c09`) where marshal's 50.5 spec declares two, so `deferred_work_intake.py` reported "all 118 already in tracked ledger" while DW-FU-50-6 (high) was invisible; and any prose file with a `---` thematic break was reported `unparseable-frontmatter` |
 | true value | Two deferrals — `3bc3d91bdf95` with `location:`, `5434eca8c9e5` high — and a prose rule is absent metadata |
 | root cause | `text.split("---", 2)` + `"---" in text` — the first `---` substring, not line-anchored fences |
-| fixing commit | `dispatch/pyforge-doctor/28.1` (PR number assigned at landing) |
-| pinning fixture | `tests/unit/test_sources_chain_deferred_work.py::test_marshal_50_5_fixture_parses_both_deferrals` and `tests/unit/test_sources_chain_frontmatter_parse.py::test_prose_file_with_a_rule_and_no_leading_fence_is_absent_not_unparseable` |
+| fixing commit | `2348be5a95` (merge of `dispatch/pyforge-doctor/28.1`, subject `Merge pyforge-doctor/28-1 into main`) |
+| pinning fixture | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_deferred_work.py::test_marshal_50_5_fixture_parses_both_deferrals` and `src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_frontmatter_parse.py::test_prose_file_with_a_rule_and_no_leading_fence_is_absent_not_unparseable` |

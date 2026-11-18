@@ -12,15 +12,20 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
+
 import pyforge.marshal
 from pyforge.marshal.seed.detect.findings import REMEDIES, FindingType
+
+# The reference page lives on the docs shelf, outside this package.
+pytestmark = pytest.mark.live_tree
 
 _PACKAGE_FILE = pyforge.marshal.__file__
 if _PACKAGE_FILE is None:
     raise ValueError("installed package has no __file__")
 # .../src/pyforge/marshal/__init__.py -> package root (four parents).
 PACKAGE_ROOT = Path(_PACKAGE_FILE).resolve().parent.parent.parent.parent
-REFERENCE_DOC = PACKAGE_ROOT / "docs" / "finding-remedy-reference.md"
+REFERENCE_DOC = PACKAGE_ROOT.parents[3] / "docs" / "reference" / "marshal-seed-findings.md"
 
 # Table row: | `artifact-missing` | HARD | Run `marshal seed adopt` … |
 _TABLE_ROW = re.compile(

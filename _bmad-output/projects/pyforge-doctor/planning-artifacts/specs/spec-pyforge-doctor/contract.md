@@ -317,7 +317,7 @@ warden's DoctorCheck names, which warden's contract lists.
 | `fold-complete` | `sources/one_chain.py` | `fold-complete`, `fold-complete-ok`, `fold-complete-incomplete`, `fold-complete-no-owner`, `fold-complete-no-station-dream`, `fold-complete-archived-in-live-tree`, `fold-complete-baselined`, `fold-complete-no-baseline` |
 | `docs-map-hygiene` | `sources/docs_map_hygiene.py` | `docs-map-hygiene` |
 | `live-proof-surface` | `sources/live_proof_surfaces.py` | `live-proof-surface` |
-| `docs-currency` | `sources/docs_currency.py` | `docs-currency-ok`, `docs-currency-generated-stale`, `docs-currency-authored-stale`, `docs-currency-map-render`, `docs-currency-map-unreadable`, `docs-currency-skill-dir-hygiene` |
+| `docs-currency` | `sources/docs_currency.py` | `docs-currency-ok`, `docs-currency-generated-stale`, `docs-currency-authored-stale`, `docs-currency-authored-unstamped`, `docs-currency-map-render`, `docs-currency-map-unreadable`, `docs-currency-skill-dir-hygiene` |
 | `frontmatter-duplicate-keys` | `sources/frontmatter_duplicate_keys.py` | `frontmatter-duplicate-key`, `frontmatter-unreadable`, `frontmatter-duplicate-keys-unevaluable` |
 | `writer-lock` | `sources/writer_lock.py` | `writer-lock`, `writer-lock-unevaluable` |
 
@@ -448,7 +448,7 @@ paths; `<p>` is `_bmad-output/projects/<p>/planning-artifacts`).
 | `fold-complete` | `archive/docs/dreams/`; the station Dreams `docs/dreams/pyforge-*.md`; `docs/governance/fold-complete-baseline.json` |
 | `docs-map-hygiene` | `docs/MAP.md`; `docs/tutorials/`, `docs/how-to/`, `docs/reference/`, `docs/explanation/`; `docs/map.yaml` against `data/docs-map-schema.json` |
 | `live-proof-surface` | this Spec folder's `live-proof-surfaces.md` (CAP-77's catalog); the paths the change touched |
-| `docs-currency` | `docs/map.yaml`, `docs/MAP.md`, the mapped pages and their `git log`; the `scripts/docs_*.py` generators (Doctor's checkout); `.claude/skills/` |
+| `docs-currency` | `docs/map.yaml`, `docs/MAP.md`; each mapped `kind: authored` page's frontmatter (`sources:`, `verified:`, or `checked_by:` naming a pixi task) and body, and the `git log` of each path its `sources:` names (after `git rev-parse --is-shallow-repository`: a shallow clone is could-not-measure); `pixi.toml` (its task names, and the identifiers a backticked token may resolve to); the `scripts/docs_*.py` generators (Doctor's checkout); `.claude/skills/` |
 | `frontmatter-duplicate-keys` | every tracked story spec `_bmad-output/projects/*/planning-artifacts/specs/spec-*.md` (`git ls-files`) |
 | `writer-lock` | `src/platform/config/flags.json` and `flag-overlays.json` at the merge base (`git show`); `docs/governance/guild-roster.json` (`roots.this`, the `chain-write-off-the-writer` session denial); the changed paths |
 

@@ -1,16 +1,14 @@
 ---
 sources:
-  - pixi.toml
   - src/platform/Containerfile
   - src/platform/compose/compose.yml
   - src/platform/compose/dbgpt/Containerfile
-  - docs/explanation/platform-deployment-architecture.md
-verified: 2026-10-24
+verified: 2026-11-17
 ---
 
 # AI Engine Operations
 
-The PyForge Estate supports multiple agentic engines integrated directly with the platform. Langflow and the Django host share the `python-agent-platform` environment defined in `pixi.toml` (the image's env); DB-GPT has its own `dbgpt-sidecar` environment because its `fastapi` pin is disjoint from Langflow's.
+The PyForge Estate supports multiple agentic engines integrated directly with the platform. Langflow and the Django host share the `python-agent-platform` environment defined in `pixi.toml` (the image's env); DB-GPT has its own `dbgpt-sidecar` environment because its `fastapi` pin is disjoint from Langflow's. The generated [Pixi environments](../reference/environments.md) page lists what each environment composes.
 
 ## Spinning up the Local Environment
 

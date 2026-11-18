@@ -1,3 +1,13 @@
+---
+sources:
+  - scripts/bmad-switch
+  - _bmad/scripts/resolve_config.py
+  - _bmad-output/PROJECTS.md
+  - .claude/skills/conda-forge-expert/tests/meta/test_all_scripts_runnable.py
+  - archive/docs/specs
+verified: 2026-11-17
+---
+
 # Agent instruction notes
 
 Detail that `AGENTS.md` and `CLAUDE.md` stopped carrying on 2026-09-26 (scribe Story 21.1,
@@ -8,7 +18,9 @@ demoted one level, with one exception: two citations of one operator's home-dire
 auto-memory were removed and are marked where they stood, because repo documents never cite a
 home-directory file. Where the text says "this file", it means the file it came from, as that
 file stood before the move; its pointers into those files may name sections that have since
-moved (§ *Moved from CLAUDE.md* opens with the map).
+moved (§ *Moved from CLAUDE.md* opens with the map). Counts, versions and statuses in the moved
+text are those of the day it was written, not of today; the 2026-11-17 verification checked that
+the paths and pixi tasks the text presents as current still resolve, and left the wording alone.
 
 ## Moved from AGENTS.md
 
@@ -177,7 +189,7 @@ Where each former `CLAUDE.md` section went; the full former text follows the tab
 | Keeping BMAD artifacts in sync (the sync loop) | `AGENTS.md` § *Keeping the BMAD planning docs accurate*; the full procedure in this file |
 | Skill Reference | this file, same heading |
 | BMAD ↔ conda-forge-expert integration (Rules 1–3) | `AGENTS.md` § *Where things are* (Rules 1–2) and § *Read on trigger* (Rule 3); the full text in this file |
-| Project Documentation Reference | `docs/MAP.md`; the legacy spec index in `CLAUDE.md` and, in full, in this file |
+| Project Documentation Reference | `docs/MAP.md`; the legacy spec index, in full, in this file (§ *Intake specs*; `CLAUDE.md` no longer carries a copy, and `AGENTS.md` § *Read on trigger* points here) |
 | conda-forge-expert v7.0.0 layout | this file; `AGENTS.md` § *Read on trigger* for the three-place rule |
 
 ### SKF skills block (the line only `CLAUDE.md`'s copy carried)
@@ -310,7 +322,7 @@ Rules: the **active spec is a BMAD artifact in Tier 2** (produced from a Tier-0 
 **Dream-first (MANDATORY, always-on):** before implementing any non-trivial effort, a **Dream** must exist in `docs/dreams/<slug>.md`, and BMAD must have produced its **spec** from it — run **`bmad-spec`** to produce **the Spec** — the five-field contract, and the artifact everything downstream binds to. For product/platform scope the planning chain (`bmad-prd` / `bmad-architecture` / `bmad-create-epics-and-stories`) then **decomposes** that Spec; it is *not a substitute for it* (Charter § The Lexicon §2 — the Spec is the unit of contract, the chain is its decomposition). Output lands in `_bmad-output/…/planning-artifacts/`. Marshal (`bmad-loop` / `bmad-build-auto` — the 6.11 name for `bmad-dev-auto`; bmad-loop ≥0.9.1 resolves whichever is installed) can do this unattended from a new Dream. **Keep the spec's status current** (`draft → ready → in-progress → shipped`) regardless of who did the work. **Gap-closure and realization work are not exempt (operator ruling 2026-09-12):** when asked to close a realization gap, realize a capability, or fix an effort whose stories already exist, the first artifact is still a **Dream seed** (`status: dreamt`, an owning station, Kinships to every chain it binds — exemplar: `docs/dreams/run-state-one-publisher.md`, minted on the CAP-17 run-state gap), and `bmad-spec` derives the Spec from it before any story is drafted or dispatched. Legacy `docs/specs/*.md` still carry `status:` frontmatter (each file's own `status:` field is its status) during the transition. **Spec → Story before code (found live 2026-09-12, no exemption for a small fix):** a `ready` Spec is a contract, not a work order. Once `bmad-spec` produces it inside a BMAD project, decompose its capabilities into a numbered Story in that project's `epics.md` and reflect it in `sprint-status-ledger.yaml` — via `bmad-sprint-planning` / `bmad-create-epics-and-stories`, or by hand mirroring the project's own established numbering convention when those skills aren't invoked directly — **before** touching any file outside `docs/dreams/` or the Spec folder itself. A mechanically well-understood, single-CAP fix is not an exemption: skipping the Story skips the one place the dev/review loop and retro triggers this repo relies on actually fire. Incident: `spec-library-catalog-manifest-sync` CAP-1/CAP-2 were hand-implemented straight from the Spec with no Story minted in `pyforge-marshal/epics.md` and no ledger entry — caught mid-turn by the operator, reconciled after the fact. Full convention: **`AGENTS.md`** (repo root).
 <!-- governance-currency:ignore-end -->
 
-> **Historical (marked 2026-11-01, EGM audit RUL-D3 and RUL-C1).** The paragraph above is kept as it stood. Its Spec ladder (`draft → ready → in-progress → shipped`) and its new standalone Dream seed predate the chain standard: a Spec now moves `draft → ready → shipped`, a station Spec stays `ready`, and a seed is a dated entry on the station Dream. The live rules are `AGENTS.md` § *Dream-first workflow* and `docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md` § 4.
+> **Historical (marked 2026-11-01, EGM audit RUL-D3 and RUL-C1).** The paragraph above is kept as it stood. Its Spec ladder (`draft → ready → in-progress → shipped`) and its new standalone Dream seed predate the chain standard: a Spec now moves `draft → ready → shipped`, a station Spec stays `ready`, and a seed is a dated entry on the station Dream. The live rules are `AGENTS.md` § *Dream-first workflow* and `docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md` § 4. The exemplar seed the paragraph names has since been archived: `archive/docs/dreams/run-state-one-publisher.md`.
 
 #### Keeping BMAD artifacts in sync with the live repo (always-on)
 
@@ -394,7 +406,7 @@ These rules reshape **story scope** for `bmad-prd`, `bmad-create-epics-and-stori
 ### Project Documentation Reference
 
 For extended architectural context, please reference the centralized `docs/` folder (map at **`docs/MAP.md`**):
-- **`docs/explanation/mcp-server-architecture.md`** — FastMCP server integration and PyPI name mapping subsystem.
+- **`docs/explanation/mcp-server-architecture.md`** — MCP server integration and PyPI name mapping subsystem.
 - **`docs/explanation/enterprise-deployment.md`** — Air-gapped environments and JFrog Artifactory integration.
 - **`docs/reference/developer-guide.md`** — Local testing and general recipe development guidelines.
 - **`docs/dreams/pyforge-herald.md`** + **`docs/how-to/presentation-deck.md`** § *The MCP bridge* — decks/prototypes round-trip between Claude Design and the repo via the `claude-design` MCP tools (seed → design visually → pull → extract/build/`deck-export`); no manual downloads. Piloted 2026-07-23 (Marshal deck). Same spec, § *Artifact dependency tree & editing surfaces* — **read before editing any deck artifact**: per-deck branch heads (deck prototype / infographic trio head / exec summary / marp exports), what derives from what, and the two propagation paths.
@@ -470,13 +482,13 @@ Skill-internal documentation (loaded on-demand when the skill activates):
 - **`.claude/skills/conda-forge-expert/scripts/`** — canonical implementation (source of truth). Edit code here.
 - **`.claude/scripts/conda-forge-expert/`** — public CLI entrypoint layer (~30 thin subprocess wrappers). What `pixi run` calls.
 - **`.claude/data/conda-forge-expert/`** — mutable runtime state (cf_atlas.db, vdb/, cve/, mappings, caches). Gitignored.
-- **`.claude/tools/conda_forge_server.py`** — FastMCP server exposing 30+ tools across recipe-authoring + atlas-intelligence + project-scanning surfaces. Started by Claude Code at session boot; tool schemas surface at call time.
+- **`.claude/tools/conda_forge_server.py`** — MCP server (the SDK's `MCPServer`; 46 tools on 2026-11-18) exposing tools across recipe-authoring + atlas-intelligence + project-scanning surfaces. Started by Claude Code at session boot; tool schemas surface at call time.
 
 **Three-place rule for a new CI script:** (1) canonical implementation at `.claude/skills/conda-forge-expert/scripts/<name>.py`; (2) thin CLI wrapper at `.claude/scripts/conda-forge-expert/<name>.py`; (3) a pixi task (`[feature.local-recipes.tasks.<name>]` in `pixi.toml`) plus an entry in the `SCRIPTS` list in `.claude/skills/conda-forge-expert/tests/meta/test_all_scripts_runnable.py`. Missing any one breaks that meta-test.
 
 **Atlas intelligence (v7.0+)** — `cf_atlas.db` ships 16 schema versions, 15 pipeline phases (B → N), and 17 CLIs. Daily-use entrypoints: `detail-cf-atlas`, `staleness-report`, `feedstock-health`, `whodepends`, `behind-upstream`, `cve-watcher`, `version-downloads`, `release-cadence`, `find-alternative`, `adoption-stage`, `scan-project`. All read-side CLIs are offline-safe. See `.claude/skills/conda-forge-expert/SKILL.md` § "Atlas Intelligence Layer" for the persona-mapped guide.
 
-Enterprise routing (JFrog Artifactory, internal mirrors) is **runtime-driven** via `_http.py` (truststore + JFrog/GitHub/.netrc auth chain) — env vars only, never committed config. See `.claude/skills/conda-forge-expert/CHANGELOG.md` v6.0.0 / v7.0.0 entries for the full release notes.
+Enterprise routing (JFrog Artifactory, internal mirrors) is **runtime-driven** via `_http.py` (truststore + JFrog/GitHub/.netrc auth chain) — environment variables and, since conda-forge-expert v8.105.2, the merged pixi config layers; never committed config. See `.claude/skills/conda-forge-expert/CHANGELOG.md` v6.0.0 / v7.0.0 entries for the full release notes.
 
 Repo-wide pointers:
 - **`_bmad-output/PROJECTS.md`** — BMAD multi-project index.

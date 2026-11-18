@@ -878,23 +878,41 @@ class TestFetchWithFallback:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# read_pixi_config (smoke — actual file read)
+# read_pixi_config (actual file reads — the three layers, merged as pixi does)
 # ═══════════════════════════════════════════════════════════════════════════
 
 class TestReadPixiConfig:
-    def test_no_config_returns_empty_dict(self, monkeypatch, tmp_path):
-        # Point HOME at an empty dir so user config doesn't exist
-        monkeypatch.setenv("HOME", str(tmp_path))
-        monkeypatch.chdir(tmp_path)
-        cfg = _http.read_pixi_config()
-        assert cfg == {}
+    """`read_pixi_config` merges system -> user -> project, the later layer
+    winning, the way `pixi config list` reports its own merged view (probed
+    on pixi 0.84.2 in a scratch workspace with a scratch HOME).
 
-    def test_project_local_config_loaded(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HOME", str(tmp_path / "home"))
-        monkeypatch.chdir(tmp_path)
-        pixi_dir = tmp_path / ".pixi"
-        pixi_dir.mkdir()
-        (pixi_dir / "config.toml").write_text(
+    Every test pins all three layer paths: HOME and the working directory are
+    temp dirs, and the system path is redirected, so the developer's own
+    `~/.pixi/config.toml` and `/etc/pixi/config.toml` can never leak in.
+    """
+
+    @pytest.fixture
+    def layers(self, monkeypatch, tmp_path, clean_mirror_env):
+        home = tmp_path / "home"
+        project = tmp_path / "project"
+        system = tmp_path / "etc" / "pixi" / "config.toml"
+        (home / ".pixi").mkdir(parents=True)
+        (project / ".pixi").mkdir(parents=True)
+        system.parent.mkdir(parents=True)
+        monkeypatch.setenv("HOME", str(home))
+        monkeypatch.chdir(project)
+        monkeypatch.setattr(_http, "_PIXI_SYSTEM_CONFIG", system)
+        return {
+            "system": system,
+            "user": home / ".pixi" / "config.toml",
+            "project": project / ".pixi" / "config.toml",
+        }
+
+    def test_no_config_returns_empty_dict(self, layers):
+        assert _http.read_pixi_config() == {}
+
+    def test_project_local_config_loaded(self, layers):
+        layers["project"].write_text(
             'default-channels = ["https://jfrog/api/conda/cf-virtual"]\n'
             'tls-root-certs = "all"\n'
             "[pypi-config]\n"
@@ -905,14 +923,123 @@ class TestReadPixiConfig:
         assert cfg["tls-root-certs"] == "all"
         assert cfg["pypi-config"]["index-url"] == "https://jfrog/api/pypi/pypi/simple"
 
-    def test_malformed_config_returns_empty(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HOME", str(tmp_path / "home"))
-        monkeypatch.chdir(tmp_path)
-        pixi_dir = tmp_path / ".pixi"
-        pixi_dir.mkdir()
-        (pixi_dir / "config.toml").write_text("this is not [valid toml")
+    def test_system_only_config_loaded(self, layers):
+        layers["system"].write_text(
+            'default-channels = ["https://system.example/conda-forge"]\n'
+        )
+        assert _http.read_pixi_config() == {
+            "default-channels": ["https://system.example/conda-forge"]
+        }
+
+    def test_user_mirrors_reach_the_scripts_beside_a_project_file(self, layers):
+        """The defect (mason Story 40.1): this repository tracks a project
+        `.pixi/config.toml` holding one unrelated key, and "first file found"
+        stopped there, so a mirror set in `~/.pixi/config.toml` never reached
+        the resolvers or the JFrog host gate."""
+        layers["project"].write_text('run-post-link-scripts = "insecure"\n')
+        layers["user"].write_text(
+            'default-channels = ["https://artifactory.corp/api/conda/conda-forge"]\n'
+            "[mirrors]\n"
+            '"https://conda.anaconda.org/conda-forge" = ["https://artifactory.corp/cf"]\n'
+            "[pypi-config]\n"
+            'index-url = "https://artifactory.corp/api/pypi/pypi/simple"\n'
+        )
         cfg = _http.read_pixi_config()
-        assert cfg == {}
+        assert cfg["run-post-link-scripts"] == "insecure"
+        assert cfg["mirrors"] == {
+            "https://conda.anaconda.org/conda-forge": ["https://artifactory.corp/cf"]
+        }
+        assert _http.resolve_conda_forge_urls()[:2] == [
+            "https://artifactory.corp/cf",
+            "https://artifactory.corp/api/conda/conda-forge",
+        ]
+        assert _http.resolve_pypi_simple_urls()[0] == (
+            "https://artifactory.corp/api/pypi/pypi/simple"
+        )
+        assert _http._pixi_configured_hosts() == {"artifactory.corp"}
+
+    def test_key_set_in_every_layer_takes_the_project_value(self, layers):
+        layers["system"].write_text(
+            'default-channels = ["https://system.example/cf"]\ntls-no-verify = true\n'
+        )
+        layers["user"].write_text(
+            'default-channels = ["https://user.example/cf"]\ntls-root-certs = "system"\n'
+        )
+        layers["project"].write_text('default-channels = ["https://project.example/cf"]\n')
+        cfg = _http.read_pixi_config()
+        # A list value is replaced whole, never concatenated across layers.
+        assert cfg["default-channels"] == ["https://project.example/cf"]
+        # Keys the later layers do not set survive from the earlier ones.
+        assert cfg["tls-no-verify"] is True
+        assert cfg["tls-root-certs"] == "system"
+
+    def test_user_value_beats_system_value(self, layers):
+        layers["system"].write_text('default-channels = ["https://system.example/cf"]\n')
+        layers["user"].write_text('default-channels = ["https://user.example/cf"]\n')
+        assert _http.read_pixi_config()["default-channels"] == ["https://user.example/cf"]
+
+    def test_mirrors_tables_merge_per_source_url(self, layers):
+        """`pixi config list` on 0.84.2: the `mirrors` table is a union over
+        its source-URL keys; a source named in two layers takes the later
+        layer's target list whole."""
+        layers["user"].write_text(
+            "[mirrors]\n"
+            '"https://conda.anaconda.org/conda-forge" = ["https://user.example/cf"]\n'
+            '"https://conda.anaconda.org/bioconda" = ["https://user.example/bioconda"]\n'
+        )
+        layers["project"].write_text(
+            "[mirrors]\n"
+            '"https://conda.anaconda.org/conda-forge" = ["https://project.example/cf"]\n'
+            '"https://conda.anaconda.org/pytorch" = ["https://project.example/pytorch"]\n'
+        )
+        assert _http.read_pixi_config()["mirrors"] == {
+            "https://conda.anaconda.org/bioconda": ["https://user.example/bioconda"],
+            "https://conda.anaconda.org/conda-forge": ["https://project.example/cf"],
+            "https://conda.anaconda.org/pytorch": ["https://project.example/pytorch"],
+        }
+
+    def test_pypi_config_merges_per_key_and_concatenates_extra_index_urls(self, layers):
+        """`pixi config list` on 0.84.2: `pypi-config` merges per key, the
+        later layer's `index-url` winning when it sets one, and
+        `extra-index-urls` concatenated earlier layer first."""
+        layers["user"].write_text(
+            "[pypi-config]\n"
+            'index-url = "https://user.example/simple"\n'
+            'extra-index-urls = ["https://user.example/extra"]\n'
+        )
+        layers["project"].write_text(
+            "[pypi-config]\n"
+            'extra-index-urls = ["https://project.example/extra"]\n'
+        )
+        assert _http.read_pixi_config()["pypi-config"] == {
+            "index-url": "https://user.example/simple",
+            "extra-index-urls": [
+                "https://user.example/extra",
+                "https://project.example/extra",
+            ],
+        }
+
+    def test_malformed_config_returns_empty(self, layers):
+        layers["project"].write_text("this is not [valid toml")
+        assert _http.read_pixi_config() == {}
+
+    def test_malformed_layer_is_skipped_and_the_others_still_apply(self, layers):
+        """Unchanged behaviour: a malformed file is logged and skipped, and
+        reading goes on to the other layers."""
+        layers["project"].write_text("this is not [valid toml")
+        layers["user"].write_text('default-channels = ["https://user.example/cf"]\n')
+        assert _http.read_pixi_config() == {
+            "default-channels": ["https://user.example/cf"]
+        }
+
+    def test_merge_never_mutates_a_layer_between_calls(self, layers):
+        layers["user"].write_text(
+            '[pypi-config]\nextra-index-urls = ["https://user.example/extra"]\n'
+        )
+        layers["project"].write_text(
+            '[pypi-config]\nextra-index-urls = ["https://project.example/extra"]\n'
+        )
+        assert _http.read_pixi_config() == _http.read_pixi_config()
 
 
 # ═══════════════════════════════════════════════════════════════════════════

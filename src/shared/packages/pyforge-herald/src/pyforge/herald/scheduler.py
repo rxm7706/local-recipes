@@ -16,7 +16,7 @@ weight this repo's lean-dependency doctrine argues against. This module
 this repo (a cron entry, a pixi task) can invoke it directly," per that
 same docstring. ``cli.py``'s ``herald scheduler run`` is the invocable
 command; a documented local ``crontab`` entry
-(``docs/cli-runbooks.md``) is the trigger -- never a GitHub Actions
+(``docs/how-to/record-progress-claims-and-notices-with-herald.md``) is the trigger -- never a GitHub Actions
 workflow (see this story's spec Design Notes: a GH-hosted runner would
 never have populated the gitignored, operator-local ``.herald/herald.db``
 it would be validating).

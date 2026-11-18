@@ -537,7 +537,10 @@ def region_findings(statuses: tuple[RegionStatus, ...]) -> tuple[Finding, ...]:
     copy-paste was the wrong token. The message keeps the
     ``f"{path}#{region}: ..."`` prefix ``check_managed_region`` shares -- so
     the two region-level producers still address a region identically -- and
-    spells the key in the tail, where the remedy can be acted on. The
+    spells the key in the tail. (Steward Story 126.4 replaced that remedy --
+    ``adopt`` never had the flag -- with restoring the markers by hand and
+    ``marshal seed update --run``, which takes no key; the message keeps the
+    key, the entry state records the opt-out under.) The
     ``managed-region-missing`` message needs no such tail: its remedy
     (``marshal seed update``) takes no region argument.
 

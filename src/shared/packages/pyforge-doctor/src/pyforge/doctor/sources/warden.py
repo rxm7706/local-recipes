@@ -44,7 +44,7 @@ from ..models import DoctorStatus, Finding, Source
 _INSTALL_HINT = (
     "pyforge-warden not installed -- run doctor from the pixi environment "
     "that carries it (`pixi run -e pyforge-doctor doctor check`, or "
-    "`-e pyforge-guild`), or add pyforge-warden to the environment"
+    "`-e pyforge-foundry-full`), or add pyforge-warden to the environment"
 )
 
 #: The degradation sentinel's ``check`` name -- deliberately never one of

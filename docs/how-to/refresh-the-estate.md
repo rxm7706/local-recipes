@@ -10,7 +10,7 @@ sources:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/estate_verify.py
   - scripts/pin_policy_check.py
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/release-cadence.md
-verified: 2026-10-24
+verified: 2026-11-18
 ---
 
 # How to refresh the estate
@@ -22,6 +22,7 @@ path is retired: one policy file, one steward duty, and six verbs in order.
 This guide is the operator and agent entry point. For BMAD core releases after a refresh, continue
 with `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/release-cadence.md`
 (steps 1–9); step 7 already hands pixi floor bumps to `estate refresh` and `estate realize`.
+The duty that applies a BMAD core release is in [How to upgrade BMAD core](upgrade-bmad-core.md).
 
 ## When a refresh is due
 
@@ -84,9 +85,9 @@ All commands use `pixi run -e pyforge-steward pyforge steward estate …` from t
 | Verb | Who | Purpose |
 | --- | --- | --- |
 | `plan` | agents and operators | Dry-run moves through the policy; `--due` for cadence |
-| `refresh` | **operator** | Rendered upgrade, loss detection + restore, re-lock, fan-out, journal |
+| `refresh` | agents (in a worktree that lands through a PR, never with `--transitive`) and operators | Rendered upgrade, loss detection + restore, re-lock, fan-out, journal |
 | `realize` | operator `--yes`; agents **`--plan` only** | Re-apply register rows whose packages moved |
-| `reconcile` | **operator** | Regenerate derived surfaces, run checks, memlog + scoped spec-surface stamps |
+| `reconcile` | agents and operators | Regenerate derived surfaces, run checks, memlog + scoped spec-surface stamps |
 | `verify` | **operator** (default); agents only inside a dispatched landing worktree per station policy | Prove the lock in a **detached worktree** |
 | `status` | agents and operators | Read the last journal (or `--all`) |
 
@@ -211,8 +212,9 @@ green **`estate verify`** on the operator's platform (`linux-64` here).
 
 ## After a dispatched agent run
 
-Agents may run `plan` and document `realize --plan` output; they must not run `refresh`,
-`reconcile`, `verify`, `realize --yes`, or `refresh --transitive`. The operator on the landing
+Agents may run `plan`, `refresh` without `--transitive` (in a worktree that lands through a PR),
+`reconcile` and `realize --plan`; they must not run `realize --yes` or `refresh --transitive`
+(`AGENTS.md` § Session guardrails), and they run `verify` only inside a dispatched landing worktree. The operator on the landing
 branch finishes: any due `realize --yes`, `reconcile`, full `verify`, fan-out greens, then push and
 open the PR with the label and memlog/scoped stamps `reconcile` did not cover (for example
 docs-only follow-ups).

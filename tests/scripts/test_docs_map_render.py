@@ -39,7 +39,7 @@ jsonschema = pytest.importorskip("jsonschema")
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
-import docs_map_render as m  # noqa: E402  (sys.path must be set up first)
+import docs_map_render as m
 
 _POINTER_PAGE = {
     "path": "tutorials/README.md",

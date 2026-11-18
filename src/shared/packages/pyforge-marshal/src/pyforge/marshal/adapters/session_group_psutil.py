@@ -59,3 +59,15 @@ def process_cmdline(pid: int) -> str | None:
     except psutil.Error, OSError:
         return None
     return " ".join(argv) if argv else None
+
+
+def process_is_zombie(pid: int) -> bool:
+    """``True`` when the host's process table shows ``pid`` exited and awaiting its parent's reap (steward
+    Story 126.4). psutil reads the state on every host marshal supports, including those with no ``/proc``
+    (macOS: the kernel's ``kinfo_proc``). A pid with no process, or one that cannot be read, is not a zombie."""
+    try:
+        return bool(psutil.Process(pid).status() == psutil.STATUS_ZOMBIE)
+    except psutil.ZombieProcess:
+        return True
+    except psutil.Error, OSError:
+        return False

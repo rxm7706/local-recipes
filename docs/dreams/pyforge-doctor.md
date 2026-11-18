@@ -767,6 +767,36 @@ Folded Dreams: [[bmad-drift-new-artifact-shape]], [[bmad-method-version-drift]],
   CAP-1 to CAP-100), `contract.md` joins the Spec's companions and `scripts/detectors.py` its surface. New open rows
   of the change: `DW-doctor-cutover-2026-11-10-1` to `-9`, `DW-doctor-56-4-1`, `DW-doctor-56-5-1` and
   `DW-doctor-58-1-1`; `DW-doctor-egm-2026-11-05-2` (no detector checks the markers) stays open.
+- **2026-11-17 (the full documentation refresh) — Found:** a read-only audit of the general documentation layer at
+  main `33c96fd0bb`. All eight documentation detectors exit 0 (`docs-currency`, `docs-map-hygiene`,
+  `general-docs-consistency`, `docs-shelf-occupancy`, `status-body-consistency`, `governance-currency`,
+  `llms-full-check`, `bmad-estate-check`), and the green hides three holes. Of the 57 authored pages `docs/map.yaml`
+  registers, 19 carry `sources:` and `verified:`, and 17 of those warn `docs-currency-authored-stale` (16 verified
+  2026-10-24, one 2026-10-25; `pixi.toml` is a moved source on 7); the other 38 carry no stamp, and `docs-currency`
+  skips a page without one, so no detector reads them. The checks are still warn-first, although the documentation
+  currency capability's success clause promotes each to fail once green. `docs/reference/github-workflows.md` says
+  "refreshed 2026-08-15" and names 9 of the 18 files under `.github/workflows/`; `docs/how-to/pause-ci.md` cites a
+  path that no longer exists; no how-to or tutorial names `pyforge atlas`, `pyforge doctor` or `pyforge warden`, and
+  about twenty steward duties appear only in the generated cheat sheet; thirteen pages under
+  `src/shared/packages/pyforge-*/docs/` sit outside the registry. **Ruled** (2026-11-17, operator: "one PR, fold into
+  docs, do all phases - do in parallel"): one integration branch, `docs-full-refresh-2026-11-17`, and one PR; the
+  package-level pages fold into `docs/` under the one-home-per-fact rule of the 2026-10-26 entry *One home for
+  leftover docs*; every phase of the plan runs, the promotion to fail included. **For doctor:** this entry binds one
+  chain, `spec-pyforge-doctor`. It amends the documentation currency capability so that an authored page without a
+  stamp is a finding and the stale, dead-reference and unstamped classes fail, and it decomposes as one epic: the
+  generated pages are regenerated from a clean tree; the 17 stale pages are re-read against their moved sources; each
+  of the 38 unstamped pages is verified and stamped, made a generated page (`github-workflows.md`), or folded or
+  archived; the package-level pages fold into the four quadrants; the missing atlas, doctor, warden and steward
+  how-tos are written; the front doors (`README.md`, `src/platform/README.md`, the package READMEs, the `MAP.md`
+  preamble) are refreshed; and the detector change lands last, on a tree it already reads green. A page another
+  station owns is refreshed here as documentation only: no station's code, CLI or capability moves.
+- **2026-11-18 (the refresh's deferred rows close) — Ruled** (operator ruling of 2026-11-18: "THIS MACHINE WILL BE A FIRST CLASS DEVELOPMENT HOST -- JUST FIX ALL THE DEFERRED ROW ITEMS NOW.. AND NOT LEAVE ANYTHING FOR LATER", "JUST USE ctranslate2 and remove the other one", "we should continue to support manticore and antigravity", "we still want to do everything in this session as one PR"): the seven rows Epic 59 opened are fixed in
+  the same PR (#2373), none left for later, and the manticore and antigravity pages stay supported pages instead of
+  being archived. **For doctor:** this entry binds `spec-pyforge-doctor` (no capability minted) and decomposes as
+  Epic 60, four stories: `monitor`, `diagnose` and `check` say only what is true; `docs-currency` measures before it
+  trusts git and the generators stamp what they read; the shelf follows its own style guide; and the chain closes
+  with the documentation currency capability shipped. Steward Epic 126 and mason Epic 40 carry the rows those
+  stations own.
 
 ## 2026-10-26 — A spike report is not a corrupt file, and the classifier can't yet tell the difference (folded from bmad-drift-new-artifact-shape)
 

@@ -232,12 +232,22 @@ def test_non_utf8_commit_message_is_replaced_not_a_crash(tmp_path: Path, memory_
     _git(tmp_path, "config", "user.name", "Test")
     (tmp_path / "file.txt").write_text("content\n", encoding="utf-8")
     _git(tmp_path, "add", "-A")
-    subprocess.run(
-        ["git", "commit", "-q", "-m", "commit \xff\xfe not valid utf-8".encode("latin-1")],
-        cwd=str(tmp_path),
-        check=True,
-        capture_output=True,
-    )
+
+    # The commit object is written by hand. `git commit` re-encodes a message
+    # that is not UTF-8 as if it were Latin-1 (it only warns), so `-m` never
+    # stored these bytes; and they travel on stdin because a `git` launcher that
+    # decodes its argv aborts on them before git runs.
+    def _git_bytes(*args: str, stdin: bytes | None = None) -> bytes:
+        return subprocess.run(["git", *args], cwd=str(tmp_path), check=True, capture_output=True, input=stdin).stdout
+
+    tree = _git_bytes("write-tree").strip()
+    person = b"Test <test@example.com> 1700000000 +0000"
+    header = b"tree " + tree + b"\nauthor " + person + b"\ncommitter " + person
+    body = header + b"\n\ncommit \xff\xfe not valid utf-8\n"
+    commit = _git_bytes("hash-object", "-t", "commit", "-w", "--stdin", stdin=body).strip()
+    _git_bytes("update-ref", "HEAD", commit.decode("ascii"))
+    # What `git log` hands scribe really is undecodable as UTF-8.
+    assert b"\xff\xfe" in _git_bytes("log", "-1", "--format=%B")
 
     store = FlatFileGraphStore(tmp_path / "graph.json")
     compile_graph(

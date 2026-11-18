@@ -33,19 +33,65 @@ redirected to a caller-given log path, never waited on) -- callers needing a
 second, divergent detach mechanism should not exist; this is the one.
 
 No non-stdlib import (CAP-1's leaf constraint) -- only ``pyforge.core.errors``
-(this package's own sibling module) and the stdlib ``os``/``subprocess``.
+(this package's own sibling module) and the stdlib ``os``/``subprocess``
+(plus ``ctypes``/``struct``/``sys`` for the macOS start-time reader below).
 """
 
 from __future__ import annotations
 
+import ctypes
 import os
+import struct
 import subprocess
+import sys
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
 from pyforge.core.errors import PyforgeError
+
+# macOS has no ``/proc``: a process's start time comes from the
+# ``kern.proc.pid.<pid>`` sysctl (the source ``ps -o lstart`` itself reads),
+# which answers for any pid on the host without privilege. The reply is one
+# ``struct kinfo_proc``; its first member is ``p_starttime``, a
+# ``struct timeval`` (64-bit ``tv_sec``, 32-bit ``tv_usec``) on every 64-bit
+# macOS ABI.
+_DARWIN_KINFO_PROC_MIB = (1, 14, 1)  # CTL_KERN, KERN_PROC, KERN_PROC_PID
+_DARWIN_KINFO_PROC_BUFFER = 2048  # > sizeof(struct kinfo_proc) (648 on 64-bit)
+_DARWIN_STARTTIME = struct.Struct("=qi")
+_C_INT_MAX = 2**31 - 1
+
+
+def _darwin_kinfo_proc(pid: int) -> bytes | None:
+    """The raw ``struct kinfo_proc`` the kernel holds for ``pid``, or ``None``
+    when no such process exists or the sysctl cannot be made. NEVER raises."""
+    if not 0 < pid <= _C_INT_MAX:
+        return None
+    try:
+        libc = ctypes.CDLL(None, use_errno=True)
+        mib = (ctypes.c_int * 4)(*_DARWIN_KINFO_PROC_MIB, pid)
+        buffer = ctypes.create_string_buffer(_DARWIN_KINFO_PROC_BUFFER)
+        size = ctypes.c_size_t(_DARWIN_KINFO_PROC_BUFFER)
+        status = libc.sysctl(mib, ctypes.c_uint(4), buffer, ctypes.byref(size), None, ctypes.c_size_t(0))
+    except OSError, AttributeError, TypeError, ValueError, ctypes.ArgumentError:
+        return None
+    if status != 0 or size.value == 0:
+        # A pid with no process is a SUCCESSFUL sysctl of zero bytes.
+        return None
+    return buffer.raw[: size.value]
+
+
+def _darwin_start_time(kinfo_proc: bytes | None) -> float | None:
+    """``p_starttime`` of a raw ``struct kinfo_proc`` as seconds since epoch."""
+    if kinfo_proc is None or len(kinfo_proc) < _DARWIN_STARTTIME.size:
+        return None
+    seconds: int
+    microseconds: int
+    seconds, microseconds = _DARWIN_STARTTIME.unpack_from(kinfo_proc)
+    if seconds <= 0:
+        return None
+    return float(seconds) + microseconds / 1_000_000
 
 
 @dataclass(frozen=True)
@@ -313,6 +359,9 @@ class PosixProcess:
         cannot be read. This is used to verify process identity across PID
         reuse. NEVER raises -- degraded hosts that cannot answer return
         ``None`` rather than crashing the caller's liveness check."""
+        if sys.platform == "darwin":
+            # No /proc on macOS: the kernel's own record, read by sysctl.
+            return _darwin_start_time(_darwin_kinfo_proc(pid))
         try:
             # Read from /proc/pid/stat to get process start time
             with open(f"/proc/{pid}/stat", "r") as f:

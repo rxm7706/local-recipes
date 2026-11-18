@@ -1,12 +1,28 @@
+---
+sources:
+  - src/platform/deploy/charts/platform/values.yaml
+  - src/platform/deploy/charts/platform/templates
+  - src/platform/deploy/overlays/ocp
+  - src/platform/deploy/overlays/eso
+  - src/platform/tests/test_chart_invariants.py
+  - src/platform/config/broker_tls.py
+  - src/platform/config/flag-overlays.json
+  - src/shared/packages/django-pyforge/src/django_pyforge/events/constants.py
+  - src/shared/packages/django-pyforge/src/django_pyforge/queues.py
+  - .github/workflows/platform-deploy.yml
+verified: 2026-11-18
+---
+
 # Deploying the platform (Story 12.1)
 
 Helm deployment for the python-agent-platform host: a **vanilla-Kubernetes
-core chart** (`charts/platform/`) plus a **thin OCP overlay**
-(`overlays/ocp/`) — AD-11's shape. The core chart renders only plain
+core chart** (`src/platform/deploy/charts/platform/`) plus a **thin OCP overlay**
+(`src/platform/deploy/overlays/ocp/`) — AD-11's shape. The core chart renders only plain
 Kubernetes kinds; everything OpenShift-specific lives in the overlay.
 Invariants are enforced by `src/platform/tests/test_chart_invariants.py`.
-Disaster recovery contract and restore runbook: `DR.md` and `restore.md`
-(Story 41.1).
+Disaster recovery contract and restore runbook:
+[`disaster-recovery.md`](../how-to/disaster-recovery.md) and
+[`restore-operations.md`](../how-to/restore-operations.md) (Story 41.1).
 
 **BYO PostgreSQL backup/PITR (Story 51.3):** when the external-postgres
 overlay is active (`postgres.external.enabled: true`, Story 51.1), the chart
@@ -14,13 +30,13 @@ does not deploy the in-cluster `postgres-backup` CronJob — pyforge does not
 run a shadow backup of a database it does not own. Backup and point-in-time
 recovery for that path are owned and operated by the **enterprise database
 team** using their own managed-PostgreSQL backup tooling; follow their runbooks,
-not `DR.md`/`restore.md`, for that datastore.
+not those two pages, for that datastore.
 
 ## Prerequisites
 
 - **helm from the `platform-dev` pixi env** (AD-16 — never a system helm):
   every command below is `pixi run -e platform-dev helm ...` from the repo
-  root. Verified against Helm v4.2.4 (conda-forge).
+  root. The env pins conda-forge's `kubernetes-helm` at 4.3 or later.
 - The **Story 10.3 platform image** pushed somewhere the cluster can pull
   (values: `image.registry`/`image.repository` plus **`image.digest`** (preferred)
   or a pinned non-latest `image.tag` — Story 43.4 refuses `latest` and bare
@@ -47,8 +63,8 @@ not `DR.md`/`restore.md`, for that datastore.
 **Secrets profile (Story 48.4 / R-20):** custody, age rotation, and the
 Vault/ESO enterprise path are documented in
 `docs/explanation/enterprise-deployment.md` § 7. Example ExternalSecret
-manifests live under `overlays/eso/`. Step-by-step rotation runbooks:
-`src/shared/packages/pyforge-steward/docs/keys-runbook.md`.
+manifests live under `src/platform/deploy/overlays/eso/`. Step-by-step rotation runbooks:
+[`docs/how-to/rotate-platform-secrets.md`](../how-to/rotate-platform-secrets.md).
 
 **OIDC profile (Story 48.9 / CAP-1):** default `oidc.profile=bundled`
 deploys Keycloak in-cluster (PostgreSQL-backed, realm-as-code ConfigMap).
@@ -112,7 +128,7 @@ ServiceAccounts, and an Ingress on `ingress.host` (default
 
 **TLS:** the default values assume a TLS-terminating ingress controller —
 `ingress.tls` supplies the cert blocks, and `django.secureSslRedirect:
-"True"` relies on the edge sending `X-Forwarded-Proto` (production.py's
+"True"` relies on the edge sending `X-Forwarded-Proto` (the production settings'
 `SECURE_PROXY_SSL_HEADER`). For a bare-HTTP dev install with no TLS
 terminator, set `django.secureSslRedirect: "False"` — the same switch the
 compose stack flips locally.
@@ -138,10 +154,10 @@ posture is declared in `src/platform/config/broker_tls.py`.
 
 **Cluster bring-up** (CRC 2.63.0 / OpenShift 4.22.7, internal-registry image
 push, keys inventory): follow
-`overlays/ocp/cluster-bringup.md` end to end before installing the chart.
+[`ocp-cluster-bringup.md`](../how-to/ocp-cluster-bringup.md) end to end before installing the chart.
 
 Two installs after the cluster is Running and the platform image is in the
-internal registry (see `overlays/ocp/README.md` for detail):
+internal registry (see `src/platform/deploy/overlays/ocp/README.md` for detail):
 
 ```sh
 pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform \
@@ -182,7 +198,7 @@ capability-naming reason where helm/PyYAML are absent.
 
 - **OCP live-cluster verification is opt-in CI (Story 12.9), with attended
   closeout still Story 12.7.** Bring-up and internal-registry push are
-  documented in `overlays/ocp/cluster-bringup.md` (Story 12.4). The optional
+  documented in [`ocp-cluster-bringup.md`](../how-to/ocp-cluster-bringup.md) (Story 12.4). The optional
   `ocp-portability-smoke` job in `.github/workflows/platform-ci.yml` (default
   off; requires `CRC_PULL_SECRET` and `PLATFORM_CI_OCP_PORTABILITY_SMOKE=true`
   or workflow_dispatch) deploys core + overlay on CRC and curls through an
@@ -195,14 +211,14 @@ capability-naming reason where helm/PyYAML are absent.
 - **Fresh installs have a transient migration window.** On a FIRST
   install the web pods go Ready before the post-install migrate Job has
   run: the `/ht/` readiness `Database` check is connectivity-only (a bare
-  `SELECT` — `config/urls.py` documents exactly this), so an unmigrated
+  `SELECT` — `src/platform/config/urls.py` documents exactly this), so an unmigrated
   database still answers 200 while ORM-touching pages 500 with
   `relation "django_site" does not exist` — the same behavior
-  `compose/compose.yml` documents for its stack. The window closes when
+  `src/platform/compose/compose.yml` documents for its stack. The window closes when
   the migrate Job completes; **upgrades are not affected** (the
   `pre-upgrade` hook runs migrations before the new pods roll out). The
   hook shape is deliberate — see the deadlock rationale in
-  `charts/platform/templates/migrate-job.yaml`.
+  `src/platform/deploy/charts/platform/templates/migrate-job.yaml`.
 - **Redis is AUTH-protected with a NetworkPolicy (Story 12.6).** The
   pre-created Secret's `REDIS_PASSWORD` key feeds `--requirepass` on the
   redis container and is wired into platform pods' `REDIS_URL` via
