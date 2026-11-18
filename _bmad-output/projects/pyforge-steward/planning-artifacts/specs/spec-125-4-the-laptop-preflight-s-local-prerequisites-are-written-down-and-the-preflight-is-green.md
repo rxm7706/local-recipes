@@ -2,7 +2,7 @@
 title: '125.4: The laptop preflight''s local prerequisites are written down, and the preflight is green'
 type: 'fix'
 created: '2026-11-17'
-status: 'in-review'
+status: 'done'
 story: 125-4-the-laptop-preflight-s-local-prerequisites-are-written-down-and-the-preflight-is-green
 spec: spec-pyforge-steward
 difficulty: 'easy'

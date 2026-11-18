@@ -8798,7 +8798,7 @@ So that a red lane on my machine means a defect in my change.
 **When** the preflight module reads the core count without a Linux-only attribute, each test that needs a host capability probes for it, and the lock in `scripts/platform-ci-local.sh` works where `flock` is absent or the tests say the host lacks it
 **Then** `pyforge-steward-test`, `pyforge-steward-live-test` and both `mypy` lanes exit 0 on macOS and are unchanged on Linux; no test is skipped by platform name
 **And** every guard is a capability probe with a reason that names the missing capability
-**Status:** review
+**Status:** done
 
 ### Story 125.2: Marshal's and core's suites and the seed update run on a macOS laptop
 
@@ -8846,4 +8846,4 @@ So that a red lane on my machine means a defect in my change.
 **When** the preflight how-to names both prerequisites, each governing Spec's memlog names the moved paths and is stamped scoped, and the full preflight is run alone on the final head
 **Then** `PYFORGE_PREFLIGHT_SCOPE=full pixi run -e pyforge-guild pr-preflight` exits 0 on the macOS laptop with the two prerequisites met; `spec-surface-check` and `docs-currency-check` exit 0
 **And** every guard is a capability probe with a reason that names the missing capability
-**Status:** review
+**Status:** done
