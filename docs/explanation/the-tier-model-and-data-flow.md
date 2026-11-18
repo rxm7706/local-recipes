@@ -1,11 +1,9 @@
 ---
 sources:
-  - AGENTS.md
-  - docs/MAP.md
   - docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md
   - scripts/promote_sprint_status.py
   - _bmad-output/PROJECTS.md
-verified: 2026-10-24
+verified: 2026-11-17
 ---
 
 # The Tier Model and Data Flow
@@ -18,7 +16,7 @@ This document explains the rationale behind the tiers of the PyForge data flow, 
 **Role:** Human aspiration and raw intake.
 **Nature:** Tracked, permanent, forward-looking.
 
-Dreams are markdown files authored by humans. They represent feature requests, bug reports, and architectural aspirations, and they are the seed for the entire pipeline. Agents *append* to a Dream (a Realization-log entry, a sibling acknowledgement) rather than rewriting it, and the Dream-append-first rule enforced by `chain-sprawl-check` prefers appending to a station's living Dream over minting a new Dream file. The standard is that a Dream is live or archived, never both: once a folded Dream's body is in its station Dream, the file moves to `archive/docs/dreams/` (CHAIN-STANDARD §11). That move goes one station per PR and is still in progress, so many archived Dreams still sit in `docs/dreams/`.
+Dreams are markdown files authored by humans. They represent feature requests, bug reports, and architectural aspirations, and they are the seed for the entire pipeline. Agents *append* to a Dream (a Realization-log entry, a sibling acknowledgement) rather than rewriting it, and the Dream-append-first rule enforced by `chain-sprawl-check` prefers appending to a station's living Dream over minting a new Dream file. The standard is that a Dream is live or archived, never both: once a folded Dream's body is in its station Dream, the file moves to `archive/docs/dreams/` (CHAIN-STANDARD §11). That move is finished: nothing in `docs/dreams/` reads `status: archived` any more, and the archived Dreams sit under `archive/docs/dreams/`.
 
 ## Tier 1: Legacy Specs (retired 2026-10-10)
 **Role:** Former hand-authored specifications.
@@ -36,7 +34,7 @@ Humans once wrote intake specs by hand in `docs/specs/`. The Dream → `bmad-spe
 Once a Dream exists, `bmad-spec` derives a formal Specification (Spec) and places it into Tier 2. This directory holds:
 - **Specs:** The technical contract for the capability (`specs/spec-<slug>/SPEC.md` plus its append-only `.memlog.md`).
 - **Epics & Stories:** Breakdowns of the Spec into actionable units (`epics.md`).
-- **Story specs:** A run drafts each story spec in Tier 3; once the story merges, the spec is promoted into the tracked `planning-artifacts/specs/` and becomes the source of record.
+- **Story specs:** The tracked story spec is minted with its Story under `planning-artifacts/specs/` (CHAIN-STANDARD §3 step 5) and is the source of record. A harness run's Tier-3 draft is scratch; it is promoted there once the story merges only when no tracked spec exists.
 - **Ledgers:** The tracked `sprint-status-ledger.yaml` twin records exactly which story keys are `backlog`, `in-progress`, `blocked`, or `done`.
 
 **The Golden Rule:** Tier 2 artifacts are tracked by Git. An agent modifying code *must* have an accompanying Tier 2 tracking artifact (a Story) that justifies the code change, and each station keeps one Dream, one Spec, one PRD, one spine, and one epic chain — "one chain per station."

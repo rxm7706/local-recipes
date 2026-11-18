@@ -1,13 +1,10 @@
 ---
 sources:
   - .claude/memory/README.md
-  - .claude/memory/MEMORY.md
   - src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py
-  - src/shared/packages/pyforge-scribe/README.md
+  - src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py
   - CLAUDE.md
-  - AGENTS.md
-  - docs/how-to/configure-your-coding-agent.md
-verified: 2026-10-24
+verified: 2026-11-17
 ---
 
 # Agent Memory Lifecycle

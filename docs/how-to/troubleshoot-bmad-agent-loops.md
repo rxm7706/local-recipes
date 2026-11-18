@@ -1,16 +1,16 @@
 ---
 sources:
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_stale.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_verify_fix.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verification_journal.py
   - scripts/promote_sprint_status.py
   - scripts/loop_stall_check.py
-  - scripts/bmad_loop_baseline_drift_check.py
+  - .claude/skills/bmad-loop-resolve/SKILL.md
   - .claude/memory/reference/bmad-loop-escalation-and-landing-traps.md
   - .claude/memory/reference/fleet-landing-pass-liveness.md
-  - docs/how-to/driving-a-pyforge-station-backlog.md
-verified: 2026-10-24
+verified: 2026-11-17
 ---
 
 # Troubleshoot BMAD Agent Loops

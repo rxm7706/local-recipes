@@ -154,6 +154,66 @@ pages:
     quadrant: how-to
     owner: fleet
     kind: authored
+  - path: how-to/adopt-the-operating-model-with-marshal-seed.md
+    quadrant: how-to
+    owner: marshal
+    kind: authored
+  - path: how-to/bootstrap-a-machine-with-steward.md
+    quadrant: how-to
+    owner: steward
+    kind: authored
+  - path: how-to/diagnose-with-doctor.md
+    quadrant: how-to
+    owner: doctor
+    kind: authored
+  - path: how-to/move-vendor-extracts-through-the-corridor.md
+    quadrant: how-to
+    owner: steward
+    kind: authored
+  - path: how-to/read-steward-registers.md
+    quadrant: how-to
+    owner: steward
+    kind: authored
+  - path: how-to/record-progress-claims-and-notices-with-herald.md
+    quadrant: how-to
+    owner: herald
+    kind: authored
+  - path: how-to/rotate-platform-secrets.md
+    quadrant: how-to
+    owner: steward
+    kind: authored
+  - path: how-to/run-and-read-pr-preflight.md
+    quadrant: how-to
+    owner: steward
+    kind: authored
+  - path: how-to/run-atlas-pipelines-and-read-datasets.md
+    quadrant: how-to
+    owner: atlas
+    kind: authored
+  - path: how-to/scan-for-compliance-with-warden.md
+    quadrant: how-to
+    owner: warden
+    kind: authored
+  - path: how-to/schedule-the-scribe-nightly-compile.md
+    quadrant: how-to
+    owner: scribe
+    kind: authored
+  - path: how-to/troubleshoot-herald-moments.md
+    quadrant: how-to
+    owner: herald
+    kind: authored
+  - path: how-to/upgrade-bmad-core.md
+    quadrant: how-to
+    owner: steward
+    kind: authored
+  - path: how-to/use-marshal-in-an-air-gapped-site.md
+    quadrant: how-to
+    owner: marshal
+    kind: authored
+  - path: how-to/use-steward-duties-that-need-operator-consent.md
+    quadrant: how-to
+    owner: steward
+    kind: authored
   - path: reference/README.md
     quadrant: reference
     owner: fleet
@@ -210,7 +270,10 @@ pages:
   - path: reference/github-workflows.md
     quadrant: reference
     owner: fleet
-    kind: authored
+    kind: generated
+    generator: scripts/docs_github_workflows.py
+    sources:
+      - .github/workflows
   - path: reference/judgement-vocabulary.md
     quadrant: reference
     owner: doctor
@@ -269,6 +332,22 @@ pages:
     quadrant: reference
     owner: fleet
     kind: authored
+  - path: reference/herald-web-dashboard.md
+    quadrant: reference
+    owner: herald
+    kind: authored
+  - path: reference/herald-webhook-endpoint.md
+    quadrant: reference
+    owner: herald
+    kind: authored
+  - path: reference/marshal-seed-findings.md
+    quadrant: reference
+    owner: marshal
+    kind: authored
+  - path: reference/marshal-seed-managed-regions.md
+    quadrant: reference
+    owner: marshal
+    kind: authored
   - path: explanation/README.md
     quadrant: explanation
     owner: fleet
@@ -313,6 +392,11 @@ pages:
     quadrant: explanation
     owner: fleet
     kind: authored
+  - path: explanation/herald-four-moments.md
+    quadrant: explanation
+    owner: herald
+    kind: authored
+
 sections:
   - key: herald
     label: Herald

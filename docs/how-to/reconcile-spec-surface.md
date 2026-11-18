@@ -5,7 +5,7 @@ sources:
   - scripts/.spec-surface-baseline.json
   - _bmad/scripts/memlog.py
   - .claude/memory/feedback/spec-surface-check-py-s-write-baseline-reads-git-ls-files-so.md
-verified: 2026-10-24
+verified: 2026-11-17
 ---
 
 # How to Reconcile Spec Surface Drift

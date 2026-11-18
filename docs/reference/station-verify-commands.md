@@ -1,3 +1,17 @@
+---
+sources:
+  - _bmad-output/projects/pyforge-atlas/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-doctor/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-herald/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-mason/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-scribe/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-warden/planning-artifacts/marshal-policy.toml
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/spec_binding.py
+verified: 2026-11-17
+---
+
 # Station verify commands
 
 Single lookup table for what `marshal factory dispatch`/`drain` actually runs to verify
@@ -40,7 +54,7 @@ Both were discovered live 2026-08-30/31: no station had ever declared a
 (first atlas, then marshal's own Epic 28 and scribe's Epic 6), and a fleet-wide sweep
 then found 338 already-shipped specs across all 8 stations whose declared commands had
 drifted from current policy. Both classes were backfilled/reconciled fleet-wide the same
-day — see each PR below for the mechanics.
+day (`git log --oneline --grep "GATE-011"` shows the mechanics).
 
 ## The table
 

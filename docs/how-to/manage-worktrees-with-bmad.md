@@ -5,8 +5,7 @@ sources:
   - scripts/worktree_sweep.py
   - scripts/bmad-switch
   - _bmad/scripts/resolve_config.py
-  - docs/how-to/detect-concurrent-agent-activity.md
-verified: 2026-10-24
+verified: 2026-11-17
 ---
 
 # How to Manage Worktrees with BMAD

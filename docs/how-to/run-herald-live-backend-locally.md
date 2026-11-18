@@ -1,3 +1,13 @@
+---
+sources:
+  - src/shared/packages/pyforge-herald/src/pyforge/herald/local_ship.py
+  - src/shared/packages/pyforge-herald/src/pyforge/herald/webhook_host.py
+  - src/shared/packages/django-pyforge/src/django_pyforge/sidecar_forward.py
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/deploy.py
+  - archive/.github/workflows/herald-live-demo.yml
+verified: 2026-11-17
+---
+
 # Run Herald's live backend locally
 
 Story 19.2. This page shows how to record one real story landing as a Progress record and a draft

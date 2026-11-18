@@ -1,3 +1,14 @@
+---
+sources:
+  - environment.yaml
+  - .scripts/run_win_build.bat
+  - build-locally.py
+  - test-recipes.py
+  - scripts/ensure-local-recipes-env.sh
+  - .claude/skills/conda-forge-expert/scripts/health_check.py
+verified: 2026-11-17
+---
+
 # Getting started
 
 Learning-oriented path to a working build environment for this repo. For
@@ -5,7 +16,7 @@ task-oriented commands after setup, see [`docs/how-to/`](../how-to/README.md).
 
 ## Requirements
 
-- A supported OS (Windows, Linux, or macOS). Windows is the fastest path here.
+- A supported OS (Windows, Linux, or macOS). The Pixi route works on all three (linux-64, osx-arm64 and win-64; there is no Intel macOS platform); the batch-script route below is Windows-only.
 - Network access to conda-forge.
 - On Windows, a shell that can run batch scripts and allow PowerShell execution for initial provisioning.
 
@@ -13,12 +24,13 @@ The build tools environment will be provisioned automatically by the Windows scr
 
 Packages pulled into the bootstrap environment (see `environment.yaml`):
 
-- python 3.12.*, conda ≥ 25.9, conda-libmamba-solver, conda-build, conda-index,
-  conda-forge-ci-setup, conda-forge-pinning, networkx 2.4.*, rattler-build-conda-compat.
+- python 3.14, pixi, conda, conda-libmamba-solver, conda-build, conda-index,
+  conda-forge-ci-setup, conda-forge-pinning, networkx, rattler-build-conda-compat.
+  `environment.yaml` is exported from `pixi.toml` and carries the exact version floors.
 
 ## Prerequisites (Pixi route)
 
-- [Pixi](https://pixi.sh) >= 0.72.2 (the workspace's `requires-pixi` floor; pixi 0.73+ is pinned in-env)
+- [Pixi](https://pixi.sh) at or above the workspace's `requires-pixi` floor in `pixi.toml` (0.80.0 on 2026-11-17; the envs carry the same floor)
 - Or: Conda/Mamba with conda-build and rattler-build
 - For Linux builds on Windows: WSL2 with Ubuntu or Docker Desktop
 
@@ -37,7 +49,7 @@ Packages pulled into the bootstrap environment (see `environment.yaml`):
 > builds via the `build` env. See also the authoritative `conda-forge-expert` skill
 > (`.claude/skills/conda-forge-expert/`) whose recipe lifecycle loop drives these tasks.
 
-## Fast path on Windows (recommended)
+## Fast path on Windows
 
 1. Open "Developer Command Prompt for VS" or a PowerShell/cmd with script execution allowed.
 2. From the repo root, select a variant (optional):
@@ -73,8 +85,9 @@ python build-locally.py win64
 python build-locally.py --filter win*
 ```
 
-- On Windows, this delegates to `.scripts\run_win_build.bat`.
-- On Linux/macOS, it invokes the corresponding `.scripts/run_docker_build.sh` or `.scripts/run_osx_build.sh` (if present from conda-smithy).
+- A `win*` config delegates to `.scripts\run_win_build.bat`.
+- A `linux*` config runs `.scripts/run_docker_build.sh`, so it needs Docker.
+- An `osx*` config runs `.scripts/run_osx_build.sh` on macOS, and the Docker script on a Linux host.
 
 ## Installation (Pixi / clone)
 
@@ -116,10 +129,10 @@ warden) instead of authoring recipes? After `pixi install -e pyforge-foundry-ful
 bootstrap sequence once (atlas-heavy steps need the `local-recipes` env installed too):
 
 ```bash
-pixi run -e pyforge-guild detectors-ci        # merge gate subset — proves the laptop SBOM
-pixi run -e local-recipes health-check        # validates pixi envs, MCP server, atlas freshness
+pixi run -e pyforge-guild detectors-ci        # the CI-safe detector subset; exit 0 is the merge bar
+pixi run -e local-recipes health-check        # checks the git upstream remote, gh auth, Docker, MCP scripts, API reachability
 pixi run -e local-recipes bootstrap-data      # one-time atlas refresh; 30-45 min cold, 5-10 min warm
-pixi run -e local-recipes verify-env          # confirms default-env directive + pixi.toml integrity
+pixi run -e local-recipes verify-env          # confirms the shell is in the local-recipes env and rattler-build answers
 pixi run -e pyforge-guild bmad-groundtruth    # live factory facts as JSON
 ```
 

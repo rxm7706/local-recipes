@@ -1,4 +1,17 @@
+---
+sources:
+  - scripts/conda-forge-packaging-inventory-operations_metrics.py
+  - scripts/conda-forge-packaging-inventory-operations_openteams_identity.py
+  - scripts/conda-forge-packaging-inventory-operations_priority.py
+  - scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py
+  - conf/conda-forge-packaging-inventory-operations_curated_groups.json
+verified: 2026-11-17
+---
+
 # MASTER PROMPT V3.0 — Consolidated Inventory Replay (Reusable)
+
+> [!NOTE]
+> Story numbers on this page (21.x, 23.x) are the ones the quartet scripts print. Atlas's `epics.md` was re-keyed on 2026-09-17 (`_bmad-output/projects/pyforge-atlas/planning-artifacts/rekey-2026-09-17.md`): Epics 12 to 25 moved down one, so Story 21.7 is now 20.7, Story 23.4 is 22.4, and Stories 23.8 and 23.9 are 22.8 and 22.9. Story 27.1 is unchanged.
 
 **Canonical runner script:** [`scripts/conda-forge-packaging-inventory-operations_metrics.py`](https://github.com/rxm7706/local-recipes/blob/main/scripts/conda-forge-packaging-inventory-operations_metrics.py)  
 **Prompt:** [`docs/reference/conda-forge-packaging-inventory-operations_prompt.md`](conda-forge-packaging-inventory-operations_prompt.md)  
@@ -10,8 +23,6 @@
 2. Any new analysis step, source, parsing rule, verification rule, status bucket, output column, or report section must update all relevant files in the same commit.
 3. Do not merge prompt-only behavior changes without script implementation updates.
 4. Do not merge script behavior changes without prompt updates.
-
----
 
 Use the following replay prompt with your coding agent:
 
@@ -27,7 +38,7 @@ Local Inputs:
 2. OpenTeams export (`.tsv`) path (historical; universe now comes from Kedro).
 3. Curated groups config (`conf/conda-forge-packaging-inventory-operations_curated_groups.json`) (historical; Kedro owns ingestion).
 
-Historical: the analysis workbook (`docs/Analysis_Dataset-2026-08-12.xlsx`) and its tab names are retired as inputs (Story 23.9). Passing `--analysis-xlsx`, `--xlsx`, `--tab`, or `--tab-out` exits 2.
+Historical: the analysis workbook (`Analysis_Dataset-2026-08-12.xlsx`, never tracked in this repository) and its tab names are retired as inputs (Story 23.9). Passing `--analysis-xlsx`, `--xlsx`, `--tab`, or `--tab-out` exits 2.
 
 Required integrated sources:
 1. Anaconda Distribution latest package table (`2026.x`).
@@ -40,7 +51,7 @@ Required integrated sources:
 8. Curated groups from local config.
 
 Parsing requirements:
-1. Parse all workbook tabs dynamically, except output snapshot tabs `verified-all-packages`, `inventory-2026-08-12`, and `identity-2026-08-12` in `docs/Analysis_Dataset-2026-08-12.xlsx` (durable copies of prior-run output — never ingest as sources). `OUTPUT_TABS` is a dated hardcode: a differently-dated output tab (e.g. `identity-2026-08-20`) is NOT in this set and IS parsed as a source sheet — it contributes nothing only because its `Package` column isn't one of the known package columns (bullet 2). The workbook-free path (execution mode 5, Story 23.8) removes this whole class of bug by construction (no sheet parsing at all).
+1. Historical (workbook era): parse all workbook tabs dynamically, except output snapshot tabs `verified-all-packages`, `inventory-2026-08-12`, and `identity-2026-08-12` in the retired workbook (durable copies of prior-run output — never ingest as sources). `OUTPUT_TABS` is a dated hardcode: a differently-dated output tab (e.g. `identity-2026-08-20`) is NOT in this set and IS parsed as a source sheet — it contributes nothing only because its `Package` column isn't one of the known package columns (bullet 2). The workbook-free path (execution command 1, Story 23.8) removes this whole class of bug by construction (no sheet parsing at all).
 2. Extract package names from known package columns (`name`, `Package_Name`, `raw_names`, `Item`, etc.).
 3. Must-include: every parseable name from `CDO-ENT-JFROG` (JFrog/Artifactory consumption inventory; formerly `Analysis_Dataset-2026-07-19`) and from `CDO-ENT-CONDA` is in the final inventory. `10kOpen` is a clone of the JFrog tab — do not double-count.
 4. OpenTeams 1:1: every parseable name in `CDO-ENT-JFROG` ∪ `CDO-ENT-CONDA` should have exactly one issue titled `[Conda-Forge Packaging] {name}` (OSS Enhancements project view; workbook `OpenTeams` tab is the snapshot). CVE `|` titles do not count. Report have / missing / surplus; 100% is the goal.
@@ -52,13 +63,12 @@ Parsing requirements:
 
 Verification and classification:
 1. Verify PyPI (`PyPI_Verified`) and conda-forge (`CondaForge_Verified`). These may
-   source from live HTTP fetches, local snapshot files (`--cf-channeldata` /
-   `--pypi-simple` / `--parselmouth`), or (Story 21.3) directly from the
-   pyforge-atlas Kedro data plane's Parquet outputs via `--live-catalog` —
-   see execution mode 4 below. When `--analysis-xlsx` is also omitted (Story
-   23.8, execution mode 5), the package universe itself is ALSO read from that
-   same Kedro data plane (`inventory_universe.parquet`) instead of the
-   workbook's sheets.
+   are read (Story 21.3) from the pyforge-atlas Kedro data plane's Parquet
+   outputs via `--live-catalog` — see execution command 4 below; the
+   snapshot-file flags (`--cf-channeldata`, `--pypi-simple`, `--parselmouth`)
+   and the script's own live HTTP fetches are gone. The package universe
+   itself is ALSO read from that same Kedro data plane
+   (`inventory_universe.parquet`, Story 23.8), never from workbook sheets.
    Story 27.1 scale floors (Kedro ``derived_artifacts`` only), counted after
    package-name normalization: ``core_packages_enumerated`` (conda-forge core names)
    must meet ``params:verification_sets.core_packages_enumerated_floor`` (default
@@ -82,7 +92,7 @@ Verification and classification:
 Deliverables (local files):
 1. Full inventory (14 columns) — `derived/inventory_verified_packages/inventory_verified_packages.parquet`; optional CSV `cdao_consolidated_inventory_verified_all_packages.csv`
 2. Dated OpenTeams 1:1 universe (`CDO-ENT-JFROG` ∪ `CDO-ENT-CONDA`) — `derived/identity_complete_export/identity_complete_export.parquet` (ranking + identity handoff columns). Historical workbook tab `inventory-2026-08-12` is retired.
-3. Identity snapshot — `identity_complete_export.parquet`, then **edit in place** the pinned secret gist files `mgmt-wf-python-modernization-identity.md` (row catalog) and `mgmt-wf-python-modernization-dashboards.md` (canvas summaries) (`scripts/conda-forge-packaging-inventory-operations_openteams_identity.py`; gist id from `OPENTEAMS_IDENTITY_GIST_ID` / gitignored `conf/conda-forge-packaging-inventory-operations.local.env` / `--gist-id`; `--skip-gist` when no id). Do not create a new gist. Do not commit the id. `--create-issues` is a separate, **live and irreversible** flag: it opens one GitHub issue (+ adds it to OpenTeams project 1) per record still missing `OpenTeams_Issue_URL`. Absent (the default), the run is dry-run only — it prints/returns what would be created and makes no `gh` mutation call.
+3. Identity snapshot — `identity_complete_export.parquet`, then **edit in place** the pinned secret gist files `mgmt-wf-python-modernization-identity.md` (row catalog) and `mgmt-wf-python-modernization-dashboards.md` (canvas summaries) (`scripts/conda-forge-packaging-inventory-operations_openteams_identity.py`; gist id from `OPENTEAMS_IDENTITY_GIST_ID` / gitignored `conf/conda-forge-packaging-inventory-operations.local.env` (template: `conf/conda-forge-packaging-inventory-operations.local.env.example`) / `--gist-id`; `--skip-gist` when no id). Do not create a new gist. Do not commit the id. `--create-issues` is a separate, **live and irreversible** flag: it opens one GitHub issue (+ adds it to OpenTeams project 1) per record still missing `OpenTeams_Issue_URL`. Absent (the default), the run is dry-run only — it prints/returns what would be created and makes no `gh` mutation call.
 
    **Story 21.7 (quartet thin-out):** `main()` no longer fetches
    `ASSOCIATOR_URL`, the OpenTeams board, `feedstock-outputs.json`, or
@@ -110,7 +120,7 @@ Deliverables (local files):
 4. `cdao_consolidated_inventory_verified_all_packages.md`
 5. [`docs/reference/conda-forge-packaging-inventory-operations_prompt.md`](conda-forge-packaging-inventory-operations_prompt.md)
 6. AOSS-Free extra Mason queue — dated CSV `aoss-free-queue-YYYY-MM-DD.csv` (same directory as `--output-csv`), columns `Package_Name` / `Reason` / `Verification_Timestamp_UTC`: `GAOSS-Free` names that are on PyPI, absent from conda-forge, and absent from the OpenTeams universe (`CDO-ENT-JFROG` ∪ `CDO-ENT-CONDA`). Never merges into or expands that universe (`write_aoss_free_queue`).
-7. Ops + Artifactory/workbook dashboard canvases — `identity-ops.canvas.tsx` and `jfrog-workbook.canvas.tsx` (the second and third of the three Dream-specified dashboard views; catalog is `identity-2026-08-20.canvas.tsx` via `conda-forge-packaging-inventory-operations_priority.py`), written by `write_dashboard_markdown` alongside the gist dashboards markdown. Default paths are under the live Cursor project `canvases/` dir; override with `--ops-canvas PATH` / `--workbook-canvas PATH` (e.g. for offline tests). A canvas-write failure logs a warning and never blocks the gist publish.
+7. Ops + Artifactory/workbook dashboard canvases — `identity-ops.canvas.tsx` and `jfrog-workbook.canvas.tsx` (the second and third of the three Dream-specified dashboard views; catalog is `identity-2026-08-20.canvas.tsx` via `conda-forge-packaging-inventory-operations_priority.py`), written by `write_dashboard_markdown` alongside the gist dashboards markdown. Default paths are under the directory `PYFORGE_INVENTORY_CANVAS_DIR` names (environment, or the gitignored `conf/conda-forge-packaging-inventory-operations.local.env`; unset, the canvas write is skipped); override with `--ops-canvas PATH` / `--workbook-canvas PATH` (e.g. for offline tests). A canvas-write failure logs a warning and never blocks the gist publish.
 
 Exact CSV columns (14):
 1. Repository_Source
@@ -194,7 +204,5 @@ is given without `--skip-revised-prompt` -- a default run writes no revised prom
 never overwrites `conda-forge-packaging-inventory-operations_prompt.md`.
 `scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py` pins this
 block against the actuator's stdout.
-
----
 
 For future reruns, replace only input paths (and optionally output paths).

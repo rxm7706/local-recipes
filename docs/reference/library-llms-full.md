@@ -1,3 +1,7 @@
+---
+checked_by: llms-full-check
+---
+
 # local-recipes — Library Catalog for LLMs & Agents (library-llms-full.md)
 
 > Purpose: give any LLM or coding agent a complete, self-contained picture of every

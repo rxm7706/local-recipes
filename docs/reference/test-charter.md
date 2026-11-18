@@ -1,25 +1,31 @@
+---
+sources:
+  - _bmad/scripts/bmad_tea_playwright.py
+  - scripts/tea_playwright_check.py
+  - src/shared/packages/pyforge-testing-kit/README.md
+verified: 2026-11-17
+---
+
 # The Eight Smiths Testing Charter
 
 ## The Guild — Eight Stations, One Owner of Execution
 
 **Doctrine**: Every station renders its own verdict. The hand that builds is never the gate that judges. Marshal alone owns execution, sequencing on verdicts it never authors.
 
----
-
 ## The Eight Smiths: Refined Mottos
+
+The mottos and roles are the Charter's (`docs/dreams/pyforge-charter.md`); where this table and the Charter disagree, the Charter wins.
 
 | # | Smith | Motto | Station | Role |
 |---|-------|-------|---------|------|
 | 1 | 🎺 Herald | Capture the dream. Illustrate the telemetry. Proclaim the release. | herald | Visual Media Engine & System Messenger |
-| 2 | ⚔️ Marshal | Enforce the spec. Guard the boundaries. Run the line. | marshal | Build Factory Supervisor & BMAD Orchestrator |
-| 3 | 🗺️ Atlas | Map the ecosystem. Know the risks. Set the foundation. | atlas | Dependency Mapper & Data Pipeline Architect |
-| 4 | 🛡️ Warden | Halt the threat. Clear the axes. Protect the perimeter. | warden | 6-Axis Security & Hygiene Auditor |
-| 5 | 🧱 Mason | Orchestrate the build. Bridge two worlds. Ship deterministically. | mason | Package & Release Craftsman |
-| 6 | 🏥 Doctor | Check the vitals. Diagnose the fault. Rank what matters. | doctor | Ecosystem Health & Diagnostics Officer |
+| 2 | ⚔️ Marshal | Enforce the spec. Guard the boundaries. Run the line. | marshal | Autonomous Build Factory Supervisor & Orchestrator |
+| 3 | 🗺️ Atlas | Chart the dependencies. Map the world. Define the floor. | atlas | Dependency Mapper & Data Pipeline Architect |
+| 4 | 🛡️ Warden | Halt the threat. Clear the axes. Protect the perimeter. | warden | Six-Axis Ecosystem Security & Hygiene Auditor |
+| 5 | 🧱 Mason | We forge the blocks. We bind the environment. We ship the structure. | mason | Package & Release Craftsman |
+| 6 | 🏥 Doctor | Check the vitals. Diagnose the fault. Keep the ecosystem alive. | doctor | Ecosystem Health & Diagnostics Officer |
 | 7 | 📖 Scribe | Capture the decision. Keep the graph. Answer from memory. | scribe | Knowledge Curator & Team Memory Keeper |
-| 8 | 👑 Steward | Supply the estate. Guard the credentials. Ensure reliability. | steward | Platform, Deployment & Operations Officer |
-
----
+| 8 | 👑 Steward | Provision the line. Hold the keys. Keep the lights on. | steward | Platform, Deployment & Operations Officer |
 
 ## Testing Charter: Each Smith's Responsibility
 
@@ -38,8 +44,6 @@
 - Evidence links validated (0% broken links)
 - Visibility coverage >90%
 
----
-
 ### ⚔️ Marshal — Commander
 **Motto**: "Enforce the spec. Guard the boundaries. Run the line."
 
@@ -55,10 +59,8 @@
 - No policy bypass scenarios
 - Orchestration reliability >99%
 
----
-
 ### 🗺️ Atlas — Navigator
-**Motto**: "Map the ecosystem. Know the risks. Set the foundation."
+**Motto**: "Chart the dependencies. Map the world. Define the floor."
 
 **Testing Focus**:
 - Dependency discovery (accuracy, freshness)
@@ -72,8 +74,6 @@
 - Query performance <500ms
 - Pipeline throughput benchmarks pass
 
----
-
 ### 🛡️ Warden — Guardian
 **Motto**: "Halt the threat. Clear the axes. Protect the perimeter."
 
@@ -81,7 +81,7 @@
 - Security gates (vulnerability detection, compliance)
 - Threat halting (false positives/negatives balance)
 - Dependency validation (supply chain integrity)
-- All six audit axes covered (hygiene, security, license, currency, provenance, maintenance)
+- All six audit axes covered (hygiene, security, license, currency, provenance, maintenance); the Charter records the first four as gating today and provenance and maintenance as Vision-tier, not built
 
 **Quality Gates**:
 - Gate coverage 100% of dependencies
@@ -89,10 +89,8 @@
 - Security scan performance <5min
 - No unprotected vectors
 
----
-
 ### 🧱 Mason — Artisan
-**Motto**: "Orchestrate the build. Bridge two worlds. Ship deterministically."
+**Motto**: "We forge the blocks. We bind the environment. We ship the structure."
 
 **Testing Focus**:
 - Build orchestration (dual-ecosystem coordination)
@@ -106,10 +104,8 @@
 - Ship success rate >99.5%
 - Artifact integrity verified
 
----
-
 ### 🏥 Doctor — Physician
-**Motto**: "Check the vitals. Diagnose the fault. Rank what matters."
+**Motto**: "Check the vitals. Diagnose the fault. Keep the ecosystem alive."
 
 **Testing Focus**:
 - Health metrics (status checks, diagnostics)
@@ -122,8 +118,6 @@
 - Diagnosis accuracy >95%
 - Gate pass rates tracked
 - Ecosystem uptime >99.9%
-
----
 
 ### 📖 Scribe — Chronicler
 **Motto**: "Capture the decision. Keep the graph. Answer from memory."
@@ -140,10 +134,8 @@
 - Recall accuracy >99%
 - Documentation coverage >95%
 
----
-
 ### 👑 Steward — Provisioner
-**Motto**: "Supply the estate. Guard the credentials. Ensure reliability."
+**Motto**: "Provision the line. Hold the keys. Keep the lights on."
 
 **Testing Focus**:
 - Infrastructure provisioning (resource availability)
@@ -156,8 +148,6 @@
 - Key rotation verified
 - Uptime SLA met (≥99%)
 - Alert/escalation coverage 100%
-
----
 
 ## The Guild Crew: One Owner of Execution
 
@@ -184,8 +174,6 @@ Development (Each Smith implements with tests)
 Shipped Features
 ```
 
----
-
 ## Testing as a Smith's Craft
 
 Each Smith's craft includes:
@@ -210,8 +198,6 @@ Each Smith's craft includes:
    - No regressions in throughput
    - Benchmarks tracked
 
----
-
 ## The Testing Hierarchy (Guild-Wide)
 
 ```
@@ -228,8 +214,6 @@ End-to-End Scenarios (Dream-to-Code)
 Shipped with Confidence
 ```
 
----
-
 ## Deployment: Eight Smiths, One Release
 
 When a dream flows through the Dream-to-Code Factory:
@@ -245,8 +229,6 @@ When a dream flows through the Dream-to-Code Factory:
 
 **All with systematic tests** — each Smith's craft is verified before handoff.
 
----
-
 ## The Charter Principle
 
 > "The Guild Crew and Eight Smiths execute dreams to code through test-driven excellence."
@@ -258,80 +240,68 @@ Each Smith:
 - ✅ Passes the gates (quality gates enforced)
 - ✅ Ships with confidence (full test coverage)
 
----
-
----
-
 ## Implementation Roadmap (Phase 1-4)
+
+The roadmap below was written on 2026-08-02. Phases 1 to 3 have since landed in a different shape from the one first planned; each phase says what the tree holds on 2026-11-17.
 
 ### Phase 1: Foundation ✅ COMPLETE
 
 **Deliverables**:
-- [x] Herald test architecture (1,895 lines with Playwright patterns)
+- [x] Herald test architecture
 - [x] Pattern documented (reusable across projects)
 - [x] Automation script created (one command per project)
 
+**Files**: `_bmad-output/projects/pyforge-herald/planning-artifacts/test-architecture.md`, generated by `_bmad/scripts/bmad_tea_playwright.py`.
+
 <!-- governance-currency:ignore-start (the pre-reconcile filename, cited as superseded) -->
-**Files**: `_bmad-output/projects/pyforge-herald/planning-artifacts/test-architecture-tea.md`
+The first hand-written version was `_bmad-output/projects/pyforge-herald/planning-artifacts/test-architecture-tea.md` (1,895 lines); the generated file replaced it.
 <!-- governance-currency:ignore-end -->
 
-### Phase 2: Automation Setup ⏳ NEXT SPRINT (6-8 hours)
+### Phase 2: Automation Setup ✅ COMPLETE
 
 **Deliverables**:
-- [ ] Create `pyforge-testing-kit` shared package (npm + PyPI)
-- [ ] Add pixi task: `pixi run tea-playwright-all`
-- [ ] Test full cycle on pyforge-atlas
+- [x] `pyforge-testing-kit` shared package: `src/shared/packages/pyforge-testing-kit/`, a Python package (no npm half was built)
+- [x] Pixi task: `pixi run -e pyforge-guild tea-playwright-all`
+- [x] Full cycle run on pyforge-atlas
 
-### Phase 3: Fleet Deployment 📋 2-3 WEEKS (30 min execution)
+### Phase 3: Fleet Deployment ✅ COMPLETE
 
 **Deliverables** (All 8 Smiths):
-- [ ] Run script on atlas, doctor, herald, marshal, mason, scribe, steward, warden
-- [ ] Verify consistency across all 8 stations
+- [x] Script run on atlas, doctor, herald, marshal, mason, scribe, steward, warden: each station has a `planning-artifacts/test-architecture.md`
+- [x] Consistency across all 8 stations is held by a detector, `pixi run -e pyforge-guild tea-playwright-check`
 - [ ] Update dashboard with test-architecture column
 
 **Batch Command**:
 ```bash
-bash apply_tea_playwright_fleet.sh
+pixi run -e pyforge-guild tea-playwright-all
 ```
 
 ### Phase 4: Development Integration 🚀 ONGOING
 
 **Deliverables**:
 - [ ] Each station implements stories with tests (pytest unit + Playwright e2e)
-- [ ] CI gates enforce coverage (unit >80%, integration >70%, e2e)
+- [ ] CI gates enforce coverage (unit >80%, integration >70%, e2e); today `scripts/coverage_gates_ci.py` enforces per-station floors on touched modules, not these two figures
 - [ ] Dashboard tracks test status per station
-
----
 
 ## How to Apply to Any Project
 
-**Pre-Requisite**: Project must have `epics-with-stories.md`
+**Pre-Requisite**: the station has an `epics.md` under `_bmad-output/projects/pyforge-<station>/planning-artifacts/`. The script covers the eight stations only.
 
 **Command**:
 ```bash
-python _bmad/scripts/bmad_tea_playwright.py \
-  --project <project-name> \
-  --epics _bmad-output/projects/<project-name>/planning-artifacts/epics-with-stories.md \
-  --architecture _bmad-output/projects/<project-name>/planning-artifacts/architecture/ARCHITECTURE-SPINE.md
+python _bmad/scripts/bmad_tea_playwright.py --project pyforge-<station>
 ```
 
-**Output**:
-- `test-architecture-tea.md` (project-specific test strategy)
-- `playwright.config.ts` (Playwright configuration)
-- `pytest.ini` (Pytest configuration)
-- `tests/` (directory scaffold with fixture stubs)
+Add `--dry-run` to render and validate without writing, `--check` to compare the story ids in `epics.md` with the Story Coverage Matrix on disk, and `--scaffold` to create empty `unit/`, `integration/`, `e2e/` and `fixtures/` folders under the station package's `tests/`.
 
----
+**Output**:
+- `planning-artifacts/test-architecture.md` (the station's test strategy, regenerated from `epics.md` and the live test inventory; a `TBD` in the output fails the run)
 
 ## References
 
-<!-- governance-currency:ignore-start (the pre-reconcile filename, cited as superseded) -->
-- **Canonical Reference**: `_bmad-output/projects/pyforge-herald/planning-artifacts/test-architecture-tea.md` (Herald test architecture, 1,895 lines)
-- **Automation Script**: `_bmad/scripts/bmad_tea_playwright.py` (one command per project)
-- **Pattern Documentation**: `_bmad-output/projects/pyforge-herald/planning-artifacts/tea-playwright-addendum.md` (reusable pattern guide)
-<!-- governance-currency:ignore-end -->
-
----
+- **Canonical Reference**: `_bmad-output/projects/pyforge-herald/planning-artifacts/test-architecture.md` (Herald test architecture)
+- **Automation Script**: `_bmad/scripts/bmad_tea_playwright.py` (one command per station, or `--all`)
+- **Originating Dream**: `archive/docs/dreams/pyforge-testing-charter.md`
 
 ## Summary
 

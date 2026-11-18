@@ -1,13 +1,12 @@
 ---
 sources:
   - docs/dreams/pyforge-charter.md
-  - docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md
   - src/platform/config/urls.py
+  - src/platform/config/flag-overlays.json
   - src/platform/deploy/charts/platform/values.yaml
   - src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py
-  - docs/how-to/one-chain-station-ops.md
-verified: 2026-10-24
+verified: 2026-11-17
 ---
 
 # PyForge Estate Overview
@@ -19,7 +18,7 @@ This document explains the architecture and operational model of the PyForge Est
 PyForge operates as an Agentic Software Development Life Cycle (SDLC) driven entirely by autonomous agents. Humans capture their intent as "Dreams" (Tier 0). The system then generates code through a strict pipeline.
 
 1. **Dream:** Human aspiration is recorded in `docs/dreams/`.
-2. **Spec:** `bmad-spec` distills the Dream into a strict Contract (`SPEC.md`); the planning chain (`bmad-prd` / `bmad-architecture` / `bmad-create-epics-and-stories`) decomposes it into a PRD, an Architecture Spine, and Epics. Marshal (`marshal chain`, `marshal planning`) can orchestrate that regeneration unattended.
+2. **Spec:** `bmad-spec` distills the Dream into a strict Contract (`SPEC.md`); the planning chain (`bmad-prd` / `bmad-architecture` / `bmad-create-epics-and-stories`) decomposes it into a PRD, an Architecture Spine, and Epics. Marshal (`marshal planning chain-regenerate`) can orchestrate that regeneration unattended.
 3. **Execution:** Autonomous agents execute the Stories to generate implementation artifacts and source code.
 4. **Verification:** Independent stations gate quality and compliance. Agents cannot judge their own work.
 

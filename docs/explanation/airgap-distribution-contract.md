@@ -1,3 +1,10 @@
+---
+sources:
+  - src/shared/packages/pyforge-mason/src/pyforge/mason/airgap_contract.py
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py
+verified: 2026-11-17
+---
+
 # Air-gap distribution contract (mason Story 9.2)
 
 This is the **socket**, not an installer. Any external distributable
@@ -23,8 +30,8 @@ Machine-readable twin: `AIRGAP_CONTRACT` in
 
 `SUPPORTED_DISTRIBUTABLES` starts **empty**. A backend registers via
 `register_distributable(DistributableBackend(...))` after
-`validate_backend_shape` accepts it. One entry at a time — same discipline
-as steward `_SUPPORTED_MODULES`.
+`validate_backend_shape` accepts it. One entry at a time, and a duplicate name
+is refused — same discipline as steward `_SUPPORTED_MODULES` in `provision.py`.
 
 ## Non-goals
 

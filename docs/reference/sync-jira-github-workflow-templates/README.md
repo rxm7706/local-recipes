@@ -1,3 +1,12 @@
+---
+sources:
+  - docs/reference/sync-jira-github-workflow-templates/github-to-jira.yml.template
+  - docs/reference/sync-jira-github-workflow-templates/jira-to-github.yml.template
+  - .steward/sync-config.example.yaml
+  - archive/_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-jira-github-projects-sync-2026-08-09/ARCHITECTURE-SPINE.md
+verified: 2026-11-17
+---
+
 # Steward `sync` — GitHub Projects V2 ↔ Jira Cloud workflow templates
 
 Epic 8, Story 8.1 (bidirectional propagation). These are **templates for the
@@ -6,10 +15,11 @@ Cloud project you are syncing. They are **never installed into this repo's
 own `.github/workflows/`**; this repo (`local-recipes`) only ships `steward`
 and this documentation, it is not itself a sync participant.
 
-See `_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/
-_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md` for
-the binding invariants (AD-1 through AD-9) referenced throughout this
-document.
+See the sync architecture spine,
+`archive/_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-jira-github-projects-sync-2026-08-09/ARCHITECTURE-SPINE.md`,
+for the binding invariants (its AD-1 through AD-10) referenced throughout
+this document. The AD numbers here are that spine's, not the steward
+station spine's.
 
 ## What's here
 
@@ -47,13 +57,16 @@ event-triggered-reconciliation paradigm).
      Projects V2 read/write only (AD-8: least-privilege, never widened).
    - `secrets.STEWARD_JIRA_EMAIL` / `secrets.STEWARD_JIRA_API_TOKEN` — the
      Atlassian account email and an API token (Jira auth resolves through
-     `_http.py`'s generic `.netrc` fallback: Basic auth, email as login,
+     `.claude/skills/conda-forge-expert/scripts/_http.py`'s generic `.netrc` fallback: Basic auth, email as login,
      API token as password).
    - `vars.STEWARD_JIRA_HOST` — the Jira Cloud site hostname, no scheme
      (e.g. `your-org.atlassian.net`).
    - `vars.STEWARD_EXAMPLE_ITEM_ID` — (GitHub→Jira template only) one
      GitHub Projects V2 item node ID, used by the `schedule`/manual path
      until you wire real per-item iteration (see the template's own TODO).
+     `steward sync reconcile --schedule` (Story 8.4, added after the
+     template was written) enumerates every linked item on the board in
+     one run and can replace that single-item call.
 4. **Copy the two `.yml.template` files** into the target repo's
    `.github/workflows/`, dropping the `.template` suffix, and fill in each
    file's own `TODO` comments (fork/mirror path for the `local-recipes`
@@ -68,7 +81,7 @@ requires infrastructure this story does not provision:
 - **GitHub → Jira**: GitHub's `projects_v2_item` webhook exists, but there
   is **no `on: project_v2_item` (or `projects_v2_item`) workflow trigger** —
   verified against GitHub's own "events that trigger workflows"
-  documentation (2026-08-09; see ARCHITECTURE-SPINE.md AD-1's amendment
+  documentation (2026-08-09; see the sync spine's AD-1 amendment
   history). Reaching `github-to-jira.yml.template`'s `repository_dispatch`
   trigger requires an **external receiver** you stand up yourself — a
   GitHub App with org-level Projects read access, or a webhook endpoint —

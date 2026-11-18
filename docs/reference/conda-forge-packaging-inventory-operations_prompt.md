@@ -1,4 +1,15 @@
+---
+sources:
+  - scripts/conda-forge-packaging-inventory-operations_metrics.py
+  - scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py
+  - src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/nodes.py
+verified: 2026-11-17
+---
+
 # Revised Master Prompt — Consolidated Verified Package Inventory (Standalone)
+
+> [!NOTE]
+> Story numbers on this page (21.x, 23.x) are the ones the quartet scripts print. Atlas's `epics.md` was re-keyed on 2026-09-17 (`_bmad-output/projects/pyforge-atlas/planning-artifacts/rekey-2026-09-17.md`): Epics 12 to 25 moved down one, so Story 21.7 is now 20.7, Story 23.4 is 22.4, and Stories 23.8 and 23.9 are 22.8 and 22.9. Story 27.1 is unchanged.
 
 You are an **Expert Python Ecosystem Analyst and Open Source Packaging Specialist**.
 
@@ -10,8 +21,6 @@ Your job is to build a **single consolidated, deduplicated, verified package inv
 
 Do **not** depend on any pre-existing repo script. Execute the full workflow yourself.
 
----
-
 ## 1) Inputs (replace paths as needed)
 
 - Atlas data root (`PYFORGE_ATLAS_DATA_ROOT`) — **required (Story 23.9)**: pass
@@ -20,7 +29,7 @@ Do **not** depend on any pre-existing repo script. Execute the full workflow you
   deliverable A rows from `inventory_verified_packages.parquet`; the AOSS-Free
   Mason queue from `inventory_aoss_free_queue.parquet`. See
   [`conda-forge-packaging-inventory-operations_replay.md`](conda-forge-packaging-inventory-operations_replay.md)
-  execution mode 5 for the exact CLI shape.  
+  execution command 1 for the exact CLI shape.  
   `{{PYFORGE_ATLAS_DATA_ROOT}}`
 - OpenTeams export (`.tsv`):  
   `{{OPENTEAMS_TSV_PATH}}`
@@ -32,7 +41,7 @@ Catalog sources (Story 23.8 `inventory_universe.parquet` — replaces workbook s
 `tab:CDO-ENT-JFROG`, `tab:GAOSS-Free`, `tab:GAOSS-Premium`, `tab:Anaconda-Main`, `tab:Anaaconda-Dist`, `tab:Conda-Forge`, `tab:Basilisk`, `tab:OpenTeams`, `tab:CDO-ENT-CONDA`.
 
 Historical output snapshot tabs (retired 2026-08-30, Story 23.9 — do **not** ingest):  
-`verified-all-packages`, `inventory-2026-08-12`, `identity-2026-08-12` in `docs/Analysis_Dataset-2026-08-12.xlsx`.
+`verified-all-packages`, `inventory-2026-08-12`, `identity-2026-08-12` in the retired analysis workbook (`Analysis_Dataset-2026-08-12.xlsx`, never tracked in this repository).
 
 Must-include (every parseable library from these two is in the final inventory; 100% inclusion):
 - `CDO-ENT-JFROG` is the CDO JFrog/Artifactory consumption inventory (`name` plus Artifactory/internal-use/packaging-tier columns). Formerly `Analysis_Dataset-2026-07-19`. `10kOpen` is a clone of this tab — do not double-count.
@@ -41,8 +50,6 @@ Must-include (every parseable library from these two is in the final inventory; 
 OpenTeams 1:1 packaging tracker (live board
 https://github.com/orgs/OpenTeams-WFT-CDO/projects/1/views/6?sliceBy%5Bvalue%5D=OSS+Enhancements+%28Conda+Forge%2C+Pixi%2C+ect%29 ;
 `openteams_project_1_board_raw.parquet` is the snapshot source): every parseable library in `CDO-ENT-JFROG` ∪ `CDO-ENT-CONDA` must have exactly one issue titled `[Conda-Forge Packaging] {name}` (example `[Conda-Forge Packaging] grpcio`). One name per issue. CVE `|` titles do not count.
-
----
 
 ## 2) External sources to integrate
 
@@ -67,8 +74,6 @@ Use these sources and attribute packages to each source:
 8. Curated groups from provided JSON (if available): Apache, Django, Linux AI & Data, NumFOCUS, Jazzband, FINOS, PSF, PyPA, Trendshift, Google AOSS, Microsoft, Kedro, BMAD.
 
 If any live source is unavailable, fallback to the nearest materialized Atlas Parquet when possible and document the fallback.
-
----
 
 ## 3) Deep parsing requirements
 
@@ -97,9 +102,7 @@ Track per package:
 - tab attribution(s)
 - source attribution(s)
 - any priority hints (`P1..P10`)
-- availability hints from workbook (PyPI/conda-forge fields if present)
-
----
+- availability hints from the catalog source (PyPI/conda-forge fields if present)
 
 ## 4) Verification logic
 
@@ -108,7 +111,7 @@ For each canonical package:
 1. **PyPI verification (`PyPI_Verified`)**
    - Primary: check PyPI existence via canonical endpoint (e.g., `/pypi/{pkg}/json` or `/project/{pkg}/`).
    - If rate/perf constraints prevent full live verification, use a capped live check + clearly documented fallback heuristic:
-     - workbook hints
+     - catalog-source hints
      - conda-forge presence as supportive signal
    - Mark Yes/No deterministically.
 
@@ -122,26 +125,25 @@ For each canonical package:
 
 4. **Packaging candidate status**
    - `Already Packaged`: PyPI=Yes and conda-forge=Yes
-   - `High Priority`: PyPI=Yes and conda-forge=No and priority in P1–P8
-   - `Low Priority`: PyPI=Yes and conda-forge=No and priority in P9–P10 or unknown
-   - `Not on PyPI`: PyPI=No
+   - `High Priority Candidate`: PyPI=Yes and conda-forge=No and priority in P1–P8
+   - `Low Priority Candidate`: PyPI=Yes and conda-forge=No and priority in P9–P10 or unknown
+   - `Conda-Forge Only`: PyPI=No and conda-forge=Yes
+   - `Not on PyPI`: PyPI=No and conda-forge=No
 
 5. **Derived URL/PURL fields**
    - `PyPI_PURL`: `pkg:pypi/{package}` or `N/A`
    - `PyPI_Package_URL`: `https://pypi.org/project/{package}/` or `N/A`
-   - `Conda-forge_PURL`: `pkg:conda/{package}` or `N/A`
+   - `Conda-forge_PURL`: `pkg:conda/{package}?channel=conda-forge` or `N/A`
    - `Conda-Forge_Package_URL`: `https://anaconda.org/conda-forge/{package}/` or `N/A`
    - `Conda-Forge_FeedStock_URL`: `https://github.com/conda-forge/{package}-feedstock` or `N/A`
 
 Use a single UTC timestamp value for all rows: `Verification_Timestamp_UTC`.
 
----
-
 ## 5) Required CSV output schema (exact 14 columns)
 
 Output files:
-- Full inventory (exact 14 columns below) — workbook tab `verified-all-packages`; optional CSV `cdao_consolidated_inventory_verified_all_packages.csv`
-- Dated OpenTeams universe (`CDO-ENT-JFROG` ∪ `CDO-ENT-CONDA` only) — workbook tab `inventory-2026-08-12` in `docs/Analysis_Dataset-2026-08-12.xlsx`. Same 14 columns first, then appended handoff columns:
+- Full inventory (exact 14 columns below) — `derived/inventory_verified_packages/inventory_verified_packages.parquet` under the Atlas data root; optional CSV `cdao_consolidated_inventory_verified_all_packages.csv`
+- Dated OpenTeams universe (`CDO-ENT-JFROG` ∪ `CDO-ENT-CONDA` only) — `derived/identity_complete_export/identity_complete_export.parquet` (the retired workbook, never tracked in this repository, held it as tab `inventory-2026-08-12`). Same 14 columns first, then appended handoff columns:
   `OpenTeams_Title`, `OpenTeams_Cohort` (`JFROG_NEW` / `JFROG_ON_CF` / `CONDA_ONLY`),
   `OpenTeams_Batch` (`Fix vulnerability` / `Create recipe` /
   `File OpenTeams tracking issue [Conda-Forge Packaging]` /
@@ -172,8 +174,6 @@ Notes:
 - `Package_Input_Name` = representative original value (first stable raw token from inputs).
 - `Core_Python_Package_Name` = normalized canonical package name.
 
----
-
 ## 6) Required markdown report
 
 Output file: `cdao_consolidated_inventory_verified_all_packages.md`
@@ -200,8 +200,6 @@ Include sections:
 7. Net-New Packages breakdown (define net-new as not on conda-forge).
 8. Fallbacks/warnings section for unavailable live sources.
 
----
-
 ## 7) Terminal summary output (exact shape)
 
 Print:
@@ -226,8 +224,6 @@ is given without `--skip-revised-prompt` -- a default run writes no revised prom
 never overwrites this file.
 `scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py` pins this
 block against the actuator's stdout.
-
----
 
 ## 8) Quality gates (must pass before completion)
 

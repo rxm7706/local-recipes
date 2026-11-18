@@ -4,8 +4,8 @@ sources:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py
   - src/shared/packages/pyforge-steward/tests/unit/test_cli.py
   - src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py
-  - pixi.toml
-verified: 2026-10-24
+  - src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py
+verified: 2026-11-17
 ---
 
 # Station CLI Operations

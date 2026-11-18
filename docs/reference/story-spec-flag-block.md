@@ -1,3 +1,12 @@
+---
+sources:
+  - docs/governance/spec-feature-flag-governance/SPEC.md
+  - scripts/flag_rule.py
+  - scripts/flag_gate_check.py
+  - docs/governance/flag-rule-baseline.json
+verified: 2026-11-17
+---
+
 # The story-spec flag block
 
 Every capability ships behind a flag, and a check no station owns refuses a story that does not
@@ -37,8 +46,8 @@ When a story ships a new flag, register it in all four places before verificatio
 1. **`src/platform/config/flags.json`** — add the flag key, variants, default variant, and metadata.
 2. **`src/platform/config/flag-overlays.json`** — set per-environment variant values; they must follow the
    story spec's `flag.default` mapping (`production`, `staging`, `dev`).
-3. **`src/shared/packages/pyforge-core/tests/unit/test_flags.py`** — extend `_SHIPPED_CLOCKS`, `expected`, or
-   `per_environment` so core's flag contract covers the new key.
+3. **`src/shared/packages/pyforge-core/tests/unit/test_flags.py`** — add the key to `_SHIPPED_CLOCKS` and to one
+   of `expected` / `per_environment`, so core's flag contract covers the new key.
 4. **`src/platform/tests/test_openfeature_file_flags.py`** — extend `_SHIPPED_BOOLEANS` so the platform file
    provider contract covers the new key.
 
@@ -182,5 +191,5 @@ roster, baseline or tree cannot be read). `python scripts/flag_gate_check.py --s
 one story spec and prints one JSON object: `verdict` (`pass`, `warn` or `red`), `findings` and
 `rule_date`, exiting 0, 0 or 1 (2 when it cannot judge).
 
-`bmad-build` does not carry its own copy of the shape: marshal Story 74.3 adds a persistent fact
-under `_bmad/custom/` that points here.
+`bmad-build` does not carry its own copy of the shape: marshal Story 74.3 added a persistent fact
+under `_bmad/custom/` (in `bmad-spec.toml`, `bmad-build.toml` and `bmad-build-auto.toml`) that points here.

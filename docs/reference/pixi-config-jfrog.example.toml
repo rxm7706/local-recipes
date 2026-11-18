@@ -3,13 +3,17 @@
 # This file is a TEMPLATE. Copy it to ONE of these locations and edit the
 # placeholders to match your org's Artifactory setup:
 #
-#   - ~/.pixi/config.toml                   (per-user, applies to all pixi projects)
-#   - .pixi/config.toml                     (per-project, gitignored — recommended for this repo)
+#   - ~/.pixi/config.toml                   (per-user, applies to all pixi projects — recommended)
 #   - /etc/pixi/config.toml                 (system-wide; needs root)
 #
-# Example copy command (project-local, gitignored):
-#   cp docs/pixi-config-jfrog.example.toml .pixi/config.toml
-#   $EDITOR .pixi/config.toml
+# Do NOT copy it over this repository's own .pixi/config.toml: that file is
+# tracked and carries `run-post-link-scripts = "insecure"`, which the estate
+# needs. Pixi merges the layers (system, then user, then project), so a user
+# file adds to the project file instead of being shadowed by it.
+#
+# Example copy command (per-user):
+#   cp docs/reference/pixi-config-jfrog.example.toml ~/.pixi/config.toml
+#   $EDITOR ~/.pixi/config.toml
 #
 # Why this is needed:
 #   - Conda layer:  conda.anaconda.org and conda-forge upstream may be
@@ -24,7 +28,7 @@
 # URLs there would break external clones. The pixi config layer is the right
 # home: it's per-developer / per-machine and never committed.
 #
-# Verified for pixi 0.67.2. Schema may shift in newer versions; check
+# Verified for pixi 0.84.2 (2026-11-17). Schema may shift in newer versions; check
 # `pixi config set --help` and `pixi config list` if a key gets rejected.
 #
 # TOML rule: top-level keys MUST come before any [table] header. The blocks
@@ -51,12 +55,14 @@ default-channels = [
 # ── TLS: trust corporate CA roots ──────────────────────────────────────────
 # Choose the root-cert source uv/pixi uses for TLS verification:
 #   - "webpki" : bundled Mozilla roots (the default; will reject corporate CA)
-#   - "native" : OS trust store (picks up corporate CA installed via your
+#   - "system" : OS trust store (picks up corporate CA installed via your
 #                org's MDM / `update-ca-certificates`)
-#   - "all"    : both webpki + native (most permissive)
 #
-# Most enterprise users want "native" or "all".
-tls-root-certs = "all"
+# "native" is the deprecated name of "system", and "all" (both sets merged)
+# is no longer supported: pixi 0.84.2 warns on each and falls back to "system".
+#
+# Most enterprise users want "system".
+tls-root-certs = "system"
 
 # ── Post-link scripts — opt in for packages that need them ─────────────────
 # Pixi disables post-link scripts by default (security: an arbitrary package
@@ -64,8 +70,9 @@ tls-root-certs = "all"
 # CUDA toolkits, internal-tooling wheels, anything that registers itself with
 # the OS) require post-link scripts to function.
 #
-# In pixi 0.67.2 this is a binary toggle: only `"insecure"` is accepted; any
-# other value (or omitting the line) leaves post-link scripts disabled.
+# The accepted values are the strings `"insecure"` (run them) and `"false"`
+# (a bare boolean does not parse on pixi 0.84.2); omitting the
+# line leaves post-link scripts disabled.
 #
 # Set this when packages fail to install / function correctly with errors
 # referencing post-link or activation scripts. Safe in a trusted internal
@@ -167,12 +174,14 @@ index-url = "https://artifactory.example.com/artifactory/api/pypi/pypi/simple"
 # Notes
 # ═══════════════════════════════════════════════════════════════════════════
 #
-# - Pixi reads the FIRST config file found in this priority chain:
-#     1. project-local  ./.pixi/config.toml
+# - Pixi merges its config layers, the later one winning per key:
+#     1. system         /etc/pixi/config.toml
 #     2. user           ~/.pixi/config.toml
-#     3. system         /etc/pixi/config.toml
-#   Settings DO NOT merge across layers; a project-local file shadows the
-#   user file completely for the keys it sets. Plan accordingly.
+#     3. project-local  ./.pixi/config.toml
+#   (checked on pixi 0.84.2 with `pixi config list`). The conda-forge-expert
+#   scripts are different: they read only the first file that exists, which
+#   in this repository is the tracked project file, so set the `*_BASE_URL`
+#   environment variables for them (docs/explanation/enterprise-deployment.md).
 #
 # - To verify pixi picked up your config:
 #     pixi config list default-channels

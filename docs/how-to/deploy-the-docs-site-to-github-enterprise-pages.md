@@ -1,3 +1,12 @@
+---
+sources:
+  - .github/workflows/pages.yml
+  - docs/foundry/marketplace/README.md
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/catalog.py
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py
+verified: 2026-11-17
+---
+
 # Deploy the docs site to GitHub Enterprise Pages
 
 Use this procedure on the **enterprise copy** of this repository (`ghe.example` in the examples below) so the same unified Pages artifact Story 27.2 builds also publishes to an internal GitHub Enterprise Pages host. The build takes the deploying host's site URL and base path from `actions/configure-pages` on every host, with nothing to turn on; this page documents only the enterprise-side steps — it does not add a second workflow, artifact, or deploy caller. A host that cannot build at all pulls the public deploy's bytes instead ([section 6](#6-pull-the-zip-for-a-host-that-cannot-build)). [Section 7](#7-add-the-bmad-marketplace-from-an-internal-mirror) is for a teammate on that host who adds the BMAD marketplace from the mirror rather than deploys it.

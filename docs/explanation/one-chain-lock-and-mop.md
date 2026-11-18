@@ -1,3 +1,11 @@
+---
+sources:
+  - docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md
+  - docs/governance/spec-one-chain-per-station/SPEC.md
+  - docs/governance/guild-roster.json
+verified: 2026-11-17
+---
+
 # Why one chain is a lock, and a fold is mop
 
 This page explains why one Dream, one Spec, one PRD, one spine, and one epic chain per PyForge station is a **minting** rule: append on the living files, and fail an unexempted new folder with `chain-sprawl-check`. It is not a calendar of fleet-wide folds. The operator steps live in [`one-chain-station-ops.md`](../how-to/one-chain-station-ops.md). The checklist those steps obey is [`CHAIN-STANDARD.md`](../governance/spec-one-chain-per-station/CHAIN-STANDARD.md) §§ 3, 7, and 9 (Spec CAP-10).

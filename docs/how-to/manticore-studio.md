@@ -1,17 +1,29 @@
+---
+sources:
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/suite.py
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-46-6-heralds-manticore-studio-has-a-root-and-a-proven-native-path.md
+  - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-18-1-the-first-station-video-renders-from-heralds-studio.md
+  - presentations/pyforge-warden/src/marp/warden-deck-narration-2026-07-31.md
+verified: 2026-11-17
+---
+
 # Herald's manticore studio
 
 Herald's video-production tool, `bmad-manticore`, is adopted for exactly one
 purpose: turning a station deck's speaker notes into a rendered `.mp4`. It
 lives in its own studio ROOT, entirely **outside** this repo's git tree —
 never provisioned into `.claude/skills/`, never touching this repo's `_bmad/`
-or `_bmad-output/`. This doc records the exact, proven procedure (Story
-46.6). The first actual render is herald 18.1's job, not this doc's.
+or `_bmad-output/`. This doc records the exact, proven procedure (steward
+Story 46.6) and the first render made with it (herald Story 18.1). Both ran
+on the operator's Linux workstation on 2026-09-07; every "this machine" below
+means that workstation on that date.
 
 ## Studio root
 
 Declared once per machine by `$PYFORGE_STUDIO_ROOT` (default
-`~/pyforge-studio/`, per spine decision AD-3, 2026-09-06). On this machine
-the env var is unset, so the default resolves to `/home/rxm7706/pyforge-studio`.
+`~/pyforge-studio/`, per spine decision suite:AD-3, 2026-09-06). Steward's
+suite probe reads the same variable and default. On this machine the env var
+was unset, so the default resolved to `/home/rxm7706/pyforge-studio`.
 The directory is a plain filesystem path with its own independent `_bmad`
 tree — nothing under it is ever added to this repo's `.gitignore` or tracked
 by this repo's git.
@@ -23,16 +35,15 @@ Check with `which <tool>` on the studio machine:
 - `uv` — required
 - `node` — required
 - `git` — required
-- `ffmpeg` — required for the actual render step (herald 18.1); **not**
+- `ffmpeg` — required for the render step (herald 18.1); **not**
   required for the install itself
 
 Live result on this machine (2026-09-07): `uv`, `node`, and `git` all
 resolved (via the pixi `local-recipes` env's `bin/`, on PATH for this shell).
 **`ffmpeg` was absent from PATH entirely** — not merely missing from a pixi
-env, and not declared anywhere in `pixi.toml`. This is a documented gap, not
-something this story installs: the render step (herald 18.1, out of this
-story's scope) will need `ffmpeg` installed separately, by the operator, on
-whatever machine actually renders.
+env, and not declared anywhere in `pixi.toml` (still true 2026-11-17). Story
+46.6 did not install it: the operator installs `ffmpeg` separately on
+whatever machine renders.
 
 ## The one sanctioned install command
 
@@ -56,7 +67,8 @@ across three attempts at this story:
   irrelevant. All 48 tool integrations succeeded.
 
 `--tools` takes the full list of tool IDs from the installer's own
-`--list-tools` output — no subset is "the sanctioned command" once `--yes`
+`--list-tools` output (re-checked 2026-11-17 against bmad-method 6.12.2:
+the same 48 IDs) — no subset is "the sanctioned command" once `--yes`
 is used (the installer's own `--help` documents `--tools` as **required**
 for non-interactive `--yes` installs).
 
@@ -135,18 +147,12 @@ leaked into this repo's own `_bmad/` or `_bmad-output/`.
 This repo's own `.claude/skills/` also stayed at zero `mc-*` directories,
 before and after — the native install never targets this repo.
 
-## Next step
-
-Herald's first actual render using this studio is **Story herald 18.1's**
-job — this doc only proves the studio exists, is reachable, and is
-isolated. `ffmpeg` will need to be installed on whatever machine runs that
-story before a render can succeed. (That render is the one recorded
-immediately below, completed 2026-09-07.)
-
 ## Story 18.1: the first real render (2026-09-07)
 
-`ffmpeg` was resolved via the `ffmpeg` pixi env on this machine (the gap the
-section above flagged). The full pipeline walked for real, end to end, on
+`ffmpeg` was supplied on this machine for the render (the gap the
+prerequisites section flagged). This page first recorded the source as an `ffmpeg`
+pixi env; `pixi.toml` declares no environment of that name today, so install
+`ffmpeg` on the render machine yourself. The full pipeline walked for real, end to end, on
 project `warden-never-false-green` (format `voiceover-explainer`), narrating
 the real Warden deck's speaker notes
 (`presentations/pyforge-warden/src/marp/warden-deck-narration-2026-07-31.md`

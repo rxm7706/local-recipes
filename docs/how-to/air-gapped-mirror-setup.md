@@ -1,3 +1,13 @@
+---
+sources:
+  - scripts/mirror-channels.py
+  - scripts/offline-build.sh
+  - docs/explanation/enterprise-deployment.md
+  - docs/reference/pixi-config-jfrog.example.toml
+  - .scripts/build_steps.sh
+verified: 2026-11-17
+---
+
 # Air-gapped mirror setup
 
 Procedural steps for mirroring conda-forge packages and building offline. For architecture rationale and JFrog integration design, see [`docs/explanation/enterprise-deployment.md`](../explanation/enterprise-deployment.md).
@@ -65,9 +75,8 @@ done < urls.txt
 ```bash
 mamba install -c conda-forge conda-index
 
-for subdir in linux-64 osx-64 osx-arm64 win-64 noarch; do
-    conda-index mirror/conda-forge/$subdir
-done
+# conda-index takes the channel root and indexes every subdir under it
+python -m conda_index mirror/conda-forge
 ```
 
 **Step 5: Transfer to Air-Gapped System**
@@ -102,21 +111,27 @@ trusted-host = internal-pypi.company.com
 
 ## Mirror management (`scripts/mirror-channels.py`)
 
-**Update Mirror**
+The script has four subcommands: `mirror`, `verify`, `cleanup` and `index`. It needs the
+`requests` package.
+
+**Create or update a mirror**
 
 ```bash
-python scripts/mirror-channels.py \
+python scripts/mirror-channels.py mirror \
   --source conda-forge \
   --dest /path/to/mirror \
-  --packages-file packages.txt \
-  --update
+  --packages-file packages.txt
 ```
 
-**Verify & Cleanup**
+`mirror` resolves dependencies unless you pass `--no-deps`, and takes `--packages <name ...>`,
+`--subdirs <subdir ...>` and `--workers <n>` (default 4). Re-run it to pick up new versions.
+
+**Verify, clean up, reindex**
 
 ```bash
-python scripts/mirror-channels.py --verify /path/to/mirror
-python scripts/mirror-channels.py --cleanup /path/to/mirror --keep-versions 2
+python scripts/mirror-channels.py verify /path/to/mirror
+python scripts/mirror-channels.py cleanup /path/to/mirror --keep-versions 2
+python scripts/mirror-channels.py index /path/to/mirror
 ```
 
 ## Building packages offline (`scripts/offline-build.sh`)
@@ -125,10 +140,14 @@ python scripts/mirror-channels.py --cleanup /path/to/mirror --keep-versions 2
 2. **Build Process**:
 
 ```bash
-export CONDA_OFFLINE=1
-export CONDA_PKGS_DIRS=/opt/mirror/pkgs
-./scripts/offline-build.sh recipes/my-package
+./scripts/offline-build.sh recipes/my-package --mirror /opt/mirror
 ```
+
+The script sets `CONDA_OFFLINE=1` and `CONDA_PKGS_DIRS=<mirror>/pkgs` itself and builds against
+`file://<mirror>/conda-forge`. The mirror path defaults to `/opt/conda-mirror`
+(`CONDA_MIRROR_PATH`), so pass `--mirror` when you extracted to `/opt/mirror` as in Step 5.
+Other options: `--target-platform <platform>`, `--output <dir>` (default `./output`) and
+`--conda-build` for `meta.yaml` recipes; rattler-build is the default.
 
 ## JFrog-proxied deployment checklist
 
@@ -139,15 +158,15 @@ proxy architecture), use this checklist instead of Steps 1-6.
 ### Setup (one-time)
 
 - [ ] Confirm JFrog has remote repositories for: conda-forge, pypi.org, files.pythonhosted.org (recommended), api.anaconda.org (optional)
-- [ ] Set up corporate CA in OS trust store, or set `REQUESTS_CA_BUNDLE` env var, or pixi's `tls-root-certs = "native"`
-- [ ] Author `.pixi/config.toml` from the template at `docs/reference/pixi-config-jfrog.example.toml`
+- [ ] Set up corporate CA in OS trust store, or set `REQUESTS_CA_BUNDLE` env var, or pixi's `tls-root-certs = "system"`
+- [ ] Author `~/.pixi/config.toml` from the template at `docs/reference/pixi-config-jfrog.example.toml` (never overwrite the tracked project file `.pixi/config.toml`)
 - [ ] Set up `*_BASE_URL` env vars in `~/.bashrc` / `.envrc` / pixi env activation (see [`docs/explanation/enterprise-deployment.md`](../explanation/enterprise-deployment.md) § 6 for the full table)
-- [ ] Bootstrap the CVE database from the internal mirror: `pixi run -e vuln-db update-cve-db`
-- [ ] Bootstrap the atlas: `pixi run bootstrap-data -- --fresh` (30-45 min cold; uses your `*_BASE_URL` overrides)
-- [ ] Validate: `pixi run health-check` (expects no public-host errors)
-- [ ] Confirm the `build` env resolves — the CI linter exports `environment.yaml` from it
-- [ ] Decide which product envs you need; they are `no-default-feature` and cheap, but each still pulls its own run-deps
-- [ ] **Do NOT** budget for `pixi run bmad-preflight` — that task is broken (see [`docs/how-to/pixi-tasks.md`](pixi-tasks.md))
+- [ ] Bootstrap the CVE database from the internal mirror: `pixi run -e local-recipes update-cve-db`
+- [ ] Bootstrap the atlas: `pixi run -e local-recipes bootstrap-data -- --fresh` (30-45 min cold; uses your `*_BASE_URL` overrides)
+- [ ] Validate: `pixi run -e local-recipes health-check` (expects no public-host errors)
+- [ ] Confirm the `build` env resolves — `environment.yaml` is exported from it, and the Docker build lane (`.scripts/build_steps.sh`) installs that file
+- [ ] Decide which `pyforge-*` envs you need; they are `no-default-feature`, so each pulls only its own run-deps (`pyforge-guild` is the session default, `local-recipes` is the recipe factory)
+- [ ] **Do NOT** budget for `pixi run bmad-preflight` — its script, `scripts/ensure-bmad-preflight.sh`, is missing (see [`docs/how-to/pixi-tasks.md`](pixi-tasks.md))
 
 ### Per-session
 

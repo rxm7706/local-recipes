@@ -1,9 +1,8 @@
 ---
 sources:
   - CLAUDE.md
-  - pixi.toml
-  - docs/dreams/pyforge-marshal.md
-verified: 2026-10-24
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/claude.toml
+verified: 2026-11-17
 ---
 
 # How to Launch a Cost-Saving Interactive Session

@@ -1,13 +1,15 @@
 ---
 sources:
-  - pixi.toml
   - src/platform/README.md
+  - src/platform/manage.py
   - src/platform/config/settings/base.py
   - src/platform/config/urls.py
   - src/platform/config/local_dev/mint.py
+  - src/platform/config/flag-overlays.json
+  - src/platform/compose/compose.yml
   - .github/workflows/platform-ci.yml
-  - archive/docs/dreams/platform-dev-boots-local.md
-verified: 2026-10-24
+  - scripts/platform-ci-local.sh
+verified: 2026-11-17
 ---
 
 # Local Platform Development
@@ -19,7 +21,7 @@ This tutorial guides Platform Builders and New Developers through standing up th
 - Ensure you have read the [PyForge Ecosystem Architecture](../explanation/pyforge-ecosystem-architecture.md) to understand the relationship between the platform and the CLI stations.
 
 ## Step 1: Provision the Development Environment
-The platform dependencies are managed via the `platform-dev` environment in `pixi.toml` — the no-Docker local baseline. It composes the image's `python-agent-platform` feature (Django, Wagtail, Langflow, the ASGI stack) with per-user server processes: PostgreSQL 17 + pgvector, Redis, the Silo S3-compatible object store, plus `helm`/`kubectl` for chart work and `django-debug-toolbar` for the local settings leaf.
+The platform dependencies are managed via the `platform-dev` environment in `pixi.toml` — the no-Docker local baseline (its feature list is in the generated [Pixi environments](../reference/environments.md)). It composes the image's `python-agent-platform` feature (Django, Wagtail, Langflow, the ASGI stack) with per-user server processes: PostgreSQL 17 + pgvector, Redis, the Silo S3-compatible object store, plus `helm`/`kubectl` for chart work and `django-debug-toolbar` for the local settings leaf.
 
 ```bash
 pixi install -e platform-dev
@@ -61,17 +63,17 @@ You can now access:
 - Station portals under `http://localhost:8000/stations/<name>/`, and the stations index at `http://localhost:8000/stations/` when flag `pyforge.steward.stations_index` is ON (dev has it ON; staging and production stay OFF until rollout)
 
 ## Step 5: Run the Platform Tests
-The Platform CI `test` job runs from `src/platform/` in the slim `platform-ci-test` environment (the sole authority for that job's dependencies): it installs Chromium for herald's deck-viewer browser check, then runs `manage.py check`, Ruff, Ruff format, mypy, the policy suite, the sqlmigrate extraction, and the full suite. Mirror it locally:
+Platform CI runs two jobs from `src/platform/` in the slim `platform-ci-test` environment (the sole authority for their dependencies). The `checks` job runs `manage.py check`, Ruff, Ruff format, mypy, the policy suite and the sqlmigrate extraction. The `test` job installs Chromium for herald's deck-viewer browser check, then runs the full suite under pytest-xdist. Mirror them locally:
 ```bash
 pixi install -e platform-ci-test
 cd src/platform
-pixi run -e platform-ci-test python -m playwright install chromium   # once; CI adds --with-deps
+pixi run -e platform-ci-test python -m playwright install chromium   # once; CI adds `playwright install-deps chromium` only when the browser fails to launch
 pixi run -e platform-ci-test python manage.py check
 pixi run -e platform-ci-test python -m pytest tests/policy -v
-pixi run -e platform-ci-test python -m pytest -v
+pixi run -e platform-ci-test python -m pytest -v -n 4 --dist loadgroup
 ```
 
-To replay the whole `test` job step for step (Ruff, mypy and the sqlmigrate extraction included), run the local twin from the repo root: `pixi run -e pyforge-guild platform-ci-local -- --test`.
+To replay both jobs step for step (Ruff, mypy and the sqlmigrate extraction included), run the local twin from the repo root: `pixi run -e pyforge-guild platform-ci-local -- --test`.
 
 > [!IMPORTANT]
 > The `dashboard/` extra is the only place Django lives in a station package. Never import `django` or `channels` at the module level in the base `pyforge-<station>` packages. The base packages must be capable of importing and running their CLI without the `[dashboard]` extra installed.

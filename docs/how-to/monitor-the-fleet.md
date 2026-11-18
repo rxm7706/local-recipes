@@ -2,12 +2,13 @@
 sources:
   - scripts/fleet_picture.py
   - scripts/fleet-poll-hourly.sh
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py
+  - scripts/fleet_poll_sync.sh
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/watch.py
   - .claude/memory/reference/fleet-landing-pass-liveness.md
   - src/shared/packages/pyforge-steward/src/pyforge/steward/sprint_ledger_query.py
   - .claude/skills/bmad-sprint-ledger-query/SKILL.md
-  - pixi.toml
-verified: 2026-10-24
+verified: 2026-11-17
 ---
 
 # How to Monitor the Fleet

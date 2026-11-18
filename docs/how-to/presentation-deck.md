@@ -1,7 +1,19 @@
 ---
 status: workflow
 spec_updated: 2026-07-24
+sources:
+  - scripts/deck_export.py
+  - scripts/deck_trio.py
+  - scripts/deck_facts.py
+  - src/shared/packages/pyforge-herald/src/pyforge/herald/registry.py
+  - src/shared/packages/pyforge-herald/src/pyforge/herald/state.py
+  - src/shared/packages/pyforge-herald/src/pyforge/herald/sync_all.py
+  - src/shared/packages/pyforge-herald/src/pyforge/herald/pptx_pipeline.py
+  - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/infographic-standard.md
+  - presentations/agentic-sdlc/package.json
+verified: 2026-11-17
 ---
+
 # Tech Spec: Design-to-Deck — reusable React/Vite presentation workflow (parameterized)
 
 > **Timeless workflow.** Turn a **Claude Design** 1920×1080 prototype
@@ -22,18 +34,15 @@ spec_updated: 2026-07-24
 > in the BMAD Method) lives at the bottom and is the reference implementation
 > shipped in PR #50 under `presentations/agentic-sdlc/`.
 >
-> This is a **framework-neutral workflow guide**, living here in `docs/how-to/`
-> with a `status: workflow` stub retained at `docs/how-to/presentation-deck.md`
-> (Story 23.3). Any agent/human can execute it. It has **no** conda-forge
-> surface, so CLAUDE.md Rules 1 & 2 (invoke `conda-forge-expert`, run a CFE
-> retro) do **not** apply.
+> This is a **framework-neutral workflow guide** (frontmatter `status: workflow`,
+> Story 23.3). Any agent/human can execute it. It has **no** conda-forge
+> surface, so the `conda-forge-expert` skill and its closing retro
+> (`AGENTS.md` § *Where things are*) do **not** apply.
 >
 > **Pixi:** the deck export tasks (`deck-export`, `deck-trio`, `deck-facts`) and the `marp`
 > binary `deck-export` runs live in `pyforge-guild`, the session default (steward Stories 63.6
 > and 63.8) — `pixi install -e pyforge-guild` is all they need. `local-recipes` still carries
 > them for back-compat, but a Guild task run as `-e local-recipes` is refused by the session hook.
-
----
 
 ## Genesis — The Dream & the PyForge Guild
 
@@ -49,16 +58,13 @@ does not duplicate it.
 starting point of every deliverable. Herald reads the Dream to render *The Deck*;
 BMAD-method (`bmad-spec`, or the planning chain) turns the same Dream into the
 active spec in `_bmad-output/projects/<slug>/planning-artifacts/`. Everything
-starts with a Dream. (This file itself predates the model; its operational body
-now lives here in `docs/how-to/` as a **timeless workflow** doc, with a
-`status: workflow` stub retained at `docs/how-to/presentation-deck.md`.)
+starts with a Dream. (This file itself predates the model; it is kept in
+`docs/how-to/` as a **timeless workflow** doc.)
 
 **Why this matters to this spec:** **Herald is the presentation persona** — the
 decks produced by this workflow *are* Herald's output. Each persona gets its own
 deck (see § *Worked Examples* → *The live deck family*); a Herald deck is, fittingly,
 a deck about the deck engine.
-
----
 
 <!-- governance-currency:ignore-start (every src/... path from here to the end of this parameterized workflow doc is relative to ONE deliverable's own repo layout, presentations/<slug>/src/..., never this monorepo's root src/ -- the dead-reference heuristic cannot tell the two apart; docs-currency Story 30.2) -->
 
@@ -90,8 +96,6 @@ a deck about the deck engine.
 6. **Verify** against [Acceptance criteria](#acceptance-criteria).
 7. **Append a new Worked Example** recording the concrete parameters, slide
    count, act structure, and the PR/commit refs. That becomes a permanent record.
-
----
 
 ## Claude Design ↔ repo handoff (operating playbook)
 
@@ -179,6 +183,7 @@ whole on every `register`. Historical notes (a project renamed, a deck seeded la
 it. Rebuild it from the READMEs — they are the durable record:
 
 ```python
+import pathlib
 from pyforge.herald import registry, state   # repo root as cwd
 root = pathlib.Path(".").resolve(); sp = root / state.DEFAULT_STATE_PATH
 for readme in sorted(root.glob("presentations/pyforge-*/README.md")):
@@ -241,7 +246,7 @@ after.
 **Shipping a `presentations/` PR.** It's a non-recipe change → add the
 `maintenance` + `documentation` labels (the `maintenance`-gated lint is what
 otherwise reds the staged-recipes linter) and confirm `environment.yaml` is in
-sync with `pixi.toml`. See auto-memory `feedback_non_recipe_pr_linter_gates`.
+sync with `pixi.toml`. See `AGENTS.md` § *Pre-PR Pre-flight Checklist* item 7.
 
 ### Artifact dependency tree & editing surfaces (per deck — READ BEFORE EDITING)
 
@@ -327,13 +332,11 @@ pull to `presentations/<slug>/project/` and a commit (per-deck README ledgers
 track etags). **The infographic standard** — floors, act arc, section set, diagram set,
 authoring template and the README ledger entry — has one home:
 `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/infographic-standard.md`
-(`spec-deck-family-currency` CAP-1). Unifying Strategy is the structure, acts and length
+(CAP-1 of the archived `spec-deck-family-currency`). Unifying Strategy is the structure, acts and length
 reference; Warden is the density and visual-form reference (its designated-best
 `Warden Infographic standalone.html` is copied into every deck project as `reference/` for
 Design chats to read). A poster below any floor — six act bands, ≥ 18 sections, ≥ 3 inline
 SVGs, ≥ 90 KB, every fact a `facts.yaml` row, full-page PNG reviewed — is not current.
-
----
 
 ## Parameters (fill these per case)
 
@@ -352,8 +355,6 @@ SVGs, ≥ 90 KB, every fact a `facts.yaml` row, full-page PNG reviewed — is no
 | `screenshot_slots` | slide 40 "In action" (3 panels) | `<image-slot>` placeholders left for real screenshots |
 | `branch_name` | `claude/add-<slug>-deck` | One PR per deck |
 | `exports` | Marp `.marp.md`, PowerPoint `.pptx` | Distributable non-React formats |
-
----
 
 ## Repo layout (the deliverable)
 
@@ -400,8 +401,6 @@ presentations/<slug>/
   public/assets/banners/  remote images localized for offline/export safety
 ```
 
----
-
 ## The prototype contract (design↔engine interface)
 
 The extractor is a small regex parser, so the Claude Design prototype must
@@ -431,11 +430,9 @@ Rules that keep extraction lossless:
 - **Footers** may carry `NN / TT` page markers; `restructure-deck.mjs` renumbers
   them to the final total if you reorder.
 
----
-
 ## The pipeline
 
-### 1. (Optional) restructure — `npm run restructure`
+### 1. (Optional) restructure — `node scripts/restructure-deck.mjs`
 `scripts/restructure-deck.mjs` is a **one-time, non-idempotent** transform run
 against the prototype *before* extraction when the raw Claude Design output needs
 editorial surgery: insert clean act-divider slides, merge/drop redundant slides,
@@ -492,8 +489,6 @@ starts on first open and persists across `S` toggles within a session
   to `src/marp/`.
 - **PowerPoint** `.pptx` — a dated export under `src/pptx/<slug>-YYYY-MM-DD.pptx`.
 
----
-
 ## Design system defaults (parameterizable)
 
 The reference theme (swap per topic):
@@ -507,8 +502,6 @@ The reference theme (swap per topic):
   in `restructure-deck.mjs`'s `divider()` — reuse its shape, restyle to taste.
 - **Chapter covers:** full-bleed banner image + dark gradient scrim + optional
   stats row.
-
----
 
 ## Standard export set (the deck-family contract)
 
@@ -532,7 +525,7 @@ in `src/marp/`:
 2026-07-23 evening decisions below):
 4. `src/marp/<slug>-infographic-standalone-<YYYY-MM-DD>.html` — self-contained
    offline poster. **Design-authored bundle preferred** (the richer Claude-Design
-   "bundled page", pulled via the Design↔Code bridge — warden's 411 KB poster is
+   "bundled page", pulled via the Design↔Code bridge — warden's poster is
    the exemplar); `marp --html` render of #3 is the **fallback** when no
    Design-authored bundle exists.
 5. `src/pptx/<slug>-deck-<YYYY-MM-DD>.pptx` — target: **editable PowerPoint**.
@@ -562,7 +555,7 @@ in `src/marp/`:
    is restored on the next warden pull. Marp render only where no bundle exists.
 3. **Derived exports cross the bridge outbound.** After `deck-export`, the herald
    CLI pushes the regenerated set back into the deck's Design project
-   (`SPEC-design-code-bridge` CAP-5), so Design holds the complete set too.
+   (CAP-5 of the archived `spec-design-code-bridge`), so Design holds the complete set too.
 
 **Generation** — from repo root; the `pyforge-guild` pixi env carries `marp` 4.2.3
 (steward Story 63.8; `local-recipes` has it too), and Chrome is read from the host at
@@ -603,8 +596,6 @@ the current PPTX and marp-rendered standalone HTML artifacts are **interim** —
 superseded per-deck as deckcraft (editable PPTX) and Design-authored bundles
 (standalone HTML) come online.
 
----
-
 ## Acceptance criteria
 
 - [ ] `npm install && npm run dev` serves the deck at `localhost:5173` with all
@@ -626,8 +617,6 @@ superseded per-deck as deckcraft (editable PPTX) and Design-authored bundles
       `build` job of `.github/workflows/pages.yml` on the pull request, before
       merge (steward Story 102.2 folded the old `docsite-check.yml` lane into it);
       `pixi run -e pyforge-guild pr-preflight` predicts it locally.
-
----
 
 ## Conventions & gotchas
 
@@ -676,21 +665,21 @@ superseded per-deck as deckcraft (editable PPTX) and Design-authored bundles
   `recipes/`; the conda-forge tooling and its `**/[Pp]ackages/*` ignore rules do
   not apply here.
 
----
-
 ## Worked Examples
 
 New decks append a subsection here. Do not modify the workflow above; record the
-per-case reality below.
+per-case reality below. Each example names its export files as they shipped. Under
+the one-current-version rule (§ *Standard export set*) the tree now holds newer
+dates: `agentic-sdlc`'s deck source and PPTX are dated 2026-08-01, and
+`pyforge-warden`'s and `pyforge-atlas`'s export sets are dated 2026-09-15.
 
 **The live deck family.** **`pyforge-genesis`** is the **master vision deck** — the
 parent narrative of the founding Dream (and its *seed*: it lays out the operating
 model well enough to initiate a new repo or adopt the model in a brownfield one).
 Each persona in the § *Genesis* PyForge Guild then gets its own chapter deck. **Atlas** and **Warden** have shipped decks (Examples 3 & 2);
-**Herald, Marshal, Mason, and Doctor** have seeded starter decks; **Scribe and
-Steward** (adopted 2026-07-23) join the backlog as `pyforge-scribe` and
-`pyforge-steward` — the existing family convention (matching `pyforge-atlas` /
-`pyforge-warden`). All eight persona decks
+**Herald, Marshal, Mason, Doctor, Scribe and Steward** each have a deck under
+`presentations/pyforge-<station>/` — the existing family convention (matching
+`pyforge-atlas` / `pyforge-warden`). All eight persona decks
 share one **Modernist / Archivo** design system (display **Archivo** / **Archivo
 Expanded**; light `#f3f2f2`, dark `#201e1d`, red `#ec3013` / `#c22a10`) so they
 present side-by-side as a family. `agentic-sdlc` (Example 1) is the **origin
@@ -725,8 +714,8 @@ theme — so a new persona deck should scaffold from **`pyforge-atlas` or
   attribute parsing in `extract-slides.mjs`) was declined — the double-quote
   parser already extracts the real prototype and the proposed regex allowed
   mismatched quotes.
-- `spec_updated` reflects when this workflow spec was back-filled (2026-07-11)
-  from the shipped effort; the deck itself predates the spec.
+- This workflow spec was back-filled on 2026-07-11 from the shipped effort; the
+  deck itself predates the spec.
 - **Export standardization (2026-07-23):** brought agentic into the § *Standard
   export set*. Authored `agentic-sdlc-executive-summary-2026-07-23.md` +
   `agentic-sdlc-infographic-2026-07-23.md` (Marp, in the deck's own Space-Grotesk

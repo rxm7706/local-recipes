@@ -1,8 +1,20 @@
+---
+sources:
+  - .claude/skills/conda-forge-expert/scripts/_http.py
+  - .claude/skills/conda-forge-expert/scripts/detail_cf_atlas.py
+  - .pixi/config.toml
+  - docs/reference/pixi-config-jfrog.example.toml
+  - .github/workflows/pages.yml
+  - .github/workflows/platform-deploy.yml
+  - src/platform/deploy/charts/platform/values.yaml
+  - src/platform/deploy/overlays/eso
+  - docs/how-to/rotate-platform-secrets.md
+verified: 2026-11-17
+---
+
 # Enterprise Deployment & Air-Gapped Environments
 
 Complete guide for deploying conda-forge packages in environments without internet access, and integrating with JFrog Artifactory. This document consolidates the architecture for air-gapped setups and the Artifactory proxying mechanism.
-
----
 
 ## 1. Air-Gapped Environment Setup
 
@@ -17,8 +29,8 @@ means something different for each surface:
 | Thing | Deploys? | Detail |
 |---|---|---|
 | **GitHub Pages docs artifact** (`docs-site/build/site/`) | **Yes — CI deploys one artifact** | Starlight shelf at the site root, herald dossier at `/herald/`, Kedro-Viz at `/dashboard/kedro-viz/` when atlas's `kedro-viz-export` artifact is mounted (skipped, never failed, when absent); built in the `site` env and published by `.github/workflows/pages.yml` (the sole `deploy-pages` caller) to `https://rxm7706.github.io/local-recipes/` |
-| Feedstocks / conda packages | **No** | No feedstock-creation workflow exists in this repo; `publish`, `publish-range`, `submit-pr` are developer-invoked, never CI-invoked |
-| The **platform** Helm chart (`src/platform/deploy/charts/platform/`) | **Yes, but human-triggered** | Deploys the Django platform (web/worker/beat/consumers, Postgres, Redis, optional Keycloak) via manual `helm install` or the `workflow_dispatch`-only `.github/workflows/platform-deploy.yml` against a Warden-verified digest — never automatic on push. See `docs/explanation/platform-deployment-architecture.md` and §§ 7-8 below |
+| Feedstocks / conda packages | **No** | No feedstock-creation workflow exists in this repo; the `local-recipes` tasks `publish`, `publish-range` and `submit-pr` are operator-invoked, never CI-invoked |
+| The **platform** Helm chart (`src/platform/deploy/charts/platform/`) | **Yes, but human-triggered** | Deploys the Django platform (web/worker/beat/consumers, Postgres, Redis, optional Keycloak) via manual `helm install` or the `workflow_dispatch`-only `.github/workflows/platform-deploy.yml` against a Warden-verified digest — never automatic on push. See [`platform-deployment-architecture.md`](platform-deployment-architecture.md) and §§ 7-8 below |
 | Other containers (root `Containerfile`, the two `src/platform/compose/*/Containerfile` sidecars) | **No — built and gate-checked in CI only** | The root Guild `Containerfile` and the sidecar Containerfiles are built by `.github/workflows/pyforge-station-tests.yml` / `platform-ci.yml` and run through `scripts/container-gates` (secrets-scan, volumes), but nothing pushes or runs them as a deployed service — CI build-time verification, not deployment |
 | `helm/lasuite-docs/values.yaml` | **No** | A values override with no chart and no apply step — a design/intent artifact, unreferenced by any in-repo code path |
 | `conf/base/knowledge.yml` | **No** | Config for the `sentinel` wiki agent (`src/sentinel/`); unreferenced by any deploy path |
@@ -36,8 +48,6 @@ Air-gapped environments require:
 1. **Full Mirror**: Mirror entire conda-forge channel locally. (Pros: Complete package availability. Cons: Large storage, slow sync).
 2. **Selective Mirror**: Mirror only required packages and dependencies. (Pros: Smaller footprint. Cons: May miss transitive dependencies).
 3. **Artifactory Proxy (Hybrid)**: Use Artifactory to cache packages on-demand. (Pros: Automatic caching. Cons: Requires initial internet access).
-
----
 
 ## 2. JFrog Artifactory Integration
 
@@ -72,7 +82,7 @@ Follow the same pattern for `conda-internal` (rclass: local) and `conda-all` (rc
 ### Which repository types to provision for full air-gap
 
 Beyond the conda-forge Remote/Local/Virtual trio above, a fully air-gapped deployment needs these
-JFrog repository types. The first two cover the default `local-recipes` env; the rest are optional
+JFrog repository types. The first two cover the `local-recipes` recipe-factory env; the rest are optional
 depending on which atlas phases and recipe ecosystems you use:
 
 - **conda-forge mirror** — JFrog "Conda Remote Repository" pointing at `https://conda.anaconda.org/conda-forge`
@@ -89,8 +99,8 @@ depending on which atlas phases and recipe ecosystems you use:
 - **CVE feed mirror** (NVD, GHSA, OSV) — internal copy refreshed by your security team
 - **AppThreat vdb mirror** — internal copy of the vdb tarball
 
-`_http.py` auto-routes to each via the corresponding `*_BASE_URL` env var (§ 6) — no code changes
-required.
+The conda-forge-expert scripts route to each through the corresponding env var (§ 6) — no code
+changes required.
 
 ### Client Configuration
 
@@ -155,38 +165,42 @@ jobs:
 
 ### Cross-host credential leak (security warning)
 
-The skill's HTTP helper at `.claude/skills/conda-forge-expert/scripts/_http.py` injects the `X-JFrog-Art-Api` header on **every** outbound request when `JFROG_API_KEY` is set in the environment — regardless of the destination host. This means a long-lived shell that exported `JFROG_API_KEY` for JFrog work will silently attach the credential to subsequent calls hitting public hosts (`pypi.org`, `github.com`, `api.anaconda.org`, AWS S3, etc.), where it appears in remote access logs as a bearer-style identifier.
+The skill's HTTP helper at `.claude/skills/conda-forge-expert/scripts/_http.py` used to attach the `X-JFrog-Art-Api` header to **every** outbound request whenever `JFROG_API_KEY` was set, whatever the destination host. It no longer does. `auth_headers_for` now gates JFrog credentials (the API key, or `JFROG_USERNAME` + `JFROG_PASSWORD`) to hosts the operator configured as a mirror: a host named by a set `*_BASE_URL` env var or by the pixi config's `mirrors`, `default-channels` or `pypi-config` index URLs. The helper's own public fallback hosts never qualify, and `github.com` / `api.github.com` are always excluded.
 
-**Mitigation patterns (pick one):**
+Three exposures remain:
 
-- **Subshell scoping (recommended for one-off external calls):**
+- **A `default` entry in `~/.netrc`.** With the gate in place, a request to an unconfigured host falls through to the `.netrc` lookup, so a `default` entry sends its Basic credentials to public hosts. Name the machine explicitly instead.
+- **Self-hosted forges.** A GHES or GitLab host named by `GITHUB_API_BASE_URL` / `GITLAB_API_BASE_URL` counts as configured and receives the JFrog credential, not `GITHUB_TOKEN`.
+- **Tools outside `_http.py`.** The gate covers the conda-forge-expert scripts only. `gh`, `git`, pixi and uv read their own credentials.
+
+**Shell scoping is still good practice (pick one):**
+
+- **Subshell scoping (for one-off external calls):**
   ```bash
-  ( unset JFROG_API_KEY; pixi run -e local-recipes submit-pr <recipe> )
+  ( unset JFROG_API_KEY; pixi run -e local-recipes submit-pr <recipe> --dry-run )
   ```
-- **Per-shell discipline**: export `JFROG_API_KEY` only in shells that exclusively touch JFrog-mirrored URLs (typically a dedicated terminal pane for `bootstrap-data`, `update-cve-database`, etc., with the corresponding `*_BASE_URL` env vars also set).
+- **Per-shell discipline**: export `JFROG_API_KEY` only in shells that exclusively touch JFrog-mirrored URLs (typically a dedicated terminal pane for `bootstrap-data`, `update-cve-db`, etc., with the corresponding `*_BASE_URL` env vars also set).
 - **Direnv / shell hook**: scope the export to a `.envrc` file in directories that touch JFrog only.
 - **Activation hook (`[feature.<env>.activation.env]`)**: pass `JFROG_API_KEY` through only on a dedicated env that needs it:
   ```toml
-  # pixi.toml — risky if applied to the default env
+  # pixi.toml — risky if applied to an everyday env
   [feature.atlas-jfrog.activation.env]
   JFROG_API_KEY = "${JFROG_API_KEY}"  # pass-through from launching shell
   ```
-  Never add it to `feature.local-recipes.activation.env` (the default env) — that would
-  re-introduce the leak on every command.
+  Never add it to an everyday env's activation (`pyforge-guild`, the session default, or
+  `local-recipes`) — that exports the key on every command.
 
-**Commands known to hit non-JFrog external hosts** (require unset before invocation when the env var is set):
+**Commands that reach public hosts** (the hosts the gate keeps the JFrog credential away from, unless you configured them as mirrors):
 
 - `submit_pr`, `prepare_submission_branch` — push to `github.com`
 - `generate_recipe_from_pypi` — `pypi.org` API
 - `update_recipe_from_github` — `api.github.com`
-- `update_cve_database` — NVD / OSV mirrors
-- `update_mapping_cache` — PyPI Simple index
+- `update_cve_database` — the OSV bulk feed
+- `update_mapping_cache` — the cf-graph name mapping on `raw.githubusercontent.com`
 - `atlas-phase F` or `bootstrap-data` in `auto` mode without `S3_PARQUET_BASE_URL` override — AWS S3
 - `atlas-phase H` in `cf-graph` mode — `github.com` tarball
 
 This document is the canonical source for the leak and its mitigations; the retired per-station `project-context.md` rulebooks (Story 30.2, 2026-09-06) used to mirror an older, less complete copy of it.
-
----
 
 ## 3. PyPI Source URLs in Recipes
 
@@ -246,8 +260,6 @@ curl -sSL "<your URL>" | sha256sum
 
 against the `sha256:` field in the recipe. The `conda-forge-expert` skill's recipe-generator emits these patterns automatically; manual edits should follow the same shape.
 
----
-
 ## 4. The `vuln-db` pixi env behind a corporate firewall
 
 The `vuln-db` feature pulls `appthreat-vulnerability-db` from PyPI. On corporate networks where direct access to `files.pythonhosted.org` is blocked, `pixi install -e vuln-db` fails — even though `pypi.org` itself is reachable through JFrog. This is the **same root cause** as the recipe-source issue in §3, hitting at a different layer (the pixi/uv resolver instead of `rattler-build`'s source fetch).
@@ -262,40 +274,47 @@ Same mechanism as recipe sources (§3): PyPI's Simple index returns wheel/sdist 
 
 ### Fix: pixi config (recommended, no committed edit)
 
-Pixi 0.67+ supports a `[pypi-config]` table in its config files. Settings here apply to the resolver before any pixi env is created — no changes to the committed `pixi.toml` needed.
+Pixi supports a `[pypi-config]` table in its config files. Settings here apply to the resolver before any pixi env is created — no changes to the committed `pixi.toml` needed.
 
-A ready-to-edit template lives at **[`docs/reference/pixi-config-jfrog.example.toml`](../reference/pixi-config-jfrog.example.toml)**. Copy it into your project-local pixi config:
+A ready-to-edit template lives at **[`docs/reference/pixi-config-jfrog.example.toml`](../reference/pixi-config-jfrog.example.toml)**. Copy it into your per-user pixi config:
 
 ```bash
-cp docs/reference/pixi-config-jfrog.example.toml .pixi/config.toml
-$EDITOR .pixi/config.toml      # set your JFrog URL + auth
+mkdir -p ~/.pixi
+cp docs/reference/pixi-config-jfrog.example.toml ~/.pixi/config.toml
+$EDITOR ~/.pixi/config.toml    # set your JFrog URL + auth
 pixi install -e vuln-db        # should now succeed
 ```
 
-`.pixi/` is gitignored, so the populated config never lands in version control. Alternative locations:
+> [!CAUTION]
+> Do not copy the template over the project file. `.pixi/` is gitignored, but `.pixi/config.toml`
+> itself is **tracked** in this repo: it carries `run-post-link-scripts = "insecure"`, which the
+> container builds and Platform CI depend on. Overwriting it shows up as a modified tracked file
+> and risks committing an internal URL.
 
-- `~/.pixi/config.toml` — per-user, applies to every pixi project on this machine.
+Other locations:
+
 - `/etc/pixi/config.toml` — system-wide (needs root).
+- `.pixi/config.toml` — the tracked project file; leave it as it is.
 
-Pixi reads the **first** config it finds in `project → user → system` order; settings do **not** merge across layers, so a project file shadows the user file completely for the keys it sets.
+Pixi **merges** the layers, `system → user → project`, with the later layer winning per key (checked on pixi 0.84.2 with `pixi config list`: a user file's keys appear beside the project file's `run-post-link-scripts`). The `_http.py` runtime layer is narrower: its `read_pixi_config()` reads only the **first** file that exists, and in this repo that is always the tracked project file. A mirror set in `~/.pixi/config.toml` therefore reaches pixi and uv but not the conda-forge-expert scripts; give those the `*_BASE_URL` env vars (§ 6).
 
-### Verified pixi 0.67.2 config schema
+### Verified pixi 0.84.2 config schema
 
-Probed against the running pixi binary; values that are accepted:
+Probed against the running pixi binary on 2026-11-17 (`pixi config list` over a scratch config); values that are accepted:
 
 | Key | Type | Notes |
 |---|---|---|
 | `pypi-config.index-url` | URL string | Primary PyPI index. Set to `https://<jfrog-host>/artifactory/api/pypi/<repo>/simple`. |
 | `pypi-config.extra-index-urls` | list of URL | Fallback indexes; uv tries each in order. |
-| `pypi-config.keyring-provider` | enum | Only `"disabled"` or `"subprocess"` accepted in 0.67.2. |
+| `pypi-config.keyring-provider` | enum | Only `"disabled"` or `"subprocess"` are accepted. |
 | `pypi-config.allow-insecure-host` | list of host | Skip TLS verification for specific hosts (foot-gun — prefer `tls-root-certs`). |
-| `tls-root-certs` | enum | `"webpki"` (Mozilla bundle), `"native"` (OS trust store), `"all"` (both). Most enterprise users want `"native"` or `"all"` to pick up corporate CA roots. |
+| `tls-root-certs` | enum | `"webpki"` (Mozilla bundle) or `"system"` (OS trust store). `"native"` still parses but warns that it is deprecated and renamed to `"system"`; `"all"` also parses with a warning. Most enterprise users want `"system"` to pick up corporate CA roots. |
 | `tls-no-verify` | bool | Global TLS bypass — never set this in prod. |
-| `run-post-link-scripts` | enum | Only `"insecure"` is accepted in pixi 0.67.2 (or omit the line). Set to `"insecure"` when packages fail because post-link / activation scripts didn't run — common with Intel MKL, CUDA, and internal tooling wheels. Pixi disables them by default for safety; opting in is reasonable on a curated internal JFrog feed. |
+| `run-post-link-scripts` | enum | `"insecure"` or `"false"`. The tracked project config already sets `"insecure"`. Set to `"insecure"` when packages fail because post-link / activation scripts didn't run — common with Intel MKL, CUDA, and internal tooling wheels. Pixi disables them by default for safety; opting in is reasonable on a curated internal JFrog feed. |
 | `proxy-config.{http,https,non-proxy-hosts}` | strings / list | Only if you're behind an HTTP CONNECT forward proxy. |
 | `default-channels` | list of URL/spec | Channels pixi resolves against by default. Set to your JFrog Conda Virtual Repository (e.g., `https://<jfrog-host>/artifactory/api/conda/conda-forge-external-virtual`) so the resolver hits the internal mirror first. |
 | `repodata-config.disable-sharded` | bool | Set to `true` so pixi requests classic `repodata.json` instead of sharded repodata. Most JFrog Conda Remote Repository deployments don't proxy the sharded protocol correctly (404s during solve). |
-| `repodata-config.disable-{zstd,bzip2,jlap}` | bool | Companion toggles for compressed/incremental repodata formats; flip to `true` if your JFrog returns 404s on `.json.zst`, `.json.bz2`, or JLAP requests. |
+| `repodata-config.disable-{zstd,bzip2}` | bool | Companion toggles for compressed repodata formats; flip to `true` if your JFrog returns 404s on `.json.zst` or `.json.bz2` requests. `disable-jlap` is no longer a key: pixi 0.84.2 ignores it with a warning. |
 | `mirrors` | table | Conda channel mirrors: `{ "https://conda.anaconda.org/conda-forge" = ["https://<jfrog>/artifactory/api/conda/conda-forge-external-virtual"] }`. Catches anything that bypasses `default-channels` (e.g., recipe-pinned channel URLs). Separate from PyPI. |
 | `authentication-override-file` | path | JSON file mapping hosts to tokens. |
 
@@ -325,7 +344,7 @@ pixi install -e vuln-db -vvv 2>&1 | grep -E "files.pythonhosted|artifactory|TLS|
 Common signatures:
 
 - **`files.pythonhosted.org` connection timeout/refused** → uv is still hitting public PyPI; your `pypi-config.index-url` (or `UV_INDEX_URL`) didn't take effect. Verify with `pixi config list pypi-config`.
-- **TLS / `unable to get local issuer certificate`** → corporate CA root not trusted. Set `tls-root-certs = "native"` in pixi config (or `UV_NATIVE_TLS=true`), or point to your bundle: `REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt`.
+- **TLS / `unable to get local issuer certificate`** → corporate CA root not trusted. Set `tls-root-certs = "system"` in pixi config (or `UV_NATIVE_TLS=true`), or point to your bundle: `REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt`.
 - **HTTP 401/403** → JFrog needs auth. Use one of the auth methods above.
 - **HTTP 404 on `appthreat-vulnerability-db`** → JFrog's PyPI Remote Repository is configured with a curated allow-list that doesn't include the package. Ask your JFrog admin to verify the upstream URL is `https://pypi.org/simple/` and remove the allow-list (or add the package).
 
@@ -342,14 +361,14 @@ The `detail-cf-atlas` script now has a two-stage chain for the build-matrix sect
 `detail_cf_atlas.py:fetch_anaconda_files` hits `https://api.anaconda.org/package/conda-forge/<name>/files`. Override the base via:
 
 ```bash
-export ANACONDA_API_BASE_URL=https://artifactory.corp/artifactory/anaconda-org-remote
+export ANACONDA_API_BASE=https://artifactory.corp/artifactory/anaconda-org-remote
+export ANACONDA_API_BASE_URL=$ANACONDA_API_BASE
 ```
 
-> **Var name:** `ANACONDA_API_BASE_URL` is the canonical project-convention name (the
-> `*_BASE_URL` family in § 6). `ANACONDA_API_BASE` (no `_URL`) is a **legacy alias** still
-> honored by `detail_cf_atlas.py` for backwards compatibility; `conda_forge_atlas.py`
-> resolves `ANACONDA_API_BASE_URL` first, then falls back to `ANACONDA_API_BASE`. Prefer
-> the `_URL` form in new setups.
+> **Var name:** the two scripts read different names, so set both. `detail_cf_atlas.py`
+> reads only `ANACONDA_API_BASE` (no `_URL`). `conda_forge_atlas.py` resolves
+> `ANACONDA_API_BASE_URL` (the `*_BASE_URL` family in § 6) first, then falls back to
+> `ANACONDA_API_BASE`.
 
 This works only if your JFrog admin has set up a Generic Remote Repository proxying `api.anaconda.org`. Many shops haven't, because anaconda.org's metadata API is rarely on the standard "things to mirror" checklist.
 
@@ -360,8 +379,8 @@ When Stage 1 returns any error, `fetch_repodata_build_matrix` walks `_http.resol
 | Priority | Source | Notes |
 |---------:|--------|-------|
 | 1 | `CONDA_FORGE_BASE_URL` env var | Set this to your JFrog conda-forge mirror |
-| 2 | Pixi `mirrors["https://conda.anaconda.org/conda-forge"][*]` | From `.pixi/config.toml` / `~/.pixi/config.toml` / `/etc/pixi/config.toml` |
-| 3 | Pixi `default-channels` containing `"conda-forge"` | Same priority order as pixi itself |
+| 2 | Pixi `mirrors["https://conda.anaconda.org/conda-forge"][*]` | From the first that exists of `.pixi/config.toml`, `~/.pixi/config.toml`, `/etc/pixi/config.toml`; in this repo that is the tracked project file (§ 4) |
+| 3 | Pixi `default-channels` containing `"conda-forge"` | Same single file as row 2 |
 | 4 | `https://repo.prefix.dev/conda-forge` | Public CDN mirror |
 | 5 | `https://conda.anaconda.org/conda-forge` | Last-resort default |
 
@@ -397,7 +416,7 @@ Build matrix (7 subdirs, latest per subdir from anaconda.org)
 
 ```bash
 # Force the files API to fail and confirm the channel mirror picks up the slack:
-ANACONDA_API_BASE_URL=https://nope.invalid pixi run -e local-recipes detail-cf-atlas django
+ANACONDA_API_BASE=https://nope.invalid pixi run -e local-recipes detail-cf-atlas django
 
 # Check the source-summary footer — you should see anaconda failing AND
 # conda-forge channel (repodata) succeeding, with the resolved base URL.
@@ -408,13 +427,11 @@ ANACONDA_API_BASE_URL=https://nope.invalid pixi run -e local-recipes detail-cf-a
 ```bash
 # Point at your JFrog channel mirror and confirm the build-matrix header
 # shows the JFrog URL (not anaconda.org or prefix.dev).
-ANACONDA_API_BASE_URL=https://nope.invalid \
+ANACONDA_API_BASE=https://nope.invalid \
 CONDA_FORGE_BASE_URL=https://artifactory.corp/artifactory/conda-forge-remote \
 JFROG_API_KEY=$MY_TOKEN \
   pixi run -e local-recipes detail-cf-atlas django
 ```
-
----
 
 ## 6. Runtime enterprise routing — the `*_BASE_URL` override family
 
@@ -425,14 +442,14 @@ last. Set the override to your JFrog (or other) mirror and the whole toolchain �
 generators, atlas phases, CVE refresh, name-mapping — routes through it. All are
 env-vars only; **nothing is ever committed**.
 
-Each `resolve_*_urls()` helper in `_http.py` reads one env var:
+Each `resolve_*_urls()` helper in `_http.py` reads one env var. `ANACONDA_API_BASE_URL` is the exception: `conda_forge_atlas.py` reads it directly (§ 5).
 
 | Env var | Upstream it redirects | Used by |
 |---|---|---|
 | `PYPI_BASE_URL` | `pypi.org/packages` (sdist/wheel source) | recipe source fetch |
 | `PYPI_JSON_BASE_URL` | `pypi.org/pypi/<pkg>/json` | `generate_recipe_from_pypi`, version checks |
 | `CONDA_FORGE_BASE_URL` | `conda.anaconda.org/conda-forge` repodata | atlas build-matrix, feedstock reuse |
-| `ANACONDA_API_BASE_URL` | `api.anaconda.org` files/metadata API | `detail-cf-atlas` (§5) |
+| `ANACONDA_API_BASE_URL` | `api.anaconda.org` files/metadata API | atlas build; `detail-cf-atlas` reads `ANACONDA_API_BASE` (§5) |
 | `GITHUB_API_BASE_URL` | `api.github.com` | version/release checks |
 | `GITHUB_BASE_URL` | `github.com` (tarballs, git) | GitHub-source recipes, cf-graph |
 | `GITHUB_RAW_BASE_URL` | `raw.githubusercontent.com` | raw file fetch |
@@ -455,7 +472,7 @@ Each `resolve_*_urls()` helper in `_http.py` reads one env var:
 Enterprise CA roots are honored in **two separate layers** — set both if the
 corporate CA is not in the default bundle:
 
-1. **The resolver layer (pixi/uv)** — `tls-root-certs = "native"` (or `"all"`) in
+1. **The resolver layer (pixi/uv)** — `tls-root-certs = "system"` in
    pixi config, or `UV_NATIVE_TLS=true`. Applies to `pixi install` / dependency
    solves *before* any script runs (see § 4).
 2. **The runtime layer (`_http.py`)** — `inject_ssl_truststore()` runs at script
@@ -465,15 +482,12 @@ corporate CA is not in the default bundle:
 
 ### Credential-leak opt-out: `skip_auth`
 
-The cross-host leak in § 2 (JFrog token attaching to public hosts) now has a
-code-level guard in addition to the shell-scoping patterns above:
+Beside the host gate described in § 2, a caller can drop auth altogether:
 `auth_headers_for(url, skip_auth=True)` and `make_request(..., skip_auth=True)`
 return no auth headers, so JFrog/GitHub tokens never attach to known-public
 endpoints. Resolvers for public-only APIs pass `skip_auth=True` at their call
 sites. The shell-scoping mitigations remain the right tool for the CLI entry
 points listed in § 2.
-
----
 
 ## 7. Secrets profile (R-20 / red-team X-7)
 
@@ -485,9 +499,9 @@ that Secret** and **how keys rotate** for two deployment profiles.
 
 Full rotation procedures (ordered steps, dual-key assertion overlap, DB role
 coordination) live in
-`src/shared/packages/pyforge-steward/docs/keys-runbook.md`. Platform deploy
+[`docs/how-to/rotate-platform-secrets.md`](../how-to/rotate-platform-secrets.md). Platform deploy
 details and the manual `kubectl create secret` quick-start are in
-`docs/explanation/platform-deployment-architecture.md`.
+[`platform-deployment-architecture.md`](platform-deployment-architecture.md).
 
 ### 7.1 Developer profile — age + steward keys
 
@@ -507,7 +521,7 @@ status, and `last_rotated`. Issue a new age identity with
 `steward keys revoke --scope <name>` (see the keys runbook).
 
 **Platform bootstrap (dev).** For local CRC/kind installs, operators still
-create `platform-secrets` manually (see deploy README). Age decrypts
+create `platform-secrets` manually (see the platform deployment page). Age decrypts
 *repository-side* encrypted files at deploy time; the Kubernetes Secret is
 populated by whoever runs `kubectl create secret` or `helm` with
 `--set-file` — the chart does not bridge those two steps automatically in
@@ -536,6 +550,7 @@ application dependency (canopy:AD-19).
    | `MIGRATION_DATABASE_URL` | Migration-role DDL URL (Liquibase Job) |
    | `POSTGRES_PASSWORD` | Postgres container bootstrap password |
    | `REDIS_PASSWORD` | Redis AUTH (Story 12.6) |
+   | `LANGFLOW_SUPERUSER_PASSWORD` | The mounted Langflow's superuser password (Story 78.1) |
    | `KEYCLOAK_ADMIN_PASSWORD` | Keycloak bootstrap admin (bundled OIDC profile only; Story 48.9) |
    | `COMPONENT_OIDC_CLIENT_SECRET` | BYO IdP client secret (`oidc.profile=byo` only) |
    | `PYFORGE_ASSERTION_PRIVATE_KEY` | RS256 assertion minter (optional env; inject when mint path is live) |
@@ -546,7 +561,7 @@ application dependency (canopy:AD-19).
 
 **Apply order.** Install ESO → configure Vault auth → apply `SecretStore` →
 apply `ExternalSecret` → verify `platform-secrets` exists → `helm install`
-the core chart. See `overlays/eso/README.md`.
+the core chart. See `src/platform/deploy/overlays/eso/README.md`.
 
 ### 7.3 Rotation summary
 
@@ -555,11 +570,9 @@ the core chart. See `overlays/eso/README.md`.
 | `DJANGO_SECRET_KEY` | Both | Update Secret → rolling restart web/worker/beat/consumers; sessions invalidate |
 | `REDIS_PASSWORD` | Both | Update Secret → restart redis Deployments → rolling restart platform pods |
 | DB roles (`DATABASE_URL`, `MIGRATION_DATABASE_URL`, `POSTGRES_PASSWORD`) | Both | Rotate password in Postgres → update all three keys atomically → migrate Job if schema tools need DDL role → rollout |
-| Assertion PEM pair | Both | Dual-key window: publish new public PEM to verifiers, wait ≥5 minutes (assertion TTL), switch minter to new private PEM, remove old public PEM; verify with runbook one-liners |
+| Assertion PEM pair | Both | Dual-key window: publish new public PEM to verifiers, wait ≥6 minutes (the five-minute assertion TTL plus clock-skew buffer), switch minter to new private PEM, remove old public PEM; verify with runbook one-liners |
 
 Detailed commands and ordering constraints are in the steward keys runbook.
-
----
 
 ## 8. OIDC identity profile (CAP-1 / Story 48.9)
 
@@ -580,7 +593,7 @@ Production identity is OIDC-delegated (`COMPONENT_OIDC_*` in
 | `oidc.profile` | `bundled` |
 | Keycloak image | `quay.io/keycloak/keycloak:26.4.0` (matches local compose) |
 | Browser issuer | `https://<keycloak.ingress.host>/realms/platform` |
-| In-cluster JWKS | `http://<release>-keycloak:8080/realms/platform/protocol/openid-connect/certs` |
+| In-cluster JWKS | `http://<release>-keycloak.<namespace>.svc.cluster.local:8080/realms/platform/protocol/openid-connect/certs` |
 | Client | `platform-web` (public + PKCE — no chart/realm secret sync) |
 
 **Required Secret keys (bundled):** all § 7.2 keys plus
