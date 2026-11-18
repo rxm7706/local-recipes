@@ -98,9 +98,9 @@ and `scripts/detectors.py` run it. The sources are the keys of `DISPATCH`
 `dream-chain`, `story-status`, `ledger-regression`, `spec-surface`,
 `deferred-work`, `bmad-drift`, `writer-lock` and the rest; `--help` lists them all.
 Mode flags apply to one source each: `--groundtruth` (`bmad-drift`), `--dreams`
-(`dream-chain`), `--layers --project SLUG` (`chain-completeness`), `--base`/`--head`
-(`ledger-regression`, `ledger-direction`), `--inv` (`dream-chain`,
-`chain-completeness`). A source that measured nothing reports `unmeasured` WARNs and
+(`dream-chain`), `--layers --project SLUG` (`chain-completeness`), `--base`
+(`ledger-regression`, `ledger-direction`), `--head` (`ledger-regression` only),
+`--inv` (`dream-chain`, `chain-completeness`). A source that measured nothing reports `unmeasured` WARNs and
 exits 0.
 
 <!-- [MANUAL:additional-notes] -->

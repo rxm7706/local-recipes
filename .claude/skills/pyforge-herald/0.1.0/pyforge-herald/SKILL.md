@@ -215,8 +215,8 @@ herald deck publish <slug> [--repo-root PATH] [--dry-run]
 herald deck exports <slug> [--repo-root PATH] --json
 herald deck sync-all [--slug SLUG] [--repo-root PATH] [--dry-run] [--proof-dir DIR]
 herald deck qa <slug> [--repo-root PATH]
-herald deck pptx-spec --template PATH -o PATH
-herald deck pptx-fill <content_plan> --template PATH -o PATH
+herald deck pptx-spec [--template PATH] [-o PATH]
+herald deck pptx-fill <content_plan> [--template PATH] -o PATH
 herald deck pptx-native <slug> [--repo-root PATH]
 herald progress|success|notice|scheduler …
 ```
