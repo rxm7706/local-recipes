@@ -40,7 +40,7 @@ class RestoreDuty:
         if not ns.drill:
             return DutyResult(
                 ok=False,
-                summary="restore: --drill is required (full operator restore is restore.md)",
+                summary="restore: --drill is required (full operator restore is docs/how-to/restore-operations.md)",
             )
         backup_path = Path(ns.backup_path).resolve()
         try:

@@ -4,7 +4,7 @@ sources:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/session.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/contract.md
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # How to bootstrap a machine with steward
@@ -63,8 +63,10 @@ pixi run -e pyforge-guild pyforge steward setup --env pyforge-guild
 
 `setup` clones the repository when `--dest` does not exist (from `--url`, which defaults to the local-recipes GitHub URL), runs `pixi install` for the environment, and installs the pre-commit hooks. `--dest` defaults to the current repository root.
 
+`--env` defaults to `pyforge-guild`; the commands on this page pass it so the environment is on the line. `--env local-recipes` materializes the 10 GB recipe-factory environment instead: use it only for recipe work.
+
 > [!CAUTION]
-> `--env` defaults to `local-recipes`, the 10 GB recipe-factory environment. Pass `--env pyforge-guild` unless you need the recipe factory. Do not run `setup` from a linked worktree: git hooks are shared with the primary checkout, so installing them there changes every worktree.
+> Do not run `setup` from a linked worktree: git hooks are shared with the primary checkout, so installing them there changes every worktree.
 
 The hook install sits behind the kill switch `pyforge.steward.setup_hooks`.
 
@@ -74,7 +76,7 @@ The hook install sits behind the kill switch `pyforge.steward.setup_hooks`.
 pixi run -e pyforge-guild pyforge steward initrepo --env pyforge-guild
 ```
 
-`initrepo` writes a minimal `pyforge.toml` when the checkout has none, materializes the environment, then runs `validate-fast`. `--repo PATH` names another pixi project root. `--env` has the same `local-recipes` default as `setup`.
+`initrepo` writes a minimal `pyforge.toml` when the checkout has none, materializes the environment, then runs `validate-fast`. `--repo PATH` names another pixi project root. `--env` has the same `pyforge-guild` default as `setup`.
 
 ### 4. Confirm the checkout is green
 
@@ -90,7 +92,7 @@ pixi run -e pyforge-guild pyforge steward validate-fast --env pyforge-guild
 eval "$(pixi run -e pyforge-guild pyforge steward shell-init)"
 ```
 
-The snippet exports `PYFORGE_REPO_ROOT`, prepends `~/.pixi/bin` to `PATH`, and registers bash completion for `steward`. It is idempotent: evaluating it twice changes nothing more. `shell-init` itself sets nothing; it only prints. To keep the wiring, add the `eval` line to your shell profile yourself.
+The snippet exports `PYFORGE_REPO_ROOT`, prepends `~/.pixi/bin` to `PATH`, and registers bash completion for `steward`. The completion offers every duty the parser registers: its word list is read from the parser when the snippet is printed, so `steward pr<Tab>` offers `provision` and `preflight`. It completes the console script `steward`, not `pyforge steward`, and only in bash. It is idempotent: evaluating it twice changes nothing more. `shell-init` itself sets nothing; it only prints. To keep the wiring, add the `eval` line to your shell profile yourself.
 
 ### 6. Check the session before you work
 

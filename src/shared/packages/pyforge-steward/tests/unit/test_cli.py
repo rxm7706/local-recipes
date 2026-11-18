@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import argparse
 import json
+import re
+from pathlib import Path
 
 import pytest
 from pyforge.core.flags import FlagOff
 
-from pyforge.steward import __version__
+from pyforge.steward import __version__, bootstrap
+from pyforge.steward.bootstrap import shell_init_script
 from pyforge.steward.cli import (
     _HELP,
     DUTIES,
@@ -249,3 +253,68 @@ def test_keys_exec_is_a_verb_of_keys_not_a_new_duty(capsys):
     out = capsys.readouterr().out
     assert "{encrypt,decrypt,rotate,list,audit,revoke,exec}" in out
     assert _HELP["keys"].endswith("encrypt/decrypt/rotate/list/audit/revoke/exec")
+
+
+# --------------------------------------------------------------------------- Story 126.3
+# ``steward shell-init`` completes every duty the parser registers. The bash completion carried its own duty
+# list, written when the parser had 13 duties; the parser grew to 31 and the list did not. The completion now
+# derives its words from the parser, and these tests fail when the two disagree.
+
+_COMPGEN_RE = re.compile(r'compgen -W "([^"]*)"')
+
+
+def _parser_duties() -> list[str]:
+    parser = build_parser()
+    for action in parser._actions:
+        if isinstance(action, argparse._SubParsersAction) and action.dest == "duty":
+            return list(action.choices)
+    raise AssertionError("steward's parser has no duty subparsers")
+
+
+def _completion_words(script: str) -> list[str]:
+    match = _COMPGEN_RE.search(script)
+    assert match is not None, "shell-init emits no compgen word list"
+    return match.group(1).split()
+
+
+def test_completion_lists_every_duty_the_parser_has(tmp_path: Path) -> None:
+    duties = _parser_duties()
+    words = _completion_words(shell_init_script(root=tmp_path))
+    missing = [duty for duty in duties if duty not in words]
+    assert missing == [], f"duties the parser has and the completion lacks: {missing}"
+
+
+def test_completion_lists_nothing_the_parser_lacks(tmp_path: Path) -> None:
+    duties = _parser_duties()
+    words = _completion_words(shell_init_script(root=tmp_path))
+    assert [word for word in words if word not in duties] == []
+    assert len(words) == len(set(words))
+
+
+def test_a_duty_added_to_the_parser_reaches_the_completion(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import pyforge.steward.cli as cli
+
+    monkeypatch.setattr(cli, "DUTIES", (*cli.DUTIES, "story-126-3-probe"))
+    monkeypatch.setitem(cli._HELP, "story-126-3-probe", "probe duty")
+    assert "story-126-3-probe" in _parser_duties()
+    assert "story-126-3-probe" in _completion_words(shell_init_script(root=tmp_path))
+
+
+# Story 126.3: the bootstrap duties' ``--help`` names the environment they really default to. Story 63.6 moved
+# the default of ``setup``, ``initrepo`` and ``validate-fast`` from ``local-recipes`` (the 10 GB recipe factory)
+# to the Guild environment; the three ``--env`` help strings kept saying ``local-recipes``.
+
+
+def _env_help(duty: str) -> str:
+    parser = build_parser()
+    for action in parser._actions:
+        if isinstance(action, argparse._SubParsersAction) and action.dest == "duty":
+            for option in action.choices[duty]._actions:
+                if "--env" in option.option_strings:
+                    return option.help or ""
+    raise AssertionError(f"steward {duty} has no --env option")
+
+
+@pytest.mark.parametrize("duty", ["setup", "initrepo", "validate-fast"])
+def test_env_help_names_the_default_the_duty_uses(duty: str) -> None:
+    assert f"(default: {bootstrap._DEFAULT_PIXI_ENV})" in _env_help(duty)

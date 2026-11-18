@@ -242,7 +242,7 @@ def test_never_signals_reused_pid(stub_root: tuple[Path, Path]) -> None:
     work.mkdir(parents=True)
     pgdir = work / "pg"
     pgdir.mkdir()
-    sleeper = subprocess.Popen(["sleep", "999999"], env={**os.environ, **_marker_env(root)})
+    sleeper = subprocess.Popen(["sleep", "999999"], env={**os.environ, **_marker_env(root)}, cwd=root)
     try:
         (pgdir / "postmaster.pid").write_text(f"{sleeper.pid}\n", encoding="utf-8")
         proc = _run_platform_ci_local(
@@ -259,7 +259,7 @@ def test_never_signals_reused_pid(stub_root: tuple[Path, Path]) -> None:
 
     redis_dir = work / "redis"
     redis_dir.mkdir(exist_ok=True)
-    sleeper2 = subprocess.Popen(["sleep", "999999"], env={**os.environ, **_marker_env(root)})
+    sleeper2 = subprocess.Popen(["sleep", "999999"], env={**os.environ, **_marker_env(root)}, cwd=root)
     try:
         (work / "redis.pid").write_text(str(sleeper2.pid), encoding="utf-8")
         proc2 = _run_platform_ci_local(

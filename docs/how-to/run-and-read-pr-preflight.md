@@ -3,8 +3,9 @@ sources:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_verify.py
   - scripts/pre_push_preflight.sh
+  - src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/contract.md
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # How to run and read the pre-push preflight
@@ -28,12 +29,15 @@ Use the `pr-preflight` task to run, on your machine, the lanes CI would run for 
 
 ### What a full run needs on your machine
 
-A full-scope run includes two lanes that need something a fresh checkout does not have. Without them the lane is red for a reason that is not your change.
+A full-scope run includes three lanes that need something a fresh checkout does not have. Without them the lane is red for a reason that is not your change.
 
 | Lane | Needs | Get it |
 | --- | --- | --- |
 | `pyforge-scribe-live-test` | The per-user PostgreSQL + pgvector cluster on `127.0.0.1:5433` | `pixi run -e pyforge-scribe-pg scribe-pg-up` (stop it with `scribe-pg-down`, check it with `scribe-pg-status`) |
 | `pyforge-atlas-test` (its two dashboard tests) | Playwright's Chromium for the atlas environment | `pixi run -e pyforge-atlas python -m playwright install chromium`, once per Playwright version |
+| `pyforge-steward-live-test` (`test_adoption_register.py::test_wired_column_agrees_with_live_pipeline_truth_for_every_row`) | Herald's manticore studio at `$PYFORGE_STUDIO_ROOT` (default `~/pyforge-studio`) | Install it once per machine: [Herald's manticore studio](manticore-studio.md) |
+
+The third row holds wherever the environment variable `CI` is unset. The adoption register records `bmad-manticore` as `wired`, the test compares that with what `steward suite pipeline-truth` finds on this machine, and a machine with no studio answers `unwired`. A CI runner sets `CI` and is exempt; a laptop is not.
 
 The suites probe the host for anything else they need. A test that cannot run here (for example one that needs a file name the filesystem refuses) reports a skip whose reason names the missing capability. It never fails for that, and it never skips by platform name.
 

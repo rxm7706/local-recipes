@@ -17,8 +17,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import subprocess
 import sys
+import textwrap
 import types
+from pathlib import Path
 
 import pytest
 
@@ -811,3 +815,97 @@ def test_cli_parses_load_outbound_slice_and_signer_default_to_blank():
     ns = build_parser().parse_args(["load", "outbound", "--file", "x", "--waybill", "w"])
     assert ns.slice_name == ""
     assert ns.signer == ""
+
+
+# --------------------------------------------------------------------------- Story 126.3
+# The corridor duties run from the CLI in a configured Django project. The tests above configure Django in this
+# process. A real invocation is a fresh process with only ``DJANGO_SETTINGS_MODULE`` set, so nothing has touched
+# ``django.conf.settings`` when the duty runs. ``quarantine`` judged that state by ``settings.configured`` alone,
+# which is false until the settings are first read, and refused in every configured project; ``load``,
+# ``passport`` and ``glass`` also accepted the environment variable. These run each duty the way an operator
+# does: a settings module that lists ``pyforge.steward.dashboard``, a migrated database, a new process.
+
+_SETTINGS_MODULE = "corridor_cli_project_settings"
+
+
+@pytest.fixture(scope="module")
+def project_env(tmp_path_factory: pytest.TempPathFactory) -> dict[str, str]:
+    """A settings module that installs the dashboard app, and its migrated SQLite database."""
+    root = tmp_path_factory.mktemp("corridor-cli-project")
+    (root / f"{_SETTINGS_MODULE}.py").write_text(
+        textwrap.dedent(
+            f"""\
+            INSTALLED_APPS = [
+                "django.contrib.contenttypes",
+                "django.contrib.auth",
+                "pyforge.steward.dashboard",
+            ]
+            DATABASES = {{"default": {{"ENGINE": "django.db.backends.sqlite3", "NAME": {str(root / "db.sqlite3")!r}}}}}
+            USE_TZ = True
+            SECRET_KEY = "story-126-3-not-a-secret"
+            """
+        ),
+        encoding="utf-8",
+    )
+    env = {
+        **os.environ,
+        "DJANGO_SETTINGS_MODULE": _SETTINGS_MODULE,
+        "PYTHONPATH": os.pathsep.join(p for p in (str(root), os.environ.get("PYTHONPATH", "")) if p),
+    }
+    migrate = subprocess.run(
+        [sys.executable, "-m", "django", "migrate", "--verbosity", "0"],
+        env=env,
+        cwd=root,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert migrate.returncode == 0, migrate.stdout + migrate.stderr
+    return env
+
+
+def _steward(env: dict[str, str], cwd: Path, *argv: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, "-m", "pyforge.steward", *argv],
+        env=env,
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+
+
+def test_glass_reads_in_a_fresh_process(project_env: dict[str, str], tmp_path: Path) -> None:
+    proc = _steward(project_env, tmp_path, "glass")
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "refused" not in proc.stdout + proc.stderr
+
+
+def test_quarantine_shelf_reads_in_a_fresh_process(project_env: dict[str, str], tmp_path: Path) -> None:
+    proc = _steward(project_env, tmp_path, "quarantine", "shelf")
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "DJANGO_SETTINGS_MODULE is unset" not in proc.stdout + proc.stderr
+
+
+def test_the_four_duties_write_and_read_in_fresh_processes(project_env: dict[str, str], tmp_path: Path) -> None:
+    extract = tmp_path / "extract.csv"
+    extract.write_text("id,title\n1,row\n", encoding="utf-8")
+    steps = [
+        ("load", "inbound", "--file", str(extract), "--waybill", "story-126-3"),
+        ("passport", "mint", "--vendor-id", "vendor-a", "--jira-key", "S126-3"),
+        ("quarantine", "admit", "--vendor-id", "vendor-a", "--jira-key", "S126-4"),
+        ("quarantine", "shelf"),
+        ("glass",),
+    ]
+    for argv in steps:
+        proc = _steward(project_env, tmp_path, *argv)
+        assert proc.returncode == 0, f"steward {' '.join(argv)}: {proc.stdout}{proc.stderr}"
+    assert "fresh" in proc.stdout, proc.stdout
+
+
+def test_without_the_settings_variable_each_read_still_refuses(project_env: dict[str, str], tmp_path: Path) -> None:
+    env = {key: value for key, value in project_env.items() if key != "DJANGO_SETTINGS_MODULE"}
+    for argv in (("glass",), ("quarantine", "shelf")):
+        proc = _steward(env, tmp_path, *argv)
+        assert proc.returncode == 1, proc.stdout + proc.stderr
+        assert "DJANGO_SETTINGS_MODULE is unset" in proc.stdout + proc.stderr

@@ -5,8 +5,15 @@ sources:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/quarantine.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/glass.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/corridor_load.py
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/glass_query.py
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/passport_mint.py
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/quarantine_admit.py
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/apps.py
+  - src/shared/packages/pyforge-steward/tests/unit/test_corridor.py
   - src/shared/packages/pyforge-steward/corridor/corridor.yaml
-verified: 2026-11-17
+  - src/platform/config/settings/base.py
+verified: 2026-11-18
 ---
 
 # How to move vendor extracts through the corridor
@@ -25,7 +32,10 @@ Use steward's `load`, `passport`, `quarantine` and `glass` duties to record a ve
 - You are reconciling a GitHub Projects item with its Jira issue. That is `steward sync`; see [How to use steward duties that need operator consent](use-steward-duties-that-need-operator-consent.md).
 
 > [!NOTE]
-> **Prerequisites.** These duties write to and read from the platform database. They need the `pyforge-steward[dashboard]` extra and a configured Django project (`DJANGO_SETTINGS_MODULE` set). Without them every verb refuses with a message and exit `1`; it never crashes. In `-e pyforge-guild` the refusal reads `Django ORM unavailable`; in `-e pyforge-steward`, `DJANGO_SETTINGS_MODULE is unset and django settings are not configured`.
+> **Prerequisites.** These duties read and write Django models, so they need three things: the `pyforge-steward[dashboard]` extra, a Django settings module that lists the app `pyforge.steward.dashboard`, and a database that app's migrations have been applied to. § *Give the duties a Django project* below sets that up. Without it every verb refuses with a message and exit `1`; it never crashes.
+
+> [!WARNING]
+> **No environment ships a configured project for these duties.** You supply the settings module. As this repository stands, that reaches a SQLite file only, not the platform's PostgreSQL database. § *What is not there yet* gives the evidence.
 
 > [!IMPORTANT]
 > `load`, `passport mint` and `quarantine admit` write shared records. An agent runs only the two reads, `glass` and `quarantine shelf`. An outbound load carries data out of the estate: the operator runs it.
@@ -39,6 +49,74 @@ Use steward's `load`, `passport`, `quarantine` and `glass` duties to record a ve
 | **Work Passport** | A freshly minted UUID that is a row's identity. A Jira key or GitHub item id is only a nickname on it. |
 | **Quarantine shelf** | Where an inbound row without a passport waits until a human links it. |
 | **Glass** | The freshness reading of the most recent inbound load. |
+
+## Give the duties a Django project
+
+Use `-e pyforge-steward`. It is the one environment that has both Django (the `dashboard` extra) and the steward CLI. `-e pyforge-guild`, the session default, has no Django.
+
+1. Write a settings module in a directory outside the repository, for example `~/.config/pyforge/corridor_settings.py`:
+
+   ```python
+   INSTALLED_APPS = [
+       "django.contrib.contenttypes",
+       "django.contrib.auth",
+       "pyforge.steward.dashboard",
+   ]
+   DATABASES = {
+       "default": {
+           "ENGINE": "django.db.backends.sqlite3",
+           "NAME": "/absolute/path/to/corridor.sqlite3",
+       }
+   }
+   USE_TZ = True
+   SECRET_KEY = "local-only-not-a-secret"
+   ```
+
+2. Point Django at it, from the repository root:
+
+   ```bash
+   export PYTHONPATH="$HOME/.config/pyforge"
+   export DJANGO_SETTINGS_MODULE=corridor_settings
+   ```
+
+3. Create the tables, once per database:
+
+   ```bash
+   pixi run -e pyforge-steward python -m django migrate
+   ```
+
+4. Run a read to confirm:
+
+   ```bash
+   pixi run -e pyforge-steward pyforge steward glass
+   ```
+
+   ```text
+   standup: unborn waybill=- (no waybill has ever loaded for this direction) | shipped: unborn waybill=- (no waybill has ever loaded for this direction)
+   ```
+
+Every command in § *Steps* is then run the same way: `pixi run -e pyforge-steward pyforge steward …`, in a shell that has the two variables.
+
+What each missing piece looks like:
+
+| You see | What is missing |
+| --- | --- |
+| `Django ORM unavailable (ModuleNotFoundError: No module named 'django')` | Django. You are in `-e pyforge-guild`; use `-e pyforge-steward`. |
+| `DJANGO_SETTINGS_MODULE is unset and django settings are not configured` | The variable of step 2. |
+| `glass failed: Model class pyforge.steward.dashboard.models.AuditEntry doesn't declare an explicit app_label and isn't in an application in INSTALLED_APPS.` | `pyforge.steward.dashboard` in the settings module's `INSTALLED_APPS`. |
+| `Django ORM unavailable (OperationalError: no such table: pyforge_steward_dashboard_corridorload)` | The migration of step 3. |
+
+Each of the four exits `1`.
+
+### What is not there yet
+
+These duties are meant for the platform database. Three facts keep them from it today:
+
+- `-e pyforge-steward` has no PostgreSQL driver: neither `psycopg` nor `psycopg2` imports there. The settings module above can name SQLite only.
+- The platform host's settings (`src/platform/config/settings/base.py`) install `django_steward_portal` and not `pyforge.steward.dashboard`. A settings module without that app gives the `INSTALLED_APPS` message above. (Read from the settings file; the platform environments are not installed on the machine this page was checked on, so the host's own settings were not run.)
+- No migration in `src/platform/` creates the corridor tables, so the platform database does not have them.
+
+So a load recorded this way lives in your SQLite file. It is not shared with anyone and the platform does not see it. Treat the corridor on a laptop as a rehearsal of the duties until a settings module and a driver ship for them.
 
 ## Steps
 
@@ -107,6 +185,7 @@ Add `--json` (before the verb, as in `steward glass --json` or `steward load --j
 
 ## Tips
 
-- No verb on this page completed for this page: no configured platform database was available. `glass` and `quarantine shelf` were run and refused as the prerequisites note says. The rest is taken from `--help`, the modules and the station contract. Which pixi environment carries a configured Django project for these duties was not established here.
+- Checked on 2026-11-18, on macOS, in `-e pyforge-steward` against a scratch SQLite database: the setup of § *Give the duties a Django project*, the four refusals in its table, and `glass` and `quarantine shelf` reading an empty database. The writes (`load inbound`, `passport mint`, `quarantine admit`) and `glass` reading `fresh` after a load run in the package's own test, `tests/unit/test_corridor.py`, each in a new process against a migrated SQLite file. `load outbound` and `glass export` were not run for this page; they are taken from `--help` and the modules. Nothing here was run against PostgreSQL.
+- Before 2026-11-18 `quarantine admit` and `quarantine shelf` refused with the `DJANGO_SETTINGS_MODULE is unset` message even when the variable was set. That is fixed (steward Story 126.3).
 - The loader never parses the file's content. It records the hash, the waybill and the transport.
 - Every flag is a row of the station contract, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/contract.md`.

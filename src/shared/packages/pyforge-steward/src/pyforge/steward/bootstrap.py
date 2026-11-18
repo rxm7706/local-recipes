@@ -211,8 +211,14 @@ def format_init_report(results: tuple[PrereqResult, ...], *, as_json: bool) -> s
 
 def shell_init_script(*, root: Path | None = None) -> str:
     """Idempotent shell snippet — safe to eval repeatedly."""
+    # Story 126.3: the completion's words are the parser's own duty tuple, read when the script is emitted, so a duty
+    # added to the parser reaches the completion with no second list to edit (the hand-written list had 13 of 31).
+    # Imported here because `cli` resolves this module's duties lazily; a module-level import would tie the two.
+    from . import cli
+
     repo = root or repo_root()
     pixi_bin = Path.home() / ".pixi" / "bin"
+    duties = " ".join(cli.DUTIES)
     lines = [
         _SHELL_INIT_MARKER,
         f'export PYFORGE_REPO_ROOT="{repo}"',
@@ -220,7 +226,7 @@ def shell_init_script(*, root: Path | None = None) -> str:
         'if [ -n "${BASH_VERSION:-}" ]; then',
         "  _pyforge_steward_complete() {",
         '    local cur="${COMP_WORDS[COMP_CWORD]}"',
-        '  COMPREPLY=( $(compgen -W "keys deploy provision budget sync workspace upgrade suite init shell-init setup initrepo validate-fast" -- "$cur") )',
+        f'    COMPREPLY=( $(compgen -W "{duties}" -- "$cur") )',
         "  }",
         "  complete -o default -F _pyforge_steward_complete steward 2>/dev/null || true",
         "fi",

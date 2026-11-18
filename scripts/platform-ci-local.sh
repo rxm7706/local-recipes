@@ -207,6 +207,35 @@ _listener_on_port() {
   return 1
 }
 
+# Whether TCP port $1 has a listener. ss where the host has it: the check the container stage has always
+# made, which needs no pid and so also sees another user's listener. _listener_on_port's lsof where the
+# host has no ss (Story 126.3).
+_port_is_bound() {
+  local port="$1"
+  if command -v ss >/dev/null 2>&1; then
+    ss -ltn 2>/dev/null | grep -q ":${port} "
+    return
+  fi
+  _listener_on_port "$port" >/dev/null
+}
+
+# Archive the NUL-separated paths on stdin to stdout, passing over a path that is listed but gone (a file
+# deleted and not yet staged). GNU tar does that itself with --ignore-failed-read; a tar with no such
+# option (bsdtar, which macOS ships) stops on the first missing path, so the list is filtered to the
+# paths that exist before it reaches tar (Story 126.3).
+_tar_listed_paths() {
+  local path
+  case "$(tar --version 2>/dev/null)" in
+    *'GNU tar'*)
+      tar --null -T - -cf - --ignore-failed-read 2>/dev/null
+      return
+      ;;
+  esac
+  while IFS= read -r -d '' path; do
+    if [ -e "$path" ] || [ -L "$path" ]; then printf '%s\0' "$path"; fi
+  done | tar --null -T - -cf - 2>/dev/null
+}
+
 _refuse_port_in_use() {
   local port="$1" name="$2" pid cmd
   pid="$(_listener_on_port "$port")" || return 0
@@ -389,7 +418,7 @@ run_platform_ci_local() {
     local ctx="$WORK/context"
     rm -rf "$ctx"; mkdir -p "$ctx"
     git ls-files -z --cached --others --exclude-standard -- . ':!recipes' \
-      | tar --null -T - -cf - --ignore-failed-read 2>/dev/null | tar -xf - -C "$ctx"
+      | _tar_listed_paths | tar -xf - -C "$ctx"
     echo "context: $(find "$ctx" -type f | wc -l) files under $ctx"
   }
 
@@ -436,7 +465,7 @@ run_platform_ci_local() {
     local common=(-e DJANGO_SECRET_KEY=ci-placeholder-not-a-real-secret -e DJANGO_ADMIN_URL=admin/
       -e COMPONENT_RUNTIME=local -e DATABASE_URL="postgres://postgres:platform@127.0.0.1:$PG_PORT/platform"
       -e REDIS_URL="redis://127.0.0.1:$REDIS_PORT/0")
-    if ss -ltn 2>/dev/null | grep -q ":$APP_PORT "; then echo "port $APP_PORT is busy; the image binds it" >&2; return 1; fi
+    if _port_is_bound "$APP_PORT"; then echo "port $APP_PORT is busy; the image binds it" >&2; return 1; fi
     "$ENGINE" rm -f "$APP" >/dev/null 2>&1 || true
     step container "Migrate the database (the image's CMD deliberately doesn't)" \
       "$ENGINE" run --rm --network host "${common[@]}" "platform:$TAG" python manage.py migrate --noinput &&

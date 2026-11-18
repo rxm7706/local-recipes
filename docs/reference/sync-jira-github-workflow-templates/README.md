@@ -3,8 +3,10 @@ sources:
   - docs/reference/sync-jira-github-workflow-templates/github-to-jira.yml.template
   - docs/reference/sync-jira-github-workflow-templates/jira-to-github.yml.template
   - .steward/sync-config.example.yaml
+  - src/shared/packages/pyforge-steward/pyproject.toml
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py
   - archive/_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-jira-github-projects-sync-2026-08-09/ARCHITECTURE-SPINE.md
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # Steward `sync` — GitHub Projects V2 ↔ Jira Cloud workflow templates
@@ -63,14 +65,32 @@ event-triggered-reconciliation paradigm).
      (e.g. `your-org.atlassian.net`).
    - `vars.STEWARD_EXAMPLE_ITEM_ID` — (GitHub→Jira template only) one
      GitHub Projects V2 item node ID, used by the `schedule`/manual path
-     until you wire real per-item iteration (see the template's own TODO).
-     `steward sync reconcile --schedule` (Story 8.4, added after the
-     template was written) enumerates every linked item on the board in
-     one run and can replace that single-item call.
+     for the first smoke test. After it passes, replace that
+     `--github-item` call with `steward sync reconcile --schedule`
+     (Story 8.4), which enumerates every linked item on the board and
+     reconciles each in one run; the template's own TODO marks the line.
 4. **Copy the two `.yml.template` files** into the target repo's
    `.github/workflows/`, dropping the `.template` suffix, and fill in each
    file's own `TODO` comments (fork/mirror path for the `local-recipes`
    checkout, schedule cadence, item iteration).
+
+## How the templates install `steward`
+
+`steward` is on neither PyPI nor conda-forge, so each workflow checks
+`local-recipes` out beside the target repo and installs from that source:
+
+- **Python 3.14.** `pyforge-steward` declares `requires-python = ">=3.14"`;
+  both templates set `python-version: "3.14"`.
+- **`pyforge-core` with it.** It is steward's one unpublished dependency
+  (the other is PyYAML, from PyPI), installed from the same checkout.
+- **Editable (`-e`).** `steward sync` finds its HTTP module,
+  `.claude/skills/conda-forge-expert/scripts/_http.py`, by walking up from
+  its own source file. A plain install copies that file into
+  `site-packages`, outside the checkout, and `reconcile` stops with
+  "this module must live inside a local-recipes checkout". Keep the `-e`.
+
+`steward sync reconcile` takes exactly one of `--github-item ID`,
+`--jira-issue KEY` or `--schedule`, plus `--config PATH` and `--dry-run`.
 
 ## The opt-in near-real-time path
 

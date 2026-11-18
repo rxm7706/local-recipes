@@ -5,7 +5,7 @@ sources:
   - src/platform/deploy/charts/platform/templates/NOTES.txt
   - src/platform/deploy/charts/platform/templates/postgres-statefulset.yaml
   - src/platform/deploy/charts/platform/templates/postgres-backup-cronjob.yaml
-verified: 2026-11-17
+verified: 2026-11-18
 ---
 
 # PostgreSQL restore runbook (steward Story 41.1)
@@ -51,6 +51,9 @@ pixi run -e pyforge-steward pyforge steward restore --drill \
 ```
 
 `--backup-path` is required and names the directory holding `manifest.json`.
+`--drill` is required too: the duty only ever runs the drill. Without it the
+duty exits `1` with `restore: --drill is required (full operator restore is
+docs/how-to/restore-operations.md)`, which points at the full restore below.
 The duty restores the drill dump into a scratch database
 (`platform_drill_<timestamp>`), compares row counts to the manifest, drops the
 scratch database, and exits non-zero on mismatch. It needs `pg_restore` on

@@ -50,12 +50,24 @@ jobs:
           repository: rxm7706/local-recipes   # TODO: your fork/mirror, if you run one
           path: _steward-src
 
+      # pyforge-steward declares `requires-python = ">=3.14"` (its
+      # pyproject.toml); an older interpreter refuses the install.
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
 
+      # Editable (-e), and pyforge-core beside it. pyforge-core is steward's
+      # one unpublished dependency, so it is installed from the same
+      # checkout. Editable because `steward sync` finds its HTTP module
+      # (.claude/skills/conda-forge-expert/scripts/_http.py) by walking up
+      # from its own source file: a plain install copies that file into
+      # site-packages, outside the checkout, and reconcile then stops with
+      # "this module must live inside a local-recipes checkout".
       - name: Install steward
-        run: pip install ./_steward-src/src/shared/packages/pyforge-steward
+        run: >-
+          pip install
+          -e ./_steward-src/src/shared/packages/pyforge-core
+          -e ./_steward-src/src/shared/packages/pyforge-steward
 
       - name: Configure Jira credentials (.netrc)
         env:
@@ -80,12 +92,12 @@ jobs:
               --github-item "${{ github.event.client_payload.node_id }}" \
               --config .steward/sync-config.yaml
           else
-            # TODO: the schedule/manual path needs every linked item's ID --
-            # loop over your own item inventory here (e.g. a `gh project
-            # item-list` call, or a small script that reads them off the
-            # board). One example item is shown so this template is
-            # directly runnable for a first smoke test (see the README's
-            # manual live-pair verification procedure).
+            # TODO: the schedule/manual path reconciles ONE example item, so
+            # this template is directly runnable for a first smoke test (see
+            # the README's manual live-pair verification procedure). Once
+            # that passes, replace `--github-item ...` below with
+            # `--schedule`: it enumerates every linked item on the board and
+            # reconciles each in this one run (Story 8.4).
             steward sync reconcile \
               --github-item "${{ vars.STEWARD_EXAMPLE_ITEM_ID }}" \
               --config .steward/sync-config.yaml
