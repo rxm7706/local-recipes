@@ -567,7 +567,7 @@
    "docs/how-to/upgrade-bmad-core.md": "b3e7429f45754d7fa2856f36b95576db29882228",
    "docs/how-to/use-marshal-in-an-air-gapped-site.md": "57416454f9d676f17b57520703f9dde2ed5454c3",
    "docs/how-to/use-steward-duties-that-need-operator-consent.md": "b021916204d8ae7fcfbdbccfcfe1447ab340b71d",
-   "docs/map.yaml": "079d660778c0720edf9a34b69907ebab39d2b7d1",
+   "docs/map.yaml": "11def536ec5a8bef856c55722d982aa32ea9a0d2",
    "docs/tutorials/README.md": "983cc85a4858ab6fb012284cc8371bb7ce061f2a",
    "docs/tutorials/getting-started.md": "9802990190eefaffec13c10a49fd1d6f41914eda",
    "docs/tutorials/local-platform-development.md": "46df8779bc7792d0986437bcc86a5562cf0e74b0",
@@ -820,7 +820,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "a302c2d72bb6d9b4a81e3c2dbd0d645fd366911a"
+  "memlog": "9febefeb4897b2d5caabe90fd082b211d7698c96"
  },
  "pyforge-herald/spec-pyforge-herald": {
   "files": {
@@ -2692,7 +2692,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "cec6769e791f96b3ca7d0ee92e86acb2742690af"
+  "memlog": "58a522d4610752b648e60a8c25a97a6aa1d1b6cf"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -3361,7 +3361,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "c9b98e542cdc1191d7a4ce98238c0cb2cb9e31e0"
+  "memlog": "87ea2ef35766867e190d196555c03d4dd32e57cc"
  },
  "pyforge-marshal/spec-pyforge-testing-charter": {
   "files": {
@@ -4491,7 +4491,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "7a613c2ad9498a5db48da63c40e3ca98b35d771f"
+  "memlog": "9984dd7501ba415fc62796096ae14cd1ebf2c24f"
  },
  "pyforge-steward/spec-pyforge-unifying-strategy": {
   "files": {
@@ -5720,7 +5720,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "4c8b9d561e8c082f1ebd427580dcf8d1b5df9dd5"
+  "memlog": "9d667fb8ca75227e5b90e1a13fee83e20f23e192"
  },
  "pyforge-steward/spec-python-foundry-cutover": {
   "files": {},
