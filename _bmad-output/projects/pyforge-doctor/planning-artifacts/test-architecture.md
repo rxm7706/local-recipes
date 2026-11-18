@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: bba21084d22cccf6
-story_count: 184
+source_fingerprint: 020e5a045d424342
+story_count: 192
 test_file_count: 131
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 184
-- **Epics parsed:** 57
+- **Stories parsed:** 192
+- **Epics parsed:** 58
 - **Test files inventoried:** 131 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `bba21084d22cccf6`
+- **Source fingerprint:** `020e5a045d424342`
 
 ## Risk Assessment
 
@@ -32,6 +32,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 
 - Epic 1: Pre-flight Check (walking skeleton)
 - Epic 11: Tracked deferred-work entries get periodically re-verified against live code
+- Epic 59: Every registered page is read, and the documentation currency checks fail (spec-pyforge-doctor CAP-84)
 
 ### Medium-risk epics
 
@@ -418,6 +419,14 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 58.2 | The docs, factory, method, env-hygiene and Pages tests that build their own t... | none observed |
 | 58.3 | spec_surface_check.py prunes the baseline keys of Specs that no longer exist,... | none observed |
 | 58.4 | The branch's baselines and governance reports are refreshed once, after every... | none observed |
+| 59.1 | Every generated page is regenerated from a clean tree, and the workflow inven... | none observed |
+| 59.2 | The stale authored pages are re-read against the sources that moved | none observed |
+| 59.3 | Every unstamped authored page is verified and stamped | none observed |
+| 59.4 | The package-level pages fold into the four quadrants | none observed |
+| 59.5 | Atlas, doctor, warden and the steward operator duties each have a how-to | none observed |
+| 59.6 | The front doors describe the tree as it is | none observed |
+| 59.7 | docs-currency fails a page that is unstamped, stale or dead-referenced | none observed |
+| 59.8 | The registry, the baselines and the chain close once, after every unit's last... | none observed |
 
 ## Quality Gates
 
