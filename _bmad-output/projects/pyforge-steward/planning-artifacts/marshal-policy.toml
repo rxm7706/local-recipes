@@ -1619,6 +1619,23 @@ verify_commands = [
   "_bmad-output/projects/pyforge-steward/planning-artifacts/**",
   "_bmad-output/projects/*/planning-artifacts/specs/*/.memlog.md",
 ]
+"125" = [  # the preflight answers on the laptop it is documented for (CAP-175), added 2026-11-17.
+  "_bmad-output/projects/pyforge-*/planning-artifacts/specs/spec-pyforge-*/.memlog.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml",
+  "docs/how-to/run-and-read-pr-preflight.md",
+  "scripts/.spec-surface-baseline.json",
+  "scripts/platform-ci-local.sh",
+  "src/shared/packages/pyforge-core/src/pyforge/core/process.py",
+  "src/shared/packages/pyforge-core/tests/**",
+  "src/shared/packages/pyforge-doctor/tests/**",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/**",
+  "src/shared/packages/pyforge-marshal/tests/**",
+  "src/shared/packages/pyforge-mason/tests/**",
+  "src/shared/packages/pyforge-scribe/tests/**",
+  "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py",
+  "src/shared/packages/pyforge-steward/tests/**",
+  "tests/scripts/test_scribe_pg.py",
+]
 
 # dispatch (Story 85.1 / CAP-286 knobs), added 2026-10-13: steward's verify-fix turn gets 45 minutes, not the
 # 15-minute default. pyforge-steward-test alone runs ~4 minutes (2482 tests), so a fix turn that must re-run it two or
