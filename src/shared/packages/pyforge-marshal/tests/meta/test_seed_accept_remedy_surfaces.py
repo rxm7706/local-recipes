@@ -5,8 +5,13 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
+
 import pyforge.marshal
 from pyforge.marshal.seed.detect.findings import REMEDIES, FindingType
+
+# Two of the surfaces live on the docs shelf, outside this package.
+pytestmark = pytest.mark.live_tree
 
 _PACKAGE_FILE = pyforge.marshal.__file__
 if _PACKAGE_FILE is None:
@@ -17,8 +22,8 @@ _PACKAGE_ROOT = _MARSHAL_PKG.parent.parent.parent
 _SURFACES = (
     _MARSHAL_PKG / "seed" / "detect" / "findings.py",
     _MARSHAL_PKG / "seed" / "verbs" / "preconditions.py",
-    _PACKAGE_ROOT / "docs" / "finding-remedy-reference.md",
-    _PACKAGE_ROOT / "docs" / "adoption-guide.md",
+    _PACKAGE_ROOT.parents[3] / "docs" / "reference" / "marshal-seed-findings.md",
+    _PACKAGE_ROOT.parents[3] / "docs" / "how-to" / "adopt-the-operating-model-with-marshal-seed.md",
 )
 
 _BAD_ACCEPT_BASELINE = re.compile(

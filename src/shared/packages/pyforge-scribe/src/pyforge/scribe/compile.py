@@ -44,7 +44,7 @@ Actions workflow (every input worth compiling -- `.claude/memory/`, the
 per-user transcript root, the gitignored `.claude/data/` store -- is
 operator-local, so a GH-hosted runner would compile an empty machine); the
 documented trigger is an opt-in operator-installed `crontab` entry, see
-`docs/cli-runbooks.md` in this package. Two Story 3.3 guards make that safe:
+`docs/how-to/schedule-the-scribe-nightly-compile.md`. Two Story 3.3 guards make that safe:
 the transcript scan is bounded (caps/timeout/mtime-cache, see
 `transcripts.py`; the cache lives beside the graph store, so it shares the
 store's own gitignored, derived-artifact home), and overlapping runs against

@@ -8,7 +8,7 @@ The ONE command the checked-in systemd-user timer
 pixi task (`pyforge-scribe-nightly-compile`) an operator can also run by
 hand. This is the trigger's own definition, checked into git and reviewable
 (spec-8-1's Boundaries & Constraints), replacing the former hand-typed
-`crontab -e` line documented in docs/cli-runbooks.md.
+`crontab -e` line documented in docs/how-to/schedule-the-scribe-nightly-compile.md.
 
 WHAT IT DOES
 ------------
@@ -109,7 +109,7 @@ def _ensure_postgres_ready(*, run=_run, which=shutil.which) -> bool:
             "scribe-nightly-trigger: `pixi run -e pyforge-scribe-pg "
             "scribe-pg-up` did not succeed -- refusing to compile against "
             "an unconfirmed PostgreSQL GraphStore this run (never fails red "
-            "for this; see docs/cli-runbooks.md)",
+            "for this; see docs/how-to/schedule-the-scribe-nightly-compile.md)",
             file=sys.stderr,
         )
         return False

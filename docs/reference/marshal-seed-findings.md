@@ -1,6 +1,15 @@
-# Finding → remedy reference
+---
+sources:
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/findings.py
+  - src/shared/packages/pyforge-marshal/tests/meta/test_finding_remedy_reference_sync.py
+verified: 2026-11-17
+---
 
-Every conformance problem `marshal seed check` (and the mutating verbs' preflight) can report uses a closed `FindingType` vocabulary. Each type has a fixed severity and remedy — the same strings as `seed/detect/findings.py::REMEDIES` (NFR-M3). Use this table when CI or a local check prints a finding you do not recognize.
+# Marshal seed findings and their remedies
+
+Every conformance problem `marshal seed check` (and the mutating verbs' preflight) can report uses a closed `FindingType` vocabulary. Each type has a fixed severity and remedy — the same strings as `REMEDIES` in `src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/findings.py` (NFR-M3). Use this table when CI or a local check prints a finding you do not recognize.
+
+The table is held to the code: marshal's `test_finding_remedy_reference_sync.py` reds when a `FindingType` is missing here or a remedy string differs from `REMEDIES`. Change the remedy in `findings.py` first, then copy it here.
 
 Severity ladder (AD-54, borrowed from `bmad_drift_check.py`):
 
@@ -33,7 +42,14 @@ Severity ladder (AD-54, borrowed from `bmad_drift_check.py`):
 | `slug-unresolved` | INFO | Pass `--project <slug>` (or set `BMAD_ACTIVE_PROJECT`, or the target's `_bmad/custom/.active-project` marker) so the entry is checked at the path it renders to. |
 | `artifact-skipped` | INFO | The artifact is absent but matches a skip recorded in `.marshal/seed-state.yml` -- remove the skip from state if it should be materialized, or run `marshal seed adopt` with `--skip` unchanged to leave it alone. |
 
-## Related commands
+## Remedies that name a command the CLI does not have
+
+Two remedy strings are printed as the code carries them, and each names a spelling `--help` does not list (checked 2026-11-17):
+
+- `opted-out` names `marshal seed adopt --reinstate <artifact>#<region>`. `marshal seed adopt` has no `--reinstate` flag. [Managed regions](marshal-seed-managed-regions.md) describes what restoring the markers by hand does.
+- `referenced-dep-missing` names `marshal doctor check`. Marshal has no `doctor` verb; the probe is Doctor's own `pyforge doctor check`.
+
+## Commands that print findings
 
 ```bash
 marshal seed check --repo-root .              # human-readable report

@@ -17,15 +17,7 @@ from __future__ import annotations
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-RUNBOOK = (
-    REPO_ROOT
-    / "src"
-    / "shared"
-    / "packages"
-    / "pyforge-scribe"
-    / "docs"
-    / "cli-runbooks.md"
-)
+RUNBOOK = REPO_ROOT / "docs" / "how-to" / "schedule-the-scribe-nightly-compile.md"
 OPS_DIR = (
     REPO_ROOT / "src" / "shared" / "packages" / "pyforge-scribe" / "ops" / "systemd"
 )

@@ -482,7 +482,7 @@ class TestPack:
         assert "could not be written" in message
 
     def test_text_output_names_files_and_archive_sha(self, home, tmp_path, capsys):
-        # The default format -- the one docs/air-gapped-deployment.md tells operators to use.
+        # The default format -- the one docs/how-to/use-marshal-in-an-air-gapped-site.md tells operators to use.
         args = _pack_args(home, tmp_path / "out")
         args.format = "text"
         code = cli.run_context_pack(args, process=_Fake())

@@ -1844,7 +1844,7 @@ def _run_scheduler_run(args: argparse.Namespace) -> int:
     trick would resolve to nothing meaningful). This default only lands
     at the web dashboard's real ``web/public/`` when ``--repo-root`` IS
     this package's own checkout, matching the documented crontab recipe
-    (``docs/cli-runbooks.md``) -- a caller pointing ``--repo-root``
+    (``docs/how-to/record-progress-claims-and-notices-with-herald.md``) -- a caller pointing ``--repo-root``
     somewhere else (e.g. an isolated test directory) and still wanting
     the real dashboard updated must pass ``--out-dir`` explicitly."""
     repo_root = args.repo_root if args.repo_root is not None else Path.cwd()

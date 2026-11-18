@@ -399,8 +399,8 @@ def transaction(db_path: Path) -> Iterator[sqlite3.Connection]:
 # can legitimately disagree, and without it that state is unrecoverable.
 # `sqlite3 .dump` does NOT emit `PRAGMA user_version`, so a database
 # restored from a logical dump -- which is what an operator following the
-# "restore `.herald/herald.db` from a backup" advice in `cli-runbooks.md`
-# and `automation-troubleshooting.md` may well have -- comes back with all
+# "restore `.herald/herald.db` from a backup" advice in
+# `docs/how-to/troubleshoot-herald-moments.md` may well have -- comes back with all
 # four tables populated and `user_version = 0`. `_ensure_schema` then reran
 # this migration and failed on `table progress already exists`, permanently:
 # every subsequent command raised the same error, with no repair path and a

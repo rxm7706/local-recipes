@@ -16,10 +16,10 @@ machinery; Marshal operates it.**
 
 | Doc | Audience |
 |---|---|
-| [Adoption guide](docs/adoption-guide.md) | First-time adopters — brownfield dry-run → apply → CI |
-| [Finding → remedy reference](docs/finding-remedy-reference.md) | Operators fixing `marshal seed check` output |
-| [Managed region contract](docs/managed-region-contract.md) | Authors editing hybrid files with marker spans |
-| [Air-gapped deployment](docs/air-gapped-deployment.md) | Offline conda mirrors — in-package templates, no runtime fetch |
+| [Adoption guide](../../../../docs/how-to/adopt-the-operating-model-with-marshal-seed.md) | First-time adopters — brownfield dry-run → apply → CI |
+| [Finding → remedy reference](../../../../docs/reference/marshal-seed-findings.md) | Operators fixing `marshal seed check` output |
+| [Managed region contract](../../../../docs/reference/marshal-seed-managed-regions.md) | Authors editing hybrid files with marker spans |
+| [Air-gapped deployment](../../../../docs/how-to/use-marshal-in-an-air-gapped-site.md) | Offline conda mirrors — in-package templates, no runtime fetch |
 
 Planning artifacts:
 [`_bmad-output/projects/pyforge-marshal/planning-artifacts/`](../../../../_bmad-output/projects/pyforge-marshal/planning-artifacts/)
@@ -53,7 +53,7 @@ The verbs, by group (the flags of each are in `contract.md`):
 | **`init`** | Greenfield install into an empty directory | `marshal seed init ./my-repo --slug my-project --agents claude,cursor` |
 | **`adopt`** | Brownfield layer onto an existing repo (dry-run by default) | `marshal seed adopt --repo-root . --agents claude,cursor` then `--apply --yes` |
 | **`check`** | Read-only conformance report (CI gate) | `marshal seed check --repo-root . --strict` |
-| **`update`** | Upgrade to a newer bundled `model_version` | `marshal seed update --repo-root . --yes` |
+| **`update`** | Upgrade to a newer bundled `model_version` | `marshal seed update --repo-root .` (dry run), then `--run --yes` |
 | **`accept`** | Record an intended edit to a tool-owned file or region as the new baseline (dry run by default; journaled) | `marshal seed accept bmad-switch --apply --reason "…"` |
 
 Helper verbs: `marshal seed explain <artifact-id>` and `marshal seed version`
@@ -82,12 +82,13 @@ marshal seed check --repo-root . --strict
 **Upgrade** when a newer Genesis release ships:
 
 ```bash
-marshal seed update --repo-root . --yes
+marshal seed update --repo-root .                # dry-run plan
+marshal seed update --repo-root . --run --yes
 ```
 
 ## Five artifact classes
 
-Every manifest entry is classified (see [adoption guide](docs/adoption-guide.md)):
+Every manifest entry is classified (see [adoption guide](../../../../docs/how-to/adopt-the-operating-model-with-marshal-seed.md)):
 
 | Class | Reader takeaway |
 |---|---|
@@ -95,7 +96,7 @@ Every manifest entry is classified (see [adoption guide](docs/adoption-guide.md)
 | **copied-managed** | Tool-owned whole file — do not hand-edit; to keep an intended edit, `marshal seed accept` it |
 | **copied-seeded** | Installed once as a starter — repo-owned forever after |
 | **generated-derived** | Recomputed from contract/state — safe to regenerate |
-| **hybrid-managed-region** | Repo-owned file, tool-owned marker span — see [managed region contract](docs/managed-region-contract.md) |
+| **hybrid-managed-region** | Repo-owned file, tool-owned marker span — see [managed region contract](../../../../docs/reference/marshal-seed-managed-regions.md) |
 
 ## Two version numbers
 

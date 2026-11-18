@@ -1,4 +1,13 @@
-# Managed region contract
+---
+sources:
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/regions/markers.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/regions/parse.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/templates/manifest.yaml
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py
+verified: 2026-11-17
+---
+
+# Marshal seed managed regions
 
 Hybrid artifacts (`hybrid-managed-region` class) are **repo-owned files** containing **tool-owned spans** delimited by marker comments. Genesis may replace only the span on `marshal seed update`; prose outside the markers is never touched.
 
@@ -17,7 +26,7 @@ Examples:
 - Markdown / HTML comments: `<!-- marshal-seed:begin region=tiers … -->`
 - Hash comments (`.gitignore`, TOML, YAML): `# marshal-seed:begin region=model-ignores …`
 
-Region names match `[a-z0-9][a-z0-9-]*` (e.g. `tiers`, `dream-first-workflow`).
+Region names match `[a-z0-9][a-z0-9-]*` (e.g. `tiers`, `dream-first-workflow`). The bundled manifest declares five hybrid artifacts: `projects-index`, `agents-md`, `claude-md`, `gitignore` and `readme-badge`.
 
 ## Edit detection
 
@@ -31,7 +40,7 @@ If markers are **absent** but the region was never opted out, `managed-region-mi
 
 1. Genesis records the pair in `state.opted_out` on the next mutating run (`adopt` / `update`).
 2. While opted out, the tool will **not** re-insert that region (`opted-out`, **INFO**).
-3. To restore management: `marshal seed adopt --reinstate <artifact-id>#<region>` (Story 10.6 ships the flag; until then see the last paragraph of this section).
+3. To restore management, restore the markers by hand and run `marshal seed update --run` (see the last paragraph of this section). The `opted-out` remedy names `marshal seed adopt --reinstate <artifact-id>#<region>`, but `adopt` has no such flag (checked against `--help`, 2026-11-17).
 
 Removing markers is the supported way to say "this repo owns this section now." Do not delete markers casually — the opt-out is durable until reinstated.
 
@@ -41,7 +50,7 @@ Two conditions bound that. The per-region claim holds for state written by this 
 
 State written by this release is not readable by an older marshal. The seed-state schema is closed and the package version is unchanged, so `seed_model_version` cannot tell the two apart, and an older marshal reports `state-invalid` for it. The remedy is to upgrade that marshal: restoring `.marshal/seed-state.yml` from version control helps only if you also restore the older marshal's own write of it, and re-running `marshal seed adopt` does not recover it (`adopt` reads state without downgrading `state-invalid`).
 
-There is no reinstate verb yet (Story 10.6; the `--reinstate` spelling above is the planned one). Restoring the markers by hand makes the region present again, and the two verbs treat it differently. `update --run` records the region on its next run. `adopt` refuses an artifact whose other regions are recorded, with "present in the file but never recorded", until `--force`; and `adopt --apply --force` then plans nothing, because every declared region is in the file, so it writes no state and the region stays unrecorded. Use `update --run` to record it. The `opted_out` key stays in state either way.
+There is no reinstate verb or flag (the `--reinstate` spelling above is only the one the remedy string names). Restoring the markers by hand makes the region present again, and the two verbs treat it differently. `update --run` records the region on its next run. `adopt` refuses an artifact whose other regions are recorded, with "present in the file but never recorded", until `--force`; and `adopt --apply --force` then plans nothing, because every declared region is in the file, so it writes no state and the region stays unrecorded. Use `update --run` to record it. The `opted_out` key stays in state either way.
 
 ## What Genesis never does
 
@@ -49,7 +58,7 @@ There is no reinstate verb yet (Story 10.6; the `--reinstate` spelling above is 
 - Write into paths matching the manifest `never_write` globs (`docs/dreams/*.md`, `**/planning-artifacts/**`, etc.).
 - Destroy real content occupying a projection path without a **WARN** refusal (adapter projection is separate; see Marshal adapter docs).
 
-## Related findings
+## Findings a managed region can raise
 
 | Situation | Finding | Severity |
 |---|---|---|
@@ -58,4 +67,4 @@ There is no reinstate verb yet (Story 10.6; the `--reinstate` spelling above is 
 | Markers deleted, opt-out recorded | `opted-out` | INFO |
 | Whole hybrid file hand-edited (non-region class confusion) | `managed-file-modified` | HARD |
 
-Remedies: [finding-remedy-reference.md](finding-remedy-reference.md).
+Remedies: [Marshal seed findings and their remedies](marshal-seed-findings.md).

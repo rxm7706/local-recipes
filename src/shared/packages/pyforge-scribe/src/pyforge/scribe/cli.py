@@ -299,8 +299,8 @@ def graph_compile(
     `.memlog.md` files, git history, retros, CHANGELOGs (Story 2.2/2.3), and
     un-curated session transcripts (Story 3.2; bounded per Story 3.3). Never
     prompts -- safe to run from cron with no human present; the documented
-    nightly trigger is an opt-in operator crontab entry (see this package's
-    `docs/cli-runbooks.md`). An overlapping run against the same store skips
+    nightly trigger is an opt-in operator crontab entry (see
+    `docs/how-to/schedule-the-scribe-nightly-compile.md`). An overlapping run against the same store skips
     cleanly with exit 0 rather than double-writing."""
     try:
         result = compile_graph(memory_root=_MEMORY_ROOT, repo_root=Path.cwd(), nightly=nightly)

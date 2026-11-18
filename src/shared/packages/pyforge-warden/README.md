@@ -27,7 +27,8 @@ pixi run -e pyforge-warden pyforge-warden-test  # run the test suite
 
 The `pyforge-warden` environment is lean by design (`no-default-feature`): it
 carries only the built package plus its conda run-dependencies
-(`python`, `deptry`, `osv-scanner`) and a test runner.
+(`deptry`, `osv-scanner` and the rest of the package's own `pixi.toml` list)
+and a test runner.
 
 ## Installing & adopting Warden
 

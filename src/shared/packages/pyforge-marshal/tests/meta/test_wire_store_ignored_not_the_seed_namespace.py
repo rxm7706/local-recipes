@@ -14,7 +14,7 @@ Two rules meet in one directory and they want opposite things:
   stays tracked; ``seed-state.yml``'s documented remedy for a
   ``state-invalid`` finding is literally "Restore
   ``.marshal/seed-state.yml`` from version control"
-  (``docs/finding-remedy-reference.md``). A blanket ``.marshal/`` rule
+  (``docs/reference/marshal-seed-findings.md``). A blanket ``.marshal/`` rule
   shadows that recovery path. ``.marshal/plan.json`` is the derived plan
   artifact (AD-57) and is git-ignored instead -- never tracked.
 

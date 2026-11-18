@@ -17,8 +17,8 @@ name: Substrate nightly
 # checked-in `.claude/memory/`, that operator's own session transcripts
 # under `~/.claude/projects/`, and the gitignored graph store -- so running
 # it in Actions would silently publish an empty planning-graph, not a real
-# one. This is Epic 8's own HARD boundary (`pyforge-scribe/docs/cli-
-# runbooks.md` § "why not a GitHub Actions workflow"), and
+# one. This is Epic 8's own HARD boundary (`docs/how-to/schedule-the-scribe-nightly-compile.md`
+# § "why not a GitHub Actions workflow"), and
 # `tests/scripts/test_scribe_nightly_trigger_docs.py` enforces it fleet-wide
 # by rejecting any workflow that invokes the compile. The published pair
 # always omits planning-graph; `marshal context bootstrap`'s own MRS-CTX-003
