@@ -145,6 +145,7 @@ def test_memlog_bookkeeping_entry_classifier(fleet_scan) -> None:
 def test_memlog_contract_date_uses_blame_when_trailing_bookkeeping(
     fleet_scan, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    import os
     import subprocess
 
     repo = tmp_path / "repo"
@@ -169,7 +170,9 @@ def test_memlog_contract_date_uses_blame_when_trailing_bookkeeping(
         encoding="utf-8",
     )
     subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
-    env = {"GIT_AUTHOR_DATE": "2026-10-04T12:00:00", "GIT_COMMITTER_DATE": "2026-10-04T12:00:00"}
+    # The parent environment rides along: a bare `env=` drops PATH, and the `git`
+    # the default search path then finds need not be the one `git init` ran.
+    env = {**os.environ, "GIT_AUTHOR_DATE": "2026-10-04T12:00:00", "GIT_COMMITTER_DATE": "2026-10-04T12:00:00"}
     subprocess.run(["git", "commit", "-m", "contract"], cwd=repo, check=True, capture_output=True, env=env)
     mem.write_text(
         "---\nupdated: 2026-10-07T09:00\n---\n\n"
@@ -178,7 +181,7 @@ def test_memlog_contract_date_uses_blame_when_trailing_bookkeeping(
         encoding="utf-8",
     )
     subprocess.run(["git", "add", "spec/.memlog.md"], cwd=repo, check=True, capture_output=True)
-    env2 = {"GIT_AUTHOR_DATE": "2026-10-07T09:00:00", "GIT_COMMITTER_DATE": "2026-10-07T09:00:00"}
+    env2 = {**os.environ, "GIT_AUTHOR_DATE": "2026-10-07T09:00:00", "GIT_COMMITTER_DATE": "2026-10-07T09:00:00"}
     subprocess.run(
         ["git", "commit", "-m", "reconcile"],
         cwd=repo,
