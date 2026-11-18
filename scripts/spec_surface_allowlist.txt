@@ -117,3 +117,4 @@ scripts/_docs_gen_common.py          # pyforge-doctor Story 30.3, same class as 
 scripts/_ci_surface_gates_render.py  # Story 99.2 CAP-166 pause-fragment render module; memlog names surface gain pending bmad-spec re-derive of spec-pyforge-steward
 scripts/ensure-local-recipes-env.sh  # Story 100.7 CAP-167 verify-env script (the local-recipes recipe-factory smoke estate verify runs; the task named it before it existed); memlog names surface gain pending bmad-spec re-derive of spec-pyforge-steward
 scripts/ci_canary.py  # Story 99.6 CAP-166 weekly canary matrix helper; memlog names surface gain pending bmad-spec re-derive of spec-pyforge-steward
+scripts/docs_station_verify.py  # doctor Story 60.2 CAP-84 seventh reference-page generator (docs/reference/station-verify-commands.md), same class as scripts/docs_pixi_tasks.py above; memlog names surface gain pending bmad-spec re-derive of spec-pyforge-doctor

@@ -1074,7 +1074,7 @@ depends-on = [{ task = "docs-site-validate-links", environment = "site" }, { tas
 # and BSD find; the workflows' `changes` steps the preflight evaluates need bash 4 (`declare -A`) and the tests
 # that run workflow lines need GNU `find -printf`, so osx-arm64 carries both. Linux runners already have them.
 [feature.host-tools.dependencies]
-git = ">=2.55.0,<2.56"            # the git every station suite and the preflight run; one version, named by the lock. Held to the 2.55 line local-recipes already locks: 2.56 needs pcre2 10.49 and libexpat 2.9, which moved 72 unrelated pins and downgraded graphviz when tried (2026-11-18); the estate refresh lifts it.
+git = ">=2.55.0"                  # the git every station suite and the preflight run; one version, named by the lock (2.55.0 on 2026-11-18, the version local-recipes already locked, so adding it moved no unrelated pin)
 
 [feature.host-tools.target.osx-arm64.dependencies]
 bash = ">=5.2"                    # bash 4+ for the workflows' `declare -A` changes steps (stock macOS ships 3.2)
