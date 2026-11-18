@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: doctor
-# stories: 298
+# stories: 308
 development_status:
   1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
   1-2-wrap-warden-s-engine-availability-self-check-fr-1: done
@@ -170,6 +170,14 @@ development_status:
   58-2-the-docs-factory-method-env-hygiene-and-pages-tests-that-build-their-own-tree-run-in-the-package-half: done
   58-3-spec_surface_check-py-prunes-the-baseline-keys-of-specs-that-no-longer-exist-and-touches-no-live-spec: done
   58-4-the-branch-s-baselines-and-governance-reports-are-refreshed-once-after-every-unit-s-last-edit: done
+  59-1-every-generated-page-is-regenerated-from-a-clean-tree-and-the-workflow-inventory-is-the-sixth: backlog
+  59-2-the-stale-authored-pages-are-re-read-against-the-sources-that-moved: backlog
+  59-3-every-unstamped-authored-page-is-verified-and-stamped: backlog
+  59-4-the-package-level-pages-fold-into-the-four-quadrants: backlog
+  59-5-atlas-doctor-warden-and-the-steward-operator-duties-each-have-a-how-to: backlog
+  59-6-the-front-doors-describe-the-tree-as-it-is: backlog
+  59-7-docs-currency-fails-a-page-that-is-unstamped-stale-or-dead-referenced: backlog
+  59-8-the-registry-the-baselines-and-the-chain-close-once-after-every-unit-s-last-edit: backlog
   6-1-profile-doctor-check-and-bring-it-inside-its-budget: done
   6-10-independence-is-structural-for-every-source: done
   6-11-the-classifier-recognizes-a-spike-report: done
@@ -304,6 +312,8 @@ development_status:
   epic-57-retrospective: optional
   epic-58: done
   epic-58-retrospective: optional
+  epic-59: backlog
+  epic-59-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional
   epic-7: done
