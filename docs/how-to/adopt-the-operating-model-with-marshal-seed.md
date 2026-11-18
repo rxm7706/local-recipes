@@ -22,8 +22,9 @@ Use the `marshal seed` verbs to deliver this repository's operating model into a
 - You are provisioning a loop home's token-economy kit by hand.
 - You are wiring the conformance check into CI.
 
-> [!NOTE]
-> **Prerequisites.** A **git** repository (non-git targets forfeit the update story). **pixi** (or another conda environment) with `pyforge-marshal` installed: in this repository, `pixi run -e pyforge-guild marshal …`. Referenced dependencies (such as pixi, copier, tmux, bmad-loop and the BMAD install) are verified, never installed: `check` reports one that is absent or below its floor as `referenced-dep-missing`, and installing it is yours to do.
+:::note
+**Prerequisites.** A **git** repository (non-git targets forfeit the update story). **pixi** (or another conda environment) with `pyforge-marshal` installed: in this repository, `pixi run -e pyforge-guild marshal …`. Referenced dependencies (such as pixi, copier, tmux, bmad-loop and the BMAD install) are verified, never installed: `check` reports one that is absent or below its floor as `referenced-dep-missing`, and installing it is yours to do.
+:::
 
 ## Two version numbers
 

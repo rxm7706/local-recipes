@@ -94,7 +94,7 @@ The hand-classified files of `docs/reference/`, and the ones that moved out of i
 |------|------|-------|
 | [`container-base-layer-convention.md`](reference/container-base-layer-convention.md) | True reference | Base-tag pinning, multi-stage pixi, secret-mount rules |
 | [`pixi-config-jfrog.example.toml`](reference/pixi-config-jfrog.example.toml) | True reference | JFrog pixi config example |
-| [`station-verify-commands.md`](reference/station-verify-commands.md) | True reference | Verify-command lookup table, derived from each station's `marshal-policy.toml` |
+| [`station-verify-commands.md`](reference/station-verify-commands.md) | True reference | Verify-command lookup table, generated from each station's `marshal-policy.toml` by `docs-station-verify` |
 | [`library-llms-full.md`](reference/library-llms-full.md) | True reference | Library catalog derived from `pixi.toml`; the `llms-full-check` detector reports drift |
 | [`bmad-estate-llms-full.md`](reference/bmad-estate-llms-full.md) | True reference | Generated BMAD-estate catalog (`bmad-estate-check` gate; regenerate with `scribe catalog bmad-estate --write`) |
 | [`github-workflows.md`](reference/github-workflows.md) | True reference | Generated workflow inventory (regenerate with `docs-github-workflows`) |

@@ -22,8 +22,9 @@ Use steward's bootstrap duties to check a machine's prerequisites, set up a chec
 
 - You only need a scratch worktree on a machine that already works. Use `pyforge steward workspace start`; see [Manage worktrees with BMAD](manage-worktrees-with-bmad.md).
 
-> [!NOTE]
-> **Prerequisites.** `pixi` must be installed for any of these to run, and a checkout must exist for all but the first clone. Run from the repository root. The commands below use `-e pyforge-guild`, the session default environment, which carries steward.
+:::note
+**Prerequisites.** `pixi` must be installed for any of these to run, and a checkout must exist for all but the first clone. Run from the repository root. The commands below use `-e pyforge-guild`, the session default environment, which carries steward.
+:::
 
 ## The duties at a glance
 
@@ -65,8 +66,9 @@ pixi run -e pyforge-guild pyforge steward setup --env pyforge-guild
 
 `--env` defaults to `pyforge-guild`; the commands on this page pass it so the environment is on the line. `--env local-recipes` materializes the 10 GB recipe-factory environment instead: use it only for recipe work.
 
-> [!CAUTION]
-> Do not run `setup` from a linked worktree: git hooks are shared with the primary checkout, so installing them there changes every worktree.
+:::caution
+Do not run `setup` from a linked worktree: git hooks are shared with the primary checkout, so installing them there changes every worktree.
+:::
 
 The hook install sits behind the kill switch `pyforge.steward.setup_hooks`.
 

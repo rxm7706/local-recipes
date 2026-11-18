@@ -21,7 +21,7 @@ contracts (`_bmad-output/projects/<slug>/planning-artifacts/`; legacy: `archive/
 - `bmad-estate-llms-full.md` — generated picture of the BMAD estate: installed core/modules, skills by family, the suite roster with wielder + provisioning path, `bmad-*` pins, the marshal harness range, the release cadence (scribe Story 24.1, `spec-pyforge-scribe` CAP-32). Never hand-edited: regenerate with `pixi run -e pyforge-guild scribe catalog bmad-estate --write`; detector `pixi run -e pyforge-guild bmad-estate-check` (structured, prose exempt).
 - `github-workflows.md` — generated inventory of `.github/workflows/*.yml` (name, triggers, gating, jobs). Regenerate with `pixi run -e pyforge-guild docs-github-workflows`.
 - `test-charter.md` — testing charter backing `archive/docs/dreams/pyforge-testing-charter.md` / `spec-pyforge-testing-charter`.
-- `station-verify-commands.md` — verify-command lookup for PyForge stations, derived from each station's `marshal-policy.toml`.
+- `station-verify-commands.md` — generated verify-command lookup for PyForge stations, from each station's `marshal-policy.toml`. Regenerate with `pixi run -e pyforge-guild docs-station-verify`.
 - `station-cheat-sheet.md` — generated lookup of each station's console script, package and environments.
 - `environments.md` — generated list of every pixi environment and the features it composes.
 - `detectors.md` — generated list of every detector `detectors` and `detectors-ci` can run.

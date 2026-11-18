@@ -322,7 +322,17 @@ pages:
   - path: reference/station-verify-commands.md
     quadrant: reference
     owner: fleet
-    kind: authored
+    kind: generated
+    generator: scripts/docs_station_verify.py
+    sources:
+      - _bmad-output/projects/pyforge-atlas/planning-artifacts/marshal-policy.toml
+      - _bmad-output/projects/pyforge-doctor/planning-artifacts/marshal-policy.toml
+      - _bmad-output/projects/pyforge-herald/planning-artifacts/marshal-policy.toml
+      - _bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml
+      - _bmad-output/projects/pyforge-mason/planning-artifacts/marshal-policy.toml
+      - _bmad-output/projects/pyforge-scribe/planning-artifacts/marshal-policy.toml
+      - _bmad-output/projects/pyforge-steward/planning-artifacts/marshal-policy.toml
+      - _bmad-output/projects/pyforge-warden/planning-artifacts/marshal-policy.toml
   - path: reference/story-spec-flag-block.md
     quadrant: reference
     owner: doctor

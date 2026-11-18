@@ -61,8 +61,9 @@ scratch database, and exits non-zero on mismatch. It needs `pg_restore` on
 
 ## Full restore (operator — production)
 
-> [!CAUTION]
-> Destructive to the live data directory. Scale web/worker to zero first.
+:::caution
+Destructive to the live data directory. Scale web/worker to zero first.
+:::
 
 1. Scale platform Deployments to zero replicas.
 2. Delete the postgres pod (StatefulSet recreates it).

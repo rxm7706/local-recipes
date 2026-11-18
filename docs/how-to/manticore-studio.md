@@ -19,7 +19,7 @@ Use the lock's `bmad-method` installer to set up Herald's video studio, `bmad-ma
 
 ## When to Skip This
 
-Skip it on a machine that never renders video. Nothing else in this repository needs the studio, and nothing from it is provisioned into this repository's `.claude/skills/`, `_bmad/` or `_bmad-output/`.
+Skip it on a machine that never renders video. One other thing reads it: steward's live suite checks the adoption register's `wired` row against this install on any machine where `CI` is unset ([How to run and read the pre-push preflight](run-and-read-pr-preflight.md)). Otherwise nothing from it is provisioned into this repository's `.claude/skills/`, `_bmad/` or `_bmad-output/`.
 
 :::note[Prerequisites]
 - The `pyforge-guild` pixi environment, installed from this repository's lock. Its `bmad-method` is 6.12.2 (`pixi run -e pyforge-guild bmad-method --version`).

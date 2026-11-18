@@ -285,11 +285,12 @@ $EDITOR ~/.pixi/config.toml    # set your JFrog URL + auth
 pixi install -e vuln-db        # should now succeed
 ```
 
-> [!CAUTION]
-> Do not copy the template over the project file. `.pixi/` is gitignored, but `.pixi/config.toml`
-> itself is **tracked** in this repo: it carries `run-post-link-scripts = "insecure"`, which the
-> container builds and Platform CI depend on. Overwriting it shows up as a modified tracked file
-> and risks committing an internal URL.
+:::caution
+Do not copy the template over the project file. `.pixi/` is gitignored, but `.pixi/config.toml`
+itself is **tracked** in this repo: it carries `run-post-link-scripts = "insecure"`, which the
+container builds and Platform CI depend on. Overwriting it shows up as a modified tracked file
+and risks committing an internal URL.
+:::
 
 Other locations:
 

@@ -24,8 +24,9 @@ Use the `pr-preflight` task to run, on your machine, the lanes CI would run for 
 - You only need the detector suite. See [How to run and understand Detectors](run-and-understand-detectors.md).
 - A lane is paused in CI and you want to know how preflight treats it. See [How to pause and resume CI surfaces](pause-ci.md) § *Local twins and preflight*.
 
-> [!NOTE]
-> **Prerequisites.** Run from the repository root with your changes committed or in the working tree. Run one full preflight at a time per machine: every run's scribe lane uses the one shared Postgres cluster on `127.0.0.1:5433`, so two runs fail each other.
+:::note
+**Prerequisites.** Run from the repository root with your changes committed or in the working tree. Run one full preflight at a time per machine: every run's scribe lane uses the one shared Postgres cluster on `127.0.0.1:5433`, so two runs fail each other.
+:::
 
 ### What a full run needs on your machine
 

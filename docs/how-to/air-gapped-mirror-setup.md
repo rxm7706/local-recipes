@@ -168,7 +168,7 @@ proxy architecture), use this checklist instead of Steps 1-6.
 - [ ] Validate: `pixi run -e local-recipes health-check` (expects no public-host errors)
 - [ ] Confirm the `build` env resolves — `environment.yaml` is exported from it, and the Docker build lane (`.scripts/build_steps.sh`) installs that file
 - [ ] Decide which `pyforge-*` envs you need; they are `no-default-feature`, so each pulls only its own run-deps (`pyforge-guild` is the session default, `local-recipes` is the recipe factory)
-- [ ] **Do NOT** budget for `pixi run bmad-preflight` — its script, `scripts/ensure-bmad-preflight.sh`, is missing (see [`docs/how-to/pixi-tasks.md`](pixi-tasks.md))
+- [ ] Run `pixi run -e pyforge-guild bmad-preflight` (it calls `pyforge steward session check`) to confirm the environment, the BMAD installation and the active project
 
 ### Per-session
 

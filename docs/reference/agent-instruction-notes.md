@@ -406,7 +406,7 @@ These rules reshape **story scope** for `bmad-prd`, `bmad-create-epics-and-stori
 ### Project Documentation Reference
 
 For extended architectural context, please reference the centralized `docs/` folder (map at **`docs/MAP.md`**):
-- **`docs/explanation/mcp-server-architecture.md`** — FastMCP server integration and PyPI name mapping subsystem.
+- **`docs/explanation/mcp-server-architecture.md`** — MCP server integration and PyPI name mapping subsystem.
 - **`docs/explanation/enterprise-deployment.md`** — Air-gapped environments and JFrog Artifactory integration.
 - **`docs/reference/developer-guide.md`** — Local testing and general recipe development guidelines.
 - **`docs/dreams/pyforge-herald.md`** + **`docs/how-to/presentation-deck.md`** § *The MCP bridge* — decks/prototypes round-trip between Claude Design and the repo via the `claude-design` MCP tools (seed → design visually → pull → extract/build/`deck-export`); no manual downloads. Piloted 2026-07-23 (Marshal deck). Same spec, § *Artifact dependency tree & editing surfaces* — **read before editing any deck artifact**: per-deck branch heads (deck prototype / infographic trio head / exec summary / marp exports), what derives from what, and the two propagation paths.
@@ -482,13 +482,13 @@ Skill-internal documentation (loaded on-demand when the skill activates):
 - **`.claude/skills/conda-forge-expert/scripts/`** — canonical implementation (source of truth). Edit code here.
 - **`.claude/scripts/conda-forge-expert/`** — public CLI entrypoint layer (~30 thin subprocess wrappers). What `pixi run` calls.
 - **`.claude/data/conda-forge-expert/`** — mutable runtime state (cf_atlas.db, vdb/, cve/, mappings, caches). Gitignored.
-- **`.claude/tools/conda_forge_server.py`** — FastMCP server exposing 30+ tools across recipe-authoring + atlas-intelligence + project-scanning surfaces. Started by Claude Code at session boot; tool schemas surface at call time.
+- **`.claude/tools/conda_forge_server.py`** — MCP server (the SDK's `MCPServer`; 46 tools on 2026-11-18) exposing tools across recipe-authoring + atlas-intelligence + project-scanning surfaces. Started by Claude Code at session boot; tool schemas surface at call time.
 
 **Three-place rule for a new CI script:** (1) canonical implementation at `.claude/skills/conda-forge-expert/scripts/<name>.py`; (2) thin CLI wrapper at `.claude/scripts/conda-forge-expert/<name>.py`; (3) a pixi task (`[feature.local-recipes.tasks.<name>]` in `pixi.toml`) plus an entry in the `SCRIPTS` list in `.claude/skills/conda-forge-expert/tests/meta/test_all_scripts_runnable.py`. Missing any one breaks that meta-test.
 
 **Atlas intelligence (v7.0+)** — `cf_atlas.db` ships 16 schema versions, 15 pipeline phases (B → N), and 17 CLIs. Daily-use entrypoints: `detail-cf-atlas`, `staleness-report`, `feedstock-health`, `whodepends`, `behind-upstream`, `cve-watcher`, `version-downloads`, `release-cadence`, `find-alternative`, `adoption-stage`, `scan-project`. All read-side CLIs are offline-safe. See `.claude/skills/conda-forge-expert/SKILL.md` § "Atlas Intelligence Layer" for the persona-mapped guide.
 
-Enterprise routing (JFrog Artifactory, internal mirrors) is **runtime-driven** via `_http.py` (truststore + JFrog/GitHub/.netrc auth chain) — env vars only, never committed config. See `.claude/skills/conda-forge-expert/CHANGELOG.md` v6.0.0 / v7.0.0 entries for the full release notes.
+Enterprise routing (JFrog Artifactory, internal mirrors) is **runtime-driven** via `_http.py` (truststore + JFrog/GitHub/.netrc auth chain) — environment variables and, since conda-forge-expert v8.105.2, the merged pixi config layers; never committed config. See `.claude/skills/conda-forge-expert/CHANGELOG.md` v6.0.0 / v7.0.0 entries for the full release notes.
 
 Repo-wide pointers:
 - **`_bmad-output/PROJECTS.md`** — BMAD multi-project index.

@@ -31,14 +31,17 @@ Use steward's `load`, `passport`, `quarantine` and `glass` duties to record a ve
 
 - You are reconciling a GitHub Projects item with its Jira issue. That is `steward sync`; see [How to use steward duties that need operator consent](use-steward-duties-that-need-operator-consent.md).
 
-> [!NOTE]
-> **Prerequisites.** These duties read and write Django models, so they need three things: the `pyforge-steward[dashboard]` extra, a Django settings module that lists the app `pyforge.steward.dashboard`, and a database that app's migrations have been applied to. § *Give the duties a Django project* below sets that up. Without it every verb refuses with a message and exit `1`; it never crashes.
+:::note
+**Prerequisites.** These duties read and write Django models, so they need three things: the `pyforge-steward[dashboard]` extra, a Django settings module that lists the app `pyforge.steward.dashboard`, and a database that app's migrations have been applied to. § *Give the duties a Django project* below sets that up. Without it every verb refuses with a message and exit `1`; it never crashes.
+:::
 
-> [!WARNING]
-> **No environment ships a configured project for these duties.** You supply the settings module. As this repository stands, that reaches a SQLite file only, not the platform's PostgreSQL database. § *What is not there yet* gives the evidence.
+:::caution
+**No environment ships a configured project for these duties.** You supply the settings module. As this repository stands, that reaches a SQLite file only, not the platform's PostgreSQL database. § *What is not there yet* gives the evidence.
+:::
 
-> [!IMPORTANT]
-> `load`, `passport mint` and `quarantine admit` write shared records. An agent runs only the two reads, `glass` and `quarantine shelf`. An outbound load carries data out of the estate: the operator runs it.
+:::caution[Important]
+`load`, `passport mint` and `quarantine admit` write shared records. An agent runs only the two reads, `glass` and `quarantine shelf`. An outbound load carries data out of the estate: the operator runs it.
+:::
 
 ## The terms
 
