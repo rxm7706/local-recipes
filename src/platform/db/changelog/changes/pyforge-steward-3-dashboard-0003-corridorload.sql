@@ -11,4 +11,4 @@ CREATE INDEX "pyforge_steward_dashboard_corridorload_batch_sha_7d55a2be" ON "pyf
 CREATE INDEX "pyforge_steward_dashboard_corridorload_batch_sha_7d55a2be_like" ON "pyforge_steward_dashboard_corridorload" ("batch_sha" varchar_pattern_ops);
 CREATE INDEX "pyforge_steward_dashboard_corridorload_waybill_a1b3fdf0" ON "pyforge_steward_dashboard_corridorload" ("waybill");
 CREATE INDEX "pyforge_steward_dashboard_corridorload_waybill_a1b3fdf0_like" ON "pyforge_steward_dashboard_corridorload" ("waybill" varchar_pattern_ops);
---rollback DROP TABLE "pyforge_steward_dashboard_corridorload" CASCADE;
+--rollback DROP TABLE IF EXISTS "pyforge_steward_dashboard_corridorload" CASCADE;

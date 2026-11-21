@@ -10,17 +10,14 @@ from __future__ import annotations
 
 import ast
 from pathlib import Path
-from typing import TYPE_CHECKING
 
+import pytest
 from django.apps import apps
 from django.conf import settings
 from django.db.migrations.loader import MigrationLoader
 
 from config.settings import base
 from db import sqlmigrate_extraction
-
-if TYPE_CHECKING:
-    import pytest
 
 PLATFORM_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = PLATFORM_ROOT.parents[1]
@@ -74,6 +71,13 @@ def test_every_corridor_migration_maps_to_a_steward_changeset() -> None:
         distribution, seq = found
         assert distribution == "pyforge-steward"
         assert f"{distribution}:{seq}" in index
+
+
+@pytest.mark.django_db
+def test_the_gate_reads_every_corridor_migration() -> None:
+    keys = sqlmigrate_extraction.production_migration_keys()
+    corridor = [key for key in keys if key.startswith(f"{CORRIDOR_LABEL}.")]
+    assert len(corridor) == CORRIDOR_MIGRATIONS
 
 
 def test_a_station_app_migration_counts_as_first_party() -> None:

@@ -6,4 +6,4 @@
 --
 ALTER TABLE "pyforge_steward_dashboard_auditentry" ADD COLUMN "scope" jsonb DEFAULT '{}'::jsonb NOT NULL;
 ALTER TABLE "pyforge_steward_dashboard_auditentry" ALTER COLUMN "scope" DROP DEFAULT;
---rollback ALTER TABLE "pyforge_steward_dashboard_auditentry" DROP COLUMN "scope" CASCADE;
+--rollback ALTER TABLE IF EXISTS "pyforge_steward_dashboard_auditentry" DROP COLUMN IF EXISTS "scope" CASCADE;

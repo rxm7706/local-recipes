@@ -16,4 +16,4 @@ CREATE INDEX "pyforge_steward_dashboard_workpassport_jira_key_09439edb" ON "pyfo
 CREATE INDEX "pyforge_steward_dashboard_workpassport_jira_key_09439edb_like" ON "pyforge_steward_dashboard_workpassport" ("jira_key" varchar_pattern_ops);
 CREATE INDEX "pyforge_steward_dashboard_workpassport_github_item_id_ded5227c" ON "pyforge_steward_dashboard_workpassport" ("github_item_id");
 CREATE INDEX "pyforge_steward_dashboar_github_item_id_ded5227c_like" ON "pyforge_steward_dashboard_workpassport" ("github_item_id" varchar_pattern_ops);
---rollback DROP TABLE "pyforge_steward_dashboard_workpassport" CASCADE;
+--rollback DROP TABLE IF EXISTS "pyforge_steward_dashboard_workpassport" CASCADE;

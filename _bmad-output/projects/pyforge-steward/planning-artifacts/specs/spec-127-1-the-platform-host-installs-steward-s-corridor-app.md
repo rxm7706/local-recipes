@@ -67,7 +67,7 @@ Ledger key: `127-1-the-platform-host-installs-steward-s-corridor-app`.
 - Capabilities: spec-pyforge-steward CAP-139, CAP-141 and CAP-143 (realized, no text change); no FR (the PRD absorbed CAP-141..145 with no requirement of its own); no AD moves.
 - Dream: `docs/dreams/pyforge-steward.md` § *Realization log*, the 2026-11-21 entry; operator ruling of 2026-11-21 on `DW-steward-126-3-1`: "Platform host".
 - Epic: Epic 127, minted with this story.
-- Ledger key: `127-1-the-platform-host-installs-steward-s-corridor-app` (`backlog`).
+- Ledger key: `127-1-the-platform-host-installs-steward-s-corridor-app` (`done`).
 - Surface: `marshal-policy.toml` `[epic_surfaces]."127"`.
 
 ## Verification

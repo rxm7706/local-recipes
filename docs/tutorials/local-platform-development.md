@@ -3,6 +3,8 @@ sources:
   - src/platform/README.md
   - src/platform/manage.py
   - src/platform/config/settings/base.py
+  - src/platform/db/sqlmigrate-map.yaml
+  - src/shared/packages/django-steward/src/django_steward_portal/station_apps.py
   - src/platform/config/urls.py
   - src/platform/config/local_dev/mint.py
   - src/platform/config/flag-overlays.json

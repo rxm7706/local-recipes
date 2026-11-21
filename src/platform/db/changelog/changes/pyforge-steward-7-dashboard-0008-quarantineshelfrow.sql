@@ -15,4 +15,4 @@ CREATE INDEX "pyforge_steward_dashboar_github_item_id_e0857a20_like" ON "pyforge
 CREATE INDEX "pyforge_steward_dashboard__passport_id_da0f1724" ON "pyforge_steward_dashboard_quarantineshelfrow" ("passport_id");
 CREATE INDEX "pyforge_steward_dashboar_passport_id_da0f1724_like" ON "pyforge_steward_dashboard_quarantineshelfrow" ("passport_id" varchar_pattern_ops);
 CREATE INDEX "pyforge_steward_dashboard__arrived_at_e39a2643" ON "pyforge_steward_dashboard_quarantineshelfrow" ("arrived_at");
---rollback DROP TABLE "pyforge_steward_dashboard_quarantineshelfrow" CASCADE;
+--rollback DROP TABLE IF EXISTS "pyforge_steward_dashboard_quarantineshelfrow" CASCADE;

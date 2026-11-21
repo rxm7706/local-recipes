@@ -84,6 +84,8 @@ The platform host installs `pyforge.steward.dashboard`, declared for it by the `
 
 Every command in § *Steps* is then run the same way, from `src/platform/`: `pixi run -e platform-dev steward …`.
 
+On stderr each run also prints Django's `RuntimeWarning: Accessing the database during app initialization is discouraged`. It comes from the mason portal, whose startup reconciliation queries the database on purpose; the duty's own output and exit code are unaffected.
+
 ### Against a scratch SQLite file (a laptop with no platform)
 
 Use `-e pyforge-steward`, which has Django (the `dashboard` extra) but no PostgreSQL driver, so it reaches a SQLite file only.

@@ -8,4 +8,4 @@ CREATE TABLE "pyforge_steward_dashboard_auditentry" ("id" bigint NOT NULL PRIMAR
 CREATE INDEX "pyforge_steward_dashboard_auditentry_actor_75903a21" ON "pyforge_steward_dashboard_auditentry" ("actor");
 CREATE INDEX "pyforge_steward_dashboard_auditentry_actor_75903a21_like" ON "pyforge_steward_dashboard_auditentry" ("actor" varchar_pattern_ops);
 CREATE INDEX "pyforge_steward_dashboard_auditentry_occurred_at_3ab8abe8" ON "pyforge_steward_dashboard_auditentry" ("occurred_at");
---rollback DROP TABLE "pyforge_steward_dashboard_auditentry" CASCADE;
+--rollback DROP TABLE IF EXISTS "pyforge_steward_dashboard_auditentry" CASCADE;

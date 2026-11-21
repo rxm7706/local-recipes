@@ -1669,7 +1669,7 @@ verify_commands = [
 "127" = [  # the corridor's records live in the platform's database (spec-pyforge-steward CAP-139, CAP-141, CAP-143), added 2026-11-21.
   ".claude/memory/**",
   "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
-  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md",
+  "_bmad-output/projects/pyforge-*/planning-artifacts/specs/spec-pyforge-*/.memlog.md",
   "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml",
   "docs/dreams/pyforge-steward.md",
   "docs/how-to/move-vendor-extracts-through-the-corridor.md",

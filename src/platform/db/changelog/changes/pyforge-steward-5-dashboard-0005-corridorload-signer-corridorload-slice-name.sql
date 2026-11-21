@@ -11,5 +11,5 @@ ALTER TABLE "pyforge_steward_dashboard_corridorload" ALTER COLUMN "signer" DROP 
 --
 ALTER TABLE "pyforge_steward_dashboard_corridorload" ADD COLUMN "slice_name" varchar(128) DEFAULT '' NOT NULL;
 ALTER TABLE "pyforge_steward_dashboard_corridorload" ALTER COLUMN "slice_name" DROP DEFAULT;
---rollback ALTER TABLE "pyforge_steward_dashboard_corridorload" DROP COLUMN "slice_name" CASCADE;
---rollback ALTER TABLE "pyforge_steward_dashboard_corridorload" DROP COLUMN "signer" CASCADE;
+--rollback ALTER TABLE IF EXISTS "pyforge_steward_dashboard_corridorload" DROP COLUMN IF EXISTS "slice_name" CASCADE;
+--rollback ALTER TABLE IF EXISTS "pyforge_steward_dashboard_corridorload" DROP COLUMN IF EXISTS "signer" CASCADE;
