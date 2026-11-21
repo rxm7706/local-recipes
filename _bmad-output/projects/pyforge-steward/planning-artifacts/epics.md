@@ -9008,7 +9008,7 @@ So that a change under `src/platform/` is checked on the laptop before it reache
 
 **Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-175 and CAP-5 (realized, no text change); FR-49 ← CAP-175; no AD moves
 **Flag:** `flag-exempt: detector-or-gate` (tests, a gate's own module and the scripts a gate runs; a gated gate is a silent green (roster list))
-**Surface:** `pixi.toml`, `pixi.lock`, `environment.yaml`, `docs/reference/environments.md`, `src/shared/packages/django-pyforge/**`, `src/platform/tests/**`
+**Surface:** `pixi.toml`, `pixi.lock`, `environment.yaml`, `docs/reference/environments.md`, `src/shared/packages/django-pyforge/**`, `src/platform/tests/**`, `src/shared/packages/pyforge-steward/tests/**`
 **Spec:** `planning-artifacts/specs/spec-128-1-the-platform-suite-and-its-checks-run-on-a-macos-laptop.md`
 **Given** the `platform-ci-test` environment solves for linux-64 only, so a macOS laptop cannot run the platform suite, its mypy step or the rest of Platform CI's `checks` job before a push
 **When** the environment also solves for macOS, carries the `host-tools` git, the station CLI's tracked-recipe lookup finds the host environment's git first, and the promotion tests read the scanned environment's Python version

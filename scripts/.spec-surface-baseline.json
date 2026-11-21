@@ -4422,7 +4422,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_pilot_skills.py": "757ef81a69416010e501660b60376c74909f18fd",
    "src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_concurrency.py": "5dec454fa0f8b57e2c1fa5aeb544f0a4f7302805",
    "src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_env_sync.py": "da23eec4c817ced948f755a0727c024fbb6721a8",
-   "src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_killed_holder.py": "0776eae12dd2040a686c180a307125b1f9f7682d",
+   "src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_killed_holder.py": "3280d134723d1601c4529280cc50e686041ff1e6",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight.py": "702ffb62e606156ab302b1215652a50c054bf586",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_budget.py": "031a9b295b2bfe6207662842098bc6173658f6d0",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_ci.py": "115dc86088a552537a06ed9d6380f02514301ef4",
@@ -4492,7 +4492,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "02e8f8d42e856f406a847a43d7dc219127c89cf8"
+  "memlog": "9f9ac8b3f7fe617a5fa078f7dcfe935646423de5"
  },
  "pyforge-steward/spec-pyforge-unifying-strategy": {
   "files": {

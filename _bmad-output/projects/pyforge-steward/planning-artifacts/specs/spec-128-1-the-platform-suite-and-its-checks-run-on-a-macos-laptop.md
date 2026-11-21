@@ -17,6 +17,7 @@ surface:
   - 'docs/reference/environments.md'
   - 'src/shared/packages/django-pyforge/**'
   - 'src/platform/tests/**'
+  - 'src/shared/packages/pyforge-steward/tests/**'
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
@@ -85,3 +86,4 @@ Ledger key: `128-1-the-platform-suite-and-its-checks-run-on-a-macos-laptop`.
 
 - 2026-11-21: minted from the station Dream's second 2026-11-21 entry and the operator, 2026-11-21: "why - The platform suite and its mypy step, which can't run on this Mac, cant we fix this".
 - 2026-11-21 (later): done on branch `corridor-platform-host-2026-11-21` (PR #2375). On macOS against PostgreSQL 17.11 and Redis: every `checks` step exits 0, including mypy; the suite reads 1,496 passed and 1 failed, the herald browser check, for want of a Playwright Chromium. Before this story the same tests could not run at all here, and on `main` nine of them failed.
+- 2026-11-21 (later): with `platform-ci-test` installable on macOS, steward's killed-holder test reaches its group-kill cleanup here; macOS answers EPERM, not ESRCH, while the killed group's members are exited but not yet reaped, so the best-effort cleanup ignores both.

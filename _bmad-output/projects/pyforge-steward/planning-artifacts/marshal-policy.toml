@@ -1695,6 +1695,7 @@ verify_commands = [
   "scripts/.spec-surface-baseline.json",
   "src/platform/tests/**",
   "src/shared/packages/django-pyforge/**",
+  "src/shared/packages/pyforge-steward/tests/**",
 ]
 
 # dispatch (Story 85.1 / CAP-286 knobs), added 2026-10-13: steward's verify-fix turn gets 45 minutes, not the
