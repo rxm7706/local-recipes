@@ -3165,7 +3165,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_cfe_commit.py": "960d10194ccb6d445bfe6f589904fe23fec14325",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_cfe_commit_live_tree.py": "f7a16fe23be050777067a31ee7903bf29653eb35",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_completion.py": "cd1fe7d4a4f1d314b66b7b1a67bcba79274346bf",
-   "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_environment_yaml.py": "26393e60160c6fa38a06d093927042a246d99d2b",
+   "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_environment_yaml.py": "fddedf76b53145f6df0ffbd42adc7299249570ec",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_flag_gate.py": "5301ccde716c67263e5f4d5cdbd2f66c85fe4c96",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_fleet.py": "322f1ce9d057ab6eb24005ed16657b4071a15a3d",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_harness_done.py": "5201f97c9eaab9df2f5e152e533e7cdbaef649e2",
@@ -3202,7 +3202,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_verify_fix.py": "f353f91455e960a0395f92108462c3c9e9e3309e",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_survival.py": "d3ddc680265ce1ec6b52d1a9c69401bf62a8f353",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification.py": "a65eaa0ba2851b2685bc2877659931584f3f33ff",
-   "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification_live_tree.py": "7c3db01ff10b66b48f86c4707e6df14fa49cf1e0",
+   "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification_live_tree.py": "f44473f57b0b6c0cb6e273e3d1d11f408b603fd4",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_commands.py": "0f8ca3898b2f483e202d8201454cc68e0c29d574",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_fix.py": "f473569594a0f67e6fd450a67c2d092055746bfc",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_fix_live_tree.py": "fb053580caf1d706421437295c95f5a640502d67",
@@ -3362,7 +3362,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "8485a8f36ac5b199bc85d61090c58659dc470353"
+  "memlog": "03285930e5e7150b51380e7312e7b943ae25b30d"
  },
  "pyforge-marshal/spec-pyforge-testing-charter": {
   "files": {

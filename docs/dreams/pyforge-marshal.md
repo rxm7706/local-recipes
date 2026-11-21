@@ -13961,6 +13961,12 @@ row; the `steward setup` read rules) · [[pyforge-scribe]] (the
   raised `FileNotFoundError` though the kill had worked (seen once in a 48-lane preflight on PR #2375, never alone). The
   test waits briefly for the file, and a session that never wrote it counts as killed before its first line. Binds
   spec-pyforge-marshal:CAP-298 (realized, no text change); decomposed as Epic 119, one story.
+- **2026-11-21** — The dispatch-verification fakes match a command by its words (operator, 2026-11-21: "Yes, fix it
+  here"). `CrossSurfaceProcess` counted any command whose joined text contained `platform-ci-local`, `bmad-estate-check`
+  or `flag-gate-check`, so in a worktree named `…-platform-ci-local-…` the interpreter's own path matched and six
+  cross-surface tests counted a platform run that never happened; the environment-yaml fake matched `steward` and
+  `provision` the same way. Each now matches a whole token of the command. Binds spec-pyforge-marshal:CAP-170 (realized,
+  no text change); decomposed as Epic 120, one story.
 
 ## 2026-11-10 — The Spec says what marshal is, and its roots come from one place
 

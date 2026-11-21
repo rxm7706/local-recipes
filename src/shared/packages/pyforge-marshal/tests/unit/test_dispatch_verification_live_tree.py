@@ -1231,22 +1231,24 @@ class CrossSurfaceProcess:
         git_log = _fake_git_log_empty(list(tokens))
         if git_log is not None:
             return git_log
-        joined = " ".join(tokens)
-        if "platform-ci-local" in joined:
+        # Story 120.1: match a command by its words. A substring of the joined line also matched the
+        # interpreter's path when the worktree's name holds a command's name.
+        words = set(tokens)
+        if "platform-ci-local" in words:
             self.platform_invocations += 1
             return ProcessResult(
                 returncode=self._platform_exit,
                 stdout="",
                 stderr="platform fail" if self._platform_exit else "",
             )
-        if "bmad-estate-check" in joined:
+        if "bmad-estate-check" in words:
             self.bmad_estate_invocations += 1
             return ProcessResult(
                 returncode=self._bmad_estate_exit,
                 stdout="",
                 stderr="bmad-estate fail" if self._bmad_estate_exit else "",
             )
-        if "flag-gate-check" in joined:
+        if "flag-gate-check" in words:
             self.flag_gate_invocations += 1
             return ProcessResult(
                 returncode=self._flag_gate_exit,
