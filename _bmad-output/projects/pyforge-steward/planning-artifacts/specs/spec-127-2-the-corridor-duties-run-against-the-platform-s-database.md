@@ -12,6 +12,7 @@ declared_low_risk: false
 flag-exempt: detector-or-gate   # tests, a gate's own module and the scripts a gate runs; a gated gate is a silent green (roster list)
 surface:
   - 'docs/how-to/move-vendor-extracts-through-the-corridor.md'
+  - 'docs/tutorials/local-platform-development.md'
   - '_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md'
   - 'src/shared/packages/pyforge-steward/**'
 context:

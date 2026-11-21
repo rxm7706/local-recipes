@@ -8968,7 +8968,7 @@ So that the corridor's records land in the platform's database, where the Dream 
 
 **Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-139, CAP-141 and CAP-143 (realized, no text change); no FR (the PRD absorbed CAP-141..145 with no requirement of its own); no AD moves
 **Flag:** `flag-exempt: detector-or-gate` (tests, a gate's own module and the scripts a gate runs; a gated gate is a silent green (roster list))
-**Surface:** `src/shared/packages/django-steward/**`, `src/platform/config/settings/base.py`, `src/platform/tests/**`
+**Surface:** `src/shared/packages/django-steward/**`, `src/platform/config/settings/base.py`, `src/platform/db/**`, `src/platform/tests/**`
 **Spec:** `planning-artifacts/specs/spec-127-1-the-platform-host-installs-steward-s-corridor-app.md`
 **Given** no Django project installs `pyforge.steward.dashboard`, so the corridor's tables exist in no shared database; `src/platform/config/settings/base.py` installs `django_steward_portal`, not the app that owns the corridor models
 **When** the `django-steward` portal package declares the station apps the host installs, and the platform's settings add every portal's declared apps by name
@@ -8984,7 +8984,7 @@ So that the corridor's records land in the platform's database, where the Dream 
 
 **Type:** feature • **Effort:** S • **Deps:** S-127.1 • **FR/AD:** spec-pyforge-steward CAP-139, CAP-141 and CAP-143 (realized, no text change); no FR (the PRD absorbed CAP-141..145 with no requirement of its own); no AD moves
 **Flag:** `flag-exempt: detector-or-gate` (tests, a gate's own module and the scripts a gate runs; a gated gate is a silent green (roster list))
-**Surface:** `docs/how-to/move-vendor-extracts-through-the-corridor.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`, `src/shared/packages/pyforge-steward/**`
+**Surface:** `docs/how-to/move-vendor-extracts-through-the-corridor.md`, `docs/tutorials/local-platform-development.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`, `src/shared/packages/pyforge-steward/**`
 **Spec:** `planning-artifacts/specs/spec-127-2-the-corridor-duties-run-against-the-platform-s-database.md`
 **Given** the corridor how-to tells the operator to write a settings module of their own and reaches a SQLite file only
 **When** the duties are run with the platform's settings in `-e platform-dev` against a PostgreSQL 17 database the platform's migrations built

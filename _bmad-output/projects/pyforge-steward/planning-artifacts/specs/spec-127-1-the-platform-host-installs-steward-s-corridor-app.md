@@ -13,6 +13,7 @@ flag-exempt: detector-or-gate   # tests, a gate's own module and the scripts a g
 surface:
   - 'src/shared/packages/django-steward/**'
   - 'src/platform/config/settings/base.py'
+  - 'src/platform/db/**'
   - 'src/platform/tests/**'
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
