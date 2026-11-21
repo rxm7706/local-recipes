@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 733
+# stories: 740
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -147,6 +147,9 @@ development_status:
   126-4-marshal-reads-a-zombie-without-proc-and-its-remedies-name-commands-that-exist: done
   126-5-the-four-compiled-station-skills-match-their-clis: done
   126-6-every-row-this-change-opened-is-closed-and-the-preflight-is-green-with-fewer-skips: done
+  127-1-the-platform-host-installs-steward-s-corridor-app: done
+  127-2-the-corridor-duties-run-against-the-platform-s-database: done
+  128-1-the-platform-suite-and-its-checks-run-on-a-macos-laptop: done
   13-1-workspace-verbs-over-git-worktree: done
   13-2-status-and-the-feed-mirror-decision: done
   13-3-a-repo-set-opens-as-one-workspace: done
@@ -557,6 +560,10 @@ development_status:
   epic-125-retrospective: optional
   epic-126: done
   epic-126-retrospective: optional
+  epic-127: done
+  epic-127-retrospective: optional
+  epic-128: done
+  epic-128-retrospective: optional
   epic-13: done
   epic-13-retrospective: optional
   epic-14: done

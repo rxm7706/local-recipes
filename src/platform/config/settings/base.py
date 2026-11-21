@@ -1,6 +1,7 @@
 # ruff: noqa: ERA001, E501
 """Base settings to build other settings files upon."""
 
+import importlib
 import importlib.util
 import json
 import os
@@ -41,6 +42,26 @@ for _dist, _module in _STATION_PORTAL_PACKAGES:
     _portal_src = BASE_DIR.parent / "shared" / "packages" / _dist / "src"
     if _portal_src.is_dir() and importlib.util.find_spec(_module) is None:
         sys.path.insert(0, str(_portal_src))
+
+
+def declared_station_apps() -> list[str]:
+    """Story 127.1: the station apps each portal package declares for the host.
+
+    A portal package may ship a ``station_apps`` module whose ``STATION_APPS``
+    names Django apps of its station that the host installs, so their models
+    migrate into this database. The host reads the names only; it never names
+    station code itself. A portal without the module declares nothing.
+    """
+    declared: list[str] = []
+    for _, module in _STATION_PORTAL_PACKAGES:
+        if importlib.util.find_spec(module) is None:
+            continue
+        if importlib.util.find_spec(f"{module}.station_apps") is None:
+            continue
+        declared.extend(importlib.import_module(f"{module}.station_apps").STATION_APPS)
+    return declared
+
+
 # Story 49.14: django_mason_portal.boot_reconcile imports pyforge.mason.boot at
 # MasonPortalConfig.ready() time (eager, not lazy -- boot reconciliation must
 # run on every Django startup). pyforge-mason is deliberately NOT a pixi
@@ -201,6 +222,9 @@ LOCAL_APPS = [
     "dbgpt_integration",
     # Steward 19.1 / 19.2: station portal reusable apps (warden fabric + shells).
     *[module for _, module in _STATION_PORTAL_PACKAGES],
+    # Story 127.1: the station apps the portals declare (steward's corridor
+    # models), after the portals themselves.
+    *declared_station_apps(),
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps

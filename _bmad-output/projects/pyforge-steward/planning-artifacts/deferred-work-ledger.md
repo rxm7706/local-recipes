@@ -7360,4 +7360,5 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-11-18 — steward Story 126.6 (branch `docs-full-refresh-2026-11-17`, PR #2373)
   reason: it is a capability to design, not a defect to correct; the operator chooses the shape.
-  status: open
+  resolution: 2026-11-21, steward Epic 127 (Story 127.1, commit ae43f482b4; Story 127.2) — operator ruling of 2026-11-21, "Platform host": the `django-steward` portal declares `pyforge.steward.dashboard` for the host, the platform's settings install every portal's declared apps, the eight corridor migrations map to Liquibase changesets `pyforge-steward:1` to `:7`, and the sqlmigrate gate counts the station app as first-party. The duties run from `src/platform/` in `-e platform-dev` with the platform's settings (checked against PostgreSQL 17.11); the corridor how-to gives that setup and keeps SQLite as the laptop fallback. The row's guess that either choice was a new capability does not hold: the ruling realizes CAP-139, CAP-141 and CAP-143 as written.
+  status: resolved

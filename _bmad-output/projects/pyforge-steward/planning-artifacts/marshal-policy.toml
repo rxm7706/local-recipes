@@ -1666,6 +1666,37 @@ verify_commands = [
   "src/shared/packages/pyforge-steward/tests/**",
   "src/shared/packages/pyforge-warden/tests/fixtures/corpus/recipes/CTranslate2/**",
 ]
+"127" = [  # the corridor's records live in the platform's database (spec-pyforge-steward CAP-139, CAP-141, CAP-143), added 2026-11-21.
+  ".claude/memory/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/pyforge-*/planning-artifacts/specs/spec-pyforge-*/.memlog.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml",
+  "docs/dreams/pyforge-steward.md",
+  "docs/how-to/move-vendor-extracts-through-the-corridor.md",
+  "docs/tutorials/local-platform-development.md",
+  "scripts/.spec-surface-baseline.json",
+  "src/platform/config/settings/base.py",
+  "src/platform/db/**",
+  "src/platform/tests/**",
+  "src/shared/packages/django-steward/**",
+  "src/shared/packages/pyforge-steward/**",
+]
+"128" = [  # the platform suite runs on a macOS laptop (spec-pyforge-steward CAP-175, CAP-5), added 2026-11-21.
+  ".claude/memory/**",
+  "_bmad-output/projects/pyforge-*/planning-artifacts/specs/spec-pyforge-*/.memlog.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/test-architecture.md",
+  "docs/dreams/pyforge-steward.md",
+  "docs/reference/environments.md",
+  "docs/reference/library-llms-full.md",
+  "environment.yaml",
+  "pixi.lock",
+  "pixi.toml",
+  "scripts/.spec-surface-baseline.json",
+  "src/platform/tests/**",
+  "src/shared/packages/django-pyforge/**",
+  "src/shared/packages/pyforge-steward/tests/**",
+]
 
 # dispatch (Story 85.1 / CAP-286 knobs), added 2026-10-13: steward's verify-fix turn gets 45 minutes, not the
 # 15-minute default. pyforge-steward-test alone runs ~4 minutes (2482 tests), so a fix turn that must re-run it two or

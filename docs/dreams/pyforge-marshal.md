@@ -13955,6 +13955,12 @@ row; the `steward setup` read rules) · [[pyforge-scribe]] (the
 - **2026-11-05** — An audit run reads the Dream entry its slice cites (Story 113.19). The reader now takes every citation form a
   live Spec writes, a dated bullet can serve as the Dream context wherever it sits, and a CAP that cites nothing finds the bullet
   whose `→` names it. Each report names every run's `dream_choice`. The live plan moves from 12 runs on `newest` to none.
+- **2026-11-21** — A challenge run past its ceiling is checked without a race (operator, 2026-11-21: "fix the marshal flaky
+  test too"). `test_a_session_past_its_ceiling_exits_1_with_outcome_error` read the pid file its fake session writes as
+  its first line, but under a loaded machine the 1.5 s ceiling can kill the session before that line runs, so the read
+  raised `FileNotFoundError` though the kill had worked (seen once in a 48-lane preflight on PR #2375, never alone). The
+  test waits briefly for the file, and a session that never wrote it counts as killed before its first line. Binds
+  spec-pyforge-marshal:CAP-298 (realized, no text change); decomposed as Epic 119, one story.
 
 ## 2026-11-10 — The Spec says what marshal is, and its roots come from one place
 

@@ -41,3 +41,19 @@ distributions:
   django-herald:
     migrations:
       herald_portal.0001_initial: 1
+  pyforge-steward:
+    # Story 127.1: the django-steward portal declares pyforge.steward.dashboard
+    # as a station app the host installs, so the corridor's tables (corridor
+    # loads, work passports, the quarantine shelf, the audit log) migrate into
+    # this database. 0006_auditaction_purge only changes AuditEntry.action's
+    # choices (sqlmigrate prints a no-op), so it maps to the changeset that
+    # creates that table.
+    migrations:
+      pyforge_steward_dashboard.0001_initial: 1
+      pyforge_steward_dashboard.0002_workpassport: 2
+      pyforge_steward_dashboard.0003_corridorload: 3
+      pyforge_steward_dashboard.0004_workpassport_vendor_id: 4
+      pyforge_steward_dashboard.0005_corridorload_signer_corridorload_slice_name: 5
+      pyforge_steward_dashboard.0006_auditaction_purge: 1
+      pyforge_steward_dashboard.0007_auditentry_scope: 6
+      pyforge_steward_dashboard.0008_quarantineshelfrow: 7

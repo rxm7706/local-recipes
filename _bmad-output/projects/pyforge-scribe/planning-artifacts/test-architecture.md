@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: scribe
-source_fingerprint: c231a347f228ecb1
-story_count: 66
-test_file_count: 24
+source_fingerprint: 8432d545afd9d8f3
+story_count: 67
+test_file_count: 30
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-scribe`
-- **Stories parsed:** 66
-- **Epics parsed:** 33
-- **Test files inventoried:** 24 under `src/shared/packages/pyforge-scribe/tests/`
+- **Stories parsed:** 67
+- **Epics parsed:** 34
+- **Test files inventoried:** 30 under `src/shared/packages/pyforge-scribe/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `c231a347f228ecb1`
+- **Source fingerprint:** `8432d545afd9d8f3`
 
 ## Risk Assessment
 
@@ -63,6 +63,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 30: The absorbed scribe Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
 - Epic 31: The scribe Spec and its public contract say what the code does (spec-pyforge-scribe CAP-4, CAP-33, CAP-34; the truth sweep amends CAP-1..3, CAP-6, CAP-9, CAP-17, CAP-18, CAP-21..23, CAP-31, CAP-32)
 - Epic 32: The instruction surface, team memory and the seed state the ruled cutover (spec-pyforge-scribe CAP-1, CAP-27, CAP-35)
+- Epic 34: The src/platform import guard reads code, not text (spec-pyforge-scribe CAP-31; relay of spec-pyforge-steward:CAP-175)
 
 ### Low-risk epics
 
@@ -75,11 +76,17 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 
 | Relative path | Level | Linked stories |
 |---------------|-------|----------------|
+| `src/shared/packages/pyforge-scribe/tests/meta/test_cutover_wording.py` | meta | none observed |
 | `src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py` | meta | none observed |
 | `src/shared/packages/pyforge-scribe/tests/meta/test_guild_env_membership.py` | meta | none observed |
 | `src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py` | meta | none observed |
+| `src/shared/packages/pyforge-scribe/tests/meta/test_live_tree_split.py` | meta | none observed |
+| `src/shared/packages/pyforge-scribe/tests/meta/test_package_metadata_matches_estate.py` | meta | none observed |
+| `src/shared/packages/pyforge-scribe/tests/meta/test_public_contract.py` | meta | none observed |
 | `src/shared/packages/pyforge-scribe/tests/meta/test_skf_skill_ownership.py` | meta | none observed |
+| `src/shared/packages/pyforge-scribe/tests/meta/test_spec_not_behind_memlog.py` | meta | none observed |
 | `src/shared/packages/pyforge-scribe/tests/meta/test_station_persona.py` | meta | none observed |
+| `src/shared/packages/pyforge-scribe/tests/meta/test_team_memory_index.py` | meta | none observed |
 | `src/shared/packages/pyforge-scribe/tests/unit/test_capture.py` | unit | none observed |
 | `src/shared/packages/pyforge-scribe/tests/unit/test_catalog_bmad_estate.py` | unit | none observed |
 | `src/shared/packages/pyforge-scribe/tests/unit/test_cli.py` | unit | none observed |
@@ -170,6 +177,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 32.3 | A Spec that is behind its memlog reds scribe's live-tree suite | none observed |
 | 33.1 | The suite splits on live_tree and postgres, and no test skips the branch it n... | none observed |
 | 33.2 | The package's metadata and docs agree with the estate | none observed |
+| 34.1 | The src/platform import guard reads code, not text | none observed |
 
 ## Quality Gates
 

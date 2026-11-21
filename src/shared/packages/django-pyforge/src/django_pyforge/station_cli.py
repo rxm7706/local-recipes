@@ -21,6 +21,7 @@ import os
 import re
 import signal
 import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -88,6 +89,19 @@ ENVIRONMENT_ALLOWLIST: tuple[str, ...] = (
     "no_proxy",
 )
 SYSTEM_PATH = "/usr/local/bin:/usr/bin:/bin"
+
+
+def git_lookup_path() -> str:
+    """The PATH the tracked-recipe lookup runs ``git`` with (Story 128.1).
+
+    The host environment's own ``bin`` (beside the interpreter running this
+    process) comes first, then the fixed system directories. No caller's
+    ``PATH`` is ever inherited. On a macOS laptop ``/usr/bin/git`` is only the
+    Xcode stub when the command-line tools are absent, so the git that
+    environment carries is the one that answers.
+    """
+    return os.pathsep.join((str(Path(sys.executable).parent), SYSTEM_PATH))
+
 
 _TOKEN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}")
 _RECIPE = re.compile(r"[A-Za-z0-9_][A-Za-z0-9._-]{0,127}")
@@ -160,7 +174,7 @@ def _tracked_recipe(slug: str, root: Path) -> str:
             capture_output=True,
             text=True,
             check=False,
-            env={"PATH": SYSTEM_PATH},
+            env={"PATH": git_lookup_path()},
             timeout=GIT_LOOKUP_SECONDS,
         )
     except (OSError, subprocess.SubprocessError) as exc:

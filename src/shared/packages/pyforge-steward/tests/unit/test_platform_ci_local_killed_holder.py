@@ -157,8 +157,9 @@ def _kill_and_follow(
     finally:
         # Story 101.1: stop what is left of the holder's group. A SIGKILL to the shell alone
         # leaves its slow python stand-in running for up to 8 s. The services it started lead
-        # sessions of their own; the follow run reclaims them.
-        with contextlib.suppress(ProcessLookupError):
+        # sessions of their own; the follow run reclaims them. Story 128.1: macOS answers EPERM, not
+        # ESRCH, while the group's members are exited but not yet reaped; both mean nothing is left.
+        with contextlib.suppress(ProcessLookupError, PermissionError):
             os.killpg(holder.pid, signal.SIGKILL)
         holder.wait(timeout=15)
     time.sleep(0.5)
