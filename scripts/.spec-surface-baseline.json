@@ -4922,7 +4922,7 @@
    "src/platform/tests/test_front_door_queries_supervisor.py": "9a7834dcf7964869468ce6e5b4bb36bf6c743e42",
    "src/platform/tests/test_golden_path_promotion_closure.py": "271858e4cc6bd2d101ea7ae47d58ac7eeeb337e3",
    "src/platform/tests/test_golden_path_promotion_osv_db.py": "c97f6406d6fe90ecbe7aa6cabaa0993a3b5e9455",
-   "src/platform/tests/test_golden_path_promotion_verdict.py": "d19de45617c81e8ed357335d9ff7f483ecba7881",
+   "src/platform/tests/test_golden_path_promotion_verdict.py": "ece25de11264a0f7e523d03b26bbe1a1bd98b253",
    "src/platform/tests/test_health_endpoint.py": "0585c84dc84e9136d0d04295b6a6223bbfa57b62",
    "src/platform/tests/test_held_run_lifecycle.py": "204785a527e6a587dc69f293368e41d1e8b0000f",
    "src/platform/tests/test_helm_gate.py": "45948763ad400eb4969cfa6a46a36c32ccb575f4",
@@ -5746,7 +5746,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "a9039be18be023def11b70b9aab92b56fe27a1d0"
+  "memlog": "d3aa3bca4761810e67f38d409b47189acadd154b"
  },
  "pyforge-steward/spec-python-foundry-cutover": {
   "files": {},

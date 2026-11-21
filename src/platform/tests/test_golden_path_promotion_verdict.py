@@ -6,6 +6,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import time
 from typing import TYPE_CHECKING
 
@@ -98,16 +99,9 @@ def _ambient_warden_env(tmp_path: Path) -> dict[str, str]:
     """Mirror warden test conftest ambient OSV + KEV + currency feeds."""
     env = _provisioned_env(tmp_path)
     feed_root = tmp_path / "feeds"
-    # Story 128.1: the scan assesses the pyforge-warden environment's own
-    # interpreter, so the runtime cycle is read there, inside the setup
-    # snippet, not from this test process (another environment, whose
-    # interpreter may be a different patch release).
+    runtime_version = ".".join(str(part) for part in sys.version_info[:3])
     setup = f"""
-import sys
-
 from pyforge.warden.feeds import write_endoflife_cache, write_kev_cache
-
-runtime_version = ".".join(str(part) for part in sys.version_info[:3])
 
 feed_root = {str(feed_root)!r}
 
@@ -119,13 +113,25 @@ def _clean_cycle(version):
         "latest": version,
     }}]
 
+import sys as _sys
+
+# Story 128.1: the scan assesses this (pyforge-warden) environment's interpreter,
+# which can be another patch release than the test process's; seed both.
+_python_cycles = [
+    cycle
+    for version in dict.fromkeys(
+        ({runtime_version!r}, ".".join(str(p) for p in _sys.version_info[:3]))
+    )
+    for cycle in _clean_cycle(version)
+]
+
 write_kev_cache(feed_root, {{"vulnerabilities": []}})
 write_endoflife_cache(
     feed_root,
     {{
         "requests": _clean_cycle("2.31.0"),
         "packaging": _clean_cycle("24.0"),
-        "python": _clean_cycle(runtime_version),
+        "python": _python_cycles,
     }},
 )
 """
