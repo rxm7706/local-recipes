@@ -76,8 +76,7 @@ requirements:
     - playwright-browsers-base
     # The binaries link the host's system libraries rather than conda's, so
     # declare the host floor rather than pull a parallel library stack in.
-    - if: linux
-      then: __glibc >=2.35
+    # The linux ffmpeg build is static: it references no GLIBC symbol version (measured 2026-11-21).
     - if: osx
       then: __osx >=14
   run_constraints:

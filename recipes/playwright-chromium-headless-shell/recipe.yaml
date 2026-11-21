@@ -77,8 +77,9 @@ requirements:
     - playwright-browsers-base
     # The binaries link the host's system libraries rather than conda's, so
     # declare the host floor rather than pull a parallel library stack in.
+    # glibc floor = the highest GLIBC_2.x symbol version the linux build references (measured 2026-11-21).
     - if: linux
-      then: __glibc >=2.35
+      then: __glibc >=2.25
     - if: osx
       then: __osx >=14
   run_constraints:
