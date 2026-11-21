@@ -545,7 +545,7 @@
    "docs/how-to/pixi-tasks.md": "cc70aff863ee1fa7819fec70b9e92f6ad8641f78",
    "docs/how-to/presentation-deck.md": "532264fab0c5828700b068f511f8272fc3d861f2",
    "docs/how-to/purge-preserved-refs.md": "1f548463a94af87266c527f10fb30597750d8649",
-   "docs/how-to/reach-a-station-mcp-endpoint.md": "4135a339a7e96bcc33fa6cbb83d0e41be45e4cfc",
+   "docs/how-to/reach-a-station-mcp-endpoint.md": "8dadcabc4a0c806f5211562404769b0c516ca551",
    "docs/how-to/read-steward-registers.md": "ffa6f65e41da13de870366a1d3e7eae449d028ef",
    "docs/how-to/recipe-testing-and-builds.md": "00078cf697abd026dd98206707deea57cad27e9a",
    "docs/how-to/reconcile-spec-surface.md": "d1b9d7ef67b3f52a8eecd2dc7345b1d054be27ae",
@@ -821,7 +821,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "f69811be6ac0a2bf204db379f4d6c6d1ba72f76f"
+  "memlog": "012a602785f78edea6f791b3a31e059cdd0a252a"
  },
  "pyforge-herald/spec-pyforge-herald": {
   "files": {
