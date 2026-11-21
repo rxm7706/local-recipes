@@ -8991,3 +8991,27 @@ So that the corridor's records land in the platform's database, where the Dream 
 **Then** `load inbound`, `passport mint`, `quarantine shelf` and `glass` run there, the how-to gives that setup and keeps the SQLite one as a laptop fallback, and the how-to's `sources:` and `verified:` are current
 **And** `DW-steward-126-3-1` reads resolved in its ledger with the commit that closed it
 **Status:** done
+
+## Epic 128: The platform suite runs on a macOS laptop (spec-pyforge-steward CAP-175, CAP-5)
+
+Minted 2026-11-21 from the station Dream's entry of the same date on the operator, 2026-11-21: "why - The platform suite and its mypy step, which can't run on this Mac, cant we fix this".
+**HARD boundaries:**
+- No pin of another environment moves; the lock change is additions only, and `git` stays at the version every other environment locks.
+- The station CLI never inherits a caller's `PATH`.
+- No assertion that holds on Linux is weakened.
+
+### Story 128.1: The platform suite and its checks run on a macOS laptop
+
+As the operator who develops on a macOS laptop,
+I want the environment also solves for macOS, carries the `host-tools` git, the station CLI's tracked-recipe lookup finds the host environment's git first, and the promotion tests read the scanned environment's Python version,
+So that a change under `src/platform/` is checked on the laptop before it reaches CI.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-175 and CAP-5 (realized, no text change); FR-49 ← CAP-175; no AD moves
+**Flag:** `flag-exempt: detector-or-gate` (tests, a gate's own module and the scripts a gate runs; a gated gate is a silent green (roster list))
+**Surface:** `pixi.toml`, `pixi.lock`, `environment.yaml`, `docs/reference/environments.md`, `src/shared/packages/django-pyforge/**`, `src/platform/tests/**`
+**Spec:** `planning-artifacts/specs/spec-128-1-the-platform-suite-and-its-checks-run-on-a-macos-laptop.md`
+**Given** the `platform-ci-test` environment solves for linux-64 only, so a macOS laptop cannot run the platform suite, its mypy step or the rest of Platform CI's `checks` job before a push
+**When** the environment also solves for macOS, carries the `host-tools` git, the station CLI's tracked-recipe lookup finds the host environment's git first, and the promotion tests read the scanned environment's Python version
+**Then** Platform CI's `checks` job (system checks, ruff, ruff format, mypy, the policy suite, the sqlmigrate extraction) and its suite run green on macOS from `-e platform-ci-test`, apart from the herald browser check where no Playwright Chromium is installed; no other environment's pins move
+**And** Linux CI stays green
+**Status:** done

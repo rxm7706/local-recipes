@@ -8163,3 +8163,12 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   corrects the deferred row's guess that either choice was a new one) and decomposes as Epic 127, two stories: the
   platform host installs the corridor app; the corridor duties run against the platform's database, the corridor
   how-to says how, and the row reads resolved.
+- **2026-11-21 (the platform suite runs on a macOS laptop) — Ruled** (operator, 2026-11-21, on Epic 127's PR: "why - The
+  platform suite and its mypy step, which can't run on this Mac, cant we fix this"): the platform's Linux-only
+  `platform-ci-test` environment was the one CI lane a macOS laptop could not replay, so a change under `src/platform/`
+  reached CI with its suite and mypy unrun. The environment now solves for macOS as well (rcssmin takes the noarch
+  floor the platform image already runs, since conda-forge publishes 1.3.0 for linux-64 only), and carries the
+  `host-tools` git; the station CLI's tracked-recipe lookup finds the host environment's git before the system's,
+  since `/usr/bin/git` on a laptop without the command-line tools is only the Xcode stub; and the promotion tests read
+  the scanned environment's Python version rather than their own. **For steward:** this entry binds
+  `spec-pyforge-steward` CAP-175 and CAP-5 (realized, no text change) and decomposes as Epic 128, one story.

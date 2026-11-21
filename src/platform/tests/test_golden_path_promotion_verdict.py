@@ -6,7 +6,6 @@ import json
 import os
 import shutil
 import subprocess
-import sys
 import time
 from typing import TYPE_CHECKING
 
@@ -99,9 +98,16 @@ def _ambient_warden_env(tmp_path: Path) -> dict[str, str]:
     """Mirror warden test conftest ambient OSV + KEV + currency feeds."""
     env = _provisioned_env(tmp_path)
     feed_root = tmp_path / "feeds"
-    runtime_version = ".".join(str(part) for part in sys.version_info[:3])
+    # Story 128.1: the scan assesses the pyforge-warden environment's own
+    # interpreter, so the runtime cycle is read there, inside the setup
+    # snippet, not from this test process (another environment, whose
+    # interpreter may be a different patch release).
     setup = f"""
+import sys
+
 from pyforge.warden.feeds import write_endoflife_cache, write_kev_cache
+
+runtime_version = ".".join(str(part) for part in sys.version_info[:3])
 
 feed_root = {str(feed_root)!r}
 
@@ -119,7 +125,7 @@ write_endoflife_cache(
     {{
         "requests": _clean_cycle("2.31.0"),
         "packaging": _clean_cycle("24.0"),
-        "python": _clean_cycle({runtime_version!r}),
+        "python": _clean_cycle(runtime_version),
     }},
 )
 """

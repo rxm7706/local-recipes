@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import os
 import stat
 import subprocess
 import sys
@@ -285,6 +286,13 @@ def test_the_environment_allowlist_is_pinned() -> None:
         "no_proxy",
     }
     assert station_cli.SYSTEM_PATH == "/usr/local/bin:/usr/bin:/bin"
+
+
+def test_the_git_lookup_finds_the_host_environment_git_first() -> None:
+    """Story 128.1: the host environment, then the system; never a caller PATH."""
+    entries = station_cli.git_lookup_path().split(os.pathsep)
+    assert entries[0] == str(Path(sys.executable).parent)
+    assert os.pathsep.join(entries[1:]) == station_cli.SYSTEM_PATH
 
 
 def test_steward_duties_are_pinned() -> None:
