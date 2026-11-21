@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: ab24c07139bd78d6
-story_count: 485
+source_fingerprint: 1b0e7a761516bcce
+story_count: 486
 test_file_count: 166
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 485
-- **Epics parsed:** 129
+- **Stories parsed:** 486
+- **Epics parsed:** 130
 - **Test files inventoried:** 166 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `ab24c07139bd78d6`
+- **Source fingerprint:** `1b0e7a761516bcce`
 
 ## Risk Assessment
 
@@ -152,6 +152,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 127: The corridor's records live in the platform's database (spec-pyforge-steward CAP-139, CAP-141, CAP-143)
 - Epic 128: The platform suite runs on a macOS laptop (spec-pyforge-steward CAP-175, CAP-5)
 - Epic 129: A killed test run leaves no stand-in server behind (spec-pyforge-steward CAP-175)
+- Epic 130: Playwright's browsers come from pixi (spec-pyforge-steward CAP-5)
 
 ### Low-risk epics
 
@@ -826,6 +827,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 127.2 | The corridor duties run against the platform's database | none observed |
 | 128.1 | The platform suite and its checks run on a macOS laptop | none observed |
 | 129.1 | A killed test run leaves no stand-in server behind | none observed |
+| 130.1 | Playwright's browsers install from pixi on linux-64, osx-arm64 and win-64 | none observed |
 
 ## Quality Gates
 

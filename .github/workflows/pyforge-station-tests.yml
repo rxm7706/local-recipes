@@ -754,7 +754,7 @@ jobs:
       # Story 117.7 (spec-pyforge-steward CAP-175; the CAP-174 shape): install the browser alone, launch it
       # once, and pull its system packages through apt only when it does not launch on the runner image --
       # the apt download was 636-668 s on a slow mirror for libraries the image already carries.
-      - name: Install Chromium for the dashboard E2E + WASM smoke gates
+      - name: Check Chromium launches for the dashboard E2E + WASM smoke gates
         run: |
           probe() {
             pixi run --frozen -e pyforge-atlas python - <<'PY'
@@ -764,7 +764,7 @@ jobs:
               playwright.chromium.launch().close()
           PY
           }
-          pixi run --frozen -e pyforge-atlas python -m playwright install chromium
+          # steward Story 130.1: Chromium comes from the lock (playwright-chromium*), so nothing is downloaded here.
           if probe; then
             echo "Chromium launches on this runner image; no system packages installed."
           else
@@ -1020,7 +1020,7 @@ jobs:
               playwright.chromium.launch().close()
           PY
           }
-          pixi run --frozen -e pyforge-herald python -m playwright install chromium
+          # steward Story 130.1: Chromium comes from the lock (playwright-chromium*), so nothing is downloaded here.
           if probe; then
             echo "Chromium launches on this runner image; no system packages installed."
           else

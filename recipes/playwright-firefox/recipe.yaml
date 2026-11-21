@@ -2,86 +2,128 @@
 schema_version: 1
 
 context:
-  version: "155.0"
-  revision: "1543"
+  version: "157.0"
+  revision: "1555"
+  inner: ${{ "firefox" if linux else ("firefox" if osx else "firefox") }}
 
 package:
   name: playwright-firefox
   version: ${{ version }}
 
+# One archive per platform, at the revision browsers.json pins in the
+# playwright driver line the estate runs (1.64.x; steward Story 130.1).
+# Extract under src/ so the build copies ONLY upstream content -- rattler-build
+# also drops conda_build.sh / build_env.sh in the work dir.
 source:
-  url: https://cdn.playwright.dev/dbazure/download/playwright/builds/firefox/1543/firefox-ubuntu-22.04.zip
-  sha256: bc8469cbdc2016aabc894b0633654e73861332a6990fc6c2149db6864d013ff3
-  # Extract under src/ so the build copies ONLY upstream content -- rattler-build
-  # also drops conda_build.sh / build_env.sh in the work dir, and `cp -a ./*`
-  # would sweep them into the package.
-  target_directory: src
+  - if: linux and x86_64
+    then:
+      url: https://cdn.playwright.dev/dbazure/download/playwright/builds/firefox/1555/firefox-ubuntu-22.04.zip
+      sha256: 0a32f1f8d7e4170573435b4219eff8317e558750612b6355f18e9a4cb27e594b
+      target_directory: src
+  - if: osx and arm64
+    then:
+      url: https://cdn.playwright.dev/dbazure/download/playwright/builds/firefox/1555/firefox-mac-arm64.zip
+      sha256: 72eb32289f368789786d16d252e8e4fef7b62ae721d57f82d3d6d9221d3fd2af
+      target_directory: src
+  - if: win and x86_64
+    then:
+      url: https://cdn.playwright.dev/dbazure/download/playwright/builds/firefox/1555/firefox-win64.zip
+      sha256: 410e14bca6099c089c2092df67803320aab70433a754aae356c4c2e990cf6b77
+      target_directory: src
 
 build:
   number: 0
-  # linux-64 only: the archive is a linux x86-64 build, and this is the only
-  # platform the estate drives. Other subdirs need their own source URL.
+  # linux-64, osx-arm64 and win-64: the three platforms the estate drives.
+  # Each needs its own archive, above; any other subdir has none.
   skip:
-    - not (linux and x86_64)
+    - not ((linux and x86_64) or (osx and arm64) or (win and x86_64))
   dynamic_linking:
     # MUST stay false. These are large prebuilt binaries carrying embedded
-    # resources (PAK bundles, V8 snapshots, ICU data) at fixed offsets;
-    # rewriting ELF sections to patch RPATH shifts those offsets and the
-    # binary segfaults at launch. Nothing here needs relocating -- the
-    # binaries resolve against host system libraries, exactly as they do
-    # under `playwright install`.
+    # resources at fixed offsets (and, on macOS, code signatures); rewriting
+    # them to patch RPATH or install names corrupts them. Nothing here needs
+    # relocating -- the binaries resolve against host system libraries,
+    # exactly as they do under `playwright install`.
     binary_relocation: false
+  prefix_detection:
+    # Nothing in a browser build embeds the build prefix; scanning ~200 MB of
+    # binaries for it only risks a false hit rewriting a signed file.
+    ignore: true
   script:
-    - if: unix
+    # The script runs on the BUILD host, so pick the shell by build_platform:
+    # a win-64 package built from macOS still copies with the unix branch.
+    - if: build_platform not in ["win-64", "win-arm64"]
       then: |
         set -ex
-        DEST="${PREFIX}/share/ms-playwright/firefox-1543"
+        DEST="${PREFIX}/share/ms-playwright/firefox-1555"
         # rattler-build STRIPS a single top-level directory when it extracts an
         # archive, so src/ holds that root's CONTENTS for chromium / headless
-        # shell / firefox, and holds the entries themselves for the multi-root
-        # webkit and ffmpeg archives. Re-creating the inner directory here makes
-        # both shapes land where Playwright looks, without depending on whether
-        # the strip happened.
-        mkdir -p "${DEST}/firefox"
-        cp -a src/. "${DEST}/firefox/"
+        # shell / firefox, and the entries themselves for the multi-root webkit
+        # and ffmpeg archives. Re-creating the inner directory here makes both
+        # shapes land where Playwright looks.
+        mkdir -p "${DEST}/${{ inner }}"
+        cp -a src/. "${DEST}/${{ inner }}"/
         # Playwright treats a browser directory WITHOUT this marker as not
-        # installed and re-downloads over it. Creating it is what makes the
-        # conda-provided browser count as a real install.
+        # installed and re-downloads over it.
         touch "${DEST}/INSTALLATION_COMPLETE"
+      else: |
+        set "DEST=%PREFIX%\share\ms-playwright\firefox-1555"
+        mkdir "%DEST%\${{ inner }}"
+        xcopy /E /I /Q /Y /H "src" "%DEST%\${{ inner }}"
+        if errorlevel 1 exit /b 1
+        type nul > "%DEST%\INSTALLATION_COMPLETE"
 
 requirements:
   run:
     - playwright-browsers-base
-    # Built against Ubuntu's glibc; the binaries link the host's system
-    # libraries rather than conda's, so declare the floor rather than pull a
-    # parallel library stack in beside the system one.
-    - __glibc >=2.35
+    # The binaries link the host's system libraries rather than conda's, so
+    # declare the host floor rather than pull a parallel library stack in.
+    # glibc floor = the highest GLIBC_2.x symbol version the linux build references (measured 2026-11-21).
+    - if: linux
+      then: __glibc >=2.18
+    - if: osx
+      then: __osx >=14
   run_constraints:
-    # The revision is dictated by browsers.json INSIDE the playwright driver.
-    # Pair a mismatched driver with this package and Playwright reports
-    # "Executable doesn't exist ... run playwright install". Verified against
-    # playwright 1.63.0 (node) and playwright-python 1.62.0, which both pin
-    # firefox r1543.
-    - playwright >=1.62,<1.64
-    - playwright-python >=1.62,<1.64
+    # The revision is dictated by browsers.json INSIDE the playwright (Node)
+    # driver; playwright-python drives that same driver. A mismatched driver
+    # reports "Executable doesn't exist ... run playwright install". Verified
+    # against playwright 1.64.0 and 1.64.1, which both pin firefox r1555.
+    - playwright >=1.64,<1.65
 
 tests:
-  - package_contents:
-      files:
-        - share/ms-playwright/firefox-1543/INSTALLATION_COMPLETE
-        - share/ms-playwright/firefox-1543/firefox/firefox
-  - script:
-      # Executing the binary is the point: a contents-only test would pass
-      # on a relocation-corrupted binary that segfaults at launch.
-      - test -x "${PREFIX}/share/ms-playwright/firefox-1543/firefox/firefox"
-      - '"${PREFIX}/share/ms-playwright/firefox-1543/firefox/firefox" --version'
-      - '"${PREFIX}/share/ms-playwright/firefox-1543/firefox/firefox" --version | grep -F "Mozilla Firefox 155.0"'
+  - if: linux
+    then:
+      package_contents:
+        files:
+          - share/ms-playwright/firefox-1555/INSTALLATION_COMPLETE
+          - "share/ms-playwright/firefox-1555/firefox/firefox"
+  - if: osx
+    then:
+      package_contents:
+        files:
+          - share/ms-playwright/firefox-1555/INSTALLATION_COMPLETE
+          - "share/ms-playwright/firefox-1555/firefox/Nightly.app/Contents/MacOS/firefox"
+  - if: win
+    then:
+      package_contents:
+        files:
+          - share/ms-playwright/firefox-1555/INSTALLATION_COMPLETE
+          - "share/ms-playwright/firefox-1555/firefox/firefox.exe"
+  - if: linux
+    then:
+      script:
+        - test -x "${PREFIX}/share/ms-playwright/firefox-1555/firefox/firefox"
+        - '"${PREFIX}/share/ms-playwright/firefox-1555/firefox/firefox" --version | grep -F "157.0"'
+  - if: osx
+    then:
+      script:
+        - test -x "${PREFIX}/share/ms-playwright/firefox-1555/firefox/Nightly.app/Contents/MacOS/firefox"
+        - '"${PREFIX}/share/ms-playwright/firefox-1555/firefox/Nightly.app/Contents/MacOS/firefox" --version | grep -F "157.0"'
 
 about:
   homepage: https://playwright.dev/docs/browsers
   repository: https://github.com/microsoft/playwright
   documentation: https://playwright.dev/docs/browsers#managing-browser-binaries
-  summary: Playwright's patched Firefox 155.0 build (firefox r1543)
+  summary: Playwright's patched Firefox 157.0 build (firefox r1555)
   description: |
     Playwright's own Firefox build. This is NOT interchangeable with the
     stock `firefox` package on conda-forge: Playwright drives Firefox
@@ -89,7 +131,7 @@ about:
     not speak. Nothing in this estate drives Firefox today; it is packaged
     for completeness of the browser set.
 
-    Installed under `$CONDA_PREFIX/share/ms-playwright/firefox-1543/` with the
+    Installed under `$CONDA_PREFIX/share/ms-playwright/firefox-1555/` with the
     `INSTALLATION_COMPLETE` marker Playwright looks for, so an environment
     carrying `playwright-browsers-base` resolves it with no network access
     and no `playwright install` step.
@@ -123,8 +165,8 @@ extra:
   cfe-generated-by-version: 8.86.4
   cfe-generated-at-datetime: 2026-09-07T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-09-07T15:40:00Z
-  cfe-local-build-platform: linux-64
+  cfe-local-build-datetime: 2026-11-21T00:00:00Z
+  cfe-local-build-platform: osx-arm64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
@@ -154,7 +196,7 @@ extra:
 #    # portable choice. Playwright locates a browser purely by directory
 #    # name and does not check which variant is inside. Verified on the
 #    # Ubuntu 24.04 build host: 0 unresolved libraries, and Firefox reports
-#    # 155.0, so the older build runs on the newer distro as expected.
+#    # 157.0, so the older build runs on the newer distro as expected.
 # build:
 #    # The install directory name is what Playwright's registry reports, taken
 #    # from --dry-run output rather than derived from the browser name.

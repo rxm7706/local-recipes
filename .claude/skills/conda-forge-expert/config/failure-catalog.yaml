@@ -4,7 +4,7 @@
 # "Recipe Authoring Gotchas" section. Hand edits are detectably wrong —
 # regenerating overwrites them; see tests/meta/test_failure_catalog_freshness.py.
 schema_version: 1
-source_sha256: "63b4b1a8da240143845414011c6276d88db4935d00ab420399598221c6cf59dc"
+source_sha256: "bc04945605888bdaec793ac45a66aa683f88166f6e2f59c736aca631768f3366"
 rows:
   - id: G1
     title: "Don't rely on env vars carrying across `script:` list entries — older rattler-build ran each entry in its own shell"
@@ -1056,4 +1056,16 @@ rows:
       - "source.patches"
       - "yaml"
       - "pyyaml"
+    enforced_by: null
+  - id: G131
+    title: "A repackaged prebuilt binary: pick the copy shell by build host, measure the glibc floor, lock a private channel through a mirror"
+    symptom_signature:
+      - "playwright-*"
+      - "else:"
+      - "cmd.exe"
+      - "not build_platform.startswith(\"win\")"
+      - "string has no method named startswith"
+      - "pixi lock"
+      - "__glibc >=2.35, for which no candidates were found"
+      - "URL scheme is not allowed"
     enforced_by: null

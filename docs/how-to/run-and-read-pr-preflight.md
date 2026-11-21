@@ -35,7 +35,7 @@ A full-scope run includes three lanes that need something a fresh checkout does 
 | Lane | Needs | Get it |
 | --- | --- | --- |
 | `pyforge-scribe-live-test` | The per-user PostgreSQL + pgvector cluster on `127.0.0.1:5433` | `pixi run -e pyforge-scribe-pg scribe-pg-up` (stop it with `scribe-pg-down`, check it with `scribe-pg-status`) |
-| `pyforge-atlas-test` (its two dashboard tests) | Playwright's Chromium for the atlas environment | `pixi run -e pyforge-atlas python -m playwright install chromium`, once per Playwright version |
+| `pyforge-atlas-test` (its two dashboard tests) | Playwright's Chromium for the atlas environment | Nothing: the environment carries it (`playwright-chromium`, `playwright-chromium-headless-shell`, from the `SelfExplainML` channel; steward Story 130.1) |
 | `pyforge-steward-live-test` (`test_adoption_register.py::test_wired_column_agrees_with_live_pipeline_truth_for_every_row`) | Herald's manticore studio at `$PYFORGE_STUDIO_ROOT` (default `~/pyforge-studio`) | Install it once per machine: [Herald's manticore studio](manticore-studio.md) |
 
 The third row holds wherever the environment variable `CI` is unset. The adoption register records `bmad-manticore` as `wired`, the test compares that with what `steward suite pipeline-truth` finds on this machine, and a machine with no studio answers `unwired`. A CI runner sets `CI` and is exempt; a laptop is not.

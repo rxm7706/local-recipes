@@ -8179,3 +8179,13 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   over an hour on 2026-11-21. Each stand-in now lives a bounded time (600 s by default), so a killed run's leftovers
   exit by themselves. **For steward:** this entry binds `spec-pyforge-steward` CAP-175 (realized, no text change) and
   decomposes as Epic 129, one story.
+- **2026-11-21 (Playwright's browsers come from pixi) — Ruled** (operator ruling of 2026-11-21: "first Write it up as a Dream entry and a Story, so it's planned but not built yet. then Do steps 1, 2 and 4 now. Settle on one Playwright driver across the estate, add macOS and Windows downloads and checksums to the browser recipes, build them locally, and wire the packages into the environments behind a local channel. All of that lands in a PR; only step 3, publishing to a channel, waits for you. use SelfExplainML to publish"): every
+  environment that drives a browser gets Playwright's browsers as conda packages, not from `playwright install`'s
+  download at run time. The six repackaging recipes under `recipes/playwright-*` exist for linux-64 only and pin
+  revisions of a driver the estate no longer runs everywhere: pixi resolves `playwright` (the Node driver, which
+  dictates the browser revisions) to 1.63 in some environments and 1.64 in others. **For steward:** this entry binds
+  `spec-pyforge-steward` (the environment capability, CAP-5; no text change) and decomposes as Epic 130, one story:
+  one driver across the estate, the six recipes on linux-64, osx-arm64 and win-64 with a checksum per download, built
+  locally, and wired into the browser-driving environments behind a local channel. The packages repackage Google's
+  Chrome for Testing under its terms, so they are not conda-forge material: they publish to the private channel
+  `SelfExplainML`, an operator act; until it is done the lock cannot name them and the PR stays a draft.

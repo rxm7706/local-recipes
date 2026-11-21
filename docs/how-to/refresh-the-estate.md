@@ -10,7 +10,7 @@ sources:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/estate_verify.py
   - scripts/pin_policy_check.py
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/release-cadence.md
-verified: 2026-11-18
+verified: 2026-11-21
 ---
 
 # How to refresh the estate
