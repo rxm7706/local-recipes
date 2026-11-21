@@ -1666,7 +1666,7 @@ verify_commands = [
   "src/shared/packages/pyforge-steward/tests/**",
   "src/shared/packages/pyforge-warden/tests/fixtures/corpus/recipes/CTranslate2/**",
 ]
-"129" = [  # Playwright's browsers come from pixi (spec-pyforge-steward CAP-5), added 2026-11-21.
+"130" = [  # Playwright's browsers come from pixi (spec-pyforge-steward CAP-5), added 2026-11-21.
   ".claude/skills/conda-forge-expert/**",
   "environment.yaml",
   "pixi.lock",

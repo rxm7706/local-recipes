@@ -149,7 +149,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 121: The cutover control plane tells the truth: one generated ledger, one writer lock (spec-python-foundry-cutover fnd:CAP-8 fnd:CAP-9 / spec-foundry-capability-ledger fcl:CAP-1 fcl:CAP-2)
 - Epic 124: The shared surfaces carry what every station's cutover-readiness work needs (spec-pyforge-steward CAP-153, CAP-175; spec-pyforge-unifying-strategy CAP-4, CAP-14, CAP-16)
 - Epic 126: macOS is a first-class development host (spec-pyforge-steward CAP-175, CAP-5)
-- Epic 129: Playwright's browsers come from pixi (spec-pyforge-steward CAP-5)
+- Epic 130: Playwright's browsers come from pixi (spec-pyforge-steward CAP-5)
 
 ### Low-risk epics
 
@@ -820,7 +820,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 126.4 | Marshal reads a zombie without /proc, and its remedies name commands that exist | none observed |
 | 126.5 | The four compiled station skills match their CLIs | none observed |
 | 126.6 | Every row this change opened is closed, and the preflight is green with fewer... | none observed |
-| 129.1 | Playwright's browsers install from pixi on linux-64, osx-arm64 and win-64 | none observed |
+| 130.1 | Playwright's browsers install from pixi on linux-64, osx-arm64 and win-64 | none observed |
 
 ## Quality Gates
 

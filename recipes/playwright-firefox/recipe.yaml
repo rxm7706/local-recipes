@@ -11,7 +11,7 @@ package:
   version: ${{ version }}
 
 # One archive per platform, at the revision browsers.json pins in the
-# playwright driver line the estate runs (1.64.x; steward Story 129.1).
+# playwright driver line the estate runs (1.64.x; steward Story 130.1).
 # Extract under src/ so the build copies ONLY upstream content -- rattler-build
 # also drops conda_build.sh / build_env.sh in the work dir.
 source:

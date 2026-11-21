@@ -415,12 +415,12 @@ mcp-host-serve = { cmd = "uvicorn mcp_host.app:app --host 127.0.0.1 --port 8090"
 platforms = ["linux-64"]
 
 [feature.platform-ci-test.dependencies]
-# steward Story 129.1: the browsers Playwright drives come from the lock (channel SelfExplainML, recipes/playwright-*),
+# steward Story 130.1: the browsers Playwright drives come from the lock (channel SelfExplainML, recipes/playwright-*),
 # not from a `playwright install` download at run time; the same set `playwright install chromium` fetches.
 playwright-chromium = ">=156.0.8078.4,<157"
 playwright-chromium-headless-shell = ">=156.0.8078.4,<157"
 playwright-ffmpeg = ">=1013"
-playwright = ">=1.64.0,<1.65"     # steward Story 129.1: one driver estate-wide (it arrives transitively here; the pin keeps it on the line the playwright-* browser packages carry)
+playwright = ">=1.64.0,<1.65"     # steward Story 130.1: one driver estate-wide (it arrives transitively here; the pin keeps it on the line the playwright-* browser packages carry)
 pyforge-steward = { path = "src/shared/packages/pyforge-steward" }  # the host imports pyforge.steward.keys / .sync (src/platform/ingest/github_projects -- the live pap:AD-2 breach) and, through steward's run-deps, pyforge.core; without it `manage.py check` dies ModuleNotFoundError: pyforge (Platform CI test job, 2026-09-04)
 pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # Story 16.1 / 48.11: django_warden_fabric/tasks.py lazy-imports pyforge.warden (cli + fleet_github_rest); platform-ci-test must ship the engine the Celery task calls (mirrors platform-dev edge)
 pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # herald Epic 19.1: station_api mounts webhook_host on the herald v1 seam
@@ -938,7 +938,7 @@ cmd = "python -m pytest tests/scripts -q -n auto --dist loadgroup"
 # Scribe capture/recall run here too since 2026-09-19 (Story 19.2, the core package only); `scribe graph compile` with the graphify/cocoindex/postgres extras stays `-e pyforge-scribe` (those are heavy and already per-env).
 # Foundry mode: rebuild -- python-foundry re-derives the same split.
 [feature.pyforge-guild.dependencies]
-playwright = ">=1.64.0,<1.65"     # steward Story 129.1: one driver estate-wide (it arrives transitively here; the pin keeps it on the line the playwright-* browser packages carry)
+playwright = ">=1.64.0,<1.65"     # steward Story 130.1: one driver estate-wide (it arrives transitively here; the pin keeps it on the line the playwright-* browser packages carry)
 pyforge-core = { path = "src/shared/packages/pyforge-core" }
 pyforge-doctor = { path = "src/shared/packages/pyforge-doctor" }      # run-deps bring jsonschema, pyyaml, mcp, pyforge-core
 # pyforge-warden is deliberately NOT here (found at the first solve, 2026-09-16): warden range-pins
@@ -1019,7 +1019,7 @@ caveman-installer = ">=4.0.0"     # Claude Code output-token compression skill i
 # pip fallback list in the workflow mirrors this table and exists only for a runner
 # where pixi cannot be set up.
 [feature.detectors.dependencies]
-# steward Story 129.1: the browsers Playwright drives come from the lock (channel SelfExplainML, recipes/playwright-*),
+# steward Story 130.1: the browsers Playwright drives come from the lock (channel SelfExplainML, recipes/playwright-*),
 # not from a `playwright install` download at run time; the same set `playwright install chromium` fetches.
 playwright-chromium = ">=156.0.8078.4,<157"
 playwright-chromium-headless-shell = ">=156.0.8078.4,<157"
@@ -1028,7 +1028,7 @@ pyforge-doctor = { path = "src/shared/packages/pyforge-doctor" }  # -> built con
 pyforge-scribe = { path = "src/shared/packages/pyforge-scribe" }  # scribe Story 24.2 (spec-pyforge-scribe CAP-32): bmad_estate_check.py shells `python -m pyforge.scribe.cli catalog bmad-estate --check`; without the package here the detector reads could-not-run (2) in CI, never a false green -- the review caught it as a false drift (run 2026-09-29)
 "ruamel.yaml" = ">=0.19.1"        # failure_catalog_generator.py, the subprocess behind failure_catalog_check (missing -> UNKNOWN, run 33906009816)
 playwright-python = ">=1.62.0"    # check-layout's browser probe (unimportable -> cannot-measure, never a false green)
-playwright = ">=1.64.0,<1.65"     # steward Story 129.1: one driver estate-wide; it fixes the browser revisions the playwright-* packages carry
+playwright = ">=1.64.0,<1.65"     # steward Story 130.1: one driver estate-wide; it fixes the browser revisions the playwright-* packages carry
 
 # --- PyForge Pages site ------------------------------------------------------
 # docs-site/ is the one generator of the Pages artifact (herald Story 43.7 retired docsite/):
@@ -2524,7 +2524,7 @@ pytest = ">=9.1.1"                # Python test framework
 pytest-mock = ">=3.16.0"          # pytest fixture wrapper around `unittest.mock`
 pytest-cov = ">=7.1.0"            # coverage.py plugin for pytest
 pytest-xdist = ">=3.8.0"          # parallel / distributed test execution for pytest
-playwright = ">=1.64.0,<1.65"     # Node binary for browser automation (CLI); steward Story 129.1: one driver estate-wide
+playwright = ">=1.64.0,<1.65"     # Node binary for browser automation (CLI); steward Story 130.1: one driver estate-wide
 ## MCP, A2A & conversion (MCP + adjacent ecosystem)
 #aichat = ">=0.30.0"
 agno = ">=2.6.22"                 # Agno is a lightweight framework for building multi-modal Agents. It supports any model provider, native multi-modal I/O, multi-agent teams, memory management, knowledge stores, structured outputs, and real-time monitoring.
@@ -2897,7 +2897,7 @@ depends-on = ["pyforge-warden-build-conda", "pyforge-warden-build-dist"]
 # AC-8) into the dedicated lean `pyforge-atlas` env.
 # Spec: docs/specs/cfe-atlas-datapipeline-kedro-migration.md § 9 Story A1.
 [feature.pyforge-atlas.dependencies]
-# steward Story 129.1: the browsers Playwright drives come from the lock (channel SelfExplainML, recipes/playwright-*),
+# steward Story 130.1: the browsers Playwright drives come from the lock (channel SelfExplainML, recipes/playwright-*),
 # not from a `playwright install` download at run time; the same set `playwright install chromium` fetches.
 playwright-chromium = ">=156.0.8078.4,<157"
 playwright-chromium-headless-shell = ">=156.0.8078.4,<157"
@@ -2922,7 +2922,7 @@ kedro-viz = ">=12.5.0"            # C2 `viz` task + test_viz_loadable smoke — 
 # CLI/browser driver (bin/playwright, no site-packages module), while the Python bindings
 # `import playwright` come from `playwright-python`. Declaring only the former resolves
 # cleanly and still fails at import — which is exactly how this was missed.
-playwright = ">=1.64.0,<1.65"      # CLI + browser driver; steward Story 129.1: one driver estate-wide
+playwright = ">=1.64.0,<1.65"      # CLI + browser driver; steward Story 130.1: one driver estate-wide
 playwright-python = ">=1.62.0"     # the `import playwright` bindings
 # Story 14.3 (CAP-2, review-pass patch): tests/views/test_live.py hard-imports
 # `starlette.testclient.TestClient`, which requires `httpx` at import time. Was TEST-ONLY
@@ -3211,7 +3211,7 @@ description = "Report whether the selected backend's local object-storage server
 cmd = "python scripts/platform_object_storage.py status"
 
 [feature.pyforge-herald.dependencies]
-# steward Story 129.1: the browsers Playwright drives come from the lock (channel SelfExplainML, recipes/playwright-*),
+# steward Story 130.1: the browsers Playwright drives come from the lock (channel SelfExplainML, recipes/playwright-*),
 # not from a `playwright install` download at run time; the same set `playwright install chromium` fetches.
 playwright-chromium = ">=156.0.8078.4,<157"
 playwright-chromium-headless-shell = ">=156.0.8078.4,<157"
@@ -3236,7 +3236,7 @@ daphne = ">=4.2.3"                # Story 13.6: the ASGI host `webhook_host.py` 
 # while the Python bindings `import playwright` come from `playwright-python`
 # -- declaring only one resolves cleanly and still fails at import (mirrors
 # [feature.pyforge-atlas.dependencies]'s own AUD-ATLAS-010 comment).
-playwright = ">=1.64.0,<1.65"     # CLI + browser driver; steward Story 129.1: one driver estate-wide
+playwright = ">=1.64.0,<1.65"     # CLI + browser driver; steward Story 130.1: one driver estate-wide
 playwright-python = ">=1.62.0"    # the `import playwright` bindings
 pillow = ">=12.3.0"               # Pillow -- render_gate's contact-sheet compositing
 python-pptx = ">=1.0.2"           # Story 15.1: pptx_pipeline.py's template-parse-then-fill CAP-1 (never hand-written OOXML)

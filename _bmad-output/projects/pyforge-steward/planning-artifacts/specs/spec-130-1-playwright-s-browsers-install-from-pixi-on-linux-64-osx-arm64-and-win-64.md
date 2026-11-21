@@ -1,9 +1,9 @@
 ---
-title: '129.1: Playwright''s browsers install from pixi on linux-64, osx-arm64 and win-64'
+title: '130.1: Playwright''s browsers install from pixi on linux-64, osx-arm64 and win-64'
 type: 'feature'
 created: '2026-11-21'
 status: 'in-progress'
-story: 129-1-playwright-s-browsers-install-from-pixi-on-linux-64-osx-arm64-and-win-64
+story: 130-1-playwright-s-browsers-install-from-pixi-on-linux-64-osx-arm64-and-win-64
 spec: spec-pyforge-steward
 difficulty: 'medium'
 review_loop_iteration: 0
@@ -32,7 +32,7 @@ deferred: []
 
 **Approach:** Pin one driver across the estate; give each recipe a download and a sha256 per platform at that driver's revisions; build locally; name the packages in the browser-driving environments from a channel. The operator publishes to `SelfExplainML`.
 
-Ledger key: `129-1-playwright-s-browsers-install-from-pixi-on-linux-64-osx-arm64-and-win-64`.
+Ledger key: `130-1-playwright-s-browsers-install-from-pixi-on-linux-64-osx-arm64-and-win-64`.
 
 ### Living CAP citations
 
@@ -72,9 +72,9 @@ Ledger key: `129-1-playwright-s-browsers-install-from-pixi-on-linux-64-osx-arm64
 
 - Capabilities: spec-pyforge-steward CAP-5 (realized, no text change); no AD moves.
 - Dream: `docs/dreams/pyforge-steward.md` § *Realization log*, the 2026-11-21 entry; operator ruling of 2026-11-21.
-- Epic: Epic 129, minted with this story.
-- Ledger key: `129-1-playwright-s-browsers-install-from-pixi-on-linux-64-osx-arm64-and-win-64`.
-- Surface: `marshal-policy.toml` `[epic_surfaces]."129"`.
+- Epic: Epic 130, minted with this story.
+- Ledger key: `130-1-playwright-s-browsers-install-from-pixi-on-linux-64-osx-arm64-and-win-64`.
+- Surface: `marshal-policy.toml` `[epic_surfaces]."130"`.
 
 ## Verification
 
