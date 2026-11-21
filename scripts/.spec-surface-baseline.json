@@ -538,7 +538,7 @@
    "docs/how-to/manage-worktrees-with-bmad.md": "64101ad51a79c7521bb1944358074384e1475cf5",
    "docs/how-to/manticore-studio.md": "5cde3a3eb807fcda7dd35e86eb193b4546867a79",
    "docs/how-to/monitor-the-fleet.md": "07c06eeb45413db91ea57365aed820f9c46d2fba",
-   "docs/how-to/move-vendor-extracts-through-the-corridor.md": "7daeacd85d26f1c750b0fee2f1eada24ee2ea50b",
+   "docs/how-to/move-vendor-extracts-through-the-corridor.md": "c73c473dcda93731c3d8d8857f654400106b3658",
    "docs/how-to/ocp-cluster-bringup.md": "ed1ea496204d746fe749973109e5cc34be397524",
    "docs/how-to/one-chain-station-ops.md": "7d8846d2a87da34b304e41e990bd16055793725d",
    "docs/how-to/pause-ci.md": "b63f5d31f9b4e2932a39304ac65c05dcff42babe",
@@ -570,7 +570,7 @@
    "docs/map.yaml": "0543b3f3add8a9c3a01844a4c9dd2d3493d0e50c",
    "docs/tutorials/README.md": "983cc85a4858ab6fb012284cc8371bb7ce061f2a",
    "docs/tutorials/getting-started.md": "9802990190eefaffec13c10a49fd1d6f41914eda",
-   "docs/tutorials/local-platform-development.md": "46df8779bc7792d0986437bcc86a5562cf0e74b0",
+   "docs/tutorials/local-platform-development.md": "e04619975c8b2d91b33aba6a9350df0855d86fdb",
    "scripts/chain_currency_sweep_check.py": "946a19a816ac360270d9643583cbaed8a86ac8dc",
    "scripts/deferred_work_check.py": "1e95096d8f1be2aceb37559ee4c5c81049571aae",
    "scripts/deferred_work_intake.py": "5c1904530ae65a883647b3fecd1bf90e6960670c",
@@ -821,7 +821,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "602238da5c420b9a33917dde5f5b66f3bdf9cd57"
+  "memlog": "084aae99f3b8d1d4b13f796464864fa21c9af693"
  },
  "pyforge-herald/spec-pyforge-herald": {
   "files": {
@@ -4641,7 +4641,7 @@
    "src/platform/config/observability/views.py": "9c300771a7302feceb09d76a89483cc4168d0b60",
    "src/platform/config/optional_components.py": "362df8e3c87956c069c4bd9042ffeac4ff9c463a",
    "src/platform/config/settings/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
-   "src/platform/config/settings/base.py": "b1ee90f41b8952388c8fb4f1a4217f302f672b90",
+   "src/platform/config/settings/base.py": "147644af2f05fd2eadf05816b78538e7e2acefca",
    "src/platform/config/settings/local.py": "995c441db8f00d6813a5bc3197f1be77c3b17890",
    "src/platform/config/settings/production.py": "4e0b08d2145e7e8b76919368ee245cefd19c1a66",
    "src/platform/config/settings/test.py": "bd42bb51d9b22b2bc0f456b621c69a32a3fe1d65",
@@ -4664,6 +4664,13 @@
    "src/platform/db/changelog/changes/pyforge-scribe-2-graph-nodes.sql": "7477f3b9bd548c69b2fbaecd17e2d8fd859948d4",
    "src/platform/db/changelog/changes/pyforge-scribe-3-app-role-grants.sql": "c57ee9ea4b7b3e1169f8082d890bcc2a1cad2b00",
    "src/platform/db/changelog/changes/pyforge-scribe-4-graph-nodes-stale-column.sql": "5f5eaf1f1956acbbe46bc3f08f7159718cba3f15",
+   "src/platform/db/changelog/changes/pyforge-steward-1-dashboard-0001-initial.sql": "4e4660924e63f0ea5bb120bfc9473c7496dddc15",
+   "src/platform/db/changelog/changes/pyforge-steward-2-dashboard-0002-workpassport.sql": "30d022477bd5fa5ee8949b34fe7bc744a0f7e17c",
+   "src/platform/db/changelog/changes/pyforge-steward-3-dashboard-0003-corridorload.sql": "fad637799edb8ede97656b21976abbfb4cf6a1b7",
+   "src/platform/db/changelog/changes/pyforge-steward-4-dashboard-0004-workpassport-vendor-id.sql": "a4730ff9261e9fe226b16db835c9296b41a518d5",
+   "src/platform/db/changelog/changes/pyforge-steward-5-dashboard-0005-corridorload-signer-corridorload-slice-name.sql": "e5c9b6ff9e2069dc95e667c0e64b6a89c104695a",
+   "src/platform/db/changelog/changes/pyforge-steward-6-dashboard-0007-auditentry-scope.sql": "87c51fd81e34179e60376b3b7e7908305aa443eb",
+   "src/platform/db/changelog/changes/pyforge-steward-7-dashboard-0008-quarantineshelfrow.sql": "233134d2f7ac94f4fddad657283b183bb4b0f62f",
    "src/platform/db/changelog/changes/python-agent-platform-1-schemas.sql": "087b34c6d147c55ebf179ea6390b29dc9e191091",
    "src/platform/db/changelog/changes/python-agent-platform-10-sites-0001-initial.sql": "9cf7f9aa62fca877caa24e63d7800941964984e0",
    "src/platform/db/changelog/changes/python-agent-platform-11-sites-0002-alter-domain-unique.sql": "7760ae61e1ec27c3897894e8fd276c5269aaf913",
@@ -4688,13 +4695,13 @@
    "src/platform/db/changelog/changes/python-agent-platform-7-users-0002-idp-subject.sql": "5091d88aa41df526bef41dc079f53fa1f6c35e3c",
    "src/platform/db/changelog/changes/python-agent-platform-8-front-door-0001-homepage.sql": "34de0635c299adcc909ab58d5a441cfcd07635e7",
    "src/platform/db/changelog/changes/python-agent-platform-9-front-door-0002-console-parity.sql": "5182662f1d55b3776875125a1c808fde780b6216",
-   "src/platform/db/changelog/db.changelog-master.yaml": "e694c373ca7038c5a8ac5d5b0b6352138c0f2a7c",
+   "src/platform/db/changelog/db.changelog-master.yaml": "005e8e2666d3487f58c8c26c21049b1488a380e9",
    "src/platform/db/create_app_role.sql": "9a411eb42b8590cf13a660a1b8dbc597fa962149",
    "src/platform/db/liquibase.properties": "4e09c290e066ce6f3a5e55206d167e16c5392328",
    "src/platform/db/liquibase_update.py": "7684baff411dfe5124744b1d4d24e69f8e6bbe41",
    "src/platform/db/postgres_backup.py": "7fe5012fd5cd17293cdb73358f5ef7d4f812ebd4",
-   "src/platform/db/sqlmigrate-map.yaml": "ae3a2d6aa338c7155fd840676f7b14a25404cf71",
-   "src/platform/db/sqlmigrate_extraction.py": "0b9f8cb8a7686158ac4e96f06d3236f398be4fd6",
+   "src/platform/db/sqlmigrate-map.yaml": "6aba02a622340e4045b50a7f44cefb6a466735ee",
+   "src/platform/db/sqlmigrate_extraction.py": "8c7ac1724cf9e362f8f5af40cad7a0cb6c149603",
    "src/platform/dbgpt_integration/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/platform/dbgpt_integration/apps.py": "f07c0fa65e0d303e21f181c11d68aef0f4e2441d",
    "src/platform/dbgpt_integration/migrations/0001_create_dbgpt_schema.py": "3be3bdb56be63aff53176b66bde14e6615766281",
@@ -4957,6 +4964,7 @@
    "src/platform/tests/test_startup_stage_two.py": "b9855381c7d8cd501fd4c9f173b5a20f7fefaf6b",
    "src/platform/tests/test_station_api_host_dispatch.py": "672bb4645c89d018efa3076e1ca3eef2f0ac3d16",
    "src/platform/tests/test_station_api_seam.py": "4b9f776c79a6ac4d3e592c6ea8af85e1064cc19e",
+   "src/platform/tests/test_station_apps.py": "93153659036bb31e0b5f09523ff0d594bd6fc7b2",
    "src/platform/tests/test_station_cli.py": "800c301808ba9dbcad2f165614ac6c949ceff094",
    "src/platform/tests/test_station_cli_live.py": "32d89f55cfd705aa6ab69accf4e5b4ac3fbba3a6",
    "src/platform/tests/test_station_port_no_loopback.py": "57d1a5c621cc6855b55d4ee4deb51724b0eec10a",
@@ -5140,6 +5148,7 @@
    "src/shared/packages/django-steward/src/django_steward_portal/__init__.py": "d311565a554d4b1d73f7cb7c330f4aeaf3d08f42",
    "src/shared/packages/django-steward/src/django_steward_portal/apps.py": "02808de27e3a74db281f9ed3c093140efcffe6b7",
    "src/shared/packages/django-steward/src/django_steward_portal/mcp_asgi.py": "6d4741e08da7bd85f748e777a5fed68826666812",
+   "src/shared/packages/django-steward/src/django_steward_portal/station_apps.py": "ab4526ba465528a84a13ba035e54b302cee9c791",
    "src/shared/packages/django-steward/src/django_steward_portal/templates/steward_portal/home.html": "617eac1d86b977c37a8957996d1eee8cd64e6c05",
    "src/shared/packages/django-steward/src/django_steward_portal/urls.py": "08204ebfab94c3725a55056f1278326a2a55bd4e",
    "src/shared/packages/django-steward/src/django_steward_portal/views.py": "55316c9bb49d1bf7b66d49f086f536215c32f9d3",
@@ -5737,7 +5746,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "f7c9eae22f31c9a422c47ec845ccdc71b980f809"
+  "memlog": "b9357f0c444c9e3550f4958c1e1454271ec06ad6"
  },
  "pyforge-steward/spec-python-foundry-cutover": {
   "files": {},
