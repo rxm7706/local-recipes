@@ -1697,6 +1697,14 @@ verify_commands = [
   "src/shared/packages/django-pyforge/**",
   "src/shared/packages/pyforge-steward/tests/**",
 ]
+"129" = [  # a killed test run leaves no stand-in server behind (spec-pyforge-steward CAP-175), added 2026-11-21.
+  "_bmad-output/projects/pyforge-*/planning-artifacts/specs/spec-pyforge-*/.memlog.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/test-architecture.md",
+  "docs/dreams/pyforge-steward.md",
+  "scripts/.spec-surface-baseline.json",
+  "src/shared/packages/pyforge-steward/tests/**",
+]
 
 # dispatch (Story 85.1 / CAP-286 knobs), added 2026-10-13: steward's verify-fix turn gets 45 minutes, not the
 # 15-minute default. pyforge-steward-test alone runs ~4 minutes (2482 tests), so a fix turn that must re-run it two or

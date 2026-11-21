@@ -8172,3 +8172,10 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   since `/usr/bin/git` on a laptop without the command-line tools is only the Xcode stub; and the promotion tests read
   the scanned environment's Python version rather than their own. **For steward:** this entry binds
   `spec-pyforge-steward` CAP-175 and CAP-5 (realized, no text change) and decomposes as Epic 128, one story.
+- **2026-11-21 (a killed test run leaves no server behind) — Ruled** (operator, 2026-11-21: "Yes, fix it here", on the
+  leaked stand-in servers): the platform-ci-local tests' stand-in `postgres` and `redis-server` are shell stubs that
+  exec `sleep 999999` in a session of their own. A finished test reaps them, but a test process that is killed (a
+  preflight stopped mid-run) leaves them for about 11.5 days, and they kept a later preflight's steward lane waiting for
+  over an hour on 2026-11-21. Each stand-in now lives a bounded time (600 s by default), so a killed run's leftovers
+  exit by themselves. **For steward:** this entry binds `spec-pyforge-steward` CAP-175 (realized, no text change) and
+  decomposes as Epic 129, one story.
