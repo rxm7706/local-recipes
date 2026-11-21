@@ -177,6 +177,8 @@ def _prepare_stub_root(root: Path) -> Path:
     # stop (Story 101.1). ``exec -a "$0 $*"`` keeps the cmdline that _is_our_postgres and
     # _is_our_redis prove. pg_ctl reads its action as a whole argument: a substring match on
     # "$*" took a tmp path naming "start" for a start, so a stop started a second postgres.
+    # Story 129.1: each stand-in sleeps a bounded lifetime (PLATFORM_CI_STUB_LIFETIME_S, 600 s by
+    # default), so one a killed test process never reaps exits by itself instead of living for days.
     service_stub = textwrap.dedent(
         """\
         #!/usr/bin/env bash
@@ -230,7 +232,7 @@ def _prepare_stub_root(root: Path) -> Path:
               if [ -n "$pgdata" ]; then
                 cat > "$pgdata/postgres" <<'STIN'
         #!/usr/bin/env bash
-        exec -a "$0 $*" sleep 999999
+        exec -a "$0 $*" sleep "${PLATFORM_CI_STUB_LIFETIME_S:-600}"
         STIN
                 chmod +x "$pgdata/postgres"
                 new_session "$pgdata/postgres" -D "$pgdata" >> "$log" 2>&1 &
@@ -260,7 +262,7 @@ def _prepare_stub_root(root: Path) -> Path:
             if [ -n "$rdir" ]; then
               cat > "$rdir/redis-server" <<'STIN'
         #!/usr/bin/env bash
-        exec -a "$0 $*" sleep 999999
+        exec -a "$0 $*" sleep "${PLATFORM_CI_STUB_LIFETIME_S:-600}"
         STIN
               chmod +x "$rdir/redis-server"
               new_session "$rdir/redis-server" --port "${rport:-0}" >> "$log" 2>&1 &
@@ -722,6 +724,37 @@ def _wait_not_running(pid: int, timeout: float = 5.0) -> bool:
             return False
         time.sleep(0.05)
     return True
+
+
+def test_a_stand_in_nobody_stops_exits_after_its_lifetime(tmp_path: Path) -> None:
+    """Story 129.1: a stand-in a killed test never reaped exits by itself once its lifetime is up."""
+    _prepare_stub_root(tmp_path)
+    dev_bin = tmp_path / ".pixi" / "envs" / "platform-dev" / "bin"
+    env = {
+        **os.environ,
+        **_marker_env(tmp_path),
+        "PLATFORM_CI_STUB_LOG": str(tmp_path / "stub.log"),
+        "PLATFORM_CI_STUB_LIFETIME_S": "1",
+    }
+    pgdata = tmp_path / "left" / "pg"
+    pgdata.mkdir(parents=True)
+    subprocess.run([str(dev_bin / "pg_ctl"), "-D", str(pgdata), "start"], env=env, cwd=tmp_path, check=True, timeout=30)
+    pg_pid = int((pgdata / "postmaster.pid").read_text(encoding="utf-8").split()[0])
+    rdir = tmp_path / "left" / "redis"
+    rdir.mkdir()
+    pidfile = tmp_path / "left" / "redis.pid"
+    subprocess.run(
+        [str(dev_bin / "redis-server"), "--port", "0", "--dir", str(rdir), "--pidfile", str(pidfile)],
+        env=env,
+        cwd=tmp_path,
+        check=True,
+        timeout=30,
+    )
+    redis_pid = int(pidfile.read_text(encoding="utf-8").strip())
+    # Neither is stopped: each must leave on its own.
+    assert _wait_not_running(pg_pid, timeout=15), "the postgres stand-in outlived its lifetime"
+    assert _wait_not_running(redis_pid, timeout=15), "the redis-server stand-in outlived its lifetime"
+    assert _wait_marked_gone(tmp_path) == []
 
 
 def test_stub_start_stop_cycle_leaves_no_process(tmp_path: Path) -> None:

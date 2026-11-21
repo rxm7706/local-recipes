@@ -9015,3 +9015,26 @@ So that a change under `src/platform/` is checked on the laptop before it reache
 **Then** Platform CI's `checks` job (system checks, ruff, ruff format, mypy, the policy suite, the sqlmigrate extraction) and its suite run green on macOS from `-e platform-ci-test`, apart from the herald browser check where no Playwright Chromium is installed; no other environment's pins move
 **And** Linux CI stays green
 **Status:** done
+
+## Epic 129: A killed test run leaves no stand-in server behind (spec-pyforge-steward CAP-175)
+
+Minted 2026-11-21 from the station Dream's entry of the same date on the operator, 2026-11-21: "Yes, fix it here".
+**HARD boundaries:**
+- No test signals a process it did not start; another session's stand-ins are never swept.
+- `scripts/platform-ci-local.sh` and the real services it starts do not change.
+
+### Story 129.1: A killed test run leaves no stand-in server behind
+
+As the operator who stops a preflight midway on a laptop,
+I want each stand-in sleeps a bounded lifetime (`PLATFORM_CI_STUB_LIFETIME_S`, 600 s by default) instead,
+So that the next preflight never waits on a server an interrupted run left behind.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-175 (realized, no text change); FR-49 ← CAP-175; no AD moves
+**Flag:** `flag-exempt: detector-or-gate` (tests, a gate's own module and the scripts a gate runs; a gated gate is a silent green (roster list))
+**Surface:** `src/shared/packages/pyforge-steward/tests/**`
+**Spec:** `planning-artifacts/specs/spec-129-1-a-killed-test-run-leaves-no-stand-in-server-behind.md`
+**Given** the platform-ci-local tests' stand-in `postgres` and `redis-server` exec `sleep 999999` in a session of their own, so a test process killed before its teardown leaves them alive for about 11.5 days, and a later preflight's steward lane waited over an hour on them
+**When** each stand-in sleeps a bounded lifetime (`PLATFORM_CI_STUB_LIFETIME_S`, 600 s by default) instead
+**Then** a stand-in nobody stops exits by itself after its lifetime, a test proves it for both stand-ins, and every existing start/stop and no-survivor test still passes
+**And** steward's live-tree half passes
+**Status:** done

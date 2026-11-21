@@ -11833,3 +11833,26 @@ So that the test reports the runner's behaviour and not the machine's load.
 **Then** the test passes under load as it does alone, a session that outlives its ceiling still fails it, and no other test changes
 **And** marshal's suite passes
 **Status:** done
+
+## Epic 120: The dispatch-verification fakes match a command by its words (spec-pyforge-marshal:CAP-170)
+
+Minted 2026-11-21 from the station Dream's entry of the same date on the operator, 2026-11-21: "Yes, fix it here".
+**HARD boundaries:**
+- Marshal's dispatch code does not change; only its test fakes do.
+- Every real invocation the fakes counted before is still counted.
+
+### Story 120.1: The dispatch-verification fakes match a command by its words
+
+As an author whose worktree is named for the work it carries,
+I want each fake matches its command by a whole token of the command (`platform-ci-local` in the token list), never by a substring of the joined line,
+So that a test reads the command marshal ran, not the directory it ran from.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-170 (realized, no text change); a fix, no new CAP
+**Flag:** `flag-exempt: detector-or-gate` (tests, a gate's own module and the scripts a gate runs; a gated gate is a silent green (roster list))
+**Surface:** `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification_live_tree.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_environment_yaml.py`
+**Spec:** `planning-artifacts/specs/spec-120-1-the-dispatch-verification-fakes-match-a-command-by-its-words.md`
+**Given** `CrossSurfaceProcess` in `test_dispatch_verification_live_tree.py` counts a command as a platform, bmad-estate or flag-gate run when the joined command line merely contains `platform-ci-local`, `bmad-estate-check` or `flag-gate-check`, so a worktree whose path holds one of those words (the interpreter's path is a token) reds six cross-surface tests, and the environment-yaml fake in `test_dispatch_environment_yaml.py` matches `steward` and `provision` the same way
+**When** each fake matches its command by a whole token of the command (`platform-ci-local` in the token list), never by a substring of the joined line
+**Then** the cross-surface and environment-yaml tests pass in a worktree whose path names those commands, and still count every real invocation
+**And** marshal's suite passes
+**Status:** done
