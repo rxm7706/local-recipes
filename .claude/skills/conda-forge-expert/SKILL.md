@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.105.2
+version: 8.106.0
 allowed-tools: [conda_forge_server]
 ---
 
@@ -4684,6 +4684,14 @@ A cap names its evidence in the recipe's CFE comment. It is G36/G77's consumer c
 
 **Fix**: compare `git show 20b2f459fa~1:recipes/<name>/recipe.yaml` and the live feedstock with the recipe, and take the feedstock's spec where no note explains the difference. Keep the feedstock's section: `run_constraints` is not `run`. Bump `build.number` at the same version (G113), and rebuild through `refresh-wave`. Reconnect a lost patch before you reach for a pin or a flag (`gibr`, `datasketches`). A patch file nothing names may be stale, not lost: the mirror replaced the local-only `reactpy` 2.0.0b13 with the feedstock's 1.1.0, and that patch belonged to the beta; the operator retired `reactpy-django` rather than restore it (Story 25.23). The mirror also moved 17 of 949 recipes to an older version, 11 in scope. Outside CAP-35's scope, 249 recipes name patch files that were never mirrored (`DW-mason-25-22-2`).
 
+### G131. A repackaged prebuilt binary: pick the copy shell by build host, measure the glibc floor, lock a private channel through a mirror
+
+**Symptom**: one of three, all met on steward Story 129.1 (the `playwright-*` browser recipes on linux-64, osx-arm64 and win-64). (a) A win-64 package cross-built from macOS fails in its `else:` `cmd.exe` branch, or a selector such as `not build_platform.startswith("win")` fails to render with `string has no method named startswith`. (b) `pixi lock` fails `__glibc >=2.35, for which no candidates were found` for a package whose binary needs far less. (c) Locking against a package that is not yet on its private channel either re-solves every environment (openssl, python, git all move) or fails `URL scheme is not allowed` for a `file://` channel.
+
+**Why**: (a) `if: unix` / `if: win` read the TARGET platform, but the build script runs on the BUILD host; rattler-build's Jinja has no string methods. (b) The recipe copied Ubuntu 22.04's glibc as the floor; the real floor is the highest `GLIBC_2.x` symbol version the binaries reference, and pixi's default linux system requirement sits below 2.35. Measured 2026-11-21: Chrome for Testing 156 needs 2.25, Firefox r1555 2.18, WebKit r2370 2.35, Playwright's ffmpeg is static. (c) Adding a channel to `channels` changes every environment's channel list, so the lock is re-solved without its locked preferences; a source package's in-process build refuses a `file://` URL.
+
+**Fix**: (a) Select the script with `if: build_platform not in ["win-64", "win-arm64"]` and copy with the unix branch for every target; keep a `cmd` branch for a Windows build host. Skip tests for a cross target (`--test skip`), and check the package's file list instead. (b) `grep -aoh 'GLIBC_2\.[0-9]*'` over the extracted binaries, take the highest, and declare that; a static binary declares none. On osx, a browser built per macOS release (WebKit) needs `__osx` at that release; Playwright maps Darwin 25+ to `mac26`. (c) Keep `channels` unchanged. Build an index of the channel's current `repodata.json` plus the new packages, serve it on localhost (`python -m http.server --directory <dir>`), and lock with `PIXI_HOME=<dir-with-config.toml>` whose `[mirrors]` maps `https://conda.anaconda.org/<channel>` to it, with the pinned pixi (`pixi exec --spec pixi=<pinned> pixi lock`). The lock records the real channel URLs and each file's sha256, so it is right once the operator uploads those exact files; until then CI cannot install it. A package already published (`playwright-browsers-base`) is fetched into the mirror, not rebuilt or re-uploaded: a rebuild has a new sha256 under the same filename.
+
 ---
 
 ## Skill Automation
@@ -4724,6 +4732,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.106.0** (Nov 21, 2026) — **steward Story 129.1 retro: the five `playwright-*` browser recipes build for linux-64, osx-arm64 and win-64 at the playwright 1.64 driver's revisions; G131 (cross-host copy script, a measured glibc floor, locking a private channel through a mirror) (MINOR).** See `CHANGELOG.md`.
 - **v8.105.2** (Nov 18, 2026) — **mason Story 40.1 Rule-2 retro: `_http.read_pixi_config` merges the system, user and project pixi config files the way pixi does, where it used to return the first file found (PATCH; script fix, no new gotcha).** See `CHANGELOG.md`.
 - **v8.105.1** (Nov 5, 2026) — **mason Story 25.23 Rule-2 retro: `reactpy-django` retires on the operator's ruling (PATCH; no script or test change, no new gotcha).** See `CHANGELOG.md`.
 - **v8.105.0** (Nov 5, 2026) — **mason Stories 25.21 and 25.22 Rule-2 retro: `refresh-wave` keeps each build's log, `--render-check` reports what cannot render before a build is spent, and a URL expression renders as rattler-build renders it; G130 (the identity snapshot lost patches and dependencies) (MINOR).** The helper matches rattler-build on all 810 in-scope recipes it can compare.
