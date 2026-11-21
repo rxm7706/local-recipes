@@ -3994,7 +3994,7 @@
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/transcripts.py": "e2657b8ce1e89fd7bc6e8f6ae7fbb0cdea0969ac",
    "src/shared/packages/pyforge-scribe/tests/meta/data/spec_behind_memlog_known.json": "5f36b2ea290645ee34d943220a14b54ee5ea5be5",
    "src/shared/packages/pyforge-scribe/tests/meta/test_cutover_wording.py": "7286b1b03b6c549a5e067eccba2634fcd6d9c84b",
-   "src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py": "36c1c61d637354be8c54995438791c3cfe833d9d",
+   "src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py": "e1278404b440e777aed66478de986a74e6eabf2b",
    "src/shared/packages/pyforge-scribe/tests/meta/test_guild_env_membership.py": "fca1e21af1032f7a7ef6123b7fefe88c14757921",
    "src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py": "12737bce8895b7362e9f4be4bad1a5b185b06e0b",
    "src/shared/packages/pyforge-scribe/tests/meta/test_live_tree_split.py": "5469d5ec32b514cac7db5c5d4883a7378b8aba50",
@@ -4025,7 +4025,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "438567048f4e3b866d74438e1f241f64a93599a0"
+  "memlog": "03072965817a6797f40cf2240172d6efaba0f5a8"
  },
  "pyforge-steward/spec-foundry-capability-ledger": {
   "files": {},
@@ -4107,7 +4107,7 @@
    "evals/review-catches-planted-defect/probes/mutated-probe.json": "9c3cce3d62357f08ef5fd76a625312997778f7ad",
    "evals/review-catches-planted-defect/scoring-policy.json": "18b8ff32419ccef507e68c659ed789fca0461102",
    "evals/review-catches-planted-defect/test_driver.py": "385da3656b300393ec549ff40377bb1df25540b0",
-   "pixi.lock": "8d93c8ae7597d7422e7c20da1b5e38fa0df3375a",
+   "pixi.lock": "86fa9f33bf0cf5cf09cccef8d627a2ab129bd703",
    "pixi.toml": "e22b1c763c7c6001fc167629ecfa1f8bd2a50f21",
    "recipes/bmad-eval-quality/LICENSE": "55625f964b7ddb4580e8e3612d553a6cada606f7",
    "recipes/bmad-eval-quality/build.bat": "79dcc2ecf4d78df61c2799cc5fb9be9fb988eae8",
@@ -4492,7 +4492,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "92195b9ab8cf6c06906c08bcfabd8662d79722d0"
+  "memlog": "02e8f8d42e856f406a847a43d7dc219127c89cf8"
  },
  "pyforge-steward/spec-pyforge-unifying-strategy": {
   "files": {
@@ -5715,7 +5715,7 @@
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/transcripts.py": "e2657b8ce1e89fd7bc6e8f6ae7fbb0cdea0969ac",
    "src/shared/packages/pyforge-scribe/tests/meta/data/spec_behind_memlog_known.json": "5f36b2ea290645ee34d943220a14b54ee5ea5be5",
    "src/shared/packages/pyforge-scribe/tests/meta/test_cutover_wording.py": "7286b1b03b6c549a5e067eccba2634fcd6d9c84b",
-   "src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py": "36c1c61d637354be8c54995438791c3cfe833d9d",
+   "src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py": "e1278404b440e777aed66478de986a74e6eabf2b",
    "src/shared/packages/pyforge-scribe/tests/meta/test_guild_env_membership.py": "fca1e21af1032f7a7ef6123b7fefe88c14757921",
    "src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py": "12737bce8895b7362e9f4be4bad1a5b185b06e0b",
    "src/shared/packages/pyforge-scribe/tests/meta/test_live_tree_split.py": "5469d5ec32b514cac7db5c5d4883a7378b8aba50",
@@ -5746,7 +5746,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "d3aa3bca4761810e67f38d409b47189acadd154b"
+  "memlog": "271ff2516375bebae02915711cb1f4189b076a3e"
  },
  "pyforge-steward/spec-python-foundry-cutover": {
   "files": {},

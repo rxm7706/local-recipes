@@ -10,7 +10,7 @@ from http import HTTPStatus
 from pathlib import Path
 
 import pytest
-from pyforge.testing_kit import changed_paths_since, diff_text_since
+from pyforge.testing_kit import changed_paths_since
 
 # Story 33.1 (spec-pyforge-scribe CAP-31, relay of spec-pyforge-steward:CAP-175): the module reads the repository
 # outside this package, so it runs in the live-tree half.
@@ -345,7 +345,18 @@ def test_src_platform_has_no_pyforge_import() -> None:
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"))
         offenders.extend(f"{rel}: {hit}" for hit in _pyforge_package_imports(tree))
-    patch = diff_text_since(root, pathspec="src/platform")
-    assert "import pyforge" not in patch
-    assert "from pyforge" not in patch
+    # Story 34.1: the AST walk is the guard. A text search of the diff also matched a
+    # string that only mentions the phrase (a warden setup snippet in a platform test),
+    # and reds a branch that edits near it though no import was added.
     assert not offenders, f"src/platform pyforge imports in this diff: {changed} {offenders}"
+
+
+def test_the_import_guard_reads_code_not_text() -> None:
+    """Story 34.1: a real import is found; a string that names the module is not."""
+    real = ast.parse("import pyforge.steward\nfrom pyforge.core import station_port\n")
+    assert _pyforge_package_imports(real) == [
+        "import pyforge.steward",
+        "from pyforge.core import ...",
+    ]
+    text_only = ast.parse('SNIPPET = """\nfrom pyforge.warden.feeds import write_kev_cache\n"""\n')
+    assert _pyforge_package_imports(text_only) == []

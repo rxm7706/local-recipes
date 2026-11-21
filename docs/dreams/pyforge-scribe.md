@@ -300,6 +300,13 @@ owner of the facts (the register, `pipeline-truth`), Doctor of any ambient verdi
   opens the seven deferred-work rows the rulings leave (DW-scribe-cutover-2026-11-10-1 to -5, -7 and -10) and closes
   DW-scribe-egm-2026-11-05-3. Story 31.4 closes scribe's part at the integration head; the keys are promoted by the
   change's ledger close, not by a story. The Dream stays `specified`.
+- **2026-11-21 (the src/platform import guard reads code, not text) — Ruled** (operator, 2026-11-21: "fix the scribe guard
+  too"): `test_src_platform_has_no_pyforge_import` asserted that the branch's `src/platform` diff text never contains
+  `import pyforge` or `from pyforge`, beside the AST walk that already finds real imports. The text search reds a branch
+  that edits within three lines of a string that merely mentions the phrase (steward Story 128.1 met it: a warden setup
+  snippet in a platform test that runs inside the warden environment). Steward's twin guard dropped the same search for
+  the same reason. **For scribe:** binds `spec-pyforge-scribe` CAP-31 (realized, no text change; relay of
+  spec-pyforge-steward:CAP-175) and decomposes as Epic 34, one story.
 
 ## 2026-10-26 — Dream — PyForge Scribe: Team Memory Management (folded from pyforge-scribe-team-memory)
 

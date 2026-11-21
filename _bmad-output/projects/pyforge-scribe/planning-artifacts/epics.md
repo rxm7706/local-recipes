@@ -1390,3 +1390,26 @@ Checked against the re-stamped spine and their epics' HARD boundaries:
 
 No story, acceptance criterion, Status line or ledger key moved in this pass. Every Story heading still maps 1:1 to a
 `sprint-status-ledger.yaml` key. `updated:` bumped.
+
+## Epic 34: The src/platform import guard reads code, not text (spec-pyforge-scribe CAP-31; relay of spec-pyforge-steward:CAP-175)
+
+Minted 2026-11-21 from the station Dream's entry of the same date on the operator, 2026-11-21: "fix the scribe guard too".
+**HARD boundaries:**
+- A real `pyforge` import under `src/platform/` still fails the guard.
+- Steward's twin guard is the reference; no other station's guard changes.
+
+### Story 34.1: The src/platform import guard reads code, not text
+
+As an author whose branch edits a platform test near a string that names a station module,
+I want the text search is removed and the AST walk over every changed `.py` file is the guard, as in steward's twin,
+So that the guard fails on an import and only on an import.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-scribe CAP-31 (realized, no text change); relay of spec-pyforge-steward:CAP-175
+**Flag:** `flag-exempt: detector-or-gate` (tests, a gate's own module and the scripts a gate runs; a gated gate is a silent green (roster list))
+**Surface:** `src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py`
+**Spec:** `planning-artifacts/specs/spec-34-1-the-src-platform-import-guard-reads-code-not-text.md`
+**Given** `test_src_platform_has_no_pyforge_import` also asserts that the branch's `src/platform` diff text never contains `import pyforge` or `from pyforge`, so an edit within three lines of a string that mentions the phrase reds the suite though no import was added
+**When** the text search is removed and the AST walk over every changed `.py` file is the guard, as in steward's twin
+**Then** a real `import pyforge…` or `from pyforge…` statement added under `src/platform/` still fails the guard, a string that mentions the phrase does not, and a test proves both
+**And** scribe's live-tree half passes
+**Status:** done
