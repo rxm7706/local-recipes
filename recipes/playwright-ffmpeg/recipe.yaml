@@ -2,94 +2,134 @@
 schema_version: 1
 
 context:
-  version: "1011"
-  revision: "1011"
+  version: "1013"
+  revision: "1013"
 
 package:
   name: playwright-ffmpeg
   version: ${{ version }}
 
+# One archive per platform, at the revision browsers.json pins in the
+# playwright driver line the estate runs (1.64.x; steward Story 129.1).
+# Extract under src/ so the build copies ONLY upstream content -- rattler-build
+# also drops conda_build.sh / build_env.sh in the work dir.
 source:
-  url: https://cdn.playwright.dev/dbazure/download/playwright/builds/ffmpeg/1011/ffmpeg-linux.zip
-  sha256: ebc74fc5b94830176a3c2914ae96bd8bc7f6a91f4f33890230f84a172ee61ccc
-  # Extract under src/ so the build copies ONLY upstream content -- rattler-build
-  # also drops conda_build.sh / build_env.sh in the work dir, and `cp -a ./*`
-  # would sweep them into the package.
-  target_directory: src
+  - if: linux and x86_64
+    then:
+      url: https://cdn.playwright.dev/dbazure/download/playwright/builds/ffmpeg/1013/ffmpeg-linux.zip
+      sha256: ee986434d158f74fb5d9c5ff1092026ceedb63f324fe90b5be89460926b7b679
+      target_directory: src
+  - if: osx and arm64
+    then:
+      url: https://cdn.playwright.dev/dbazure/download/playwright/builds/ffmpeg/1013/ffmpeg-mac-arm64.zip
+      sha256: 63e48ce8d4a6d9d496383e5ac557b26466e719fa29126bbbd5f5f7016ac9229c
+      target_directory: src
+  - if: win and x86_64
+    then:
+      url: https://cdn.playwright.dev/dbazure/download/playwright/builds/ffmpeg/1013/ffmpeg-win64.zip
+      sha256: 0c4ee6c694e9bffea27128ab543ae573466c5245d7d16c054e40115d7d743874
+      target_directory: src
 
 build:
   number: 0
-  # linux-64 only: the archive is a linux x86-64 build, and this is the only
-  # platform the estate drives. Other subdirs need their own source URL.
+  # linux-64, osx-arm64 and win-64: the three platforms the estate drives.
+  # Each needs its own archive, above; any other subdir has none.
   skip:
-    - not (linux and x86_64)
+    - not ((linux and x86_64) or (osx and arm64) or (win and x86_64))
   dynamic_linking:
     # MUST stay false. These are large prebuilt binaries carrying embedded
-    # resources (PAK bundles, V8 snapshots, ICU data) at fixed offsets;
-    # rewriting ELF sections to patch RPATH shifts those offsets and the
-    # binary segfaults at launch. Nothing here needs relocating -- the
-    # binaries resolve against host system libraries, exactly as they do
-    # under `playwright install`.
+    # resources at fixed offsets (and, on macOS, code signatures); rewriting
+    # them to patch RPATH or install names corrupts them. Nothing here needs
+    # relocating -- the binaries resolve against host system libraries,
+    # exactly as they do under `playwright install`.
     binary_relocation: false
+  prefix_detection:
+    # Nothing in a browser build embeds the build prefix; scanning ~200 MB of
+    # binaries for it only risks a false hit rewriting a signed file.
+    ignore: true
   script:
-    - if: unix
+    # The script runs on the BUILD host, so pick the shell by build_platform:
+    # a win-64 package built from macOS still copies with the unix branch.
+    - if: build_platform not in ["win-64", "win-arm64"]
       then: |
         set -ex
-        DEST="${PREFIX}/share/ms-playwright/ffmpeg-1011"
+        DEST="${PREFIX}/share/ms-playwright/ffmpeg-1013"
         # rattler-build STRIPS a single top-level directory when it extracts an
         # archive, so src/ holds that root's CONTENTS for chromium / headless
-        # shell / firefox, and holds the entries themselves for the multi-root
-        # webkit and ffmpeg archives. Re-creating the inner directory here makes
-        # both shapes land where Playwright looks, without depending on whether
-        # the strip happened.
-        mkdir -p "${DEST}/"
-        cp -a src/. "${DEST}//"
+        # shell / firefox, and the entries themselves for the multi-root webkit
+        # and ffmpeg archives. Re-creating the inner directory here makes both
+        # shapes land where Playwright looks.
+        mkdir -p "${DEST}"
+        cp -a src/. "${DEST}"/
         # Playwright treats a browser directory WITHOUT this marker as not
-        # installed and re-downloads over it. Creating it is what makes the
-        # conda-provided browser count as a real install.
+        # installed and re-downloads over it.
         touch "${DEST}/INSTALLATION_COMPLETE"
+      else: |
+        set "DEST=%PREFIX%\share\ms-playwright\ffmpeg-1013"
+        mkdir "%DEST%"
+        xcopy /E /I /Q /Y /H "src" "%DEST%"
+        if errorlevel 1 exit /b 1
+        type nul > "%DEST%\INSTALLATION_COMPLETE"
 
 requirements:
   run:
     - playwright-browsers-base
-    # Built against Ubuntu's glibc; the binaries link the host's system
-    # libraries rather than conda's, so declare the floor rather than pull a
-    # parallel library stack in beside the system one.
-    - __glibc >=2.35
+    # The binaries link the host's system libraries rather than conda's, so
+    # declare the host floor rather than pull a parallel library stack in.
+    - if: linux
+      then: __glibc >=2.35
+    - if: osx
+      then: __osx >=14
   run_constraints:
-    # The revision is dictated by browsers.json INSIDE the playwright driver.
-    # Pair a mismatched driver with this package and Playwright reports
-    # "Executable doesn't exist ... run playwright install". Verified against
-    # playwright 1.63.0 (node) and playwright-python 1.62.0, which both pin
-    # ffmpeg r1011.
-    - playwright >=1.62,<1.64
-    - playwright-python >=1.62,<1.64
+    # The revision is dictated by browsers.json INSIDE the playwright (Node)
+    # driver; playwright-python drives that same driver. A mismatched driver
+    # reports "Executable doesn't exist ... run playwright install". Verified
+    # against playwright 1.64.0 and 1.64.1, which both pin ffmpeg r1013.
+    - playwright >=1.64,<1.65
 
 tests:
-  - package_contents:
-      files:
-        - share/ms-playwright/ffmpeg-1011/INSTALLATION_COMPLETE
-        - share/ms-playwright/ffmpeg-1011/ffmpeg-linux
-  - script:
-      # Executing the binary is the point: a contents-only test would pass
-      # on a relocation-corrupted binary that segfaults at launch.
-      - test -x "${PREFIX}/share/ms-playwright/ffmpeg-1011/ffmpeg-linux"
-      - '"${PREFIX}/share/ms-playwright/ffmpeg-1011/ffmpeg-linux" -version'
-      - '"${PREFIX}/share/ms-playwright/ffmpeg-1011/ffmpeg-linux" -version | grep -F "ffmpeg version n7.0.1-playwright-build-1011"'
+  - if: linux
+    then:
+      package_contents:
+        files:
+          - share/ms-playwright/ffmpeg-1013/INSTALLATION_COMPLETE
+          - "share/ms-playwright/ffmpeg-1013/ffmpeg-linux"
+  - if: osx
+    then:
+      package_contents:
+        files:
+          - share/ms-playwright/ffmpeg-1013/INSTALLATION_COMPLETE
+          - "share/ms-playwright/ffmpeg-1013/ffmpeg-mac"
+  - if: win
+    then:
+      package_contents:
+        files:
+          - share/ms-playwright/ffmpeg-1013/INSTALLATION_COMPLETE
+          - "share/ms-playwright/ffmpeg-1013/ffmpeg-win64.exe"
+  - if: linux
+    then:
+      script:
+        - test -x "${PREFIX}/share/ms-playwright/ffmpeg-1013/ffmpeg-linux"
+        - '"${PREFIX}/share/ms-playwright/ffmpeg-1013/ffmpeg-linux" -version'
+  - if: osx
+    then:
+      script:
+        - test -x "${PREFIX}/share/ms-playwright/ffmpeg-1013/ffmpeg-mac"
+        - '"${PREFIX}/share/ms-playwright/ffmpeg-1013/ffmpeg-mac" -version'
 
 about:
   homepage: https://playwright.dev/docs/browsers
   repository: https://github.com/microsoft/playwright
   documentation: https://playwright.dev/docs/browsers#managing-browser-binaries
-  summary: Playwright's ffmpeg build for video recording (ffmpeg r1011)
+  summary: Playwright's ffmpeg build for video recording (ffmpeg r1013)
   description: |
     The ffmpeg build Playwright shells out to when a test records video
     (`record_video_dir`). Screenshot and trace capture do not need it.
     Versioned by Playwright's build revision because `browsers.json`
     carries no upstream version for this entry; the binary self-reports
-    ffmpeg n7.0.1-playwright-build-1011.
+    ffmpeg n7.0.1-playwright-build-1013.
 
-    Installed under `$CONDA_PREFIX/share/ms-playwright/ffmpeg-1011/` with the
+    Installed under `$CONDA_PREFIX/share/ms-playwright/ffmpeg-1013/` with the
     `INSTALLATION_COMPLETE` marker Playwright looks for, so an environment
     carrying `playwright-browsers-base` resolves it with no network access
     and no `playwright install` step.
@@ -123,8 +163,8 @@ extra:
   cfe-generated-by-version: 8.86.4
   cfe-generated-at-datetime: 2026-09-07T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-09-07T15:40:00Z
-  cfe-local-build-platform: linux-64
+  cfe-local-build-datetime: 2026-11-21T00:00:00Z
+  cfe-local-build-platform: osx-arm64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
@@ -135,7 +175,7 @@ extra:
 #    # come from a network `playwright install` into the machine-global
 #    # ~/.cache/ms-playwright, which no lock file describes and no air-gapped
 #    # host can reach. This package closes that gap for one browser.
-#    # Versioned 1011 -- the Playwright build revision -- because browsers.json
+#    # Versioned 1013 -- the Playwright build revision -- because browsers.json
 #    # records no browserVersion for ffmpeg, unlike the four browsers.
 #    # The only entry in the set that ships its own licence (COPYING.LGPLv2.1).
 # source:
