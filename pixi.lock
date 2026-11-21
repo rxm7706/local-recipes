@@ -2230,7 +2230,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/perl-5.44.0-1_h7cc23a3_perl5.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pillow-12.3.0-py314h50bfbbb_4.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pixi-0.81.0-hf01adef_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/playwright-1.63.0-h5585027_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/playwright-1.64.1-h5585027_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pnpm-12.4.1-h04c6bae_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/protobuf-7.35.1-py314h0469dc4_3.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/psutil-7.2.2-py314hfe1a184_3.conda
@@ -3041,7 +3041,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/ncurses-6.6-hdb14827_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/nodejs-26.10.0-ha5cdc1e_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/openssl-3.6.4-h781a0a9_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/playwright-1.63.0-hd412ae8_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/playwright-1.64.1-hd412ae8_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pydantic-core-2.46.5-py314h7e8cd81_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/python-3.14.7-hcd007b5_106_cp314.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pyyaml-6.0.3-py314h67df5f8_1.conda
@@ -3173,7 +3173,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/ncurses-6.6-he64c551_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/nodejs-26.10.0-h8d74fab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/openssl-3.6.4-h55eecbc_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/playwright-1.63.0-hd1b9f45_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/playwright-1.64.1-hd1b9f45_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pydantic-core-2.46.5-py314hc05cd11_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/python-3.14.7-h0ae1c2c_106_cp314.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pyyaml-6.0.3-py314h6e9b3f0_1.conda
@@ -3247,7 +3247,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/libzlib-1.3.2-hfd05255_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/nodejs-26.10.0-h80d1838_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/openssl-3.6.4-hf411b9b_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/playwright-1.63.0-h8fff0a6_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/playwright-1.64.1-h8fff0a6_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pydantic-core-2.46.5-py314h9f07db2_2.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/python-3.14.7-h53f6dd8_106_cp314.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pywin32-312-py314hf700ef7_2.conda
@@ -8759,7 +8759,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/openssl-3.6.4-h781a0a9_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/osv-scanner-2.4.0-hfc2019e_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pillow-12.3.0-py314h50bfbbb_4.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/playwright-1.63.0-hd412ae8_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/playwright-1.64.1-hd412ae8_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/protobuf-7.35.1-py314h0469dc4_3.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/psutil-7.2.2-py314hfe1a184_3.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/psycopg-c-3.2.10-py314h9c594ad_0.conda
@@ -17424,7 +17424,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/perl-5.44.0-1_h7cc23a3_perl5.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pillow-12.3.0-py314h50bfbbb_4.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pixi-0.81.0-hf01adef_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/playwright-1.63.0-h5585027_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/playwright-1.64.1-h5585027_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pnpm-12.4.1-h04c6bae_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/protobuf-7.35.1-py314h0469dc4_3.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/psutil-7.2.2-py314hfe1a184_3.conda
@@ -31270,30 +31270,6 @@ packages:
     - pixman >=0.46.4,<1.0a0
   size: 376704
   timestamp: 1786106621354
-- conda: https://conda.anaconda.org/conda-forge/linux-64/playwright-1.63.0-h5585027_1.conda
-  sha256: d8cb08c0b5449f025ed0b9ed5f8d2a6c257a37ba6a9af671a29615e1ffe5b0e8
-  md5: e08207e285f00b7a02462337a8fab127
-  depends:
-  - nodejs
-  - nodejs >=24.19.0,<25.0a0
-  license: Apache-2.0
-  license_family: APACHE
-  purls: []
-  run_exports: {}
-  size: 2856666
-  timestamp: 1788967585107
-- conda: https://conda.anaconda.org/conda-forge/linux-64/playwright-1.63.0-hd412ae8_1.conda
-  sha256: 2534bdc07fc4e9abbb1cfb2569b62fc3ddedc8e62f4cf55c60731f24b61f9b6c
-  md5: 1aef7df0499fa4ca84122110759c0255
-  depends:
-  - nodejs
-  - nodejs >=26.8.1,<27.0a0
-  license: Apache-2.0
-  license_family: APACHE
-  purls: []
-  run_exports: {}
-  size: 2856969
-  timestamp: 1788967588862
 - conda: https://conda.anaconda.org/conda-forge/linux-64/playwright-1.64.0-h5585027_0.conda
   sha256: e2f24874b86af0935cedaf61f8e34b1d502dd2f7bb7acecb8b344a14c8a8738f
   md5: 22600e9b2ccbbb2f8e3feb1f636e3939
@@ -31317,6 +31293,29 @@ packages:
   run_exports: {}
   size: 2902883
   timestamp: 1791430624038
+- conda: https://conda.anaconda.org/conda-forge/linux-64/playwright-1.64.1-h5585027_0.conda
+  sha256: e1c215be00659e1c84156d4297b3dcdb93ab7e749574b1efbcbef8d9a39936e5
+  md5: 10031c2c33919b5026c0824c11e8caca
+  depends:
+  - nodejs
+  - nodejs >=24.21.0,<25.0a0
+  license: Apache-2.0
+  license_family: APACHE
+  purls: []
+  run_exports: {}
+  size: 2902707
+  timestamp: 1792009338724
+- conda: https://conda.anaconda.org/conda-forge/linux-64/playwright-1.64.1-hd412ae8_0.conda
+  sha256: 34a127658bba375a2ed3b84a06d395bb58c02dabb9eb71369ebffc291be88c93
+  md5: 8962fedfb8f11401fc8a114d26eb3bf3
+  depends:
+  - nodejs
+  - nodejs >=26.10.0,<27.0a0
+  license: Apache-2.0
+  license_family: APACHE
+  run_exports: {}
+  size: 2903008
+  timestamp: 1792009341160
 - conda: https://conda.anaconda.org/conda-forge/linux-64/pngquant-3.0.3-h71f41fa_1.conda
   sha256: dfc5c5ff7898919dce02ea7c9a9f1b1b5c281215d4cdb931b82d92fc9c3c0643
   md5: 1cc37c3aa1a3a3bfe6f3d1c4a7a978e3
@@ -58237,18 +58236,6 @@ packages:
     - pixman >=0.46.4,<1.0a0
   size: 198717
   timestamp: 1786106922508
-- conda: https://conda.anaconda.org/conda-forge/osx-arm64/playwright-1.63.0-hd1b9f45_1.conda
-  sha256: a2213d8b2f9860adcee64444f1ad5a61afa2ab9150c845f9f7b61fee3d8edb51
-  md5: 528bdf9349adaad3ec84a5dc3d2a7f18
-  depends:
-  - nodejs
-  - nodejs >=26.8.1,<27.0a0
-  license: Apache-2.0
-  license_family: APACHE
-  purls: []
-  run_exports: {}
-  size: 2856393
-  timestamp: 1788967595041
 - conda: https://conda.anaconda.org/conda-forge/osx-arm64/playwright-1.64.0-h63323fe_0.conda
   sha256: 3b5457444289013480699420ec8f8f630109ae914a8f08c9c3938887f817f229
   md5: d2a4c2d151aa2411f92f0a9acd06db26
@@ -58272,6 +58259,17 @@ packages:
   run_exports: {}
   size: 2902565
   timestamp: 1791430608114
+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/playwright-1.64.1-hd1b9f45_0.conda
+  sha256: ef243ded7269f1eab7d10f24ef62530c423b87e854e170e3d02cf93a1f016376
+  md5: 93d32c7d9abbef160f91a2f233d43028
+  depends:
+  - nodejs
+  - nodejs >=26.10.0,<27.0a0
+  license: Apache-2.0
+  license_family: APACHE
+  run_exports: {}
+  size: 2902400
+  timestamp: 1792009338453
 - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pnpm-12.4.1-h465deab_0.conda
   sha256: 66654ce2c52e362b4f53f9c8e813aa5904ff33f64f60d164554c45f69eda7266
   md5: ca954890a1bed5841841927412eda634
@@ -65900,18 +65898,6 @@ packages:
     - pixman >=0.46.4,<1.0a0
   size: 257473
   timestamp: 1786106677325
-- conda: https://conda.anaconda.org/conda-forge/win-64/playwright-1.63.0-h8fff0a6_1.conda
-  sha256: 580dab8f3478c616ad125e49f9001730daf45192edab808410cd8de1bc40ac11
-  md5: bc46aa00f443b658b04d2eab538a3fb3
-  depends:
-  - nodejs
-  - nodejs >=26.8.1,<27.0a0
-  license: Apache-2.0
-  license_family: APACHE
-  purls: []
-  run_exports: {}
-  size: 2872319
-  timestamp: 1788967586616
 - conda: https://conda.anaconda.org/conda-forge/win-64/playwright-1.64.0-h8fff0a6_0.conda
   sha256: 10c61c24933672e8ac408d3e64104c8154383a1f69f7ffff178a3f2a1b8e2b18
   md5: b07809a3007a2f961485ee26ebc91b32
@@ -65936,6 +65922,17 @@ packages:
   run_exports: {}
   size: 2912561
   timestamp: 1791430603982
+- conda: https://conda.anaconda.org/conda-forge/win-64/playwright-1.64.1-h8fff0a6_0.conda
+  sha256: fb796cb1eb7d6b62998db509b08016fb7382c95eaaf513e871860c043429aa8f
+  md5: 161bab65ff16d086b80eaafb98de0be1
+  depends:
+  - nodejs
+  - nodejs >=26.10.0,<27.0a0
+  license: Apache-2.0
+  license_family: APACHE
+  run_exports: {}
+  size: 2913205
+  timestamp: 1792009338037
 - conda: https://conda.anaconda.org/conda-forge/win-64/pnpm-12.4.1-h785286a_0.conda
   sha256: c1a4757a9601214c416376dc7684211450e0f9e335eef9c9600fb999842a6717
   md5: 2c8323628b495293eba735409018afb4
