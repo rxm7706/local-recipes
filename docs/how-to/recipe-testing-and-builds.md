@@ -8,7 +8,7 @@ sources:
   - scripts/platform-ci-local.sh
   - .github/workflows/platform-ci.yml
   - .github/workflows/pyforge-station-tests.yml
-verified: 2026-11-18
+verified: 2026-11-21
 ---
 
 # Recipe testing and builds

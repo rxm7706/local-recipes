@@ -3,7 +3,7 @@ sources:
   - scripts/platform_ci_test_requirements_check.py
   - src/platform/Containerfile
   - .github/workflows/platform-ci.yml
-verified: 2026-11-17
+verified: 2026-11-21
 ---
 
 # Platform Python dependencies — pixi is the sole authority

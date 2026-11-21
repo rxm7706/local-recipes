@@ -201,6 +201,44 @@ holds:
   authority: CAP-5 pixi-version-check
   owner: pyforge-steward
   until: estate refresh policy
+- package: playwright
+  hold: cap
+  cap: <1.65
+  features:
+  - detectors
+  - local-recipes
+  - platform-ci-test
+  - pyforge-atlas
+  - pyforge-guild
+  - pyforge-herald
+  reason: One driver line estate-wide; its browsers.json fixes the revisions the playwright-* browser packages carry (1.64.0 and 1.64.1 pin the same set)
+  authority: spec-129-1
+  owner: pyforge-steward
+  until: the playwright-* browser recipes move to the next driver's revisions
+- package: playwright-chromium
+  hold: cap
+  cap: <157
+  features:
+  - detectors
+  - platform-ci-test
+  - pyforge-atlas
+  - pyforge-herald
+  reason: Chrome for Testing 156 is chromium r1248, the revision playwright 1.64 drives; a newer build needs a newer driver
+  authority: spec-129-1
+  owner: pyforge-steward
+  until: the playwright cap moves
+- package: playwright-chromium-headless-shell
+  hold: cap
+  cap: <157
+  features:
+  - detectors
+  - platform-ci-test
+  - pyforge-atlas
+  - pyforge-herald
+  reason: Chrome for Testing 156 is chromium-headless-shell r1248, the revision playwright 1.64 drives
+  authority: spec-129-1
+  owner: pyforge-steward
+  until: the playwright cap moves
 - package: asgiref
   hold: cap
   cap: <4.0

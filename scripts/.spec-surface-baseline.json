@@ -513,7 +513,7 @@
    "docs/explanation/mcp-server-architecture.md": "c1d8f83d9a9627aa7ea1c5b1d5290bb26d0c7683",
    "docs/explanation/one-chain-lock-and-mop.md": "08ea75c6ce2dd78e92a92b1cabcfb60ecf06d1ba",
    "docs/explanation/platform-deployment-architecture.md": "b88c21eb95aaa7ed5a9edaa02a79511b01c49a30",
-   "docs/explanation/platform-requirements.md": "60e87e47442e094c3e947d295606100051c075d2",
+   "docs/explanation/platform-requirements.md": "57d57ab0398f1eeaf1ab637ca2982120ffecab91",
    "docs/explanation/pyforge-ecosystem-architecture.md": "9467b7c40484c674f3f47976a92401a24bc96adb",
    "docs/explanation/pyforge-estate-overview.md": "fe8ad75f703c14d3b3c44e1453fcc118aff1ba35",
    "docs/explanation/the-detector-framework.md": "cf8ca32b65e2994b82242469c3da8debfcbd883c",
@@ -547,7 +547,7 @@
    "docs/how-to/purge-preserved-refs.md": "1f548463a94af87266c527f10fb30597750d8649",
    "docs/how-to/reach-a-station-mcp-endpoint.md": "4135a339a7e96bcc33fa6cbb83d0e41be45e4cfc",
    "docs/how-to/read-steward-registers.md": "ffa6f65e41da13de870366a1d3e7eae449d028ef",
-   "docs/how-to/recipe-testing-and-builds.md": "00078cf697abd026dd98206707deea57cad27e9a",
+   "docs/how-to/recipe-testing-and-builds.md": "f706fb21490ba4d0ff019e8eae897e4d31b94840",
    "docs/how-to/reconcile-spec-surface.md": "d1b9d7ef67b3f52a8eecd2dc7345b1d054be27ae",
    "docs/how-to/record-progress-claims-and-notices-with-herald.md": "340c2bbf31a9b537a577e68b59efd2d48d3bbada",
    "docs/how-to/refresh-the-estate.md": "1227ef60e31a65fc3f06a14ff270c7896e5cfe1d",
@@ -570,7 +570,7 @@
    "docs/map.yaml": "94e2c7bf0e4ca9d15f255791ecad4d067900f162",
    "docs/tutorials/README.md": "983cc85a4858ab6fb012284cc8371bb7ce061f2a",
    "docs/tutorials/getting-started.md": "9802990190eefaffec13c10a49fd1d6f41914eda",
-   "docs/tutorials/local-platform-development.md": "46df8779bc7792d0986437bcc86a5562cf0e74b0",
+   "docs/tutorials/local-platform-development.md": "93cad98373834fbdccc288eebf42e2ca91898982",
    "scripts/chain_currency_sweep_check.py": "946a19a816ac360270d9643583cbaed8a86ac8dc",
    "scripts/deferred_work_check.py": "1e95096d8f1be2aceb37559ee4c5c81049571aae",
    "scripts/deferred_work_intake.py": "5c1904530ae65a883647b3fecd1bf90e6960670c",
@@ -821,7 +821,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "c1679ffe7d4a357c88ed1102ede7bfacd5b0afbf"
+  "memlog": "0b260fef7ff1fde8d2fe6066eca93314001d92bb"
  },
  "pyforge-herald/spec-pyforge-herald": {
   "files": {
@@ -4086,11 +4086,11 @@
    "docs/governance/ci-surfaces.schema.json": "f5739b053157098b48ebf81527e7fd4e65383c93",
    "docs/governance/ci-surfaces.yaml": "4c168ba53bae34a83380fb0c07b2afc95a27da1e",
    "docs/governance/pin-policy.schema.json": "83074dd072cd25ed665ec7b7e73178414a207186",
-   "docs/governance/pin-policy.yaml": "df930167b1479d9907db35c3b44fcb4c6f0ab3b2",
+   "docs/governance/pin-policy.yaml": "89ead0ed1094879e08a10cd8fe97a5e3b69986ff",
    "docs/governance/realization-register.schema.json": "24d9758de8984c2ce6bc39da1d71f3d449f25be1",
    "docs/governance/realization-register.yaml": "70777615b698effdd7eb7a1c9391bd3e631682b4",
    "docs/how-to/track-upstream-todos.md": "02c41e9feee7801c4fef53b155bd0d724386b019",
-   "docs/reference/library-llms-full.md": "5bd0df26792393be4032b6704391be95a753a982",
+   "docs/reference/library-llms-full.md": "20ebd7e2433199a17f73356ac2a4d3448a90e857",
    "docs/reference/pixi-config-jfrog.example.toml": "fdf42c66fc45f62be43e95c62b5d1d5124287fd5",
    "evals/review-catches-planted-defect/README.md": "a06ac8f35b80beb3ca5758bab201c84643d39aca",
    "evals/review-catches-planted-defect/arms/clean.diff": "8a5abed77a0fc68cb9da84cd6476848cf46cf774",
@@ -4492,7 +4492,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "16e3593e2506a922156a506128f3911a09a3c35b"
+  "memlog": "9e8994e6b1dfa56eb93d642c4cb2741ffc964217"
  },
  "pyforge-steward/spec-pyforge-unifying-strategy": {
   "files": {
