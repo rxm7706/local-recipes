@@ -8149,3 +8149,17 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   environment carries `git`, and macOS carries bash 4 and GNU find; steward's remaining Linux assumptions and stale
   operator text; marshal's zombie check and remedy strings; the four compiled station skills; and the close, in which
   every row Epics 59 and 125 opened reads resolved. Doctor Epic 60 and mason Epic 40 carry the rows those stations own.
+- **2026-11-21 (the corridor's records live in the platform's database) — Ruled** (operator ruling of 2026-11-21 on
+  `DW-steward-126-3-1`, "Platform host"): steward's corridor duties (`load`, `passport`, `quarantine`, `glass`) need a
+  Django project and a migrated database, and no environment shipped one. The platform host is their home: the
+  `django-steward` portal package declares `pyforge.steward.dashboard` as an app the host installs, so the corridor
+  tables migrate into the platform's PostgreSQL 17 — the "existing Postgres app" the corridor's Dream entry of
+  2026-09-17 and CAP-141 name — and the duties run with the platform's settings in `-e platform-dev`, which already
+  carries the steward CLI, Django and both PostgreSQL drivers. `src/platform/` still imports no `pyforge.*`: it reads a
+  portal package's declared apps by name, as it already reads the portals themselves. Rejected: a settings module in
+  the `pyforge-steward` environment, which would keep the records apart from the platform or make a second owner of
+  its migrations. **For steward:** this entry binds `spec-pyforge-steward` CAP-139, CAP-141 and CAP-143 (realized, no
+  text change: the ruling makes their stated intent true rather than adding a capability, so no CAP is minted, which
+  corrects the deferred row's guess that either choice was a new one) and decomposes as Epic 127, two stories: the
+  platform host installs the corridor app; the corridor duties run against the platform's database, the corridor
+  how-to says how, and the row reads resolved.
