@@ -3012,6 +3012,10 @@ environments:
     - url: https://conda.anaconda.org/SelfExplainML/
     packages:
       linux-64:
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/playwright-chromium-156.0.8078.4-h1060546_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/playwright-chromium-headless-shell-156.0.8078.4-h1060546_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/playwright-ffmpeg-1013-hf4d9c80_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/playwright-browsers-base-1.0.0-h4616a5c_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-hda65f42_10.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/c-ares-1.34.8-hebe6cf0_2.conda
@@ -3102,6 +3106,10 @@ environments:
       - conda_source: pyforge-doctor[e327f752] @ src/shared/packages/pyforge-doctor
       - conda_source: pyforge-scribe[16195398] @ src/shared/packages/pyforge-scribe
       osx-arm64-min:
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/playwright-browsers-base-1.0.0-h4616a5c_1.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/osx-arm64/playwright-chromium-156.0.8078.4-he54f113_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/osx-arm64/playwright-chromium-headless-shell-156.0.8078.4-he54f113_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/osx-arm64/playwright-ffmpeg-1013-he54f113_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-types-0.8.0-pyhd8ed1ab_0.conda
@@ -3187,6 +3195,10 @@ environments:
       - conda_source: pyforge-doctor[2093e2ba] @ src/shared/packages/pyforge-doctor
       - conda_source: pyforge-scribe[6d3ca47e] @ src/shared/packages/pyforge-scribe
       win-64:
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/playwright-browsers-base-1.0.0-h4616a5c_1.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/win-64/playwright-chromium-156.0.8078.4-h5c0b47d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/win-64/playwright-chromium-headless-shell-156.0.8078.4-h5c0b47d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/win-64/playwright-ffmpeg-1013-h5c0b47d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-types-0.8.0-pyhd8ed1ab_0.conda
@@ -8677,6 +8689,10 @@ environments:
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/SelfExplainML/linux-64/opengrep-1.30.2-he562398_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/playwright-chromium-156.0.8078.4-h1060546_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/playwright-chromium-headless-shell-156.0.8078.4-h1060546_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/playwright-ffmpeg-1013-hf4d9c80_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/playwright-browsers-base-1.0.0-h4616a5c_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/age-1.3.2-hfc2019e_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/argon2-cffi-bindings-26.1.0-py314h89acca1_2.conda
@@ -10300,7 +10316,11 @@ environments:
       linux-64:
       - conda: https://conda.anaconda.org/SelfExplainML/linux-64/git-pkgs-0.21.0-h1fb1ff7_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/linux-64/opengrep-1.30.2-he562398_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/playwright-chromium-156.0.8078.4-h1060546_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/playwright-chromium-headless-shell-156.0.8078.4-h1060546_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/playwright-ffmpeg-1013-hf4d9c80_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/playwright-browsers-base-1.0.0-h4616a5c_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/at-spi2-atk-2.38.0-h0630a04_3.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/linux-64/at-spi2-core-2.40.3-h0630a04_0.tar.bz2
@@ -10771,6 +10791,10 @@ environments:
       - conda_source: pyforge-warden[95261c63] @ src/shared/packages/pyforge-warden
       osx-arm64-min:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/playwright-browsers-base-1.0.0-h4616a5c_1.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/osx-arm64/playwright-chromium-156.0.8078.4-he54f113_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/osx-arm64/playwright-chromium-headless-shell-156.0.8078.4-he54f113_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/osx-arm64/playwright-ffmpeg-1013-he54f113_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/a2a-sdk-1.1.5-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/adwaita-icon-theme-51.0-unix_0.conda
@@ -11199,6 +11223,10 @@ environments:
       - conda_source: pyforge-warden[d7ffe6e9] @ src/shared/packages/pyforge-warden
       win-64:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/playwright-browsers-base-1.0.0-h4616a5c_1.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/win-64/playwright-chromium-156.0.8078.4-h5c0b47d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/win-64/playwright-chromium-headless-shell-156.0.8078.4-h5c0b47d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/win-64/playwright-ffmpeg-1013-h5c0b47d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/a2a-sdk-1.1.5-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/aiofiles-25.1.0-pyhcf101f3_1.conda
@@ -11942,8 +11970,12 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/linux-64/git-pkgs-0.21.0-h1fb1ff7_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/linux-64/nebari-infrastructure-core-0.14.0-hfc2019e_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/linux-64/opengrep-1.30.2-he562398_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/playwright-chromium-156.0.8078.4-h1060546_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/playwright-chromium-headless-shell-156.0.8078.4-h1060546_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/playwright-ffmpeg-1013-hf4d9c80_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-4.3.0-h98f672e_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/playwright-browsers-base-1.0.0-h4616a5c_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-plus-4.2.1-h59285b8_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/age-1.3.2-hfc2019e_0.conda
@@ -12604,7 +12636,11 @@ environments:
       osx-arm64-min:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-4.3.0-h98f672e_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/playwright-browsers-base-1.0.0-h4616a5c_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-plus-4.2.1-h59285b8_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/osx-arm64/playwright-chromium-156.0.8078.4-he54f113_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/osx-arm64/playwright-chromium-headless-shell-156.0.8078.4-he54f113_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/osx-arm64/playwright-ffmpeg-1013-he54f113_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/a2a-sdk-1.1.5-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/adwaita-icon-theme-51.0-unix_0.conda
@@ -13234,7 +13270,11 @@ environments:
       win-64:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-4.3.0-h2fd06db_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/playwright-browsers-base-1.0.0-h4616a5c_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-plus-4.2.1-h59285b8_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/win-64/playwright-chromium-156.0.8078.4-h5c0b47d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/win-64/playwright-chromium-headless-shell-156.0.8078.4-h5c0b47d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/win-64/playwright-ffmpeg-1013-h5c0b47d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/a2a-sdk-1.1.5-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/aiofiles-25.1.0-pyhcf101f3_1.conda
@@ -14354,6 +14394,9 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/linux-64/git-pkgs-0.21.0-h1fb1ff7_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/linux-64/nebari-infrastructure-core-0.14.0-hfc2019e_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/linux-64/opengrep-1.30.2-he562398_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/playwright-chromium-156.0.8078.4-h1060546_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/playwright-chromium-headless-shell-156.0.8078.4-h1060546_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/playwright-ffmpeg-1013-hf4d9c80_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-creative-intelligence-suite-0.3.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-dashboard-1.2.2.dev0-pyhcba1bba_0.conda
@@ -14364,6 +14407,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-utility-skills-2.0.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/playwright-browsers-base-1.0.0-h4616a5c_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-plus-4.2.1-h59285b8_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/age-1.3.2-hfc2019e_0.conda
@@ -15100,7 +15144,11 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-utility-skills-2.0.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/playwright-browsers-base-1.0.0-h4616a5c_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-plus-4.2.1-h59285b8_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/osx-arm64/playwright-chromium-156.0.8078.4-he54f113_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/osx-arm64/playwright-chromium-headless-shell-156.0.8078.4-he54f113_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/osx-arm64/playwright-ffmpeg-1013-he54f113_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/a2a-sdk-1.1.5-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/adwaita-icon-theme-51.0-unix_0.conda
@@ -15803,7 +15851,11 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-utility-skills-2.0.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/playwright-browsers-base-1.0.0-h4616a5c_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-plus-4.2.1-h59285b8_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/win-64/playwright-chromium-156.0.8078.4-h5c0b47d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/win-64/playwright-chromium-headless-shell-156.0.8078.4-h5c0b47d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/win-64/playwright-ffmpeg-1013-h5c0b47d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/a2a-sdk-1.1.5-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/aiofiles-25.1.0-pyhcf101f3_1.conda
@@ -16567,6 +16619,9 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/linux-64/git-pkgs-0.21.0-h1fb1ff7_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/linux-64/nebari-infrastructure-core-0.14.0-hfc2019e_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/linux-64/opengrep-1.30.2-he562398_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/playwright-chromium-156.0.8078.4-h1060546_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/playwright-chromium-headless-shell-156.0.8078.4-h1060546_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/playwright-ffmpeg-1013-hf4d9c80_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-creative-intelligence-suite-0.3.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-dashboard-1.2.2.dev0-pyhcba1bba_0.conda
@@ -16577,6 +16632,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-utility-skills-2.0.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/playwright-browsers-base-1.0.0-h4616a5c_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-plus-4.2.1-h59285b8_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/age-1.3.2-hfc2019e_0.conda
@@ -18235,6 +18291,10 @@ environments:
     - url: https://conda.anaconda.org/SelfExplainML/
     packages:
       linux-64:
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/playwright-chromium-156.0.8078.4-h1060546_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/playwright-chromium-headless-shell-156.0.8078.4-h1060546_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/playwright-ffmpeg-1013-hf4d9c80_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/playwright-browsers-base-1.0.0-h4616a5c_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-plus-4.2.1-h59285b8_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/autobahn-26.7.1-py314hfe1a184_0.conda
@@ -18443,7 +18503,11 @@ environments:
       - conda_source: pyforge-herald[e0015f58] @ src/shared/packages/pyforge-herald
       - conda_source: pyforge-testing-kit[6d81a677] @ src/shared/packages/pyforge-testing-kit
       osx-arm64-min:
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/playwright-browsers-base-1.0.0-h4616a5c_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-plus-4.2.1-h59285b8_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/osx-arm64/playwright-chromium-156.0.8078.4-he54f113_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/osx-arm64/playwright-chromium-headless-shell-156.0.8078.4-he54f113_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/osx-arm64/playwright-ffmpeg-1013-he54f113_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-types-0.8.0-pyhd8ed1ab_0.conda
@@ -18643,7 +18707,11 @@ environments:
       - conda_source: pyforge-herald[6595c651] @ src/shared/packages/pyforge-herald
       - conda_source: pyforge-testing-kit[08ea3472] @ src/shared/packages/pyforge-testing-kit
       win-64:
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/playwright-browsers-base-1.0.0-h4616a5c_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-plus-4.2.1-h59285b8_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/win-64/playwright-chromium-156.0.8078.4-h5c0b47d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/win-64/playwright-chromium-headless-shell-156.0.8078.4-h5c0b47d_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/win-64/playwright-ffmpeg-1013-h5c0b47d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-types-0.8.0-pyhd8ed1ab_0.conda
@@ -24140,6 +24208,38 @@ packages:
   license: LGPL-2.1-only
   size: 46388501
   timestamp: 1791516468380
+- conda: https://conda.anaconda.org/SelfExplainML/linux-64/playwright-chromium-156.0.8078.4-h1060546_0.conda
+  sha256: 5c4473966fafcf75fe95459d78ba016d0eb4fa3d743e1b02ff9036b44c7e9cc5
+  md5: 74cced7c9aa6f283f0b78c10c262a9c3
+  depends:
+  - playwright-browsers-base
+  - __glibc >=2.25
+  constrains:
+  - playwright >=1.64,<1.65
+  license: LicenseRef-Google-Chrome-ToS
+  size: 160580883
+  timestamp: 1795269344893
+- conda: https://conda.anaconda.org/SelfExplainML/linux-64/playwright-chromium-headless-shell-156.0.8078.4-h1060546_0.conda
+  sha256: 645474e5ecba20660ce5dd1cfe48e08b0ceaac14f032d3e12dbdebe9db14850c
+  md5: 5f06c9c931154aa9a4d9e82e7c76cb32
+  depends:
+  - playwright-browsers-base
+  - __glibc >=2.25
+  constrains:
+  - playwright >=1.64,<1.65
+  license: LicenseRef-Google-Chrome-ToS
+  size: 97094586
+  timestamp: 1795269359843
+- conda: https://conda.anaconda.org/SelfExplainML/linux-64/playwright-ffmpeg-1013-hf4d9c80_0.conda
+  sha256: 6ee89683dc240b2901ffd8e445b71be5d8e8e8fee730d55786ab9c2aec1d840a
+  md5: 87fcddbb9a124f0cccb9d2107b23e0de
+  depends:
+  - playwright-browsers-base
+  constrains:
+  - playwright >=1.64,<1.65
+  license: LGPL-2.1-only
+  size: 2146869
+  timestamp: 1795269391212
 - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
   sha256: dbbd6fd842ee928283187a7f95ff04eea34a53215703ba5a12f9da1107cbd689
   md5: b5cd1c5e1998b6a6fb4f2dddb8839be0
@@ -24256,6 +24356,12 @@ packages:
   license: Apache-2.0
   size: 31939
   timestamp: 1787698745464
+- conda: https://conda.anaconda.org/SelfExplainML/noarch/playwright-browsers-base-1.0.0-h4616a5c_1.conda
+  sha256: 69a6865654fc6816e342823cb23cfe6447b00a97572a175ea148d2b8b7e91650
+  md5: 361d81afdf5462e4c5ecab75b4900e14
+  license: Apache-2.0
+  size: 10021
+  timestamp: 1788790932880
 - conda: https://conda.anaconda.org/SelfExplainML/noarch/ppt-master-5.1.0-hc364b38_0.conda
   sha256: c58b19ce11b08785ab490f85773fa9d5eadfd2454766b984b835d5aba7c8f5c5
   md5: 79c1f54222b49899fa6ebf5755bb6bbd
@@ -24312,6 +24418,69 @@ packages:
   license: Apache-2.0
   size: 65607
   timestamp: 1787691874389
+- conda: https://conda.anaconda.org/SelfExplainML/osx-arm64/playwright-chromium-156.0.8078.4-he54f113_0.conda
+  sha256: 8b792820845555e1c51640b0e1b7bc605a31e3afa516a0dc4400f9daa1b19cac
+  md5: 9dfc18dd20533feb081b2b5c343bd55f
+  depends:
+  - playwright-browsers-base
+  - __osx >=14
+  constrains:
+  - playwright >=1.64,<1.65
+  license: LicenseRef-Google-Chrome-ToS
+  size: 157093169
+  timestamp: 1795269281589
+- conda: https://conda.anaconda.org/SelfExplainML/osx-arm64/playwright-chromium-headless-shell-156.0.8078.4-he54f113_0.conda
+  sha256: 8321c8c945fedd60b15a4af644565415f4bd85bd383c973f91b36e5f31e7b53d
+  md5: 4e242dc56c4d6f01d7ea2c0f892ee27e
+  depends:
+  - playwright-browsers-base
+  - __osx >=14
+  constrains:
+  - playwright >=1.64,<1.65
+  license: LicenseRef-Google-Chrome-ToS
+  size: 82884931
+  timestamp: 1795269304762
+- conda: https://conda.anaconda.org/SelfExplainML/osx-arm64/playwright-ffmpeg-1013-he54f113_0.conda
+  sha256: a2f015980c42f8c6b02107bacfb8b7de9413e795dfa7c1d6bdc44543bf0f5184
+  md5: 3758b9bf1cbf7652c12d3a96b0c97c57
+  depends:
+  - playwright-browsers-base
+  - __osx >=14
+  constrains:
+  - playwright >=1.64,<1.65
+  license: LGPL-2.1-only
+  size: 1434618
+  timestamp: 1795269343863
+- conda: https://conda.anaconda.org/SelfExplainML/win-64/playwright-chromium-156.0.8078.4-h5c0b47d_0.conda
+  sha256: 8144d014f26f7243df0503a372f68b9772aa3494de6e4d3471f2d1cb3ca32934
+  md5: 2c273836e845eff9554a9e3e8e3b8ea2
+  depends:
+  - playwright-browsers-base
+  constrains:
+  - playwright >=1.64,<1.65
+  license: LicenseRef-Google-Chrome-ToS
+  size: 177600274
+  timestamp: 1795269391900
+- conda: https://conda.anaconda.org/SelfExplainML/win-64/playwright-chromium-headless-shell-156.0.8078.4-h5c0b47d_0.conda
+  sha256: bfaa26f1cac736b87eeee560a9bae051d17bdbb0e48e90c2b75dbb8728a6d743
+  md5: faf3604142f5736ef83ffc9fbdfab193
+  depends:
+  - playwright-browsers-base
+  constrains:
+  - playwright >=1.64,<1.65
+  license: LicenseRef-Google-Chrome-ToS
+  size: 106086557
+  timestamp: 1795269408757
+- conda: https://conda.anaconda.org/SelfExplainML/win-64/playwright-ffmpeg-1013-h5c0b47d_0.conda
+  sha256: 0758d6e32c6cd040b73098d6e1b64aa5dff6698df4d3d815b3326518cd1c3ba9
+  md5: 33cf7933fbcf9eee1ebebe768cd2cb02
+  depends:
+  - playwright-browsers-base
+  constrains:
+  - playwright >=1.64,<1.65
+  license: LGPL-2.1-only
+  size: 1632742
+  timestamp: 1795269437669
 - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
   build_number: 20
   sha256: 1dd3fffd892081df9726d7eb7e0dea6198962ba775bd88842135a4ddb4deb3c9

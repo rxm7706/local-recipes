@@ -415,6 +415,11 @@ mcp-host-serve = { cmd = "uvicorn mcp_host.app:app --host 127.0.0.1 --port 8090"
 platforms = ["linux-64"]
 
 [feature.platform-ci-test.dependencies]
+# steward Story 129.1: the browsers Playwright drives come from the lock (channel SelfExplainML, recipes/playwright-*),
+# not from a `playwright install` download at run time; the same set `playwright install chromium` fetches.
+playwright-chromium = ">=156.0.8078.4,<157"
+playwright-chromium-headless-shell = ">=156.0.8078.4,<157"
+playwright-ffmpeg = ">=1013"
 playwright = ">=1.64.0,<1.65"     # steward Story 129.1: one driver estate-wide (it arrives transitively here; the pin keeps it on the line the playwright-* browser packages carry)
 pyforge-steward = { path = "src/shared/packages/pyforge-steward" }  # the host imports pyforge.steward.keys / .sync (src/platform/ingest/github_projects -- the live pap:AD-2 breach) and, through steward's run-deps, pyforge.core; without it `manage.py check` dies ModuleNotFoundError: pyforge (Platform CI test job, 2026-09-04)
 pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # Story 16.1 / 48.11: django_warden_fabric/tasks.py lazy-imports pyforge.warden (cli + fleet_github_rest); platform-ci-test must ship the engine the Celery task calls (mirrors platform-dev edge)
@@ -1014,6 +1019,11 @@ caveman-installer = ">=4.0.0"     # Claude Code output-token compression skill i
 # pip fallback list in the workflow mirrors this table and exists only for a runner
 # where pixi cannot be set up.
 [feature.detectors.dependencies]
+# steward Story 129.1: the browsers Playwright drives come from the lock (channel SelfExplainML, recipes/playwright-*),
+# not from a `playwright install` download at run time; the same set `playwright install chromium` fetches.
+playwright-chromium = ">=156.0.8078.4,<157"
+playwright-chromium-headless-shell = ">=156.0.8078.4,<157"
+playwright-ffmpeg = ">=1013"
 pyforge-doctor = { path = "src/shared/packages/pyforge-doctor" }  # -> built conda pkg; its run-deps bring python, jsonschema, pyyaml, mcp, pyforge-core
 pyforge-scribe = { path = "src/shared/packages/pyforge-scribe" }  # scribe Story 24.2 (spec-pyforge-scribe CAP-32): bmad_estate_check.py shells `python -m pyforge.scribe.cli catalog bmad-estate --check`; without the package here the detector reads could-not-run (2) in CI, never a false green -- the review caught it as a false drift (run 2026-09-29)
 "ruamel.yaml" = ">=0.19.1"        # failure_catalog_generator.py, the subprocess behind failure_catalog_check (missing -> UNKNOWN, run 33906009816)
@@ -2887,6 +2897,11 @@ depends-on = ["pyforge-warden-build-conda", "pyforge-warden-build-dist"]
 # AC-8) into the dedicated lean `pyforge-atlas` env.
 # Spec: docs/specs/cfe-atlas-datapipeline-kedro-migration.md § 9 Story A1.
 [feature.pyforge-atlas.dependencies]
+# steward Story 129.1: the browsers Playwright drives come from the lock (channel SelfExplainML, recipes/playwright-*),
+# not from a `playwright install` download at run time; the same set `playwright install chromium` fetches.
+playwright-chromium = ">=156.0.8078.4,<157"
+playwright-chromium-headless-shell = ">=156.0.8078.4,<157"
+playwright-ffmpeg = ">=1013"
 pyforge-atlas = { path = "src/shared/packages/pyforge-atlas" }  # -> built conda pkg
 pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # AC-8: the [gate] extra default-installed IN-REPO at feature level (A1-A5 alternative route) — NOT a pyforge-atlas package run-dep, so external conda installs stay warden-optional
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: admission.py/lasuite.py/basilisk.py/migration_status.py/refresh.py's mandatory run-dep (atomic_write)
@@ -3196,6 +3211,11 @@ description = "Report whether the selected backend's local object-storage server
 cmd = "python scripts/platform_object_storage.py status"
 
 [feature.pyforge-herald.dependencies]
+# steward Story 129.1: the browsers Playwright drives come from the lock (channel SelfExplainML, recipes/playwright-*),
+# not from a `playwright install` download at run time; the same set `playwright install chromium` fetches.
+playwright-chromium = ">=156.0.8078.4,<157"
+playwright-chromium-headless-shell = ">=156.0.8078.4,<157"
+playwright-ffmpeg = ">=1013"
 uv = ">=0.13.0"                  # the SKF validators herald's skill meta-test runs call `uv` (steward Story 126.2)
 pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # -> built conda pkg
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: claims.py/deck_pipeline.py/notices.py/progress.py/registry.py/state.py's mandatory run-dep

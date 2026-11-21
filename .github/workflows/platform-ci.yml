@@ -243,7 +243,7 @@ jobs:
       # that ran at 38-43 kB/s; the step took 636-668 s on the three cancelled
       # runs named above the job's timeout. After the fallback the browser is
       # launched again, so a failure reds this step, beside its cause.
-      - name: Install Chromium for the herald deck viewer browser check
+      - name: Check Chromium launches for the herald deck viewer browser check
         run: |
           probe() {
             python - <<'PY'
@@ -253,7 +253,7 @@ jobs:
               playwright.chromium.launch().close()
           PY
           }
-          python -m playwright install chromium
+          # steward Story 129.1: Chromium comes from the lock (playwright-chromium*), so nothing is downloaded here.
           if probe; then
             echo "Chromium launches on this runner image; no system packages installed."
           else
