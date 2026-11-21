@@ -1666,6 +1666,13 @@ verify_commands = [
   "src/shared/packages/pyforge-steward/tests/**",
   "src/shared/packages/pyforge-warden/tests/fixtures/corpus/recipes/CTranslate2/**",
 ]
+"129" = [  # Playwright's browsers come from pixi (spec-pyforge-steward CAP-5), added 2026-11-21.
+  ".claude/skills/conda-forge-expert/**",
+  "environment.yaml",
+  "pixi.lock",
+  "pixi.toml",
+  "recipes/playwright-*/**",
+]
 
 # dispatch (Story 85.1 / CAP-286 knobs), added 2026-10-13: steward's verify-fix turn gets 45 minutes, not the
 # 15-minute default. pyforge-steward-test alone runs ~4 minutes (2482 tests), so a fix turn that must re-run it two or
