@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 782
+# stories: 788
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -133,12 +133,14 @@ development_status:
   117-8-the-kernel-specs-are-reconciled-and-stamped-once-after-the-last-edit-on-the-branch: done
   118-1-the-testing-kit-s-suite-runs-without-the-host-and-its-public-surface-is-written-down: done
   118-2-the-testing-charter-says-what-was-built-and-carries-epic-118-s-capabilities: done
+  119-1-a-challenge-run-past-its-ceiling-is-checked-without-a-race: done
   12-1-full-pixi-wiring-distribution-and-repo-gate-compliance: done
   12-2-the-local-recipes-empty-plan-oracle-critical: done
   12-3-offline-operation-and-the-egress-counter: done
   12-4-pattern-meta-tests-and-the-never-write-proof: done
   12-5-cli-contract-idempotence-harness-and-performance-gates: done
   12-6-readme-adoption-guide-and-the-finding-remedy-reference: done
+  120-1-the-dispatch-verification-fakes-match-a-command-by-its-words: done
   13-1-a-baseline-can-be-stamped-for-one-spec: done
   13-2-a-moved-contract-reconciles-only-the-paths-it-names: done
   13-3-the-no-baseline-ungoverned-and-stale-allowlist-findings-are-cleared: done
@@ -608,8 +610,12 @@ development_status:
   epic-117-retrospective: optional
   epic-118: done
   epic-118-retrospective: optional
+  epic-119: done
+  epic-119-retrospective: optional
   epic-12: done
   epic-12-retrospective: optional
+  epic-120: done
+  epic-120-retrospective: optional
   epic-13: done
   epic-13-retrospective: optional
   epic-14: done

@@ -8149,6 +8149,36 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   environment carries `git`, and macOS carries bash 4 and GNU find; steward's remaining Linux assumptions and stale
   operator text; marshal's zombie check and remedy strings; the four compiled station skills; and the close, in which
   every row Epics 59 and 125 opened reads resolved. Doctor Epic 60 and mason Epic 40 carry the rows those stations own.
+- **2026-11-21 (the corridor's records live in the platform's database) — Ruled** (operator ruling of 2026-11-21 on
+  `DW-steward-126-3-1`, "Platform host"): steward's corridor duties (`load`, `passport`, `quarantine`, `glass`) need a
+  Django project and a migrated database, and no environment shipped one. The platform host is their home: the
+  `django-steward` portal package declares `pyforge.steward.dashboard` as an app the host installs, so the corridor
+  tables migrate into the platform's PostgreSQL 17 — the "existing Postgres app" the corridor's Dream entry of
+  2026-09-17 and CAP-141 name — and the duties run with the platform's settings in `-e platform-dev`, which already
+  carries the steward CLI, Django and both PostgreSQL drivers. `src/platform/` still imports no `pyforge.*`: it reads a
+  portal package's declared apps by name, as it already reads the portals themselves. Rejected: a settings module in
+  the `pyforge-steward` environment, which would keep the records apart from the platform or make a second owner of
+  its migrations. **For steward:** this entry binds `spec-pyforge-steward` CAP-139, CAP-141 and CAP-143 (realized, no
+  text change: the ruling makes their stated intent true rather than adding a capability, so no CAP is minted, which
+  corrects the deferred row's guess that either choice was a new one) and decomposes as Epic 127, two stories: the
+  platform host installs the corridor app; the corridor duties run against the platform's database, the corridor
+  how-to says how, and the row reads resolved.
+- **2026-11-21 (the platform suite runs on a macOS laptop) — Ruled** (operator, 2026-11-21, on Epic 127's PR: "why - The
+  platform suite and its mypy step, which can't run on this Mac, cant we fix this"): the platform's Linux-only
+  `platform-ci-test` environment was the one CI lane a macOS laptop could not replay, so a change under `src/platform/`
+  reached CI with its suite and mypy unrun. The environment now solves for macOS as well (rcssmin takes the noarch
+  floor the platform image already runs, since conda-forge publishes 1.3.0 for linux-64 only), and carries the
+  `host-tools` git; the station CLI's tracked-recipe lookup finds the host environment's git before the system's,
+  since `/usr/bin/git` on a laptop without the command-line tools is only the Xcode stub; and the promotion tests read
+  the scanned environment's Python version rather than their own. **For steward:** this entry binds
+  `spec-pyforge-steward` CAP-175 and CAP-5 (realized, no text change) and decomposes as Epic 128, one story.
+- **2026-11-21 (a killed test run leaves no server behind) — Ruled** (operator, 2026-11-21: "Yes, fix it here", on the
+  leaked stand-in servers): the platform-ci-local tests' stand-in `postgres` and `redis-server` are shell stubs that
+  exec `sleep 999999` in a session of their own. A finished test reaps them, but a test process that is killed (a
+  preflight stopped mid-run) leaves them for about 11.5 days, and they kept a later preflight's steward lane waiting for
+  over an hour on 2026-11-21. Each stand-in now lives a bounded time (600 s by default), so a killed run's leftovers
+  exit by themselves. **For steward:** this entry binds `spec-pyforge-steward` CAP-175 (realized, no text change) and
+  decomposes as Epic 129, one story.
 - **2026-11-21 (Playwright's browsers come from pixi) — Ruled** (operator ruling of 2026-11-21: "first Write it up as a Dream entry and a Story, so it's planned but not built yet. then Do steps 1, 2 and 4 now. Settle on one Playwright driver across the estate, add macOS and Windows downloads and checksums to the browser recipes, build them locally, and wire the packages into the environments behind a local channel. All of that lands in a PR; only step 3, publishing to a channel, waits for you. use SelfExplainML to publish"): every
   environment that drives a browser gets Playwright's browsers as conda packages, not from `playwright install`'s
   download at run time. The six repackaging recipes under `recipes/playwright-*` exist for linux-64 only and pin

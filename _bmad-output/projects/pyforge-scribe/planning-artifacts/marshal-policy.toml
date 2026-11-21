@@ -244,6 +244,14 @@ verify_commands = [
   "environment.yaml",
   "scripts/.spec-surface-baseline.json",
 ]
+"34" = [  # the src/platform import guard reads code, not text (spec-pyforge-scribe CAP-31; relay of spec-pyforge-steward:CAP-175), added 2026-11-21.
+  "_bmad-output/projects/pyforge-*/planning-artifacts/specs/spec-pyforge-*/.memlog.md",
+  "_bmad-output/projects/pyforge-scribe/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/pyforge-scribe/planning-artifacts/test-architecture.md",
+  "docs/dreams/pyforge-scribe.md",
+  "scripts/.spec-surface-baseline.json",
+  "src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py",
+]
 
 [model_tier_map.heavy]
 dev = { harness = "cursor", model = "composer-2.5-fast" }

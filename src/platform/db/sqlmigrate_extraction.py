@@ -39,6 +39,10 @@ TEST_ONLY_APPS = frozenset(
 FIRST_PARTY_MARKERS = (
     "/src/platform/",
     "/src/shared/packages/django-",
+    # Story 127.1: a station's own Django app that a portal package declares
+    # for the host (steward's corridor app) migrates into this database too,
+    # so its migrations need changesets like any other first-party app's.
+    "/src/shared/packages/pyforge-",
 )
 
 

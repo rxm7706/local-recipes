@@ -11810,3 +11810,49 @@ Epic 113 and lands `done` in the same PR as Stories 113.15 and 113.16, so `epic-
 *Chain-currency cascade (arch -> epics), EGM audit, marshal Story 113.18.*
 
 Stories 113.18 (`done`) and 113.19 (`backlog`) are minted. Dated notes land on Stories 113.1, 113.2, 113.4, 113.5 and 113.6. No epic is added, and no story is renumbered.
+
+## Epic 119: A challenge run past its ceiling is checked without a race (spec-pyforge-marshal:CAP-298)
+
+Minted 2026-11-21 from the station Dream's entry of the same date on the operator, 2026-11-21: "fix the marshal flaky test too".
+**HARD boundaries:**
+- A session that outlives its ceiling still fails the test.
+- The runner's code does not change; only the test's read of its fake session does.
+
+### Story 119.1: A challenge run past its ceiling is checked without a race
+
+As an author whose full preflight loads every core of the machine,
+I want the test waits a bounded time for the pid file, checks that a session which wrote it is dead, and counts a session that never wrote it as killed before its first line,
+So that the test reports the runner's behaviour and not the machine's load.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-298 (FR-240; realized, no text change); a fix, no new CAP
+**Flag:** `flag-exempt: detector-or-gate` (tests, a gate's own module and the scripts a gate runs; a gated gate is a silent green (roster list))
+**Surface:** `src/shared/packages/pyforge-marshal/tests/unit/test_factory_challenge.py`
+**Spec:** `planning-artifacts/specs/spec-119-1-a-challenge-run-past-its-ceiling-is-checked-without-a-race.md`
+**Given** `test_a_session_past_its_ceiling_exits_1_with_outcome_error` reads the pid file its fake session writes as its first line, and on a loaded machine the 1.5 s ceiling can kill the session before that line runs, so the read raises `FileNotFoundError` though the kill worked
+**When** the test waits a bounded time for the pid file, checks that a session which wrote it is dead, and counts a session that never wrote it as killed before its first line
+**Then** the test passes under load as it does alone, a session that outlives its ceiling still fails it, and no other test changes
+**And** marshal's suite passes
+**Status:** done
+
+## Epic 120: The dispatch-verification fakes match a command by its words (spec-pyforge-marshal:CAP-170)
+
+Minted 2026-11-21 from the station Dream's entry of the same date on the operator, 2026-11-21: "Yes, fix it here".
+**HARD boundaries:**
+- Marshal's dispatch code does not change; only its test fakes do.
+- Every real invocation the fakes counted before is still counted.
+
+### Story 120.1: The dispatch-verification fakes match a command by its words
+
+As an author whose worktree is named for the work it carries,
+I want each fake matches its command by a whole token of the command (`platform-ci-local` in the token list), never by a substring of the joined line,
+So that a test reads the command marshal ran, not the directory it ran from.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-170 (realized, no text change); a fix, no new CAP
+**Flag:** `flag-exempt: detector-or-gate` (tests, a gate's own module and the scripts a gate runs; a gated gate is a silent green (roster list))
+**Surface:** `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification_live_tree.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_environment_yaml.py`
+**Spec:** `planning-artifacts/specs/spec-120-1-the-dispatch-verification-fakes-match-a-command-by-its-words.md`
+**Given** `CrossSurfaceProcess` in `test_dispatch_verification_live_tree.py` counts a command as a platform, bmad-estate or flag-gate run when the joined command line merely contains `platform-ci-local`, `bmad-estate-check` or `flag-gate-check`, so a worktree whose path holds one of those words (the interpreter's path is a token) reds six cross-surface tests, and the environment-yaml fake in `test_dispatch_environment_yaml.py` matches `steward` and `provision` the same way
+**When** each fake matches its command by a whole token of the command (`platform-ci-local` in the token list), never by a substring of the joined line
+**Then** the cross-surface and environment-yaml tests pass in a worktree whose path names those commands, and still count every real invocation
+**And** marshal's suite passes
+**Status:** done

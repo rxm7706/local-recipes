@@ -197,8 +197,8 @@ class _CrossSurfaceEnvProcess:
         self.provision_invocations = 0
 
     def run(self, tokens, *, cwd: Path):
-        joined = " ".join(tokens)
-        if "steward" in joined and "provision" in joined:
+        words = set(tokens)  # Story 120.1: whole words, never a substring of a path
+        if "steward" in words and "provision" in words:
             self.provision_invocations += 1
             return ProcessResult(
                 self._provision_exit,

@@ -1172,8 +1172,21 @@ def test_a_session_past_its_ceiling_exits_1_with_outcome_error(repo: Path, tmp_p
     intent, outcome = (entry["payload"] for entry in _journal(run_dir))
     assert intent["timeout_s"] == 1.5
     assert outcome["status"] == "error" and "ceiling" in outcome["error"]
-    with pytest.raises(ProcessLookupError):
-        os.kill(int(pidfile.read_text(encoding="utf-8")), 0)
+    _assert_killed(pidfile)
+
+
+def _assert_killed(pidfile: Path, *, grace_s: float = 2.0) -> None:
+    """Story 119.1: the fake session writes its pid as its first line, and on a loaded machine the ceiling can kill
+    it before that line runs. Wait a bounded time for the file: a session that wrote it must be dead, and one that
+    never wrote it was killed before its first line (a survivor would still write it inside the grace)."""
+    deadline = time.monotonic() + grace_s
+    while time.monotonic() < deadline:
+        text = pidfile.read_text(encoding="utf-8").strip() if pidfile.exists() else ""
+        if text:
+            with pytest.raises(ProcessLookupError):
+                os.kill(int(text), 0)
+            return
+        time.sleep(0.05)
 
 
 def test_dispatch_hook_reports_a_timed_out_readiness_review_and_proceeds(

@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 736
+# stories: 746
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -147,7 +147,10 @@ development_status:
   126-4-marshal-reads-a-zombie-without-proc-and-its-remedies-name-commands-that-exist: done
   126-5-the-four-compiled-station-skills-match-their-clis: done
   126-6-every-row-this-change-opened-is-closed-and-the-preflight-is-green-with-fewer-skips: done
-  130-1-playwright-s-browsers-install-from-pixi-on-linux-64-osx-arm64-and-win-64: in-progress
+  127-1-the-platform-host-installs-steward-s-corridor-app: done
+  127-2-the-corridor-duties-run-against-the-platform-s-database: done
+  128-1-the-platform-suite-and-its-checks-run-on-a-macos-laptop: done
+  129-1-a-killed-test-run-leaves-no-stand-in-server-behind: done
   13-1-workspace-verbs-over-git-worktree: done
   13-2-status-and-the-feed-mirror-decision: done
   13-3-a-repo-set-opens-as-one-workspace: done
@@ -155,6 +158,7 @@ development_status:
   13-5-workspace-clean-delete-removes-a-gone-or-landed-workspace-without-a-prompt-or-an-archive: done
   13-6-a-workspace-started-from-another-branch-is-landed-once-its-branch-is-on-main: done
   13-7-a-landed-workspace-that-holds-tier-3-files-deletes-and-keeps-the-files: done
+  130-1-playwright-s-browsers-install-from-pixi-on-linux-64-osx-arm64-and-win-64: in-progress
   14-1-the-pre-flight-diff-retrodicts-a-real-upgrade: done
   14-10-the-next-rehearsal-exercises-cap-6s-fallback-and-cap-8s-conflict-path-report-only: done
   14-2-apply-is-deliberate-branched-and-never-clobbers-custom: done
@@ -558,10 +562,16 @@ development_status:
   epic-125-retrospective: optional
   epic-126: done
   epic-126-retrospective: optional
-  epic-130: in-progress
-  epic-130-retrospective: optional
+  epic-127: done
+  epic-127-retrospective: optional
+  epic-128: done
+  epic-128-retrospective: optional
+  epic-129: done
+  epic-129-retrospective: optional
   epic-13: done
   epic-13-retrospective: optional
+  epic-130: in-progress
+  epic-130-retrospective: optional
   epic-14: done
   epic-14-retrospective: optional
   epic-15: done

@@ -105,3 +105,25 @@ databaseChangeLog:
   - include:
       file: changes/django-herald-1-herald-portal-0001-initial.sql
       relativeToChangelogFile: true
+  # Story 127.1: steward's corridor tables (pyforge_steward_dashboard, declared by the django-steward portal).
+  - include:
+      file: changes/pyforge-steward-1-dashboard-0001-initial.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/pyforge-steward-2-dashboard-0002-workpassport.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/pyforge-steward-3-dashboard-0003-corridorload.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/pyforge-steward-4-dashboard-0004-workpassport-vendor-id.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/pyforge-steward-5-dashboard-0005-corridorload-signer-corridorload-slice-name.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/pyforge-steward-6-dashboard-0007-auditentry-scope.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/pyforge-steward-7-dashboard-0008-quarantineshelfrow.sql
+      relativeToChangelogFile: true

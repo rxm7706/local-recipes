@@ -8952,22 +8952,102 @@ So that every row of `DW-doctor-59-*` and `DW-steward-125-*` closes in this chan
 **And** every row of `DW-doctor-59-*` and `DW-steward-125-*` reads resolved in its ledger with the commit that closed it
 **Status:** done
 
-## Epic 130: Playwright's browsers come from pixi (spec-pyforge-steward CAP-5)
+## Epic 127: The corridor's records live in the platform's database (spec-pyforge-steward CAP-139, CAP-141, CAP-143)
 
-Minted 2026-11-21 from the station Dream's entry of the same date on the operator ruling of 2026-11-21: "first Write it up as a Dream entry and a Story, so it's planned but not built yet. then Do steps 1, 2 and 4 now. Settle on one Playwright driver across the estate, add macOS and Windows downloads and checksums to the browser recipes, build them locally, and wire the packages into the environments behind a local channel. All of that lands in a PR; only step 3, publishing to a channel, waits for you. use SelfExplainML to publish". The browser-driving environments fetch Chromium with `playwright install` at run time; the repo's six browser recipes are linux-64 only and pin a driver the estate no longer runs everywhere.
+Minted 2026-11-21 from the station Dream's entry of the same date on the operator ruling of 2026-11-21 on `DW-steward-126-3-1`: "Platform host". Steward's corridor duties had no configured Django project; the platform host becomes their home, so the corridor's tables migrate into the platform's PostgreSQL 17.
 **HARD boundaries:**
+- `src/platform/` imports no `pyforge.*`; it reads a portal package's declared apps by name.
+- No PostgreSQL or driver pin moves (the estate holds PostgreSQL 17).
+- The SQLite setup stays documented as a laptop fallback; nothing that runs today stops running.
+
+### Story 127.1: The platform host installs steward's corridor app
+
+As the operator who loads a vendor's extract,
+I want the `django-steward` portal package declares the station apps the host installs, and the platform's settings add every portal's declared apps by name,
+So that the corridor's records land in the platform's database, where the Dream says they live.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-139, CAP-141 and CAP-143 (realized, no text change); no FR (the PRD absorbed CAP-141..145 with no requirement of its own); no AD moves
+**Flag:** `flag-exempt: detector-or-gate` (tests, a gate's own module and the scripts a gate runs; a gated gate is a silent green (roster list))
+**Surface:** `src/shared/packages/django-steward/**`, `src/platform/config/settings/base.py`, `src/platform/db/**`, `src/platform/tests/**`
+**Spec:** `planning-artifacts/specs/spec-127-1-the-platform-host-installs-steward-s-corridor-app.md`
+**Given** no Django project installs `pyforge.steward.dashboard`, so the corridor's tables exist in no shared database; `src/platform/config/settings/base.py` installs `django_steward_portal`, not the app that owns the corridor models
+**When** the `django-steward` portal package declares the station apps the host installs, and the platform's settings add every portal's declared apps by name
+**Then** `pyforge.steward.dashboard` is in the platform's `INSTALLED_APPS` and its eight migrations are in the platform's migration plan; `src/platform/` still imports no `pyforge.*`; a portal that declares nothing changes nothing
+**And** the platform's own suite and steward's suite pass
+**Status:** done
+
+### Story 127.2: The corridor duties run against the platform's database
+
+As the operator who loads a vendor's extract,
+I want the duties are run with the platform's settings in `-e platform-dev` against a PostgreSQL 17 database the platform's migrations built,
+So that the corridor's records land in the platform's database, where the Dream says they live.
+
+**Type:** feature • **Effort:** S • **Deps:** S-127.1 • **FR/AD:** spec-pyforge-steward CAP-139, CAP-141 and CAP-143 (realized, no text change); no FR (the PRD absorbed CAP-141..145 with no requirement of its own); no AD moves
+**Flag:** `flag-exempt: detector-or-gate` (tests, a gate's own module and the scripts a gate runs; a gated gate is a silent green (roster list))
+**Surface:** `docs/how-to/move-vendor-extracts-through-the-corridor.md`, `docs/tutorials/local-platform-development.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`, `src/shared/packages/pyforge-steward/**`
+**Spec:** `planning-artifacts/specs/spec-127-2-the-corridor-duties-run-against-the-platform-s-database.md`
+**Given** the corridor how-to tells the operator to write a settings module of their own and reaches a SQLite file only
+**When** the duties are run with the platform's settings in `-e platform-dev` against a PostgreSQL 17 database the platform's migrations built
+**Then** `load inbound`, `passport mint`, `quarantine shelf` and `glass` run there, the how-to gives that setup and keeps the SQLite one as a laptop fallback, and the how-to's `sources:` and `verified:` are current
+**And** `DW-steward-126-3-1` reads resolved in its ledger with the commit that closed it
+**Status:** done
+
+## Epic 128: The platform suite runs on a macOS laptop (spec-pyforge-steward CAP-175, CAP-5)
+
+Minted 2026-11-21 from the station Dream's entry of the same date on the operator, 2026-11-21: "why - The platform suite and its mypy step, which can't run on this Mac, cant we fix this".
+**HARD boundaries:**
+- No pin of another environment moves; the lock change is additions only, and `git` stays at the version every other environment locks.
+- The station CLI never inherits a caller's `PATH`.
+- No assertion that holds on Linux is weakened.
+
+### Story 128.1: The platform suite and its checks run on a macOS laptop
+
+As the operator who develops on a macOS laptop,
+I want the environment also solves for macOS, carries the `host-tools` git, the station CLI's tracked-recipe lookup finds the host environment's git first, and the promotion tests read the scanned environment's Python version,
+So that a change under `src/platform/` is checked on the laptop before it reaches CI.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-175 and CAP-5 (realized, no text change); FR-49 ← CAP-175; no AD moves
+**Flag:** `flag-exempt: detector-or-gate` (tests, a gate's own module and the scripts a gate runs; a gated gate is a silent green (roster list))
+**Surface:** `pixi.toml`, `pixi.lock`, `environment.yaml`, `docs/reference/environments.md`, `src/shared/packages/django-pyforge/**`, `src/platform/tests/**`, `src/shared/packages/pyforge-steward/tests/**`
+**Spec:** `planning-artifacts/specs/spec-128-1-the-platform-suite-and-its-checks-run-on-a-macos-laptop.md`
+**Given** the `platform-ci-test` environment solves for linux-64 only, so a macOS laptop cannot run the platform suite, its mypy step or the rest of Platform CI's `checks` job before a push
+**When** the environment also solves for macOS, carries the `host-tools` git, the station CLI's tracked-recipe lookup finds the host environment's git first, and the promotion tests read the scanned environment's Python version
+**Then** Platform CI's `checks` job (system checks, ruff, ruff format, mypy, the policy suite, the sqlmigrate extraction) and its suite run green on macOS from `-e platform-ci-test`, apart from the herald browser check where no Playwright Chromium is installed; no other environment's pins move
+**And** Linux CI stays green
+**Status:** done
+
+## Epic 129: A killed test run leaves no stand-in server behind (spec-pyforge-steward CAP-175)
+
+Minted 2026-11-21 from the station Dream's entry of the same date on the operator, 2026-11-21: "Yes, fix it here".
+**HARD boundaries:**
+- No test signals a process it did not start; another session's stand-ins are never swept.
+- `scripts/platform-ci-local.sh` and the real services it starts do not change.
+
+### Story 129.1: A killed test run leaves no stand-in server behind
+
+As the operator who stops a preflight midway on a laptop,
+I want each stand-in sleeps a bounded lifetime (`PLATFORM_CI_STUB_LIFETIME_S`, 600 s by default) instead,
+So that the next preflight never waits on a server an interrupted run left behind.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-175 (realized, no text change); FR-49 ← CAP-175; no AD moves
+**Flag:** `flag-exempt: detector-or-gate` (tests, a gate's own module and the scripts a gate runs; a gated gate is a silent green (roster list))
+**Surface:** `src/shared/packages/pyforge-steward/tests/**`
+**Spec:** `planning-artifacts/specs/spec-129-1-a-killed-test-run-leaves-no-stand-in-server-behind.md`
+**Given** the platform-ci-local tests' stand-in `postgres` and `redis-server` exec `sleep 999999` in a session of their own, so a test process killed before its teardown leaves them alive for about 11.5 days, and a later preflight's steward lane waited over an hour on them
+**When** each stand-in sleeps a bounded lifetime (`PLATFORM_CI_STUB_LIFETIME_S`, 600 s by default) instead
+**Then** a stand-in nobody stops exits by itself after its lifetime, a test proves it for both stand-ins, and every existing start/stop and no-survivor test still passes
+**And** steward's live-tree half passes
+**Status:** done
+## Epic 130: Playwright's browsers come from pixi (spec-pyforge-steward CAP-5)
+Minted 2026-11-21 from the station Dream's entry of the same date on the operator ruling of 2026-11-21: "first Write it up as a Dream entry and a Story, so it's planned but not built yet. then Do steps 1, 2 and 4 now. Settle on one Playwright driver across the estate, add macOS and Windows downloads and checksums to the browser recipes, build them locally, and wire the packages into the environments behind a local channel. All of that lands in a PR; only step 3, publishing to a channel, waits for you. use SelfExplainML to publish". The browser-driving environments fetch Chromium with `playwright install` at run time; the repo's six browser recipes are linux-64 only and pin a driver the estate no longer runs everywhere.
 - One driver version across every environment; a browser package's `run_constraints` admit only that driver line.
 - Publishing to `SelfExplainML` is the operator's act; no agent uploads, and no lock names a package that is not published.
 - No recipe here is submitted to conda-forge (Google Chrome for Testing terms).
-
 ### Story 130.1: Playwright's browsers install from pixi on linux-64, osx-arm64 and win-64
-
 As the operator who develops on a macOS laptop and runs the browser checks there and in CI,
 I want one Playwright driver across the estate, the six browser recipes building for linux-64, osx-arm64 and win-64, and the browser-driving environments taking them from a channel,
 So that no environment downloads a browser at run time and the browser a test drives is the one the lock names.
-
 **Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-5 (realized, no text change); no AD moves
-**Flag:** `flag-exempt: detector-or-gate` (tests, a gate's own module and the scripts a gate runs; a gated gate is a silent green (roster list))
 **Surface:** `recipes/playwright-*/**`, `pixi.toml`, `pixi.lock`, `environment.yaml`, `.claude/skills/conda-forge-expert/**`
 **Spec:** `planning-artifacts/specs/spec-130-1-playwright-s-browsers-install-from-pixi-on-linux-64-osx-arm64-and-win-64.md`
 **Given** pixi resolves the `playwright` driver to 1.63 in some environments and 1.64 in others, and the six browser recipes build for linux-64 only, at the 1.63 driver's revisions

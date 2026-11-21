@@ -1007,6 +1007,23 @@ verify_commands = [
   "src/shared/packages/pyforge-testing-kit/README.md",
   "src/shared/packages/pyforge-testing-kit/tests/**",
 ]
+"119" = [  # a challenge run past its ceiling is checked without a race (spec-pyforge-marshal:CAP-298), added 2026-11-21.
+  "_bmad-output/projects/pyforge-*/planning-artifacts/specs/spec-pyforge-*/.memlog.md",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/test-architecture.md",
+  "docs/dreams/pyforge-marshal.md",
+  "scripts/.spec-surface-baseline.json",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_factory_challenge.py",
+]
+"120" = [  # the dispatch-verification fakes match a command by its words (spec-pyforge-marshal:CAP-170), added 2026-11-21.
+  "_bmad-output/projects/pyforge-*/planning-artifacts/specs/spec-pyforge-*/.memlog.md",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/test-architecture.md",
+  "docs/dreams/pyforge-marshal.md",
+  "scripts/.spec-surface-baseline.json",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_environment_yaml.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification_live_tree.py",
+]
 
 [[landing_rules]]
 name = "maintenance-label"

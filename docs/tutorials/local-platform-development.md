@@ -3,6 +3,8 @@ sources:
   - src/platform/README.md
   - src/platform/manage.py
   - src/platform/config/settings/base.py
+  - src/platform/db/sqlmigrate-map.yaml
+  - src/shared/packages/django-steward/src/django_steward_portal/station_apps.py
   - src/platform/config/urls.py
   - src/platform/config/local_dev/mint.py
   - src/platform/config/flag-overlays.json
@@ -37,7 +39,7 @@ pixi run -e platform-dev python manage.py migrate
 ```
 
 :::note
-Production DDL is owned by Liquibase (`src/platform/db/changelog/`), not by `migrate`. If you add first-party models, generate the Django migration with `makemigrations`, keep `makemigrations --check` green, and add the matching Liquibase changeset — the CI step `python -m db.sqlmigrate_extraction` fails on a production migration with no changeset. Station dashboards live in `src/shared/packages/pyforge-<station>/src/pyforge/<station>/dashboard/`, behind each package's `[dashboard]` extra.
+Production DDL is owned by Liquibase (`src/platform/db/changelog/`), not by `migrate`. If you add first-party models, generate the Django migration with `makemigrations`, keep `makemigrations --check` green, and add the matching Liquibase changeset — the CI step `python -m db.sqlmigrate_extraction` fails on a production migration with no changeset. Station dashboards live in `src/shared/packages/pyforge-<station>/src/pyforge/<station>/dashboard/`, behind each package's `[dashboard]` extra. A portal package can declare its station's app for the host in a `station_apps` module; steward's portal declares `pyforge.steward.dashboard`, so `migrate` also creates the corridor's tables, and their changesets are `pyforge-steward:1` to `:7`.
 :::
 
 ## Step 3: Mint a Local Identity
