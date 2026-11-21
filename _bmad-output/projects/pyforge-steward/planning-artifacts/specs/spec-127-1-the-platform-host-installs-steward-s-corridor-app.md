@@ -2,7 +2,7 @@
 title: '127.1: The platform host installs steward''s corridor app'
 type: 'feature'
 created: '2026-11-21'
-status: 'ready-for-dev'
+status: 'done'
 story: 127-1-the-platform-host-installs-steward-s-corridor-app
 spec: spec-pyforge-steward
 difficulty: 'easy'
@@ -76,3 +76,4 @@ Ledger key: `127-1-the-platform-host-installs-steward-s-corridor-app`.
 ## Spec Change Log
 
 - 2026-11-21: minted from the station Dream's 2026-11-21 entry and the operator ruling of 2026-11-21 on `DW-steward-126-3-1`: "Platform host".
+- 2026-11-21 (later): done on branch `corridor-platform-host-2026-11-21`; checked against PostgreSQL 17.11 on macOS (migrate, a real Liquibase update, every corridor duty in `-e platform-dev`).

@@ -8974,7 +8974,7 @@ So that the corridor's records land in the platform's database, where the Dream 
 **When** the `django-steward` portal package declares the station apps the host installs, and the platform's settings add every portal's declared apps by name
 **Then** `pyforge.steward.dashboard` is in the platform's `INSTALLED_APPS` and its eight migrations are in the platform's migration plan; `src/platform/` still imports no `pyforge.*`; a portal that declares nothing changes nothing
 **And** the platform's own suite and steward's suite pass
-**Status:** backlog
+**Status:** done
 
 ### Story 127.2: The corridor duties run against the platform's database
 
@@ -8990,4 +8990,4 @@ So that the corridor's records land in the platform's database, where the Dream 
 **When** the duties are run with the platform's settings in `-e platform-dev` against a PostgreSQL 17 database the platform's migrations built
 **Then** `load inbound`, `passport mint`, `quarantine shelf` and `glass` run there, the how-to gives that setup and keeps the SQLite one as a laptop fallback, and the how-to's `sources:` and `verified:` are current
 **And** `DW-steward-126-3-1` reads resolved in its ledger with the commit that closed it
-**Status:** backlog
+**Status:** done
