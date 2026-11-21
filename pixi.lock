@@ -9217,7 +9217,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pexpect-4.9.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.14.8-pyh5ded981_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/playwright-python-1.65.2-pyh5ded981_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/playwright-python-1.62.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.7.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pre-commit-4.7.0-pyha770c72_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/prometheus_client-0.26.0-pyhd8ed1ab_0.conda
@@ -9398,7 +9398,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pcre2-10.47-he63d830_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/perl-5.44.0-1_hb001647_perl5.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pillow-13.0.0-py314h4efa0c3_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/playwright-1.65.1-h94f5d84_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/playwright-1.64.1-hd1b9f45_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/protobuf-7.35.1-py314hba6b116_6.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/psutil-7.2.2-py314hef190fd_4.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/psycopg-c-3.2.10-py314h6d48133_0.conda
@@ -49322,20 +49322,6 @@ packages:
   run_exports: {}
   size: 183086
   timestamp: 1785560624794
-- conda: https://conda.anaconda.org/conda-forge/noarch/playwright-python-1.65.2-pyh5ded981_0.conda
-  sha256: 89b9e82066ec5f89c32ae842a68f1c07a25ff44850b22dea6a1b542668585906
-  md5: 8f94e667b0abe81e438dd9a49f0c5e61
-  depends:
-  - greenlet >=3.1.1,<4
-  - playwright
-  - pyee >=13,<14
-  - python >=3.11
-  - python
-  license: Apache-2.0
-  license_family: APACHE
-  run_exports: {}
-  size: 280078
-  timestamp: 1794637380918
 - conda: https://conda.anaconda.org/conda-forge/noarch/plotly-7.1.0-pyhd8ed1ab_0.conda
   sha256: 156c3109d9fbe41b61b1b4001d59ebedbec17c803ee1dab878444bce0516bd44
   md5: 7842399da4895e5c5174cf6b44ef1c36
@@ -60651,17 +60637,17 @@ packages:
   run_exports: {}
   size: 2902565
   timestamp: 1791430608114
-- conda: https://conda.anaconda.org/conda-forge/osx-arm64/playwright-1.65.1-h94f5d84_0.conda
-  sha256: e667bab209b59a20d9f507abbd8b0c78ccbf831fb6d08ad51abc09c23aa5658d
-  md5: 2d1b6f9f89abad5845d7c4d7c7aea3bc
+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/playwright-1.64.1-hd1b9f45_0.conda
+  sha256: ef243ded7269f1eab7d10f24ef62530c423b87e854e170e3d02cf93a1f016376
+  md5: 93d32c7d9abbef160f91a2f233d43028
   depends:
   - nodejs
-  - nodejs >=26.13.1,<27.0a0
+  - nodejs >=26.10.0,<27.0a0
   license: Apache-2.0
   license_family: APACHE
   run_exports: {}
-  size: 2962611
-  timestamp: 1794636974266
+  size: 2902400
+  timestamp: 1792009338453
 - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pnpm-12.4.1-h465deab_0.conda
   sha256: 66654ce2c52e362b4f53f9c8e813aa5904ff33f64f60d164554c45f69eda7266
   md5: ca954890a1bed5841841927412eda634
