@@ -2,7 +2,7 @@
 
 ## TL;DR — what's new in the latest release
 
-**v8.106.0** (Nov 21, 2026, current) — **steward Story 129.1 retro: Playwright's browsers as packages on three platforms; G131 (MINOR).**
+**v8.106.0** (Nov 21, 2026, current) — **steward Story 130.1 retro: Playwright's browsers as packages on three platforms; G131 (MINOR).**
 - **Recipes.** `playwright-chromium`, `playwright-chromium-headless-shell`, `playwright-firefox`, `playwright-webkit` and `playwright-ffmpeg` take one archive and sha256 per platform (linux-64, osx-arm64, win-64) at the revisions playwright 1.64.0 and 1.64.1 both pin (chromium r1248 / Chrome for Testing 156.0.8078.4, firefox r1555, webkit r2370, ffmpeg r1013), and constrain `playwright >=1.64,<1.65`. All fifteen built locally with rattler-build 0.76.1; the five osx-arm64 builds ran their tests and launch their binary; the linux-64 and win-64 builds were cross-built from macOS with `--test skip` and their file lists checked. `playwright-browsers-base` is unchanged and already on `SelfExplainML`.
 - **Measured, not copied.** Each linux floor is the highest `GLIBC_2.x` symbol its binaries reference (2.25, 2.25, 2.18, 2.35, none), where every recipe had declared 2.35. The osx-arm64 WebKit build is Playwright's `mac26` build and declares `__osx >=26`.
 - **New gotcha.** G131: pick the copy script by `build_platform`, not the target selector; measure the glibc floor; lock a not-yet-published private-channel package through a localhost mirror and `PIXI_HOME`, never by adding a channel.
