@@ -550,7 +550,7 @@
    "docs/how-to/recipe-testing-and-builds.md": "f706fb21490ba4d0ff019e8eae897e4d31b94840",
    "docs/how-to/reconcile-spec-surface.md": "d1b9d7ef67b3f52a8eecd2dc7345b1d054be27ae",
    "docs/how-to/record-progress-claims-and-notices-with-herald.md": "340c2bbf31a9b537a577e68b59efd2d48d3bbada",
-   "docs/how-to/refresh-the-estate.md": "1227ef60e31a65fc3f06a14ff270c7896e5cfe1d",
+   "docs/how-to/refresh-the-estate.md": "a4620ae35178fcb5e98e6d9afb1174ff7c0dd79a",
    "docs/how-to/restore-operations.md": "f315756947ad710e286b9511bb1e0e8a6f82a2b8",
    "docs/how-to/rotate-platform-secrets.md": "f5063bc1c6c3bc38413b56aced9e1df58e1544ce",
    "docs/how-to/run-and-read-pr-preflight.md": "27b8b80826c09d6978faa785312539d0889430e0",
@@ -821,7 +821,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "0b260fef7ff1fde8d2fe6066eca93314001d92bb"
+  "memlog": "39f32e63ebcf5b7ef7b428ed73eb3712a013a136"
  },
  "pyforge-herald/spec-pyforge-herald": {
   "files": {
