@@ -3994,7 +3994,7 @@
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/transcripts.py": "e2657b8ce1e89fd7bc6e8f6ae7fbb0cdea0969ac",
    "src/shared/packages/pyforge-scribe/tests/meta/data/spec_behind_memlog_known.json": "5f36b2ea290645ee34d943220a14b54ee5ea5be5",
    "src/shared/packages/pyforge-scribe/tests/meta/test_cutover_wording.py": "7286b1b03b6c549a5e067eccba2634fcd6d9c84b",
-   "src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py": "e1278404b440e777aed66478de986a74e6eabf2b",
+   "src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py": "ba97d97056581b68e40e21e7b512f8ec543d4755",
    "src/shared/packages/pyforge-scribe/tests/meta/test_guild_env_membership.py": "fca1e21af1032f7a7ef6123b7fefe88c14757921",
    "src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py": "12737bce8895b7362e9f4be4bad1a5b185b06e0b",
    "src/shared/packages/pyforge-scribe/tests/meta/test_live_tree_split.py": "5469d5ec32b514cac7db5c5d4883a7378b8aba50",
@@ -4025,7 +4025,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "03072965817a6797f40cf2240172d6efaba0f5a8"
+  "memlog": "94364b7de674cfd09e19f8e5ef33e655b1f0fb67"
  },
  "pyforge-steward/spec-foundry-capability-ledger": {
   "files": {},

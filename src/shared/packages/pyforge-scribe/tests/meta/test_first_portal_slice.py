@@ -358,5 +358,5 @@ def test_the_import_guard_reads_code_not_text() -> None:
         "import pyforge.steward",
         "from pyforge.core import ...",
     ]
-    text_only = ast.parse('SNIPPET = """\nfrom pyforge.warden.feeds import write_kev_cache\n"""\n')
+    text_only = ast.parse('SNIPPET = """\nfrom pyforge.example import a_name\n"""\n')
     assert _pyforge_package_imports(text_only) == []
