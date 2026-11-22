@@ -3496,6 +3496,30 @@ So that the boards read as part of the site and I can pick one on a phone.
 **And** atlas's package half passes, with tests that fail by name for each
 **Status:** done
 
+## Epic 50: A host that keeps failing costs a run a bounded time (spec-pyforge-atlas CAP-64, CAP-65; AD-13)
+
+Minted 2026-11-22 from the station Dream's Realization log entry of the same date on the operator, 2026-11-22: "Do this task here:
+Fix the stalled Vizro dashboard export job". **HARD boundaries:**
+- A refusal (a 404, a redirect refused) is the host's answer and never uses the budget.
+- A stopped run never overwrites a row it did not reach, and never clears a staleness marker.
+- No request, credential rule, endpoint or flag of Story 35.4 or 35.5 changes; the one catalog edit is the registries' 20 s request timeout (legacy Phase L's).
+
+### Story 50.1: A host that keeps failing costs a run a bounded time
+
+As the operator who reads the weekly public data build,
+I want a host that fails every request to cost the run minutes, with a line saying why,
+So that the build finishes, the boards publish, and the log names the cause.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-atlas CAP-64, CAP-65 (realized, no text change); FR-72 ← CAP-64; FR-73 ← CAP-65; AD-13 (no AD moves)
+**Flag:** none (`type: fix`, `spec-feature-flag-governance` Q1)
+**Surface:** `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/rate_limit.py`, `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vcs_sources.py`, `src/shared/packages/pyforge-atlas/conf/base/catalog.yml`, `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_failure_budget.py`
+**Spec:** `planning-artifacts/specs/spec-50-1-a-host-that-keeps-failing-costs-a-run-a-bounded-time.md`
+**Given** the public data build ran into its 240-minute limit on five runs, silent inside `vcs_gitlab_api_raw`'s refresh, because a host that fails every request for a transient cause costs two URLs times four attempts times up to 60 s a project with no limit and no line logged
+**When** a host or registry refresh spends 300 s on requests that failed after their retries, or five such requests fail in a row, or the run passes 1800 s
+**Then** the host is not asked again in that run; what the run got is persisted, the rows it never reached keep their last-good values, the store is marked stale with the reason, and the log names the host, how many were asked and why it stopped; a refusal uses none of the budget, a host that recovers is asked to the end, and each run starts with a fresh budget
+**And** atlas's package half passes, with a test that replays the stall (every request a 429 with `Retry-After: 60`, 300 projects) and fails when the run is not stopped inside the budget
+**Status:** done
+
 ## Validation note — 2026-08-26 (chain-currency sweep)
 
 Validated against the architecture spine as re-cut today (its `## Currency
@@ -3718,3 +3742,9 @@ re-scoped; Story statuses move only at the ledger close.
 *Chain-currency cascade (arch -> epics), CAP-63 amendment.* 2026-11-22: Epic 49 and Story 49.1 are minted under
 `spec-pyforge-atlas` CAP-63 (FR-71, amended in place); no other epic or story moves. **Content changed:** Epic 49, this
 section and `updated:`.
+
+## Currency reconciliation — 2026-11-22 (a host that keeps failing)
+
+*Chain-currency cascade (arch -> epics).* 2026-11-22: Epic 50 and Story 50.1 are minted under `spec-pyforge-atlas`
+CAP-64 and CAP-65 (FR-72, FR-73; realized, no text change; AD-13 stands); no other epic or story moves. **Content
+changed:** Epic 50 and this section.

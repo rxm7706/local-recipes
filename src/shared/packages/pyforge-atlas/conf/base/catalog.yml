@@ -707,6 +707,7 @@ vcs_registry_npm_raw:
   type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.NPM_BASE_URL}
   registry: npm
+  timeout_seconds: 20  # Story 50.1: legacy Phase L's per-request timeout (the default is 900 s)
   credentials: npm_token
   filepath: ${globals:paths.data_root}/raw/vcs_registry_npm_raw
   metadata:
@@ -716,6 +717,7 @@ vcs_registry_cran_raw:
   type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.CRAN_BASE_URL}
   registry: cran
+  timeout_seconds: 20  # Story 50.1: legacy Phase L's per-request timeout (the default is 900 s)
   filepath: ${globals:paths.data_root}/raw/vcs_registry_cran_raw
   metadata:
     layer: raw
@@ -724,6 +726,7 @@ vcs_registry_cpan_raw:
   type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.CPAN_BASE_URL}
   registry: cpan
+  timeout_seconds: 20  # Story 50.1: legacy Phase L's per-request timeout (the default is 900 s)
   filepath: ${globals:paths.data_root}/raw/vcs_registry_cpan_raw
   metadata:
     layer: raw
@@ -732,6 +735,7 @@ vcs_registry_luarocks_raw:
   type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.LUAROCKS_BASE_URL}
   registry: luarocks
+  timeout_seconds: 20  # Story 50.1: legacy Phase L's per-request timeout (the default is 900 s)
   filepath: ${globals:paths.data_root}/raw/vcs_registry_luarocks_raw
   metadata:
     layer: raw
@@ -740,6 +744,7 @@ vcs_registry_crates_raw:
   type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.CRATES_BASE_URL}
   registry: crates
+  timeout_seconds: 20  # Story 50.1: legacy Phase L's per-request timeout (the default is 900 s)
   rps: 1.0  # Story 35.4: legacy Phase L runs crates at concurrency 1 (about one request a second)
   credentials: crates_token
   filepath: ${globals:paths.data_root}/raw/vcs_registry_crates_raw
@@ -750,6 +755,7 @@ vcs_registry_rubygems_raw:
   type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.RUBYGEMS_BASE_URL}
   registry: rubygems
+  timeout_seconds: 20  # Story 50.1: legacy Phase L's per-request timeout (the default is 900 s)
   rps: 1.0  # Story 35.4: legacy Phase L runs rubygems at concurrency 1 (about one request a second)
   credentials: rubygems_token
   filepath: ${globals:paths.data_root}/raw/vcs_registry_rubygems_raw
@@ -760,6 +766,7 @@ vcs_registry_maven_raw:
   type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.MAVEN_BASE_URL}
   registry: maven
+  timeout_seconds: 20  # Story 50.1: legacy Phase L's per-request timeout (the default is 900 s)
   filepath: ${globals:paths.data_root}/raw/vcs_registry_maven_raw
   metadata:
     layer: raw
@@ -768,6 +775,7 @@ vcs_registry_nuget_raw:
   type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.NUGET_BASE_URL}
   registry: nuget
+  timeout_seconds: 20  # Story 50.1: legacy Phase L's per-request timeout (the default is 900 s)
   credentials: nuget_token
   filepath: ${globals:paths.data_root}/raw/vcs_registry_nuget_raw
   metadata:

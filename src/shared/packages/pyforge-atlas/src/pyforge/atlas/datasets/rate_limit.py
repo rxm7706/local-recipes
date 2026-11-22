@@ -203,6 +203,99 @@ class RateLimitedScheduler:
                 stalls = 0
 
 
+# A host that fails every request (throttling a shared runner address, or not reachable from
+# it) costs up to ``2 URLs x (max_retries + 1) x (timeout or Retry-After)`` per project: with the
+# live VCS universe that ran the public data build into its 240-minute limit on five weekly runs
+# (2026-11-02 to 2026-11-16) with no line logged. A refresh therefore carries a budget for
+# failure, per host and per run (atlas Story 50.1).
+DEFAULT_FAILURE_BUDGET_SECONDS = 300.0
+DEFAULT_MAX_CONSECUTIVE_FAILURES = 5
+# A host that answers, but slowly (a tarpit, 19 s an answer), fails nothing: the run's wall clock is its
+# only limit. Ten times the 2026-10-26 GitLab refresh (3 min 14 s).
+DEFAULT_RUN_DEADLINE_SECONDS = 1800.0
+
+
+class HostUnavailable(RuntimeError):
+    """A host used up its failure budget, or its run's deadline, this run: the refresh stops asking it."""
+
+    def __init__(self, reason: str) -> None:
+        super().__init__(reason)
+        self.reason = reason
+
+
+class FailureBudget:
+    """How much failure, and how much time, one host may cost one refresh run.
+
+    Three limits, each of which stops the run for that host by raising :class:`HostUnavailable`:
+
+    - ``seconds``: the time spent on requests that failed for a transient cause even after their
+      retries -- their attempts and the waits between them. A request that answers in the end
+      (a 429, a wait, then a 200) costs nothing: a host that recovers is asked to the end.
+    - ``max_consecutive``: the count of such requests in a row. A request that answers -- a 200,
+      or a refusal such as a 404 -- resets it.
+    - ``deadline_seconds``: the run's wall clock, checked between identifiers, for a host that
+      answers slowly and so fails nothing.
+
+    ``clock`` is injectable for tests.
+    """
+
+    def __init__(
+        self,
+        *,
+        seconds: float = DEFAULT_FAILURE_BUDGET_SECONDS,
+        max_consecutive: int = DEFAULT_MAX_CONSECUTIVE_FAILURES,
+        deadline_seconds: float = DEFAULT_RUN_DEADLINE_SECONDS,
+        clock: Callable[[], float] = time.monotonic,
+    ) -> None:
+        if seconds <= 0 or max_consecutive <= 0 or deadline_seconds <= 0:
+            raise ValueError(
+                "a failure budget's limits are positive: "
+                f"seconds={seconds!r}, max_consecutive={max_consecutive!r}, deadline_seconds={deadline_seconds!r}"
+            )
+        self.seconds = float(seconds)
+        self.max_consecutive = int(max_consecutive)
+        self.deadline_seconds = float(deadline_seconds)
+        self._clock = clock
+        self._began = clock()
+        self._pending = 0.0
+        self.spent = 0.0
+        self.consecutive = 0
+
+    def now(self) -> float:
+        return self._clock()
+
+    def elapsed(self) -> float:
+        return self._clock() - self._began
+
+    def check_deadline(self) -> None:
+        """Between identifiers: stop a run that has used its wall clock."""
+        if self.elapsed() >= self.deadline_seconds:
+            raise HostUnavailable(f"the run passed its {self.deadline_seconds:.0f} s deadline")
+
+    def answered(self) -> None:
+        """The request answered (a success, or a refusal that is the host's answer): what its
+        failed attempts cost is forgiven and the count starts again."""
+        self._pending = 0.0
+        self.consecutive = 0
+
+    def failed_attempt(self, started: float, *, wait: float = 0.0) -> None:
+        """One attempt begun at ``started`` failed for a transient cause; ``wait`` is what its retry
+        sleeps. Held against the request, charged only if the request fails in the end."""
+        self._pending += max(0.0, self._clock() - started) + max(0.0, wait)
+
+    def exhausted(self, reason: str) -> None:
+        """The request failed for a transient cause even after its retries: charge it."""
+        self.spent += self._pending
+        self._pending = 0.0
+        self.consecutive += 1
+        if self.spent >= self.seconds:
+            raise HostUnavailable(
+                f"{reason}; {self.spent:.0f} s spent on failed requests (budget {self.seconds:.0f} s)"
+            )
+        if self.consecutive >= self.max_consecutive:
+            raise HostUnavailable(f"{reason}; {self.consecutive} requests in a row failed after their retries")
+
+
 @runtime_checkable
 class FetcherClient(Protocol):
     """The injected fetcher-client contract (AD-2).

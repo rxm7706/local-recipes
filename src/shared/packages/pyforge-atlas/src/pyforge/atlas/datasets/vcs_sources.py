@@ -35,7 +35,7 @@ import re
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import quote
 
 import pandas as pd
@@ -44,7 +44,16 @@ from kedro_datasets.api import APIDataset
 
 from . import credentials as credential_switch
 from . import public_sources
-from .rate_limit import DEFAULT_RPS, FetchError, RateLimitedScheduler
+from .rate_limit import (
+    DEFAULT_FAILURE_BUDGET_SECONDS,
+    DEFAULT_MAX_CONSECUTIVE_FAILURES,
+    DEFAULT_RPS,
+    DEFAULT_RUN_DEADLINE_SECONDS,
+    FailureBudget,
+    FetchError,
+    HostUnavailable,
+    RateLimitedScheduler,
+)
 from .refresh import (
     DEFAULT_REFRESH_MAX_RETRIES,
     DEFAULT_REFRESH_TIMEOUT_SECONDS,
@@ -169,6 +178,37 @@ def _why(exc: BaseException) -> str:
     if status:
         return f"HTTP {status}"
     return type(_root_cause(exc)).__name__
+
+
+def _transient(exc: BaseException) -> bool:
+    """A failure the host may not repeat: a 429, a 5xx, or no status with the network underneath
+    (a dropped connection, a timeout: ``OSError``). A 404 is the host's answer, not a failure."""
+    status = _status_of(exc)
+    if status is None:
+        return isinstance(_root_cause(exc), OSError)
+    return status == 429 or status >= 500  # noqa: PLR2004
+
+
+def _fetch_outcome(fetch: Callable[[], Any], spec: _EndpointSpec, budget: FailureBudget) -> _Outcome:
+    """Story 50.1, the path that retries inside :func:`fetch_one_with_retry`: one identifier's
+    version, or its error as before the story (``str(exc)``), with its failure charged to the run's
+    budget when the cause is transient. A refusal resets the count; a stop passes through."""
+    started = budget.now()
+    try:
+        payload = fetch()
+    except Exception as exc:
+        if not _transient(exc):
+            budget.answered()
+            return None, str(exc), False
+        budget.failed_attempt(started)
+        budget.exhausted(_why(exc))
+        return None, str(exc), True
+    budget.answered()
+    try:
+        version = spec.extract(payload)
+    except Exception as exc:  # noqa: BLE001 -- a body the extractor cannot read is that row's error, as before
+        return None, str(exc), False
+    return version, None if version else "no version found in response", False
 
 
 def _root_cause(exc: BaseException) -> BaseException:
@@ -348,7 +388,87 @@ _REGISTRY_SPECS: dict[str, _EndpointSpec] = {
 }
 
 
-class VcsHostSeedDataset(_ParquetRefreshStore, AbstractDataset):
+#: A progress line at most this often, so a slow run says where it is (atlas Story 50.1).
+_PROGRESS_SECONDS = 60.0
+#: One identifier's outcome: its version, its error, and whether the error is a transient failure.
+_Outcome = tuple[str | None, str | None, bool]
+
+
+class _BudgetedRefresh:
+    """One run's failure budget for a host or registry store (atlas Story 50.1): a fresh
+    :class:`FailureBudget` per ``load_many``, the loop that stops when the host uses it up, and the
+    lines a reader of the run's log needs -- how many were asked, how far it is, and why it stopped."""
+
+    _failure_budget_seconds: float
+    _max_consecutive_failures: int
+    _run_deadline_seconds: float
+    _clock: Callable[[], float]
+    _COLUMNS: tuple[str, ...]
+
+    if TYPE_CHECKING:  # the store this mixes into (``_ParquetRefreshStore``)
+
+        def _persist(self, frame: pd.DataFrame) -> None: ...
+        def _mark_stale(self, reason: str, *, only_if_absent: bool = False) -> Any: ...
+
+    def _new_budget(self) -> FailureBudget:
+        return FailureBudget(
+            seconds=self._failure_budget_seconds,
+            max_consecutive=self._max_consecutive_failures,
+            deadline_seconds=self._run_deadline_seconds,
+            clock=self._clock,
+        )
+
+    def _run(
+        self,
+        name: str,
+        identifiers: Sequence[tuple[str, str]],
+        one: Callable[[str, FailureBudget], _Outcome],
+    ) -> pd.DataFrame:
+        """Ask ``one`` for every ``(conda_name, identifier)`` until the list ends or the host stops
+        the run, then persist and report. Returns the rows of the identifiers that finished."""
+        budget = self._new_budget()
+        total = len(identifiers)
+        finished: list[tuple[dict[str, Any], bool]] = []
+        stopped: HostUnavailable | None = None
+        logger.info("%s: asking for %d identifier(s)", name, total)
+        said = budget.now()
+        for conda_name, identifier in identifiers:
+            try:
+                budget.check_deadline()
+                version, error, transient = one(identifier, budget)
+            except HostUnavailable as exc:
+                stopped = exc
+                break
+            finished.append(({"conda_name": conda_name, "upstream_version": version, "last_error": error}, transient))
+            if budget.now() - said >= _PROGRESS_SECONDS:
+                said = budget.now()
+                logger.info("%s: %d of %d finished after %.0f s", name, len(finished), total, budget.elapsed())
+        columns = list(self._COLUMNS)
+        frame = pd.DataFrame([row for row, _ in finished], columns=columns)
+        # A stopped run costs no good data: a row that failed for the cause that stopped it is not
+        # written over its last-good value (the store merges by key), and neither is a row never reached.
+        kept = [row for row, transient in finished if not (stopped is not None and transient)]
+        to_store = pd.DataFrame(kept, columns=columns)
+        has_success = not to_store.empty and to_store["upstream_version"].notna().any()
+        self._persist(to_store if has_success else pd.DataFrame(columns=columns))
+        answered = int(frame["upstream_version"].notna().sum()) if not frame.empty else 0
+        if stopped is None:
+            logger.info(
+                "%s: finished %d in %.0f s, %d with a version, %d without",
+                name,
+                total,
+                budget.elapsed(),
+                answered,
+                len(frame) - answered,
+            )
+            return frame
+        reason = f"{name} unavailable this run: {stopped.reason}; finished {len(frame)} of {total}"
+        logger.warning("%s; the rest keep their last-good rows and are asked again next run", reason)
+        self._mark_stale(reason)
+        return frame
+
+
+class VcsHostSeedDataset(_BudgetedRefresh, _ParquetRefreshStore, AbstractDataset):
     """GitLab or Codeberg latest-tag source (``vcs_gitlab_api_raw`` / ``vcs_codeberg_api_raw``).
 
     ``load()`` is a read-only projection of the persisted store; the live fetch runs
@@ -372,6 +492,10 @@ class VcsHostSeedDataset(_ParquetRefreshStore, AbstractDataset):
         scheduler: RateLimitedScheduler | None = None,
         sleep: Callable[[float], None] = time.sleep,
         metadata: dict[str, Any] | None = None,
+        failure_budget_seconds: float = DEFAULT_FAILURE_BUDGET_SECONDS,
+        max_consecutive_failures: int = DEFAULT_MAX_CONSECUTIVE_FAILURES,
+        run_deadline_seconds: float = DEFAULT_RUN_DEADLINE_SECONDS,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         if host not in _HOST_SPECS:
             raise ValueError(f"unknown VCS host {host!r}; expected one of {sorted(_HOST_SPECS)}")
@@ -384,6 +508,11 @@ class VcsHostSeedDataset(_ParquetRefreshStore, AbstractDataset):
         self.scheduler = scheduler if scheduler is not None else RateLimitedScheduler(rps=rps)
         self._sleep = sleep
         self.metadata = metadata
+        self._failure_budget_seconds = float(failure_budget_seconds)
+        self._max_consecutive_failures = int(max_consecutive_failures)
+        self._run_deadline_seconds = float(run_deadline_seconds)
+        self._clock = clock
+        self._new_budget()  # a limit that is not positive is refused here, not at the first refresh
         # review fix #8: the single-source-of-truth store name this instance may
         # legitimately write — validated in save() against the incoming
         # RefreshRequest.store so a future positional drift between
@@ -411,12 +540,14 @@ class VcsHostSeedDataset(_ParquetRefreshStore, AbstractDataset):
             sleep=self._sleep,
         )
 
-    def _get(self, url: str, fetcher: Callable[[str], Any] | None) -> Any:
+    def _get(self, url: str, fetcher: Callable[[str], Any] | None, budget: FailureBudget | None = None) -> Any:
         """Story 35.4: one bounded GET with legacy's auth: GitLab's ``PRIVATE-TOKEN`` only under the
         switch, else nothing (a no-op auth keeps ``~/.netrc`` out). ``fetcher`` takes the URL. A 429, a
         5xx or a failure with no status (a dropped connection, a timeout) is retried, a ``Retry-After``
         waited, as legacy retries them (CFA:5009-5014); any other refusal (a 404 release) is not, so the
-        tags are asked at once, as legacy does."""
+        tags are asked at once, as legacy does. Story 50.1: every transient failure is held against
+        ``budget`` (the run's; a fresh one for a call outside a run) and charged if the request fails in
+        the end, which may stop the run with :class:`HostUnavailable`."""
 
         def _do_fetch() -> Any:
             if fetcher is not None:
@@ -433,39 +564,62 @@ class VcsHostSeedDataset(_ParquetRefreshStore, AbstractDataset):
                 raise FetchError(self._host, int(response.status_code))
             return _coerce_json(response)
 
+        budget = budget if budget is not None else self._new_budget()
         attempt = 0
         while True:
+            started = budget.now()
             self.scheduler.acquire()
             try:
-                return _do_fetch()
+                payload = _do_fetch()
             except Exception as exc:
                 attempt += 1
-                status = _status_of(exc)
                 # a failure with no status is retried only when the network caused it (a dropped
                 # connection, a timeout: OSError underneath); a programming error is not
-                transient = status is None and isinstance(_root_cause(exc), OSError)
-                if attempt > self._max_retries or not (transient or status == 429 or (status or 0) >= 500):
+                if not _transient(exc):
+                    budget.answered()  # a refusal (a 404 release) is the host's answer
                     raise
-                self._sleep(_retry_after(exc) or retry_backoff_seconds(attempt))
+                if attempt > self._max_retries:
+                    budget.failed_attempt(started)
+                    budget.exhausted(_why(exc))
+                    raise
+                wait = _retry_after(exc) or retry_backoff_seconds(attempt)
+                budget.failed_attempt(started, wait=wait)
+                self._sleep(wait)
+            else:
+                budget.answered()
+                return payload
 
     def _release_or_tag(
-        self, identifier: str, *, fetcher: Callable[[str], Any] | None
+        self, identifier: str, *, fetcher: Callable[[str], Any] | None, budget: FailureBudget | None = None
     ) -> tuple[str | None, str | None]:
         """Story 35.4: the latest release, else the first tag, normalized as legacy does
         (``_fetch_release_or_tag``, CFA:4990); ``(None, reason)`` when there is neither."""
+        version, error, _transient_failure = self._release_or_tag_outcome(identifier, fetcher, budget)
+        return version, error
+
+    def _release_or_tag_outcome(
+        self, identifier: str, fetcher: Callable[[str], Any] | None, budget: FailureBudget | None
+    ) -> _Outcome:
+        """:meth:`_release_or_tag`, and whether its error is a transient failure of the host (Story
+        50.1). A stop of the run (:class:`HostUnavailable`) passes through."""
+        budget = budget if budget is not None else self._new_budget()
         try:
             release_url, tags_url = _live_host_paths(self._host, self._base_url, identifier)
         except ValueError as exc:
-            return None, str(exc)
+            return None, str(exc), False
         try:
-            tag = _release_tag(self._get(release_url, fetcher))
+            tag = _release_tag(self._get(release_url, fetcher, budget))
+        except HostUnavailable:
+            raise
         except Exception:  # noqa: BLE001 -- no release (often a 404): legacy falls back to the tags
             tag = None
         if not tag:
             try:
-                tags = self._get(tags_url, fetcher)
+                tags = self._get(tags_url, fetcher, budget)
+            except HostUnavailable:
+                raise
             except Exception as exc:  # noqa: BLE001 -- one project's failure is its row's error (AD-13)
-                return None, _why(exc)
+                return None, _why(exc), _transient(exc)
             # legacy reads a tag's ``name``, else its ``tag_name``
             names = (
                 [t.get("name") or t.get("tag_name") for t in tags if isinstance(t, dict)]
@@ -474,7 +628,7 @@ class VcsHostSeedDataset(_ParquetRefreshStore, AbstractDataset):
             )
             tag = next((str(n) for n in names if n), None)
         version = normalize_release_tag(tag)
-        return version, None if version else "no tags"
+        return version, None if version else "no tags", False
 
     def load_many(
         self,
@@ -486,30 +640,16 @@ class VcsHostSeedDataset(_ParquetRefreshStore, AbstractDataset):
         skip-on-failure: a batch where every fetch failed / yielded no version is
         treated as EMPTY for persistence — never clobbers last-good with an all-null
         result)."""
-        rows: list[dict[str, Any]] = []
         live = credential_switch.live_vcs_universe()
-        for conda_name, identifier in identifiers:
+
+        def one(identifier: str, budget: FailureBudget) -> _Outcome:
             if live:
                 # Story 35.4: legacy's release-then-tag path (CFA:4990)
-                version, error = self._release_or_tag(identifier, fetcher=fetcher)
-                rows.append({"conda_name": conda_name, "upstream_version": version, "last_error": error})
-                continue
-            try:
-                payload = self.fetch_one(identifier, fetcher=fetcher)
-                version = _HOST_SPECS[self._host].extract(payload)
-                rows.append(
-                    {
-                        "conda_name": conda_name,
-                        "upstream_version": version,
-                        "last_error": None if version else "no version found in response",
-                    }
-                )
-            except Exception as exc:
-                rows.append({"conda_name": conda_name, "upstream_version": None, "last_error": str(exc)})
-        frame = pd.DataFrame(rows, columns=list(self._COLUMNS))
-        has_success = bool(rows) and frame["upstream_version"].notna().any()
-        self._persist(frame if has_success else pd.DataFrame(columns=list(self._COLUMNS)))
-        return frame
+                return self._release_or_tag_outcome(identifier, fetcher, budget)
+            return _fetch_outcome(lambda: self.fetch_one(identifier, fetcher=fetcher), _HOST_SPECS[self._host], budget)
+
+        # Story 50.1: one budget for failure per run; a host that uses it up is not asked again
+        return self._run(self._host, identifiers, one)
 
     def load(self) -> pd.DataFrame:
         return self._read_store(self._COLUMNS)
@@ -529,7 +669,9 @@ class VcsHostSeedDataset(_ParquetRefreshStore, AbstractDataset):
                 f"{self._expected_store!r} but received a RefreshRequest for "
                 f"{data.store!r} — pipeline wiring has drifted out of sync."
             )
-        if not data.force and not self._refresh_due(data.cadence_seconds):
+        # Story 50.1: a store a stopped run left stale is due, whatever its age, so the rows that run never
+        # reached are asked on the next run and its marker is not cleared unasked
+        if not data.force and not self.is_stale() and not self._refresh_due(data.cadence_seconds):
             self._clear_stale()
             return
         # Story 35.2: with the flag on, the universe's pairs, not the identity subset
@@ -543,10 +685,13 @@ class VcsHostSeedDataset(_ParquetRefreshStore, AbstractDataset):
             "rps": self.scheduler.rps,
             "timeout_seconds": self._timeout_seconds,
             "max_retries": self._max_retries,
+            "failure_budget_seconds": self._failure_budget_seconds,
+            "max_consecutive_failures": self._max_consecutive_failures,
+            "run_deadline_seconds": self._run_deadline_seconds,
         }
 
 
-class RegistryUpstreamDataset(_ParquetRefreshStore, AbstractDataset):
+class RegistryUpstreamDataset(_BudgetedRefresh, _ParquetRefreshStore, AbstractDataset):
     """Cross-ecosystem registry latest-version source (Phase L ``vcs_registry_*_raw``).
 
     Same shape as :class:`VcsHostSeedDataset` (see its docstring) — one
@@ -568,6 +713,10 @@ class RegistryUpstreamDataset(_ParquetRefreshStore, AbstractDataset):
         scheduler: RateLimitedScheduler | None = None,
         sleep: Callable[[float], None] = time.sleep,
         metadata: dict[str, Any] | None = None,
+        failure_budget_seconds: float = DEFAULT_FAILURE_BUDGET_SECONDS,
+        max_consecutive_failures: int = DEFAULT_MAX_CONSECUTIVE_FAILURES,
+        run_deadline_seconds: float = DEFAULT_RUN_DEADLINE_SECONDS,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         if registry not in _REGISTRY_SPECS:
             raise ValueError(f"unknown registry {registry!r}; expected one of {sorted(_REGISTRY_SPECS)}")
@@ -580,6 +729,11 @@ class RegistryUpstreamDataset(_ParquetRefreshStore, AbstractDataset):
         self.scheduler = scheduler if scheduler is not None else RateLimitedScheduler(rps=rps)
         self._sleep = sleep
         self.metadata = metadata
+        self._failure_budget_seconds = float(failure_budget_seconds)
+        self._max_consecutive_failures = int(max_consecutive_failures)
+        self._run_deadline_seconds = float(run_deadline_seconds)
+        self._clock = clock
+        self._new_budget()  # a limit that is not positive is refused here, not at the first refresh
         # review fix #8: see VcsHostSeedDataset.__init__ — validated in save().
         self._expected_store = f"vcs_registry_{registry}_raw"
 
@@ -609,24 +763,13 @@ class RegistryUpstreamDataset(_ParquetRefreshStore, AbstractDataset):
         *,
         fetcher: Callable[[str], Any] | None = None,
     ) -> pd.DataFrame:
-        rows: list[dict[str, Any]] = []
-        for conda_name, identifier in identifiers:
-            try:
-                payload = self.fetch_one(identifier, fetcher=fetcher)
-                version = _REGISTRY_SPECS[self._registry].extract(payload)
-                rows.append(
-                    {
-                        "conda_name": conda_name,
-                        "upstream_version": version,
-                        "last_error": None if version else "no version found in response",
-                    }
-                )
-            except Exception as exc:
-                rows.append({"conda_name": conda_name, "upstream_version": None, "last_error": str(exc)})
-        frame = pd.DataFrame(rows, columns=list(self._COLUMNS))
-        has_success = bool(rows) and frame["upstream_version"].notna().any()
-        self._persist(frame if has_success else pd.DataFrame(columns=list(self._COLUMNS)))
-        return frame
+        spec = _REGISTRY_SPECS[self._registry]
+
+        def one(identifier: str, budget: FailureBudget) -> _Outcome:
+            return _fetch_outcome(lambda: self.fetch_one(identifier, fetcher=fetcher), spec, budget)
+
+        # Story 50.1: one budget for failure per run, as VcsHostSeedDataset.load_many
+        return self._run(self._registry, identifiers, one)
 
     def load(self) -> pd.DataFrame:
         return self._read_store(self._COLUMNS)
@@ -644,7 +787,9 @@ class RegistryUpstreamDataset(_ParquetRefreshStore, AbstractDataset):
                 f"store {self._expected_store!r} but received a RefreshRequest for "
                 f"{data.store!r} — pipeline wiring has drifted out of sync."
             )
-        if not data.force and not self._refresh_due(data.cadence_seconds):
+        # Story 50.1: a store a stopped run left stale is due, whatever its age, so the rows that run never
+        # reached are asked on the next run and its marker is not cleared unasked
+        if not data.force and not self.is_stale() and not self._refresh_due(data.cadence_seconds):
             self._clear_stale()
             return
         # Story 35.2: with the flag on, the universe's pairs, not the identity subset
@@ -658,4 +803,7 @@ class RegistryUpstreamDataset(_ParquetRefreshStore, AbstractDataset):
             "rps": self.scheduler.rps,
             "timeout_seconds": self._timeout_seconds,
             "max_retries": self._max_retries,
+            "failure_budget_seconds": self._failure_budget_seconds,
+            "max_consecutive_failures": self._max_consecutive_failures,
+            "run_deadline_seconds": self._run_deadline_seconds,
         }

@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: aabe1e438d0a8b2f
-story_count: 169
-test_file_count: 187
+source_fingerprint: 2f4e12ee8099baa8
+story_count: 170
+test_file_count: 188
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 169
-- **Epics parsed:** 48
-- **Test files inventoried:** 187 under `src/shared/packages/pyforge-atlas/tests/`
+- **Stories parsed:** 170
+- **Epics parsed:** 49
+- **Test files inventoried:** 188 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `aabe1e438d0a8b2f`
+- **Source fingerprint:** `2f4e12ee8099baa8`
 
 ## Risk Assessment
 
@@ -80,6 +80,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 47: The atlas public contract is written and held to the code (spec-pyforge-atlas CAP-73, FR-78)
 - Epic 48: The atlas package and its suite stand apart from A's tree and from what the operator retired (relay of spec-pyforge-steward:CAP-175; spec-pyforge-atlas CAP-44..CAP-47 retired; fixes under CAP-48 and CAP-69)
 - Epic 49: The boards' static pages wear the site's theme (spec-pyforge-atlas CAP-63, FR-71)
+- Epic 50: A host that keeps failing costs a run a bounded time (spec-pyforge-atlas CAP-64, CAP-65; AD-13)
 
 ### Low-risk epics
 
@@ -134,6 +135,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_core_sources_last_good.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_credentialed_switch.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_dependency_history.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_failure_budget.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_github_versions_health.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_hosts_and_registries.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_identity_live_sources.py` | unit | none observed |
@@ -450,6 +452,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 48.3 | The retired views runtime leaves the package again | none observed |
 | 48.4 | One memlog event reconciles every atlas path this effort moved | none observed |
 | 49.1 | The boards' static pages wear the site's theme | none observed |
+| 50.1 | A host that keeps failing costs a run a bounded time | none observed |
 
 ## Quality Gates
 
