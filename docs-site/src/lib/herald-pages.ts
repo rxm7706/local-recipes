@@ -20,7 +20,7 @@ import path from 'node:path';
 
 import { builtFromHtml } from './built-from.ts';
 import { siteShell } from './flags.ts';
-import { holdsAFile } from './nav.ts';
+import { holdsAFile, KEDRO_VIZ_FRAME } from './nav.ts';
 import { MAIN_ID, SHELL_SCRIPT, themeScript } from './site-header.ts';
 
 /** Where each twin is served under the `/herald/` mount (`scripts/populate-public.mts`, Story 43.3). */
@@ -548,7 +548,9 @@ export function neighbours(site: SiteConfig, repoRoot: string): Array<Record<str
       continue;
     }
     if (present) {
-      shown.push({ ...entry, export: readKedroVizManifest(exportDir) });
+      // Story 53.3 (CAP-63): with the site shell, the tile opens the framed page under the site header.
+      const href = siteShell() ? KEDRO_VIZ_FRAME.replace(/^herald\//, '') : entry.href;
+      shown.push({ ...entry, href, export: readKedroVizManifest(exportDir) });
     }
   }
   return shown;
@@ -626,6 +628,19 @@ ${BACKBAR_STYLE}`;
 }
 
 /**
+ * The back-bar of a reader's page around a mounted app (Story 53.3: Kedro-Viz), links relative to
+ * `/herald/<page>/`: the overview, and the app by itself (`appHref`).
+ */
+export function frameBackbar(title: string, appHref: string): string {
+  return `<div class="ig-backbar">
+  <a href="../index.html">&larr; Overview</a>
+  <a href="${escapeAttr(appHref)}">Full page</a>
+  <span class="ig-title">${escapeText(title)}</span>
+</div>
+${BACKBAR_STYLE}`;
+}
+
+/**
  * A family view's back-bar, as the retired Jinja build's `FAMILY_VIEW_BACKBAR` (links relative to `/herald/decks/<slug>/`), plus a
  * link to the framed file itself (`twinHref`).
  */
@@ -642,24 +657,35 @@ ${BACKBAR_STYLE}`;
 
 /**
  * The reader's page under the one header (Story 53.1, CAP-63): the header, then a `<main>` holding the page's `h1`,
- * the back-bar as a row of its own (no longer fixed over the page) and the twin's frame filling what is left.
+ * the back-bar as a row of its own (no longer fixed over the page) and the twin's frame filling what is left. The
+ * back-bar's own style pads the body for its fixed form, later in the document and `!important`; the head rule here
+ * outranks it by specificity (the review of Story 53.3).
  */
-function shellTwinWrapperHtml(options: { title: string; backbar: string; rel: string; twin: string; header: string }): string {
+function shellTwinWrapperHtml(options: {
+  title: string;
+  backbar: string;
+  rel: string;
+  twin: string;
+  header: string;
+  description?: string;
+}): string {
   const { title, backbar, rel, twin, header } = options;
+  const description = options.description ?? `${title}, published as committed, framed under the PyForge site header.`;
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${escapeText(title)}</title>
-<meta name="description" content="${escapeAttr(`${title}, published as committed, framed under the PyForge site header.`)}">
+<meta name="description" content="${escapeAttr(description)}">
 <meta name="generator" content="Astro">
 <meta http-equiv="Content-Security-Policy" content="${HERALD_CSP}">
 <script>${THEME_SCRIPT}</script>
 <link rel="stylesheet" href="${escapeAttr(`${rel}${HERALD_THEME}`)}">
 <style>
 html,body{margin:0;height:100%;background:var(--sl-color-black)}
-body{box-sizing:border-box;display:flex;flex-direction:column;padding-top:0!important;font-family:var(--sl-font)}
+body{box-sizing:border-box;display:flex;flex-direction:column;font-family:var(--sl-font)}
+html body{padding-top:0!important}
 .ig-main{flex:1;min-height:0;display:flex;flex-direction:column}
 .ig-main .ig-backbar{position:static}
 .ig-twin{display:block;flex:1;min-height:0;width:100%;border:0;background:var(--sl-color-black)}
@@ -695,10 +721,12 @@ export function twinWrapperHtml(options: {
   twin: string;
   /** The site header (`siteHeaderHtml`), with `pyforge.herald.site_shell` on: the page then has it, a `<main>` and an `h1`. */
   header?: string;
+  /** The page's description under the shell; the default says a committed twin is framed. */
+  description?: string;
 }): string {
-  const { title, backbar, rel, twin, header } = options;
+  const { title, backbar, rel, twin, header, description } = options;
   if (header !== undefined) {
-    return shellTwinWrapperHtml({ title, backbar, rel, twin, header });
+    return shellTwinWrapperHtml({ title, backbar, rel, twin, header, description });
   }
   return `<!doctype html>
 <html lang="en">

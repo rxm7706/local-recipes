@@ -60,6 +60,8 @@ export interface HeaderOptions {
   toRoot: string;
   /** The page's own path, site-root relative (`'herald/decks/'`), for `aria-current`. */
   pagePath: string;
+  /** A page under no path of the menu (a board mounted beside the sections): no link is marked current. */
+  unlisted?: boolean;
   /** The docs shell: Starlight supplies the skip link, the `<header>` landmark and the phone menu. */
   docs?: boolean;
   /** The search control's HTML; the default is the header's own Pagefind dialog. */
@@ -75,12 +77,12 @@ const DEFAULT_SEARCH =
 
 /** The header, with its skip link ahead of it on every page but the docs (Starlight's own skip link is there). */
 export function siteHeaderHtml(sections: MapSection[], options: HeaderOptions): string {
-  const { toRoot, pagePath, docs = false, searchHtml } = options;
+  const { toRoot, pagePath, docs = false, searchHtml, unlisted = false } = options;
   const groups = headerGroups(sections);
   const current = currentMenuPath(groups, pagePath);
   // `page` on the link to this very page, `true` on the link to the section a deeper page sits under.
   const mark = (path: string): string =>
-    path !== current ? '' : path === pagePath ? ' aria-current="page"' : ' aria-current="true"';
+    unlisted || path !== current ? '' : path === pagePath ? ' aria-current="page"' : ' aria-current="true"';
   const link = (item: { label: string; path: string }): string =>
     `<a data-pf-menu-link href="${esc(`${toRoot}${item.path}`)}"${mark(item.path)}>${esc(item.label)}</a>`;
   const items = groups
@@ -88,7 +90,7 @@ export function siteHeaderHtml(sections: MapSection[], options: HeaderOptions): 
       if (!group.grouped) {
         return `<li>${link(group.links[0])}</li>`;
       }
-      const open = group.links.some((item) => item.path === current) ? ' data-pf-current' : '';
+      const open = !unlisted && group.links.some((item) => item.path === current) ? ' data-pf-current' : '';
       return (
         `<li class="pf-group"><details${open}><summary>${esc(group.label)}</summary>` +
         `<ul>${group.links.map((item) => `<li>${link(item)}</li>`).join('')}</ul></details></li>`

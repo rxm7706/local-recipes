@@ -2560,6 +2560,22 @@ So that nothing on the site needs a sideways scroll or a guess.
 **And** herald's live-tree half passes, with a test that fails by name for each
 **Status:** done
 
+### Story 53.3: Kedro-Viz opens under the site header, with a way back
+
+As a reader who opens Kedro-Viz from the site's menu,
+I want the pipeline graph under the same header as every other page,
+So that I can get back to the site without the browser's back button.
+
+**Type:** feature • **Effort:** S • **Deps:** S-53.1 • **FR/AD:** spec-pyforge-herald CAP-63 (amended 2026-11-22); FR-15.1 ← CAP-63; pyforge-herald:AD-23 (as amended 2026-11-22; AD-21 rule 5 holds: the export is mounted verbatim)
+**Flag:** `pyforge.herald.site_shell` (Story 53.1's flag; off, the menu links the app itself and no framed page is built)
+**Surface:** `docs-site/src/pages/herald/pipelines/**`, `docs-site/src/lib/**`, `docs-site/scripts/pages.mts`, `docs-site/README.md`, `src/shared/packages/pyforge-herald/tests/**`
+**Spec:** `planning-artifacts/specs/spec-53-3-kedro-viz-opens-under-the-site-header-with-a-way-back.md`
+**Given** the menu's Kedro-Viz link lands on upstream's app, which carries no header and no link back to the site (the gap Story 53.1's review recorded), and a board steward's `deploy static` mounts under `dashboard/` gets no header either
+**When** the flag is on and the site is built with a Kedro-Viz export in the build input
+**Then** `herald/pipelines/index.html` carries the one header, a `<main>`, an `h1` and a skip link, frames `dashboard/kedro-viz/` and links the app by itself; the menu, the home's door, the sidebar and the overview's tile open that page; the export's own files are byte for byte what was mounted; every other page mounted under `dashboard/` carries the header; and `pages-check` names an export mounted with no framed page
+**And** with the flag off, or with no export, no framed page is built and the menu is as before; herald's live-tree half passes
+**Status:** done
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
@@ -2820,5 +2836,6 @@ headings still map to 160 ledger keys. **Content changed:** this section and `up
 ## Currency reconciliation — 2026-11-22 (the Pages site reads as one product)
 
 *Chain-currency cascade (arch -> epics), CAP-63 mint.* 2026-11-22: Epic 53 and Stories 53.1 and 53.2 are minted under
-`spec-pyforge-herald` CAP-63 (FR-15.1, FR-15.2; pyforge-herald:AD-23 amended); 162 Story headings map to 162 ledger keys.
+`spec-pyforge-herald` CAP-63 (FR-15.1, FR-15.2; pyforge-herald:AD-23 amended); Story 53.3 (Kedro-Viz under the site
+header) joined the same day on the operator's ask; 163 Story headings map to 163 ledger keys.
 **Content changed:** Epic 53, this section and `updated:`.

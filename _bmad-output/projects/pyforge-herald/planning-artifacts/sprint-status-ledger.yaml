@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: herald
-# stories: 268
+# stories: 269
 development_status:
   1-1-package-scaffold-for-pyforge-herald: done
   1-2-transport-port-primary-mcp-client-adapter-the-transport-spike: done
@@ -160,6 +160,7 @@ development_status:
   52-2-herald-s-landing-record-names-this-checkout-s-forge-and-its-package-names-python-3-14: done
   53-1-every-page-carries-the-one-header-and-dark-is-the-default: done
   53-2-every-page-reads-at-phone-width-and-names-itself: done
+  53-3-kedro-viz-opens-under-the-site-header-with-a-way-back: done
   6-1-implement-herald-cli-dispatcher: done
   6-2-implement-shared-argument-conventions: done
   6-3-implement-cli-authentication-authorization: done

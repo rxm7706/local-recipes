@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: 533497c17a113347
-story_count: 162
-test_file_count: 101
+source_fingerprint: 7b040a76b344f2e3
+story_count: 163
+test_file_count: 102
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-herald`
-- **Stories parsed:** 162
+- **Stories parsed:** 163
 - **Epics parsed:** 53
-- **Test files inventoried:** 101 under `src/shared/packages/pyforge-herald/tests/`
+- **Test files inventoried:** 102 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `533497c17a113347`
+- **Source fingerprint:** `7b040a76b344f2e3`
 
 ## Risk Assessment
 
@@ -181,6 +181,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-herald/tests/unit/test_registry.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_reliability_epic11.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_scheduler.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_site_shell_flag_states.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_smoke.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_stamps.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_state.py` | unit | none observed |
@@ -362,6 +363,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 52.2 | Herald's landing record names this checkout's forge, and its package names Py... | none observed |
 | 53.1 | Every page carries the one header, and dark is the default | none observed |
 | 53.2 | Every page reads at phone width and names itself | none observed |
+| 53.3 | Kedro-Viz opens under the site header, with a way back | none observed |
 
 ## Quality Gates
 

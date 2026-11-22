@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 import yaml
-from pages_astro import DOCS_SITE, REPO_ROOT, astro_build, needs_astro, needs_node, pages_check, ts
+from pages_astro import DOCS_SITE, REPO_ROOT, astro_build, fixture_tree, needs_astro, needs_node, pages_check, ts
 
 # This module reads the live tree outside its package (docs-site/, docs/), so it runs in herald's live-tree half.
 pytestmark = pytest.mark.live_tree
@@ -353,3 +353,150 @@ def test_53_2_a_reader_page_has_its_h1_with_the_shell_off_too(tmp_path: Path) ->
         assert "data-pf-header" not in text, f"{page.name}: the header reached a build with the flag off"
         assert len(re.findall(r"<h1\b", text)) == 1, f"{page.name}: not exactly one h1"
     assert not (out / "pf-shell.js").exists()
+
+
+# ------------------------------------------------------------------ Story 53.3: Kedro-Viz under the site header
+
+KEDRO_FRAME = "herald/pipelines/index.html"
+NAV = DOCS_SITE / "src" / "lib" / "nav.ts"
+
+
+@pytest.fixture(scope="module")
+def shell_with_exports(tmp_path_factory: pytest.TempPathFactory) -> tuple[Path, Path]:
+    """A fixture tree holding a Kedro-Viz export, built with the site shell on; ``(artifact, tree)``."""
+    tmp = tmp_path_factory.mktemp("site-shell-exports")
+    root = fixture_tree(tmp / "tree", exports=True)
+    out = tmp / "site"
+    done = astro_build(out, root=root, extra_env={"PYFORGE_SITE_SHELL": "1"})
+    assert done.returncode == 0, done.stdout[-3000:] + done.stderr[-3000:]
+    return out, root
+
+
+@needs_astro
+def test_53_3_a_mounted_kedro_viz_is_framed_under_the_site_header(shell_with_exports: tuple[Path, Path]) -> None:
+    out, root = shell_with_exports
+    # the export is mounted verbatim: every file byte for byte what the build input holds
+    source = root / "docs" / "dashboard" / "kedro-viz"
+    mounted = out / "dashboard" / "kedro-viz"
+    files = sorted(p.relative_to(source) for p in source.rglob("*") if p.is_file())
+    assert files and files == sorted(p.relative_to(mounted) for p in mounted.rglob("*") if p.is_file())
+    assert all((mounted / rel).read_bytes() == (source / rel).read_bytes() for rel in files)
+    page = (out / KEDRO_FRAME).read_text(encoding="utf-8")
+    assert len(re.findall(r"\bdata-pf-header\b", page)) == 1 and len(re.findall(r"<main\b", page)) == 1
+    assert len(re.findall(r"<h1\b", page)) == 1 and re.search(r'<meta name="description" content="[^"]+', page)
+    assert re.search(r'<a\b[^>]*href="#pf-main"[^>]*>\s*Skip to content\s*</a>', page)
+    frames = re.findall(r"<iframe\b([^>]*)>", page)
+    assert (
+        len(frames) == 1 and 'src="../../dashboard/kedro-viz/"' in frames[0] and re.search(r'title="[^"]+"', frames[0])
+    )
+    assert '<a href="../../dashboard/kedro-viz/">Full page</a>' in page  # the app by itself stays one click away
+    assert 'href="../../herald/pipelines/" aria-current="page"' in page
+    assert "published as committed" not in page  # the export is a workflow artifact, never a committed twin
+    assert "html body{padding-top:0!important}" in page  # the back-bar's own body padding leaves no strip above
+
+
+@needs_astro
+def test_53_3_the_menu_the_door_the_sidebar_and_the_tile_open_the_framed_page(
+    shell_with_exports: tuple[Path, Path],
+) -> None:
+    out, root = shell_with_exports
+    home = (out / "index.html").read_text(encoding="utf-8")
+    menu = dict(re.findall(r'<a data-pf-menu-link href="([^"]+)"[^>]*>([^<]+)</a>', home[: home.index("pf-tools")]))
+    by_label = {label: href for href, label in menu.items()}
+    assert by_label["Kedro-Viz"].endswith("/herald/pipelines/"), by_label
+    assert re.search(r'data-pf-door="herald/pipelines/"', home), "the home's Kedro-Viz door opens the bare app"
+    sidebar = home[home.index('class="sidebar-content') :]
+    sidebar = sidebar[: sidebar.index("</nav>")]
+    assert "/herald/pipelines/" in sidebar and "/dashboard/kedro-viz/" not in sidebar
+    overview = (out / "herald" / "index.html").read_text(encoding="utf-8")
+    body = overview[overview.index("<main") :]
+    assert 'href="pipelines/"' in body and 'href="../dashboard/kedro-viz/"' not in body
+    # the legacy root redirect still lands on the app itself
+    assert "dashboard/kedro-viz/" in (out / "kedro-viz/index.html").read_text(encoding="utf-8")
+    # the fixture tree carries none of the tracked tree's legacy redirects; what this story adds is judged clean
+    findings = pages_check(out, env={"PYFORGE_SITE_SHELL": "1"}, repo_root=root)
+    ours = ("site headers", "<main>", "skip link", "herald/pipelines", "broken link")
+    assert not [line for line in findings if any(mark in line for mark in ours)], findings
+
+
+@needs_astro
+def test_53_3_pages_check_names_a_mounted_kedro_viz_with_no_framed_page(
+    shell_with_exports: tuple[Path, Path], tmp_path: Path
+) -> None:
+    out, root = shell_with_exports
+    broken = tmp_path / "site"
+    shutil.copytree(out, broken)
+    (broken / KEDRO_FRAME).unlink()
+    findings = pages_check(broken, env={"PYFORGE_SITE_SHELL": "1"}, repo_root=root)
+    assert any(line.startswith(f"missing {KEDRO_FRAME}") for line in findings), findings
+
+
+@needs_astro
+def test_53_3_no_framed_page_without_the_export_or_without_the_shell(shell: Path, tmp_path: Path) -> None:
+    assert not (shell / KEDRO_FRAME).exists(), "the tracked tree mounts no Kedro-Viz export"
+    root = fixture_tree(tmp_path / "tree", exports=True)
+    out = tmp_path / "site"
+    done = astro_build(out, root=root)
+    assert done.returncode == 0, done.stdout[-3000:] + done.stderr[-3000:]
+    assert not (out / KEDRO_FRAME).exists()
+    home = (out / "index.html").read_text(encoding="utf-8")
+    assert re.search(r'data-pf-menu-link[^>]*href="[^"]*dashboard/kedro-viz/"', home), (
+        "flag off: the menu links the app"
+    )
+    assert 'data-pf-door="dashboard/kedro-viz/"' in home and "herald/pipelines/" not in home
+    overview = (out / "herald" / "index.html").read_text(encoding="utf-8")
+    assert 'href="../dashboard/kedro-viz/"' in overview and "pipelines/" not in overview
+
+
+@needs_node
+def test_53_3_only_the_kedro_viz_section_is_reframed() -> None:
+    sections = [
+        {"key": "pipelines", "label": "Kedro-Viz", "href": "dashboard/kedro-viz/", "owner": "atlas", "order": 30},
+        {"key": "dashboards", "label": "Dashboards", "href": "dashboard/vizro/", "owner": "atlas", "order": 40},
+    ]
+    framed = ts(NAV, "return m.framedSections(inp.sections)", sections=sections)
+    assert [s["href"] for s in framed] == ["herald/pipelines/", "dashboard/vizro/"]
+
+
+@needs_node
+@pytest.mark.parametrize(
+    ("html", "expect"),
+    [
+        (
+            '<!doctype html><meta charset="utf-8"><title>T</title><p>x</p>',
+            {"head": ['<meta charset="utf-8">', "<title>T</title>"], "main": "<p>x</p>", "html": '<html lang="en">'},
+        ),
+        (
+            '<!doctype html><html lang="de"><title>T</title><p>x</p></html>',
+            {"head": ["<title>T</title>"], "main": "<p>x</p>", "html": '<html lang="de">'},
+        ),
+        ("<p>only content</p>", {"head": [], "main": "<p>only content</p>", "html": '<html lang="en">'}),
+    ],
+)
+def test_53_3_a_page_with_no_head_and_body_keeps_its_head_matter_in_the_head(html: str, expect: dict) -> None:
+    sections = json.dumps(_sections())
+    call = f"return m.withShell(inp.html, 'dashboard/board/index.html', 'dashboard/vizro/', {sections})"
+    out = ts(SHELL, call, html=html)
+    assert isinstance(out, str)
+    assert out.lower().count("<!doctype") == 1 and out.count("<html") == 1 and expect["html"] in out
+    head = out[out.index("<head>") : out.index("</head>")]
+    assert all(item in head for item in expect["head"]) and len(re.findall(r"<meta\s+charset", out)) == 1
+    main = re.search(r'<main id="pf-main" class="pf-mounted">(.*?)</main>', out, re.S)
+    assert main and main.group(1) == expect["main"], out[-200:]
+    assert "aria-current" not in out, "a board under no section of the menu marks a menu link"
+
+
+@needs_node
+@pytest.mark.parametrize(
+    "html",
+    [
+        "<!doctype html><html><head><title>T</title><p>no head close</p>",
+        "<!doctype html><body><p>body with no head</p></body>",
+        "<!-- a comment first --><!doctype html><title>T</title><p>x</p>",
+        '<?xml version="1.0"?><!doctype html><title>T</title><p>x</p>',
+    ],
+)
+def test_53_3_half_structured_html_is_left_as_it_is(html: str) -> None:
+    sections = json.dumps(_sections())
+    call = f"return m.withShell(inp.html, 'dashboard/board/index.html', 'dashboard/vizro/', {sections})"
+    assert ts(SHELL, call, html=html) is None

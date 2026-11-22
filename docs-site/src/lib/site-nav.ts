@@ -16,6 +16,7 @@ import { parse as parseYaml } from 'yaml';
 import { marketplacePages, siteShell, statusPages } from './flags.ts';
 import {
   doors,
+  framedSections,
   holdsAFile,
   type MapSection,
   type MenuItem,
@@ -61,13 +62,15 @@ export function siteNav(): SiteNav {
   // registry's section keys; the registry keeps its shape.
   const site = (parseYaml(fs.readFileSync(path.join(data, SITE_YML), 'utf8')) ?? {}) as { doors?: Record<string, string> };
   const about = site.doors ?? {};
-  const sections = siteSections(reg.sections, presence).map((section) =>
+  const published = siteSections(reg.sections, presence).map((section) =>
     typeof about[section.key] === 'string' ? { ...section, description: about[section.key] } : section,
   );
+  // Story 53.3 (CAP-63): with the shell, the Kedro-Viz section links its framed page under the site header.
+  const sections = siteShell() ? framedSections(published) : published;
   loaded = {
     sections,
     menu: topMenu(sections),
-    sidebar: sidebar(reg, path.join(repo, 'docs'), presence, siteShell()),
+    sidebar: sidebar(reg, path.join(repo, 'docs'), presence, siteShell(), siteShell()),
     doors: doors(sections, quadrantEntries(reg.pages)),
   };
   return loaded;

@@ -859,6 +859,14 @@ Herald rebases to one Dream, one Spec, one PRD, one spine, one epic chain. Folde
   as authored: a light poster opened from a dark gallery is not rewritten (the constraint of 2026-09-13 holds).
   Owner `spec-pyforge-herald`. The boards' and the marketplace's own pages are atlas's and steward's
   (`pyforge-atlas.md` and `pyforge-steward.md`, the entries of this date); the changes input is steward's.
+- **2026-11-22 (Kedro-Viz under the site header) — Ruled** (operator, 2026-11-22: "add a wrapper page for Kedro-Viz
+  with a back link"): the review of the entry above left one stated gap, that the menu's Kedro-Viz link lands on
+  upstream's app with no way back. The app is still never edited; it is framed. A reader's page, `herald/pipelines/`,
+  carries the one header and shows the app in a frame with a link to the app by itself, and with the shell on the menu,
+  the home's door, the sidebar and the overview's tile open that page. The same pass gives the header to every other
+  page mounted under `dashboard/`, since steward's `deploy static` boards had none. **For herald:** this entry amends
+  `spec-pyforge-herald` CAP-63 and decomposes as Story 53.3, behind Story 53.1's flag. Upstream's first-run popup still
+  shows inside the frame. Owner `spec-pyforge-herald`.
 
 ## 2026-10-26 — The deck family stays current — infographics re-derived from the ledgers, not remembered (folded from deck-family-currency)
 

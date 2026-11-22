@@ -27,6 +27,9 @@ const QUADRANT_LABELS: Record<string, string> = {
 };
 /** The dashboard exports in `docs/dashboard/<name>/`, each mounted at `/dashboard/<name>/` only when present. */
 export const DASHBOARD_EXPORTS = ['kedro-viz', 'vizro'];
+/** Where the Kedro-Viz export is mounted, and the reader's page that frames it under the site header (Story 53.3). */
+export const KEDRO_VIZ_MOUNT = 'dashboard/kedro-viz/';
+export const KEDRO_VIZ_FRAME = 'herald/pipelines/';
 /** The sections a flag owns, by key, and that flag's key (read through `src/lib/flags.ts`). */
 export const FLAG_SECTIONS: Record<string, string> = {
   status: 'pyforge.herald.status_pages',
@@ -117,6 +120,15 @@ export function siteSections(sections: MapSection[], presence: Presence): MapSec
       const flag = FLAG_SECTIONS[section.key];
       return (mount === null || presence.mounted(mount)) && (flag === undefined || presence.flag(flag));
     });
+}
+
+/**
+ * The sections as a reader of the site shell reaches them (Story 53.3, CAP-63): the Kedro-Viz section links the
+ * reader's page that frames the export under the site header, not the bare app, which has no way back. Applied after
+ * `siteSections`, so the section still shows only when the export is mounted.
+ */
+export function framedSections(sections: MapSection[]): MapSection[] {
+  return sections.map((section) => (section.href === KEDRO_VIZ_MOUNT ? { ...section, href: KEDRO_VIZ_FRAME } : section));
 }
 
 /** A section's links: its entries, or the section itself when it has none. */
@@ -245,12 +257,20 @@ export function sectionGroups(sections: MapSection[], collapsed = false): Sideba
 
 /**
  * The whole docs sidebar: the quadrants, then the sections; throws listing every defect. `collapsed` starts every group
- * closed (Story 53.1, CAP-63); Starlight opens the one holding the current page.
+ * closed (Story 53.1, CAP-63); Starlight opens the one holding the current page. `framed` links the Kedro-Viz section
+ * to its framed page (Story 53.3).
  */
-export function sidebar(reg: Registry, docsDir: string, presence: Presence, collapsed = false): SidebarGroup[] {
+export function sidebar(
+  reg: Registry,
+  docsDir: string,
+  presence: Presence,
+  collapsed = false,
+  framed = false,
+): SidebarGroup[] {
   const { groups, errors } = quadrantGroups(reg.pages, docsDir, collapsed);
   if (errors.length) {
     throw new Error(`docs/map.yaml and docs/ disagree:\n  ${errors.join('\n  ')}`);
   }
-  return [...groups, ...sectionGroups(siteSections(reg.sections, presence), collapsed)];
+  const sections = siteSections(reg.sections, presence);
+  return [...groups, ...sectionGroups(framed ? framedSections(sections) : sections, collapsed)];
 }

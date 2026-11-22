@@ -32,7 +32,7 @@ import { ARTIFACT_DOSSIER, NOT_PAGES } from '../src/lib/artifact.ts';
 import { BUILT_FROM_OPEN } from '../src/lib/built-from.ts';
 import { envFlagOn } from '../src/lib/flags.ts';
 import { marketplaceArtifactFindings, marketplaceManifestFindings } from '../src/lib/marketplace.ts';
-import { DASHBOARD_EXPORTS, holdsAFile } from '../src/lib/nav.ts';
+import { DASHBOARD_EXPORTS, holdsAFile, KEDRO_VIZ_FRAME } from '../src/lib/nav.ts';
 
 const DOCS_SITE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.dirname(DOCS_SITE);
@@ -536,6 +536,10 @@ export function check(root: string, options: CheckOptions = {}): string[] {
   // <main> and a skip link -- redirect stubs, the authored twins, the artifact build, the Pagefind bundle and the
   // Kedro-Viz mount (upstream's app, never written to) excepted.
   if (envFlagOn('PYFORGE_SITE_SHELL', env)) {
+    // Story 53.3: a mounted Kedro-Viz export is reached through its framed page under the site header.
+    if (has('dashboard/kedro-viz/index.html') && !has(KEDRO_VIZ_FRAME_PAGE)) {
+      out.push(`missing ${KEDRO_VIZ_FRAME_PAGE}: Kedro-Viz is mounted and no page frames it under the site header`);
+    }
     for (const rel of all.filter((r) => r.endsWith('.html') && !NO_SHELL.some((prefix) => r.startsWith(prefix)))) {
       const html = read(rel);
       if (isStub(html)) {
@@ -649,6 +653,9 @@ export function check(root: string, options: CheckOptions = {}): string[] {
   }
   return out;
 }
+
+/** The reader's page that frames the mounted Kedro-Viz export (Story 53.3; `src/lib/nav.ts` `KEDRO_VIZ_FRAME`). */
+const KEDRO_VIZ_FRAME_PAGE = `${KEDRO_VIZ_FRAME}index.html`;
 
 /** Output the one header is never asked of (Story 53.1): no page a reader navigates the site from. */
 const NO_SHELL = ['herald/twins/', 'herald/artifact/', 'dashboard/kedro-viz/', 'pagefind/'];
