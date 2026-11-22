@@ -526,6 +526,13 @@ harness_preference = ["cursor"]
   "scripts/.spec-surface-baseline.json",
   "_bmad-output/projects/pyforge-*/planning-artifacts/specs/spec-pyforge-*/.memlog.md",
 ]
+"51" = [  # a stopped refresh starts where the last one ended (spec-pyforge-atlas CAP-64, CAP-65; Story 51.1), added 2026-11-22.
+  "src/shared/packages/pyforge-atlas/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-*/planning-artifacts/specs/spec-pyforge-*/.memlog.md",
+]
 
 [dispatch]
 landing_reverify = "on-code-change"

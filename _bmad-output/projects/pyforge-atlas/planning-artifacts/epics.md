@@ -3520,6 +3520,31 @@ So that the build finishes, the boards publish, and the log names the cause.
 **And** atlas's package half passes, with a test that replays the stall (every request a 429 with `Retry-After: 60`, 300 projects) and fails when the run is not stopped inside the budget
 **Status:** done
 
+## Epic 51: A stopped refresh starts where the last one ended (spec-pyforge-atlas CAP-64, CAP-65; AD-13)
+
+Minted 2026-11-22 from the station Dream's Realization log entry of the same date on the operator, 2026-11-22: "Yes,
+start it" (the recommendation "ask the stalest identifiers first, and log GitLab's headers on a 429"). **HARD boundaries:**
+- The rows a reader loads keep their three columns; the asked time is a column of the store file only.
+- A mark that a row was asked never writes over a last-good value.
+- No request, pace, budget, credential rule, endpoint or flag of Story 35.4, 35.5 or 50.1 changes.
+- What a host says about its limit reaches the log as a fixed set of header names with values cut to plain characters, never the response as sent.
+
+### Story 51.1: A stopped refresh starts where the last one ended
+
+As the operator who reads the weekly public data build,
+I want a refresh that a host stops to start next time with the rows it did not reach, and the log to say what the host said about its limit,
+So that stopped runs cover every identifier between them and the cause of a 429 can be read.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-atlas CAP-64, CAP-65 (realized, no text change); FR-72 ← CAP-64; FR-73 ← CAP-65; AD-13 (no AD moves)
+**Flag:** none (`type: fix`, `spec-feature-flag-governance` Q1)
+**Surface:** `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/rate_limit.py`, `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vcs_sources.py`, `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_stalest_first.py`
+**Spec:** `planning-artifacts/specs/spec-51-1-a-stopped-refresh-starts-where-the-last-one-ended.md`
+**Given** run 45019765201 stopped GitLab's refresh at 105 of 406 on HTTP 429, every run asks the same list in the same order, and the log does not carry what the host said about its limit
+**When** a host or registry refresh runs
+**Then** it asks the identifiers never asked first, then the rest longest since asked first (asked in the same second: a row with a version before one without, then the order given); every identifier it asks is marked with the time, in a column `load` never returns, and a mark writes over no last-good value; a row it did not reach keeps its old time; and a 429's rate-limit headers are logged once a run and added to the reason of a stop that a 429 caused, which the staleness marker records
+**And** atlas's package half passes, with a test that stops a run part way twice and fails unless the second run asks the unreached identifiers before any the first run asked, and a test where three identifiers fail every time and the healthy ones are still reached
+**Status:** done
+
 ## Validation note — 2026-08-26 (chain-currency sweep)
 
 Validated against the architecture spine as re-cut today (its `## Currency
@@ -3748,3 +3773,9 @@ section and `updated:`.
 *Chain-currency cascade (arch -> epics).* 2026-11-22: Epic 50 and Story 50.1 are minted under `spec-pyforge-atlas`
 CAP-64 and CAP-65 (FR-72, FR-73; realized, no text change; AD-13 stands); no other epic or story moves. **Content
 changed:** Epic 50 and this section.
+
+## Currency reconciliation — 2026-11-22 (a stopped refresh starts where the last one ended)
+
+*Chain-currency cascade (arch -> epics).* 2026-11-22: Epic 51 and Story 51.1 are minted under `spec-pyforge-atlas`
+CAP-64 and CAP-65 (FR-72, FR-73; realized, no text change; AD-13 stands); no other epic or story moves. **Content
+changed:** Epic 51 and this section.
