@@ -629,7 +629,7 @@ def _install_targets(row: dict[str, Any]) -> tuple[str, ...]:
 
 def _verified_text(row: dict[str, Any]) -> str:
     value = row.get("verified_at")
-    return f"verified {value}" if isinstance(value, str) and value else "never verified"
+    return f"Verified {value}" if isinstance(value, str) and value else "Never verified"
 
 
 def _steps_text(row: dict[str, Any], steps_root: Path | None) -> str | None:
@@ -960,8 +960,104 @@ def render_markdown(
 # --------------------------------------------------------------------------------------------- pages
 
 
-def _page(title: str, body: str) -> str:
+#: The one block of a page's stylesheet that names a colour or a face (Story 130.2): each ``--pf-*`` property is a
+#: site theme variable (Starlight's ``--sl-*``, ``docs-site/src/styles/theme.css``) with that file's light value as
+#: its fallback, so a page under the site's header wears the theme the reader chose and a page opened alone from a
+#: file reads light. ``(property, site variable, light fallback, dark fallback)``; a face has no dark value.
+_THEME: tuple[tuple[str, str, str, str | None], ...] = (
+    ("--pf-bg", "--sl-color-black", "#f1f3ef", "#12161a"),
+    ("--pf-text", "--sl-color-white", "#1a2024", "#e7ebe6"),
+    ("--pf-muted", "--sl-color-gray-2", "#3a444a", "#b7c0ba"),
+    ("--pf-line", "--sl-color-gray-5", "#d3d8cf", "#2b3238"),
+    ("--pf-surface", "--sl-color-gray-6", "#e7eae4", "#191e22"),
+    ("--pf-link", "--sl-color-text-accent", "#7d4b0d", "#dd9a3f"),
+    ("--pf-font", "--sl-font", '"IBM Plex Sans",system-ui,-apple-system,sans-serif', None),
+    ("--pf-font-mono", "--sl-font-mono", '"IBM Plex Mono",ui-monospace,"SF Mono",Consolas,monospace', None),
+    ("--pf-font-heading", "--sl-font-heading", '"Big Shoulders Display","IBM Plex Sans",sans-serif', None),
+)
+
+
+def _theme_block() -> str:
+    """The fallback block: the light values under ``:root``, then the dark ones for a reader whose system is dark
+    and whose page has no site theme above it. No rule after this block names a colour or a face."""
+    light = ";".join(f"{name}:var({site},{light})" for name, site, light, _ in _THEME)
+    dark = ";".join(f"{name}:var({site},{dark})" for name, site, _, dark in _THEME if dark is not None)
+    return f":root{{{light}}}\n@media (prefers-color-scheme:dark){{:root{{{dark}}}}}\n"
+
+
+#: Every rule under the fallback block reads ``--pf-*`` only. The text column and its gutter sit on ``main``, so a
+#: header the site gives the page at assembly (herald Story 53.1) spans the body; long commands wrap or scroll, so
+#: a page fits a 375 px screen.
+_RULES = (
+    "body{margin:0;font-family:var(--pf-font);line-height:1.5;color:var(--pf-text);background:var(--pf-bg)}\n"
+    "main{box-sizing:border-box;max-width:46rem;margin:0 auto;padding:1.5rem 1rem 3rem;overflow-wrap:anywhere}\n"
+    "h1,h2,h3{font-family:var(--pf-font-heading);line-height:1.2}\n"
+    "a{color:var(--pf-link)}\n"
+    "code{font-family:var(--pf-font-mono);font-size:.92em}\n"
+    "pre{background:var(--pf-surface);border:1px solid var(--pf-line);padding:.75rem;overflow-x:auto}\n"
+    "pre code{overflow-wrap:normal}\n"
+    "article{border-top:1px solid var(--pf-line);padding-top:1rem;margin-top:1rem}\n"
+    ".meta{display:flex;flex-wrap:wrap;gap:.4rem;list-style:none;margin:.5rem 0;padding:0;"
+    "color:var(--pf-muted);font-size:.9rem}\n"
+    ".meta li{border:1px solid var(--pf-line);border-radius:1rem;padding:.05rem .6rem}\n"
+    ".note{color:var(--pf-muted);font-size:.95rem}\n"
+)
+
+#: The index page's description, in its ``<meta name="description">`` and its opening paragraph.
+INDEX_DESCRIPTION = (
+    "Skills, modules, and agents. Find, install, create, and publish. "
+    "Listings are generated from the index. Nothing here is a live install button."
+)
+
+#: What a reader sees for each machine value (Story 130.2); the value itself stays in the item's ``data-*``
+#: attribute and in ``listings.json``.
+_KIND_WORDS = {"skill": "Skill", "module": "Module", "agent": "Agent", "bundle": "Bundle"}
+_TRUST_WORDS = {
+    "unverified": "Not yet reviewed",
+    "community-reviewed": "Reviewed by the community",
+    "bmad-certified": "Certified by BMAD",
+}
+_TIER_WORDS = {
+    "community": "Community contribution",
+    "estate-reviewed": "Estate contribution",
+    "bmad-certified": "BMAD contribution",
+}
+_LANE_WORDS = {"instructions-only": "Instructions only", "code-backed": "Runs code"}
+
+
+def _meta_item(key: str, value: str, words: str) -> str:
+    """One labelled item of a listing's metadata: the words a reader follows, the machine value in ``data-<key>``."""
+    return f'<li data-{key}="{html.escape(value)}">{html.escape(words)}</li>'
+
+
+def _meta_list(items: list[str]) -> str:
+    return '<ul class="meta">' + "".join(items) + "</ul>"
+
+
+def _kind_item(row: dict[str, Any]) -> str:
+    kind = str(row["kind"])
+    return _meta_item("kind", kind, _KIND_WORDS.get(kind, kind))
+
+
+def _trust_item(row: dict[str, Any]) -> str:
+    trust = str(row["trust_tier"])
+    return _meta_item("trust", trust, _TRUST_WORDS.get(trust, trust))
+
+
+def _lane_item(lane: str) -> str:
+    return _meta_item("lane", lane, _LANE_WORDS.get(lane, lane))
+
+
+def _verified_item(row: dict[str, Any]) -> str:
+    value = row.get("verified_at")
+    return _meta_item("verified-at", value if isinstance(value, str) else "", _verified_text(row))
+
+
+def _page(title: str, body: str, *, description: str) -> str:
+    """One self-contained page. ``description`` is the page's ``<meta name="description">``: the listing's own
+    summary on a card, the marketplace's on the index; whitespace is folded so it stays one line."""
     safe_title = html.escape(title)
+    summary = html.escape(" ".join(description.split()) or title)
     return (
         "<!DOCTYPE html>\n"
         '<html lang="en">\n'
@@ -969,17 +1065,15 @@ def _page(title: str, body: str) -> str:
         '<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
         f"<title>{safe_title}</title>\n"
+        f'<meta name="description" content="{summary}">\n'
         "<style>\n"
-        "body{font-family:Georgia,serif;margin:2rem auto;max-width:46rem;line-height:1.45;"
-        "color:#1c1917;background:#fafaf9}\n"
-        "a{color:#1d4ed8} code{font-family:ui-monospace,monospace;font-size:.95em}\n"
-        "pre{background:#f5f5f4;border:1px solid #d6d3d1;padding:.75rem;overflow-x:auto}\n"
-        "article{border-top:1px solid #d6d3d1;padding-top:1rem;margin-top:1rem}\n"
-        ".meta{color:#44403c;font-size:.95rem}\n"
+        f"{_theme_block()}{_RULES}"
         "</style>\n"
         "</head>\n"
         "<body>\n"
+        "<main>\n"
         f"{body}\n"
+        "</main>\n"
         "</body>\n"
         "</html>\n"
     )
@@ -998,25 +1092,41 @@ def render_skill_card(row: dict[str, Any], *, steps_text: str | None = None) -> 
     validate_listing(row)
     title = str(row.get("title") or row.get("display_name") or row["name"])
     tier = row.get("tier")
-    trust = str(row["trust_tier"])
-    tier_bit = f"tier {html.escape(str(tier))} · " if tier else ""
     href = _card_href(row)
     up = "../" * href.count("/")
-    jobs = row.get("jobs") or []
-    jobs_bit = (" · jobs " + ", ".join(html.escape(str(job)) for job in jobs)) if jobs else ""
+    jobs = [str(job) for job in row.get("jobs") or []]
     lane = _listing_lane(row)
-    # the lane is listing metadata, so it sits in the header beside the kind (Story 109.8, DW-steward-109-3-4)
-    lane_bit = f" · lane {html.escape(lane)}" if lane else ""
+    version = row.get("version")
+    # Each value prints as words an outside reader follows, the machine value in the item's data-* attribute (Story
+    # 130.2); the lane is listing metadata, so it sits in the header beside the kind (Story 109.8, DW-steward-109-3-4)
+    first = [
+        _kind_item(row),
+        _meta_item("name", str(row["name"]), str(row["name"])),
+        _meta_item("version", str(version or ""), f"Version {version}" if version else "No version yet"),
+    ]
+    if lane:
+        first.append(_lane_item(lane))
+    second = []
+    if tier:
+        second.append(_meta_item("tier", str(tier), _TIER_WORDS.get(str(tier), str(tier))))
+    second += [
+        _trust_item(row),
+        _meta_item("source", str(row["source"]), f"Source: {row['source']}"),
+        _verified_item(row),
+    ]
+    if jobs:
+        second.append(_meta_item("jobs", " ".join(jobs), "Use it to: " + ", ".join(jobs)))
     bits = [
         f'<p><a href="{up}index.html">Marketplace</a></p>',
         f"<h1>{html.escape(title)}</h1>",
-        f'<p class="meta">{html.escape(str(row["kind"]))} · '
-        f"{html.escape(str(row['name']))} · version {html.escape(str(row.get('version') or 'unversioned'))}{lane_bit}</p>",
-        f'<p class="meta">{tier_bit}trust {html.escape(trust)} · source {html.escape(str(row["source"]))} · '
-        f"{html.escape(_verified_text(row))}{jobs_bit}</p>",
+        _meta_list(first),
+        _meta_list(second),
     ]
     if tier == "community":
-        bits.append('<p class="meta">No review record. community maps to unverified until a CODEOWNER promotes it.</p>')
+        bits.append(
+            '<p class="note">No one has reviewed this listing yet. A community contribution stays '
+            "&quot;Not yet reviewed&quot; until a repository code owner promotes it.</p>"
+        )
     description = str(row.get("description") or row.get("summary") or "")
     if description:
         bits.append(f"<p>{html.escape(description)}</p>")
@@ -1098,7 +1208,7 @@ def render_skill_card(row: dict[str, Any], *, steps_text: str | None = None) -> 
             "<h2>Contribute</h2><p>A pull request is the publish path; the lanes are defined in the marketplace "
             f'<a href="{REPOSITORY_BLOB_URL}/{MARKETPLACE_ROOT_RELATIVE}/README.md">README</a>.</p>'
         )
-    return _page(title, "\n".join(bits))
+    return _page(title, "\n".join(bits), description=description)
 
 
 def _sources_html(row: dict[str, Any]) -> str:
@@ -1143,26 +1253,23 @@ def render_index(rows: list[dict[str, Any]]) -> str:
     _check_rows(rows)
     parts = [
         "<h1>BMAD marketplace</h1>",
-        "<p>Skills, modules, and agents. Find, install, create, and publish. "
-        "Listings are generated from the index. Nothing here is a live install button.</p>",
+        f"<p>{html.escape(INDEX_DESCRIPTION)}</p>",
     ]
     if not rows:
         parts.append("<p>No listings yet.</p>")
     for row in rows:
         title = html.escape(str(row.get("title") or row["name"]))
         href = html.escape(_card_href(row))
-        kind = html.escape(str(row["kind"]))
-        trust = html.escape(str(row["trust_tier"]))
         lane = _listing_lane(row)
-        lane_bit = f" · {html.escape(lane)}" if lane else ""
+        items = [_kind_item(row), _trust_item(row), *([_lane_item(lane)] if lane else []), _verified_item(row)]
         parts.append(
             "<article>"
             f'<h2><a href="{href}">{title}</a></h2>'
-            f'<p class="meta">{kind} · {trust}{lane_bit} · {html.escape(_verified_text(row))}</p>'
+            f"{_meta_list(items)}"
             f"<p>{html.escape(str(row.get('description') or ''))}</p>"
             "</article>"
         )
-    return _page("BMAD marketplace", "\n".join(parts))
+    return _page("BMAD marketplace", "\n".join(parts), description=INDEX_DESCRIPTION)
 
 
 def render_listings_json(rows: list[dict[str, Any]]) -> str:

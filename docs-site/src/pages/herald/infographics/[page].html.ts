@@ -5,6 +5,9 @@
  */
 import type { APIRoute, GetStaticPaths } from 'astro';
 
+import { siteShell } from '../../../lib/flags';
+import { siteHeaderHtml } from '../../../lib/site-header';
+import { siteNav } from '../../../lib/site-nav';
 import { infographicBackbar, twinWrapperHtml, type Infographic } from '../../../lib/herald-pages';
 import { loadHeraldPages } from '../../../loaders/herald-pages-loader';
 
@@ -17,6 +20,9 @@ export const getStaticPaths: GetStaticPaths = () => {
 
 export const GET: APIRoute = ({ props }) => {
   const { ig } = props as { ig: Infographic };
-  const html = twinWrapperHtml({ title: ig.title, backbar: infographicBackbar(ig.title, `../${ig.twin}`), rel: '../', twin: ig.twin });
+  const header = siteShell()
+    ? siteHeaderHtml(siteNav().sections, { toRoot: '../../', pagePath: 'herald/infographics/' })
+    : undefined;
+  const html = twinWrapperHtml({ title: ig.title, backbar: infographicBackbar(ig.title, `../${ig.twin}`), rel: '../', twin: ig.twin, header });
   return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 };

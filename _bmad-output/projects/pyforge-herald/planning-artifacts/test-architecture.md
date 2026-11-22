@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: 2a4e886cdca50b9b
-story_count: 160
-test_file_count: 98
+source_fingerprint: 7b040a76b344f2e3
+story_count: 163
+test_file_count: 102
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-herald`
-- **Stories parsed:** 160
-- **Epics parsed:** 52
-- **Test files inventoried:** 98 under `src/shared/packages/pyforge-herald/tests/`
+- **Stories parsed:** 163
+- **Epics parsed:** 53
+- **Test files inventoried:** 102 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `2a4e886cdca50b9b`
+- **Source fingerprint:** `7b040a76b344f2e3`
 
 ## Risk Assessment
 
@@ -75,6 +75,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 49: The absorbed herald Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
 - Epic 51: The dossier's figures are counted and its cutover claims are bound to the ledgers (spec-pyforge-herald CAP-46; spec-python-foundry-cutover:CAP-14)
 - Epic 52: Herald's suite and package stand as an oracle a second root can run (relay of spec-pyforge-steward:CAP-175; no herald CAP)
+- Epic 53: The Pages site reads as one product (spec-pyforge-herald CAP-63)
 
 ### Low-risk epics
 
@@ -106,6 +107,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-herald/tests/meta/test_docs_site_imports_tracked.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_docs_site_validators.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_docsite_zero_origin.py` | meta | none observed |
+| `src/shared/packages/pyforge-herald/tests/meta/test_dossier_cutover_claims.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_dossier_golden.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_herald_pages_model.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_marketplace_mount.py` | meta | none observed |
@@ -118,7 +120,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-herald/tests/meta/test_pptx_native_driver_has_no_literals.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_pptx_native_live_decks.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_preflight_pages_lane.py` | meta | none observed |
+| `src/shared/packages/pyforge-herald/tests/meta/test_public_contract.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_release_comms_routing.py` | meta | none observed |
+| `src/shared/packages/pyforge-herald/tests/meta/test_site_shell.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_skf_skill_and_persona.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_slides_generator_routing.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_twins_zero_origin.py` | meta | none observed |
@@ -177,6 +181,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-herald/tests/unit/test_registry.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_reliability_epic11.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_scheduler.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_site_shell_flag_states.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_smoke.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_stamps.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_state.py` | unit | none observed |
@@ -356,6 +361,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 51.2 | The dossier's cutover claims, herald section and stale prose are true today, ... | none observed |
 | 52.1 | Herald's live-tree readers carry the live_tree marker | none observed |
 | 52.2 | Herald's landing record names this checkout's forge, and its package names Py... | none observed |
+| 53.1 | Every page carries the one header, and dark is the default | none observed |
+| 53.2 | Every page reads at phone width and names itself | none observed |
+| 53.3 | Kedro-Viz opens under the site header, with a way back | none observed |
 
 ## Quality Gates
 

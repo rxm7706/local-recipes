@@ -10,6 +10,7 @@
  */
 
 @import './theme.css';
+@import './shell.css';
 
 :root {
   --paper: var(--sl-color-black);

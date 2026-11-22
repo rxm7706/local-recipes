@@ -1,0 +1,23 @@
+---
+/**
+ * The one header (Story 53.1, spec-pyforge-herald CAP-63): `src/lib/site-header.ts` rendered for an Astro page, with
+ * the script that drives it. A `search` slot replaces the header's own search (the docs pass Starlight's).
+ */
+import { SHELL_SCRIPT, siteHeaderHtml } from '../lib/site-header';
+import { siteNav } from '../lib/site-nav';
+
+interface Props {
+  /** From the page to the site root: `''`, `'../'`, or the host's base path. */
+  toRoot: string;
+  /** The page's own path, site-root relative. */
+  pagePath: string;
+  docs?: boolean;
+}
+
+const { toRoot, pagePath, docs = false } = Astro.props;
+const searchHtml = Astro.slots.has('search') ? await Astro.slots.render('search') : undefined;
+const html = siteHeaderHtml(siteNav().sections, { toRoot, pagePath, docs, searchHtml });
+---
+
+<Fragment set:html={html} />
+<script is:inline defer src={`${toRoot}${SHELL_SCRIPT}`}></script>

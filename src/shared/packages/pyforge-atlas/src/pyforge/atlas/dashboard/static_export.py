@@ -115,13 +115,54 @@ _PAGE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 # page's build-stamp Card (`app._factory_page`).
 _STAMP_RE = re.compile(r"\*\*(?:Data build stamp|Build timestamp) \(AD-17\):\*\*\s+`([^`]+)`")
 _UNAVAILABLE_RE = re.compile(r"\*\*Data build stamp \(AD-17\):\*\*\s+unavailable\b")
-_CSS = (
-    "body{font-family:system-ui,sans-serif;margin:0 auto;max-width:72rem;padding:1rem;line-height:1.5}"
-    "nav{margin-bottom:1rem}table{border-collapse:collapse;margin:.5rem 0 1.5rem;font-size:.9rem}"
-    "th,td{border:1px solid #ccc;padding:.25rem .5rem;text-align:left;vertical-align:top}"
-    "caption{text-align:left;font-style:italic;padding:.25rem 0}.card{margin:1rem 0}"
-    ".export-note{color:#555}.read-error{color:#a00}"
+#: What the index shows for a board whose data has not been built (never the word a stamp would be).
+NO_DATA_TEXT = "No data yet"
+_MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+_ISO_DAY_RE = re.compile(r"^(\d{4})-(\d{2})-(\d{2})(?:[T ]|$)")
+# Story 49.1: the one place the export names a colour or a font face. Each local property is a site
+# theme variable (Starlight's, filled by docs-site/src/styles/theme.css) with a literal fallback: the
+# site's light value, and its dark value under the system scheme, so a page opened alone from a file
+# reads in both. Where the site's stylesheet is loaded its variables win, `data-theme` included.
+_THEME_CSS = (
+    ":root{"
+    "--pf-font:var(--sl-font,system-ui,sans-serif);"
+    "--pf-mono:var(--sl-font-mono,ui-monospace,monospace);"
+    "--pf-bg:var(--sl-color-black,#f1f3ef);"
+    "--pf-text:var(--sl-color-white,#1a2024);"
+    "--pf-muted:var(--sl-color-gray-3,#58676f);"
+    "--pf-border:var(--sl-color-gray-5,#d3d8cf);"
+    "--pf-surface:var(--sl-color-gray-6,#e7eae4);"
+    "--pf-link:var(--sl-color-text-accent,#7d4b0d);"
+    "--pf-error:var(--sl-color-red,#a3392f)}"
+    "@media screen and (prefers-color-scheme:dark){:root{"
+    "--pf-bg:var(--sl-color-black,#12161a);"
+    "--pf-text:var(--sl-color-white,#e7ebe6);"
+    "--pf-muted:var(--sl-color-gray-3,#8ea0a8);"
+    "--pf-border:var(--sl-color-gray-5,#2b3238);"
+    "--pf-surface:var(--sl-color-gray-6,#191e22);"
+    "--pf-link:var(--sl-color-text-accent,#dd9a3f);"
+    "--pf-error:var(--sl-color-red,#d6766a)}}"
 )
+# Every rule reads the local properties above; none names a colour. A table scrolls inside its own
+# `.table-wrap`, so the page body never scrolls sideways at a phone's width.
+_RULES_CSS = (
+    # The column sits on `main` and the boards link, never on `body`: the site header a page is given at assembly
+    # (herald Story 53.1) then spans the body, as it does on every other page.
+    "body{font-family:var(--pf-font);margin:0;line-height:1.5;"
+    "background:var(--pf-bg);color:var(--pf-text);overflow-wrap:anywhere}"
+    "main,.boards-nav{box-sizing:border-box;max-width:72rem;margin:0 auto;padding:0 1rem}"
+    ".boards-nav{padding-top:1rem;padding-bottom:1rem}main{padding-bottom:2rem}"
+    "a{color:var(--pf-link)}code{font-family:var(--pf-mono)}"
+    ".table-wrap{overflow-x:auto;max-width:100%;margin:.5rem 0 1.5rem}"
+    "table{border-collapse:collapse;font-size:.9rem;overflow-wrap:normal}"
+    "th,td{border:1px solid var(--pf-border);padding:.25rem .5rem;text-align:left;vertical-align:top}"
+    "th{background:var(--pf-surface)}"
+    "caption{text-align:left;font-style:italic;padding:.25rem 0}.card{margin:1rem 0}"
+    ".export-note{color:var(--pf-muted)}.read-error{color:var(--pf-error)}"
+    ".no-data{color:var(--pf-muted);font-style:italic;border:1px dashed var(--pf-border);"
+    "border-radius:.25rem;padding:0 .4rem;white-space:nowrap}"
+)
+_CSS = _THEME_CSS + _RULES_CSS
 _PAGE_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -131,7 +172,7 @@ _PAGE_TEMPLATE = """<!DOCTYPE html>
 <style>{css}</style>
 </head>
 <body>
-<nav aria-label="Boards"><a href="{nav_href}">{nav_text}</a></nav>
+<nav class="boards-nav" aria-label="Boards"><a href="{nav_href}">{nav_text}</a></nav>
 <main>
 <h1>{title}</h1>
 {body}
@@ -164,6 +205,8 @@ class _RenderedBoard:
     path: str
     data_build_timestamp: str
     html: str
+    #: One line saying what the board shows, when the inventory carries one (none does today).
+    description: str = ""
 
 
 def access_column_boards(inventory: Iterable[_app.PageDef] | None = None) -> list[tuple[str, str]]:
@@ -357,6 +400,7 @@ def _render_board(
         path=f"{page.id}/{INDEX_NAME}",
         data_build_timestamp=stamp,
         html=scrub(page_html),
+        description=str(getattr(declared, "description", "") or ""),
     )
 
 
@@ -469,8 +513,8 @@ def _render_table(component: Any, frames: dict[str, Any], *, sort_by: str | None
         for row in frame.itertuples(index=False, name=None)
     )
     return (
-        f'<table id="{_esc(component.id)}">\n<caption>{_esc(caption)}</caption>\n'
-        f"<thead><tr>{head}</tr></thead>\n<tbody>\n{body}\n</tbody>\n</table>"
+        f'<div class="table-wrap"><table id="{_esc(component.id)}">\n<caption>{_esc(caption)}</caption>\n'
+        f"<thead><tr>{head}</tr></thead>\n<tbody>\n{body}\n</tbody>\n</table></div>"
     )
 
 
@@ -519,21 +563,40 @@ def _render_chart(
     return f'<p class="export-note">{_esc(note)}</p>\n{drawn}' if note else drawn
 
 
+def _day(stamp: str) -> str:
+    """``stamp`` as ``<time datetime="stamp">26 Oct 2026</time>``: the day the stamp itself names, never
+    the local clock or time zone. A stamp that names no day prints as it is."""
+    match = _ISO_DAY_RE.match(stamp)
+    if match is None or not 1 <= int(match.group(2)) <= 12:
+        return _esc(stamp)
+    day = f"{int(match.group(3))} {_MONTHS[int(match.group(2)) - 1]} {match.group(1)}"
+    return f'<time datetime="{_esc(stamp)}">{day}</time>'
+
+
+def _data_built(stamp: str) -> str:
+    if stamp == UNAVAILABLE:
+        return f'<span class="no-data">{_esc(NO_DATA_TEXT)}</span>'
+    return _day(stamp)
+
+
 def _render_index(boards: Sequence[_RenderedBoard], *, exported_text: str, export_commit: str) -> str:
+    described = any(board.description for board in boards)  # no description anywhere: no column
     rows = "\n".join(
         f'<tr><td><a href="{_esc(board.path)}">{_esc(board.title)}</a></td>'
-        f"<td><code>{_esc(board.path)}</code></td><td>{_esc(board.data_build_timestamp)}</td></tr>"
+        + (f"<td>{_esc(board.description)}</td>" if described else "")
+        + f"<td>{_data_built(board.data_build_timestamp)}</td></tr>"
         for board in boards
     )
     body = (
-        f'<p class="export-note">{len(boards)} boards, exported {_esc(exported_text)} from commit '
-        f"<code>{_esc(export_commit)}</code>. Each board is a static page of the cf_atlas Vizro dashboard; "
-        "its data build stamp (AD-17) is its own dataset's, and <code>unavailable</code> where that dataset "
-        "has not materialized.</p>\n"
-        f'<table id="boards">\n<caption>{len(boards)} boards</caption>\n'
-        '<thead><tr><th scope="col">Board</th><th scope="col">Path</th>'
-        '<th scope="col">Data build stamp (AD-17)</th></tr></thead>\n'
-        f"<tbody>\n{rows}\n</tbody>\n</table>"
+        f'<p class="export-note">{len(boards)} boards, exported {_day(exported_text)} from commit '
+        f'<code title="{_esc(export_commit)}">{_esc(export_commit[:12])}</code>. Each board is a static page of '
+        "the cf_atlas Vizro dashboard. The date beside a board is the day its own data was built; "
+        f"&quot;{_esc(NO_DATA_TEXT)}&quot; marks a board whose data has not been built.</p>\n"
+        f'<div class="table-wrap"><table id="boards">\n<caption>{len(boards)} boards</caption>\n'
+        '<thead><tr><th scope="col">Board</th>'
+        + ('<th scope="col">What it shows</th>' if described else "")
+        + '<th scope="col">Data built</th></tr></thead>\n'
+        f"<tbody>\n{rows}\n</tbody>\n</table></div>"
     )
     return _PAGE_TEMPLATE.format(
         title="cf_atlas boards",
@@ -648,4 +711,4 @@ def _pipe_table(block: list[str]) -> str:
     rows = "".join(
         "<tr>" + "".join(f"<td>{_inline(cell)}</td>" for cell in _pipe_cells(line)) + "</tr>" for line in body_lines
     )
-    return f"<table><thead><tr>{head}</tr></thead><tbody>{rows}</tbody></table>"
+    return f'<div class="table-wrap"><table><thead><tr>{head}</tr></thead><tbody>{rows}</tbody></table></div>'

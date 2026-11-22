@@ -24,6 +24,9 @@ name: Pages
 # Story 43.7 moved it beside the generator) before every build, and the build env carries
 # PYFORGE_STATUS_PAGES (herald Story 42.1's flag); `steward pages build|deploy|status` is the
 # duty that speaks to this workflow.
+# Story 130.1: a second Guild step writes herald's changes input (docs-site/src/content/changes.json,
+# scripts/pages_changes.py) from the built commit's first-parent merges, after fetching the commits
+# the shallow checkout lacks.
 # Story 102.5: actions/configure-pages is authoritative on every host -- its base_url and
 # base_path reach the build (SITE_URL, PAGES_HOST_BASE_URL, PAGES_HOST_BASE_PATH) with no flag
 # (herald Story 42.3 retires the second-host flag) -- and after each deploy the
@@ -104,7 +107,8 @@ jobs:
       - id: pages
         uses: actions/configure-pages@v6
 
-      # Herald's build flags (pyforge.herald.status_pages, pyforge.herald.ci_surfaces_tile) as
+      # Herald's build flags (pyforge.herald.status_pages, pyforge.herald.ci_surfaces_tile,
+      # pyforge.herald.site_shell since herald Story 53.1) as
       # PYFORGE_* lines, resolved in the Guild env (herald Story 43.7: python -m pyforge.herald.pages_env);
       # steward's pages_duty and marketplace_pages flags the same way (Stories 102.4 and 109.3). No
       # PYFORGE_ENVIRONMENT is set here, so every deploy resolves the dev overlay of the estate tree.
@@ -163,6 +167,24 @@ jobs:
             --ledger "$RUNNER_TEMP/sprint-ledger.json" \
             --generated-at "$(git log -1 --format=%cI HEAD)" \
             --out docs-site/src/content/fleet-status.json
+
+      # Herald's changes page and its feed read this input (herald Story 43.6; Story 130.1, part 1 of
+      # DW-steward-43-6-1): the merges on main's first-parent line in the 30 days before the built commit.
+      # generated_at and the window are that commit's, never the clock's, so a scheduled build of an
+      # unmoved tree writes the same file, hashes the same and skips its deploy. The checkout is shallow,
+      # and a shallow commit hides whether it is a merge, so the step first fetches every commit of the
+      # built commit's history with its trees and no blob (--filter=blob:none; about 13 s). Never
+      # --filter=tree:0: the Astro build that follows runs `git log --name-status` over the docs
+      # (Starlight), and on a clone with no trees that log fetches each one lazily and does not finish
+      # inside the job's 20 minutes (both builds of PR 2378, 2026-11-22). A date-bounded fetch (--shallow-since) would cut the line at a merged branch whose tip is
+      # older than the bound. The script exits 3, and writes nothing, on a history that still stops
+      # inside the window.
+      - name: Write the changes page's build input
+        run: |
+          if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+            git fetch --no-tags --filter=blob:none --unshallow origin "$(git rev-parse HEAD)"
+          fi
+          pixi run --frozen -e pyforge-guild python scripts/pages_changes.py --out docs-site/src/content/changes.json
 
       # configure-pages is authoritative on every host (Story 102.5, herald Story 42.3): the
       # deploying host's base URL and path reach pages-check and the Astro build, no flag.

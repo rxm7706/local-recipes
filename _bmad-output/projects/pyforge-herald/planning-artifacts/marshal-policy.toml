@@ -709,6 +709,22 @@ verify_commands = [
 # verified verdict when only merges of main and planning-only commits moved the branch since the head it judged,
 # after a narrow re-check, and still waits for CI (operator rulings 2026-10-15; the Pages stations' speed ask). The
 # block's other keys keep their defaults: each is read at the consumer when a block omits it.
+"53" = [  # the Pages site reads as one product (spec-pyforge-herald CAP-63; Stories 53.1 and 53.2), added 2026-11-22.
+  "src/shared/packages/pyforge-herald/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-herald/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "docs-site/**",
+  "docs/map.yaml",
+  "docs/**",
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "docs/governance/flag-inventory/pyforge-herald.md",
+  "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
+  "src/platform/tests/test_openfeature_file_flags.py",
+  "_bmad-output/projects/pyforge-*/planning-artifacts/specs/spec-pyforge-*/.memlog.md",
+]
+
 [dispatch]
 landing_reverify = "on-code-change"
 

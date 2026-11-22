@@ -6,6 +6,9 @@
  */
 import type { APIRoute, GetStaticPaths } from 'astro';
 
+import { siteShell } from '../../../../lib/flags';
+import { siteHeaderHtml } from '../../../../lib/site-header';
+import { siteNav } from '../../../../lib/site-nav';
 import { familyViewBackbar, twinWrapperHtml, type Family, type FamilyView } from '../../../../lib/herald-pages';
 import { loadHeraldPages } from '../../../../loaders/herald-pages-loader';
 
@@ -21,6 +24,9 @@ export const getStaticPaths: GetStaticPaths = () => {
 export const GET: APIRoute = ({ props }) => {
   const { family, view } = props as { family: Family; view: FamilyView };
   const title = `${family.title} — ${view.label}`;
-  const html = twinWrapperHtml({ title, backbar: familyViewBackbar(family.title, title, `../../${view.twin}`), rel: '../../', twin: view.twin });
+  const header = siteShell()
+    ? siteHeaderHtml(siteNav().sections, { toRoot: '../../../', pagePath: 'herald/decks/' })
+    : undefined;
+  const html = twinWrapperHtml({ title, backbar: familyViewBackbar(family.title, title, `../../${view.twin}`), rel: '../../', twin: view.twin, header });
   return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 };

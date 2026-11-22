@@ -450,6 +450,21 @@
         "cleanup_by": ""
       }
     },
+    "pyforge.herald.site_shell": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "herald",
+        "story": "53-1-every-page-carries-the-one-header-and-dark-is-the-default",
+        "created": "2026-11-22",
+        "on_everywhere": "2026-11-22",
+        "cleanup_by": "2027-02-20"
+      }
+    },
     "pyforge.herald.status_pages": {
       "state": "ENABLED",
       "variants": {

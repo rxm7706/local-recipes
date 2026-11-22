@@ -13,9 +13,10 @@ import path from 'node:path';
 
 import { parse as parseYaml } from 'yaml';
 
-import { marketplacePages, statusPages } from './flags.ts';
+import { marketplacePages, siteShell, statusPages } from './flags.ts';
 import {
   doors,
+  framedSections,
   holdsAFile,
   type MapSection,
   type MenuItem,
@@ -26,7 +27,7 @@ import {
   siteSections,
   topMenu,
 } from './nav.ts';
-import { heraldPagesRoot } from '../loaders/herald-pages-loader.ts';
+import { heraldPagesRoot, SITE_YML } from '../loaders/herald-pages-loader.ts';
 import { repoRoot } from './agent-surface.ts';
 
 export interface SiteNav {
@@ -57,11 +58,19 @@ export function siteNav(): SiteNav {
     mounted: (name: string) => holdsAFile(path.join(data, 'docs', 'dashboard', name)),
     flag: (key: string) => (FLAGS[key] ?? (() => false))(),
   };
-  const sections = siteSections(reg.sections, presence);
+  // Story 53.1 (CAP-63): what each door says is behind it is the site's own copy (`site.yml` `doors`), keyed by the
+  // registry's section keys; the registry keeps its shape.
+  const site = (parseYaml(fs.readFileSync(path.join(data, SITE_YML), 'utf8')) ?? {}) as { doors?: Record<string, string> };
+  const about = site.doors ?? {};
+  const published = siteSections(reg.sections, presence).map((section) =>
+    typeof about[section.key] === 'string' ? { ...section, description: about[section.key] } : section,
+  );
+  // Story 53.3 (CAP-63): with the shell, the Kedro-Viz section links its framed page under the site header.
+  const sections = siteShell() ? framedSections(published) : published;
   loaded = {
     sections,
     menu: topMenu(sections),
-    sidebar: sidebar(reg, path.join(repo, 'docs'), presence),
+    sidebar: sidebar(reg, path.join(repo, 'docs'), presence, siteShell(), siteShell()),
     doors: doors(sections, quadrantEntries(reg.pages)),
   };
   return loaded;

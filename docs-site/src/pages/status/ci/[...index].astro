@@ -9,6 +9,7 @@ import { Badge } from '@astrojs/starlight/components';
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 
 import { ciStatus, lane1 } from '../../../lib/agent-data.ts';
+import { readableDate } from '../../../lib/reader-text.ts';
 import { statusPages } from '../../../lib/flags.ts';
 import { guildRows } from '../../../lib/status.ts';
 
@@ -34,7 +35,7 @@ const variant = (verdict: string) =>
     was captured. A snapshot: nothing on this page is live.
   </p>
   <p class="status-snapshot">
-    Snapshot captured <time datetime={String(snapshot.fetched_at)}>{String(snapshot.fetched_at)}</time>.{' '}
+    Snapshot captured <time datetime={String(snapshot.fetched_at)}>{readableDate(String(snapshot.fetched_at))}</time>.{' '}
     <a href="../">Fleet board</a> &middot; <a href="../runs/">Runs and progress</a>
     {live && (<> &middot; <a href={live.href}>{live.label}</a></>)}
   </p>
@@ -47,13 +48,13 @@ const variant = (verdict: string) =>
       {
         rows.map((r) => (
           <tr data-surface={r.id} data-verdict={r.verdict}>
-            <td><code>{r.id}</code></td>
-            <td><Badge text={r.verdict} variant={variant(r.verdict)} /></td>
-            <td><code>{r.switch}</code></td>
-            <td>{r.paused_since}</td>
-            <td>{r.review_by}</td>
-            <td>{r.owner}</td>
-            <td>{r.detail}</td>
+            <th scope="row"><code>{r.id}</code></th>
+            <td data-label="Verdict"><Badge text={r.verdict} variant={variant(r.verdict)} /></td>
+            <td data-label="Switch"><code>{r.switch}</code></td>
+            <td data-label="Paused since">{r.paused_since}</td>
+            <td data-label="Review by">{r.review_by}</td>
+            <td data-label="Owner">{r.owner}</td>
+            <td data-label="Detail">{r.detail}</td>
           </tr>
         ))
       }

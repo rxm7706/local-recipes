@@ -1,6 +1,6 @@
 """The Pages build's flag environment (herald Story 43.7, spec-pyforge-herald CAP-61).
 
-The ``site`` env that builds the Pages artifact carries no pyforge package, so the Guild env resolves herald's two
+The ``site`` env that builds the Pages artifact carries no pyforge package, so the Guild env resolves herald's
 build flags and hands their states to the build as environment variables, which ``docs-site/src/lib/flags.ts``
 reads -- one ``NAME=1|0`` line each, for a workflow step to append to ``$GITHUB_ENV``::
 
@@ -8,7 +8,8 @@ reads -- one ``NAME=1|0`` line each, for a workflow step to append to ``$GITHUB_
 
 ``pyforge.herald.status_pages`` is ``PYFORGE_STATUS_PAGES`` (Story 42.1: the ``/status/`` prefix and its menu
 entry); ``pyforge.herald.ci_surfaces_tile`` is ``PYFORGE_CI_SURFACES_TILE`` (Story 39.1: the dossier's CI surfaces
-tile). Replaces the three ``docsite/tools/export_*_env.py`` scripts the retired Jinja path carried.
+tile); ``pyforge.herald.site_shell`` is ``PYFORGE_SITE_SHELL`` (Story 53.1: the one header on every page and the
+dark default). Replaces the three ``docsite/tools/export_*_env.py`` scripts the retired Jinja path carried.
 """
 
 from __future__ import annotations
@@ -18,12 +19,14 @@ from collections.abc import Callable
 from pathlib import Path
 
 from pyforge.herald.ci_surfaces_tile import ci_surfaces_tile_enabled
+from pyforge.herald.site_shell import site_shell_enabled
 from pyforge.herald.status_pages import status_pages_enabled
 
 #: Each build flag's environment variable and its reader, in the order the lines are printed.
 BUILD_FLAGS: tuple[tuple[str, Callable[..., bool]], ...] = (
     ("PYFORGE_STATUS_PAGES", status_pages_enabled),
     ("PYFORGE_CI_SURFACES_TILE", ci_surfaces_tile_enabled),
+    ("PYFORGE_SITE_SHELL", site_shell_enabled),
 )
 
 

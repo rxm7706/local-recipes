@@ -9,7 +9,7 @@ sources:
   - src/platform/deploy/charts/platform/values.yaml
   - src/platform/deploy/overlays/eso
   - docs/how-to/rotate-platform-secrets.md
-verified: 2026-11-18
+verified: 2026-11-22
 ---
 
 # Enterprise Deployment & Air-Gapped Environments

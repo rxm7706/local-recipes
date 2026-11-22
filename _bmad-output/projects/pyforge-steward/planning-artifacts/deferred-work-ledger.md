@@ -6533,6 +6533,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-10-15 — herald Story 43.6 (Pages redesign chain)
   note: re-pointed 2026-10-15 — herald Story 43.7 retired `docsite/` (its independent review, part B, should-fix 2): the three inputs' paths follow to `docs-site/src/content/`; the work order is otherwise unchanged
+  note: part (1) closed 2026-11-22 — steward Story 130.1: `pages.yml` writes `changes.json` with `scripts/pages_changes.py` before `pages-check`, the window and `generated_at` anchored on the built commit; parts (2) `marshal-status.json` and (3) `herald-progress.json` stay open
   status: open
 
 ### DW-steward-43-7-1: `jinja2` stays in `[feature.site.dependencies]` with no reader; drop it at the next estate refresh

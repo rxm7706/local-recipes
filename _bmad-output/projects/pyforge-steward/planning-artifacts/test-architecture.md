@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: ab24c07139bd78d6
-story_count: 485
-test_file_count: 166
+source_fingerprint: 8a18d1ab0b0234af
+story_count: 487
+test_file_count: 167
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 485
-- **Epics parsed:** 129
-- **Test files inventoried:** 166 under `src/shared/packages/pyforge-steward/tests/`
+- **Stories parsed:** 487
+- **Epics parsed:** 130
+- **Test files inventoried:** 167 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `ab24c07139bd78d6`
+- **Source fingerprint:** `8a18d1ab0b0234af`
 
 ## Risk Assessment
 
@@ -152,6 +152,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 127: The corridor's records live in the platform's database (spec-pyforge-steward CAP-139, CAP-141, CAP-143)
 - Epic 128: The platform suite runs on a macOS laptop (spec-pyforge-steward CAP-175, CAP-5)
 - Epic 129: A killed test run leaves no stand-in server behind (spec-pyforge-steward CAP-175)
+- Epic 130: The changes page has its input, and the marketplace wears the site's theme (spec-pyforge-steward CAP-168, CAP-171)
 
 ### Low-risk epics
 
@@ -266,6 +267,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_marketplace_pages.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_measures.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_pages.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_pages_changes.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_pages_duty.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_pages_duty_flag_states.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_pages_export.py` | unit | none observed |
@@ -826,6 +828,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 127.2 | The corridor duties run against the platform's database | none observed |
 | 128.1 | The platform suite and its checks run on a macOS laptop | none observed |
 | 129.1 | A killed test run leaves no stand-in server behind | none observed |
+| 130.1 | The Pages workflow writes the changes input | none observed |
+| 130.2 | The marketplace's pages wear the site's theme | none observed |
 
 ## Quality Gates
 

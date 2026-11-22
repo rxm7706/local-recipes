@@ -1757,6 +1757,11 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
         "src/shared/packages/pyforge-steward/tests/unit/test_bootstrap_setup_flow.py": _H["BOOTSTRAP_INPUTS"],
         "src/shared/packages/pyforge-steward/tests/unit/test_frame_preflight.py": _H["FRAMES"],
         "src/shared/packages/pyforge-steward/tests/unit/test_fresh_clone_class_path.py": _H["CLASS_PATH"],
+        "src/shared/packages/pyforge-steward/tests/unit/test_pages_changes.py": (
+            ("scripts/pages_changes.py",),
+            "Story 130.1 (spec-pyforge-steward CAP-168): the tests run scripts/pages_changes.py, found from the "
+            "repo root, over temporary repositories of their own",
+        ),
         "src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py": _H["PIXI_AND_WORKFLOWS"],
         "src/shared/packages/pyforge-steward/tests/unit/test_preflight_suite_reduction.py": _H["PIXI_AND_WORKFLOWS"],
         "src/shared/packages/pyforge-steward/tests/unit/test_session.py": _H["STEWARD_SESSION"],
