@@ -521,7 +521,7 @@
    "docs/how-to/README.md": "c6ed46ea76ac716eb179d133babc1bc1fd7fcd5b",
    "docs/how-to/adopt-the-operating-model-with-marshal-seed.md": "3f51837cca468d05bd41fd07bdd94e9228a7302d",
    "docs/how-to/ai-engine-operations.md": "d00ce598235bdaa09ab9e390254927951686adfe",
-   "docs/how-to/air-gapped-mirror-setup.md": "a807d3f3c75882a89504a5b1914d7f64082cb970",
+   "docs/how-to/air-gapped-mirror-setup.md": "f0bee26283e21e21bda4c9becc9502c17ec26464",
    "docs/how-to/antigravity-developer-startup.md": "c2ed5b4fd1a9acc9600f49af1ab11ce37867ee3a",
    "docs/how-to/bootstrap-a-machine-with-steward.md": "6abf33473bd35fdd960b3675d9900a4eea1bbe5b",
    "docs/how-to/configure-your-coding-agent.md": "fabef757858e04226100031af9997fb66b2af883",
@@ -821,7 +821,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "db5a3bea1eb602ea50288a804d868db0312120b1"
+  "memlog": "788b5eee16609323b84e88b2f37ef6066abb9226"
  },
  "pyforge-herald/spec-pyforge-herald": {
   "files": {
