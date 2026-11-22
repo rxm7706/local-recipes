@@ -415,6 +415,7 @@ pages:
 sections:
   - key: herald
     label: Herald
+    description: "The dossier, ten infographics and ten deck families that explain the factory."
     href: herald/
     owner: herald
     order: 10
@@ -433,26 +434,31 @@ sections:
         href: herald/decks/
   - key: status
     label: Status
+    description: "Where every station stands: stories done, in progress and blocked, as of the last build."
     href: status/
     owner: herald
     order: 20
   - key: pipelines
     label: Kedro-Viz
+    description: "The Atlas data pipelines as an interactive graph of every step and dataset."
     href: dashboard/kedro-viz/
     owner: atlas
     order: 30
   - key: dashboards
     label: Dashboards
+    description: "The Atlas boards on conda-forge packages: health, freshness, dependencies and risk."
     href: dashboard/vizro/
     owner: atlas
     order: 40
   - key: marketplace
     label: Marketplace
+    description: "Skills a teammate can install, with what each one does and how far it is reviewed."
     href: marketplace/
     owner: steward
     order: 45
   - key: changes
     label: Changes
+    description: "What merged to main in the last 30 days, with an RSS feed."
     href: changes/
     owner: herald
     order: 50

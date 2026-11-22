@@ -33,7 +33,13 @@ export const FLAG_SECTIONS: Record<string, string> = {
   marketplace: 'pyforge.steward.marketplace_pages',
 };
 /** The docs shelf's menu entry and door: the site root, first (CAP-58). */
-export const DOCS_ENTRY = { key: 'docs', label: 'Docs', href: '' };
+export const DOCS_ENTRY = {
+  key: 'docs',
+  label: 'Docs',
+  href: '',
+  /** What the docs door says is behind it (Story 53.1, CAP-63). */
+  description: 'Tutorials, how-to guides, reference and explanation for the factory.',
+};
 
 export interface MapPage {
   path: string;
@@ -49,6 +55,8 @@ export interface MapEntry {
 export interface MapSection extends MapEntry {
   owner: string;
   order: number;
+  /** One line a reader outside the fleet follows: what is behind this section's door (Story 53.1, CAP-63). */
+  description?: string;
   entries?: MapEntry[];
 }
 
@@ -131,12 +139,16 @@ export function quadrantEntries(pages: MapPage[]): MenuItem[] {
 }
 
 /** The home's doors: the docs shelf (its quadrants), then one per section, each listing its entries. */
-export function doors(sections: MapSection[], docs: MenuItem[] = []): Array<{ label: string; path: string; entries: MenuItem[] }> {
+export function doors(
+  sections: MapSection[],
+  docs: MenuItem[] = [],
+): Array<{ label: string; path: string; description: string; entries: MenuItem[] }> {
   return [
-    { label: DOCS_ENTRY.label, path: DOCS_ENTRY.href, entries: docs },
+    { label: DOCS_ENTRY.label, path: DOCS_ENTRY.href, description: DOCS_ENTRY.description, entries: docs },
     ...sections.map((section) => ({
       label: section.label,
       path: section.href,
+      description: section.description ?? '',
       entries: (section.entries ?? []).map((entry) => ({ label: entry.label, path: entry.href, section: section.key })),
     })),
   ];
@@ -170,7 +182,11 @@ function quadrantPagesOnDisk(docsDir: string): string[] {
  * when the map and `docs/` disagree: a duplicate or path-less entry, an unknown quadrant, a mapped page missing on
  * disk, or a quadrant page the map does not list.
  */
-export function quadrantGroups(pages: MapPage[], docsDir: string): { groups: SidebarGroup[]; errors: string[] } {
+export function quadrantGroups(
+  pages: MapPage[],
+  docsDir: string,
+  collapsed = false,
+): { groups: SidebarGroup[]; errors: string[] } {
   const errors: string[] = [];
   const byQuadrant = new Map<string, string[]>();
   const seen = new Set<string>();
@@ -205,7 +221,7 @@ export function quadrantGroups(pages: MapPage[], docsDir: string): { groups: Sid
   }
   const groups = [...byQuadrant].map(([quadrant, paths]) => ({
     label: QUADRANT_LABELS[quadrant],
-    collapsed: false,
+    collapsed,
     items: [
       { link: `/${quadrant}/`, label: QUADRANT_LABELS[quadrant] },
       ...paths.filter((rel) => rel !== `${quadrant}/README.md`).map((rel) => ({ slug: slug(rel) })),
@@ -215,23 +231,26 @@ export function quadrantGroups(pages: MapPage[], docsDir: string): { groups: Sid
 }
 
 /** The sidebar's groups after the quadrants: one per section with entries, else one link. */
-export function sectionGroups(sections: MapSection[]): SidebarGroup[] {
+export function sectionGroups(sections: MapSection[], collapsed = false): SidebarGroup[] {
   return sections.map((section) =>
     section.entries?.length
       ? {
           label: section.label,
-          collapsed: false,
+          collapsed,
           items: section.entries.map((entry) => ({ link: `/${entry.href}`, label: entry.label })),
         }
       : { label: section.label, link: `/${section.href}` },
   );
 }
 
-/** The whole docs sidebar: the quadrants, then the sections; throws listing every defect. */
-export function sidebar(reg: Registry, docsDir: string, presence: Presence): SidebarGroup[] {
-  const { groups, errors } = quadrantGroups(reg.pages, docsDir);
+/**
+ * The whole docs sidebar: the quadrants, then the sections; throws listing every defect. `collapsed` starts every group
+ * closed (Story 53.1, CAP-63); Starlight opens the one holding the current page.
+ */
+export function sidebar(reg: Registry, docsDir: string, presence: Presence, collapsed = false): SidebarGroup[] {
+  const { groups, errors } = quadrantGroups(reg.pages, docsDir, collapsed);
   if (errors.length) {
     throw new Error(`docs/map.yaml and docs/ disagree:\n  ${errors.join('\n  ')}`);
   }
-  return [...groups, ...sectionGroups(siteSections(reg.sections, presence))];
+  return [...groups, ...sectionGroups(siteSections(reg.sections, presence), collapsed)];
 }

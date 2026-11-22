@@ -2542,7 +2542,7 @@ So that the site reads as one product and I never lose my way back.
 **When** the flag is on and the site is built
 **Then** every HTML page the site serves, redirect stubs and authored twins excepted, holds the one header (`data-pf-header`) with the registry's menu grouped by section, the search control and the theme toggle, one `<main>` and a skip link; a page with no stored theme resolves to dark; each door on the home carries its registry description; and sidebar groups other than the current page's start closed
 **And** with the flag off the built pages match today's shells, and `pages-check` exits 0 in both states
-**Status:** backlog
+**Status:** done
 
 ### Story 53.2: Every page reads at phone width and names itself
 
@@ -2558,7 +2558,7 @@ So that nothing on the site needs a sideways scroll or a guess.
 **When** the site is built
 **Then** the status and CI pages fit a 375 px viewport, every `<time>` prints a readable date with the ISO form in `datetime`, every gallery `iframe` has a title, every viewer page an `h1`, every page a `meta name="description"`, and no sidebar label or status badge prints a story id
 **And** herald's live-tree half passes, with a test that fails by name for each
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

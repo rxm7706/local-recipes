@@ -1,0 +1,21 @@
+---
+/**
+ * The docs shell's theme rule (Story 53.1, spec-pyforge-herald CAP-63; operator ruling 2026-11-22): the stored theme,
+ * else dark -- the rule every other page takes from `themeScript(true)` in `src/lib/site-header.ts`. Registered in
+ * astro.config.mjs in place of Starlight's ThemeProvider while `pyforge.herald.site_shell` is on. The header's toggle
+ * (`pf-shell.js`) writes the stored theme; Starlight's theme select is not rendered, so `updatePickers` has no work.
+ */
+---
+
+<script is:inline>
+  window.StarlightThemeProvider = (() => {
+    let stored = null;
+    try {
+      stored = localStorage.getItem('starlight-theme');
+    } catch (e) {
+      stored = null;
+    }
+    document.documentElement.dataset.theme = stored === 'light' ? 'light' : 'dark';
+    return { updatePickers() {} };
+  })();
+</script>

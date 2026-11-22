@@ -13,6 +13,7 @@ import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 
 import { fleetStatus, lane1 } from '../../lib/agent-data.ts';
 import { statusPages } from '../../lib/flags.ts';
+import { readableDate } from '../../lib/reader-text.ts';
 import { board } from '../../lib/status.ts';
 
 export function getStaticPaths() {
@@ -37,7 +38,7 @@ const n = view.stations.length;
   <p class="status-snapshot">
     {
       view.generatedAt ? (
-        <>Snapshot taken <time datetime={view.generatedAt}>{view.generatedAt}</time>.</>
+        <>Snapshot taken <time datetime={view.generatedAt}>{readableDate(view.generatedAt)}</time>.</>
       ) : (
         <>Snapshot time not recorded in the input.</>
       )
@@ -55,13 +56,13 @@ const n = view.stations.length;
       {
         view.stations.map((s) => (
           <tr data-station={s.name}>
-            <td>{s.name}</td>
-            <td>{s.epics}</td>
-            <td>{s.done} / {s.total}</td>
-            <td>{s.in_progress}</td>
-            <td>{s.backlog}</td>
-            <td>{s.blocked}</td>
-            <td>
+            <th scope="row">{s.name}</th>
+            <td data-label="Epics">{s.epics}</td>
+            <td data-label="Done / total">{s.done} / {s.total}</td>
+            <td data-label="In progress">{s.in_progress}</td>
+            <td data-label="Backlog">{s.backlog}</td>
+            <td data-label="Blocked">{s.blocked}</td>
+            <td data-label="Done">
               {/* the label beside the bar is its text; the bar carries none, so the percentage reads once (43.7 review) */}
               <progress max="100" value={s.width} data-width={s.width} aria-label={`${s.width}% done`} />{' '}
               {s.width}%

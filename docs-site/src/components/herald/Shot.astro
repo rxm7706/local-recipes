@@ -23,7 +23,7 @@ const { href, preview, placeholder } = Astro.props;
     <iframe
       src={preview}
       loading="lazy"
-      title=""
+      title={`Preview of ${placeholder}`}
       aria-hidden="true"
       tabindex="-1"
       scrolling="no"

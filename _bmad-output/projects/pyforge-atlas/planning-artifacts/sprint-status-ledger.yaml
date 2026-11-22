@@ -166,7 +166,7 @@ development_status:
   48-2-atlas-s-two-root-literals-resolve-from-the-member: done
   48-3-the-retired-views-runtime-leaves-the-package-again: done
   48-4-one-memlog-event-reconciles-every-atlas-path-this-effort-moved: done
-  49-1-the-boards-static-pages-wear-the-site-s-theme: backlog
+  49-1-the-boards-static-pages-wear-the-site-s-theme: done
   5-1-define-the-boring-semantic-layer-bsl-models: done
   5-2-build-the-vizro-dashboard-port-the-28-clis-to-pages: done
   5-3-integrate-vizro-ai-expose-the-nl-interface-as-an-mcp-tool: done
@@ -267,7 +267,7 @@ development_status:
   epic-47-retrospective: optional
   epic-48: done
   epic-48-retrospective: optional
-  epic-49: backlog
+  epic-49: done
   epic-49-retrospective: optional
   epic-5: done
   epic-5-retrospective: done

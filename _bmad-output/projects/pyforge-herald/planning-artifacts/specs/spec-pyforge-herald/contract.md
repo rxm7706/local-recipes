@@ -83,6 +83,7 @@ names no key.
 |---|---|
 | `pyforge.herald.status_pages` | `status_pages.py` `STATUS_PAGES_FLAG`; `flags.ts` `statusPages()` |
 | `pyforge.herald.ci_surfaces_tile` | `ci_surfaces_tile.py` `CI_SURFACES_TILE_FLAG`; `flags.ts` `ciSurfacesTile()` |
+| `pyforge.herald.site_shell` | `site_shell.py` `SITE_SHELL_FLAG`; `flags.ts` `siteShell()` |
 | `pyforge.herald.deck_publish` | `deck_publish.py` `DECK_PUBLISH_FLAG` (gates `deck publish` and `deck exports`) |
 | `pyforge.herald.deck_export_native` | `pptx_native.py` `DECK_EXPORT_NATIVE_FLAG` (gates `deck pptx-native`) |
 | `pyforge.herald.deck_viewer` | `twins.py` `DECK_VIEWER_FLAG` (`deck publish` uploads the HTML twins when it is on) |
@@ -126,6 +127,7 @@ the argument of `envFlagOn('X', …)`. Astro's build constants under `import.met
 | `CONDA_PREFIX` | package `pptx_native.py` | literal `os.environ.get` |
 | `NODE_PATH` | package `pptx_native.py` | literal read on a copy of `os.environ` |
 | `PYFORGE_STATUS_PAGES` | docs-site `src/lib/flags.ts`, `scripts/pages.mts` | `envFlagOn` argument |
+| `PYFORGE_SITE_SHELL` | docs-site `src/lib/flags.ts`, `scripts/pages.mts` | `envFlagOn` argument |
 | `PYFORGE_CI_SURFACES_TILE` | docs-site `src/lib/flags.ts` | `envFlagOn` argument |
 | `PYFORGE_MARKETPLACE_PAGES` | docs-site `src/lib/flags.ts`, `scripts/pages.mts` | `envFlagOn` argument |
 | `PAGES_BUILD_INPUTS_DIR` | docs-site `src/lib/agent-surface.ts` | `process.env[INPUTS_DIR_ENV]` |

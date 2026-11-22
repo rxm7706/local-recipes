@@ -9061,7 +9061,7 @@ So that it stops saying its input is absent.
 **When** `pages.yml` runs `scripts/pages_changes.py` before `pages-check`, with the history the window needs
 **Then** `changes.json` lists the first-parent merges to `main` in the 30 days before the built commit, each with its date, station, subject and commit id, `generated_at` and the window anchored on that commit, in the shape herald's `parseChanges` accepts
 **And** a second run on the same commit writes the same bytes, and steward's suite passes with tests that fail by name on a clock-anchored window or a merge off the first-parent line
-**Status:** backlog
+**Status:** done
 
 ### Story 130.2: The marketplace's pages wear the site's theme
 
@@ -9077,4 +9077,4 @@ So that the marketplace reads as part of the site.
 **When** `write_site` renders the tree
 **Then** every colour a rendered page sets is a site theme variable with a fallback, in light and dark, each listing's kind, trust and verification read as words an outside reader follows, and the committed `site/` byte-matches the render
 **And** steward's package half passes, with a test that fails by name on a colour outside the fallback block
-**Status:** backlog
+**Status:** done

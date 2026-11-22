@@ -385,6 +385,7 @@ def test_bridge_core_sweep_covers_every_non_excluded_package_module():
             "pages_env",  # Story 43.7 (CAP-61): the Pages build's flag environment, not bridge-core
             "ci_surfaces_tile",  # Story 39.1 (CAP-59): CI surfaces tile flag read, not bridge-core
             "status_pages",  # Story 42.1 (CAP-60): status pages flag read, not bridge-core
+            "site_shell",  # Story 53.1 (CAP-63): site shell flag read, not bridge-core
             "local_ship",  # Story 19.2 (no CAP; CAP-38/CAP-39 effect): operator loopback ship, not bridge-core
         }
         == swept

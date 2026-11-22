@@ -1,0 +1,16 @@
+---
+/**
+ * The docs shell's header (Story 53.1, spec-pyforge-herald CAP-63): the one site header, with Starlight's own search
+ * in its slot. Registered in astro.config.mjs in place of Starlight's Header while `pyforge.herald.site_shell` is on.
+ */
+import Search from '@astrojs/starlight/components/Search.astro';
+import SiteHeader from './SiteHeader.astro';
+
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+const pathname = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : `${Astro.url.pathname}/`;
+const pagePath = pathname.startsWith(base) ? pathname.slice(base.length) : pathname.replace(/^\//, '');
+---
+
+<SiteHeader toRoot={base} pagePath={pagePath} docs>
+  <Search slot="search" />
+</SiteHeader>

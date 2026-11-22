@@ -2,7 +2,7 @@
 title: '130.2: The marketplace''s pages wear the site''s theme'
 type: 'fix'
 created: '2026-11-22'
-status: 'ready-for-dev'
+status: 'done'
 story: 130-2-the-marketplace-s-pages-wear-the-site-s-theme
 spec: spec-pyforge-steward
 difficulty: 'easy'
@@ -66,7 +66,7 @@ Ledger key: `130-2-the-marketplace-s-pages-wear-the-site-s-theme`.
 - Capabilities: spec-pyforge-steward CAP-171 (amended 2026-11-22); FR-44 ← CAP-171; no AD moves.
 - Dream: `docs/dreams/pyforge-steward.md` § *Realization log*, the 2026-11-22 entry; operator, 2026-11-22: dark by default, one PR.
 - Epic: Epic 130, minted with this story.
-- Ledger key: `130-2-the-marketplace-s-pages-wear-the-site-s-theme` (`backlog`).
+- Ledger key: `130-2-the-marketplace-s-pages-wear-the-site-s-theme` (`done`).
 - Surface: `marshal-policy.toml` `[epic_surfaces]."130"`.
 
 ## Verification

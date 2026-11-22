@@ -166,3 +166,31 @@ def test_pages_yml_writes_the_fleet_board_input_before_the_build() -> None:
     assert "sprint-ledger-query -- --format json --output" in runs[writer]
     assert "--out docs-site/src/content/fleet-status.json" in runs[writer]
     assert 'python -m pyforge.herald.pages_env >> "$GITHUB_ENV"' in runs[env]
+
+
+def test_pages_yml_writes_the_changes_input_before_the_build() -> None:
+    """Story 130.1 (part 1 of DW-steward-43-6-1): a Guild step writes the changes page's input
+    (docs-site/src/content/changes.json, gitignored) after the fleet board's and before pages-check, having fetched
+    the commits the 30-day window needs into the shallow checkout. The step passes the script no date: the window
+    and generated_at come from the built commit, so the deploy skip of an unmoved tree holds."""
+    steps = [s for s in _load()["jobs"]["build"]["steps"] if isinstance(s, dict)]
+    runs = [str(s.get("run", "")) for s in steps]
+    fleet = next(i for i, run in enumerate(runs) if "scripts/pages_fleet_status.py" in run)
+    writer = next(i for i, run in enumerate(runs) if "scripts/pages_changes.py" in run)
+    build = next(i for i, run in enumerate(runs) if "pages-check" in run)
+    assert fleet < writer < build
+    assert writer == fleet + 1
+    assert steps[writer]["name"] == "Write the changes page's build input"
+    assert "if" not in steps[writer]  # written on every build, as the fleet input is
+    lines = [line.strip() for line in runs[writer].splitlines() if line.strip()]
+    assert lines == [
+        'if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then',
+        'git fetch --no-tags --filter=tree:0 --unshallow origin "$(git rev-parse HEAD)"',
+        "fi",
+        "pixi run --frozen -e pyforge-guild python scripts/pages_changes.py --out docs-site/src/content/changes.json",
+    ]
+    # no clock: neither `date` nor a relative --since reaches the step, and the script takes no time argument
+    assert not re.search(r"\bdate\b|--since|--window-days|--ref", runs[writer])
+    ignored = (REPO_ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()
+    assert "docs-site/src/content/changes.json" in ignored
+    assert (REPO_ROOT / "scripts" / "pages_changes.py").is_file()

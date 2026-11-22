@@ -2,7 +2,7 @@
 title: '53.1: Every page carries the one header, and dark is the default'
 type: 'feature'
 created: '2026-11-22'
-status: 'ready-for-dev'
+status: 'done'
 story: 53-1-every-page-carries-the-one-header-and-dark-is-the-default
 spec: spec-pyforge-herald
 difficulty: 'hard'
@@ -97,9 +97,25 @@ Ledger key: `53-1-every-page-carries-the-one-header-and-dark-is-the-default`.
 - Capabilities: spec-pyforge-herald CAP-63; FR-15.1 ← CAP-63; pyforge-herald:AD-23 (amended 2026-11-22).
 - Dream: `docs/dreams/pyforge-herald.md` § *Realization log*, the 2026-11-22 entry; operator, 2026-11-22: "keep the look, share the header"; dark by default.
 - Epic: Epic 53, minted with this story.
-- Ledger key: `53-1-every-page-carries-the-one-header-and-dark-is-the-default` (`backlog`).
+- Ledger key: `53-1-every-page-carries-the-one-header-and-dark-is-the-default` (`done`).
 - Surface: `marshal-policy.toml` `[epic_surfaces]."53"`.
 
 ## Verification
 
 **Commands:** the Acceptance Criteria above, each read from its exit code.
+
+## Review record (2026-11-22)
+
+Independent review of the staged diff against this spec: pass with fixes, all applied in the change. Enter in the
+header's search box no longer closes the dialog; a search excerpt is rebuilt as text and `<mark>` nodes, never set as
+HTML; Escape returns focus to the group it closes; the header's own search and theme controls are hidden with scripts
+off; `aria-current` reads `page` only on the link to the page itself; `withShell` cuts at the last `</body>` of the
+page as written; the wider door grid applies only with the flag on.
+
+**Deviation, recorded:** the header is not asked of `herald/artifact/`, `pagefind/` or the Kedro-Viz mount
+(`dashboard/kedro-viz/`), beyond the stubs and twins this spec's criteria name. CAP-63's success text is amended to
+name them (memlog, 2026-11-22). The menu's Kedro-Viz link lands on upstream's app, which has no way back but the
+browser's.
+
+**AC1 as written builds with the flag off locally:** set `PYFORGE_SITE_SHELL=1` (as `pages.yml` does through
+`python -m pyforge.herald.pages_env`) to run the header check; `tests/meta/test_site_shell.py` does.

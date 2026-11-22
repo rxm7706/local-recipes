@@ -2,7 +2,7 @@
 title: '130.1: The Pages workflow writes the changes input'
 type: 'fix'
 created: '2026-11-22'
-status: 'ready-for-dev'
+status: 'done'
 story: 130-1-the-pages-workflow-writes-the-changes-input
 spec: spec-pyforge-steward
 difficulty: 'medium'
@@ -74,7 +74,7 @@ Ledger key: `130-1-the-pages-workflow-writes-the-changes-input`.
 - Capabilities: spec-pyforge-steward CAP-168 (amended 2026-11-22); FR-8 ← CAP-2, CAP-168; no AD moves.
 - Dream: `docs/dreams/pyforge-steward.md` § *Realization log*, the 2026-11-22 entry; operator, 2026-11-22: "Wire Up the input".
 - Epic: Epic 130, minted with this story.
-- Ledger key: `130-1-the-pages-workflow-writes-the-changes-input` (`backlog`).
+- Ledger key: `130-1-the-pages-workflow-writes-the-changes-input` (`done`).
 - Surface: `marshal-policy.toml` `[epic_surfaces]."130"`.
 
 ## Verification

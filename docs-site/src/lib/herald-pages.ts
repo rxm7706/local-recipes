@@ -19,7 +19,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { builtFromHtml } from './built-from.ts';
+import { siteShell } from './flags.ts';
 import { holdsAFile } from './nav.ts';
+import { MAIN_ID, SHELL_SCRIPT, themeScript } from './site-header.ts';
 
 /** Where each twin is served under the `/herald/` mount (`scripts/populate-public.mts`, Story 43.3). */
 export const TWINS_DIR = 'twins';
@@ -48,11 +50,7 @@ export const PREVIEW_ONLOAD = "this.parentElement.classList.add('is-loaded')";
  * back-forward cache after a toggle elsewhere. No second toggle, no second store, no global name. Allowed by hash in
  * the CSP below.
  */
-export const THEME_SCRIPT =
-  "(()=>{const r=document.documentElement,m=matchMedia('(prefers-color-scheme: light)');" +
-  "const s=()=>{try{return localStorage.getItem('starlight-theme')}catch(e){return null}};" +
-  "const a=()=>{r.dataset.theme=(s()||(m.matches?'light':'dark'))==='light'?'light':'dark'};" +
-  "a();m.addEventListener('change',a);addEventListener('pageshow',a)})()";
+export const THEME_SCRIPT = themeScript(siteShell());
 
 const sha256 = (text: string): string => `'sha256-${createHash('sha256').update(text).digest('base64')}'`;
 
@@ -79,7 +77,13 @@ export function cspWith(scripts: string[]): string {
  * back-bar's; the inline scripts are the preview handler and the theme script. Every Starlight page gets the same
  * policy with its own scripts at build end (`src/lib/artifact.ts`).
  */
-export const HERALD_CSP = cspWith(["'unsafe-hashes'", sha256(PREVIEW_ONLOAD), sha256(THEME_SCRIPT)]);
+export const HERALD_CSP = cspWith([
+  "'unsafe-hashes'",
+  sha256(PREVIEW_ONLOAD),
+  sha256(THEME_SCRIPT),
+  // Story 53.1: the header's search opens the docs' Pagefind index, whose engine is WebAssembly.
+  ...(siteShell() ? ["'wasm-unsafe-eval'"] : []),
+]);
 
 const GOOGLE_FONT_LINK = /<link\b[^>]*\b(?:href|rel)=['"][^'"]*fonts\.(?:googleapis|gstatic)\.com[^'"]*['"][^>]*>\s*/gi;
 const GOOGLE_FONT_IMPORT = /@import\s+url\(['"]?https:\/\/fonts\.googleapis\.com[^)]+\)\s*;?\s*/gi;
@@ -636,6 +640,43 @@ export function familyViewBackbar(deckTitle: string, title: string, twinHref: st
 ${BACKBAR_STYLE}`;
 }
 
+/**
+ * The reader's page under the one header (Story 53.1, CAP-63): the header, then a `<main>` holding the page's `h1`,
+ * the back-bar as a row of its own (no longer fixed over the page) and the twin's frame filling what is left.
+ */
+function shellTwinWrapperHtml(options: { title: string; backbar: string; rel: string; twin: string; header: string }): string {
+  const { title, backbar, rel, twin, header } = options;
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${escapeText(title)}</title>
+<meta name="description" content="${escapeAttr(`${title}, published as committed, framed under the PyForge site header.`)}">
+<meta name="generator" content="Astro">
+<meta http-equiv="Content-Security-Policy" content="${HERALD_CSP}">
+<script>${THEME_SCRIPT}</script>
+<link rel="stylesheet" href="${escapeAttr(`${rel}${HERALD_THEME}`)}">
+<style>
+html,body{margin:0;height:100%;background:var(--sl-color-black)}
+body{box-sizing:border-box;display:flex;flex-direction:column;padding-top:0!important;font-family:var(--sl-font)}
+.ig-main{flex:1;min-height:0;display:flex;flex-direction:column}
+.ig-main .ig-backbar{position:static}
+.ig-twin{display:block;flex:1;min-height:0;width:100%;border:0;background:var(--sl-color-black)}
+.built-from{box-sizing:border-box;height:1.5rem;margin:0;padding:0 16px;line-height:1.5rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+</style>
+</head>
+<body>
+${header}<script defer src="${escapeAttr(`${rel}../${SHELL_SCRIPT}`)}"></script>
+<main id="${MAIN_ID}" class="ig-main"><h1 class="pf-sr">${escapeText(title)}</h1>
+${backbar}<iframe class="ig-twin" src="${escapeAttr(`${rel}${twin}`)}" title="${escapeAttr(title)}"></iframe>
+</main>
+${builtFromHtml()}
+</body>
+</html>
+`;
+}
+
 function escapeAttr(text: string): string {
   return escapeText(text).replace(/"/g, '&quot;');
 }
@@ -647,8 +688,18 @@ function escapeAttr(text: string): string {
  * back-bar follows the docs toggle (Story 43.4's review); the twin keeps its own design. Below the frame, the line
  * saying what built the page (Story 43.5).
  */
-export function twinWrapperHtml(options: { title: string; backbar: string; rel: string; twin: string }): string {
-  const { title, backbar, rel, twin } = options;
+export function twinWrapperHtml(options: {
+  title: string;
+  backbar: string;
+  rel: string;
+  twin: string;
+  /** The site header (`siteHeaderHtml`), with `pyforge.herald.site_shell` on: the page then has it, a `<main>` and an `h1`. */
+  header?: string;
+}): string {
+  const { title, backbar, rel, twin, header } = options;
+  if (header !== undefined) {
+    return shellTwinWrapperHtml({ title, backbar, rel, twin, header });
+  }
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -667,6 +718,7 @@ body{box-sizing:border-box}
 </style>
 </head>
 <body>
+<h1 class="pf-sr">${escapeText(title)}</h1>
 ${backbar}<iframe class="ig-twin" src="${escapeAttr(`${rel}${twin}`)}" title="${escapeAttr(title)}"></iframe>
 ${builtFromHtml()}
 </body>

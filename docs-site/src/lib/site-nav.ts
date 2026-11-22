@@ -13,7 +13,7 @@ import path from 'node:path';
 
 import { parse as parseYaml } from 'yaml';
 
-import { marketplacePages, statusPages } from './flags.ts';
+import { marketplacePages, siteShell, statusPages } from './flags.ts';
 import {
   doors,
   holdsAFile,
@@ -61,7 +61,7 @@ export function siteNav(): SiteNav {
   loaded = {
     sections,
     menu: topMenu(sections),
-    sidebar: sidebar(reg, path.join(repo, 'docs'), presence),
+    sidebar: sidebar(reg, path.join(repo, 'docs'), presence, siteShell()),
     doors: doors(sections, quadrantEntries(reg.pages)),
   };
   return loaded;

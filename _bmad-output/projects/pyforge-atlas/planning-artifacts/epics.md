@@ -3494,7 +3494,7 @@ So that the boards read as part of the site and I can pick one on a phone.
 **When** `vizro-static-export` writes the tree
 **Then** every colour an exported page sets is a site theme variable with a fallback, in light and dark; the index names each board and the day its data was built with the full stamp in `datetime`, marks a board with no data as such, and has no path column; and index and board pages fit 375 px
 **And** atlas's package half passes, with tests that fail by name for each
-**Status:** backlog
+**Status:** done
 
 ## Validation note — 2026-08-26 (chain-currency sweep)
 

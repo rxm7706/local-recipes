@@ -2,7 +2,7 @@
 title: '49.1: The boards'' static pages wear the site''s theme'
 type: 'fix'
 created: '2026-11-22'
-status: 'ready-for-dev'
+status: 'done'
 story: 49-1-the-boards-static-pages-wear-the-site-s-theme
 spec: spec-pyforge-atlas
 difficulty: 'medium'
@@ -72,7 +72,7 @@ Ledger key: `49-1-the-boards-static-pages-wear-the-site-s-theme`.
 - Capabilities: spec-pyforge-atlas CAP-63 (amended 2026-11-22); FR-71 ← CAP-63; no AD moves.
 - Dream: `docs/dreams/pyforge-atlas.md` § *Realization log*, the 2026-11-22 entry; operator, 2026-11-22: all three audiences, dark by default, one PR.
 - Epic: Epic 49, minted with this story.
-- Ledger key: `49-1-the-boards-static-pages-wear-the-site-s-theme` (`backlog`).
+- Ledger key: `49-1-the-boards-static-pages-wear-the-site-s-theme` (`done`).
 - Surface: `marshal-policy.toml` `[epic_surfaces]."49"`.
 
 ## Verification

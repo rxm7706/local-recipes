@@ -507,6 +507,7 @@ jobs:
             scripts/lint_types.py
             scripts/pages_artifact_download.py
             scripts/pages_build_stamp.py
+            scripts/pages_changes.py
             scripts/pages_fleet_status.py
             scripts/pixi_env_matrix.py
             scripts/platform-ci-local.sh

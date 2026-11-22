@@ -5,6 +5,7 @@
  * last release"). Newest first, each with its date, station and subject; the RSS feed carries the same items.
  * A build-time snapshot: absent input is one line, never a failed build.
  */
+import { readableDate } from '../../lib/reader-text.ts';
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 
 import { changesInput } from '../../lib/agent-data.ts';
@@ -40,7 +41,7 @@ const feedHead = [
           Merges to <code>main</code> in the last {days} days, newest first.{' '}
           {changes.generatedAt ? (
             <>
-              Snapshot taken <time datetime={changes.generatedAt}>{changes.generatedAt}</time>.
+              Snapshot taken <time datetime={changes.generatedAt}>{readableDate(changes.generatedAt)}</time>.
             </>
           ) : (
             <>Snapshot time not recorded in the input.</>
@@ -52,7 +53,7 @@ const feedHead = [
           <ol class="changes-list">
             {changes.merges.map((merge, index) => (
               <li id={mergeAnchor(merge, index)} data-merge={merge.sha ?? ''}>
-                <time datetime={merge.date}>{merge.date}</time> <b>{merge.station}</b> {merge.subject}
+                <time datetime={merge.date}>{readableDate(merge.date)}</time> <b>{merge.station}</b> {merge.subject}
               </li>
             ))}
           </ol>

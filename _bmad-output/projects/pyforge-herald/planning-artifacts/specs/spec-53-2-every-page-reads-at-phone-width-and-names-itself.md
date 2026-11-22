@@ -2,7 +2,7 @@
 title: '53.2: Every page reads at phone width and names itself'
 type: 'fix'
 created: '2026-11-22'
-status: 'ready-for-dev'
+status: 'done'
 story: 53-2-every-page-reads-at-phone-width-and-names-itself
 spec: spec-pyforge-herald
 difficulty: 'medium'
@@ -75,7 +75,7 @@ Ledger key: `53-2-every-page-reads-at-phone-width-and-names-itself`.
 - Capabilities: spec-pyforge-herald CAP-63; FR-15.2 ← CAP-63; no AD moves.
 - Dream: `docs/dreams/pyforge-herald.md` § *Realization log*, the 2026-11-22 entry; operator, 2026-11-22: all three audiences.
 - Epic: Epic 53, minted with this story.
-- Ledger key: `53-2-every-page-reads-at-phone-width-and-names-itself` (`backlog`).
+- Ledger key: `53-2-every-page-reads-at-phone-width-and-names-itself` (`done`).
 - Surface: `marshal-policy.toml` `[epic_surfaces]."53"`.
 
 ## Verification
