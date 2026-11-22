@@ -862,6 +862,26 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   the first run with this change will say), and that the job then finishes inside its limit. Owner
   `spec-pyforge-atlas`; binds CAP-64 and CAP-65 (realized, no text change: AD-13's "the run goes on" made true for a
   host that keeps failing) and decomposes as Epic 50, one story.
+- **2026-11-22 (a stopped refresh starts where the last one ended) — Found and ruled:** the first public data build
+  with Epic 50 (run 45019765201) finished in 90 minutes and logged the cause the five cancelled runs hid: `gitlab
+  unavailable this run: HTTP 429; 361 s spent on failed requests (budget 300 s); finished 105 of 406`. Atlas asks
+  GitLab at most 180 requests a minute; GitLab.com answers both endpoints with `ratelimit-limit: 500` a minute for an
+  address that sends no credential (read from a laptop, 2026-11-22), and the same code asked all 406 in 3 min 14 s on
+  2026-10-26. So the runner's address is most likely spent by other tenants of the hosted runners: likely, not
+  proven, because the run logs the 429 and not what the host said about its limit. And a stopped run does not add
+  up: every run asks the same list in the same order from the top, so a run stopped at 105 refreshes the same 105
+  next week and the other 301 keep their old rows for as long as the host throttles. **Ruled** (operator,
+  2026-11-22, on the recommendation "ask the stalest identifiers first, and log GitLab's headers on a 429": "Yes,
+  start it"): a refresh asks the identifiers it has never asked first, then the rest longest since asked first, so
+  stopped runs ask the whole list between them; every identifier a run asks is marked as asked whether or not the
+  host answered, and a mark writes over no last-good value (review, 2026-11-22: unmarked, an identifier that fails
+  every time is first in every run and stops each one before it reaches the rest); and a 429's rate-limit headers
+  (the limit's name, its size, what was observed, what remains, the wait) reach the log and the stop's reason. The
+  store file keeps each row's asked time in a column `load` never returns. **Not ruled here:** a GitLab credential on the public build (AD-11 forbids it; the
+  operator's ruling), batching through GitLab's GraphQL API, and a larger budget for GitLab. **Not proven here:** that
+  the runner's address is the cause (the first throttled run with this change will say), and how many runs full
+  coverage takes. Owner `spec-pyforge-atlas`; binds CAP-64 and CAP-65 (realized, no text change: AD-13's last-good
+  rows made to converge) and decomposes as Epic 51, one story.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 

@@ -237,7 +237,8 @@ class FailureBudget:
     - ``deadline_seconds``: the run's wall clock, checked between identifiers, for a host that
       answers slowly and so fails nothing.
 
-    ``clock`` is injectable for tests.
+    ``clock`` is injectable for tests. ``host_said`` is what the host last said about its own limit on
+    a 429 (atlas Story 51.1), for the run's log and its stop reason; it changes no limit here.
     """
 
     def __init__(
@@ -261,6 +262,12 @@ class FailureBudget:
         self._pending = 0.0
         self.spent = 0.0
         self.consecutive = 0
+        self.host_said: str | None = None
+
+    def heard(self, said: str | None) -> None:
+        """Keep what the host said about its limit on a 429; nothing said keeps the last."""
+        if said:
+            self.host_said = said
 
     def now(self) -> float:
         return self._clock()

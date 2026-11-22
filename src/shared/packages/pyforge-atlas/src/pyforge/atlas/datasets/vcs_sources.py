@@ -82,6 +82,21 @@ def _version_sort_key(version: str) -> tuple:
 # Shared row shape for BOTH VcsHostSeedDataset and RegistryUpstreamDataset — the
 # review finding added ``last_error`` to the registry side to match the host side.
 _VERSION_COLUMNS: tuple[str, ...] = ("conda_name", "upstream_version", "last_error")
+#: Story 51.1: when a row was last asked for (epoch seconds), whether or not the host answered: a
+#: column of the store file only. ``load`` returns ``_VERSION_COLUMNS``, never this one; a refresh
+#: orders its identifiers by it.
+_ASKED_AT = "asked_at"
+#: Story 51.1: what a host says about its own limit on a 429, in the order logged (GitLab's names).
+_LIMIT_HEADERS: tuple[str, ...] = (
+    "RateLimit-Name",
+    "RateLimit-Limit",
+    "RateLimit-Observed",
+    "RateLimit-Remaining",
+    "RateLimit-Reset",
+    "Retry-After",
+)
+_LIMIT_VALUE_LENGTH = 48
+_LIMIT_VALUE_RE = re.compile(r"[^A-Za-z0-9_.:-]")
 
 
 def _coerce_json(raw: Any) -> Any:
@@ -180,6 +195,30 @@ def _why(exc: BaseException) -> str:
     return type(_root_cause(exc)).__name__
 
 
+def _limit_said(exc: BaseException) -> str | None:
+    """Story 51.1: what a 429 says about the host's limit, as ``name=value`` pairs of
+    :data:`_LIMIT_HEADERS` only, each value cut to plain characters and a fixed length (a header is the
+    host's text: it reaches the log and the staleness marker, never as sent). ``None`` when the
+    failure is not a 429 or carries none of them."""
+    if _status_of(exc) != 429:  # noqa: PLR2004
+        return None
+    for arg in (exc, *getattr(exc, "args", ())):
+        headers = getattr(getattr(arg, "response", None), "headers", None)
+        if headers is None:
+            continue
+        said = []
+        for name in _LIMIT_HEADERS:
+            value = headers.get(name)
+            if value is None:
+                continue
+            clean = _LIMIT_VALUE_RE.sub("", str(value))[:_LIMIT_VALUE_LENGTH]
+            if clean:
+                said.append(f"{name}={clean}")
+        if said:
+            return " ".join(said)
+    return None
+
+
 def _transient(exc: BaseException) -> bool:
     """A failure the host may not repeat: a 429, a 5xx, or no status with the network underneath
     (a dropped connection, a timeout: ``OSError``). A 404 is the host's answer, not a failure."""
@@ -200,6 +239,7 @@ def _fetch_outcome(fetch: Callable[[], Any], spec: _EndpointSpec, budget: Failur
         if not _transient(exc):
             budget.answered()
             return None, str(exc), False
+        budget.heard(_limit_said(exc))
         budget.failed_attempt(started)
         budget.exhausted(_why(exc))
         return None, str(exc), True
@@ -404,9 +444,13 @@ class _BudgetedRefresh:
     _run_deadline_seconds: float
     _clock: Callable[[], float]
     _COLUMNS: tuple[str, ...]
+    #: The wall clock a row's asked time is read from (the budget's clock is monotonic); a test sets it.
+    _now: Callable[[], float] = staticmethod(time.time)
 
     if TYPE_CHECKING:  # the store this mixes into (``_ParquetRefreshStore``)
+        _store_path: Any
 
+        def _store_exists(self) -> bool: ...
         def _persist(self, frame: pd.DataFrame) -> None: ...
         def _mark_stale(self, reason: str, *, only_if_absent: bool = False) -> Any: ...
 
@@ -418,28 +462,101 @@ class _BudgetedRefresh:
             clock=self._clock,
         )
 
+    def _stored(self) -> pd.DataFrame | None:
+        """Story 51.1: the store file as written (its asked time included), or ``None`` when there is
+        none or it cannot be read -- the order is a preference, and the refresh goes on without it."""
+        if not self._store_exists():
+            return None
+        try:
+            stored = pd.read_parquet(self._store_path)
+        except Exception as exc:  # noqa: BLE001 -- see the docstring
+            logger.warning("store %s unreadable, asking in the order given: %s", self._store_path, exc)
+            return None
+        return stored if "conda_name" in stored.columns else None
+
+    @staticmethod
+    def _asked_times(stored: pd.DataFrame | None) -> dict[str, float]:
+        """Story 51.1: when each ``conda_name`` was last asked; a row with no time (written before
+        the story, or never asked) is absent."""
+        if stored is None or _ASKED_AT not in stored.columns:
+            return {}
+        times = pd.to_numeric(stored[_ASKED_AT], errors="coerce")
+        return {str(n): float(t) for n, t in zip(stored["conda_name"], times, strict=True) if pd.notna(t)}
+
+    @staticmethod
+    def _stalest_first(identifiers: Sequence[tuple[str, str]], stored: pd.DataFrame | None) -> list[tuple[str, str]]:
+        """Story 51.1: the identifiers never asked, then the rest longest since asked first -- so the
+        runs a host stops cover the whole list between them. Asked in the same second, a row that
+        holds a version goes before one that holds none (the ones that fail go last), and the rest
+        keep the order given."""
+        times = _BudgetedRefresh._asked_times(stored)
+        empty: set[str] = set()
+        if stored is not None and "upstream_version" in stored.columns:
+            empty = {str(n) for n in stored.loc[stored["upstream_version"].isna(), "conda_name"]}
+
+        def key(pair: tuple[str, str]) -> tuple[bool, float, bool]:
+            name = str(pair[0])
+            return name in times, times.get(name, 0.0), name in empty
+
+        return sorted(identifiers, key=key)
+
+    def _touched(self, stored: pd.DataFrame | None, asked: dict[str, str | None]) -> list[dict[str, Any]]:
+        """Story 51.1: rows that record that ``asked`` (name -> its error) were asked now and write
+        over no value: a name the store holds keeps its row with the new time; a name it does not
+        hold gets a row with no version and its error. Without them an identifier that fails every
+        time stays first in every run and stops each one before it reaches the rest."""
+        if not asked:
+            return []
+        now = int(self._now())
+        held: dict[str, dict[str, Any]] = {}
+        if stored is not None:
+            for record in stored.to_dict("records"):
+                held[str(record["conda_name"])] = record
+        rows = []
+        for conda_name, error in asked.items():
+            old = held.get(str(conda_name))
+            row = (
+                {c: old.get(c) for c in self._COLUMNS}
+                if old is not None
+                else {"conda_name": conda_name, "upstream_version": None, "last_error": error}
+            )
+            rows.append({**row, _ASKED_AT: now})
+        return rows
+
     def _run(
         self,
         name: str,
         identifiers: Sequence[tuple[str, str]],
         one: Callable[[str, FailureBudget], _Outcome],
     ) -> pd.DataFrame:
-        """Ask ``one`` for every ``(conda_name, identifier)`` until the list ends or the host stops
-        the run, then persist and report. Returns the rows of the identifiers that finished."""
+        """Ask ``one`` for every ``(conda_name, identifier)``, stalest first, until the list ends or
+        the host stops the run, then persist and report. Returns the rows of the identifiers that
+        finished."""
         budget = self._new_budget()
         total = len(identifiers)
         finished: list[tuple[dict[str, Any], bool]] = []
         stopped: HostUnavailable | None = None
+        stopped_on: str | None = None  # the identifier being asked when the host stopped the run
         logger.info("%s: asking for %d identifier(s)", name, total)
         said = budget.now()
-        for conda_name, identifier in identifiers:
+        told = False
+        stored = self._stored()
+        for conda_name, identifier in self._stalest_first(identifiers, stored):
+            asking = False
             try:
                 budget.check_deadline()
+                asking = True
                 version, error, transient = one(identifier, budget)
             except HostUnavailable as exc:
                 stopped = exc
+                stopped_on = conda_name if asking else None
                 break
-            finished.append(({"conda_name": conda_name, "upstream_version": version, "last_error": error}, transient))
+            finally:
+                if budget.host_said and not told:
+                    told = True  # Story 51.1: once a run, what the host said about its limit
+                    logger.info("%s: the host limits requests: %s", name, budget.host_said)
+            row = {"conda_name": conda_name, "upstream_version": version, "last_error": error}
+            finished.append(({**row, _ASKED_AT: int(self._now())}, transient))
             if budget.now() - said >= _PROGRESS_SECONDS:
                 said = budget.now()
                 logger.info("%s: %d of %d finished after %.0f s", name, len(finished), total, budget.elapsed())
@@ -448,9 +565,20 @@ class _BudgetedRefresh:
         # A stopped run costs no good data: a row that failed for the cause that stopped it is not
         # written over its last-good value (the store merges by key), and neither is a row never reached.
         kept = [row for row, transient in finished if not (stopped is not None and transient)]
-        to_store = pd.DataFrame(kept, columns=columns)
-        has_success = not to_store.empty and to_store["upstream_version"].notna().any()
-        self._persist(to_store if has_success else pd.DataFrame(columns=columns))
+        stored_columns = [*columns, _ASKED_AT]
+        has_success = any(row["upstream_version"] is not None and pd.notna(row["upstream_version"]) for row in kept)
+        if not has_success:
+            kept = []  # AD-13: a batch with no version is not written over last-good
+        # Story 51.1: what the stopped run asked and did not write is still marked as asked
+        asked: dict[str, str | None] = {}
+        if stopped is not None:
+            asked = {row["conda_name"]: row["last_error"] for row, transient in finished if transient}
+            if stopped_on is not None:
+                asked[stopped_on] = stopped.reason.split(";")[0]
+        self._persist(pd.DataFrame([*kept, *self._touched(stored, asked)], columns=stored_columns))
+        if not has_success and asked:
+            # the rows above record only that the host was asked: the store still holds no new data
+            self._mark_stale("fetch returned no data — keeping last-good")
         answered = int(frame["upstream_version"].notna().sum()) if not frame.empty else 0
         if stopped is None:
             logger.info(
@@ -463,6 +591,8 @@ class _BudgetedRefresh:
             )
             return frame
         reason = f"{name} unavailable this run: {stopped.reason}; finished {len(frame)} of {total}"
+        if budget.host_said and "HTTP 429" in stopped.reason:
+            reason += f"; the host said {budget.host_said}"
         logger.warning("%s; the rest keep their last-good rows and are asked again next run", reason)
         self._mark_stale(reason)
         return frame
@@ -578,6 +708,7 @@ class VcsHostSeedDataset(_BudgetedRefresh, _ParquetRefreshStore, AbstractDataset
                 if not _transient(exc):
                     budget.answered()  # a refusal (a 404 release) is the host's answer
                     raise
+                budget.heard(_limit_said(exc))
                 if attempt > self._max_retries:
                     budget.failed_attempt(started)
                     budget.exhausted(_why(exc))
