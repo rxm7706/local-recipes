@@ -185,7 +185,7 @@ def test_pages_yml_writes_the_changes_input_before_the_build() -> None:
     lines = [line.strip() for line in runs[writer].splitlines() if line.strip()]
     assert lines == [
         'if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then',
-        'git fetch --no-tags --filter=tree:0 --unshallow origin "$(git rev-parse HEAD)"',
+        'git fetch --no-tags --filter=blob:none --unshallow origin "$(git rev-parse HEAD)"',
         "fi",
         "pixi run --frozen -e pyforge-guild python scripts/pages_changes.py --out docs-site/src/content/changes.json",
     ]
@@ -194,3 +194,14 @@ def test_pages_yml_writes_the_changes_input_before_the_build() -> None:
     ignored = (REPO_ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()
     assert "docs-site/src/content/changes.json" in ignored
     assert (REPO_ROOT / "scripts" / "pages_changes.py").is_file()
+
+
+def test_pages_yml_never_fetches_history_without_trees() -> None:
+    """The Astro build runs ``git log --name-status`` over the docs (Starlight). On a clone fetched with
+    ``--filter=tree:0`` that log fetches every tree lazily: both Pages builds of PR 2378 ran into the job's
+    20-minute limit on it (2026-11-22; a clone with trees answers in seconds). No step may leave the checkout
+    without its history's trees."""
+    text = (REPO_ROOT / ".github" / "workflows" / "pages.yml").read_text(encoding="utf-8")
+    commands = [line for line in text.splitlines() if not line.lstrip().startswith("#")]
+    assert not [line for line in commands if "tree:0" in line], "pages.yml fetches history without trees"
+    assert any("--filter=blob:none --unshallow" in line for line in commands)

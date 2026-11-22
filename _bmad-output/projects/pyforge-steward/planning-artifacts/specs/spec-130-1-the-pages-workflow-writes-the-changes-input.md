@@ -80,3 +80,12 @@ Ledger key: `130-1-the-pages-workflow-writes-the-changes-input`.
 ## Verification
 
 **Commands:** the Acceptance Criteria above, each read from its exit code.
+
+## After-landing record (2026-11-22)
+
+Both Pages builds of PR 2378 were cancelled at the job's 20-minute limit. The step first fetched the history with
+`--filter=tree:0`; the Astro build that follows runs `git log --name-status` over the docs (Starlight), and on a clone
+with no trees that log fetches each tree lazily and does not finish (measured on a simulated CI checkout: 214 lines in
+45 s, against all 9,245 in 4 s with trees). The step now fetches with `--filter=blob:none` (about 13 s), and
+`test_pages_yml_never_fetches_history_without_trees` holds it. The review's "no later step reads git history" was
+wrong: the build does, through Starlight.

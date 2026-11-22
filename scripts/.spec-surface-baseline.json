@@ -4056,7 +4056,7 @@
    ".claude/skills/conda-forge-expert/scripts/bmad_suite_metapackage.py": "8486f42d79ab92fe20fcf9e7696caf5b3e30e354",
    ".dockerignore": "ab927fa27b132c499fef1cda0e0ac30b097b25ad",
    ".github/workflows/lint-types.yml": "2d8044bb1d148205787d935825600928ccfba8a3",
-   ".github/workflows/pages.yml": "fe6c4f889deea1bfb19c6e470772fc0f0880595d",
+   ".github/workflows/pages.yml": "f48148524a19bc8d0f24883d0e9d43ecf54b945a",
    ".github/workflows/pyforge-pip-install.yml": "10d1be91c5d07bf274c9ea12bed25fbc723da34b",
    ".pre-commit-config.yaml": "de3d4b755fd07499703e53a6dd7acf4ba4b71b8b",
    ".steward/keys-inventory.yaml": "bf804e787eef3694f18c70b2c617c22d15e640fd",
@@ -4348,7 +4348,7 @@
    "src/shared/packages/pyforge-steward/tests/meta/test_no_station_assumes_local_recipes.py": "4750c9c067f90140fb370e19c80ea25bfd810f5c",
    "src/shared/packages/pyforge-steward/tests/meta/test_object_store_seam_boundaries.py": "275ba7079fab07e0a759160a6f890c15bd8b5de9",
    "src/shared/packages/pyforge-steward/tests/meta/test_oracle_map.py": "737c0b3d55d05769d0e5de3abc50adde6a98ba56",
-   "src/shared/packages/pyforge-steward/tests/meta/test_pages_workflow.py": "907bf3c73fd2aff02991412535b5e5261e2be0a9",
+   "src/shared/packages/pyforge-steward/tests/meta/test_pages_workflow.py": "64c4b6c76d58a2ea6697c29c263de3f598df70ab",
    "src/shared/packages/pyforge-steward/tests/meta/test_portability.py": "97b35ac09773866f0ef8712b4573ca3c2a4fa01a",
    "src/shared/packages/pyforge-steward/tests/meta/test_pr_preflight_lanes_resolve_under_pixi.py": "da6969a83e532fad72285fc3fd31ebbe4ed6cdf9",
    "src/shared/packages/pyforge-steward/tests/meta/test_preflight_docs_site_lanes.py": "4fc2c8316cf6a3c6ec4545a469e62ec9c8850709",
@@ -4426,7 +4426,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_marketplace_pages.py": "9f9573caaec58f503083807763e4c08e1c2324a2",
    "src/shared/packages/pyforge-steward/tests/unit/test_measures.py": "ad38b82e87911c044f3b0eee3e5f4ed02e07b463",
    "src/shared/packages/pyforge-steward/tests/unit/test_pages.py": "81b3c28c886f15e85b84c1406fe57fd878628afb",
-   "src/shared/packages/pyforge-steward/tests/unit/test_pages_changes.py": "11f2f756a8eda5cc7049f01f5d6e8468d887e0b0",
+   "src/shared/packages/pyforge-steward/tests/unit/test_pages_changes.py": "ae395b270dbb5506b97189443da8e10340c3525b",
    "src/shared/packages/pyforge-steward/tests/unit/test_pages_duty.py": "0799c95d679612fb31f3db653e06ce9a005a612f",
    "src/shared/packages/pyforge-steward/tests/unit/test_pages_duty_flag_states.py": "8755fcd6faabcb978c648aa1eac4f8c4c2c06063",
    "src/shared/packages/pyforge-steward/tests/unit/test_pages_export.py": "54e746b228ecd2e0f23917a8bf2e6b1c50dfac50",
@@ -4508,7 +4508,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "e0379c54e00af57cde913a1a81119f0362035ed7"
+  "memlog": "3eec2d541a467023d2821f1eb5063a8dd0923deb"
  },
  "pyforge-steward/spec-pyforge-unifying-strategy": {
   "files": {

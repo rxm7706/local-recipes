@@ -238,7 +238,7 @@ def _fetch_as_the_workflow_does(clone: Path) -> None:
     """The fetch of pages.yml's step (test_pages_workflow.py pins its text): every commit, no tree and no blob."""
     if _git(clone, "rev-parse", "--is-shallow-repository") == "true":
         head = _git(clone, "rev-parse", "HEAD")
-        _git(clone, "fetch", "--no-tags", "--filter=tree:0", "--unshallow", "origin", head)
+        _git(clone, "fetch", "--no-tags", "--filter=blob:none", "--unshallow", "origin", head)
 
 
 @pytest.mark.parametrize("side_day", ["2020-02-01", "2019-12-20"])
