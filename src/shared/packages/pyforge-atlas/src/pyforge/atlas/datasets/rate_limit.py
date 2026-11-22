@@ -215,8 +215,9 @@ DEFAULT_MAX_CONSECUTIVE_FAILURES = 5
 DEFAULT_RUN_DEADLINE_SECONDS = 1800.0
 
 
-class HostUnavailable(RuntimeError):
-    """A host used up its failure budget, or its run's deadline, this run: the refresh stops asking it."""
+class HostUnavailable(PyforgeError, RuntimeError):
+    """A host used up its failure budget, or its run's deadline, this run: the refresh stops asking it.
+    Rooted in ``PyforgeError`` as every exception a station raises deliberately (SPEC-pyforge-core CAP-5)."""
 
     def __init__(self, reason: str) -> None:
         super().__init__(reason)
