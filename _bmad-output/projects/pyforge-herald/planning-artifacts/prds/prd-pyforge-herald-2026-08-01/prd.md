@@ -1746,7 +1746,7 @@ This group is new: Group 12 holds what the one generator renders, and no group h
   section, search, the theme toggle), one `<main>` and a skip link to it; redirect stubs and the authored poster and
   deck twins are the exceptions. The herald pages keep their display headlines, hero and full-width page under it.
 - A reader with no stored theme gets dark, on every page; a stored choice still wins.
-- Each door on the home says what is behind it, from the registry; docs sidebar groups other than the current page's
+- Each door on the home says what is behind it (`site.yml` `doors`, keyed by the registry's section keys); docs sidebar groups other than the current page's
   start closed. Story 53.1, behind `pyforge.herald.site_shell`.
 
 **FR-15.2: Every page reads at phone width and names itself** ← CAP-63

@@ -69,7 +69,7 @@ These files are maintained in this repository and are **not** byte-identical to 
   registry's menu grouped by section, search and the theme toggle, rendered by the docs shell
   (`components/Header.astro`), both herald layouts and the reader pages, and written at build end into each page
   another station mounts (`dashboard/vizro/`, `marketplace/`). With it, a reader who stored no theme gets dark, each
-  door on the home prints its registry `description`, and sidebar groups start closed. `src/lib/reader-text.ts`
+  door on the home prints its line of `site.yml` `doors` (keyed by the registry's section keys), and sidebar groups start closed. `src/lib/reader-text.ts`
   (Story 53.2) prints every time as a readable date and fills a missing page description.
 - `src/styles/theme.css`, `src/styles/herald-fonts.css`, `src/styles/herald.css` — the site theme, its faces and the
   herald pages' stylesheet (Story 43.4 and its review; see *Theme and fonts* below); `src/pages/herald/[sheet].css.ts`

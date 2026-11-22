@@ -23,7 +23,6 @@ surface:
   - 'docs-site/src/styles/**'
   - 'docs-site/astro.config.mjs'
   - 'docs-site/scripts/**'
-  - 'docs/map.yaml'
   - 'src/platform/config/flags.json'
   - 'src/platform/config/flag-overlays.json'
   - 'src/shared/packages/pyforge-core/tests/unit/test_flags.py'
@@ -44,7 +43,7 @@ deferred: []
 
 **Problem:** The live Pages site is one menu over four shells (UX review, 2026-11-21): the docs carry Starlight's header, the herald pages a header of their own with no search or theme toggle, the mounted Vizro and marketplace pages none. 88 pages have no `<main>` and no skip link, the ten-link menu cuts the title at 1280 px, five of the home's seven doors are a bare word, the docs sidebar opens every group, and a reader with no stored theme gets the system scheme.
 
-**Approach:** One `SiteHeader.astro` (title, the registry's menu grouped by section, search, theme toggle; `data-pf-header`) rendered by the docs shell and both herald layouts, and written at `astro:build:done` into each page another station mounts, with the theme script and a link to the site's theme sheet (pyforge-herald:AD-23, amended 2026-11-22). The theme script's fallback becomes dark. Registry sections gain a `description` the doors print; sidebar groups start collapsed. All behind `pyforge.herald.site_shell`, read through `docs-site/src/lib/flags.ts`.
+**Approach:** One `SiteHeader.astro` (title, the registry's menu grouped by section, search, theme toggle; `data-pf-header`) rendered by the docs shell and both herald layouts, and written at `astro:build:done` into each page another station mounts, with the theme script and a link to the site's theme sheet (pyforge-herald:AD-23, amended 2026-11-22). The theme script's fallback becomes dark. `site.yml` gains `doors`, one line per registry section, which the doors print; sidebar groups start collapsed. All behind `pyforge.herald.site_shell`, read through `docs-site/src/lib/flags.ts`.
 
 Ledger key: `53-1-every-page-carries-the-one-header-and-dark-is-the-default`.
 
@@ -104,6 +103,13 @@ Ledger key: `53-1-every-page-carries-the-one-header-and-dark-is-the-default`.
 
 **Commands:** the Acceptance Criteria above, each read from its exit code.
 
+**Both flag states:** `src/shared/packages/pyforge-herald/tests/unit/test_site_shell_flag_states.py` runs the flag in
+both states (`flag_states`): the build environment, the theme rule and the sidebar groups follow it. The built pages:
+`src/shared/packages/pyforge-herald/tests/meta/test_site_shell.py` builds the site with
+`pyforge.herald.site_shell` on (the `shell` fixture: the header, `<main>`, skip link, dark default, door lines and
+closed groups on every page) and off (`test_53_2_a_reader_page_has_its_h1_with_the_shell_off_too`: no header and no
+`pf-shell.js`); `src/shared/packages/pyforge-herald/tests/meta/test_one_generator.py` pins the flag-off shells.
+
 ## Review record (2026-11-22)
 
 Independent review of the staged diff against this spec: pass with fixes, all applied in the change. Enter in the
@@ -116,6 +122,10 @@ page as written; the wider door grid applies only with the flag on.
 (`dashboard/kedro-viz/`), beyond the stubs and twins this spec's criteria name. CAP-63's success text is amended to
 name them (memlog, 2026-11-22). The menu's Kedro-Viz link lands on upstream's app, which has no way back but the
 browser's.
+
+**Door lines moved, recorded:** the lines were first added to `docs/map.yaml` as a `description` per section;
+doctor's docs-map schema refuses an unknown key there (`docs-currency` read the map as unreadable), so they live in
+herald's own `site.yml` `doors`, keyed by the registry's section keys, and `docs/map.yaml` is unchanged.
 
 **AC1 as written builds with the flag off locally:** set `PYFORGE_SITE_SHELL=1` (as `pages.yml` does through
 `python -m pyforge.herald.pages_env`) to run the header check; `tests/meta/test_site_shell.py` does.

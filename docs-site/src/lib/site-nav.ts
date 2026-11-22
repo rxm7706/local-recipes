@@ -26,7 +26,7 @@ import {
   siteSections,
   topMenu,
 } from './nav.ts';
-import { heraldPagesRoot } from '../loaders/herald-pages-loader.ts';
+import { heraldPagesRoot, SITE_YML } from '../loaders/herald-pages-loader.ts';
 import { repoRoot } from './agent-surface.ts';
 
 export interface SiteNav {
@@ -57,7 +57,13 @@ export function siteNav(): SiteNav {
     mounted: (name: string) => holdsAFile(path.join(data, 'docs', 'dashboard', name)),
     flag: (key: string) => (FLAGS[key] ?? (() => false))(),
   };
-  const sections = siteSections(reg.sections, presence);
+  // Story 53.1 (CAP-63): what each door says is behind it is the site's own copy (`site.yml` `doors`), keyed by the
+  // registry's section keys; the registry keeps its shape.
+  const site = (parseYaml(fs.readFileSync(path.join(data, SITE_YML), 'utf8')) ?? {}) as { doors?: Record<string, string> };
+  const about = site.doors ?? {};
+  const sections = siteSections(reg.sections, presence).map((section) =>
+    typeof about[section.key] === 'string' ? { ...section, description: about[section.key] } : section,
+  );
   loaded = {
     sections,
     menu: topMenu(sections),

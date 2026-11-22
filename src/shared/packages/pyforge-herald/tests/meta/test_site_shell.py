@@ -139,8 +139,9 @@ def test_53_1_the_theme_script_falls_back_to_dark_only_with_the_shell() -> None:
 
 @needs_astro
 def test_53_1_every_door_says_what_is_behind_it(shell: Path) -> None:
+    site = yaml.safe_load((DOCS_SITE / "src" / "content" / "site.yml").read_text(encoding="utf-8"))
     for section in _sections():
-        assert str(section.get("description", "")).strip(), f"docs/map.yaml section {section['key']} has no description"
+        assert str(site["doors"].get(section["key"], "")).strip(), f"site.yml doors has no line for {section['key']}"
     home = (shell / "index.html").read_text(encoding="utf-8")
     doors = re.findall(r"<div class=\"pf-door[^>]*data-pf-door=\"([^\"]*)\"[^>]*>(.*?)</div>", home, re.S)
     assert len(doors) >= 4, doors

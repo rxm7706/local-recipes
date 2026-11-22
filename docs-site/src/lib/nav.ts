@@ -55,7 +55,7 @@ export interface MapEntry {
 export interface MapSection extends MapEntry {
   owner: string;
   order: number;
-  /** One line a reader outside the fleet follows: what is behind this section's door (Story 53.1, CAP-63). */
+  /** What is behind this section's door (Story 53.1, CAP-63): filled from `site.yml` `doors` by `site-nav.ts`. */
   description?: string;
   entries?: MapEntry[];
 }
