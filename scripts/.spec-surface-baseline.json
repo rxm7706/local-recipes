@@ -110,7 +110,7 @@
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/json_sources.py": "1e67fa739f85451481962098bfe29e1f74161f15",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/migration_status.py": "846ad6d1de8a1a318fec40ebfe306452db9d65d9",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/public_sources.py": "1aae3a714997a8e36d9aff3e45f214f6826c9aa4",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/rate_limit.py": "135487d72b2cb8d34b15cec6f291137f38938af4",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/rate_limit.py": "0c3ed4c857bd6030639a41279e0f198545a06bea",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/recipe_extras.py": "2b7c91ba643d12c5ad130ae278b536e46725f197",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/refresh.py": "c806dd3eaa1d3491a7d1b64e93bc24506b9fcd2e",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/repodata_uploads.py": "7b7e8524ca745bef17e6251ce22ac47dc3773bfd",
@@ -501,7 +501,7 @@
    "src/shared/packages/pyforge-atlas/wasm/index.html": "58d44155379ec640d36caf59b8c701ec8fcfce27",
    "src/shared/packages/pyforge-atlas/wasm/package.json": "e8ec7eef8dff664e2910f4fee67ada79e4105d93"
   },
-  "memlog": "d701a0c88cc3684833319933a3c599d9c0d3a7c9"
+  "memlog": "3c11e2b8e0a010d6039cb441c5feb98f5af53c00"
  },
  "pyforge-doctor/spec-pyforge-doctor": {
   "files": {
@@ -2036,7 +2036,7 @@
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/json_sources.py": "1e67fa739f85451481962098bfe29e1f74161f15",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/migration_status.py": "846ad6d1de8a1a318fec40ebfe306452db9d65d9",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/public_sources.py": "1aae3a714997a8e36d9aff3e45f214f6826c9aa4",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/rate_limit.py": "135487d72b2cb8d34b15cec6f291137f38938af4",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/rate_limit.py": "0c3ed4c857bd6030639a41279e0f198545a06bea",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/recipe_extras.py": "2b7c91ba643d12c5ad130ae278b536e46725f197",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/refresh.py": "c806dd3eaa1d3491a7d1b64e93bc24506b9fcd2e",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/repodata_uploads.py": "7b7e8524ca745bef17e6251ce22ac47dc3773bfd",
@@ -2708,7 +2708,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "a577eddc62753bdfdcedd3fdf835486ae0f082f3"
+  "memlog": "3e55c1eec5fa031cfab291f9260b5c0bb8d37980"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -5250,7 +5250,7 @@
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/json_sources.py": "1e67fa739f85451481962098bfe29e1f74161f15",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/migration_status.py": "846ad6d1de8a1a318fec40ebfe306452db9d65d9",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/public_sources.py": "1aae3a714997a8e36d9aff3e45f214f6826c9aa4",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/rate_limit.py": "135487d72b2cb8d34b15cec6f291137f38938af4",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/rate_limit.py": "0c3ed4c857bd6030639a41279e0f198545a06bea",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/recipe_extras.py": "2b7c91ba643d12c5ad130ae278b536e46725f197",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/refresh.py": "c806dd3eaa1d3491a7d1b64e93bc24506b9fcd2e",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/repodata_uploads.py": "7b7e8524ca745bef17e6251ce22ac47dc3773bfd",
@@ -5764,7 +5764,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "027895ed1ef72b3bdcc265be470cef1e69c036a7"
+  "memlog": "7fa915a95a4cc5f766a45475bb41f787034c1ecd"
  },
  "pyforge-steward/spec-python-foundry-cutover": {
   "files": {},
