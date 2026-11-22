@@ -844,6 +844,24 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   `datetime` and in each board's own page; both pages fit 375 px. The site header on these pages is herald's to
   give at assembly, not this export's to copy. Kedro-Viz is upstream's app and is not restyled. Owner
   `spec-pyforge-atlas`; binds CAP-63.
+- **2026-11-22 (a host that keeps failing costs a run a bounded time) — Found and ruled:** after the Pages change of the
+  entry above merged, the live `/dashboard/vizro/` still served the 2026-10-26 export. The producer's `vizro` job
+  (`kedro-viz-publish.yml`, step "Build the public atlas data") had been cancelled at its 240-minute limit on five
+  runs in a row (2026-11-02 push and schedule, 2026-11-09, 2026-11-13, 2026-11-16), each time silent after
+  `Saving data to vcs_gitlab_api_raw (VcsHostSeedDataset)`; the same refresh took 3 min 14 s on 2026-10-26. The fetch
+  code did not change in that week, and run from a laptop it answers in under half a second a project. What the code
+  lacks is a limit: with `pyforge.atlas.live_vcs_universe` on, a host that fails every request for a transient cause
+  (a 429 with `Retry-After`, a timeout) costs two URLs times four attempts times up to 60 s a project, with no line
+  logged, so the cause on the runner cannot be read from the logs. **Ruled** (operator, 2026-11-22: "Do this task here: Fix
+  the stalled Vizro dashboard export job"): a refresh carries a budget for failure per host and per run (300 s spent on
+  failed requests, or five requests in a row failed after their retries); when it is used up the host is not asked
+  again, the rows it never reached keep their last-good values, the store is marked stale with the reason, and the
+  log says how many were asked and why it stopped. A refusal (a 404) is the host's answer and uses none of it, a
+  request that answers in the end costs nothing, and a run that passes 1800 s stops too (a host that answers slowly
+  fails nothing). The same budget covers the eight registries, which take legacy's 20 s request timeout. **Not proven here:** what the runner's requests to GitLab met (the log of
+  the first run with this change will say), and that the job then finishes inside its limit. Owner
+  `spec-pyforge-atlas`; binds CAP-64 and CAP-65 (realized, no text change: AD-13's "the run goes on" made true for a
+  host that keeps failing) and decomposes as Epic 50, one story.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 
