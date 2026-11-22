@@ -4358,7 +4358,7 @@
    "src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py": "122bb0dfe334fac10aff358f3a520a35d33f2762",
    "src/shared/packages/pyforge-steward/tests/meta/test_skf_steward_skill.py": "59b81655874ec6092a48ffba2a36782ebcefb3e3",
    "src/shared/packages/pyforge-steward/tests/meta/test_station_persona.py": "3abb292663e1fd54c3ab908d447e5028abee0da0",
-   "src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py": "490ce32109b7252c5a2559cc6ca5b20b46297707",
+   "src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py": "cc010f8fad11e67418cbcdb43f242e6bfd3d45a4",
    "src/shared/packages/pyforge-steward/tests/meta/test_stations_index_boundaries.py": "e8a07719b7390dc55507eadc5b93c9da4745dbd0",
    "src/shared/packages/pyforge-steward/tests/meta/test_steward_persona.py": "7ba6807ef0d4d471f4bf033b7e49f7ebfc1cdc6c",
    "src/shared/packages/pyforge-steward/tests/meta/test_steward_single_flag_tree.py": "5d8d08af8b2208cfa79006a39233a49a91a090f6",
@@ -4507,7 +4507,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "87a804fbcd8547b6599226142c4116d28478d348"
+  "memlog": "e0379c54e00af57cde913a1a81119f0362035ed7"
  },
  "pyforge-steward/spec-pyforge-unifying-strategy": {
   "files": {
