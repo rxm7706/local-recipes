@@ -2,7 +2,7 @@
 title: 'Product Brief: Atlas (pyforge-atlas)'
 status: complete
 created: 2026-07-25
-updated: "2026-11-12"   # RE-STAMPED 2026-11-12 (cutover readiness, atlas Story 48.4, the chain close (CHAIN-STANDARD § 3 step 7): spec-pyforge-atlas:CAP-73 reads shipped and the Spec's memlog names every atlas path the change moved; the product scope does not change; no CAP, FR or AD is minted.) Prior "2026-11-10": RE-STAMPED 2026-11-10 (cutover readiness, atlas Story 46.1): chain-currency cascade (research -> brief) for research/cutover-readiness-audit-2026-11-10.md; the Unity and Wasm satellites are retired, never built; no CAP, FR or AD is minted. Prior "2026-11-05": RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior "2026-11-01"
+updated: "2026-11-22"   # RE-STAMPED 2026-11-22 (the static export wears the site's theme): chain-currency cascade; vision, problem, scope and success criteria unchanged. Prior 2026-11-12: RE-STAMPED 2026-11-12 (cutover readiness, atlas Story 48.4, the chain close (CHAIN-STANDARD § 3 step 7): spec-pyforge-atlas:CAP-73 reads shipped and the Spec's memlog names every atlas path the change moved; the product scope does not change; no CAP, FR or AD is minted.) Prior "2026-11-10": RE-STAMPED 2026-11-10 (cutover readiness, atlas Story 46.1): chain-currency cascade (research -> brief) for research/cutover-readiness-audit-2026-11-10.md; the Unity and Wasm satellites are retired, never built; no CAP, FR or AD is minted. Prior "2026-11-05": RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior "2026-11-01"
 inputs:
   - 'docs/dreams/pyforge-atlas.md'
   - 'docs/dreams/pyforge-charter.md § 3 Atlas'
@@ -925,3 +925,9 @@ capability markers now say what is built, open or retired (Story 46.1). The prod
 ## Currency reconciliation — 2026-11-12 (Story 48.4)
 
 *Chain close (CHAIN-STANDARD § 3 step 7), cutover readiness, atlas Story 48.4.* `spec-pyforge-atlas:CAP-73` (the public contract written beside the Spec and held to the code; Stories 47.1 and 47.2) reads `(shipped 2026-11-11)`, and the Spec's memlog names every atlas path the change moved in one `Surface reconcile` event; the product scope does not change.
+
+## Currency reconciliation — 2026-11-22 (the static export wears the site's theme)
+
+*Chain-currency cascade, CAP-63 amendment.* 2026-11-22: the UX review's finding on the export's pages changes how they
+look, not this brief's vision, problem, scope or success criteria; `spec-pyforge-atlas` amended CAP-63, the PRD amended
+FR-71, and Epic 49 holds the work. **Content changed:** this section and `updated:`.

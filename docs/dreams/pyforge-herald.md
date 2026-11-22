@@ -835,6 +835,30 @@ Herald rebases to one Dream, one Spec, one PRD, one spine, one epic chain. Folde
   `DW-herald-50-1-3`, `DW-herald-50-1-4` (Story 50.1), `DW-herald-50-2-1`, `DW-herald-50-2-2`, `DW-herald-50-3-2`,
   `DW-herald-50-4-1`, `DW-herald-52-1-1`, `DW-herald-52-1-2`, `DW-herald-52-2-1`, `DW-herald-cutover-2026-11-10-1`
   and `DW-herald-cutover-2026-11-10-2`.
+- **2026-11-22 (the Pages site reads as one product) — Found and ruled:** a UX review of the live site
+  (`https://rxm7706.github.io/local-recipes/`, 265 URLs crawled, every page type read at 1280 px and 375 px in both
+  themes, 2026-11-21) found one menu over four different shells. The docs and status pages carry Starlight's header
+  (title, search, theme toggle); the herald pages carry a header of their own with neither; the Vizro boards and the
+  marketplace are unstyled light pages whose one way back is a single link; Kedro-Viz has no way back at all. 88
+  pages have no search, no theme toggle, no `<main>` landmark and no skip link. The home's doors are uneven: Docs and
+  Herald list what is behind them and the other five are a bare word. The top menu is ten flat links that cut the
+  title to "PyForge documenta" at 1280 px and wrap to four rows on a phone. The docs sidebar opens every group, about
+  50 how-to links, on every page. The fleet board's table is 674 px wide in a 343 px column and the CI table the
+  same. Gallery frames have no `title`; 31 viewer pages have no `h1`; 172 pages have no description. Snapshot times
+  print as `2026-11-21T10:35:33-06:00`, and labels carry story ids and codes a reader outside the fleet cannot read.
+  `/changes/` says its input is absent (`DW-steward-43-6-1`). **Ruled** (operator, 2026-11-22): the site serves the
+  operator, the team and outside readers alike; the herald pages keep their poster look (the display headlines, the
+  hero, the full-width page) and take the docs header ("keep the look, share the header"); dark is the theme a
+  reader who has chosen none gets; the changes input is wired, not hidden; and the whole change lands as one PR.
+  **For herald:** one header on every page the generator renders or mounts — the same title, the registry's menu
+  grouped by section, search and the theme toggle — with a `<main>` landmark and a skip link; dark when no theme is
+  stored; every door on the home says what is behind it, from the registry; sidebar groups other than the current
+  one start closed; the status tables read at 375 px with no sideways scroll of the page; every time a page prints
+  is a date a person reads, with the machine form in `datetime`; every gallery frame has a title, every viewer page
+  an `h1`, every page a description; and reader-facing labels carry no story id or internal code. The posters stay
+  as authored: a light poster opened from a dark gallery is not rewritten (the constraint of 2026-09-13 holds).
+  Owner `spec-pyforge-herald`. The boards' and the marketplace's own pages are atlas's and steward's
+  (`pyforge-atlas.md` and `pyforge-steward.md`, the entries of this date); the changes input is steward's.
 
 ## 2026-10-26 — The deck family stays current — infographics re-derived from the ledgers, not remembered (folded from deck-family-currency)
 

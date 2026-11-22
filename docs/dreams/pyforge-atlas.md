@@ -832,6 +832,18 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   gate `implementation-readiness-report-2026-11-12.md` (PASS). The gaps the rulings keep are open ledger rows
   (`DW-atlas-46-1-1` to `DW-atlas-46-1-9` and the two planned rows the retro names); the ledger keys move to `done`
   in the change's ledger close. Owner `spec-pyforge-atlas`.
+- **2026-11-22 (the boards' static pages wear the site's theme) — Found and ruled:** the same UX review of the
+  live Pages site (herald's Dream, the entry of this date) found the 35 pages under `/dashboard/vizro/` the one part
+  of the site that ignores its theme: white with browser-default links whatever the reader chose, no site header,
+  and "Site home" or "All boards" as the only way out. The index reads as a file listing: a Path column of
+  `feedstock-health/index.html`, a full ISO timestamp per row, a 40-character commit id and the code "AD-17" in the
+  heading, and `unavailable` printed the same as a stamp. At 375 px the index table runs off the page. **Ruled**
+  (operator, 2026-11-22: all three audiences, dark by default, one PR): the export's pages read the site's theme
+  variables, light and dark, and stay readable opened alone from a file; the index names each board and the day its
+  data was built, marks a board with no data as such, and drops the path column; the stamp stays in full in
+  `datetime` and in each board's own page; both pages fit 375 px. The site header on these pages is herald's to
+  give at assembly, not this export's to copy. Kedro-Viz is upstream's app and is not restyled. Owner
+  `spec-pyforge-atlas`; binds CAP-63.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 

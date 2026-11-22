@@ -8179,3 +8179,16 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   over an hour on 2026-11-21. Each stand-in now lives a bounded time (600 s by default), so a killed run's leftovers
   exit by themselves. **For steward:** this entry binds `spec-pyforge-steward` CAP-175 (realized, no text change) and
   decomposes as Epic 129, one story.
+- **2026-11-22 (the changes page has its input, and the marketplace wears the site's theme) — Ruled** (operator,
+  2026-11-22, on the UX review of the live Pages site recorded in herald's Dream, the entry of this date: "Wire Up
+  the input"; dark by default; one PR): `/changes/` has said "the `changes.json` build input is absent" since herald
+  Story 43.6 because no Guild step of `pages.yml` writes it (`DW-steward-43-6-1`). The Pages workflow now writes
+  `changes.json` before the build, from the first-parent merges to `main` in the 30 days before the built commit,
+  with the station read from the merge subject and every time taken from the commit, never the clock, so an
+  unmoved tree still hashes the same and skips its deploy. The other two inputs of that row
+  (`marshal-status.json`, `herald-progress.json`) stay open on it. The marketplace's pages are the other unthemed
+  part of the site: a serif light page with no header and no way back. They read the site's theme variables, light
+  and dark, stay readable opened alone, and say "skill · unverified" in words an outside reader follows; the site
+  header on them is herald's to give at assembly. **For steward:** this entry binds the Pages duct and the
+  marketplace pages' capabilities on `spec-pyforge-steward`, named by the Spec's re-derive, and decomposes as one
+  epic, two stories.

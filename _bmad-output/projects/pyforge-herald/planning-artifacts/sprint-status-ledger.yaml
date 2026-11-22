@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: herald
-# stories: 264
+# stories: 268
 development_status:
   1-1-package-scaffold-for-pyforge-herald: done
   1-2-transport-port-primary-mcp-client-adapter-the-transport-spike: done
@@ -158,6 +158,8 @@ development_status:
   51-2-the-dossier-s-cutover-claims-herald-section-and-stale-prose-are-true-today-and-a-test-resolves-each-claim: done
   52-1-herald-s-live-tree-readers-carry-the-live-tree-marker: done
   52-2-herald-s-landing-record-names-this-checkout-s-forge-and-its-package-names-python-3-14: done
+  53-1-every-page-carries-the-one-header-and-dark-is-the-default: backlog
+  53-2-every-page-reads-at-phone-width-and-names-itself: backlog
   6-1-implement-herald-cli-dispatcher: done
   6-2-implement-shared-argument-conventions: done
   6-3-implement-cli-authentication-authorization: done
@@ -270,6 +272,8 @@ development_status:
   epic-51-retrospective: optional
   epic-52: done
   epic-52-retrospective: optional
+  epic-53: backlog
+  epic-53-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional
   epic-7: done
