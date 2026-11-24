@@ -11,7 +11,7 @@ sources:
   - src/platform/compose/compose.yml
   - .github/workflows/platform-ci.yml
   - scripts/platform-ci-local.sh
-verified: 2026-11-22
+verified: 2026-11-23
 ---
 
 # Local Platform Development
