@@ -9101,4 +9101,4 @@ So that no environment downloads a browser at run time and the browser a test dr
 **When** one driver is pinned across the estate, each recipe carries a download and a sha256 per platform at that driver's revisions and builds locally, and the browser-driving environments name the packages from a channel
 **Then** every environment resolves one `playwright` version, each recipe builds for linux-64 and osx-arm64 (win-64 built or its blocker named), and a browser check runs on macOS with no `playwright install`
 **And** the lock names the packages only once the operator has published them to `SelfExplainML`; until then the PR is a draft
-**Status:** in-progress
+**Status:** done

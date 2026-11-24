@@ -2,7 +2,7 @@
 title: '131.1: Playwright''s browsers install from pixi on linux-64, osx-arm64 and win-64'
 type: 'feature'
 created: '2026-11-21'
-status: 'in-progress'
+status: 'done'
 story: 131-1-playwright-s-browsers-install-from-pixi-on-linux-64-osx-arm64-and-win-64
 spec: spec-pyforge-steward
 difficulty: 'medium'
@@ -83,3 +83,4 @@ Ledger key: `131-1-playwright-s-browsers-install-from-pixi-on-linux-64-osx-arm64
 ## Spec Change Log
 
 - 2026-11-21: minted from the station Dream's 2026-11-21 entry and the operator's ruling of the same date.
+- 2026-11-23: closed. The 15 packages are on `SelfExplainML` (operator upload 2026-11-23; every sha256 matches `pixi.lock`), PR #2376's CI is green on every workflow, and the full `pr-preflight` passed all 48 lanes. Renumbered from 129.1, then 130.1, as main landed its own Epics 129 and 130.
