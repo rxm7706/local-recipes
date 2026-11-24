@@ -729,11 +729,10 @@ jobs:
       matrix:
         group: [1, 2, 3]
     env:
-      # test_wasm_smoke.py's _chromium_executable() reads this var itself
-      # (falling back to a hardcoded /opt/pw-browsers otherwise, which this
-      # runner does not have) -- set once, at job level, so the install step
-      # and the test run resolve the identical browser.
-      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
+      # No PLAYWRIGHT_BROWSERS_PATH here (steward Story 130.1): the environment's activation hook points it at
+      # $CONDA_PREFIX/share/ms-playwright, where playwright-chromium* put the browser, and it never overrides a
+      # value already set -- a job-level value would send Playwright and test_wasm_smoke.py's
+      # _chromium_executable() to an empty directory.
       PYTEST_ADDOPTS: --splits 3 --group ${{ matrix.group }} --durations-path tests/durations/pyforge-atlas.json
     steps:
       - uses: actions/checkout@v7
