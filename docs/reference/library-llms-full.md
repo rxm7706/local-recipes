@@ -911,7 +911,7 @@ Testing:
 
 Browser automation:
 - **playwright** (>=1.64.0,<1.65) — the Node Playwright driver and CLI; its `browsers.json` fixes the
-  browser revisions, so one line estate-wide (steward Story 130.1).
+  browser revisions, so one line estate-wide (steward Story 131.1).
 - **playwright-chromium** (>=156.0.8078.4,<157) — Chrome for Testing laid out under
   `$CONDA_PREFIX/share/ms-playwright/chromium-1248`; channel `SelfExplainML`, recipe
   `recipes/playwright-chromium`. In the detectors, platform-ci-test, atlas and herald features.
