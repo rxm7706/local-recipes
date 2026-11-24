@@ -8,6 +8,7 @@
  * shown here are read: no Tier-3 path reaches Pages. Emitted only with `pyforge.herald.status_pages` on (the flag
  * that owns the `/status/` prefix), beside the fleet board and the guild status page.
  */
+import { readableDate } from '../../../lib/reader-text.ts';
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 
 import { heraldProgressInput, lane1, marshalStatusInput } from '../../../lib/agent-data.ts';
@@ -41,7 +42,7 @@ const num = (value: number | null, digits = 0) => (value === null ? dash : value
       <>
         <p class="runs-snapshot">
           {marshal.value.generatedAt ? (
-            <>Snapshot taken <time datetime={marshal.value.generatedAt}>{marshal.value.generatedAt}</time>.</>
+            <>Snapshot taken <time datetime={marshal.value.generatedAt}>{readableDate(marshal.value.generatedAt)}</time>.</>
           ) : (
             <>Snapshot time not recorded in the input.</>
           )}
@@ -82,7 +83,7 @@ const num = (value: number | null, digits = 0) => (value === null ? dash : value
       <>
         <p class="runs-snapshot">
           {progress.value.generatedAt ? (
-            <>Snapshot taken <time datetime={progress.value.generatedAt}>{progress.value.generatedAt}</time>.</>
+            <>Snapshot taken <time datetime={progress.value.generatedAt}>{readableDate(progress.value.generatedAt)}</time>.</>
           ) : (
             <>Snapshot time not recorded in the input.</>
           )}

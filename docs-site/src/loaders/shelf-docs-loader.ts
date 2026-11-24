@@ -1,3 +1,4 @@
+import { firstParagraph, readerTitle } from '../lib/reader-text.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -99,8 +100,17 @@ async function walkDocs(
       title = extracted.title;
       body = extracted.rest;
     }
+    // Story 53.2 (CAP-63): the published title drops the story id a page was filed under, and a page that states no
+    // description takes its first paragraph.
+    title = readerTitle(title);
     const id = generateId(rel);
     const entryData: Record<string, unknown> = { ...data, title, draft: false };
+    if (typeof entryData.description !== 'string' || !entryData.description.trim()) {
+      const about = firstParagraph(body);
+      if (about) {
+        entryData.description = about;
+      }
+    }
     if (!Array.isArray(entryData.head)) {
       entryData.head = [];
     }

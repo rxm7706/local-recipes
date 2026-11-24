@@ -512,6 +512,27 @@ harness_preference = ["cursor"]
 # verified verdict when only merges of main and planning-only commits moved the branch since the head it judged,
 # after a narrow re-check, and still waits for CI (operator rulings 2026-10-15; the Pages stations' speed ask). The
 # block's other keys keep their defaults: each is read at the consumer when a block omits it.
+"49" = [  # the boards' static pages wear the site's theme (spec-pyforge-atlas CAP-63, FR-71; Story 49.1), added 2026-11-22.
+  "src/shared/packages/pyforge-atlas/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-*/planning-artifacts/specs/spec-pyforge-*/.memlog.md",
+]
+"50" = [  # a host that keeps failing costs a run a bounded time (spec-pyforge-atlas CAP-64, CAP-65; Story 50.1), added 2026-11-22.
+  "src/shared/packages/pyforge-atlas/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-*/planning-artifacts/specs/spec-pyforge-*/.memlog.md",
+]
+"51" = [  # a stopped refresh starts where the last one ended (spec-pyforge-atlas CAP-64, CAP-65; Story 51.1), added 2026-11-22.
+  "src/shared/packages/pyforge-atlas/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-*/planning-artifacts/specs/spec-pyforge-*/.memlog.md",
+]
 
 [dispatch]
 landing_reverify = "on-code-change"

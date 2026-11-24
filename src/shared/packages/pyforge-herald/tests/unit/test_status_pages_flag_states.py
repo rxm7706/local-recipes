@@ -113,10 +113,18 @@ def test_ac9_the_build_env_and_the_pages_follow_the_flag_state(flag_provider: di
 
 def test_the_export_prints_one_line_per_build_flag(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     tree = flagd_tree(tmp_path, {_FLAG: "on", "pyforge.herald.ci_surfaces_tile": "off"})
-    assert pages_env.build_env(flags_path=tree) == {"PYFORGE_STATUS_PAGES": "1", "PYFORGE_CI_SURFACES_TILE": "0"}
+    assert pages_env.build_env(flags_path=tree) == {
+        "PYFORGE_STATUS_PAGES": "1",
+        "PYFORGE_CI_SURFACES_TILE": "0",
+        "PYFORGE_SITE_SHELL": "0",
+    }
     assert pages_env.main([]) == 0
     lines = capsys.readouterr().out.splitlines()
-    assert [line.split("=")[0] for line in lines] == ["PYFORGE_STATUS_PAGES", "PYFORGE_CI_SURFACES_TILE"]
+    assert [line.split("=")[0] for line in lines] == [
+        "PYFORGE_STATUS_PAGES",
+        "PYFORGE_CI_SURFACES_TILE",
+        "PYFORGE_SITE_SHELL",
+    ]
     assert all(re.fullmatch(r"PYFORGE_\w+=[01]", line) for line in lines)
 
 

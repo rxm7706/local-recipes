@@ -11,6 +11,8 @@ import rehypeBasePaths from './src/rehype-base-paths.js';
 import { getSiteUrl } from './src/lib/site-url.mjs';
 import { readRedirects, refusePublicCollisions, writeLegacyRedirects } from './src/lib/redirects.ts';
 import { addCsp, writeArtifactDossier } from './src/lib/artifact.ts';
+import { addShell } from './src/lib/shell.ts';
+import { siteShell } from './src/lib/flags.ts';
 import { holdsAFile } from './src/lib/nav.ts';
 import { siteNav } from './src/lib/site-nav.ts';
 import { heraldPagesRoot } from './src/loaders/herald-pages-loader.ts';
@@ -73,13 +75,22 @@ export default defineConfig({
       sidebar,
       // Story 43.4's review (operator ruling 2026-10-15): one theme across the site -- Starlight's variables filled
       // with the herald look (src/styles/theme.css), which the docs take here and the herald pages through their own.
-      customCss: ['./src/styles/theme.css'],
+      customCss: ['./src/styles/theme.css', './src/styles/shell.css'],
       components: {
         SiteTitle: './src/components/SiteTitle.astro',
         // Story 43.5: the built-from line under Starlight's footer.
         Footer: './src/components/Footer.astro',
         // Story 43.7: the home's doors, from the registry, ahead of the docs root's markdown.
         MarkdownContent: './src/components/MarkdownContent.astro',
+        // Story 53.1 (CAP-63), behind pyforge.herald.site_shell: the one site header in place of Starlight's, and
+        // the stored-theme-else-dark rule in place of Starlight's stored-theme-else-system one.
+        ...(siteShell()
+          ? {
+              Header: './src/components/Header.astro',
+              ThemeProvider: './src/components/ThemeProvider.astro',
+              MobileMenuFooter: './src/components/MobileMenuFooter.astro',
+            }
+          : {}),
       },
     }),
     heraldArtifact(),
@@ -107,6 +118,10 @@ function heraldArtifact() {
         refusePublicCollisions(outDir, served, assets);
         writeLegacyRedirects(outDir, siteRedirects.legacy);
         writeArtifactDossier(outDir, basePath);
+        // Story 53.1 (CAP-63; AD-23 amended 2026-11-22): the pages other stations mount get the one header here.
+        if (siteShell()) {
+          addShell(outDir, siteNav().sections);
+        }
         addCsp(outDir);
       },
     },

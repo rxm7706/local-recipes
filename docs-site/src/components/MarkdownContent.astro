@@ -6,19 +6,23 @@
  * Every other page is Starlight's own MarkdownContent. Every href carries the host's base path (CAP-56).
  */
 import Default from '@astrojs/starlight/components/MarkdownContent.astro';
+import { siteShell } from '../lib/flags';
 import { siteNav } from '../lib/site-nav';
 
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 const home = Astro.locals.starlightRoute.id === '';
 const doors = home ? siteNav().doors : [];
+/** Story 53.1 (CAP-63): with the shell on, each door says what is behind it, from the registry. */
+const describe = siteShell();
 ---
 
 {
   home && (
-    <nav class="pf-doors" aria-label="The site's parts" data-pf-doors>
+    <nav class:list={['pf-doors', describe && 'pf-doors--about']} aria-label="The site's parts" data-pf-doors>
       {doors.map((door) => (
         <div class="pf-door" data-pf-door={door.path}>
           <a class="pf-door-link" href={`${base}${door.path}`}>{door.label}</a>
+          {describe && door.description && <p class="pf-door-about" data-pf-door-about>{door.description}</p>}
           {door.entries.length > 0 && (
             <ul>
               {door.entries.map((entry) => (
@@ -42,6 +46,9 @@ const doors = home ? siteNav().doors : [];
     gap: 1rem;
     margin-bottom: 2rem;
   }
+  .pf-doors--about {
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  }
   .pf-door {
     border: 1px solid var(--sl-color-gray-5);
     border-radius: 0.5rem;
@@ -58,6 +65,11 @@ const doors = home ? siteNav().doors : [];
   }
   .pf-door-link:hover {
     color: var(--sl-color-text-accent);
+  }
+  .pf-door-about {
+    margin: 0.35rem 0 0;
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-2);
   }
   .pf-door ul {
     list-style: none;

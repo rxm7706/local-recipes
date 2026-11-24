@@ -832,6 +832,56 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   gate `implementation-readiness-report-2026-11-12.md` (PASS). The gaps the rulings keep are open ledger rows
   (`DW-atlas-46-1-1` to `DW-atlas-46-1-9` and the two planned rows the retro names); the ledger keys move to `done`
   in the change's ledger close. Owner `spec-pyforge-atlas`.
+- **2026-11-22 (the boards' static pages wear the site's theme) — Found and ruled:** the same UX review of the
+  live Pages site (herald's Dream, the entry of this date) found the 35 pages under `/dashboard/vizro/` the one part
+  of the site that ignores its theme: white with browser-default links whatever the reader chose, no site header,
+  and "Site home" or "All boards" as the only way out. The index reads as a file listing: a Path column of
+  `feedstock-health/index.html`, a full ISO timestamp per row, a 40-character commit id and the code "AD-17" in the
+  heading, and `unavailable` printed the same as a stamp. At 375 px the index table runs off the page. **Ruled**
+  (operator, 2026-11-22: all three audiences, dark by default, one PR): the export's pages read the site's theme
+  variables, light and dark, and stay readable opened alone from a file; the index names each board and the day its
+  data was built, marks a board with no data as such, and drops the path column; the stamp stays in full in
+  `datetime` and in each board's own page; both pages fit 375 px. The site header on these pages is herald's to
+  give at assembly, not this export's to copy. Kedro-Viz is upstream's app and is not restyled. Owner
+  `spec-pyforge-atlas`; binds CAP-63.
+- **2026-11-22 (a host that keeps failing costs a run a bounded time) — Found and ruled:** after the Pages change of the
+  entry above merged, the live `/dashboard/vizro/` still served the 2026-10-26 export. The producer's `vizro` job
+  (`kedro-viz-publish.yml`, step "Build the public atlas data") had been cancelled at its 240-minute limit on five
+  runs in a row (2026-11-02 push and schedule, 2026-11-09, 2026-11-13, 2026-11-16), each time silent after
+  `Saving data to vcs_gitlab_api_raw (VcsHostSeedDataset)`; the same refresh took 3 min 14 s on 2026-10-26. The fetch
+  code did not change in that week, and run from a laptop it answers in under half a second a project. What the code
+  lacks is a limit: with `pyforge.atlas.live_vcs_universe` on, a host that fails every request for a transient cause
+  (a 429 with `Retry-After`, a timeout) costs two URLs times four attempts times up to 60 s a project, with no line
+  logged, so the cause on the runner cannot be read from the logs. **Ruled** (operator, 2026-11-22: "Do this task here: Fix
+  the stalled Vizro dashboard export job"): a refresh carries a budget for failure per host and per run (300 s spent on
+  failed requests, or five requests in a row failed after their retries); when it is used up the host is not asked
+  again, the rows it never reached keep their last-good values, the store is marked stale with the reason, and the
+  log says how many were asked and why it stopped. A refusal (a 404) is the host's answer and uses none of it, a
+  request that answers in the end costs nothing, and a run that passes 1800 s stops too (a host that answers slowly
+  fails nothing). The same budget covers the eight registries, which take legacy's 20 s request timeout. **Not proven here:** what the runner's requests to GitLab met (the log of
+  the first run with this change will say), and that the job then finishes inside its limit. Owner
+  `spec-pyforge-atlas`; binds CAP-64 and CAP-65 (realized, no text change: AD-13's "the run goes on" made true for a
+  host that keeps failing) and decomposes as Epic 50, one story.
+- **2026-11-22 (a stopped refresh starts where the last one ended) — Found and ruled:** the first public data build
+  with Epic 50 (run 45019765201) finished in 90 minutes and logged the cause the five cancelled runs hid: `gitlab
+  unavailable this run: HTTP 429; 361 s spent on failed requests (budget 300 s); finished 105 of 406`. Atlas asks
+  GitLab at most 180 requests a minute; GitLab.com answers both endpoints with `ratelimit-limit: 500` a minute for an
+  address that sends no credential (read from a laptop, 2026-11-22), and the same code asked all 406 in 3 min 14 s on
+  2026-10-26. So the runner's address is most likely spent by other tenants of the hosted runners: likely, not
+  proven, because the run logs the 429 and not what the host said about its limit. And a stopped run does not add
+  up: every run asks the same list in the same order from the top, so a run stopped at 105 refreshes the same 105
+  next week and the other 301 keep their old rows for as long as the host throttles. **Ruled** (operator,
+  2026-11-22, on the recommendation "ask the stalest identifiers first, and log GitLab's headers on a 429": "Yes,
+  start it"): a refresh asks the identifiers it has never asked first, then the rest longest since asked first, so
+  stopped runs ask the whole list between them; every identifier a run asks is marked as asked whether or not the
+  host answered, and a mark writes over no last-good value (review, 2026-11-22: unmarked, an identifier that fails
+  every time is first in every run and stops each one before it reaches the rest); and a 429's rate-limit headers
+  (the limit's name, its size, what was observed, what remains, the wait) reach the log and the stop's reason. The
+  store file keeps each row's asked time in a column `load` never returns. **Not ruled here:** a GitLab credential on the public build (AD-11 forbids it; the
+  operator's ruling), batching through GitLab's GraphQL API, and a larger budget for GitLab. **Not proven here:** that
+  the runner's address is the cause (the first throttled run with this change will say), and how many runs full
+  coverage takes. Owner `spec-pyforge-atlas`; binds CAP-64 and CAP-65 (realized, no text change: AD-13's last-good
+  rows made to converge) and decomposes as Epic 51, one story.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 

@@ -6,7 +6,7 @@ sources:
   - src/platform/deploy/charts/platform/values.yaml
   - src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py
-verified: 2026-11-18
+verified: 2026-11-22
 ---
 
 # PyForge Estate Overview

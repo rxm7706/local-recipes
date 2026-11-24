@@ -430,8 +430,13 @@ def test_ac2_facts_json_is_one_object_per_facts_yaml(build) -> None:
 @needs_astro
 def test_ac3_the_changes_page_lists_five_merges_newest_first(build) -> None:
     page = (build("full") / "changes" / "index.html").read_text(encoding="utf-8")
-    items = re.findall(r'<li id="merge-[^"]+"[^>]*>(.*?)</li>', page, re.S)
-    assert [_text(item) for item in items] == [f"{d} {s} {subject}" for d, s, subject in _MERGES_NEWEST_FIRST]
+    items = re.findall(r'<li id="merge-[^"]+"[^>]*>\s*<time datetime="([^"]+)">([^<]+)</time>(.*?)</li>', page, re.S)
+    assert [(d, _text(rest)) for d, _, rest in items] == [
+        (d, f"{s} {subject}") for d, s, subject in _MERGES_NEWEST_FIRST
+    ]
+    # Story 53.2 (CAP-63): the machine form is in datetime; what the page prints is a date a person reads
+    assert [shown for _, shown, _ in items][0] == "15 Oct 2026, 08:10 UTC"
+    assert not [shown for _, shown, _ in items if re.match(r"\d{4}-\d\d-\d\d", shown)]
     assert "data-pf-menu-link" in page  # the shared menu, as every shelf page carries it
     assert 'href="rss.xml"' in page
 

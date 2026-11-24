@@ -202,6 +202,7 @@ _SHIPPED_CLOCKS = {
     "pyforge.herald.deck_viewer": ("herald", "30-1-", "2026-09-28", "", ""),
     "pyforge.herald.ci_surfaces_tile": ("herald", "39-1-", "2026-10-14", "", ""),
     "pyforge.herald.status_pages": ("herald", "42-1-", "2026-10-15", "", ""),
+    "pyforge.herald.site_shell": ("herald", "53-1-", "2026-11-22", "2026-11-22", "2027-02-20"),
     "pyforge.herald.deck_export_native": ("herald", "32-1-", "2026-09-28", "", ""),
     "pyforge.steward.ledger_query_postgres_sync": (
         "steward",
@@ -301,6 +302,7 @@ _LATER_KILL_SWITCHES = {
     "pyforge.steward.nkp_deploy": "2027-01-29",  # steward Story 118.1 (CAP-176), minted 2026-10-31
     "pyforge.steward.nkp_packs": "2027-01-29",  # steward Story 118.2 (CAP-177), minted 2026-10-31
     "pyforge.steward.cutover_ledger_write": "2027-02-08",  # steward Stories 121.1 / 121.2 (fnd:CAP-9), 2026-11-10
+    "pyforge.herald.site_shell": "2027-02-20",  # herald Story 53.1 (CAP-63), ON everywhere from mint, 2026-11-22
 }
 
 
@@ -423,6 +425,7 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.herald.deck_viewer": {"dev": True, "staging": True, "production": False},
         "pyforge.herald.ci_surfaces_tile": {"dev": True, "staging": False, "production": False},
         "pyforge.herald.status_pages": {"dev": True, "staging": False, "production": False},
+        "pyforge.herald.site_shell": {"dev": True, "staging": True, "production": True},
         "pyforge.herald.deck_export_native": {"dev": True, "staging": True, "production": False},
         "pyforge.warden.fix_draft_pr_estate": {"dev": True, "staging": True, "production": False},
         "pyforge.warden.fleet_inventory": {"dev": True, "staging": True, "production": False},

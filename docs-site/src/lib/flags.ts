@@ -34,3 +34,11 @@ export function ciSurfacesTile(): boolean {
 export function marketplacePages(): boolean {
   return envFlagOn('PYFORGE_MARKETPLACE_PAGES');
 }
+
+/**
+ * `pyforge.herald.site_shell` (Story 53.1, CAP-63): the one header on every page, the dark default, the doors'
+ * descriptions and the closed sidebar groups. Off, each shell keeps the header and the theme rule it had.
+ */
+export function siteShell(): boolean {
+  return envFlagOn('PYFORGE_SITE_SHELL');
+}

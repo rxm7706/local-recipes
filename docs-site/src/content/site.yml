@@ -22,6 +22,17 @@ lane1:
   label: Live view on Lane 1
   href: /console/
 
+# What each door on the home says is behind it (herald Story 53.1, CAP-63), keyed by the registry's section keys
+# (docs/map.yaml `sections`); printed with pyforge.herald.site_shell on. One line a reader outside the fleet follows.
+# A section with no line here gets a door with no description, and herald's test_site_shell names it.
+doors:
+  herald: The dossier, ten infographics and ten deck families that explain the factory.
+  status: "Where every station stands: stories done, in progress and blocked, as of the last build."
+  pipelines: The Atlas data pipelines as an interactive graph of every step and dataset.
+  dashboards: "The Atlas boards on conda-forge packages: health, freshness, dependencies and risk."
+  marketplace: Skills a teammate can install, with what each one does and how far it is reviewed.
+  changes: What merged to main in the last 30 days, with an RSS feed.
+
 # The herald overview's tiles for things that live in the same publish root but are produced by
 # something else (the menus take them from the registry). hrefs are relative to the /herald/ mount.
 #

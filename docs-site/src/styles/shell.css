@@ -1,0 +1,340 @@
+/*
+ * The site shell's rules (Stories 53.1 and 53.2, spec-pyforge-herald CAP-63): the one header every page carries and the
+ * fleet board's and CI table's phone layout. It names no font and no colour and sets no theme variable -- every value
+ * is one of Starlight's variables, which theme.css fills -- so re-theming the site is still replacing theme.css. Read
+ * by the docs (astro.config.mjs `customCss`), the herald pages (styles/herald.css) and, appended to the theme sheet at
+ * /herald/theme.css, the reader pages and the pages other stations mount (pages/herald/[sheet].css.ts).
+ */
+
+/* Story 53.1 (CAP-63): the one site header, on every page -- the docs (inside Starlight's fixed header bar), the
+   herald pages, the reader pages and the pages other stations mount. Variables only, as everything in this file. */
+.pf-sr,
+.pf-skip:not(:focus) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.pf-skip:focus {
+  position: fixed;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 1000;
+  padding: 0.5rem 0.75rem;
+  background: var(--sl-color-black);
+  color: var(--sl-color-white);
+  border: 2px solid var(--sl-color-accent);
+  border-radius: 0.25rem;
+}
+.pf-header {
+  font-family: var(--sl-font);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--sl-color-white);
+}
+header.pf-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--sl-color-black);
+  border-bottom: 1px solid var(--sl-color-gray-5);
+  padding: 0 clamp(1rem, 4vw, 3.5rem);
+}
+.pf-header--docs {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+}
+.pf-header-inner {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  min-height: 3.25rem;
+  height: 100%;
+}
+.pf-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: none;
+  font-family: var(--sl-font-heading);
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--sl-color-white);
+  text-decoration: none;
+}
+.pf-spark {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--sl-color-accent);
+}
+.pf-nav {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+.pf-nav ul {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem 1.1rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pf-nav a,
+.pf-nav summary {
+  display: block;
+  padding: 0.4rem 0;
+  color: var(--sl-color-gray-2);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+.pf-nav summary {
+  list-style: none;
+}
+.pf-nav summary::-webkit-details-marker {
+  display: none;
+}
+.pf-nav summary::after {
+  content: '';
+  display: inline-block;
+  margin-left: 0.4rem;
+  border: 0.3rem solid transparent;
+  border-top-color: currentColor;
+  border-bottom: 0;
+  vertical-align: middle;
+}
+.pf-nav a:hover,
+.pf-nav summary:hover {
+  color: var(--sl-color-white);
+}
+.pf-nav a[aria-current],
+.pf-nav details[data-pf-current] > summary {
+  color: var(--sl-color-white);
+  border-bottom-color: var(--sl-color-accent);
+}
+.pf-group {
+  position: relative;
+}
+.pf-group details > ul {
+  position: absolute;
+  top: 100%;
+  left: -0.75rem;
+  z-index: 110;
+  display: block;
+  min-width: 11rem;
+  padding: 0.4rem 0.75rem;
+  background: var(--sl-color-gray-6);
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.375rem;
+}
+.pf-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: none;
+  margin-left: auto;
+}
+.pf-menu-btn,
+.pf-search,
+.pf-theme {
+  font: inherit;
+  color: var(--sl-color-gray-2);
+  background: transparent;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.375rem;
+  padding: 0.35rem 0.7rem;
+  min-height: 2.25rem;
+  cursor: pointer;
+}
+.pf-menu-btn:hover,
+.pf-search:hover,
+.pf-theme:hover {
+  color: var(--sl-color-white);
+  border-color: var(--sl-color-gray-3);
+}
+.pf-header a:focus-visible,
+.pf-header button:focus-visible,
+.pf-header summary:focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: 2px;
+}
+.pf-menu-btn {
+  display: none;
+}
+.pf-search-dialog {
+  width: min(40rem, calc(100vw - 2rem));
+  max-height: 80vh;
+  padding: 1rem;
+  color: var(--sl-color-white);
+  background: var(--sl-color-gray-6);
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.5rem;
+}
+.pf-search-row {
+  display: flex;
+  gap: 0.5rem;
+}
+.pf-search-dialog input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  padding: 0.5rem 0.75rem;
+  color: var(--sl-color-white);
+  background: var(--sl-color-black);
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.375rem;
+}
+.pf-search-dialog button {
+  font: inherit;
+  color: var(--sl-color-gray-2);
+  background: transparent;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.375rem;
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+}
+.pf-search-dialog ol {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+}
+.pf-search-dialog li {
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--sl-color-gray-5);
+}
+.pf-search-dialog li a {
+  color: var(--sl-color-text-accent);
+}
+.pf-search-dialog li p {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--sl-color-gray-2);
+}
+/* A mounted page's own content, under the header it was given at assembly: a page with no <main> of its own gets a
+   column here; one that brings its own keeps its own layout. */
+main.pf-mounted {
+  display: block;
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: 1.25rem clamp(1rem, 4vw, 3.5rem) 3rem;
+}
+/* The header's own search and theme controls work through its script; with scripts off they are not shown. */
+:root:not(.pf-js) .pf-search,
+:root:not(.pf-js) .pf-theme {
+  display: none;
+}
+.pf-search-dialog mark {
+  background: var(--sl-color-accent-low);
+  color: inherit;
+}
+/* The docs keep Starlight's phone menu (the sidebar lists the same sections), so the header's own menu shows only
+   where there is room for it, as the top menu did before Story 53.1. */
+@media (max-width: 71.99rem) {
+  .pf-header--docs .pf-nav {
+    display: none;
+  }
+}
+/* Everywhere else the menu folds behind one button on a phone; with scripts off it stays open and wraps. */
+@media (max-width: 55.99rem) {
+  header.pf-header .pf-header-inner {
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+    padding: 0.4rem 0;
+  }
+  header.pf-header .pf-nav {
+    order: 3;
+    flex: 1 0 100%;
+  }
+  header.pf-header .pf-nav ul {
+    flex-wrap: wrap;
+  }
+  .pf-js header.pf-header .pf-menu-btn {
+    display: inline-block;
+  }
+  .pf-js header.pf-header:not(.pf-open) .pf-nav {
+    display: none;
+  }
+  .pf-js header.pf-header.pf-open .pf-nav > ul {
+    display: block;
+  }
+  header.pf-header .pf-group details > ul {
+    position: static;
+    border: 0;
+    background: transparent;
+    padding: 0 0 0 1rem;
+  }
+}
+@media print {
+  .pf-header,
+  .pf-skip {
+    display: none !important;
+  }
+}
+
+/* Story 53.2 (CAP-63): the fleet board and the CI table on a phone -- each row becomes a block, its heading cell the
+   row's title and every other cell one labelled line, so no column is hidden and the page never scrolls sideways. */
+.sl-markdown-content table.status-table th[scope='row'] {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 49.99rem) {
+  .sl-markdown-content table.status-table,
+  .sl-markdown-content table.status-table tbody {
+    display: block;
+    width: 100%;
+    overflow: visible;
+  }
+  .sl-markdown-content table.status-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .sl-markdown-content table.status-table tr {
+    display: block;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--sl-color-gray-5);
+  }
+  .sl-markdown-content table.status-table th[scope='row'],
+  .sl-markdown-content table.status-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.15rem 0;
+    border: 0;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+  .sl-markdown-content table.status-table th[scope='row'] {
+    display: block;
+    text-align: left;
+    padding-bottom: 0.3rem;
+  }
+  .sl-markdown-content table.status-table td::before {
+    content: attr(data-label);
+    flex: none;
+    color: var(--sl-color-gray-3);
+    text-align: left;
+  }
+  .sl-markdown-content table.status-table td:empty {
+    display: none;
+  }
+}
+@media (max-width: 49.99rem) {
+  .sl-markdown-content table.status-table td > * {
+    min-width: 0;
+  }
+  .sl-markdown-content table.status-table code {
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+}

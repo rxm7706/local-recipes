@@ -64,6 +64,18 @@ These files are maintained in this repository and are **not** byte-identical to 
   absolute URL (herald deferred-work row `DW-herald-42-1-1`)
 - `src/lib/flags.ts` — the one reader of the build flags, `PYFORGE_STATUS_PAGES` and `PYFORGE_CI_SURFACES_TILE`,
   which the Guild env exports (`python -m pyforge.herald.pages_env`)
+- `src/lib/site-header.ts`, `src/components/SiteHeader.astro`, `src/lib/shell.ts`, `src/styles/shell.css` — the one
+  site header (herald Story 53.1, CAP-63), behind `pyforge.herald.site_shell` (`PYFORGE_SITE_SHELL`): the title, the
+  registry's menu grouped by section, search and the theme toggle, rendered by the docs shell
+  (`components/Header.astro`), both herald layouts and the reader pages, and written at build end into each page
+  another station mounts (`dashboard/vizro/`, `marketplace/`). With it, a reader who stored no theme gets dark, each
+  door on the home prints its line of `site.yml` `doors` (keyed by the registry's section keys), and sidebar groups start closed. `src/lib/reader-text.ts`
+  (Story 53.2) prints every time as a readable date and fills a missing page description.
+- `src/pages/herald/pipelines/[page].html.ts` — the reader's page around the mounted Kedro-Viz export (herald Story
+  53.3): the site header, then upstream's app in a frame with a link to the app by itself. Built only with the site
+  shell on and the export in the build input; `nav.ts` `framedSections` points the menu, the door and the sidebar at it.
+  Kedro-Viz keeps its view in its own frame's URL, so the page's address does not change with it: "Full page" opens
+  the app by itself, where a view can be shared by its link.
 - `src/styles/theme.css`, `src/styles/herald-fonts.css`, `src/styles/herald.css` — the site theme, its faces and the
   herald pages' stylesheet (Story 43.4 and its review; see *Theme and fonts* below); `src/pages/herald/[sheet].css.ts`
   serves the faces at `/herald/fonts.css` (the twins' one link) and the theme at `/herald/theme.css` (the reader pages)

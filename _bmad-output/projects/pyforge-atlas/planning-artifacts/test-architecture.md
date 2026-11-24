@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: f291592606a6fa64
-story_count: 168
-test_file_count: 190
+source_fingerprint: 3a2cbb63ad83afc1
+story_count: 171
+test_file_count: 189
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 168
-- **Epics parsed:** 47
-- **Test files inventoried:** 190 under `src/shared/packages/pyforge-atlas/tests/`
+- **Stories parsed:** 171
+- **Epics parsed:** 50
+- **Test files inventoried:** 189 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `f291592606a6fa64`
+- **Source fingerprint:** `3a2cbb63ad83afc1`
 
 ## Risk Assessment
 
@@ -79,6 +79,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 46: The atlas Spec says what is built, what is open and what is retired (spec-pyforge-atlas CAP-1, CAP-7, CAP-18..CAP-31, CAP-35, CAP-36, CAP-43..CAP-47, CAP-50..CAP-52, CAP-54..CAP-56, CAP-58..CAP-72)
 - Epic 47: The atlas public contract is written and held to the code (spec-pyforge-atlas CAP-73, FR-78)
 - Epic 48: The atlas package and its suite stand apart from A's tree and from what the operator retired (relay of spec-pyforge-steward:CAP-175; spec-pyforge-atlas CAP-44..CAP-47 retired; fixes under CAP-48 and CAP-69)
+- Epic 49: The boards' static pages wear the site's theme (spec-pyforge-atlas CAP-63, FR-71)
+- Epic 50: A host that keeps failing costs a run a bounded time (spec-pyforge-atlas CAP-64, CAP-65; AD-13)
+- Epic 51: A stopped refresh starts where the last one ended (spec-pyforge-atlas CAP-64, CAP-65; AD-13)
 
 ### Low-risk epics
 
@@ -103,10 +106,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/integration/publish/test_emit_range.py` | integration | none observed |
 | `src/shared/packages/pyforge-atlas/tests/integration/test_plain_run_fresh_root.py` | integration | none observed |
 | `src/shared/packages/pyforge-atlas/tests/integration/wasm/test_wasm_smoke.py` | integration | none observed |
+| `src/shared/packages/pyforge-atlas/tests/meta/test_catalog_contract.py` | meta | none observed |
 | `src/shared/packages/pyforge-atlas/tests/meta/test_cli_tool_parity.py` | meta | none observed |
 | `src/shared/packages/pyforge-atlas/tests/meta/test_foundry_full_mypy_lane.py` | meta | none observed |
 | `src/shared/packages/pyforge-atlas/tests/meta/test_planning_record.py` | meta | none observed |
 | `src/shared/packages/pyforge-atlas/tests/meta/test_portal_inventory_row.py` | meta | none observed |
+| `src/shared/packages/pyforge-atlas/tests/meta/test_public_contract.py` | meta | none observed |
 | `src/shared/packages/pyforge-atlas/tests/meta/test_skf_skill_and_persona.py` | meta | none observed |
 | `src/shared/packages/pyforge-atlas/tests/tools/test_live_artifactory_transport.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/a2a_surface/test_a2a_payloads.py` | unit | none observed |
@@ -131,6 +136,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_core_sources_last_good.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_credentialed_switch.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_dependency_history.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_failure_budget.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_github_versions_health.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_hosts_and_registries.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_identity_live_sources.py` | unit | none observed |
@@ -150,6 +156,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_s3_downloads.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_sbom_intake.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_snapshot_history.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_stalest_first.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_story_27_2_degraded_datasets.py` | unit | 27.2 |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_tier3_sources.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_upstream_discovery.py` | unit | none observed |
@@ -273,11 +280,6 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/trending_candidates/test_query.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/trending_candidates/test_surface_parity.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/validation/test_validation_hook.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/unit/views/test_cli_bridge.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/unit/views/test_live.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/unit/views/test_registry.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/unit/views/test_render.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/unit/views/test_widgets.py` | unit | none observed |
 
 ## Story Coverage Matrix
 
@@ -451,6 +453,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 48.2 | Atlas's two root literals resolve from the member | none observed |
 | 48.3 | The retired views runtime leaves the package again | none observed |
 | 48.4 | One memlog event reconciles every atlas path this effort moved | none observed |
+| 49.1 | The boards' static pages wear the site's theme | none observed |
+| 50.1 | A host that keeps failing costs a run a bounded time | none observed |
+| 51.1 | A stopped refresh starts where the last one ended | none observed |
 
 ## Quality Gates
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import re
 import shutil
 from pathlib import Path
 
@@ -138,7 +139,7 @@ def test_write_site_refuses_when_the_flag_is_off_and_writes_when_it_is_on(tmp_pa
     assert "<h2>Unpublished packages</h2><ul><li>pyforge-mason: not on PyPI or conda-forge</li></ul>" in card
     assert ".agents/skills" in card
     assert ".claude/skills" in card
-    assert "never verified" in card
+    assert "Never verified" in card
     payload = json.loads((site / "listings.json").read_text(encoding="utf-8"))
     assert payload["schema"] == SCHEMA_ID
     assert payload["listings"][0]["id"] == "mason/environment"
@@ -373,14 +374,25 @@ def test_committed_environment_card_renders_steps_md_not_the_paper_sample(tmp_pa
     assert "<h3>0. Install the published tools</h3>" in card and "<h4>" not in card
     assert card.index("<h2>Steps</h2>") < card.index("<h3>0. Install the published tools</h3>")
     # the lane is named, not defined, on the card (row 55), in the header meta line (Story 109.8)
-    assert '<p class="meta">skill · @mason/environment · version 0.1.0 · lane code-backed</p>' in card
+    # Story 130.2: each value reads as words, the machine value in the item's data-* attribute
+    assert (
+        '<ul class="meta"><li data-kind="skill">Skill</li><li data-name="@mason/environment">@mason/environment</li>'
+        '<li data-version="0.1.0">Version 0.1.0</li><li data-lane="code-backed">Runs code</li></ul>' in card
+    )
+    assert (
+        '<ul class="meta"><li data-tier="community">Community contribution</li>'
+        '<li data-trust="unverified">Not yet reviewed</li><li data-source="estate-listings">Source: estate-listings</li>'
+        '<li data-verified-at="">Never verified</li>'
+        '<li data-jobs="find install create">Use it to: find, install, create</li></ul>' in card
+    )
+    assert "No one has reviewed this listing yet." in card and "community maps to unverified" not in card
     assert (
         "<h2>Contribute</h2><p>A pull request is the publish path; the lanes are defined in the marketplace "
         f'<a href="{REPOSITORY_BLOB_URL}/docs/foundry/marketplace/README.md">README</a>.' in card
     )
     assert "Lane: " not in card
     assert "An instructions-only skill has none" not in card
-    assert "· jobs find, install, create</p>" in card and "<p>Jobs:" not in card
+    assert "<p>Jobs:" not in card  # the jobs sit in the header list (asserted above), not in a paragraph of their own
     assert "sha256sum -c mason-environment.zip.sha256 &amp;&amp; unzip mason-environment.zip -d .claude/skills/" in card
     assert "-d .agents/skills/" in card
     # the two spec-named items come before the runbook, and the unpublished list names both packages
@@ -394,7 +406,7 @@ def test_committed_environment_card_renders_steps_md_not_the_paper_sample(tmp_pa
     assert card.index("<h2>Steps</h2>") < card.index("<h2>Related</h2>") < card.index("<h2>Contribute</h2>")
     assert "<li>pyforge-mason: PyPI, conda-forge, and SelfExplainML returned 404 on 2026-10-21</li>" in card
     assert "<li>pyforge-core: Required by pyforge mason dispatch; same 404 check</li>" in card
-    assert "never verified" in card
+    assert "Never verified" in card
     assert "mason-environment.zip" in card and "mason-environment.zip.sha256" in card
     # Story 109.6: the Install section carries Round 0's Claude Code result; Codex's manifest stays a pointer
     assert "found it does not read <code>.agents/skills/</code>" in card
@@ -409,16 +421,25 @@ def test_committed_environment_card_renders_steps_md_not_the_paper_sample(tmp_pa
     assert "<code>.agents/plugins/marketplace.json</code> stays a discovery pointer until its Round 0 row runs" in card
     assert "as uncertain" not in card and "confirms a plugin install" not in card
     index_html = (site / "index.html").read_text(encoding="utf-8")
-    assert index_html.count("never verified") == 3
+    assert index_html.count("Never verified") == 3
+    assert (
+        index_html.count(
+            '<ul class="meta"><li data-kind="skill">Skill</li><li data-trust="unverified">Not yet reviewed</li>'
+            '<li data-lane="code-backed">Runs code</li><li data-verified-at="">Never verified</li></ul>'
+        )
+        == 3
+    )
+    assert "skill · unverified · code-backed · never verified" not in index_html
 
 
 def test_a_verified_listing_shows_its_date_on_the_card_and_the_index() -> None:
     row = _skill()
     row["verified_at"] = "2026-10-21"
     documents = render_site([row])
-    assert "verified 2026-10-21" in documents["skills/mason/environment.html"]
-    assert "verified 2026-10-21" in documents["index.html"]
-    assert "never verified" not in documents["index.html"]
+    item = '<li data-verified-at="2026-10-21">Verified 2026-10-21</li>'
+    assert item in documents["skills/mason/environment.html"]
+    assert item in documents["index.html"]
+    assert "Never verified" not in documents["index.html"]
 
 
 def test_a_card_escapes_what_a_listing_says() -> None:
@@ -473,3 +494,133 @@ def test_a_cards_relative_runbook_link_points_into_the_mounted_folder() -> None:
     assert '<a href="environment/steps.md">steps</a>' in card
     assert '<a href="environment/references/x.md">ref</a>' in card
     assert '<a href="https://e.test/d">docs</a>' in card
+
+
+# --- the theme and the page head (Story 130.2) ------------------------------------------------------
+
+_STYLE = re.compile(r"<style>\n(.*?)</style>", re.DOTALL)
+_COLOUR_LITERAL = re.compile(r"#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color|color-mix)\(")
+#: What a rule under the fallback block may hold beside ``var(--pf-*)``: lengths, numbers and layout keywords.
+_PLAIN_VALUE = re.compile(
+    r"^(?:-?\d*\.?\d+(?:rem|em|px|%)?|auto|none|solid|flex|wrap|anywhere|normal|border-box|var\(--pf-[a-z-]+\))$"
+)
+_COLOUR_ATTRIBUTE = re.compile(r"<[^>]*\s(?:style|bgcolor|color|text|link|vlink|alink|face)\s*=", re.IGNORECASE)
+
+
+def _rendered_pages() -> dict[str, str]:
+    """The index and one card of every kind and trust tier, verified and not, with a rendered runbook."""
+    verified = _skill()
+    verified["verified_at"] = "2026-10-21"
+    module = listing_from_estate_module({"name": "bmad-builder", "trust_tier": "bmad-certified"})
+    reviewed = _module("x", trust_tier="community-reviewed")
+    documents = render_site([verified, module, reviewed])
+    documents["card-with-steps.html"] = render_skill_card(
+        _skill(), steps_text="# t\n\n## One\n\nRun `x`:\n\n```bash\nx --flag\n```\n\n- a\n- b\n"
+    )
+    return {name: text for name, text in documents.items() if name.endswith(".html")}
+
+
+def _split_stylesheet(page: str) -> tuple[str, str]:
+    """A page's one stylesheet as (the fallback block, the rules under it)."""
+    styles = _STYLE.findall(page)
+    assert len(styles) == 1, "one <style> per page"
+    lines = styles[0].splitlines()
+    assert lines[0].startswith(":root{") and lines[1].startswith("@media (prefers-color-scheme:dark){:root{")
+    return "\n".join(lines[:2]), "\n".join(lines[2:])
+
+
+def test_a_rendered_page_sets_no_colour_outside_the_fallback_block() -> None:
+    """Every colour and face a page sets is a ``--pf-*`` property, and each of those is a site theme variable with a
+    fallback, light under ``:root`` and dark under the system scheme: a literal colour or a named face in any rule
+    under the block, or in a tag's attributes, fails here."""
+    pages = _rendered_pages()
+    assert len(pages) >= 5
+    for name, page in pages.items():
+        block, rules = _split_stylesheet(page)
+        # the block: every property is var(<site variable>, <fallback>), light and dark
+        light, dark = block.splitlines()
+        for declarations in (light[len(":root{") : -1], dark[dark.index("{:root{") + len("{:root{") : -2]):
+            for declaration in re.split(r";(?=--pf-)", declarations):
+                assert re.fullmatch(r"--pf-[a-z-]+:var\(--sl-[a-z0-9-]+,.+\)", declaration), (name, declaration)
+        for colour in ("bg", "text", "muted", "line", "surface", "link"):
+            assert f"--pf-{colour}:var(--sl-" in light and f"--pf-{colour}:var(--sl-" in dark, (name, colour)
+        # the rules under it: no colour literal, and every value is a length, a layout keyword or var(--pf-*)
+        assert not _COLOUR_LITERAL.search(rules), (name, _COLOUR_LITERAL.search(rules))
+        assert "--sl-" not in rules and "@import" not in rules and "url(" not in rules, name
+        for rule in rules.splitlines():
+            selector, _, body = rule.partition("{")
+            assert body.endswith("}"), (name, rule)
+            for declaration in body[:-1].split(";"):
+                prop, _, value = declaration.partition(":")
+                for token in value.split():
+                    assert _PLAIN_VALUE.match(token), (name, selector, prop, token)
+                if prop in ("color", "background", "font-family"):
+                    assert re.fullmatch(r"var\(--pf-[a-z-]+\)", value), (name, selector, declaration)
+        # the body: no inline style and no presentational attribute carries a colour or a face past the stylesheet
+        body_html = page[page.index("<body>") :]
+        assert "<style" not in body_html and "<font" not in body_html.lower(), name
+        assert not _COLOUR_ATTRIBUTE.search(body_html), (name, _COLOUR_ATTRIBUTE.search(body_html))
+        assert 'name="theme-color"' not in page, name
+
+
+def test_a_colour_outside_the_fallback_block_is_caught() -> None:
+    """The check above is not a tautology: the stylesheet Story 130.2 replaced fails each of its parts."""
+    old = "body{font-family:Georgia,serif;color:#1c1917;background:#fafaf9}\na{color:#1d4ed8}"
+    assert _COLOUR_LITERAL.search(old)
+    assert not _PLAIN_VALUE.match("Georgia,serif") and not _PLAIN_VALUE.match("red")
+    assert _COLOUR_ATTRIBUTE.search('<p style="color:red">') and _COLOUR_ATTRIBUTE.search("<body bgcolor=#fff>")
+    assert not _COLOUR_ATTRIBUTE.search('<li data-kind="skill">Skill</li><a href="x.html">x</a>')
+
+
+def test_a_rendered_page_fits_a_phone_and_brings_no_site_header() -> None:
+    """A 16 px gutter on the text column, wrapping prose and scrolling code blocks; the site's header and menu are
+    given at assembly (herald Story 53.1), never copied into the page."""
+    for name, page in _rendered_pages().items():
+        _, rules = _split_stylesheet(page)
+        assert "main{box-sizing:border-box;max-width:46rem;margin:0 auto;padding:1.5rem 1rem 3rem;" in rules, name
+        assert "overflow-wrap:anywhere" in rules and "overflow-x:auto" in rules and "flex-wrap:wrap" in rules, name
+        assert '<meta name="viewport" content="width=device-width, initial-scale=1">' in page, name
+        assert not re.search(r"\b\d{3,}px\b|min-width", rules), name  # no fixed width wider than a phone
+        assert "<body>\n<main>\n" in page and "\n</main>\n</body>" in page, name
+        assert "<header" not in page and "<nav" not in page, name
+
+
+def test_every_rendered_page_carries_a_description() -> None:
+    """The index describes the marketplace and each card carries its listing's own summary, escaped, in one
+    ``<meta name="description">`` in the head."""
+    row = _skill()
+    row["description"] = 'Resolve "manifests" <b>into</b>\none lockfile & check it.'
+    bare = _module("bare")
+    bare.pop("description", None)
+    documents = render_site([row, bare])
+    pattern = re.compile(r'<meta name="description" content="([^"]*)">')
+    for name, page in documents.items():
+        if not name.endswith(".html"):
+            continue
+        head = page[: page.index("</head>")]
+        found = pattern.findall(head)
+        assert len(found) == 1, f"{name}: one description in the head"
+        assert found[0].strip(), f"{name}: the description is empty"
+        assert "<" not in found[0] and "\n" not in found[0], name
+        assert pattern.findall(page[page.index("</head>") :]) == [], name
+    assert (
+        '<meta name="description" content="Skills, modules, and agents. Find, install, create, and publish. '
+        'Listings are generated from the index. Nothing here is a live install button.">' in documents["index.html"]
+    )
+    assert (
+        '<meta name="description" content="Resolve &quot;manifests&quot; &lt;b&gt;into&lt;/b&gt; one lockfile &amp; '
+        'check it.">' in documents["skills/mason/environment.html"]
+    )
+    # a listing with no summary of its own falls back to its title, never to an empty description
+    assert pattern.findall(documents["modules/bare.html"]) == ["bare"]
+
+
+def test_the_committed_pages_carry_a_description_and_the_theme() -> None:
+    site = repo_root() / _MARKETPLACE / "site"
+    pages = sorted(site.rglob("*.html"))
+    assert len(pages) == 4
+    for page in pages:
+        text = page.read_text(encoding="utf-8")
+        assert re.search(r'<meta name="description" content="[^"]+">', text[: text.index("</head>")]), page
+        _split_stylesheet(text)
+        assert "Georgia" not in text and "#1c1917" not in text, page

@@ -273,7 +273,10 @@ def test_42_4_ac1_ac2_the_guild_page_names_its_capture_time_and_says_nothing_on_
     once (AC2)."""
     captured = _fetched_at()
     guild = (built / "status/ci/index.html").read_text(encoding="utf-8")
-    element = f'<time datetime="{captured}">{captured}</time>'
+    # Story 53.2 (CAP-63): the capture time is in datetime, and the page prints it as a date a person reads
+    shown = re.findall(rf'<time datetime="{re.escape(captured)}">([^<]+)</time>', guild)
+    assert len(shown) == 1 and not re.match(r"\d{4}-\d\d-\d\d", shown[0]), shown
+    element = f'<time datetime="{captured}">{shown[0]}</time>'
     assert guild.count(element) == 1, element
     paragraphs = [p for p in re.findall(r"<p\b[^>]*>(.*?)</p>", guild, re.S) if "Snapshot captured" in p]
     assert len(paragraphs) == 1 and element in paragraphs[0], paragraphs

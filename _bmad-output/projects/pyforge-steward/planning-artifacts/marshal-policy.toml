@@ -1718,6 +1718,17 @@ verify_commands = [
 # three times hit the default cap: Story 100.3's fix session was killed at 900 s (MRS-DISP-059) with its edits complete
 # but uncommitted (operator direction 2026-10-13: "adjust the supervisor"). max_parallel restates the default because a
 # declared block replaces the default block whole.
+"130" = [  # the changes page has its input, and the marketplace wears the site's theme (spec-pyforge-steward CAP-168, CAP-171; Stories 130.1 and 130.2), added 2026-11-22.
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
+  "scripts/pages_changes.py",
+  ".github/workflows/pages.yml",
+  "docs/foundry/marketplace/site/**",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-*/planning-artifacts/specs/spec-pyforge-*/.memlog.md",
+]
 
 [dispatch]
 max_parallel = 1

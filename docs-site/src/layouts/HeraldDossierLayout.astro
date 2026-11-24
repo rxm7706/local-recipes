@@ -9,6 +9,9 @@
 import { builtFromHtml } from '../lib/built-from';
 import { HERALD_CSP, THEME_SCRIPT } from '../lib/herald-pages';
 import '../styles/herald.css';
+import SiteHeader from '../components/SiteHeader.astro';
+import { siteShell } from '../lib/flags';
+import { MAIN_ID } from '../lib/site-header';
 import { siteNav } from '../lib/site-nav';
 
 interface Props {
@@ -22,6 +25,9 @@ const rel = '../';
 /** This page is /herald/dossier/; menu paths are relative to the site root. */
 const toRoot = `${rel}../`;
 const current = 'herald/dossier/';
+/** Story 53.1 (CAP-63): with the shell on, the one site header replaces this layout's own; the skip link lands on
+ * the wrapper of the dossier body, which holds the page's one `<main>` (components/dossier/DossierBody.astro). */
+const shell = siteShell();
 const nav = siteNav().menu.map((item) => ({ label: item.label, href: `${toRoot}${item.path}`, path: item.path }));
 ---
 
@@ -37,29 +43,43 @@ const nav = siteNav().menu.map((item) => ({ label: item.label, href: `${toRoot}$
     <script is:inline set:html={THEME_SCRIPT} />
   </head>
   <body>
-    <header class="site-nav">
-      <div class="site-nav-inner">
-        <a class="site-brand" href={`${rel}index.html`}><span class="spark"></span>PyForge</a>
-        <ul>
-          {
-            nav.map((item) => (
-              <li>
-                <a
-                  class="nav-link"
-                  data-pf-menu-link
-                  href={item.href}
-                  aria-current={item.path === current ? 'page' : undefined}
-                >
-                  {item.label}
-                </a>
-              </li>
-            ))
-          }
-        </ul>
-        <span class="nav-spacer"></span>
-      </div>
-    </header>
-    <slot />
+    {
+      shell ? (
+        <SiteHeader toRoot={toRoot} pagePath={current} />
+      ) : (
+        <header class="site-nav">
+          <div class="site-nav-inner">
+            <a class="site-brand" href={`${rel}index.html`}><span class="spark"></span>PyForge</a>
+            <ul>
+              {
+                nav.map((item) => (
+                  <li>
+                    <a
+                      class="nav-link"
+                      data-pf-menu-link
+                      href={item.href}
+                      aria-current={item.path === current ? 'page' : undefined}
+                    >
+                      {item.label}
+                    </a>
+                  </li>
+                ))
+              }
+            </ul>
+            <span class="nav-spacer"></span>
+          </div>
+        </header>
+      )
+    }
+    {
+      shell ? (
+        <div id={MAIN_ID}>
+          <slot />
+        </div>
+      ) : (
+        <slot />
+      )
+    }
     <Fragment set:html={builtFromHtml()} />
   </body>
 </html>

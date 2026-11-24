@@ -11,7 +11,9 @@ real rendering, refusals and directory swap count toward that gate. Every export
 
 from __future__ import annotations
 
+import dataclasses
 import json
+import re
 import sys
 from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
@@ -152,11 +154,15 @@ def test_markdown_headings_paragraphs_and_inline_forms() -> None:
 def test_markdown_pipe_tables_with_and_without_a_separator_row() -> None:
     separated = static_export._markdown("| Source | Rows |\n|:---|---:|\n| `a` | **1** |\n| b | 2 |")
     assert separated == (
-        '<table><thead><tr><th scope="col">Source</th><th scope="col">Rows</th></tr></thead>'
-        "<tbody><tr><td><code>a</code></td><td><strong>1</strong></td></tr><tr><td>b</td><td>2</td></tr></tbody></table>"
+        '<div class="table-wrap"><table><thead><tr><th scope="col">Source</th><th scope="col">Rows</th></tr></thead>'
+        "<tbody><tr><td><code>a</code></td><td><strong>1</strong></td></tr><tr><td>b</td><td>2</td></tr></tbody>"
+        "</table></div>"
     )
     bare = static_export._markdown("| h |\n| --x-- |")
-    assert bare == '<table><thead><tr><th scope="col">h</th></tr></thead><tbody><tr><td>--x--</td></tr></tbody></table>'
+    assert bare == (
+        '<div class="table-wrap"><table><thead><tr><th scope="col">h</th></tr></thead>'
+        "<tbody><tr><td>--x--</td></tr></tbody></table></div>"
+    )
 
 
 def test_markdown_escapes_hostile_text_and_never_emits_its_markup() -> None:
@@ -195,7 +201,8 @@ def test_a_grid_renders_every_row_and_column_escaped() -> None:
     assert "<td>&lt;/td&gt;&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;</td><td></td>" in table
     assert "<td>a &amp; b</td><td>[&#x27;x&#x27;, &#x27;&lt;y&gt;&#x27;]</td>" in table
     assert "<tr><td></td><td>7</td></tr>" in table  # a missing value is a blank cell, never "None"
-    assert table.startswith('<table id="hostile--grid">\n<caption>3 rows</caption>')
+    assert table.startswith('<div class="table-wrap"><table id="hostile--grid">\n<caption>3 rows</caption>')
+    assert table.endswith("</table></div>")
 
 
 @pytest.mark.parametrize(
@@ -489,10 +496,18 @@ def test_the_export_writes_the_tree_and_a_manifest_with_exactly_its_keys(tmp_pat
         assert (out / board["path"]).is_file()
 
     index = (out / "index.html").read_text(encoding="utf-8")
-    assert '<nav aria-label="Boards"><a href="../../">Site home</a></nav>' in index
-    assert f"2 boards, exported {EXPORTED_TEXT} from commit <code>{SHA}</code>" in index
-    assert f'<tr><td><a href="{BOARD}/index.html">Tiny &lt;Board&gt; &amp; Co</a></td>' in index
-    assert f"<td><code>{SCAN}/index.html</code></td><td>unavailable</td></tr>" in index
+    assert '<nav class="boards-nav" aria-label="Boards"><a href="../../">Site home</a></nav>' in index
+    assert (
+        f'2 boards, exported <time datetime="{EXPORTED_TEXT}">15 Oct 2026</time> from commit '
+        f'<code title="{SHA}">{SHA[:12]}</code>.'
+    ) in index
+    assert (
+        f'<tr><td><a href="{BOARD}/index.html">Tiny &lt;Board&gt; &amp; Co</a></td>'
+        f'<td><time datetime="{STAMP}">1 Oct 2026</time></td></tr>'
+    ) in index
+    assert (
+        f'<tr><td><a href="{SCAN}/index.html">Tiny Scan</a></td><td><span class="no-data">No data yet</span></td></tr>'
+    ) in index
 
 
 def test_a_board_page_renders_its_card_grid_and_chart(tmp_path: Path, tiny: list[dict]) -> None:
@@ -500,7 +515,7 @@ def test_a_board_page_renders_its_card_grid_and_chart(tmp_path: Path, tiny: list
     _export(out, tmp_path / "data")
     page = (out / BOARD / "index.html").read_text(encoding="utf-8")
     assert page.startswith("<!DOCTYPE html>") and "<title>Tiny &lt;Board&gt; &amp; Co - cf_atlas boards</title>" in page
-    assert '<nav aria-label="Boards"><a href="../index.html">All boards</a></nav>' in page
+    assert '<nav class="boards-nav" aria-label="Boards"><a href="../index.html">All boards</a></nav>' in page
     assert (
         f'<p class="export-note">Static export of board <code>{BOARD}</code>, built {EXPORTED_TEXT} from commit '
         f"<code>{SHA[:12]}</code>. Data build stamp (AD-17): {STAMP}. Filters are not part of a static page"
@@ -812,3 +827,162 @@ def test_a_live_scan_note_is_dropped_under_either_label(tmp_path: Path, monkeypa
     _export(out, tmp_path / "data")
     page = (out / SCAN / "index.html").read_text(encoding="utf-8")
     assert SCAN_NOTE not in page and _app.NOTE_LABEL not in page
+
+
+# --- Story 49.1: the site's theme, the index a reader can read, 375 px --------------------------------------------
+
+_COLOUR_LITERAL = re.compile(r"#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(")
+_SITE_VARIABLE_WITH_FALLBACK = re.compile(r"var\(--sl-[a-z0-9-]+,[^;{}]+\)")
+_ISO_STAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}")
+_COLOUR_PROPERTY = re.compile(r"(?:^|-)(?:color|background|border|outline|fill|stroke|shadow)(?:-|$)")
+#: What a colour declaration may hold beside a local property: a line style and lengths, never a colour name.
+_NOT_A_COLOUR = re.compile(r"solid|dashed|\.?\d[\d.]*(?:px|rem|em)?")
+
+
+def _styles(page: str) -> list[str]:
+    return re.findall(r"<style>(.*?)</style>", page, flags=re.DOTALL)
+
+
+def _text(page: str) -> str:
+    """What a reader sees: the page without its stylesheet, scripts, tags and their attributes."""
+    page = re.sub(r"<(style|script)\b.*?</\1>", " ", page, flags=re.DOTALL)
+    return re.sub(r"<[^>]*>", " ", page)
+
+
+def _exported_pages(tmp_path: Path) -> dict[str, str]:
+    out = tmp_path / "vizro"
+    _export(out, tmp_path / "data")
+    return {
+        "index": (out / "index.html").read_text(encoding="utf-8"),
+        BOARD: (out / BOARD / "index.html").read_text(encoding="utf-8"),
+        SCAN: (out / SCAN / "index.html").read_text(encoding="utf-8"),
+    }
+
+
+def test_no_colour_literal_outside_the_fallback_block(tmp_path: Path, tiny: list[dict]) -> None:
+    """Every colour and font face a page sets is a site theme variable with a literal fallback, named
+    once in the fallback block; every rule after it reads a local property and names no colour."""
+    theme, rules = static_export._THEME_CSS, static_export._RULES_CSS
+    for name, page in _exported_pages(tmp_path).items():
+        assert _styles(page) == [theme + rules], name  # one stylesheet, the fallback block first
+
+    assert not _COLOUR_LITERAL.search(rules), _COLOUR_LITERAL.findall(rules)
+    assert "--sl-" not in rules  # a rule reads the local properties, which hold the fallbacks
+    for selector_body in re.findall(r"\{([^{}]*)\}", rules):
+        for declaration in filter(None, selector_body.split(";")):
+            prop, _, value = declaration.partition(":")
+            if prop == "font-family":
+                assert re.fullmatch(r"var\(--pf-[a-z-]+\)", value), declaration
+            elif _COLOUR_PROPERTY.search(prop) and prop not in {"border-collapse", "border-radius"}:
+                rest = re.sub(r"var\(--pf-[a-z-]+\)", "", value).split()
+                assert "var(--pf-" in value, declaration
+                assert all(_NOT_A_COLOUR.fullmatch(word) for word in rest), declaration
+
+    # the fallback block: each local property is a site variable with a fallback, and nothing else
+    declarations = [d for body in re.findall(r"\{([^{}]*)\}", theme) for d in filter(None, body.split(";"))]
+    assert declarations and all(
+        re.fullmatch(r"--pf-[a-z-]+:" + _SITE_VARIABLE_WITH_FALLBACK.pattern, d) for d in declarations
+    ), declarations
+    assert not _COLOUR_LITERAL.search(_SITE_VARIABLE_WITH_FALLBACK.sub("", theme))
+    for used in set(re.findall(r"var\((--pf-[a-z-]+)\)", rules)):
+        assert f"{used}:var(--sl-" in theme, used
+
+
+def test_the_fallbacks_are_the_sites_light_values_and_its_dark_ones_under_the_system_scheme() -> None:
+    theme = static_export._THEME_CSS
+    light, _, dark = theme.partition("@media screen and (prefers-color-scheme:dark){")
+    assert dark.endswith("}}") and light.startswith(":root{")
+    assert "--pf-bg:var(--sl-color-black,#f1f3ef)" in light and "--pf-text:var(--sl-color-white,#1a2024)" in light
+    assert "--pf-bg:var(--sl-color-black,#12161a)" in dark and "--pf-text:var(--sl-color-white,#e7ebe6)" in dark
+    colours = {name for name in re.findall(r"(--pf-[a-z-]+):var\(--sl-color", light)}
+    assert colours and colours == set(re.findall(r"(--pf-[a-z-]+):var\(--sl-color", dark))  # each one, both schemes
+    rules = static_export._RULES_CSS
+    assert "background:var(--pf-bg);color:var(--pf-text)" in rules and "a{color:var(--pf-link)}" in rules
+
+
+def test_the_index_prints_no_iso_stamp_as_text(tmp_path: Path, tiny: list[dict]) -> None:
+    index = _exported_pages(tmp_path)["index"]
+    assert not _ISO_STAMP.search(_text(index)), _ISO_STAMP.findall(_text(index))
+    assert f'<time datetime="{STAMP}">1 Oct 2026</time>' in index  # the full stamp stays, in `datetime`
+    assert SHA not in _text(index) and SHA[:12] in _text(index) and f'title="{SHA}"' in index
+    assert "AD-17" not in _text(index)
+
+
+@pytest.mark.parametrize(
+    ("stamp", "shown"),
+    [
+        ("2026-10-26T23:59:59Z", '<time datetime="2026-10-26T23:59:59Z">26 Oct 2026</time>'),
+        # the day the stamp names, whatever its offset: read from its text, never converted
+        ("2026-01-01T00:30:00+14:00", '<time datetime="2026-01-01T00:30:00+14:00">1 Jan 2026</time>'),
+        ("2026-12-09", '<time datetime="2026-12-09">9 Dec 2026</time>'),
+        ("2026-13-01T00:00:00Z", "2026-13-01T00:00:00Z"),
+        ("<when>", "&lt;when&gt;"),
+    ],
+)
+def test_a_stamp_prints_as_the_day_it_names(stamp: str, shown: str) -> None:
+    assert static_export._day(stamp) == shown
+    assert static_export._data_built(stamp) == shown
+
+
+def test_the_index_has_no_path_column(tmp_path: Path, tiny: list[dict]) -> None:
+    index = _exported_pages(tmp_path)["index"]
+    headings = re.findall(r'<th scope="col">(.*?)</th>', index)
+    assert headings == ["Board", "Data built"]
+    assert "Path" not in _text(index) and "index.html" not in _text(index)
+    for row in re.findall(r"<tr><td>.*?</tr>", index):
+        assert row.count("<td>") == 2 and "<code>" not in row, row
+
+
+def test_the_index_describes_a_board_only_when_the_inventory_does() -> None:
+    plain, described = _boards("one", "two")
+    described = dataclasses.replace(described, description="Counts <things>")
+    without = static_export._render_index([plain], exported_text=EXPORTED_TEXT, export_commit=SHA)
+    assert re.findall(r'<th scope="col">(.*?)</th>', without) == ["Board", "Data built"]
+    index = static_export._render_index([plain, described], exported_text=EXPORTED_TEXT, export_commit=SHA)
+    assert re.findall(r'<th scope="col">(.*?)</th>', index) == ["Board", "What it shows", "Data built"]
+    assert '<td><a href="one/index.html">one</a></td><td></td><td><time' in index
+    assert '<td><a href="two/index.html">two</a></td><td>Counts &lt;things&gt;</td><td><time' in index
+
+
+def test_a_board_with_no_data_is_not_rendered_as_a_stamped_one(tmp_path: Path, tiny: list[dict]) -> None:
+    index = _exported_pages(tmp_path)["index"]
+    cells = dict(re.findall(r'<tr><td><a href="([a-z-]+)/index.html">.*?</a></td><td>(.*?)</td></tr>', index))
+    assert cells[BOARD].startswith("<time ") and "no-data" not in cells[BOARD]
+    assert cells[SCAN] == f'<span class="no-data">{static_export.NO_DATA_TEXT}</span>'
+    assert static_export.NO_DATA_TEXT == "No data yet"
+    assert static_export.UNAVAILABLE not in _text(index)  # the manifest's token is not a reader's word
+    assert ".no-data{" in static_export._RULES_CSS  # the mark has its own style
+    assert json.loads((tmp_path / "vizro" / "manifest.json").read_text(encoding="utf-8"))["boards"][1][
+        "data_build_timestamp"
+    ] == (static_export.UNAVAILABLE)  # the manifest keeps its token
+
+
+def test_every_table_scrolls_inside_its_own_wrapper_at_a_phones_width(tmp_path: Path, tiny: list[dict]) -> None:
+    """375 px: a wide table scrolls in `.table-wrap`; the body never scrolls sideways."""
+    rules = static_export._RULES_CSS
+    assert ".table-wrap{overflow-x:auto;max-width:100%;" in rules
+    assert "overflow-wrap:anywhere" in rules.split("}")[0]  # the body breaks a long path or id
+    assert not re.search(r"(?<![a-z-])(?:min-)?width:\d+(?:px|rem|em)", rules)  # no fixed width to overflow a phone
+    for name, page in _exported_pages(tmp_path).items():
+        assert '<meta name="viewport" content="width=device-width, initial-scale=1">' in page, name
+        tables = page.count("<table")
+        assert tables and page.count('<div class="table-wrap"><table') == tables, name
+        assert page.count("</table></div>") == tables, name
+
+
+def test_the_export_adds_no_site_header_and_keeps_its_own_links(tmp_path: Path, tiny: list[dict]) -> None:
+    pages = _exported_pages(tmp_path)
+    for name, page in pages.items():
+        assert page.count("<nav") == 1 and "<header" not in page and "<link" not in page, name
+    assert '<nav class="boards-nav" aria-label="Boards"><a href="../../">Site home</a></nav>' in pages["index"]
+    assert '<nav class="boards-nav" aria-label="Boards"><a href="../index.html">All boards</a></nav>' in pages[BOARD]
+    assert f"Data build stamp (AD-17): {STAMP}. Filters" in pages[BOARD]  # the full stamp stays on its own page
+
+
+def test_the_page_column_sits_on_main_and_the_boards_link_never_on_body() -> None:
+    """The site header a page is given at assembly spans the body (herald Story 53.1): the export's column, margin and
+    padding sit on ``main`` and ``.boards-nav`` (the review of 2026-11-22)."""
+    rules = static_export._RULES_CSS
+    body = rules[rules.index("body{") : rules.index("}", rules.index("body{"))]
+    assert "margin:0;" in body and "max-width" not in body and "padding" not in body, body
+    assert "main,.boards-nav{" in rules and "nav{margin" not in rules.replace(".boards-nav{", "")

@@ -5,8 +5,8 @@
 # `pyforge steward cutover plan` writes it. verified-in-foundry is a state on a rebuild row, never a mode.
 schema: pyforge.capability-ledger/v1
 generated_by: pyforge steward cutover plan
-updated: "2026-11-12"
-source_sha: "2fe6e661a3fc298d885112e89326a4464fc67347"
+updated: "2026-11-22"
+source_sha: "47f90a729e30811dd494f28cc450f1fbaf2dc70d"
 extract: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-capability-ledger/extract.md
 modes: [rebuild, retire, A-only, B-only, pending]
 states: [planned, rebuilding, verified-in-foundry, cut]
@@ -1614,6 +1614,14 @@ capabilities:
     path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
     mode: rebuild
     state: planned
+  - id: pyforge-herald:CAP-63
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: the Pages site reads as one product
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+    mode: rebuild
+    state: planned
+    defaulted: "2026-11-22"
   - id: pyforge-core:CAP-1
     spec: pyforge-core
     station: pyforge-marshal
