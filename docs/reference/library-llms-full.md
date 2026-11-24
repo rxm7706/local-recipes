@@ -910,7 +910,14 @@ Testing:
   exists, splits by count otherwise. In the steward, marshal, atlas, doctor and herald features.
 
 Browser automation:
-- **playwright** (>=1.64.0) — the Node Playwright CLI (browser installs, codegen).
+- **playwright** (>=1.64.0,<1.65) — the Node Playwright driver and CLI; its `browsers.json` fixes the
+  browser revisions, so one line estate-wide (steward Story 131.1).
+- **playwright-chromium** (>=156.0.8078.4,<157) — Chrome for Testing laid out under
+  `$CONDA_PREFIX/share/ms-playwright/chromium-1248`; channel `SelfExplainML`, recipe
+  `recipes/playwright-chromium`. In the detectors, platform-ci-test, atlas and herald features.
+- **playwright-chromium-headless-shell** (>=156.0.8078.4,<157) — the headless shell
+  `launch(headless=True)` prefers; same channel, features and layout (`chromium_headless_shell-1248`).
+- **playwright-ffmpeg** (>=1013) — the ffmpeg build Playwright records video with; same channel and features.
 - **playwright-python** (>=1.62.0) — `from playwright.sync_api import ...`; drive
   Chromium/Firefox/WebKit from Python (scraping, E2E, screenshots).
 

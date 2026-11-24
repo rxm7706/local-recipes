@@ -9078,3 +9078,27 @@ So that the marketplace reads as part of the site.
 **Then** every colour a rendered page sets is a site theme variable with a fallback, in light and dark, each listing's kind, trust and verification read as words an outside reader follows, and the committed `site/` byte-matches the render
 **And** steward's package half passes, with a test that fails by name on a colour outside the fallback block
 **Status:** done
+
+## Epic 131: Playwright's browsers come from pixi (spec-pyforge-steward CAP-5)
+
+Minted 2026-11-21 from the station Dream's entry of the same date on the operator ruling of 2026-11-21: "first Write it up as a Dream entry and a Story, so it's planned but not built yet. then Do steps 1, 2 and 4 now. Settle on one Playwright driver across the estate, add macOS and Windows downloads and checksums to the browser recipes, build them locally, and wire the packages into the environments behind a local channel. All of that lands in a PR; only step 3, publishing to a channel, waits for you. use SelfExplainML to publish". The browser-driving environments fetch Chromium with `playwright install` at run time; the repo's six browser recipes are linux-64 only and pin a driver the estate no longer runs everywhere.
+**HARD boundaries:**
+- One driver version across every environment; a browser package's `run_constraints` admit only that driver line.
+- Publishing to `SelfExplainML` is the operator's act; no agent uploads, and no lock names a package that is not published.
+- No recipe here is submitted to conda-forge (Google Chrome for Testing terms).
+
+### Story 131.1: Playwright's browsers install from pixi on linux-64, osx-arm64 and win-64
+
+As the operator who develops on a macOS laptop and runs the browser checks there and in CI,
+I want one Playwright driver across the estate, the six browser recipes building for linux-64, osx-arm64 and win-64, and the browser-driving environments taking them from a channel,
+So that no environment downloads a browser at run time and the browser a test drives is the one the lock names.
+
+**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-5 (realized, no text change); no AD moves
+**Flag:** `flag-exempt: detector-or-gate` (tests, a gate's own module and the scripts a gate runs; a gated gate is a silent green (roster list))
+**Surface:** `recipes/playwright-*/**`, `pixi.toml`, `pixi.lock`, `environment.yaml`, `.claude/skills/conda-forge-expert/**`
+**Spec:** `planning-artifacts/specs/spec-131-1-playwright-s-browsers-install-from-pixi-on-linux-64-osx-arm64-and-win-64.md`
+**Given** pixi resolves the `playwright` driver to 1.63 in some environments and 1.64 in others, and the six browser recipes build for linux-64 only, at the 1.63 driver's revisions
+**When** one driver is pinned across the estate, each recipe carries a download and a sha256 per platform at that driver's revisions and builds locally, and the browser-driving environments name the packages from a channel
+**Then** every environment resolves one `playwright` version, each recipe builds for linux-64 and osx-arm64 (win-64 built or its blocker named), and a browser check runs on macOS with no `playwright install`
+**And** the lock names the packages only once the operator has published them to `SelfExplainML`; until then the PR is a draft
+**Status:** done
