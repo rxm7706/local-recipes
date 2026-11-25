@@ -2,7 +2,7 @@
  "pyforge-atlas/spec-pyforge-atlas": {
   "files": {
    ".github/workflows/kedro-viz-publish.yml": "3e4292d500ec2809c29799f8852d53801e664b56",
-   "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md": "4b2a272b1d5bceb434cb5990e9e2aa566cf4ed1e",
+   "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md": "4a811deaadbbb1ceeda2c11f2bed184268ad7ac1",
    "conf/conda-forge-packaging-inventory-operations.local.env.example": "e55c099b03392fa21a2ebd9aec433a0252024656",
    "conf/conda-forge-packaging-inventory-operations_curated_groups.json": "07c799631537e1ff4e9b3c81770ad2082a0060fb",
    "scripts/conda-forge-packaging-inventory-operations_metrics.py": "be74945eb4937c831e11f146630485f6779a1193",
@@ -502,7 +502,7 @@
    "src/shared/packages/pyforge-atlas/wasm/index.html": "58d44155379ec640d36caf59b8c701ec8fcfce27",
    "src/shared/packages/pyforge-atlas/wasm/package.json": "e8ec7eef8dff664e2910f4fee67ada79e4105d93"
   },
-  "memlog": "2c027be9e88aaf155a3562fd31bcb12989e4c526"
+  "memlog": "81da2a952dfe76702bfcba3a4e4738b044a6fd61"
  },
  "pyforge-doctor/spec-pyforge-doctor": {
   "files": {
@@ -525,7 +525,7 @@
    "docs/how-to/ai-engine-operations.md": "ea67043dbc28dc191da6416c270da94bc383d597",
    "docs/how-to/air-gapped-mirror-setup.md": "ae55e8c191e725129bb1a47ed7b1428567acf898",
    "docs/how-to/antigravity-developer-startup.md": "c2ed5b4fd1a9acc9600f49af1ab11ce37867ee3a",
-   "docs/how-to/bootstrap-a-machine-with-steward.md": "6abf33473bd35fdd960b3675d9900a4eea1bbe5b",
+   "docs/how-to/bootstrap-a-machine-with-steward.md": "b8f4fbdb0f4265a5b46580b5d08357b65d911ac0",
    "docs/how-to/configure-your-coding-agent.md": "fabef757858e04226100031af9997fb66b2af883",
    "docs/how-to/deploy-the-docs-site-to-github-enterprise-pages.md": "5f3d8674d129eb7c809149b0d283bc94aa49a92d",
    "docs/how-to/detect-concurrent-agent-activity.md": "51859a70732adb7a5cc7f13112861e7b05434655",
@@ -559,7 +559,7 @@
    "docs/how-to/run-and-understand-detectors.md": "50c317322746584e10e1522d526912db9f7a8661",
    "docs/how-to/run-atlas-pipelines-and-read-datasets.md": "efb5138a9de6d24281b863e09a6a150a32aac2c2",
    "docs/how-to/run-herald-live-backend-locally.md": "fad93d5b4de2bd5c52e4c27be6a45e79fea77402",
-   "docs/how-to/scan-for-compliance-with-warden.md": "dc6dd519b6137c654c3c03518d543cfbe5ba2e12",
+   "docs/how-to/scan-for-compliance-with-warden.md": "9649e1aa5335656f0fa9eb2321a92ae813c68e8f",
    "docs/how-to/schedule-the-scribe-nightly-compile.md": "56db7842260ba4ce748450680b21e1f3bfa9545c",
    "docs/how-to/station-cli-operations.md": "bccebdca7a729bda6b7b158e5804d01634cbe5ce",
    "docs/how-to/track-upstream-todos.md": "3afeac8ca50ad5af666745dad89cd6f66597a6fa",
@@ -823,7 +823,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "0a9263b972d722149eb1f9cb5ecedc15332622f8"
+  "memlog": "c24742789ca2a0869cb044d2b0af4234037a5764"
  },
  "pyforge-herald/spec-pyforge-herald": {
   "files": {
