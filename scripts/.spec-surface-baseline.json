@@ -513,17 +513,17 @@
    "docs/explanation/enterprise-deployment.md": "eb41c188f7151073255562d9dc1b8452a8db5d39",
    "docs/explanation/herald-four-moments.md": "a1fd444a86d705f3745120282934c68326fe0ca9",
    "docs/explanation/mcp-server-architecture.md": "c1d8f83d9a9627aa7ea1c5b1d5290bb26d0c7683",
-   "docs/explanation/one-chain-lock-and-mop.md": "08ea75c6ce2dd78e92a92b1cabcfb60ecf06d1ba",
+   "docs/explanation/one-chain-lock-and-mop.md": "888c9869005e58ec483765e6451ff09b455928a3",
    "docs/explanation/platform-deployment-architecture.md": "d0df58b4f5646d6004a958051bc3ab52f88cdd30",
    "docs/explanation/platform-requirements.md": "9fc6f6250dc6d48ce03929e44d4819c78f2f1e3c",
    "docs/explanation/pyforge-ecosystem-architecture.md": "9467b7c40484c674f3f47976a92401a24bc96adb",
    "docs/explanation/pyforge-estate-overview.md": "a984c99b9595d531ce8c9e648c4fad8167954f28",
-   "docs/explanation/the-detector-framework.md": "cf8ca32b65e2994b82242469c3da8debfcbd883c",
+   "docs/explanation/the-detector-framework.md": "12de25dd38faeefecaace41e1d3914a9a5375d65",
    "docs/explanation/the-tier-model-and-data-flow.md": "b6d9cd90ce017a2d134d3b3cf416c54797cda31d",
    "docs/how-to/README.md": "c6ed46ea76ac716eb179d133babc1bc1fd7fcd5b",
    "docs/how-to/adopt-the-operating-model-with-marshal-seed.md": "c9055f0c5d0f4d2d481f9def1f2aeb3bdd997874",
    "docs/how-to/ai-engine-operations.md": "ea67043dbc28dc191da6416c270da94bc383d597",
-   "docs/how-to/air-gapped-mirror-setup.md": "f0bee26283e21e21bda4c9becc9502c17ec26464",
+   "docs/how-to/air-gapped-mirror-setup.md": "ae55e8c191e725129bb1a47ed7b1428567acf898",
    "docs/how-to/antigravity-developer-startup.md": "c2ed5b4fd1a9acc9600f49af1ab11ce37867ee3a",
    "docs/how-to/bootstrap-a-machine-with-steward.md": "6abf33473bd35fdd960b3675d9900a4eea1bbe5b",
    "docs/how-to/configure-your-coding-agent.md": "fabef757858e04226100031af9997fb66b2af883",
@@ -541,7 +541,7 @@
    "docs/how-to/manticore-studio.md": "5cde3a3eb807fcda7dd35e86eb193b4546867a79",
    "docs/how-to/monitor-the-fleet.md": "07c06eeb45413db91ea57365aed820f9c46d2fba",
    "docs/how-to/move-vendor-extracts-through-the-corridor.md": "c73c473dcda93731c3d8d8857f654400106b3658",
-   "docs/how-to/ocp-cluster-bringup.md": "ed1ea496204d746fe749973109e5cc34be397524",
+   "docs/how-to/ocp-cluster-bringup.md": "3976682bafe52c1ff88b864c8c41a05580ec4adf",
    "docs/how-to/one-chain-station-ops.md": "7d8846d2a87da34b304e41e990bd16055793725d",
    "docs/how-to/pause-ci.md": "b63f5d31f9b4e2932a39304ac65c05dcff42babe",
    "docs/how-to/pixi-tasks.md": "9777da81fd881d9927397890cc5b5e12a76faab7",
@@ -556,19 +556,19 @@
    "docs/how-to/restore-operations.md": "f315756947ad710e286b9511bb1e0e8a6f82a2b8",
    "docs/how-to/rotate-platform-secrets.md": "743eec1aa64d51ae11d818b3051a1d739171d91c",
    "docs/how-to/run-and-read-pr-preflight.md": "176217e1117fcffe73943877e1730f96df819eaa",
-   "docs/how-to/run-and-understand-detectors.md": "06cf70af56686f8a87ab938efa5f08d3e7f0c317",
+   "docs/how-to/run-and-understand-detectors.md": "50c317322746584e10e1522d526912db9f7a8661",
    "docs/how-to/run-atlas-pipelines-and-read-datasets.md": "efb5138a9de6d24281b863e09a6a150a32aac2c2",
    "docs/how-to/run-herald-live-backend-locally.md": "fad93d5b4de2bd5c52e4c27be6a45e79fea77402",
    "docs/how-to/scan-for-compliance-with-warden.md": "dc6dd519b6137c654c3c03518d543cfbe5ba2e12",
    "docs/how-to/schedule-the-scribe-nightly-compile.md": "56db7842260ba4ce748450680b21e1f3bfa9545c",
    "docs/how-to/station-cli-operations.md": "bccebdca7a729bda6b7b158e5804d01634cbe5ce",
-   "docs/how-to/track-upstream-todos.md": "02c41e9feee7801c4fef53b155bd0d724386b019",
+   "docs/how-to/track-upstream-todos.md": "3afeac8ca50ad5af666745dad89cd6f66597a6fa",
    "docs/how-to/troubleshoot-bmad-agent-loops.md": "0da58cf0e133444e687f5eb61c2be6e828abc30b",
    "docs/how-to/troubleshoot-herald-moments.md": "562236ea361f6dba8a3a8a6615687ffd376ebf04",
    "docs/how-to/troubleshooting-recipe-builds.md": "42027672a58821071e97ac16f815bfceeba83f74",
    "docs/how-to/upgrade-bmad-core.md": "b3e7429f45754d7fa2856f36b95576db29882228",
    "docs/how-to/use-marshal-in-an-air-gapped-site.md": "8be1fbe8ad58d3a7bd73726039f552b1eca06020",
-   "docs/how-to/use-steward-duties-that-need-operator-consent.md": "b021916204d8ae7fcfbdbccfcfe1447ab340b71d",
+   "docs/how-to/use-steward-duties-that-need-operator-consent.md": "d18978203a5d30b0726242f9d379b36300a7668e",
    "docs/map.yaml": "00be2882eafc074b217b64b92ae76aa946327251",
    "docs/tutorials/README.md": "983cc85a4858ab6fb012284cc8371bb7ce061f2a",
    "docs/tutorials/getting-started.md": "5f501f9a1e9f5b148368938989d35ff264511eb9",
@@ -823,7 +823,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "9f857aa37c9d1343fb18b4b52b8e42a6abe86a2c"
+  "memlog": "0a9263b972d722149eb1f9cb5ecedc15332622f8"
  },
  "pyforge-herald/spec-pyforge-herald": {
   "files": {
@@ -4105,7 +4105,7 @@
    "docs/governance/pin-policy.yaml": "b311ca23f61361e38b5696dce136e439b39aceda",
    "docs/governance/realization-register.schema.json": "24d9758de8984c2ce6bc39da1d71f3d449f25be1",
    "docs/governance/realization-register.yaml": "70777615b698effdd7eb7a1c9391bd3e631682b4",
-   "docs/how-to/track-upstream-todos.md": "02c41e9feee7801c4fef53b155bd0d724386b019",
+   "docs/how-to/track-upstream-todos.md": "3afeac8ca50ad5af666745dad89cd6f66597a6fa",
    "docs/reference/library-llms-full.md": "53bf041ca959113430a21796a4d95f69e62e91dc",
    "docs/reference/pixi-config-jfrog.example.toml": "34bb94c6e9fee8e788189d58507bf1b1e2f6fd94",
    "evals/review-catches-planted-defect/README.md": "a06ac8f35b80beb3ca5758bab201c84643d39aca",
@@ -4380,7 +4380,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_ci_status.py": "03867c5fee2ebe732c98adbe9ed0873d1214af64",
    "src/shared/packages/pyforge-steward/tests/unit/test_cli.py": "eef43bbf7c0d25ca81acd4c812047a5abea62c13",
    "src/shared/packages/pyforge-steward/tests/unit/test_corridor.py": "a23a37c35fa94d5877120a32621868701c5f5d4f",
-   "src/shared/packages/pyforge-steward/tests/unit/test_cutover.py": "f20b76fc1b26e891215c0514cca1a2bbb14afed7",
+   "src/shared/packages/pyforge-steward/tests/unit/test_cutover.py": "2bf0223cc960feca7e32f09499b0372e3c8db1eb",
    "src/shared/packages/pyforge-steward/tests/unit/test_cutover_ledger.py": "17298daecb21f73feb66a1facb009d71fc74d365",
    "src/shared/packages/pyforge-steward/tests/unit/test_cutover_ledger_check.py": "06a482d59d0f09a68f50fe89b772505bb01174c8",
    "src/shared/packages/pyforge-steward/tests/unit/test_dashboard_admin_and_htmx.py": "1a96b00f9357f3e42776882c4d7a1e3514b1f620",
@@ -4510,7 +4510,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "e7bbeb0269819ae7af54e1d9ed759068d4e39362"
+  "memlog": "12d7d3397d9cdf45ca1e0204f03d625c84e068d7"
  },
  "pyforge-steward/spec-pyforge-unifying-strategy": {
   "files": {
@@ -5771,7 +5771,7 @@
  },
  "pyforge-steward/spec-python-foundry-cutover": {
   "files": {},
-  "memlog": "b5ef9c12e666bcd9d2b39585d91c6cc187ca73cc"
+  "memlog": "5bfe0bcc9c442876d3909977f3e8424d7212fe85"
  },
  "pyforge-warden/spec-pyforge-warden": {
   "files": {
