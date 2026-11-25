@@ -9342,7 +9342,7 @@ So that I do not assemble the path from six pages, and the page I follow shows o
 
 ## Epic 136: The rows a lapsed blocker held close (spec-pyforge-steward CAP-5, CAP-166, CAP-175, CAP-179, CAP-182; spec-pyforge-unifying-strategy CAP-15, CAP-16)
 
-Minted 2026-11-25 from the station Dream's entry of the same date (the rows a lapsed blocker held close) on the operator ruling of 2026-11-25: "All 22 rows". Twenty-two open deferred-work rows across the ledgers carry a named blocker. For ten of them the blocker was the scope of the change that wrote the row, the 2026-11-10 cutover-readiness change, which landed as PR #2371; they are carried here, one story per kind of work: two modules that spell the layout (`DW-steward-123-2-2`), three package-data files that cite absorbed ids (`DW-steward-122-4-1`), the host's private import (`DW-steward-cutover-2026-11-10-3`), the personas' bare ids (`DW-steward-cutover-2026-11-10-10`), the Story lines of `epics.md` (`DW-steward-cutover-2026-11-10-9`), seven tests that run in no CI job (`DW-steward-cutover-2026-11-10-8`, `DW-steward-cutover-2026-11-10-12`, `DW-scribe-cutover-2026-11-10-2`), the missing durations files (`DW-steward-cutover-2026-11-10-11`) and seven atlas tasks in the recipe-factory feature (`DW-atlas-46-1-4`). Three more are atlas's own Epic 53.
+Minted 2026-11-25 from the station Dream's entry of the same date (the rows a lapsed blocker held close) on the operator ruling of 2026-11-25: "All 22 rows". Twenty-two open deferred-work rows across the ledgers carry a named blocker. For ten of them the blocker was the scope of the change that wrote the row, the 2026-11-10 cutover-readiness change, which landed as PR #2371; they are carried here, one story per kind of work: two modules that spell the layout (`DW-steward-123-2-2`), three package-data files that cite absorbed ids (`DW-steward-122-4-1`), the host's private import (`DW-steward-cutover-2026-11-10-3`), the personas' bare ids (`DW-steward-cutover-2026-11-10-10`), the Story lines of `epics.md` (`DW-steward-cutover-2026-11-10-9`), seven tests that run in no CI job (`DW-steward-cutover-2026-11-10-8`, `DW-steward-cutover-2026-11-10-12`, `DW-scribe-cutover-2026-11-10-2`), the missing durations files (`DW-steward-cutover-2026-11-10-11`) and seven atlas tasks in the recipe-factory feature (`DW-atlas-46-1-4`). Three more are atlas's own Epic 53. Stories 136.9 to 136.11 were added the same day on the operator ruling "lets address these too": a local preflight lane for the two steps of Story 136.6 (136.9), the six compiled station skills that cite the persona ids bare (`DW-steward-136-4-1`, 136.10) and the Story lines Story 136.5 left (`DW-steward-136-5-1`, 136.11).
 **HARD boundaries:**
 - Seven rows stay open with their blocker, by the operator ruling of 2026-11-25 "Leave them blocked": `DW-steward-121-2`, `DW-steward-121-3`, `DW-steward-cutover-2026-11-10-4`, `DW-steward-cutover-2026-11-10-5`, `DW-steward-cutover-2026-11-10-7`, `DW-atlas-46-1-3` and `DW-atlas-46-1-8`. No `blocked` key is flipped.
 - No CI job, ci-surfaces row or budget is added (operator ruling of 2026-11-25: "No new lane"), and no dependency is added, moved or re-pinned.
@@ -9477,3 +9477,51 @@ So that an atlas gate does not need the 10 GB recipe-factory environment.
 **Then** each moved task resolves and runs in `-e pyforge-atlas`, is no longer defined under `feature.local-recipes`, and `gate-contract.md`'s table and its meta-test agree with `pixi.toml`
 **And** no dependency is added or moved, the lock is unchanged or passes `pixi lock --check` with the pinned pixi, a task that could not move is named with its reason, and the row reads resolved or names what is left
 **Status:** done
+
+### Story 136.9: The two named-test steps have a local preflight lane
+
+As an agent that reads a green local preflight as a green CI run,
+I want the two steps Story 136.6 added to the lint-types job to run as lanes of `pr-preflight`,
+So that a red of either is met before a push, not after.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-159 (the preflight selects and runs every lane a PR gates on) and CAP-175 (realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: two tasks join the list the preflight already reads)
+**Surface:** `pixi.toml`, `environment.yaml`, `src/shared/packages/pyforge-steward/tests/**`, `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight*.py`, `docs/how-to/pixi-tasks.md`, `docs/**`
+**Spec:** `planning-artifacts/specs/spec-136-9-the-two-named-test-steps-have-a-local-preflight-lane.md`
+**Given** the review of Story 136.6 found that the two new lint-types steps have no `pr-preflight` lane
+**When** both tasks are added to `pr-preflight-lanes`, each in the environment its CI step uses
+**Then** a full-scope `pr-preflight` lists and runs `steward-share-tree-test` in `pyforge-guild` and `scribe-plane-and-portal-test` in `pyforge-foundry-full`, and `pixi run --dry-run -e pyforge-guild pr-preflight-lanes` resolves every task
+**And** steward's preflight tests pass, and no CI job, ci-surfaces row or dependency is added
+**Status:** ready-for-dev
+
+### Story 136.10: Six station skills and their briefs cite the persona ids in qualified form
+
+As an agent that loads a station's compiled skill,
+I want the atlas, doctor, herald, marshal, scribe and warden skill briefs and compiled skills to cite the host's requirements and the strategy's capabilities by their qualified ids,
+So that a compiled skill and its persona name the same ids.
+
+**Type:** fix • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-unifying-strategy CAP-15 (every station teaches an agent its own work; realized, no text change) and CAP-16; no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: a compiled skill cites ids in the form the chain standard defines)
+**Surface:** `.claude/skills/pyforge-atlas/**`, `.claude/skills/pyforge-doctor/**`, `.claude/skills/pyforge-herald/**`, `.claude/skills/pyforge-marshal/**`, `.claude/skills/pyforge-scribe/**`, `.claude/skills/pyforge-warden/**`, `.claude/skills/.export-manifest.json`, `.claude/skills/export-skill-result-*.json`, `AGENTS.md`, `docs/reference/skills-catalog.md`, `docs/map.yaml`, `src/shared/packages/pyforge-doctor/tests/fixtures/**`, `src/shared/packages/pyforge-*/tests/**`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-136-10-six-station-skills-and-their-briefs-cite-the-persona-ids-in-qualified-form.md`
+**Given** `DW-steward-136-4-1` reports six skill briefs and four compiled skills that cite the persona ids bare
+**When** each brief is qualified and each of the six skills is regenerated by `skf-update-skill` and exported by `skf-export-skill`, one station at a time
+**Then** no active compiled skill or brief of the six stations cites one of the four ids bare, every `[MANUAL]` block is byte-identical to its earlier text, each `active` link serves the rebuilt version, and no other skill directory changes
+**And** the `AGENTS.md` skill block and the export manifest name the versions built, the scribe instruction-surface parity test and `governance-currency` pass, each station's test that reads its compiled skill passes, and the row reads resolved
+**Status:** ready-for-dev
+
+### Story 136.11: The Story lines the page did not resolve name their capabilities
+
+As a reader who follows a Story's FR/AD line to the capability it realizes,
+I want each Story line Story 136.5 left to name the capability the Story realizes, where the Story's own record shows it,
+So that the remainder is the lines that truly have no capability, each counted.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-179 (the ids the station cites are the Spec's; realized, no text change); CHAIN-STANDARD section 2 (a citation names a defined capability, traced, never counted); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a planning fix: citations move, no behaviour does)
+**Surface:** `_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-136-11-the-story-lines-the-page-did-not-resolve-name-their-capabilities.md`
+**Given** `DW-steward-136-5-1` lists the Story FR/AD lines of steward's `epics.md` that Story 136.5 could not resolve from the page
+**When** each is traced through its story spec, its Epic's prose and the capability's intent, and re-keyed or qualified only where a record names the capability
+**Then** every id written is a capability its Spec defines whose intent the Story's work matches, Stories 12.9 and 59.2 cite today's ids or record why not, and the lines still without a resolvable capability are counted by reason in the story's change log
+**And** no Story key, heading, status or acceptance line changes, the chain detectors pass, and the row reads resolved, naming the counted remainder as lines that have no capability to cite
+**Status:** ready-for-dev

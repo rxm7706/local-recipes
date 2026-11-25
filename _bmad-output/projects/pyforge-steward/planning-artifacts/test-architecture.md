@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 16fb9b4c64f4e3e0
-story_count: 508
+source_fingerprint: 31520013394cc8ce
+story_count: 511
 test_file_count: 169
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 508
+- **Stories parsed:** 511
 - **Epics parsed:** 136
 - **Test files inventoried:** 169 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `16fb9b4c64f4e3e0`
+- **Source fingerprint:** `31520013394cc8ce`
 
 ## Risk Assessment
 
@@ -859,6 +859,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 136.6 | The tests that ran in no CI job run in one | none observed |
 | 136.7 | Each sharded suite splits by recorded durations | none observed |
 | 136.8 | The seven atlas gate tasks run in atlas's own environment | none observed |
+| 136.9 | The two named-test steps have a local preflight lane | none observed |
+| 136.10 | Six station skills and their briefs cite the persona ids in qualified form | none observed |
+| 136.11 | The Story lines the page did not resolve name their capabilities | none observed |
 
 ## Quality Gates
 
