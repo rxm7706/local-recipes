@@ -8284,3 +8284,39 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   bare machine to a ready verdict per profile, with the steward skill regenerated (135.3). Out of scope: installing or
   signing in to anything, starting a cluster or a database, cloud targets, and replacing `session check`, `estate
   verify` or the preflight.
+- **2026-11-25 (the rows a lapsed blocker held close) — Found:** a sweep of the eight deferred-work ledgers for
+  rows left open on purpose. 1,090 rows read `open`; 22 of them give a named blocker as their reason (steward 15, atlas
+  6, scribe 1). Each was read against the tree. For twelve the blocker was the scope of the change that wrote the row,
+  the 2026-11-10 cutover-readiness change (PR #2371, landed), or a decision that change would not take: two steward
+  modules that spell the station-packages directory by hand (`DW-steward-123-2-2`), three package-data files that cite
+  an absorbed Spec's capability id (`DW-steward-122-4-1`), the host pipeline's import of steward's private
+  `_default_transport` (`DW-steward-cutover-2026-11-10-3`), the eight personas' bare `FR-13`, `FR-11`, `CAP-15` and
+  `CAP-16` (`DW-steward-cutover-2026-11-10-10`), 383 Story lines of steward's `epics.md` that cite a pre-fold id or
+  none (`DW-steward-cutover-2026-11-10-9`), seven tests that skip in the only environment their suite runs in
+  (`DW-steward-cutover-2026-11-10-8`, `DW-steward-cutover-2026-11-10-12`, `DW-scribe-cutover-2026-11-10-2`), six
+  durations files the station-tests workflow names and nobody wrote (`DW-steward-cutover-2026-11-10-11`), seven atlas
+  gate tasks that run only in `-e local-recipes` (`DW-atlas-46-1-4`), and atlas's `DW-atlas-46-1-1` and
+  `DW-atlas-46-1-6`. One waited on a ruling (`DW-atlas-46-1-7`). Two are the operator's acts on steward's own rows:
+  `DW-steward-134-2-1` (the session hook's two false denials) and `DW-steward-135-3-1` (the steward skill's attended
+  regeneration). Seven wait on the cutover. **Ruled** (operator rulings of 2026-11-25, in session: "find all the Still
+  open by design items in the entire code base - we want to resolve them all", then "All 22 rows"; on the two scribe test
+  rows, "No new lane": the tests run as steps of jobs that already install their environment, with no new ci-surfaces
+  row or budget; on the seven cutover rows, "Leave them blocked"; on `DW-atlas-46-1-7`, "Layout-free URN"). **For
+  steward:** this entry binds capabilities that already state the behaviour and mints none: `spec-pyforge-steward`
+  CAP-182 (one module names the layout; its marker drops the qualifier naming `DW-steward-123-2-2`), CAP-179 (the ids
+  the station cites are the Spec's; its `oracle-map.md` note is amended), CAP-175 (a station suite runs once, in
+  shards sized by time), CAP-166 (every pausable CI surface is declared once; no row is added) and CAP-5 (station work
+  runs in the station's own environment, never `local-recipes`), with `spec-pyforge-unifying-strategy` CAP-15 and
+  CAP-16 (the personas) and pap:AD-2 (the host never imports `pyforge.*`; the dated carve-out DW-steward-74-1 stands
+  and only shrinks). `spec-pyforge-core` (the testing kit's diff guard), `spec-pyforge-scribe:CAP-26`,
+  `spec-pyforge-atlas:CAP-50` and `spec-pyforge-atlas:CAP-69` are read and not changed. It decomposes as Epic 136,
+  eight stories: the two modules derive from the root layout (136.1), the three data files cite today's ids (136.2),
+  the host imports the public name and the diff guard admits the four carved-out files (136.3), the personas qualify
+  their ids (136.4), the Story lines are re-keyed (136.5), the seven tests run in a job (136.6), the durations files
+  are written (136.7) and the atlas tasks move to atlas's environment (136.8). Atlas's three rows are atlas's Epic 53,
+  on atlas's Dream. Each is a fix, so no flag is added. **Constraints:** no `blocked` key is flipped and the seven
+  cutover rows keep their blocker (`DW-steward-121-2`, `DW-steward-121-3`, `DW-steward-cutover-2026-11-10-4`,
+  `DW-steward-cutover-2026-11-10-5`, `DW-steward-cutover-2026-11-10-7`, `DW-atlas-46-1-3`, `DW-atlas-46-1-8`); no CI
+  job, ci-surfaces row, budget or dependency is added; the session hook is not edited by an agent, so
+  `DW-steward-134-2-1` closes when the operator applies the patch this change hands over; a compiled skill is written
+  by `skf-update-skill`, so `DW-steward-135-3-1` closes on one attended run.

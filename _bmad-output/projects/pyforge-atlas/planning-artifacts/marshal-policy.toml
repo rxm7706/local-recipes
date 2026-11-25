@@ -549,6 +549,24 @@ harness_preference = ["cursor"]
   "src/shared/packages/pyforge-atlas/tests/unit/trending_candidates/test_main.py",
   "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_basilisk.py",
 ]
+"53" = [  # Atlas's rows a lapsed blocker held close (spec-pyforge-atlas CAP-43, CAP-54, CAP-55, CAP-73), added 2026-11-25
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/.memlog.md",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/contract.md",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml",
+  "archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/complete-export-contract.md",
+  "archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-upstream-discovery/tier-taxonomy.md",
+  "docs/**",
+  "docs/dreams/pyforge-atlas.md",
+  "docs/dreams/pyforge-steward.md",
+  "scripts/.spec-surface-baseline.json",
+  "src/shared/packages/pyforge-atlas/**",
+  "src/shared/packages/pyforge-atlas/src/pyforge/atlas/**",
+  "src/shared/packages/pyforge-atlas/src/pyforge/atlas/observability.py",
+  "src/shared/packages/pyforge-atlas/tests/**",
+]
 
 [dispatch]
 landing_reverify = "on-code-change"

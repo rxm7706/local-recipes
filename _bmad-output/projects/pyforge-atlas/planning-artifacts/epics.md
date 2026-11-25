@@ -3804,3 +3804,60 @@ changed:** Epic 50 and this section.
 *Chain-currency cascade (arch -> epics).* 2026-11-22: Epic 51 and Story 51.1 are minted under `spec-pyforge-atlas`
 CAP-64 and CAP-65 (FR-72, FR-73; realized, no text change; AD-13 stands); no other epic or story moves. **Content
 changed:** Epic 51 and this section.
+
+## Epic 53: Atlas's rows a lapsed blocker held close (spec-pyforge-atlas CAP-43, CAP-54, CAP-55, CAP-73)
+
+Minted 2026-11-25 from the station Dream's entry of the same date (the rows a lapsed blocker held close) on the operator rulings of 2026-11-25: "All 22 rows", and, on `DW-atlas-46-1-7`, "Layout-free URN". Three atlas rows were held by the scope of the 2026-11-10 cutover-readiness change, which landed as PR #2371, or by a ruling now given: two live companions that sit under `archive/` (`DW-atlas-46-1-6`), the lineage producer that names a path that does not exist (`DW-atlas-46-1-7`), and comments that cite a test layout and spec sections that moved (`DW-atlas-46-1-1`). `DW-atlas-46-1-4` (seven gate tasks in the recipe-factory feature) is steward's Story 136.8, since `pixi.toml` is steward's.
+**HARD boundaries:**
+- `DW-atlas-46-1-3` (the conda-forge-expert tree read) and `DW-atlas-46-1-8` (the credentialed, attended run of Story 24.2) stay open with their blocker, by the operator ruling of 2026-11-25 "Leave them blocked"; Story 24.2's key stays `blocked`.
+- `SPEC.md` is never hand-edited: a cite path moves through the memlog and a `bmad-spec` render.
+- No statement of code changes in Story 53.3, no coverage floor is lowered, and no dataset, catalog entry, pipeline or dependency is added.
+- No flag: each story restores what a capability or the chain standard already states.
+
+### Story 53.1: The two live companions sit in the station Spec folder
+
+As a reader who follows a capability to the companion it reads,
+I want `tier-taxonomy.md` and `complete-export-contract.md` to sit beside `SPEC.md`,
+So that a live contract is not read from `archive/`.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-atlas CAP-43, CAP-54 and CAP-55 (each reads one of the two companions; the cite paths move through the memlog, no capability text change); CHAIN-STANDARD section 11 item 2 (a live companion is carried into the station Spec folder); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a planning fix: two files move, no behaviour does)
+**Surface:** `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/complete-export-contract.md`, `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-upstream-discovery/tier-taxonomy.md`, `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/**`, `src/shared/packages/pyforge-atlas/**`, `docs/**`, `scripts/.spec-surface-baseline.json`, `_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-53-1-the-two-live-companions-sit-in-the-station-spec-folder.md`
+**Given** `DW-atlas-46-1-6` reports that `tier-taxonomy.md` and `complete-export-contract.md` are read by live capabilities and sit under `archive/`
+**When** both are moved into `specs/spec-pyforge-atlas/`, listed in `companions:`, and every reference is re-pointed
+**Then** `git ls-files` lists both under `specs/spec-pyforge-atlas/` only, the Spec's `companions:` names them, CAP-43, CAP-54 and CAP-55 cite the new paths, and no tracked file outside `archive/` and the memlogs names either archive path
+**And** the three record companions stay archived, the docs link gate and `spec-surface-check` pass, and the row reads resolved
+**Status:** ready-for-dev
+
+### Story 53.2: The lineage producer is a layout-free identifier
+
+As a reader of an OpenLineage event atlas emitted,
+I want the producer on every event and facet to name the package, not a path in one repository's tree,
+So that the producer is true on either root and never points at a page that does not exist.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-atlas CAP-73 (the public contract, whose `Lineage producer` section records the value; the section moves with the constant); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: the constant named a path that never existed after the package moved)
+**Surface:** `src/shared/packages/pyforge-atlas/src/pyforge/atlas/observability.py`, `src/shared/packages/pyforge-atlas/src/pyforge/atlas/**`, `src/shared/packages/pyforge-atlas/tests/**`, `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/contract.md`, `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/.memlog.md`, `docs/**`, `_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-53-2-the-lineage-producer-is-a-layout-free-identifier.md`
+**Given** `DW-atlas-46-1-7` reports that the producer URI names a path that does not exist, and the operator rules that the producer is a layout-free URN
+**When** a test that fails on the unchanged tree is written, and the constant, the tests that pin it and `contract.md` move to `urn:local-recipes:pyforge-atlas`
+**Then** every event and facet atlas emits carries `urn:local-recipes:pyforge-atlas` as its producer, no file under the package names the old URL, and `contract.md` records the value the code has
+**And** an event with the URN producer is built and serialized by the OpenLineage client in a test, the contract meta-test passes, and the row reads resolved
+**Status:** ready-for-dev
+
+### Story 53.3: Atlas's comments cite the test layout and the specs that exist
+
+As a reader who follows a comment in the atlas package to a test or a spec section,
+I want each cited test path and spec section to be one that exists,
+So that a citation leads somewhere.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-atlas CAP-73 (the package says what the tree has; realized, no text change); reads spec-pyforge-steward:CAP-175 (the touched-module coverage floor counts an AST change; no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: comments and docstrings name paths that exist)
+**Surface:** `src/shared/packages/pyforge-atlas/**`, `_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-53-3-atlas-s-comments-cite-the-test-layout-and-the-specs-that-exist.md`
+**Given** `DW-atlas-46-1-1` reports comments and docstrings in the atlas package that cite the pre-`tests/unit/` test layout and section numbers of an archived intake spec
+**When** every `#` comment and config citation is corrected, and each docstring citation is corrected wherever the touched-module coverage floor still holds
+**Then** each remaining test-path citation under the package resolves with `git ls-files`, each spec citation names a file that exists, and atlas's coverage gate passes on the branch
+**And** no statement of code changes (a module's AST differs only in docstrings), the modules whose docstrings were left are listed with their coverage, and the row reads resolved or is replaced by one row naming exactly those modules
+**Status:** ready-for-dev

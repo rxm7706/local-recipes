@@ -9339,3 +9339,141 @@ So that I do not assemble the path from six pages, and the page I follow shows o
 **And** the steward skill's `init` line, CLI block and duty table match the live `--help`, with its `[MANUAL]` blocks byte-identical
 **And** `docs-map-hygiene-check`, `docs-currency-check`, `governance-currency` and `general-docs-consistency-check` pass
 **Status:** done
+
+## Epic 136: The rows a lapsed blocker held close (spec-pyforge-steward CAP-5, CAP-166, CAP-175, CAP-179, CAP-182; spec-pyforge-unifying-strategy CAP-15, CAP-16)
+
+Minted 2026-11-25 from the station Dream's entry of the same date (the rows a lapsed blocker held close) on the operator ruling of 2026-11-25: "All 22 rows". Twenty-two open deferred-work rows across the ledgers carry a named blocker. For ten of them the blocker was the scope of the change that wrote the row, the 2026-11-10 cutover-readiness change, which landed as PR #2371; they are carried here, one story per kind of work: two modules that spell the layout (`DW-steward-123-2-2`), three package-data files that cite absorbed ids (`DW-steward-122-4-1`), the host's private import (`DW-steward-cutover-2026-11-10-3`), the personas' bare ids (`DW-steward-cutover-2026-11-10-10`), the Story lines of `epics.md` (`DW-steward-cutover-2026-11-10-9`), seven tests that run in no CI job (`DW-steward-cutover-2026-11-10-8`, `DW-steward-cutover-2026-11-10-12`, `DW-scribe-cutover-2026-11-10-2`), the missing durations files (`DW-steward-cutover-2026-11-10-11`) and seven atlas tasks in the recipe-factory feature (`DW-atlas-46-1-4`). Three more are atlas's own Epic 53.
+**HARD boundaries:**
+- Seven rows stay open with their blocker, by the operator ruling of 2026-11-25 "Leave them blocked": `DW-steward-121-2`, `DW-steward-121-3`, `DW-steward-cutover-2026-11-10-4`, `DW-steward-cutover-2026-11-10-5`, `DW-steward-cutover-2026-11-10-7`, `DW-atlas-46-1-3` and `DW-atlas-46-1-8`. No `blocked` key is flipped.
+- No CI job, ci-surfaces row or budget is added (operator ruling of 2026-11-25: "No new lane"), and no dependency is added, moved or re-pinned.
+- The session hook is not edited by an agent: `DW-steward-134-2-1` is the operator's act, on a patch this change hands over.
+- A compiled station skill is written by its own tool (`skf-update-skill`), never by hand.
+- No flag: each story restores what a capability or the chain standard already states.
+
+### Story 136.1: Steward's last two modules derive the station-packages directory from the root layout
+
+As a maintainer who moves this root's layout,
+I want `five_tier.py` and `preflight_suite_reduction.py` to read the station-packages directory from `root_layout.STATION_PACKAGES_DIR`,
+So that one module names the layout and no other spells it segment by segment.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-182 (one module names this root's layout; the marker drops its `not met: every other module derives from it` qualifier through the memlog); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: two modules read a constant that already exists)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/five_tier.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_suite_reduction.py`, `src/shared/packages/pyforge-steward/tests/meta/test_portability.py`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md`, `docs/foundry/capability-ledger.yaml`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-136-1-steward-s-last-two-modules-derive-the-station-packages-directory-from-the-root-layout.md`
+**Given** `DW-steward-123-2-2` reports that `five_tier.py` and `preflight_suite_reduction.py` spell the station-packages directory segment by segment and that `test_portability.py` excepts both by name
+**When** both modules derive the directory from `root_layout.STATION_PACKAGES_DIR` and the two `LAYOUT_EXCEPTIONS` entries are deleted
+**Then** `LAYOUT_EXCEPTIONS` is empty, `test_portability.py` passes, every path the two modules returned before is the same path, and no steward module but `root_layout.py` joins those three segments
+**And** the memlog of `spec-pyforge-steward` records that CAP-182's marker drops the qualifier naming `DW-steward-123-2-2`, and the row reads resolved
+**Status:** ready-for-dev
+
+### Story 136.2: Three steward package-data files cite today's capability ids
+
+As a reader who follows a capability id from a package file to the Spec,
+I want the sprint-ledger-query schema, the measure catalog and the estate catalog to cite the station Spec's ids,
+So that every id in steward's package resolves in `spec-pyforge-steward`.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-179 (the public contract and the ids the package cites; realized, no text change; its `oracle-map.md` row note is amended); reads CAP-148, CAP-45 and CAP-117 (no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: three comments or descriptions name ids the fold already re-keyed)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/data/sprint-ledger-query.schema.json`, `src/shared/packages/pyforge-steward/measures/measures.yaml`, `src/shared/packages/pyforge-steward/catalog/catalog.yaml`, `src/shared/packages/pyforge-steward/tests/meta/test_cap_citations.py`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/oracle-map.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-136-2-three-steward-package-data-files-cite-today-s-capability-ids.md`
+**Given** `DW-steward-122-4-1` reports three package-data files that cite an absorbed Spec's capability id and an `oracle-map.md` note that understates what `test_cap_citations.py` holds
+**When** each citation is re-keyed to the station Spec's id by the provenance map and the test reads the three files
+**Then** no file under the steward package cites `spec-sprint-ledger-query-module`, `spec-build-league-scorecard` or `spec-self-hosted-bmad-marketplace` as a live id, the three files cite spec-pyforge-steward:CAP-148, CAP-45 and CAP-117, and a test fails when one of them cites an absorbed Spec again
+**And** `oracle-map.md`'s CAP-179 row note says the test holds help, output, comments, docstrings and the three data files, and the row reads resolved
+**Status:** ready-for-dev
+
+### Story 136.3: The host's ingest imports steward's transport by its public name
+
+As a maintainer of the one dated carve-out under `src/platform/ingest/github_projects/`,
+I want the pipeline to import `default_transport`, and the diff guard to admit an edit of a carved-out file that shrinks the breach,
+So that the carve-out can shrink without every station suite turning red.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-182 (the public name `default_transport`; realized, no text change) and pap:AD-2 (the host never imports `pyforge.*`; the dated carve-out DW-steward-74-1 stands and only shrinks); reads `spec-pyforge-core` (the testing kit's diff guard; no text change)
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: an import reads a name that already exists, and a guard reads the allowlist another test already holds)
+**Surface:** `src/platform/ingest/github_projects/pipeline.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py`, `src/shared/packages/pyforge-testing-kit/**`, `src/shared/packages/pyforge-steward/tests/meta/test_object_store_seam_boundaries.py`, `src/shared/packages/pyforge-*/tests/**`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-136-3-the-host-s-ingest-imports-steward-s-transport-by-its-public-name.md`
+**Given** `DW-steward-cutover-2026-11-10-3` reports that the host pipeline imports steward's private `_default_transport`, and that every station suite's diff guard refuses any edit of that file
+**When** the kit's diff guard admits the four carved-out files and nothing else, and the pipeline imports `default_transport`
+**Then** the pipeline imports the public name, every one of the 20 guards passes on this branch, a test shows the guard still reds a changed `src/platform` file outside the four that imports `pyforge`, and the allowlist is written in one place two tests read
+**And** the carve-out does not grow: the four paths are the four of `PLATFORM_PYFORGE_IMPORTERS`, and the row reads resolved under DW-steward-74-1, which stays open
+**Status:** ready-for-dev
+
+### Story 136.4: The eight station personas cite their requirements and capabilities in qualified form
+
+As an agent that reads a station persona,
+I want each requirement and capability id the persona cites to name the chain it belongs to,
+So that `FR-13` in a persona cannot be read as the station's own FR-13.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-unifying-strategy CAP-16 (every station can be addressed as a persona) and CAP-15 (realized, no text change); CHAIN-STANDARD section 0 (the `canopy:` prefix); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: four ids take the prefix the chain standard already defines)
+**Surface:** `.claude/skills/bmad-agent-*/SKILL.md`, `.claude/skills/bmad-agent-*/customize.toml`, `src/shared/packages/pyforge-*/tests/meta/test_station_persona.py`, `src/shared/packages/pyforge-*/tests/meta/test_skf_skill_and_persona.py`, `src/shared/packages/pyforge-steward/tests/meta/test_steward_persona.py`, `src/shared/packages/pyforge-*/tests/**`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-136-4-the-eight-station-personas-cite-their-requirements-and-capabilities-in-qualified-form.md`
+**Given** `DW-steward-cutover-2026-11-10-10` reports that all eight station personas cite `FR-13`, `FR-11`, `CAP-15` and `CAP-16` unqualified and that each suite's persona test pins the wording
+**When** the four ids are qualified in the eight personas, their `customize.toml` and the template, and each suite's persona test asserts the qualified form
+**Then** no persona `SKILL.md` or `customize.toml` cites one of the four ids bare, every persona contract test passes, and a test fails when a persona cites one bare again
+**And** no other persona line changes, no compiled `pyforge-<station>` skill is hand-edited, and the row reads resolved
+**Status:** ready-for-dev
+
+### Story 136.5: Story lines in steward's epics cite today's capability ids
+
+As a reader who follows a Story's FR/AD line to the capability it realizes,
+I want each Story line in steward's `epics.md` to cite the station Spec's id,
+So that a Story minted before the fold resolves in `spec-pyforge-steward` without the provenance map.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-179 (the ids the station cites are the Spec's; realized, no text change); CHAIN-STANDARD section 2 (a citation names a defined capability); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a planning fix: citations move, no behaviour does)
+**Surface:** `_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-136-5-story-lines-in-steward-s-epics-cite-today-s-capability-ids.md`
+**Given** `DW-steward-cutover-2026-11-10-9` reports 383 Story FR/AD lines in steward's `epics.md` that cite an absorbed Spec's capability id, a bare id or none
+**When** each line citing an absorbed Spec is re-keyed through the Spec's provenance headings, and each bare id the page resolves is qualified
+**Then** no Story FR/AD line cites an absorbed steward Spec's capability as a live id, every re-keyed id is a capability `spec-pyforge-steward` defines, and the lines left unresolved are counted by kind in the story's change log
+**And** no Story key, heading, status or acceptance line changes, `chain-completeness-check`, `story-status-check` and `ledger-regression-check` pass, and the row reads resolved, naming any remainder as a new row if one is left
+**Status:** ready-for-dev
+
+### Story 136.6: The tests that ran in no CI job run in one
+
+As the operator who reads a green CI run as every test having run,
+I want steward's two share-tree tests and scribe's five skipped tests to run in a CI job whose environment holds what they need,
+So that a test that skips in its own station's environment is not a test that runs nowhere.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-175 (a station suite runs once, as its two halves) and CAP-166 (every pausable CI surface is declared once; no row is added, by the operator ruling of 2026-11-25 "No new lane"); reads `spec-pyforge-scribe:CAP-26` (no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix to CI coverage: no product behaviour moves)
+**Surface:** `.github/workflows/lint-types.yml`, `.github/workflows/pyforge-station-tests.yml`, `pixi.toml`, `environment.yaml`, `src/shared/packages/pyforge-steward/tests/unit/test_provision_module_installers.py`, `src/shared/packages/pyforge-scribe/tests/meta/test_live_tree_split.py`, `src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plane.py`, `src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py`, `docs/reference/github-workflows.md`, `docs/governance/**`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`, `_bmad-output/projects/pyforge-scribe/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-136-6-the-tests-that-ran-in-no-ci-job-run-in-one.md`
+**Given** `DW-steward-cutover-2026-11-10-8`, `DW-steward-cutover-2026-11-10-12` and `DW-scribe-cutover-2026-11-10-2` report seven tests that skip in the only environment their suite runs in, and the operator rules "No new lane"
+**When** each test is run by node id as a step of an existing CI job whose environment holds its imports, through a pixi task, and the step fails when a named test skips
+**Then** the two share-tree tests pass in a job on `pyforge-guild`, the five scribe tests pass in the job on `pyforge-foundry-full`, each locally through its pixi task, and no CI job, ci-surfaces row, budget or dependency is added
+**And** a skip of any of the seven fails its step, each skip reason and scribe's skip-site guard name the task that runs the test, `docs/reference/github-workflows.md` says so, and the three rows read resolved
+**Status:** ready-for-dev
+
+### Story 136.7: Each sharded suite splits by recorded durations
+
+As the operator who pays for every CI minute,
+I want each sharded test job to split its tests by how long they take,
+So that no shard runs far longer than its siblings because it drew the slow tests by count.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-175 (each station half runs as N shards sized by time; realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: the workflow already names the files)
+**Surface:** `tests/durations/**`, `.github/workflows/pyforge-station-tests.yml`, `pixi.toml`, `environment.yaml`, `tests/scripts/**`, `scripts/**`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-136-7-each-sharded-suite-splits-by-recorded-durations.md`
+**Given** `DW-steward-cutover-2026-11-10-11` reports that the workflow names six durations files and none exists
+**When** each file is written by one full unsharded run of its task with `--store-durations`
+**Then** `tests/durations/` holds a non-empty durations file for every `--durations-path` the workflow names, and a test fails when the workflow names one that is missing or empty
+**And** no shard count or workflow command changes, the README says how a file is refreshed, and the row reads resolved
+**Status:** ready-for-dev
+
+### Story 136.8: The seven atlas gate tasks run in atlas's own environment
+
+As an agent that runs an atlas gate,
+I want `dashboard-dryrun`, `dashboard-serve`, `vizro-ai-dryrun`, `publish`, `publish-range`, `wasm-build` and `wasm-smoke` to run in `-e pyforge-atlas`,
+So that an atlas gate does not need the 10 GB recipe-factory environment.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-5 (`pyforge-guild` and each station's own environment, never `local-recipes`, carry station work; realized, no text change); reads `spec-pyforge-atlas:CAP-50` and `spec-pyforge-atlas:CAP-69` (their `gate-contract.md` table moves with the tasks; no capability text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: seven tasks move to the environment CI already runs their suites in)
+**Surface:** `pixi.toml`, `pixi.lock`, `environment.yaml`, `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/gate-contract.md`, `src/shared/packages/pyforge-atlas/tests/**`, `src/shared/packages/pyforge-atlas/AGENTS.md`, `docs/**`, `.github/workflows/**`, `_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-136-8-the-seven-atlas-gate-tasks-run-in-atlas-s-own-environment.md`
+**Given** `DW-atlas-46-1-4` reports seven atlas gate tasks that run only in `-e local-recipes`, and the change that held them there has landed
+**When** each task whose dependencies `pyforge-atlas` already solves is moved to `[feature.pyforge-atlas.tasks]` unchanged, and `gate-contract.md` and every caller name the new environment
+**Then** each moved task resolves and runs in `-e pyforge-atlas`, is no longer defined under `feature.local-recipes`, and `gate-contract.md`'s table and its meta-test agree with `pixi.toml`
+**And** no dependency is added or moved, the lock is unchanged or passes `pixi lock --check` with the pinned pixi, a task that could not move is named with its reason, and the row reads resolved or names what is left
+**Status:** ready-for-dev
