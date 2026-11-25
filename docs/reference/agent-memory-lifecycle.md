@@ -4,7 +4,7 @@ sources:
   - src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py
   - src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py
   - CLAUDE.md
-verified: 2026-11-18
+verified: 2026-11-24
 ---
 
 # Agent Memory Lifecycle

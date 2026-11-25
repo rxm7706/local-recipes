@@ -5,7 +5,7 @@ sources:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_currency.py
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/verdict.py
   - docs/reference/judgement-vocabulary.md
-verified: 2026-11-18
+verified: 2026-11-24
 ---
 
 # How to run and understand Detectors

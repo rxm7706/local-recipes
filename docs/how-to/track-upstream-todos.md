@@ -3,7 +3,7 @@ sources:
   - docs/foundry/upstream-todos.yaml
   - scripts/upstream_todos_check.py
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-67-4-upstream-tickets-for-the-gaps-that-need-one.md
-verified: 2026-11-17
+verified: 2026-11-24
 ---
 
 # How to Track Upstream To-Dos
