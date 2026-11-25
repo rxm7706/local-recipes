@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: 8187cbb9a5fecd1c
-story_count: 196
+source_fingerprint: 637e1f34b064eb11
+story_count: 197
 test_file_count: 131
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 196
-- **Epics parsed:** 59
+- **Stories parsed:** 197
+- **Epics parsed:** 60
 - **Test files inventoried:** 131 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `8187cbb9a5fecd1c`
+- **Source fingerprint:** `637e1f34b064eb11`
 
 ## Risk Assessment
 
@@ -95,6 +95,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 57: The doctor Spec says what the code does, and its public contract is written once (spec-pyforge-doctor CAP-96..CAP-99; decisions D1 and D4)
 - Epic 58: The package-local half is the rebuild oracle, and the branch's baselines name only live Specs (spec-pyforge-doctor CAP-97, CAP-59)
 - Epic 60: The documentation refresh's deferred rows close (spec-pyforge-doctor CAP-84, CAP-2, CAP-3)
+- Epic 61: The documentation says what the tree does (spec-pyforge-doctor CAP-84)
 
 ## Test Inventory
 
@@ -432,6 +433,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 60.2 | docs-currency measures before it trusts git, and the generators stamp what th... | none observed |
 | 60.3 | The shelf follows its own style guide, and the manticore and antigravity page... | none observed |
 | 60.4 | Doctor's chain closes: CAP-84 reads shipped and the incident log's home is se... | none observed |
+| 61.1 | The shelf, the front doors and the dossier say what the tree does | none observed |
 
 ## Quality Gates
 

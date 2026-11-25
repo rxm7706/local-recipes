@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: warden
-source_fingerprint: f7d182595d67ebb6
-story_count: 84
+source_fingerprint: 210da7db4de42548
+story_count: 85
 test_file_count: 89
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-warden`
-- **Stories parsed:** 84
-- **Epics parsed:** 26
+- **Stories parsed:** 85
+- **Epics parsed:** 27
 - **Test files inventoried:** 89 under `src/shared/packages/pyforge-warden/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `f7d182595d67ebb6`
+- **Source fingerprint:** `210da7db4de42548`
 
 ## Risk Assessment
 
@@ -59,6 +59,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 25: The warden chain says what the code does (cutover readiness 2026-11-10; spec-pyforge-warden CAP-27, CAP-29; decisions D4 and D6)
 - Epic 26: Warden's public contract is one companion, held by a test (spec-pyforge-warden CAP-28; decision D1)
 - Epic 27: Warden's live-tree readers run as their own half (relay of spec-pyforge-steward:CAP-175; decision D2)
+- Epic 28: The upload and the job views answer only to the warden role (spec-pyforge-warden CAP-16)
 
 ### Low-risk epics
 
@@ -246,6 +247,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 26.2 | Every warden capability names the test modules that prove it | none observed |
 | 26.3 | The contract names what other code imports, where each capability lives, and ... | none observed |
 | 27.1 | Warden's live-tree readers run as their own half | none observed |
+| 28.1 | The upload and the job views answer only to the warden role | none observed |
 
 ## Quality Gates
 
