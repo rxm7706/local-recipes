@@ -3,7 +3,7 @@
 This is a [Kedro](https://docs.kedro.org) project. These guidelines help AI coding assistants work with it correctly.
 
 <!-- bmad:context -->
-<!-- Verified 2026-11-11 against 72f3e3158f. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+<!-- Verified 2026-11-25 against 21087f55c9. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
 
 ## pyforge-atlas (Kedro/Dagster/DuckDB cf_atlas migration)
 
@@ -68,8 +68,9 @@ repo-wide surface is the root `AGENTS.md`. The binding contract is
 
 ## Where things are
 
-- Gates and their tests: `pyforge-atlas-test` (the whole suite; `kedro-test` is its alias), `kedro-catalog-check` →
-  `tests/unit/catalog/`, `parity-diff` → `tests/unit/parity/`, `dagster-dryrun` → `tests/unit/orchestration/`,
+- Gates and their tests: `kedro-test` (the whole suite: `pyforge-atlas-test`, the package half, then
+  `pyforge-atlas-live-test`, the live-tree half), `kedro-catalog-check` → `tests/unit/catalog/`, `parity-diff` →
+  `tests/unit/parity/`, `dagster-dryrun` → `tests/unit/orchestration/`,
   `bsl-metric-check` → `tests/unit/semantic/`, `duckdb-singularity` → `tests/unit/singularity/`,
   `query-plane-parity` → `tests/unit/query_plane/`, `vizro-ai-dryrun` → `tests/unit/nl/`, `dashboard-dryrun` →
   `tests/integration/dashboard/`, `wasm-smoke` → `tests/integration/wasm/`, `publish-range` →
