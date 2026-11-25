@@ -92,7 +92,7 @@ Boundaries — write them down rather than overclaim
 Imports are stdlib + ``filelock`` + ``kedro.framework.hooks`` + ``pyforge.core`` (Story 14.2,
 CAP-2's pure-stdlib atomic-write leaf) only — no ``pandas``, no
 ``dashboard.*``, no ``dagster``, and (the file is scanned by
-``tests/catalog/test_no_inline_io.py``) never ``subprocess``: the lock must not shell out.
+``tests/unit/catalog/test_no_inline_io.py``) never ``subprocess``: the lock must not shell out.
 """
 
 from __future__ import annotations

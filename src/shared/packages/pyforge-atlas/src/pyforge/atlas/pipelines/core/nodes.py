@@ -1,7 +1,7 @@
 """``core`` pipeline nodes — the conda-side backbone (Story B1, § 5.2 / AD-3).
 
 PURE functions: ``pandas.DataFrame`` in → ``pandas.DataFrame`` out, NO inline IO
-(THE CRUX — ``tests/catalog/test_no_inline_io.py`` bans HTTP/DB clients across the
+(THE CRUX — ``tests/unit/catalog/test_no_inline_io.py`` bans HTTP/DB clients across the
 whole package). Fetch / rate-limiting / TTL are dataset concerns (AD-2 / AD-5); a
 node receives already-fetched frames via the catalog and only transforms them.
 
@@ -193,8 +193,8 @@ def detect_latest_status(
     # legacy: Phase B.6  (phase_b6_yanked_detection CFA:1665)
     """LITE semantics (AC-6): a package present in the current repodata is
     ``latest_status='active'``. Full per-version yanked detection is an explicit
-    follow-on, NOT part of this story (spec § 12). Output: ``conda_name``,
-    ``latest_status``."""
+    follow-on, NOT part of this story (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md § 12). Output:
+    ``conda_name``, ``latest_status``."""
     repo = core_repodata_raw
     if repo is None or repo.empty:
         return pd.DataFrame(columns=["conda_name", "latest_status"])
@@ -379,7 +379,8 @@ def compute_version_download_history(
 
 
 def _inactive_feedstocks(cf_graph: pd.DataFrame) -> set[str]:
-    """Build the archived/inactive feedstock skip-set (v7.9.0 fix; spec § 3.3
+    """Build the archived/inactive feedstock skip-set (v7.9.0 fix;
+    archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md § 3.3
     "Phases J + M archived-feedstock filter") — the set is built at the write site
     BEFORE emitting edges, so archived feedstocks never pollute the graph."""
     if "feedstock_archived" not in cf_graph.columns or "feedstock_name" not in cf_graph.columns:

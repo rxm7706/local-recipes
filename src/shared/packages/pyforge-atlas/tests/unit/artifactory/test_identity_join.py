@@ -4,7 +4,7 @@ Proves the whole CAP-2/CAP-3 success signal offline against hand-constructed
 ``pd.DataFrame`` fixtures (no catalog, no live tables). One test per I/O & Edge-Case Matrix
 row in the story spec, plus a duplicate-name-across-rows passthrough case, plus two tests
 proving the provenance-rank collapse (modeled on
-``tests/pipelines/pypi_intelligence/test_mapping_export.py``'s
+``tests/unit/pipelines/pypi_intelligence/test_mapping_export.py``'s
 ``test_g10_spelling_survives_and_is_not_clobbered`` /
 ``test_equal_tier_collision_is_order_independent_deterministic``)."""
 

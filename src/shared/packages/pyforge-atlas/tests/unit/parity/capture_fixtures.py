@@ -15,7 +15,7 @@ is touched. A recaptured fixture is stamped ``provenance:
 "credentialed-legacy-capture-<date>"`` so it is distinguishable from a shape-only
 seed and the harness/PARITY_NOTES can tell which fixtures still need recapture.
 
-Lives in ``tests/parity/`` (writes fixture files; not pipeline code).
+Lives in ``tests/unit/parity/`` (writes fixture files; not pipeline code).
 """
 
 from __future__ import annotations

@@ -97,4 +97,4 @@ Per AC-5's "reconciles — **or explicitly documents**" branch, B1 DOCUMENTS the
 
 The ~44-feedstock disagreement is a data-quality investigation beyond one story. It is
 recorded here and in the `enrich_maintainers` node docstring; B1 and B4 are both named
-owners in spec § 3.3, and B4 finalizes the reconciliation.
+owners in archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md § 3.3, and B4 finalizes the reconciliation.

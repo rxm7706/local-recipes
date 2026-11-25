@@ -2,7 +2,7 @@
 title: '53.2: The lineage producer is a layout-free identifier'
 type: 'fix'
 created: '2026-11-25'
-status: 'ready-for-dev'
+status: 'in-review'
 story: 53-2-the-lineage-producer-is-a-layout-free-identifier
 spec: spec-pyforge-atlas
 difficulty: 'easy'
@@ -95,3 +95,8 @@ Ledger key: `53-2-the-lineage-producer-is-a-layout-free-identifier`.
 ## Spec Change Log
 
 - 2026-11-25: minted from the station Dream's 2026-11-25 entry (the rows a lapsed blocker held close) and the operator's ruling of the same date. Not implemented.
+
+- 2026-11-25: reproduction on the unchanged tree: AC1's grep exits 0 with two lines (`observability.py:84`, `contract.md:481`); three new tests fail (`test_the_producer_is_a_layout_free_urn`, the event-and-facet producer test, and the contract meta-test `test_the_lineage_producer_in_the_contract_is_the_one_the_code_stamps`). No test or fixture pinned the old URL.
+- 2026-11-25: change: `observability.PRODUCER = "urn:local-recipes:pyforge-atlas"`; `contract.md` § Lineage producer records the URN. The new test serializes every captured event with the OpenLineage client's `Serde` and found the `atlasNodeMetrics` run facet still carrying the client library's producer (the open row DW-E2-3), so `AtlasNodeMetricsRunFacet.__attrs_post_init__` now stamps `PRODUCER` when none is given (through `getattr`/`setattr`: mypy cannot see the base class's field where openlineage is not installed, and a `producer=` call argument reds the guild mypy lane). DW-E2-3 is met by this change; its ledger row is the session lead's to close. The client adds its own `tags` run facet with its own producer; the test excludes it by name. No namespace, schema URL or flag changed.
+- 2026-11-25: tests added: 4 in `tests/unit/observability/test_observability_fixtures.py`, 1 in `tests/meta/test_public_contract.py`. Touched modules: observability, catalog `test_no_inline_io.py` and the contract meta-test, 51 passed, exit 0. Working-tree coverage gate (`coverage_gates_ci.py --paths-file`, the one AST-changed source module `pyforge.atlas.observability`, 92.9% in the package half): exit 0. `lint-types` for pyforge-atlas: ruff, ruff-format and mypy ok; the task as a whole exits 1 on `ruff-format` findings in pyforge-steward and pyforge-testing-kit files this story does not touch.
+- 2026-11-25: AC1 exit 1 (no line matches, as expected); AC2 exit 0; AC3 exit 0 (2995 passed, 27 skipped; 53 passed, 5 skipped). `pyforge-atlas-live-test` exit 0. The memlog reconcile, the scoped stamp and the ledger row are the session lead's.

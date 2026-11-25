@@ -5,7 +5,7 @@ second OS process spawned with ``subprocess.Popen([sys.executable, "-c", ...])``
 real ``kedro.pipeline.Pipeline`` + ``DataCatalog`` through the real
 :class:`~pyforge.atlas.admission.RunAdmissionHooks`. No threads, no mocks, no monkeypatched
 lock in the gate. (``subprocess`` is banned inside ``src/pyforge/atlas/**``, never in
-``tests/`` — ``tests/catalog/test_credential_scoping.py`` is the in-suite precedent.)
+``tests/`` — ``tests/unit/catalog/test_credential_scoping.py`` is the in-suite precedent.)
 
 Review pass 1 — the gap that let a CWD-relative lock root ship green
 --------------------------------------------------------------------
@@ -78,7 +78,7 @@ _CHILD_TIMEOUT = 45.0
 # stderr readiness handshake, so it bounds "is it blocked on the lock?" and not "has it
 # finished importing kedro?" — the confusion that made the old wait test vacuous. The suite's
 # precedent for a bare interpreter+import warmup is the 3.0s in
-# ``tests/dashboard/test_dashboard_e2e.py``; a reject-fast verdict lands in milliseconds once
+# ``tests/integration/dashboard/test_dashboard_e2e.py``; a reject-fast verdict lands in milliseconds once
 # the handshake has fired, so this is orders of magnitude of margin either way.
 _BLOCKED_WINDOW = 3.0
 
@@ -328,7 +328,7 @@ def catalog_filepath_root() -> Path:
     return Path(str(filepath)).resolve().parents[3]
 
 
-# Credential stubs are a test-harness concern; ``tests/orchestration/conftest.py`` owns the
+# Credential stubs are a test-harness concern; ``tests/unit/orchestration/conftest.py`` owns the
 # canonical version and the rationale. Repeated here (never overwriting an existing file) so
 # this module is hermetic and collection-order-independent rather than relying on that
 # directory being collected first.

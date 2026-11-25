@@ -1,7 +1,7 @@
 """External-refresh assets for the three § 3.4 separately-built stores (Story B5).
 
-The migration's boundary (spec §3.4 / §5.2 / §5.4) brings three out-of-pipeline stores
-into scope as **scheduled external-refresh assets** in their domain pipelines:
+The migration's boundary (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md §3.4 / §5.2 / §5.4) brings three
+out-of-pipeline stores into scope as **scheduled external-refresh assets** in their domain pipelines:
 
 - AppThreat vdb (``vulnerability_vdb_store``, FLIP(B5)) — refreshed by the ``vdb-refresh``
   task in the **vuln-db env** (``appthreat-vulnerability-db``); read by Phases G / G',
@@ -22,7 +22,7 @@ into scope as **scheduled external-refresh assets** in their domain pipelines:
    ``pyforge.core.process`` (a ``ProcessPort``), and the OSV store fetches through
    ``public_sources``; an injected ``refresher`` (fixtures) still wins. **No** ``subprocess`` /
    HTTP client is imported here (the whole ``datasets/`` subpackage is scanned by
-   ``tests/catalog/test_no_inline_io.py``; ``subprocess`` is on the denylist).
+   ``tests/unit/catalog/test_no_inline_io.py``; ``subprocess`` is on the denylist).
 
 2. **Declared resource requirement + retry/observability budget, not a shell-out (AD-6).**
    The vuln-db env is modeled as a :class:`RequiredResource` declaration; the per-asset
@@ -45,7 +45,7 @@ into scope as **scheduled external-refresh assets** in their domain pipelines:
 
 5. **Single-writer (AD-3/AD-10).** Each store is written by exactly ONE node (its refresh
    asset); Phases G / G' and ``scan-project`` consume it read-only. Enforced by
-   ``tests/pipelines/test_refresh_single_writer.py``.
+   ``tests/unit/pipelines/test_refresh_single_writer.py``.
 
 Imports are restricted to ``pandas`` / ``kedro`` / ``pathlib`` / ``json`` /
 ``time`` / ``dataclasses`` / ``logging`` / ``pyforge.core`` (Story 14.2, CAP-2's
@@ -76,7 +76,8 @@ from .vdb_boundary import coerce_cvss_score
 
 logger = logging.getLogger(__name__)
 
-# One week in seconds — the cadence all three refresh assets share (spec §5.4:
+# One week in seconds — the cadence all three refresh assets share
+# (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md §5.4:
 # "vdb-refresh / update-cve-db / update-mapping-cache weekly").
 WEEKLY_SECONDS = 604_800
 
@@ -95,14 +96,17 @@ DEFAULT_REFRESH_MAX_RETRIES = 3
 # AC-1). Keyed by the catalog store dataset name; values in seconds with the legacy
 # source cited. ``params:refresh_cadences`` is asserted == this table AND (for the two
 # stores that also carry a `ttls` entry) cross-checked against the independent `ttls`
-# block by tests/pipelines/test_refresh_schedule_fixtures.py.
+# block by tests/unit/pipelines/test_refresh_schedule_fixtures.py.
 LEGACY_REFRESH_TTLS: dict[str, int] = {
     # vdb-refresh: the AppThreat vdb is rebuilt on the weekly bootstrap cadence
-    # (spec §5.4; conda-forge-expert `vdb-refresh` pixi task, vuln-db env).
+    # (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md §5.4; conda-forge-expert `vdb-refresh` pixi task,
+    # vuln-db env).
     "vulnerability_vdb_store": WEEKLY_SECONDS,
-    # update-cve-db: cve_manager.CVE_TTL_DAYS = 7 (spec §5.4; conf `ttls` mirror).
+    # update-cve-db: cve_manager.CVE_TTL_DAYS = 7 (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md §5.4;
+    # conf `ttls` mirror).
     "vulnerability_osv_offline_store": WEEKLY_SECONDS,
-    # update-mapping-cache: mapping_manager.MAPPING_TTL_DAYS = 7 (spec §5.4).
+    # update-mapping-cache: mapping_manager.MAPPING_TTL_DAYS = 7
+    # (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md §5.4).
     "pypi_conda_map_store": WEEKLY_SECONDS,
 }
 

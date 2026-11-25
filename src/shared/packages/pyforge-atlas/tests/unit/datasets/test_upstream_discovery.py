@@ -1,6 +1,6 @@
 """GitHub-trending discovery dataset tests (Story 13.1 — CAP-1, FR-64).
 
-Mirrors ``tests/datasets/test_refresh_assets.py``'s taxonomy for
+Mirrors ``tests/unit/datasets/test_refresh_assets.py``'s taxonomy for
 ``TrendingSnapshotDataset`` (subclasses ``ExternalRefreshDataset``, so the cadence/force
 freshness + AD-13 keep-last-good/never-crash/atomic-write machinery is proven there;
 these tests cover CAP-1's OWN contract: the 3-period fetch + fallback orchestration, the

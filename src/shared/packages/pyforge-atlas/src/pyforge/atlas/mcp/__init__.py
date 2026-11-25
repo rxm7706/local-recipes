@@ -2,7 +2,8 @@
 
 The CFE-agent-facing MCP surface, re-authored over the KEDRO APIs directly
 (``KedroSession`` / ``DataCatalog``) — NOT over ``kedro-mcp``, which is
-wrapped-where-helpful, never load-bearing (spec § 4.5 / § 5.5, FR-7, AD-1).
+wrapped-where-helpful, never load-bearing (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md § 4.5 / § 5.5,
+FR-7, AD-1).
 
 Design invariants honored here:
 
@@ -12,13 +13,13 @@ Design invariants honored here:
   provenance envelope live, Story I4) or a
   ``session.run(pipeline_name=<name>)`` trigger. No metric/business logic
   ever lives in a tool body (AST-enforced by
-  ``tests/mcp/test_no_business_logic_in_tool_bodies.py``).
+  ``tests/unit/mcp/test_no_business_logic_in_tool_bodies.py``).
 - **AD-23 (one execution plane)** — an MCP trigger rides the identical
   ``KedroSession`` machinery (runner, hooks, profile) as a CLI run; there
   is no bespoke node-invocation path.
 - **AD-1 (import direction)** — nothing in this package imports
   ``kedro_mcp`` or ``dagster`` (structurally enforced by
-  ``tests/catalog/test_no_inline_io.py::test_ad1_import_direction``).
+  ``tests/unit/catalog/test_no_inline_io.py::test_ad1_import_direction``).
 
 ``.server`` (the official ``mcp`` SDK registration wrapper) is deliberately
 NOT imported here — the SDK stays a lazy, registration-time-only dependency

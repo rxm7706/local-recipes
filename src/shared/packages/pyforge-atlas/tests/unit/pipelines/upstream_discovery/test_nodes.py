@@ -1,13 +1,13 @@
 """``upstream_discovery`` node unit tests (Story 13.1 CAP-1 / FR-64 + Story 13.2 CAP-2 /
 FR-65 + Story 13.4 CAP-4 / FR-67).
 
-Pure trigger-node test mirroring ``tests/pipelines/vulnerability/test_nodes.py``'s style
+Pure trigger-node test mirroring ``tests/unit/pipelines/vulnerability/test_nodes.py``'s style
 (there is no equivalent trigger-node test file there — the closest precedent is
 ``refresh_vdb_store``'s cadence coercion, exercised indirectly via
-``tests/pipelines/test_refresh_schedule_fixtures.py``; here it is tested directly against
+``tests/unit/pipelines/test_refresh_schedule_fixtures.py``; here it is tested directly against
 a ``ttls`` dict, present / missing / non-numeric).
 
-The CAP-2 classifier tests below mirror ``tests/pipelines/seed_gaps/test_nodes.py``'s
+The CAP-2 classifier tests below mirror ``tests/unit/pipelines/seed_gaps/test_nodes.py``'s
 style: small hand-built fixture ``DataFrame``s, one test per I/O & Edge-Case Matrix row
 (spec-13-2-tier-classification.md).
 

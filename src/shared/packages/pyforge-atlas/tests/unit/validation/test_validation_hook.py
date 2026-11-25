@@ -13,7 +13,7 @@ fire in the real order) and asserts the load-bearing F2 behaviours:
   ZERO node changes (AC-3);
 - the banned ``kedro_great_expectations`` / ``kedro_pandera`` plugins are absent and the GX
   boundary is a version-capped deferred stub (AD-9 — see also
-  ``tests/catalog/test_no_inline_io.py``);
+  ``tests/unit/catalog/test_no_inline_io.py``);
 - edge cases: no contract → pass-through; a non-frame output skips gracefully; empty frames;
   a broken validator halts (never silently passes); the default no-op sink never crashes;
   multi-output nodes halt before ANY persist; the default hook is deepcopy-safe (the C1
@@ -284,7 +284,7 @@ def test_gx_boundary_is_a_deferred_version_capped_stub():
 
 
 def test_shipped_validation_module_imports_no_great_expectations():
-    # Belt-and-suspenders alongside tests/catalog/test_no_inline_io.py: the shipped module
+    # Belt-and-suspenders alongside tests/unit/catalog/test_no_inline_io.py: the shipped module
     # must not have pulled GX into sys.modules by importing it at module load.
     import pyforge.atlas.validation as val
 

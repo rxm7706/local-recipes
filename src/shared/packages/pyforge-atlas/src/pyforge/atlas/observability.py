@@ -3,7 +3,7 @@
 This module is the **single observability seam** (AD-6/AD-23): it is the ONLY
 module in ``pyforge.atlas`` permitted to import ``openlineage`` / ``opentelemetry``
 (structurally enforced by
-``tests/catalog/test_no_inline_io.py::test_observability_libs_only_in_observability``).
+``tests/unit/catalog/test_no_inline_io.py::test_observability_libs_only_in_observability``).
 All instrumentation lives here, in a Kedro **Hooks** implementation registered in
 ``settings.HOOKS`` — so EVERY entry point inherits it once (AD-23): a ``kedro run``
 picks up the settings hooks natively, and a Dagster run picks them up too because
@@ -34,7 +34,7 @@ path emits nowhere (no network at import or at run):
   with NO exporter (spans are created but dropped; nothing is set globally).
 - ``openlineage_client=None`` → OL emission is skipped entirely.
 
-The **gate** (``tests/observability/``) injects an in-memory OTel span exporter and
+The **gate** (``tests/unit/observability/``) injects an in-memory OTel span exporter and
 a capturing OpenLineage client (:func:`make_capturing_client`) and asserts the
 emitted event/span shape — those captured fixtures ARE the gate (AD-20). The LIVE
 collector/exporter wiring (a real OTLP endpoint / OpenLineage backend URL, env-driven)
@@ -80,8 +80,9 @@ from opentelemetry import trace as otel_trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.trace import Span, Status, StatusCode, Tracer
 
-# Producer URI stamped on every emitted OpenLineage facet/event (this project).
-PRODUCER = "https://github.com/rxm7706/local-recipes/tree/main/pyforge-atlas"
+# Producer URI stamped on every emitted OpenLineage facet/event (this project): a URN, the form the
+# report-schema ``$id``s use, so it names no repository layout (Story 53.2).
+PRODUCER = "urn:local-recipes:pyforge-atlas"
 
 # Default OpenLineage namespace for the migrated cf_atlas DAG.
 DEFAULT_NAMESPACE = "cf_atlas"
@@ -99,6 +100,13 @@ class AtlasNodeMetricsRunFacet(RunFacet):
     rows: int = 0
     latency_ms: float = 0.0
     cache_hits: int = 0
+
+    def __attrs_post_init__(self) -> None:
+        # Atlas's own facet names atlas as its producer; left unset, the base class stamps the client library's URL.
+        # getattr/setattr: the field is the base class's, which mypy cannot see where openlineage is not installed.
+        if not getattr(self, "_producer", ""):
+            setattr(self, "_producer", PRODUCER)
+        super().__attrs_post_init__()
 
 
 class _CapturingTransport(Transport):

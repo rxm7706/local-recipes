@@ -2,7 +2,7 @@
 title: '53.3: Atlas''s comments cite the test layout and the specs that exist'
 type: 'fix'
 created: '2026-11-25'
-status: 'ready-for-dev'
+status: 'in-review'
 story: 53-3-atlas-s-comments-cite-the-test-layout-and-the-specs-that-exist
 spec: spec-pyforge-atlas
 difficulty: 'medium'
@@ -90,3 +90,10 @@ Ledger key: `53-3-atlas-s-comments-cite-the-test-layout-and-the-specs-that-exist
 ## Spec Change Log
 
 - 2026-11-25: minted from the station Dream's 2026-11-25 entry (the rows a lapsed blocker held close) and the operator's ruling of the same date. Not implemented.
+
+- 2026-11-25: reproduction on the unchanged tree: `git grep -c "tests/catalog\|tests/parity\|spec §"` counts 89 hits in 50 files under the package; AC1 exits 1 with 38 of 48 cited test paths unresolved. A wider scan (every `tests/<x>` citation whose first segment is not in today's layout) finds 98 across `src/`, `conf/`, `tools/` and `tests/`.
+- 2026-11-25: finding: the gate's fingerprint (`scripts/coverage_gate.py` `ast_fingerprint`) drops every docstring as well as every import, so a docstring-only edit is not a touched module. Every docstring citation was therefore changed; no module's docstrings were left, and no module is listed.
+- 2026-11-25: change: 71 files (3 `conf/base/*.yml`, 33 under `src/pyforge/atlas/`, 33 test modules, `tests/unit/parity/PARITY_NOTES.md`, `tools/lasuite_bringup.py`), 135 citations. Each old test path now names the path `git ls-files` has (all under `tests/unit/` except `tests/integration/dashboard/conftest.py` and `test_dashboard_e2e.py`); the six cited `::test` functions exist. Each `spec § n` names `archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md` (sections 3.3, 3.4, 4.5, 5.1, 5.2, 5.4, 5.5, 5.9, 9, 11, 12, 13.1 and FR-3, FR-20, FR-21 are in the file), and `docs/specs/trendshift-conda-forge.md` gains its `archive/` prefix. Two comments cited the repository root's `tests/packaging/test_dependency_completeness.py`, which exists but not under the package; they now name the test and the root folder in words, so AC1's package-relative check holds.
+- 2026-11-25: left, because each is a string literal and changing it changes a statement: `parity/legacy_surface.py` lines 64 and 74 (`scope_note=` values holding `spec §3.3`), `tests/unit/catalog/test_catalog_resolution.py` line 59 (an assertion message holding `tests/catalog/conftest.py`), `tests/unit/orchestration/conftest.py` line 96 and `tests/unit/test_admission.py` line 354 (the generated stub's text holding `tests/orchestration/conftest.py`). After the sweep the row's grep counts 3 hits in 2 files, all among these.
+- 2026-11-25: no statement changed: for all 71 files' Python modules the AST with docstrings stripped equals `git show HEAD:<file>`, except the three files Story 53.2 changes (`observability.py` and its two test modules). Working-tree coverage gate over the AST-changed files: one touched module, `pyforge.atlas.observability` (Story 53.2's), exit 0. `lint-types` for pyforge-atlas: ruff, ruff-format and mypy ok.
+- 2026-11-25: AC1 exit 0 (46 cited paths, 0 unresolved); AC2 exit 0 (as written it diffs `origin/main...HEAD` and sees no uncommitted file, so the working-tree run above is the verdict that counts until the commit); AC3 exit 0 (2995 passed, 27 skipped; 53 passed, 5 skipped). `pyforge-atlas-live-test` exit 0 (341, 164 and 103 passed).

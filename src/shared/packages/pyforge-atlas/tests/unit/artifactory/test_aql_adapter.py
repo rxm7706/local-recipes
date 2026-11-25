@@ -25,7 +25,7 @@ from pyforge.atlas.artifactory import (
 
 class MockArtifactory:
     """An in-memory Artifactory AQL API -- the injected ``transport``. Routes on method + URL
-    path, like ``MockWagtail`` in ``tests/factory/test_lasuite.py``. Records every call so a
+    path, like ``MockWagtail`` in ``tests/unit/factory/test_lasuite.py``. Records every call so a
     test can assert the two round trips (topology, then aggregation) stay separate."""
 
     def __init__(

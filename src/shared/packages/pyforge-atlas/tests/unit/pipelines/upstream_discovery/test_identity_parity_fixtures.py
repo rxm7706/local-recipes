@@ -1,6 +1,6 @@
 """Story 21.6 (CAP-3, Phase D identity join) — the fixed parity fixture corpus
 (identity-contract.md Parity test corpus), loaded from the tracked JSON fixture
-under ``tests/parity/fixtures/upstream_discovery/`` and run through
+under ``tests/unit/parity/fixtures/upstream_discovery/`` and run through
 ``build_identity_packages_primary`` end to end.
 
 This is a SEPARATE, literal fixture-file exercise of the same join

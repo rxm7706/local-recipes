@@ -105,7 +105,7 @@ def static_server():
     """Serve wasm/build/ on a loopback port — a static file host, not a backend."""
     if not (BUILD_DIR / "index.html").exists():
         _skip_or_fail(
-            "wasm artifact not built — run `pixi run -e local-recipes wasm-build` first "
+            "wasm artifact not built — run `pixi run -e pyforge-atlas wasm-build` first "
             f"(expected {BUILD_DIR / 'index.html'})"
         )
 

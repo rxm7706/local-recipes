@@ -21,14 +21,14 @@ The fix, and why it is here rather than in ``conf/``
 ---------------------------------------------------
 Stub credentials are a **test-harness** concern, not shipped configuration:
 
-* ``tests/catalog/conftest.py`` already establishes this pattern — it injects
+* ``tests/unit/catalog/conftest.py`` already establishes this pattern — it injects
   ``STUB_CREDENTIALS`` into a purpose-built config loader, which is why
   ``kedro-catalog-check`` is already hermetic.
 * Shipping stubs in ``conf/base/credentials.yml`` would also hand them to LIVE
   runs (``kedro run``, ``dagster dev``), turning a clear config-time failure into
   a confusing 401 at the HTTP layer. A real run SHOULD fail loudly when real
   credentials are missing.
-* ``tests/catalog/test_credential_scoping.py`` forbids any ``*credentials*`` file
+* ``tests/unit/catalog/test_credential_scoping.py`` forbids any ``*credentials*`` file
   under ``conf/`` outside ``conf/local`` — a bright line worth keeping absolute.
 
 So we seed the gitignored ``conf/local/credentials.yml`` only when it does not

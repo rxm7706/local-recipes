@@ -10,7 +10,7 @@ Follows the same injectable-transport pattern proven by :mod:`pyforge.atlas.fact
 (``AqlTransport = Callable[[AqlRequest], AqlResponse]``); the default transport (used when
 none is injected) raises a clear, named :class:`ArtifactoryAqlError` rather than reaching for
 a real HTTP client -- this module imports no ``requests``/``httpx``/``urllib3``/etc. (enforced
-structurally, repo-wide, by ``tests/catalog/test_no_inline_io.py``'s ``IO_DENYLIST`` scan).
+structurally, repo-wide, by ``tests/unit/catalog/test_no_inline_io.py``'s ``IO_DENYLIST`` scan).
 Unlike ``LaSuiteClient``, this module has no env-driven config resolver -- see the
 ``ArtifactoryConfig`` docstring below for why.
 

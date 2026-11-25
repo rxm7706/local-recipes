@@ -666,6 +666,14 @@ def test_every_exit_code_is_in_the_contract(contract: str, exit_codes: dict[str,
     assert missing_by_entry(exit_codes, _row_tokens(_section(contract, "Exit codes"))) == []
 
 
+def test_the_lineage_producer_in_the_contract_is_the_one_the_code_stamps(contract: str) -> None:
+    """Story 53.2: ``observability.PRODUCER`` is a layout-free URN, and ``## Lineage producer`` records that value."""
+    producer = _module(_package_dir() / "observability.py").constants.get("PRODUCER")
+    assert isinstance(producer, str) and producer.startswith("urn:"), producer
+    assert "/tree/" not in producer and "src/" not in producer, producer
+    assert producer in _tokens(_section(contract, "Lineage producer"))
+
+
 # --------------------------------------------------------------------------- one negative case per family
 
 

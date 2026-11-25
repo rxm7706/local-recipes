@@ -1,8 +1,8 @@
 """Story 30.2 (CAP-63) AC9: the export in both states of ``pyforge.atlas.vizro_static_boards``.
 
 ``flag_states`` installs OpenFeature's in-memory provider, so this module needs ``openfeature``:
-it runs in ``-e pyforge-atlas`` (``pyforge-atlas-test``) and is skipped in ``-e local-recipes``
-(``dashboard-dryrun``), which does not carry it. The state drives the task through a flagd tree
+it runs in ``-e pyforge-atlas`` (``pyforge-atlas-test`` and, since steward Story 136.8,
+``dashboard-dryrun``), which carries it, and skips where it is absent. The state drives the task through a flagd tree
 written for it, the way Story 30.1's two-state test drives its manifest tool.
 """
 

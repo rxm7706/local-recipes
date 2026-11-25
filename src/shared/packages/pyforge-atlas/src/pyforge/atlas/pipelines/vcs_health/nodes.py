@@ -34,7 +34,7 @@ _MS_THRESHOLD = 1_000_000_000_000
 # The FR-20 recency gate: the release-velocity signal qualifies ONLY where the
 # upstream release is <= 90 days old (the rebuild-cadence-artifact guard). Cross-
 # validated live at a 5,000-package sample and the full 19,726-feedstock population
-# to within 1 pp (spec § FR-20 / Story B9).
+# to within 1 pp (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md § FR-20 / Story B9).
 _NINETY_DAYS_SECONDS = 90 * 24 * 3600
 
 # Unix epoch anchor (tz-aware) — subtracting it from a UTC-normalized parse yields
@@ -87,7 +87,7 @@ def _as_bool_series(col: pd.Series) -> pd.Series:
 # TTL-cadence mechanism as the vulnerability/mapping refresh assets, reusing the
 # existing ``params:ttls`` Phase K/L cadences (``vcs_upstream_versions`` /
 # ``vcs_registry_versions``) rather than growing ``params:refresh_cadences`` (whose
-# 3-entry set is exact-pinned by ``tests/pipelines/test_refresh_schedule_fixtures.py``).
+# 3-entry set is exact-pinned by ``tests/unit/pipelines/test_refresh_schedule_fixtures.py``).
 # ---------------------------------------------------------------------------
 
 
@@ -186,7 +186,7 @@ def enrich_maintainers(
     conda-forge-tracker.md), Δ≈**44** (spec:287-292). The ~44-feedstock disagreement is
     a data-quality investigation beyond one story; the AC explicitly allows
     "reconciles — or explicitly documents". See the parity notes
-    (``tests/parity/PARITY_NOTES.md``).
+    (``tests/unit/parity/PARITY_NOTES.md``).
 
     Input: ``feedstock_name``, ``conda_name``, ``maintainers`` (list per row). Output:
     ``(vcs_maintainers, vcs_package_maintainers)`` — the unique maintainer universe and
@@ -401,7 +401,8 @@ def derive_release_velocity(
     pypi_conda_mapping: pd.DataFrame,
     now: int | None = None,
 ) -> pd.DataFrame:
-    # legacy: FR-20 release velocity  (Story B9; spec § 5.2 item 4 / § FR-20 / § 9)
+    # legacy: FR-20 release velocity  (Story B9; archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md § 5.2 item
+    #   4 / § FR-20 / § 9)
     """Derive ``release_lag_hours`` + ``release_lag_qualifies`` — how long conda-forge
     takes to publish a matching build after an upstream PyPI release. **NO new external
     source**: reuses the Phase H ``pypi_current_versions`` (which RETAINS
@@ -433,7 +434,7 @@ def derive_release_velocity(
 
     Calibration reference ONLY (NOT asserted — it is a calibration note, not a gate):
     the live baseline this signal should roughly reproduce is median ≈ 8.9 h, 72.4%
-    within 24 h, 83.7% within 72 h (spec § FR-20).
+    within 24 h, 83.7% within 72 h (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md § FR-20).
 
     Inputs — ``pypi_current_versions``: ``pypi_name``, ``version``,
     ``upload_time_iso_8601``. ``core_repodata_raw``: ``conda_name``, ``version``,
@@ -536,7 +537,7 @@ def derive_release_velocity(
 #         typed empty frame, never raises.)
 # ---------------------------------------------------------------------------
 
-# The output readiness classes (spec § FR-21 four-way split).
+# The output readiness classes (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md § FR-21 four-way split).
 READINESS_NOARCH = "noarch"
 READINESS_REBUILD_DONE = "rebuild-done"
 READINESS_CONFIRMED_PENDING = "confirmed-pending"
@@ -652,7 +653,8 @@ def classify_migration_readiness(
     core_downloads: pd.DataFrame,
     vcs_migration_categories: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    # legacy: FR-21 migration readiness  (Story B10; spec § 5.2 item 4 / § FR-21 / § 9)
+    # legacy: FR-21 migration readiness  (Story B10; archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md § 5.2
+    #   item 4 / § FR-21 / § 9)
     """Classify each atlas feedstock's readiness for every migration the bot lists.
 
     ``vcs_migration_detail_raw`` is the PARTITIONED conda-forge-bot-data status detail

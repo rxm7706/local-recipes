@@ -4,7 +4,7 @@ The Vulnerability pipeline gains a second, conda-native identity axis: Basilisk
 (``api.basilisk.prefix.dev``) — a live, OSV-compatible REST API matched against
 the conda-forge PURL (``pkg:conda/conda-forge/<name>@<version>``, the in-flight CEP-63 draft
 form; purl itself is ECMA-427). Two source datasets own the fetch IO (THE A2 CRUX — the pure
-node bodies never touch a client; ``tests/catalog/test_no_inline_io.py`` AST-scans the whole
+node bodies never touch a client; ``tests/unit/catalog/test_no_inline_io.py`` AST-scans the whole
 package and bans ``subprocess``/HTTP imports):
 
 - :class:`BasiliskBatchDataset` — ``POST /v1/querybatch`` with the documented **≤1,000

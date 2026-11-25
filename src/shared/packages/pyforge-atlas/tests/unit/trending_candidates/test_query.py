@@ -2,7 +2,7 @@
 
 One test per I/O & Edge-Case Matrix row in the story spec (the parity row — "CLI --json
 vs MCP tool, same filters" — is covered separately, in
-``tests/mcp/test_read_surface.py``'s delegate-parity test).
+``tests/unit/mcp/test_read_surface.py``'s delegate-parity test).
 """
 
 from __future__ import annotations

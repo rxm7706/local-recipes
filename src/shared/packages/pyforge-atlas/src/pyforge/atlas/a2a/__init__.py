@@ -6,8 +6,8 @@ agent hands the ``conda-forge-expert`` authoring agent — a BSL-derived insight
 FR-10/FR-18 alert — is one variant of the ONE payload family declared in :mod:`.schema`;
 no competing dialect is defined anywhere else in the package (the architecture review's
 "two competing alert dialects" hazard). Structural guards:
-``tests/catalog/test_no_inline_io.py::test_a2a_sdk_only_in_a2a_layer`` (only ``a2a/`` imports
-the a2a-sdk) + ``tests/a2a_surface/test_a2a_payloads.py`` (no other module defines a payload
+``tests/unit/catalog/test_no_inline_io.py::test_a2a_sdk_only_in_a2a_layer`` (only ``a2a/`` imports
+the a2a-sdk) + ``tests/unit/a2a_surface/test_a2a_payloads.py`` (no other module defines a payload
 schema — the dir avoids the ``a2a`` name so pytest's prepended path can't shadow the SDK).
 
 Invariants:

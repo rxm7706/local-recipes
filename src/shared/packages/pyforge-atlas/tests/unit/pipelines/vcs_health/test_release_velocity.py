@@ -1,6 +1,6 @@
 """FR-20 release-to-availability velocity node tests (Story B9; NEW-SIGNAL, AD-14).
 
-Two MANDATORY failure-mode fixtures (spec § 9 Story B9):
+Two MANDATORY failure-mode fixtures (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md § 9 Story B9):
   1. the 90-day recency guard (the false "47% behind" classification cannot recur), and
   2. rebuild-inside-window invariance (MIN timestamp = first availability, so a second
      build of the same version inside the window does NOT shift the lag).

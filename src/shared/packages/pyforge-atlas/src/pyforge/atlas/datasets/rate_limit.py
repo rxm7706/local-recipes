@@ -4,7 +4,7 @@ Story B1 (THE CRUX — the whole migration's thesis): Phase K's 3-RPS token buck
 Phase F's provenance fetches, ``Retry-After`` + jittered backoff, and per-registry
 concurrency caps are, in the legacy monolith (``conda_forge_atlas.py`` @ b18cbb5),
 imperative code *inside* the phase functions. They CANNOT live in a pure node body
-(``tests/catalog/test_no_inline_io.py`` structurally bans HTTP/DB clients across the
+(``tests/unit/catalog/test_no_inline_io.py`` structurally bans HTTP/DB clients across the
 whole package). Per AD-2 / AD-5 / AD-13 the fetching + rate-limiting move into the
 catalog request datasets (``request_datasets.py``) or an injected fetcher-client
 passed to a node as a catalog input; the node body stays pure and receives

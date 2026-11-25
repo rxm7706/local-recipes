@@ -196,7 +196,7 @@ def test_packages_shell_pages_are_bsl_wired_and_light_up_with_data(packages_parq
 def test_dashboard_only_imports_semantic_seam_never_bsl_directly():
     """AD-8 discipline: the dashboard data layer consumes the semantic MODELS (the seam),
     and does not itself import boring_semantic_layer (that ban is enforced package-wide by
-    tests/catalog/test_no_inline_io.py; asserted here at the module level too)."""
+    tests/unit/catalog/test_no_inline_io.py; asserted here at the module level too)."""
     from pathlib import Path
 
     src = Path(dash_data.__file__).read_text(encoding="utf-8")

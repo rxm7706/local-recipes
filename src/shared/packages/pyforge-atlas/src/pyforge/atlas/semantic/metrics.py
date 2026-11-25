@@ -14,7 +14,7 @@ these expressions to Ibis tables read from Parquet via DuckDB.
 formula comes from in ``METRIC_PROVENANCE``. Two kinds:
 
 - ``legacy-formula`` — the expression is a faithful port of an EXPLICIT legacy CLI
-  formula (cited by file + symbol). The ``tests/semantic`` parity fixtures anchor
+  formula (cited by file + symbol). The ``tests/unit/semantic`` parity fixtures anchor
   it by re-implementing that legacy formula INDEPENDENTLY (verbatim copy of the
   legacy function / SQL predicate) and asserting the Ibis port matches — a real
   legacy anchor, never "both sides compute the same thing".

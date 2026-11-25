@@ -1,6 +1,6 @@
 """Shared offline-session seeding helper for the trending_candidates test suite.
 
-Mirrors ``tests/mcp/test_read_surface.py``'s ``real_catalog_session`` pattern (AD-11):
+Mirrors ``tests/unit/mcp/test_read_surface.py``'s ``real_catalog_session`` pattern (AD-11):
 a REAL ``kedro.io.DataCatalog`` seeded with a ``MemoryDataset``, and a monkeypatched
 ``pyforge.atlas.mcp.session.bootstrapped_session`` — proves the real ``catalog.load``
 path end-to-end without any live Kedro project / network / real data.
@@ -72,7 +72,7 @@ def seed_catalog(monkeypatch):
 def seed_parquet_catalog(monkeypatch, tmp_path):
     """Like ``seed_catalog``, but backs ``trending_candidates_classified`` with a REAL
     ``kedro_datasets.pandas.ParquetDataset`` (mirrors
-    ``tests/mcp/test_read_surface.py::test_read_dataset_pandas_parquet_reports_file_mtime_not_read_time``)
+    ``tests/unit/mcp/test_read_surface.py::test_read_dataset_pandas_parquet_reports_file_mtime_not_read_time``)
     instead of a ``MemoryDataset``. Two things only a real file-backed dataset can prove:
 
     - the provenance envelope (``build_stamp``/``provenance_kind``) actually propagates

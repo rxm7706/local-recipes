@@ -9,7 +9,8 @@ Builders take an already-constructed Ibis table so model DEFINITION (the D1 metr
 semantics) is decoupled from data LOCATION (D2 wires the catalog Parquet paths, the
 gate wires small fixtures). ``duckdb_table_from_parquet`` is the query-time seam that
 reads a Parquet file as an Ibis/DuckDB table with NO network — mirroring how the 5
-legacy SQL views are query-time constructs (spec § 3.3, not catalog datasets).
+legacy SQL views are query-time constructs (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md § 3.3, not
+catalog datasets).
 
 The **maintainer ⋈ is a first-class BSL dimension** (AC-2): ``package_maintainers``
 declares ``maintainer`` as a queryable dimension over ``vcs_package_maintainers``, and

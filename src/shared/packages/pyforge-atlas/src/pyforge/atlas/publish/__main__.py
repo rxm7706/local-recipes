@@ -9,7 +9,7 @@ publish (pushing ``target_dir`` to GitHub Pages / a real host) is the ATTENDED b
 event and is DEFERRED (see DW-G2). Point a static host — or the WASM runtime's Range
 consumer — at ``target_dir`` to serve it.
 
-Run: ``pixi run -e local-recipes publish [-- --target <dir>]``.
+Run: ``pixi run -e pyforge-atlas publish [-- --target <dir>]``.
 """
 
 from __future__ import annotations

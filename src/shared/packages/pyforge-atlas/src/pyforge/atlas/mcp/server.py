@@ -1,7 +1,7 @@
 """Official ``mcp`` SDK registration wrapper for the atlas MCP surface.
 
-``kedro-mcp`` is wrapped-where-helpful, NEVER load-bearing (spec § 4.5 /
-§ 5.5, FR-7, AD-1): nothing here (or anywhere in the package) imports
+``kedro-mcp`` is wrapped-where-helpful, NEVER load-bearing (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md
+§ 4.5 / § 5.5, FR-7, AD-1): nothing here (or anywhere in the package) imports
 ``kedro_mcp``, and the trigger/read surface (``tools.py``) works with it
 absent. ``mcp`` is imported LAZILY inside :func:`build_server` so this
 module — and the whole ``pyforge.atlas.mcp`` package — imports with
@@ -20,7 +20,7 @@ from pyforge.atlas.mcp import tools
 def _official_mcp_server_class():
     """Load ``MCPServer`` from the PyPI ``mcp`` SDK.
 
-    Atlas tests live under ``tests/mcp/`` and this package is
+    Atlas tests live under ``tests/unit/mcp/`` and this package is
     ``pyforge.atlas.mcp``, so ``mcp`` on ``sys.path`` is often not the SDK.
     """
     from pathlib import Path

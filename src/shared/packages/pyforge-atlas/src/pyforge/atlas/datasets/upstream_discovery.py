@@ -2,7 +2,7 @@
 
 Epic 13 (Upstream discovery) starts with CAP-1: nothing today ingests GitHub-trending
 Python repos into the shipped Kedro/Dagster/DuckDB dataflow — the legacy
-``docs/specs/trendshift-conda-forge.md`` "Phase T" never shipped. This module owns the
+``archive/docs/specs/trendshift-conda-forge.md`` "Phase T" never shipped. This module owns the
 whole IO/degradation contract for the ``trending_candidates`` catalog entry:
 
 - :class:`TrendingSnapshotDataset` — subclasses :class:`ExternalRefreshDataset` (the same

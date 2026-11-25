@@ -48,7 +48,7 @@ also covers MCP and CLI triggers.
 **Offline / dryrun**: building these definitions performs NO network IO — the
 Kedro catalog datasets take injected fetchers that default to offline (Wave B),
 and the ``local`` env resolves only placeholder credentials. The
-``dagster-dryrun`` gate (``tests/orchestration/test_definitions_dryrun.py``) imports
+``dagster-dryrun`` gate (``tests/unit/orchestration/test_definitions_dryrun.py``) imports
 this module, builds :data:`defs`, and asserts schedules enumerate + jobs
 resolve + each op has an independent timeout — with NO live execution.
 """

@@ -8,7 +8,7 @@ ported here; B2-B3 extend the harness; B4 CONSUMES it at the attended credential
 event (the exact row-count + value parity on the ``v_actionable_packages`` family — NOT
 in B1 scope, AD-19).
 
-Fixtures live in the TRACKED test tree (``tests/parity/fixtures/``), never read from
+Fixtures live in the TRACKED test tree (``tests/unit/parity/fixtures/``), never read from
 ``.claude/data/`` at gate time (spine "Tests & fixtures" row). See ``PARITY_NOTES.md``
 for the fixture provenance + the documented maintainer-universe delta (AC-5).
 """

@@ -2,7 +2,7 @@
 title: '53.1: The two live companions sit in the station Spec folder'
 type: 'fix'
 created: '2026-11-25'
-status: 'ready-for-dev'
+status: 'in-review'
 story: 53-1-the-two-live-companions-sit-in-the-station-spec-folder
 spec: spec-pyforge-atlas
 difficulty: 'easy'
@@ -90,3 +90,7 @@ Ledger key: `53-1-the-two-live-companions-sit-in-the-station-spec-folder`.
 ## Spec Change Log
 
 - 2026-11-25: minted from the station Dream's 2026-11-25 entry (the rows a lapsed blocker held close) and the operator's ruling of the same date. Not implemented.
+
+- 2026-11-25: reproduction on the unchanged tree: AC2's grep exits 0 and lists both files under `archive/`; `specs/spec-pyforge-atlas/` holds neither.
+- 2026-11-25: change: `git mv` of `tier-taxonomy.md` (from `spec-upstream-discovery/`) and `complete-export-contract.md` (from `spec-atlas-kedro-catalog-expansion/`) into `specs/spec-pyforge-atlas/`; both are 100% renames, no line of either changed, and neither holds a relative link. No tracked file outside `SPEC.md`, the memlogs, `epics.md`, `marshal-policy.toml`, `archive/` and this story spec names either archive path, so no other reference moved: the package, `docs/` and `.claude/` cite both files by bare name. Left for the session lead, through the memlog and a render: `SPEC.md` `companions:` (lines 82-91, two entries to add) and the cites at lines 305 (CAP-43), 341 (CAP-54) and 344 (CAP-55). Not in this story's surface and left as they are: `marshal-policy.toml` lines 559-560 (this story's own epic surface) and the pre-archive path (`…/specs/spec-atlas-kedro-catalog-expansion/…`, `…/specs/spec-upstream-discovery/…`, no `archive/`) in `docs/dreams/pyforge-atlas.md` line 1454 and in the frontmatter of story specs 12-2 to 12-5, 20-5, 21-1 and 22-1 to 22-9.
+- 2026-11-25: AC1 prints 2 (exit 0); AC2 exit 1 (no line matches, as expected). The three record companions are untouched. The docs link gate and `spec-surface-check` are the session lead's, after the render and the scoped stamp.

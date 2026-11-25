@@ -1,14 +1,14 @@
 """The legacy-surface view registry + the AD-14 parity-scope boundary (B4).
 
-Q1's adopted default (spec §11 / ARCHITECTURE-SPINE AD-19): parity is proven by
-**exact row-count + value parity on the ``v_actionable_packages``-family views**,
+Q1's adopted default (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md §11 / ARCHITECTURE-SPINE AD-19):
+parity is proven by **exact row-count + value parity on the ``v_actionable_packages``-family views**,
 with timestamp/ordering-only diffs documented benign. This module freezes that
-family (spec §3.3 view discipline; cf-atlas-legacy ``engineering-contracts.md``
-§ View discipline) and encodes the **AD-14 boundary**: B4 compares LEGACY-SURFACE
+family (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md §3.3 view discipline; cf-atlas-legacy
+``engineering-contracts.md`` § View discipline) and encodes the **AD-14 boundary**: B4 compares LEGACY-SURFACE
 outputs only — the B8/B9/B10 new-signal datasets (basilisk / release-velocity /
 migration-readiness) are NEVER parity-gated.
 
-Pure data + helpers only — no IO. The credentialed comparator (in ``tests/parity/``)
+Pure data + helpers only — no IO. The credentialed comparator (in ``tests/unit/parity/``)
 consumes this registry: in CREDENTIALED mode it reads ``SELECT * FROM <view>`` from
 the real legacy ``cf_atlas.db`` (which already defines these views) and composes the
 comparable frame from the named Kedro Parquet datasets. The per-view composition
@@ -29,7 +29,8 @@ class LegacySurfaceView:
       reads ``SELECT * FROM <view>`` directly (the legacy DB already defines it).
     - ``kedro_datasets``: the migrated Parquet output(s) that BACK the view; the
       comparator composes the Kedro-side comparable frame from these.
-    - ``scope_note``: the ``# scope:`` justification (spec §3.3 meta-test).
+    - ``scope_note``: the ``# scope:`` justification (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md §3.3
+      meta-test).
     """
 
     view: str
@@ -76,7 +77,8 @@ LEGACY_SURFACE_VIEWS: tuple[LegacySurfaceView, ...] = (
 
 
 # --- AD-14: the parity-scope boundary -------------------------------------
-# B8/B9/B10 are additive NEW-SIGNAL stories, NEVER parity-gated (spec §9 preamble;
+# B8/B9/B10 are additive NEW-SIGNAL stories, NEVER parity-gated
+# (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md §9 preamble;
 # ARCHITECTURE-SPINE AD-14). Their output datasets are OUT of B4's parity set. The
 # names below are the planned new-signal outputs; the invariant that MATTERS is
 # that NONE of them is ever a legacy-surface view (test_legacy_surface_scope).
