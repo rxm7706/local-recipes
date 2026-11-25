@@ -276,7 +276,6 @@ lives at `conf/base/knowledge.yml`.
 | Task | What it runs |
 |---|---|
 | `pixi run sync-upstream-conda-forge` | Pull from conda-forge/staged-recipes upstream |
-| `pixi run sync-upstream-public-fork` | Pull from user fork |
 | `pixi run update-mapping-cache` | Refresh PyPI→conda mapping |
 | `pixi run verify-env` | Confirm the shell is inside the `local-recipes` pixi env |
 | `pixi run env-inspect -- [--audit/--freshness/--security/--bus-factor/--licenses/--sbom]` | Inspect a pixi/conda env from multiple angles |

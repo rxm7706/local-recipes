@@ -113,7 +113,7 @@ import argparse
 import inspect
 import sys
 
-from pyforge.core.flags import FlagOff
+from pyforge.core.flags import FlagConfigError, FlagOff
 
 from ..adapters.harness_bmadloop import (
     HARNESS_VERSION_RANGE_TEXT,
@@ -358,7 +358,9 @@ def main(argv: list[str] | None = None) -> int:
     handler's returned value is relayed only after the SAME domain clamp the
     ``SystemExit`` path applies (see ``core/verdict.exit_code_for``),
     and a ``KeyboardInterrupt`` anywhere in parser construction, parsing, or
-    handler dispatch returns the SIGINT constant.
+    handler dispatch returns the SIGINT constant. A ``FlagConfigError`` (a bad
+    ``PYFORGE_ENVIRONMENT``, an uncomposable flag tree) is a usage error, and
+    any other exception returns the ERROR rung (Story 121.1).
 
     Story 115.3 (CAP-13 amended 2026-11-10): the ``seed`` verb group keeps
     its own closed exit taxonomy, so a ``seed`` handler's return is admitted
@@ -426,6 +428,17 @@ def main(argv: list[str] | None = None) -> int:
         except OSError:
             pass
         return EXIT_USAGE
+    except FlagConfigError as exc:
+        # Story 121.1 (DW-marshal-review-2026-11-24-1): the flag tree, its
+        # overlay or PYFORGE_ENVIRONMENT cannot be composed (an unknown
+        # environment name, say). The invocation is misconfigured -- usage,
+        # one stderr line -- never a traceback whose interpreter exit 1 reads
+        # as the UNEVALUABLE rung.
+        try:
+            print(f"marshal: {' '.join(str(exc).split())}", file=sys.stderr)
+        except OSError:
+            pass
+        return EXIT_USAGE
     except config_cli.RepoRootUnresolvedError as exc:
         # Story 82.1 (DW-FU-2-1-7): `cli/config.py::repo_root()` -- the one
         # anchor every policy/gate/loop-home consumer reads -- found neither a
@@ -461,6 +474,16 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_USAGE
     except KeyboardInterrupt:
         return EXIT_SIGINT
+    except Exception as exc:
+        # Story 121.1: the last resort. An exception no branch above names is
+        # an internal failure; it leaves through the ERROR rung's own exit
+        # code (projected by core/verdict, never built here) with one stderr
+        # line, so no invocation exits outside the frozen domain.
+        try:
+            print(f"marshal: internal error: {type(exc).__name__}: {' '.join(str(exc).split())}", file=sys.stderr)
+        except OSError:
+            pass
+        return exit_code_for(Verdict.ERROR)
 
 
 if __name__ == "__main__":

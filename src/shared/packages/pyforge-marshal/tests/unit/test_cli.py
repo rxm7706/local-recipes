@@ -18,10 +18,12 @@ from unittest.mock import patch
 import jsonschema
 import pytest
 from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
+from pyforge.testing_kit.flags import flagd_tree
 
 from pyforge import marshal as marshal_package
 from pyforge.marshal.cli.main import __version__, main
-from pyforge.marshal.core.verdict import EXIT_SIGINT, EXIT_USAGE
+from pyforge.marshal.core.model import Verdict
+from pyforge.marshal.core.verdict import EXIT_SIGINT, EXIT_USAGE, exit_code_for
 
 _PYPROJECT = Path(__file__).resolve().parents[2] / "pyproject.toml"
 _SCHEMA_PATH = Path(marshal_package.__file__).resolve().parent / "schemas" / "policy.json"
@@ -939,6 +941,43 @@ def test_handler_returning_out_of_domain_int_is_clamped_to_usage(monkeypatch):
 
     monkeypatch.setattr(main_module.config_cli, "add_config_subparser", fake_add)
     assert main_module.main(["config"]) == EXIT_USAGE
+
+
+# --- Story 121.1: a bad environment is usage, any other exception the ERROR rung ---
+
+
+def test_bad_pyforge_environment_is_a_usage_error_with_one_stderr_line(tmp_path, monkeypatch, capsys):
+    """DW-marshal-review-2026-11-24-1, defect 2: ``PYFORGE_ENVIRONMENT=bogus marshal status`` raised
+    ``FlagConfigError`` through ``main()`` and the console script exited 1 -- the UNEVALUABLE rung --
+    under a traceback. A misconfigured invocation is usage: one stderr line, ``EXIT_USAGE``. The flag
+    tree is given by path, as a checkout gives one: with no tree no switch is read and nothing raises."""
+    tree = flagd_tree(tmp_path, {"pyforge.marshal.preserve_refs": "on"})
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(tree))
+    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "bogus")
+    exit_code = main(["status"])
+    captured = capsys.readouterr()
+    assert exit_code == EXIT_USAGE
+    assert captured.err.splitlines() == ["marshal: PYFORGE_ENVIRONMENT 'bogus' is not one of dev, staging, production"]
+    assert "Traceback" not in captured.err
+
+
+def test_handler_raising_an_unexpected_exception_returns_the_error_rung(monkeypatch, capsys):
+    """``main()`` never raises: an exception no branch names leaves through the ERROR rung, projected
+    by ``exit_code_for``, with one stderr line and no traceback -- never the interpreter's exit 1."""
+    from pyforge.marshal.cli import main as main_module
+
+    def boom(args):
+        raise RuntimeError("wiring fell over")
+
+    def fake_add(subparsers):
+        parser = subparsers.add_parser("config")
+        parser.set_defaults(handler=boom)
+
+    monkeypatch.setattr(main_module.config_cli, "add_config_subparser", fake_add)
+    exit_code = main_module.main(["config"])
+    captured = capsys.readouterr()
+    assert exit_code == exit_code_for(Verdict.ERROR) == 4
+    assert captured.err.splitlines() == ["marshal: internal error: RuntimeError: wiring fell over"]
 
 
 # --- Story 1.4: the `init` subcommand's wiring into main.py -----------------

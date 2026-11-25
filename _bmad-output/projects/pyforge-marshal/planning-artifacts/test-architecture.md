@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: 43b9e4de563c5472
-story_count: 552
+source_fingerprint: 981dd4c00505ea9c
+story_count: 553
 test_file_count: 306
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 552
-- **Epics parsed:** 118
+- **Stories parsed:** 553
+- **Epics parsed:** 119
 - **Test files inventoried:** 306 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `43b9e4de563c5472`
+- **Source fingerprint:** `981dd4c00505ea9c`
 
 ## Risk Assessment
 
@@ -139,6 +139,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 118: The testing kit is a floor a second root can rebuild (spec-pyforge-testing-charter:CAP-6..spec-pyforge-testing-charter:CAP-7)
 - Epic 119: A challenge run past its ceiling is checked without a race (spec-pyforge-marshal:CAP-298)
 - Epic 120: The dispatch-verification fakes match a command by its words (spec-pyforge-marshal:CAP-170)
+- Epic 121: Teardown, the front door and the required-check read fail closed (spec-pyforge-marshal:CAP-287, CAP-304, CAP-210)
 
 ### Low-risk epics
 
@@ -1022,6 +1023,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 118.2 | The testing charter says what was built, and carries Epic 118's capabilities | none observed |
 | 119.1 | A challenge run past its ceiling is checked without a race | none observed |
 | 120.1 | The dispatch-verification fakes match a command by its words | none observed |
+| 121.1 | Teardown compares tips, a bad environment is a usage error, and a required ch... | none observed |
 
 ## Quality Gates
 
