@@ -1582,7 +1582,7 @@ So that a succeeded job is a scan that ran, a pull-request POST that failed leav
 **Then** the warden suite and the platform suite exit 0 with a test per defect that fails on the tree before the fix
 **And** a defect the tree does not reproduce is recorded in the story spec as not a defect, with the command that was run, and no code moves for it
 **And** the retry the row asks for a stale approval is not built: the open task refuses any approval of a proposal queued longer than the approval expiry, so a second approve could not open a pull request
-**Status:** review
+**Status:** done
 
 ## Currency validation — 2026-08-26
 

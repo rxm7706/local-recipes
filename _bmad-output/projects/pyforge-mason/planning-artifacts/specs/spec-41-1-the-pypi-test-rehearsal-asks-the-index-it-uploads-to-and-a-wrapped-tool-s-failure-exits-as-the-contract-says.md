@@ -2,7 +2,7 @@
 title: "41.1: The pypi-test rehearsal asks the index it uploads to, and a wrapped tool's failure exits as the contract says"
 type: 'fix'
 created: '2026-11-25'
-status: 'in-review'
+status: 'done'
 story: 41-1-the-pypi-test-rehearsal-asks-the-index-it-uploads-to-and-a-wrapped-tool-s-failure-exits-as-the-contract-says
 spec: spec-pyforge-mason
 difficulty: 'medium'
@@ -128,3 +128,4 @@ Ledger key: `41-1-the-pypi-test-rehearsal-asks-the-index-it-uploads-to-and-a-wra
 - 2026-11-25: AC3's line form and its grep take ` - ` in place of ` (`, the form the session lead set for the review-defect stories.
 - 2026-11-25: the story is implemented and in review. Not yet done, at landing: the deferred-work row's `resolved` status with the closing commit, the ledger key, and the spec-surface reconcile.
 - 2026-11-25: the station closer closed `DW-mason-review-2026-11-24-1` in the ledger's own form (`status: closed` with a `resolution:` line, branch `review-defects-2026-11-25`) and opened `DW-mason-41-1-1` for the operator's decision whether a failed wrapped tool projects to exit 1; the acceptance text reads `closed` where it read `resolved`, the word this ledger uses. Left to landing: the ledger key and the spec-surface reconcile.
+- 2026-11-25: closed. PR #2385 merged as 080f89c4df (`Merge pyforge-steward/133-1 into main`) after its 51 CI checks passed and the full local `pr-preflight` exited 0 on 48 lanes; an independent reviewer read the diff against this spec before the merge, its findings were applied and re-reviewed.

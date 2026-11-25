@@ -2,7 +2,7 @@
 title: '133.1: Suite advance refuses before it edits, and steward''s exit codes stay in its domain'
 type: 'fix'
 created: '2026-11-25'
-status: 'in-review'
+status: 'done'
 story: 133-1-suite-advance-refuses-before-it-edits-and-steward-s-exit-codes-stay-in-its-domain
 spec: spec-pyforge-steward
 difficulty: 'medium'
@@ -134,3 +134,4 @@ Ledger key: `133-1-suite-advance-refuses-before-it-edits-and-steward-s-exit-code
 - 2026-11-25: defect 3: reproduced and fixed - `tests/unit/test_guards.py::test_lacking_with_a_missing_spec_exits_1_not_70` failed on the unchanged tree (`FileNotFoundError` escaped the duty and `main()` returned 70), with `test_lacking_with_a_missing_spec_is_a_failed_duty_naming_the_path`, `test_lacking_with_a_spec_that_is_not_utf8_is_a_failed_duty` and `test_source_ground_with_a_missing_text_file_is_a_failed_duty_naming_the_path`. `GuardsDuty.run` catches `OSError` and `ValueError` on both reads (`lacking --spec`, `source-ground --text`) and returns a failed duty naming the path.
 - 2026-11-25: defect 4: reproduced and fixed - `tests/unit/test_cli.py::test_a_system_exit_raised_inside_a_duty_never_returns_its_own_code` failed on the unchanged tree for 99, 4, 255 and -1 (`main()` returned the raised integer). `main()` now returns 70 and names the raised code on stderr when a `SystemExit` integer is outside the six documented codes; no exit code is added. Narrowed by the lead's ruling: the claim covers a raised `SystemExit` only, not a code a duty requests in `details["exit_code"]`.
 - 2026-11-25: the story is implemented and in review. Owed outside this spec, reported to the lead: the row `DW-steward-review-2026-11-24-1` closes naming these four outcomes, and Story 133.1's sentences in `epics.md` and the Dream take the narrowed wording.
+- 2026-11-25: closed. PR #2385 merged as 080f89c4df (`Merge pyforge-steward/133-1 into main`) after its 51 CI checks passed and the full local `pr-preflight` exited 0 on 48 lanes; an independent reviewer read the diff against this spec before the merge, its findings were applied and re-reviewed.

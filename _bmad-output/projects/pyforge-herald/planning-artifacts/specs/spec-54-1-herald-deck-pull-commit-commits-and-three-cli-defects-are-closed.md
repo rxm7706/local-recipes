@@ -2,7 +2,7 @@
 title: '54.1: herald deck pull --commit commits, and three CLI defects are closed'
 type: 'fix'
 created: '2026-11-25'
-status: 'in-review'
+status: 'done'
 story: 54-1-herald-deck-pull-commit-commits-and-three-cli-defects-are-closed
 spec: spec-pyforge-herald
 difficulty: 'medium'
@@ -139,3 +139,4 @@ Ledger key: `54-1-herald-deck-pull-commit-commits-and-three-cli-defects-are-clos
 - 2026-11-25: defect 4: reproduced and fixed - `test_update_with_no_station_exits_2_and_writes_nothing` failed on the unchanged tree (`assert 0 == 2`); `progress --update` with no positional station now exits 2 before dispatch.
 - 2026-11-25: defect 5: reproduced and fixed - `test_cli_deck_exports_unknown_slug_exits_2` failed on the unchanged tree (exit 1). Judged against `contract.md` § exit codes first: `DeckUsageError` is exit 2 and its own text names the unknown slug, so the code moved, not the table.
 - 2026-11-25: the story is implemented and in review. The station skill's stale `--commit` sentence is left as a follow-up (§ Follow-ups), by the lead's ruling.
+- 2026-11-25: closed. PR #2385 merged as 080f89c4df (`Merge pyforge-steward/133-1 into main`) after its 51 CI checks passed and the full local `pr-preflight` exited 0 on 48 lanes; an independent reviewer read the diff against this spec before the merge, its findings were applied and re-reviewed.

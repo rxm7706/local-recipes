@@ -2,7 +2,7 @@
 title: '121.1: Teardown compares tips, a bad environment is a usage error, and a required check is read on every page'
 type: 'fix'
 created: '2026-11-25'
-status: 'in-review'
+status: 'done'
 story: 121-1-teardown-compares-tips-a-bad-environment-is-a-usage-error-and-a-required-check-is-read-on-every-page
 spec: spec-pyforge-marshal
 difficulty: 'medium'
@@ -126,3 +126,4 @@ Ledger key: `121-1-teardown-compares-tips-a-bad-environment-is-a-usage-error-and
 - 2026-11-25: defect 2: reproduced and fixed - `PYFORGE_ENVIRONMENT=bogus pixi run --frozen -e pyforge-guild marshal status` exited 1 under an `UnknownEnvironmentError` traceback on the unchanged tree, and `test_bad_pyforge_environment_is_a_usage_error_with_one_stderr_line` and `test_handler_raising_an_unexpected_exception_returns_the_error_rung` in `tests/unit/test_cli.py` failed against the unchanged `cli/main.py` (the exceptions left `main()`).
 - 2026-11-25: defect 3: reproduced and fixed - `pixi run --frozen -e pyforge-marshal pytest src/shared/packages/pyforge-marshal/tests/unit/test_forge_gh.py -q` exited 1 on the unchanged tree: `test_check_run_status_reads_a_failed_required_check_on_a_later_page` read `None` for a failed run on page 2 of 101, and `test_check_run_status_raises_when_a_later_page_fails_never_a_partial_answer` did not raise.
 - 2026-11-25: the story is implemented and in review; all three defects reproduced, none closed as not a defect (AC7 not exercised).
+- 2026-11-25: closed. PR #2385 merged as 080f89c4df (`Merge pyforge-steward/133-1 into main`) after its 51 CI checks passed and the full local `pr-preflight` exited 0 on 48 lanes; an independent reviewer read the diff against this spec before the merge, its findings were applied and re-reviewed.

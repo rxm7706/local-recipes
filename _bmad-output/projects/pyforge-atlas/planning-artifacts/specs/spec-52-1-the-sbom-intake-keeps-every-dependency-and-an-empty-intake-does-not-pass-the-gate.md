@@ -2,7 +2,7 @@
 title: '52.1: The SBOM intake keeps every dependency and an empty intake does not pass the gate'
 type: 'fix'
 created: '2026-11-25'
-status: 'in-review'
+status: 'done'
 story: 52-1-the-sbom-intake-keeps-every-dependency-and-an-empty-intake-does-not-pass-the-gate
 spec: spec-pyforge-atlas
 difficulty: 'medium'
@@ -149,3 +149,4 @@ Each command selects its test by name, so a test that was never written exits 5,
 - 2026-11-25: defect 6: reproduced and fixed - `test_short_page_below_the_reported_total_is_a_partial_walk` failed on the unchanged tree (the 450-row last-good overwritten with 250 rows, not stale); the review's regression, one nameless item making every full walk partial, failed as `test_full_walk_with_a_nameless_item_is_complete_not_partial` before the walk counted items served.
 - 2026-11-25: second review, one residue on defect 6, fixed: the empty-frame branch judged a page before its served items were counted, so a last page whose one item the parser drops read as `empty page at offset=400 with 400/401 served` and the complete walk was thrown away. `test_a_served_page_whose_items_are_all_dropped_is_counted_before_it_is_judged` failed on that tree (`300 == 400`); the walk now counts a page before judging it, a page that serves nothing short of the total stays partial, and a page whose items are all dropped is judged as the short or full page it is.
 - 2026-11-25: the story is implemented and in review: all six defects of `DW-atlas-review-2026-11-24-1` fixed, none closed as not a defect, and the review's three findings closed under the lead's rulings.
+- 2026-11-25: closed. PR #2385 merged as 080f89c4df (`Merge pyforge-steward/133-1 into main`) after its 51 CI checks passed and the full local `pr-preflight` exited 0 on 48 lanes; an independent reviewer read the diff against this spec before the merge, its findings were applied and re-reviewed.

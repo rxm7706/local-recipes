@@ -196,7 +196,7 @@ development_status:
   60-3-the-shelf-follows-its-own-style-guide-and-the-manticore-and-antigravity-pages-are-supported-pages: done
   60-4-doctor-s-chain-closes-cap-84-reads-shipped-and-the-incident-log-s-home-is-settled: done
   61-1-the-shelf-the-front-doors-and-the-dossier-say-what-the-tree-does: done
-  62-1-the-kill-switch-writes-the-flag-tree-whole-and-reports-its-reason: review
+  62-1-the-kill-switch-writes-the-flag-tree-whole-and-reports-its-reason: done
   7-1-the-emitter-mints-identity-at-defer-time: done
   7-2-grandfather-the-470-at-a-dated-cut-off: done
   7-3-the-detector-sees-anonymous-tier-3-entries: done
@@ -326,7 +326,7 @@ development_status:
   epic-60-retrospective: optional
   epic-61: done
   epic-61-retrospective: optional
-  epic-62: in-progress
+  epic-62: done
   epic-62-retrospective: optional
   epic-7: done
   epic-7-retrospective: optional

@@ -4139,7 +4139,7 @@ So that no reader sees a half-written tree while the switch is thrown, and the r
 **When** each of the two defects of `DW-doctor-61-1-2` is first reproduced against the tree, and then the tree is written through `pyforge.core.atomic_write` with the file's own mode kept, and the command's result line names the reason
 **Then** a failure during the write leaves `flags.json` byte-identical and no temporary file beside it, a symlinked tree is still a symlink and its target reads DISABLED, a tree whose directory the process cannot write is a named refusal at exit 2 with the file byte-identical, the one result line of a successful run carries the flag, the path, the state change and the reason, and the read-only guard still proves the actuator module writes and still fails when a third module does
 **And** a defect the tree does not reproduce is recorded as not a defect in the story spec and in the row, and `DW-doctor-61-1-2` reads resolved in doctor's ledger with the commit that closed it
-**Status:** review
+**Status:** done
 
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)

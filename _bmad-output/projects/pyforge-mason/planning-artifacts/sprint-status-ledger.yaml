@@ -139,7 +139,7 @@ development_status:
   4-4-mason-environment-check: done
   4-5-a-repeated-platform-keeps-every-value: done
   40-1-the-cfe-scripts-merge-the-pixi-config-layers-and-the-mcp-reference-names-the-server-it-is: done
-  41-1-the-pypi-test-rehearsal-asks-the-index-it-uploads-to-and-a-wrapped-tool-s-failure-exits-as-the-contract-says: review
+  41-1-the-pypi-test-rehearsal-asks-the-index-it-uploads-to-and-a-wrapped-tool-s-failure-exits-as-the-contract-says: done
   5-1-cfe-independence-test: done
   5-2-governance-test: done
   5-3-delegation-fidelity-test: done
@@ -224,7 +224,7 @@ development_status:
   epic-4-retrospective: optional
   epic-40: done
   epic-40-retrospective: optional
-  epic-41: in-progress
+  epic-41: done
   epic-41-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional

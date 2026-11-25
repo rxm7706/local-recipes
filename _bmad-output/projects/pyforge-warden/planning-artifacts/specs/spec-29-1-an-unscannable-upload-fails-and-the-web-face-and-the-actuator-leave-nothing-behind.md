@@ -2,7 +2,7 @@
 title: '29.1: An unscannable upload fails, and the web face and the actuator leave nothing behind'
 type: 'fix'
 created: '2026-11-25'
-status: 'in-review'
+status: 'done'
 story: 29-1-an-unscannable-upload-fails-and-the-web-face-and-the-actuator-leave-nothing-behind
 spec: spec-pyforge-warden
 difficulty: 'medium'
@@ -162,3 +162,4 @@ Ledger key: `29-1-an-unscannable-upload-fails-and-the-web-face-and-the-actuator-
 - 2026-11-25: defect 5: reproduced and fixed - `test_whole_run_failure_records_its_cause` in `src/shared/packages/pyforge-warden/tests/unit/test_actuator.py` (a solver `OSError` escaped `run_actuator`; the two whole-run records carried no exception type) and `test_whole_run_actuator_failure_reaches_the_proposal` in `src/platform/tests/test_warden_fleet_proposal_recovery.py` (the proposal's error was "actuator produced no outcome for finding").
 - 2026-11-25: the story is implemented and in review.
 - 2026-11-25: second review, one low problem, fixed: the dismissal defect 4 permits had no operator path, because the proposals page listed `QUEUED` proposals only. `stale_approved_proposals()` in `proposals.py` and the three proposal views now give the page the stale approvals, and `fleet_proposals.html` shows each with a Dismiss form and no Approve form. `test_proposals_page_lists_a_stale_approval_with_dismiss_only`, `test_the_expiry_setting_decides_what_the_page_lists` and `test_a_stale_approval_is_dismissed_through_the_page` in `src/platform/tests/test_warden_fleet_proposal_stale_portal.py` failed on the tree before the change (the page read "No queued proposals."). The template and that test module join the surface.
+- 2026-11-25: closed. PR #2385 merged as 080f89c4df (`Merge pyforge-steward/133-1 into main`) after its 51 CI checks passed and the full local `pr-preflight` exited 0 on 48 lanes; an independent reviewer read the diff against this spec before the merge, its findings were applied and re-reviewed.
