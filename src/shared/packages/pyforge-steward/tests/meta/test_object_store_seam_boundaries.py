@@ -23,8 +23,9 @@ sanctioned ones are in `config/asgi.py` and `config/station_api.py`) -- is out o
 Rule 1 has one known breach, closed and exact: `src/platform/ingest/github_projects` (Story
 12.8's dlt lane) still imports `pyforge.steward.keys` and `.sync`; `pixi.toml`
 `[feature.platform-ci-test.dependencies]` calls it "the live pap:AD-2 breach". Relocating
-that lane out of the host is its own effort. The allowlist below is the four files, and it
-can only shrink: a listed file that stops importing `pyforge.*` fails the test until it is
+that lane out of the host is its own effort. The allowlist is the four files, written once in
+the testing kit (`pyforge.testing_kit.PLATFORM_PYFORGE_IMPORTERS`, Story 136.3) so the fleet's
+diff guards and this test read one list, and it can only shrink: a listed file that stops importing `pyforge.*` fails the test until it is
 removed from the list, and any other importer reds.
 """
 
@@ -34,6 +35,7 @@ import ast
 from pathlib import Path
 
 import pytest
+from pyforge.testing_kit import PLATFORM_PYFORGE_IMPORTERS
 
 # Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
 # station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
@@ -43,16 +45,6 @@ _HERE = Path(__file__).resolve()
 ROOT = next(p for p in _HERE.parents if (p / "pixi.toml").is_file() and (p / "AGENTS.md").is_file())
 PLATFORM = ROOT / "src" / "platform"
 DJANGO_PYFORGE = ROOT / "src" / "shared" / "packages" / "django-pyforge" / "src" / "django_pyforge"
-
-#: The four `src/platform` files that import `pyforge.*` today (see the module docstring).
-PLATFORM_PYFORGE_IMPORTERS: frozenset[str] = frozenset(
-    {
-        "src/platform/ingest/github_projects/graphql.py",
-        "src/platform/ingest/github_projects/pipeline.py",
-        "src/platform/ingest/github_projects/source.py",
-        "src/platform/ingest/github_projects/test_github_metrics_dlt.py",
-    }
-)
 
 #: Directories that hold third-party or generated files, never this repository's own modules.
 _SKIP_DIRS = frozenset({"node_modules", "site-packages", ".venv", "staticfiles"})

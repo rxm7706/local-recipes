@@ -8,7 +8,7 @@ from http import HTTPStatus
 from pathlib import Path
 
 import pytest
-from pyforge.testing_kit import changed_paths_since
+from pyforge.testing_kit import changed_paths_since, pyforge_import_offenders
 
 # Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
 # station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
@@ -132,15 +132,8 @@ def test_story_does_not_add_pyforge_under_src_platform():
     # already gives the real enforcement pap:AD-2 needs.
     root = _repo_root()
     changed = changed_paths_since(root, pathspec="src/platform")
-    offenders: list[str] = []
-    for rel in changed:
-        path = root / rel
-        if path.suffix != ".py" or not path.is_file():
-            continue
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-        if "pyforge" in _imported_roots(tree):
-            offenders.append(rel)
-    assert not offenders
+    offenders = pyforge_import_offenders(changed, root)
+    assert not offenders, f"src/platform pyforge imports in this diff: {changed} {offenders}"
 
 
 def test_conda_forge_expert_not_replaced():

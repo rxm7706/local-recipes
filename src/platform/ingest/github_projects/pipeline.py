@@ -9,7 +9,7 @@ from typing import Callable
 
 import dlt
 from pyforge.steward.keys import HostScopedCredential
-from pyforge.steward.sync import TransportFn, _default_transport
+from pyforge.steward.sync import TransportFn, default_transport
 
 from .graphql import DEFAULT_PAGE_SIZE, ProjectSnapshotPage
 from .source import github_projects_source
@@ -39,7 +39,7 @@ def run_pipeline(
 ) -> dlt.pipeline.Pipeline:
     """Load Projects V2 data into the `github_metrics` dataset."""
     credential = credential or _credential_from_env()
-    transport = transport or _default_transport
+    transport = transport or default_transport
 
     source = github_projects_source(
         project_id,

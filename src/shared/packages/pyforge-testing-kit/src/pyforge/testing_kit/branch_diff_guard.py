@@ -13,6 +13,11 @@ This module centralizes the git mechanics only. Each guard's own POLICY --
 which paths, which exemptions, which content check -- stays local to the test
 file that owns it; nothing here decides what a violation looks like.
 
+One policy is shared, because 20 guards and steward's seam test would otherwise
+each hold a copy: ``PLATFORM_PYFORGE_IMPORTERS``, the four ``src/platform`` files
+of the dated pap:AD-2 carve-out (DW-steward-74-1), which
+``pyforge_import_offenders`` admits (steward Story 136.3).
+
 The base defaults to ``refs/remotes/origin/main`` (``ORIGIN_MAIN``), and an
 explicit ``origin/<branch>`` is read by its full refname too (marshal Story
 62.1, spec-pyforge-marshal CAP-272): git resolves a short name to a local
@@ -53,6 +58,21 @@ from pyforge.core.process import PosixProcess, ProcessResult
 
 #: The remote's ``main`` by its full refname -- every guard's default base.
 ORIGIN_MAIN = "refs/remotes/origin/main"
+
+#: The four ``src/platform`` files that import ``pyforge.*`` -- the dated pap:AD-2 carve-out
+#: (DW-steward-74-1, Story 12.8's dlt lane), written here once (steward Story 136.3):
+#: ``pyforge_import_offenders`` admits exactly these, and steward's
+#: ``tests/meta/test_object_store_seam_boundaries.py`` reads this constant as its allowlist,
+#: where a listed file that stops importing ``pyforge.*`` fails until it is removed. The
+#: list only shrinks.
+PLATFORM_PYFORGE_IMPORTERS: frozenset[str] = frozenset(
+    {
+        "src/platform/ingest/github_projects/graphql.py",
+        "src/platform/ingest/github_projects/pipeline.py",
+        "src/platform/ingest/github_projects/source.py",
+        "src/platform/ingest/github_projects/test_github_metrics_dlt.py",
+    }
+)
 
 _PROCESS = PosixProcess()
 
@@ -162,9 +182,13 @@ def existed_at_ref(root: Path, path: str, *, ref: str = ORIGIN_MAIN) -> bool:
 def pyforge_import_offenders(paths: list[str], root: Path) -> list[str]:
     """Which of ``paths`` (repo-relative) contain a top-level ``import
     pyforge`` / ``from pyforge...`` -- ``"rel:lineno"`` entries, never a
-    crash on a non-Python or already-deleted path."""
+    crash on a non-Python or already-deleted path. A path in
+    ``PLATFORM_PYFORGE_IMPORTERS`` (matched exactly, as the repo-relative
+    POSIX path) is admitted; every other path is judged."""
     offenders: list[str] = []
     for rel in paths:
+        if rel in PLATFORM_PYFORGE_IMPORTERS:
+            continue
         path = root / rel
         if path.suffix != ".py" or not path.is_file():
             continue
