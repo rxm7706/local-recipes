@@ -59,7 +59,16 @@ def _run_journal_record(repo: Path) -> dict:
 
 
 STATIONS = ("atlas", "doctor", "herald", "marshal", "mason", "scribe", "steward", "warden")
-LINT = {"ruff", "ruff-format", "mypy", "target-version-check", "precommit-config-check"}
+# Story 136.9: lint-types.yml's job also runs the two named-test steps of Story 136.6, so they are its lanes too.
+LINT = {
+    "ruff",
+    "ruff-format",
+    "mypy",
+    "target-version-check",
+    "precommit-config-check",
+    "steward-share-tree-test",
+    "scribe-plane-and-portal-test",
+}
 SPEC_ALWAYS_ON = {"detectors-ci", "pyforge-doctor-scripts-test", "docs-map-render-test", "docs-gen-test"}
 ALWAYS_ON_SINCE_SPEC = {"pyforge-doctor-aggregate-scripts-test", "scripts-lib-test", "pyforge-deps-test"}
 DOCS_SITE_VALIDATE = {"docs-site-validate-links", "docs-site-validate-sidebar-order", "docs-site-validate-sidebar"}
