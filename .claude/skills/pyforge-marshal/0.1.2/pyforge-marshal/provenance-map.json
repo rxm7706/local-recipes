@@ -1,0 +1,2474 @@
+{
+  "provenance_version": "2.0",
+  "skill_name": "pyforge-marshal",
+  "skill_type": "single",
+  "source_repo": "src/shared/packages/pyforge-marshal",
+  "source_commit": "5f22584869704d9fb14aa6f422beaf12e165f039",
+  "source_ref": "local",
+  "generated_at": "2026-11-12T00:00:00Z",
+  "grounding": {
+    "date": "2026-11-25",
+    "commit_short": "5f22584869",
+    "station": "marshal",
+    "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-136-10-six-station-skills-and-their-briefs-cite-the-persona-ids-in-qualified-form.md",
+    "path_base": "repository root; the tool's own map (gitignored forge data) is relative to source_repo, and this tracked copy is that map with source_repo prefixed to each source_file"
+  },
+  "entries": [
+    {
+      "export_name": "AuditRun",
+      "export_type": "class",
+      "source_library": "pyforge-marshal",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 794,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "ChallengeRefused",
+      "export_type": "class",
+      "source_library": "pyforge-marshal",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 110,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "ChallengeRunner",
+      "export_type": "class",
+      "source_library": "pyforge-marshal",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 100,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "ReadinessResult",
+      "export_type": "class",
+      "source_library": "pyforge-marshal",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 1165,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "RunOutcome",
+      "export_type": "class",
+      "source_library": "pyforge-marshal",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 115,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "adapter_models",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "effective: policy.EffectivePolicy"
+      ],
+      "return_type": "list[str]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 219,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "add_factory_challenge_subparser",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "factory_subparsers: argparse._SubParsersAction"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 126,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "append_journal",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "journal: Path",
+        "writer: str",
+        "counter: int",
+        "run_id: str",
+        "kind: str",
+        "phase: Phase",
+        "payload: Mapping[str, object]",
+        "now: datetime",
+        "intent: JournalEntryId | None = None"
+      ],
+      "return_type": "JournalEntryId",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 494,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "append_memlog",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "root: Path",
+        "workspace: str",
+        "text: str"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 947,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "artifact_dir",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "root: Path",
+        "slug: str",
+        "config: core.ChallengeConfig"
+      ],
+      "return_type": "Path",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 436,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "audit_plan",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "root: Path",
+        "slice_dir: Path"
+      ],
+      "return_type": "tuple[list[AuditRun], list[str]]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 838,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "build_context",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "root: Path",
+        "slug: str",
+        "stage: str",
+        "target: Path",
+        "config: core.ChallengeConfig",
+        "dream: Path | None = None",
+        "standards_fallback: tuple[Path, ...] = ()",
+        "omit_dream: bool = False"
+      ],
+      "return_type": "core.ChallengeContext",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 455,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "challenge_config",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "effective: policy.EffectivePolicy"
+      ],
+      "return_type": "core.ChallengeConfig",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 211,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "challenger_aliases",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [],
+      "return_type": "tuple[str, ...]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 296,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "challenger_catalog",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "slug: str",
+        "effective: policy.EffectivePolicy"
+      ],
+      "return_type": "Mapping[str, object]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 288,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "compose_effective",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "slug: str"
+      ],
+      "return_type": "policy.EffectivePolicy",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 196,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "cut_slice",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "source: Path",
+        "selector: core.Selector"
+      ],
+      "return_type": "tuple[str, str]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 756,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "default_standards",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "root: Path",
+        "slug: str",
+        "stage: str"
+      ],
+      "return_type": "tuple[Path, ...]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 440,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "dream_path",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "root: Path",
+        "slug: str"
+      ],
+      "return_type": "Path",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 400,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "epic_drift_paths",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "epics_text: str",
+        "epic: str"
+      ],
+      "return_type": "tuple[list[str], list[str]]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 685,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "epics_path",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "root: Path",
+        "slug: str"
+      ],
+      "return_type": "Path",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 404,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "flag_on",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "key: str"
+      ],
+      "return_type": "bool",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 187,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "glossary_path",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "root: Path",
+        "slug: str"
+      ],
+      "return_type": "Path",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 392,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "journal_refusal",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "out_dir: Path",
+        "slug: str",
+        "reason: str",
+        "now: datetime"
+      ],
+      "return_type": "Path",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 529,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "model_refusals",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "config: core.ChallengeConfig",
+        "slug: str",
+        "effective: policy.EffectivePolicy",
+        "launch_model: str | None = None",
+        "stage: str | None = None"
+      ],
+      "return_type": "list[str]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 304,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "new_run_dir",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "out_dir: Path",
+        "slug: str",
+        "moment: datetime"
+      ],
+      "return_type": "Path",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 550,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "owner_override",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "root: Path",
+        "stage: str",
+        "target: Path"
+      ],
+      "return_type": "Path | None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 419,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "owning_spec",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "root: Path",
+        "slug: str",
+        "stage: str",
+        "target: Path"
+      ],
+      "return_type": "Path",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 431,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "plugin_refusal",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "plugins: Path",
+        "version: str",
+        "personas: tuple[str, ...] = ()"
+      ],
+      "return_type": "str | None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 342,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "plugins_root",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "env: Mapping[str, str] | None = None"
+      ],
+      "return_type": "Path",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 337,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "readiness_for_dispatch",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "root: Path",
+        "slug: str",
+        "story_spec: Path",
+        "effective: policy.EffectivePolicy",
+        "runner: ChallengeRunner | None = None",
+        "now: Callable[[], datetime] = lambda: datetime.now(UTC)",
+        "plugins: Path | None = None",
+        "launch_model: str | None = None"
+      ],
+      "return_type": "ReadinessResult",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 1176,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "readiness_payload",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "result: ReadinessResult"
+      ],
+      "return_type": "dict[str, object]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 1240,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "resolve_owner",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "root: Path",
+        "project: str",
+        "report: core.ChallengeReport"
+      ],
+      "return_type": "Path",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 966,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_audit",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "root: Path",
+        "config: core.ChallengeConfig",
+        "runner: ChallengeRunner",
+        "out_root: Path",
+        "force: bool",
+        "now: Callable[[], datetime]"
+      ],
+      "return_type": "tuple[Path, dict[str, list[core.ChallengeReport]], list[str]]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 870,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_challenge",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "runner: ChallengeRunner | None = None",
+        "root: Path | None = None",
+        "now: Callable[[], datetime] = lambda: datetime.now(UTC)",
+        "memlog: Callable[[Path, str, str], None] = append_memlog"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 1030,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_one",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "root: Path",
+        "slug: str",
+        "stage: str",
+        "target: Path",
+        "config: core.ChallengeConfig",
+        "runner: ChallengeRunner",
+        "out_dir: Path",
+        "now: Callable[[], datetime] = lambda: datetime.now(UTC)",
+        "dream: Path | None = None",
+        "owner: Path | None = None",
+        "standards: tuple[Path, ...] = ()",
+        "dream_choice: str = \"\"",
+        "omit_dream: bool = False",
+        "run_dir: Path | None = None"
+      ],
+      "return_type": "RunOutcome",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 557,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_resolve",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "root: Path",
+        "memlog: Callable[[Path, str, str], None]"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 985,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "session_models",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "effective: policy.EffectivePolicy",
+        "launch_model: str | None = None"
+      ],
+      "return_type": "list[str]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 271,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "spec_path",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "root: Path",
+        "slug: str"
+      ],
+      "return_type": "Path",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 396,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "spin_models",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "effective: policy.EffectivePolicy"
+      ],
+      "return_type": "list[str]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 246,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "station_skill_path",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "root: Path",
+        "station: str"
+      ],
+      "return_type": "Path | None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 408,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "tree_snapshot",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "root: Path"
+      ],
+      "return_type": "str | None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 520,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "write_dream_entry",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "root: Path",
+        "slug: str",
+        "cap_slice: core.CapSlice",
+        "out_dir: Path"
+      ],
+      "return_type": "tuple[Path, str]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 772,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "write_drift_target",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "root: Path",
+        "slug: str",
+        "epic: str",
+        "out_dir: Path"
+      ],
+      "return_type": "Path",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 707,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "write_slice",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "root: Path",
+        "source: Path",
+        "selector: core.Selector",
+        "out_dir: Path"
+      ],
+      "return_type": "Path",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 766,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "add_check_subparser",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "subparsers: argparse._SubParsersAction"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/check.py",
+      "source_line": 88,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_check",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "process: ProcessPort | None = None",
+        "context: MarshalContext | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/check.py",
+      "source_line": 199,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "add_context_subparser",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "subparsers: argparse._SubParsersAction"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/context.py",
+      "source_line": 131,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_context_advisory",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "scribe: ScribeCli | None = None",
+        "process: PosixProcess | None = None",
+        "fs: FsPort | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/context.py",
+      "source_line": 803,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_context_bundle",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/context.py",
+      "source_line": 671,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_context_refresh",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "scribe: ScribeCli | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/context.py",
+      "source_line": 345,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_context_retrieve",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "scribe: ScribeCli | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/context.py",
+      "source_line": 486,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "Cap4VerificationResult",
+      "export_type": "class",
+      "source_library": "pyforge-marshal",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 357,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "CycleSlugs",
+      "export_type": "class",
+      "source_library": "pyforge-marshal",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 5175,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "DispatchAttempt",
+      "export_type": "class",
+      "source_library": "pyforge-marshal",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 212,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "DispatchPreflightConflict",
+      "export_type": "class",
+      "source_library": "pyforge-marshal",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 202,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "DispatchWorktreeResolution",
+      "export_type": "class",
+      "source_library": "pyforge-marshal",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 1763,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "FleetCycleReport",
+      "export_type": "class",
+      "source_library": "pyforge-marshal",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 229,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "FollowupPlan",
+      "export_type": "class",
+      "source_library": "pyforge-marshal",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 5228,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "StationCyclePlan",
+      "export_type": "class",
+      "source_library": "pyforge-marshal",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 5446,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "StructureGraphSeed",
+      "export_type": "class",
+      "source_library": "pyforge-marshal",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 921,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "add_factory_dispatch_attach_subparser",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "factory_subparsers: argparse._SubParsersAction"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 4276,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "add_factory_dispatch_resume_subparser",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "factory_subparsers: argparse._SubParsersAction"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 4290,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "add_factory_dispatch_subparser",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "factory_subparsers: argparse._SubParsersAction"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 268,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "add_factory_drain_subparser",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "factory_subparsers: argparse._SubParsersAction"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 4482,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "cross_station_surface_overlap_advisories",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "fs: FsPort",
+        "vcs: VcsPort",
+        "process: ProcessPort",
+        "repo_root: Path",
+        "requested_slug: str",
+        "requested_story_key: str",
+        "requested_spec_text: str"
+      ],
+      "return_type": "tuple[Finding, ...]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 2676,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "dispatch_codegraph_index_enabled",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [],
+      "return_type": "bool",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 351,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "dispatch_once",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "slug: str",
+        "story: str",
+        "fs: FsPort | None = None",
+        "vcs: CommittingVcs | None = None",
+        "build_harness: BuildHarnessPort | None = None",
+        "process: ProcessPort | None = None",
+        "policy_flags: dict[str, object] | None = None",
+        "parallel_dispatch: bool = False",
+        "hold_landing: bool = False"
+      ],
+      "return_type": "DispatchAttempt",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 3122,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "execute_fleet_cycle",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "repo_root: Path",
+        "mode: dispatch_fleet.FleetCampaignMode",
+        "leave_remaining: int",
+        "campaign_blocked: dict[str, dict[str, str]]",
+        "fs: FsPort",
+        "vcs: CommittingVcs",
+        "build_harness: BuildHarnessPort",
+        "process: ProcessPort",
+        "harness: HarnessPort",
+        "station: str | None = None",
+        "explicit_stories: tuple[str, ...] | None = None",
+        "policy_flags: dict[str, object] | None = None",
+        "max_in_flight: int | None = None",
+        "retry_environment_blocks: bool = False",
+        "followups_launched: frozenset[tuple[str, StoryKey]] = frozenset()"
+      ],
+      "return_type": "FleetCycleReport",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 5705,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "gather_dispatch_journal_facts",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "fs: FsPort",
+        "run_dir: Path",
+        "run_id: str"
+      ],
+      "return_type": "dispatch_core.DispatchJournalFacts",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 1834,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "gather_fleet_finalize_escalations",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "fs: FsPort",
+        "repo_root: Path"
+      ],
+      "return_type": "dict[str, dispatch_fleet.FinalizeEscalation]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 1679,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "gather_fleet_missing_spec_escalations",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "fs: FsPort",
+        "harness: HarnessPort",
+        "vcs: VcsPort",
+        "repo_root: Path"
+      ],
+      "return_type": "dict[str, dispatch_fleet.MissingSpecEscalation]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 4729,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "iter_dispatch_run_dirs",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "repo_root: Path",
+        "slug: str"
+      ],
+      "return_type": "tuple[Path, ...]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 1811,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "latest_dispatch_run_dir",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "repo_root: Path",
+        "slug: str"
+      ],
+      "return_type": "Path | None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 1827,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "live_dispatch_conflict",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "fs: FsPort",
+        "vcs: VcsPort",
+        "process: ProcessPort",
+        "repo_root: Path",
+        "slug: str",
+        "story_key: str",
+        "effective_policy: policy.EffectivePolicy",
+        "harness_reported_failure: bool = False"
+      ],
+      "return_type": "str | None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 2966,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "one_in_flight_enabled",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [],
+      "return_type": "bool",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 346,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "plan_followup_reviews",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "repo_root: Path",
+        "slugs: Sequence[str]",
+        "vcs: VcsPort",
+        "launched: frozenset[tuple[str, StoryKey]] = frozenset()",
+        "policy_flags: dict[str, object] | None = None",
+        "fetch: bool = True"
+      ],
+      "return_type": "FollowupPlan",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 5273,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "plan_station_cycle",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "repo_root: Path",
+        "slug: str",
+        "mode: dispatch_fleet.FleetCampaignMode",
+        "leave_remaining: int",
+        "campaign_blocked: Mapping[str, str]",
+        "order_override: Sequence[str] | None",
+        "station_skips: Mapping[str, str]",
+        "explicit_stories: tuple[str, ...] | None",
+        "policy_flags: dict[str, object] | None",
+        "max_in_flight: int | None",
+        "retry_environment_blocks: bool",
+        "fs: FsPort",
+        "vcs: VcsPort",
+        "process: ProcessPort",
+        "harness: HarnessPort",
+        "mint_wave_id: Callable[[], str]",
+        "followups: Sequence[dispatch_fleet.FollowupCandidate] = ()"
+      ],
+      "return_type": "StationCyclePlan",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 5489,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "resolve_cycle_slugs",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "repo_root: Path",
+        "station: str | None"
+      ],
+      "return_type": "CycleSlugs",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 5187,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "resolve_dispatch_session_verdict",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "fs: FsPort",
+        "vcs: VcsPort",
+        "process: ProcessPort",
+        "repo_root: Path",
+        "slug: str",
+        "journal: dispatch_core.DispatchJournalFacts",
+        "effective_policy: policy.EffectivePolicy",
+        "run_dir: Path | None = None",
+        "spec_relative_path: str | None = None"
+      ],
+      "return_type": "DispatchSessionVerdict | None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 2043,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "resolve_max_parallel",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "effective_policy: policy.EffectivePolicy",
+        "cli_override: int | None = None",
+        "policy_flags: dict[str, object] | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 2223,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_dispatch",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "fs: FsPort | None = None",
+        "vcs: CommittingVcs | None = None",
+        "build_harness: BuildHarnessPort | None = None",
+        "process: ProcessPort | None = None",
+        "harness: HarnessPort | None = None",
+        "context: MarshalContext | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 2993,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_dispatch_attach",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "fs: FsPort | None = None",
+        "vcs: VcsPort | None = None",
+        "process: ProcessPort | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 4310,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_dispatch_resume",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "fs: FsPort | None = None",
+        "vcs: VcsPort | None = None",
+        "process: ProcessPort | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 4407,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_fleet_drain",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "fs: FsPort | None = None",
+        "vcs: CommittingVcs | None = None",
+        "build_harness: BuildHarnessPort | None = None",
+        "process: ProcessPort | None = None",
+        "harness: HarnessPort | None = None",
+        "context: MarshalContext | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 6403,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "skip_basis",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "story: str",
+        "reason: str",
+        "station_skips: Mapping[str, str]",
+        "block_classes: Mapping[str, dispatch_fleet.FleetBlockClass]",
+        "mode: dispatch_fleet.FleetCampaignMode"
+      ],
+      "return_type": "str",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 5682,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "spin_loop_home_in_flight_conflict",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "fs: FsPort",
+        "vcs: VcsPort",
+        "process: ProcessPort",
+        "harness: HarnessPort",
+        "home: Path",
+        "slug: str",
+        "story_key: str",
+        "effective_policy: policy.EffectivePolicy",
+        "preflight_advisories: list[Finding] | None = None"
+      ],
+      "return_type": "DispatchPreflightConflict | None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 2614,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "station_finalize_pending_story",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "fs: FsPort",
+        "process: ProcessPort",
+        "repo_root: Path",
+        "slug: str",
+        "backlog: Sequence[str]",
+        "effective_policy: policy.EffectivePolicy"
+      ],
+      "return_type": "tuple[str, str] | None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 2274,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "station_in_flight_conflict",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "fs: FsPort",
+        "vcs: VcsPort",
+        "process: ProcessPort",
+        "repo_root: Path",
+        "slug: str",
+        "story_key: str",
+        "effective_policy: policy.EffectivePolicy",
+        "harness_reported_failure: bool = False",
+        "candidate_spec_text: str | None = None",
+        "deps_graph: Mapping[str, tuple] | None = None",
+        "parallel_dispatch: bool = False",
+        "preflight_advisories: list[Finding] | None = None"
+      ],
+      "return_type": "DispatchPreflightConflict | None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 2435,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "station_story_block_facts",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "fs: FsPort",
+        "vcs: VcsPort",
+        "process: ProcessPort",
+        "repo_root: Path",
+        "slug: str",
+        "story_key: str",
+        "effective_policy: policy.EffectivePolicy",
+        "followup_entry: bool = False"
+      ],
+      "return_type": "dispatch_fleet.StationBlockEvidence | None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 2738,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "station_story_blocked_evidence",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "fs: FsPort",
+        "vcs: VcsPort",
+        "process: ProcessPort",
+        "repo_root: Path",
+        "slug: str",
+        "story_key: str",
+        "effective_policy: policy.EffectivePolicy"
+      ],
+      "return_type": "str | None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 2944,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "story_dispatch_preserve_tag",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "fs: FsPort",
+        "repo_root: Path",
+        "slug: str",
+        "story_key: str"
+      ],
+      "return_type": "str | None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 1551,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "wave_held_stories",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "cycle: StationCyclePlan"
+      ],
+      "return_type": "tuple[str, ...]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 5665,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "add_homes_subparser",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "subparsers: argparse._SubParsersAction"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py",
+      "source_line": 326,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "add_init_subparser",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "subparsers: argparse._SubParsersAction"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py",
+      "source_line": 301,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "add_preflight_subparser",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "subparsers: argparse._SubParsersAction"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py",
+      "source_line": 1253,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "add_teardown_subparser",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "subparsers: argparse._SubParsersAction"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py",
+      "source_line": 2110,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "published_story_tasks",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "project_slug: str"
+      ],
+      "return_type": "dict[str, dict] | None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py",
+      "source_line": 349,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_homes",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "vcs: VcsPort | None = None",
+        "fs: FsPort | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py",
+      "source_line": 1057,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_init",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "vcs: VcsPort | None = None",
+        "fs: FsPort | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py",
+      "source_line": 630,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_preflight",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "vcs: VcsPort | None = None",
+        "fs: FsPort | None = None",
+        "harness: HarnessPort | None = None",
+        "kit_probe = None",
+        "kit_index_builder = None",
+        "mcp_probe: McpProbePort | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py",
+      "source_line": 1406,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_teardown",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "vcs: VcsPort | None = None",
+        "fs: FsPort | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py",
+      "source_line": 2321,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "add_seed_subparser",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "subparsers: argparse._SubParsersAction"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py",
+      "source_line": 1250,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "packaged_seed_model_version",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [],
+      "return_type": "ModelVersion",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py",
+      "source_line": 147,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "resolve_context_layers",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "repo_root: Path",
+        "explicit_slug: str | None"
+      ],
+      "return_type": "dict[str, dict[str, object]]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py",
+      "source_line": 275,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_accept",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "manifest: Manifest | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py",
+      "source_line": 1109,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_adopt",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "manifest: Manifest | None = None",
+        "confirm: Callable[[], bool] | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py",
+      "source_line": 642,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_check",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "manifest: Manifest | None = None",
+        "vcs: VcsPort | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py",
+      "source_line": 458,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_explain",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "manifest: Manifest | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py",
+      "source_line": 1165,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_init",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "manifest: Manifest | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py",
+      "source_line": 778,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_kit",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "manifest: Manifest | None = None",
+        "fs: FsPort | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py",
+      "source_line": 1037,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_update",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "manifest: Manifest | None = None",
+        "confirm: Callable[[], bool] | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py",
+      "source_line": 902,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_version",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "manifest: Manifest | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py",
+      "source_line": 1207,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "add_factory_subparser",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "subparsers: argparse._SubParsersAction"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py",
+      "source_line": 1112,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_attach",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "fs: FsPort | None = None",
+        "harness: HarnessPort | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py",
+      "source_line": 3004,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_resume",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "fs: FsPort | None = None",
+        "harness: HarnessPort | None = None",
+        "process: ProcessPort | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py",
+      "source_line": 2475,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_spin",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "fs: FsPort | None = None",
+        "harness: HarnessPort | None = None",
+        "process: ProcessPort | None = None",
+        "context: MarshalContext | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py",
+      "source_line": 1570,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "add_status_subparser",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "subparsers: argparse._SubParsersAction"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py",
+      "source_line": 474,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "dispatch_only_fleet_rows_enabled",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [],
+      "return_type": "bool",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py",
+      "source_line": 208,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "latest_dispatch_wave_id",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "repo_root: Path",
+        "slug: str"
+      ],
+      "return_type": "str | None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py",
+      "source_line": 922,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "list_live_dispatch_stories",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "fs: FsPort",
+        "vcs: VcsPort",
+        "process: ProcessPort",
+        "repo_root: Path",
+        "slug: str",
+        "effective_policy"
+      ],
+      "return_type": "tuple[str, ...]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py",
+      "source_line": 900,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_status",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace",
+        "vcs: VcsPort | None = None",
+        "fs: FsPort | None = None",
+        "harness: HarnessPort | None = None",
+        "process: ProcessPort | None = None",
+        "clock: ClockPort | None = None",
+        "context: MarshalContext | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py",
+      "source_line": 1734,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "classify",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "code: str"
+      ],
+      "return_type": "Verdict",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py",
+      "source_line": 1436,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "compute_verdict",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "findings: Iterable[Finding]",
+        "floor: Verdict = Verdict.CLEAN"
+      ],
+      "return_type": "Verdict",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py",
+      "source_line": 1453,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "exit_code_for",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "verdict: Verdict | str"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py",
+      "source_line": 1473,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "relay_exit_code",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "child_code: int"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py",
+      "source_line": 1480,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "build_server",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "name: str = SERVER_NAME"
+      ],
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/server.py",
+      "source_line": 30,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "argv: list[str] | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/server.py",
+      "source_line": 116,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "assert_no_absolute_command",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "command: str"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/tools.py",
+      "source_line": 295,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "list_marshal_tools",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [],
+      "return_type": "dict[str, Any]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/tools.py",
+      "source_line": 87,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "marshal_check",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "scope: str = \"all\"",
+        "project: str | None = None",
+        "main: Callable[[list[str] | None], int] | None = None"
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/tools.py",
+      "source_line": 184,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "marshal_homes",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "main: Callable[[list[str] | None], int] | None = None"
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/tools.py",
+      "source_line": 196,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "marshal_preflight",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "slug: str",
+        "main: Callable[[list[str] | None], int] | None = None"
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/tools.py",
+      "source_line": 203,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "marshal_preserve_list",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "station: str | None = None",
+        "story: str | None = None",
+        "producer: str | None = None",
+        "state: str | None = None",
+        "main: Callable[[list[str] | None], int] | None = None"
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/tools.py",
+      "source_line": 243,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "marshal_preserve_push",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "pending: bool = False",
+        "main: Callable[[list[str] | None], int] | None = None"
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/tools.py",
+      "source_line": 263,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "marshal_preserve_retire",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "tag: str",
+        "evidence: str",
+        "main: Callable[[list[str] | None], int] | None = None"
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/tools.py",
+      "source_line": 271,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "marshal_refresh",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "project: str | None = None",
+        "base: str | None = None",
+        "main: Callable[[list[str] | None], int] | None = None"
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/tools.py",
+      "source_line": 218,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "marshal_status",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "project: str | None = None",
+        "main: Callable[[list[str] | None], int] | None = None"
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/tools.py",
+      "source_line": 176,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "marshal_upstream",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "main: Callable[[list[str] | None], int] | None = None"
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/tools.py",
+      "source_line": 211,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "marshal_watch",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "project: str | None = None",
+        "run: str | None = None",
+        "fleet: bool = False",
+        "main: Callable[[list[str] | None], int] | None = None"
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/tools.py",
+      "source_line": 230,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "mcp_server_registration_spec",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [],
+      "return_type": "Mapping[str, Mapping[str, object]]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/tools.py",
+      "source_line": 280,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_marshal",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "argv: Sequence[str]",
+        "main: Callable[[list[str] | None], int] | None = None"
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/tools.py",
+      "source_line": 103,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "ConformanceFailure",
+      "export_type": "class",
+      "source_library": "pyforge-marshal",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/errors.py",
+      "source_line": 132,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "InternalError",
+      "export_type": "class",
+      "source_library": "pyforge-marshal",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/errors.py",
+      "source_line": 184,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "NeverWriteViolation",
+      "export_type": "class",
+      "source_library": "pyforge-marshal",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/errors.py",
+      "source_line": 163,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "PreconditionFailure",
+      "export_type": "class",
+      "source_library": "pyforge-marshal",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/errors.py",
+      "source_line": 152,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "SeedError",
+      "export_type": "class",
+      "source_library": "pyforge-marshal",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/errors.py",
+      "source_line": 70,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "StateInvalid",
+      "export_type": "class",
+      "source_library": "pyforge-marshal",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/errors.py",
+      "source_line": 174,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "UsageError",
+      "export_type": "class",
+      "source_library": "pyforge-marshal",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/errors.py",
+      "source_line": 142,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "argv: list[str] | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py",
+      "source_line": 348,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    }
+  ],
+  "file_entries": [],
+  "last_update": "2026-11-25T22:27:03Z",
+  "update_type": "incremental",
+  "test_report_run_id": null,
+  "files_changed": 15,
+  "exports_affected": 0,
+  "confidence_tier": "Forge",
+  "manual_sections_preserved": 3
+}

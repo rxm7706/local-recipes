@@ -4,7 +4,7 @@
   "outputs": [
     {
       "type": "skill",
-      "path": ".claude/skills/pyforge-steward/0.1.2/pyforge-steward/context-snippet.md"
+      "path": ".claude/skills/pyforge-scribe/0.1.2/pyforge-scribe/context-snippet.md"
     },
     {
       "type": "config",
@@ -17,15 +17,15 @@
   ],
   "summary": {
     "skills": [
-      "pyforge-steward"
+      "pyforge-scribe"
     ],
     "always_on_tokens": 1637,
     "on_trigger_tokens": {
-      "pyforge-steward": 10342
+      "pyforge-scribe": 8447
     }
   },
-  "timestamp": "2026-11-25T20:34:06Z",
-  "run_id": "G1d0N6Rj",
+  "timestamp": "2026-11-25T22:33:29Z",
+  "run_id": "IOY55Rgx",
   "headless_decisions": [
     {
       "gate": "load-skill.confirmation",

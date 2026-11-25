@@ -174,8 +174,8 @@ development_status:
   135-2-the-container-pod-ocp-and-nkp-profiles-say-what-each-needs: done
   135-3-one-onboarding-tutorial-takes-a-bare-machine-to-a-ready-verdict-per-profile: done
   136-1-steward-s-last-two-modules-derive-the-station-packages-directory-from-the-root-layout: done
-  136-10-six-station-skills-and-their-briefs-cite-the-persona-ids-in-qualified-form: ready-for-dev
-  136-11-the-story-lines-the-page-did-not-resolve-name-their-capabilities: ready-for-dev
+  136-10-six-station-skills-and-their-briefs-cite-the-persona-ids-in-qualified-form: done
+  136-11-the-story-lines-the-page-did-not-resolve-name-their-capabilities: done
   136-2-three-steward-package-data-files-cite-today-s-capability-ids: done
   136-3-the-host-s-ingest-imports-steward-s-transport-by-its-public-name: done
   136-4-the-eight-station-personas-cite-their-requirements-and-capabilities-in-qualified-form: done
@@ -183,7 +183,7 @@ development_status:
   136-6-the-tests-that-ran-in-no-ci-job-run-in-one: done
   136-7-each-sharded-suite-splits-by-recorded-durations: done
   136-8-the-seven-atlas-gate-tasks-run-in-atlas-s-own-environment: done
-  136-9-the-two-named-test-steps-have-a-local-preflight-lane: ready-for-dev
+  136-9-the-two-named-test-steps-have-a-local-preflight-lane: done
   14-1-the-pre-flight-diff-retrodicts-a-real-upgrade: done
   14-10-the-next-rehearsal-exercises-cap-6s-fallback-and-cap-8s-conflict-path-report-only: done
   14-2-apply-is-deliberate-branched-and-never-clobbers-custom: done
@@ -607,7 +607,7 @@ development_status:
   epic-134-retrospective: optional
   epic-135: done
   epic-135-retrospective: optional
-  epic-136: in-progress
+  epic-136: done
   epic-136-retrospective: optional
   epic-14: done
   epic-14-retrospective: optional

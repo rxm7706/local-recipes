@@ -1,5 +1,5 @@
 name: pyforge-scribe
-version: 0.1.1
+version: 0.1.2
 target_version: 0.1.0
 source_type: source
 source_repo: src/shared/packages/pyforge-scribe
@@ -36,7 +36,7 @@ scope:
     - tests/**
     - '**/__pycache__/**'
   notes: >
-    CAP-15 proof compile for a station with no skill on origin/main.
+    spec-pyforge-unifying-strategy:CAP-15 proof compile for a station with no skill on origin/main.
     Public contract is the scribe CLI (AD-7). Portal django-scribe is out of scope.
     Scope widened 2026-11-01 (steward Story 29.4, EGM audit RUL-CL2): catalog.py
     is the scribe catalog command's module; recompiled in place at 0.1.0.
@@ -52,6 +52,10 @@ scope:
     with no --target walks the named list; index move-list retired with CAP-34;
     the three graph-store owners; what the station MCP runner runs (scribe
     recall only) and does not run.
+    Regenerated 2026-11-25 (steward Story 136.10, DW-steward-136-4-1). Carry:
+    generated text cites canopy:FR-13, canopy:FR-11,
+    spec-pyforge-unifying-strategy:CAP-15 and
+    spec-pyforge-unifying-strategy:CAP-16 in qualified form, as the personas do.
   rationale:
     recommended: specific-modules
     chosen: specific-modules

@@ -1,0 +1,88 @@
+{
+  "name": "pyforge-atlas",
+  "version": "0.1.1",
+  "skill_type": "single",
+  "scope_type": "specific-modules",
+  "source_authority": "internal",
+  "source_repo": "src/shared/packages/pyforge-atlas",
+  "source_root": "src/shared/packages/pyforge-atlas",
+  "source_commit": "5f22584869704d9fb14aa6f422beaf12e165f039",
+  "source_ref": "local",
+  "confidence_tier": "Forge",
+  "spec_version": "1.3",
+  "generation_date": "2026-11-25T22:22:38Z",
+  "description": "Kedro/Dagster/DuckDB factory intelligence. Agents use pyforge atlas grammar and POST /stations/atlas/mcp, whose tools mcp/server.py registers (run_<pipeline>_pipeline, read_atlas_dataset, list_atlas_pipelines, list_atlas_datasets, query_vizro_ai, query_trending_candidates). Do not import pyforge.atlas internals. Do not replace conda-forge-expert.",
+  "language": "python",
+  "exports": [
+    "main",
+    "run_core_pipeline",
+    "run_vcs_health_pipeline",
+    "run_pypi_intelligence_pipeline",
+    "run_vulnerability_pipeline",
+    "run_seed_gaps_pipeline",
+    "run_universal_sbom_pipeline",
+    "run_derived_artifacts_pipeline",
+    "run_upstream_discovery_pipeline",
+    "read_atlas_dataset",
+    "list_atlas_pipelines",
+    "list_atlas_datasets",
+    "query_vizro_ai",
+    "query_trending_candidates",
+    "build_server",
+    "__version__",
+    "discover_cli_verbs",
+    "AtlasMCPError",
+    "PIPELINE_NAMES",
+    "list_datasets",
+    "list_pipelines",
+    "read_dataset",
+    "run_pipeline",
+    "ProvenanceInfo",
+    "load_with_provenance",
+    "resolve_for_catalog_dataset",
+    "resolve_for_file",
+    "resolve_for_snapshot_history"
+  ],
+  "tool_versions": {
+    "ast_grep": "0.45.3",
+    "qmd": "unknown",
+    "skf": "3.0.0"
+  },
+  "confidence_distribution": {
+    "t1": 15,
+    "t1_low": 15,
+    "t2": 0,
+    "t3": 0
+  },
+  "stats": {
+    "exports_documented": 30,
+    "exports_public_api": 15,
+    "exports_internal": 0,
+    "exports_total": 15,
+    "public_api_coverage": 2.0,
+    "total_coverage": 2.0,
+    "scripts_count": 0,
+    "assets_count": 0
+  },
+  "scripts": [],
+  "assets": [],
+  "doc_sources": [
+    {
+      "url": "src/shared/packages/pyforge-atlas/README.md",
+      "detected_via": "readme_always",
+      "recorded_at": "2026-08-25T00:00:00Z"
+    },
+    {
+      "url": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/contract.md",
+      "detected_via": "skill_brief_doc_urls",
+      "recorded_at": "2026-11-12T00:00:00Z"
+    }
+  ],
+  "generated_by": "create-skill",
+  "dependencies": [
+    "kedro",
+    "kedro-datasets",
+    "pyforge-core"
+  ],
+  "compatibility": "N/A -- internal station CLI, not a published library"
+}

@@ -1,5 +1,5 @@
 name: pyforge-marshal
-version: 0.1.1
+version: 0.1.2
 target_version: 0.1.0
 source_type: source
 source_repo: src/shared/packages/pyforge-marshal
@@ -43,7 +43,7 @@ scope:
     - tests/**
     - '**/__pycache__/**'
   notes: >
-    CAP-15 compile for marshal. Public contract is the marshal CLI (AD-7).
+    spec-pyforge-unifying-strategy:CAP-15 compile for marshal. Public contract is the marshal CLI (AD-7).
     Portal django-marshal is out of scope. Do not wire bmad-loop ingest.
     Scope widened 2026-11-01 (steward Story 29.4, EGM audit RUL-CL2): spin.py,
     dispatch.py (where factory dispatch registers), context.py and challenge.py
@@ -61,6 +61,10 @@ scope:
     113.14..113.17; --section and --dream-section; run_challenge's line; the
     context verbs; the marshal-mcp tools; both exit domains; what each MCP
     face's runner runs and does not run.
+    Regenerated 2026-11-25 (steward Story 136.10, DW-steward-136-4-1). Carry:
+    generated text cites canopy:FR-13, canopy:FR-11,
+    spec-pyforge-unifying-strategy:CAP-15 and
+    spec-pyforge-unifying-strategy:CAP-16 in qualified form, as the personas do.
   rationale:
     recommended: specific-modules
     chosen: specific-modules

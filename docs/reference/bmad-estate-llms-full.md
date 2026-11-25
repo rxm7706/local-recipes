@@ -10,12 +10,12 @@
 > from steward's adoption register (AD-2), and a version the sources disagree on is shown
 > as a disagreement, never resolved here.
 >
-> Generated: 2026-11-18. Regenerate: `pixi run -e pyforge-guild scribe catalog bmad-estate --write`.
+> Generated: 2026-11-25. Regenerate: `pixi run -e pyforge-guild scribe catalog bmad-estate --write`.
 > Drift detector: `pixi run -e pyforge-guild bmad-estate-check` (structured: a section reds when
 > its derived facts move, prose is exempt).
 
 <!-- bmad-estate-digest: installed=2a8aac8d7467 -->
-<!-- bmad-estate-digest: skills=781de936eb78 -->
+<!-- bmad-estate-digest: skills=1aa37072e8e4 -->
 <!-- bmad-estate-digest: phases=b74a30513e46 -->
 <!-- bmad-estate-digest: suite=dbc85dd78eb2 -->
 <!-- bmad-estate-digest: pins=a16daebabc88 -->
@@ -189,7 +189,7 @@ core/bmm split comes from `_bmad/_config/bmad-help.csv`. 133 skills.
 
 | Skill | Description |
 |---|---|
-| `pyforge-atlas` | Kedro/Dagster/DuckDB factory intelligence for conda-forge (pyforge.atlas). Use when running atlas pipelines, listing catalog datasets, or reading the station MCP surface. Invoke via `pyforge atlas …` (FR-13) — do not imp |
+| `pyforge-atlas` | Kedro/Dagster/DuckDB factory intelligence for conda-forge (pyforge.atlas). Use when running atlas pipelines, listing catalog datasets, or reading the station MCP surface. Invoke via `pyforge atlas …` (canopy:FR-13) — do |
 | `pyforge-doctor` | Pre-flight and fleet-watch diagnostics via the doctor CLI (check, monitor, diagnose, backlog-intake). Use when running pyforge doctor grammar, POST /stations/doctor/mcp, or working in src/shared/packages/pyforge-doctor/. |
 | `pyforge-herald` | Seeds, pulls, and reports Claude Design deck bridge state via the herald CLI. Use when running herald deck seed / pull / status, or working in src/shared/packages/pyforge-herald/. Do not import pyforge.herald internals; |
 | `pyforge-marshal` | Deterministic BMAD-loop supervisor: fleet status, loop homes, detector check, and Genesis seed via the marshal CLI. Use when running marshal status / homes / check / seed, or working in src/shared/packages/pyforge-marsha |

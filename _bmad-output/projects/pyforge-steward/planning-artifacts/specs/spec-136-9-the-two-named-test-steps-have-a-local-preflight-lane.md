@@ -2,7 +2,7 @@
 title: '136.9: The two named-test steps have a local preflight lane'
 type: 'fix'
 created: '2026-11-25'
-status: 'ready-for-dev'
+status: 'done'
 story: 136-9-the-two-named-test-steps-have-a-local-preflight-lane
 spec: spec-pyforge-steward
 difficulty: 'easy'
@@ -87,3 +87,7 @@ Ledger key: `136-9-the-two-named-test-steps-have-a-local-preflight-lane`.
 ## Spec Change Log
 
 - 2026-11-25: minted from the station Dream's 2026-11-25 entry (the remainder of the rows a lapsed blocker held) and the operator's ruling of the same date. Not implemented.
+- 2026-11-25: reproduced: the first full preflight of this branch ran 48 lanes and named neither `steward-share-tree-test` nor `scribe-plane-and-portal-test`.
+- 2026-11-25: session lead: both tasks added to `pr-preflight-lanes`' `depends-on` after the `mypy` entry, the second pinned to `pyforge-foundry-full`. The preflight reads a lane's workflow from the `pixi run` steps of `.github/workflows/*.yml`, and Story 136.6 put both steps in `lint-types.yml`, so the lanes are selected when that workflow fires; no preflight code changes. AC1 prints 2; AC2 exit 0 (with the lint-types cache, docs-site lane and trigger-map modules: 107 passed). `docs_pixi_tasks.py --check` exit 0, the generated page does not show a `depends-on`. The full preflight that gates the push is the proof the lanes run.
+- 2026-11-25: independent review: the entry is valid TOML and `preflight_ci._step_matches` selects both lanes exactly when `lint-types.yml` fires. Applied its should-fix: `steward-share-tree-test` is pinned to `pyforge-guild` as `{ task = ..., environment = ... }`, so the lane cannot run in another environment whose tests would skip.
+- 2026-11-25: closed. Implemented, independently reviewed against this spec, its findings applied; the deferred-work row is closed by the session lead; the full local `pr-preflight` gates the push to PR #2388.

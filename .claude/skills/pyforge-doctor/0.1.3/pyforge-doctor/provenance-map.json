@@ -1,0 +1,152 @@
+{
+  "provenance_version": "2.0",
+  "skill_name": "pyforge-doctor",
+  "skill_type": "single",
+  "source_repo": "src/shared/packages/pyforge-doctor",
+  "source_commit": "5f22584869704d9fb14aa6f422beaf12e165f039",
+  "source_ref": "local",
+  "generated_at": "2026-11-12T00:00:00Z",
+  "grounding": {
+    "date": "2026-11-25",
+    "commit_short": "5f22584869",
+    "station": "doctor",
+    "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-136-10-six-station-skills-and-their-briefs-cite-the-persona-ids-in-qualified-form.md",
+    "path_base": "repository root; the tool's own map (gitignored forge data) is relative to source_repo, and this tracked copy is that map with source_repo prefixed to each source_file"
+  },
+  "entries": [
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "source_library": "pyforge-doctor",
+      "params": [
+        "argv: list[str] | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-doctor/src/pyforge/doctor/__main__.py",
+      "source_line": 510,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "DoctorReport",
+      "export_type": "class",
+      "source_library": "pyforge-doctor",
+      "source_file": "src/shared/packages/pyforge-doctor/src/pyforge/doctor/models.py",
+      "source_line": 540,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "DoctorStatus",
+      "export_type": "class",
+      "source_library": "pyforge-doctor",
+      "source_file": "src/shared/packages/pyforge-doctor/src/pyforge/doctor/models.py",
+      "source_line": 39,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "Finding",
+      "export_type": "class",
+      "source_library": "pyforge-doctor",
+      "source_file": "src/shared/packages/pyforge-doctor/src/pyforge/doctor/models.py",
+      "source_line": 424,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "Partition",
+      "export_type": "class",
+      "source_library": "pyforge-doctor",
+      "source_file": "src/shared/packages/pyforge-doctor/src/pyforge/doctor/models.py",
+      "source_line": 399,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "Prescription",
+      "export_type": "class",
+      "source_library": "pyforge-doctor",
+      "source_file": "src/shared/packages/pyforge-doctor/src/pyforge/doctor/models.py",
+      "source_line": 493,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "Source",
+      "export_type": "class",
+      "source_library": "pyforge-doctor",
+      "source_file": "src/shared/packages/pyforge-doctor/src/pyforge/doctor/models.py",
+      "source_line": 47,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "is_gather_failure",
+      "export_type": "function",
+      "source_library": "pyforge-doctor",
+      "params": [
+        "finding: Finding"
+      ],
+      "return_type": "bool",
+      "source_file": "src/shared/packages/pyforge-doctor/src/pyforge/doctor/models.py",
+      "source_line": 462,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "source_library": "pyforge-doctor",
+      "params": [
+        "argv: list[str] | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__main__.py",
+      "source_line": 280,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "exit_code_for",
+      "export_type": "function",
+      "source_library": "pyforge-doctor",
+      "params": [
+        "findings: Iterable[Finding] | DoctorReport"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-doctor/src/pyforge/doctor/verdict.py",
+      "source_line": 45,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    }
+  ],
+  "file_entries": [],
+  "last_update": "2026-11-25T22:31:03Z",
+  "update_type": "incremental",
+  "test_report_run_id": null,
+  "files_changed": 6,
+  "exports_affected": 0,
+  "confidence_tier": "Forge",
+  "manual_sections_preserved": 2
+}

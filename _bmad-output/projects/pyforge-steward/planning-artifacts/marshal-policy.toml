@@ -1815,6 +1815,11 @@ verify_commands = [
   "src/shared/packages/pyforge-steward/**",
 ]
 "136" = [  # The rows a lapsed blocker held close (spec-pyforge-steward CAP-5, CAP-166, CAP-175, CAP-179, CAP-182; spec-pyforge-unifying-strategy CAP-15, CAP-16), added 2026-11-25
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml",
+  "_bmad-output/projects/pyforge-scribe/planning-artifacts/marshal-policy.toml",
+  ".github/workflows/pyforge-station-tests.yml",
+  "docs/reference/bmad-estate-llms-full.md",
+  "src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py",
   ".claude/skills/bmad-agent-*/SKILL.md",
   ".claude/skills/bmad-agent-*/customize.toml",
   ".github/workflows/**",

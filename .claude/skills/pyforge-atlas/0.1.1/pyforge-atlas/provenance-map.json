@@ -1,0 +1,463 @@
+{
+  "provenance_version": "2.0",
+  "skill_name": "pyforge-atlas",
+  "skill_type": "single",
+  "source_repo": "src/shared/packages/pyforge-atlas",
+  "source_commit": "5f22584869704d9fb14aa6f422beaf12e165f039",
+  "source_ref": "local",
+  "generated_at": "2026-11-12T00:00:00Z",
+  "grounding": {
+    "date": "2026-11-25",
+    "commit_short": "5f22584869",
+    "station": "atlas",
+    "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-136-10-six-station-skills-and-their-briefs-cite-the-persona-ids-in-qualified-form.md",
+    "path_base": "repository root; the tool's own map (gitignored forge data) is relative to source_repo, and this tracked copy is that map with source_repo prefixed to each source_file"
+  },
+  "entries": [
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [
+        "*args",
+        "**kwargs"
+      ],
+      "return_type": "Any",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__main__.py",
+      "source_line": 92,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "build_server",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [
+        "name: str = \"pyforge-atlas-atlas\""
+      ],
+      "return_type": "MCPServer",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py",
+      "source_line": 49,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_core_pipeline",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [],
+      "return_type": "dict",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py",
+      "source_line": 56,
+      "confidence": "T1-low",
+      "extraction_method": "source-read",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "run_vcs_health_pipeline",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [],
+      "return_type": "dict",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py",
+      "source_line": 61,
+      "confidence": "T1-low",
+      "extraction_method": "source-read",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "run_pypi_intelligence_pipeline",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [],
+      "return_type": "dict",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py",
+      "source_line": 66,
+      "confidence": "T1-low",
+      "extraction_method": "source-read",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "run_vulnerability_pipeline",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [],
+      "return_type": "dict",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py",
+      "source_line": 71,
+      "confidence": "T1-low",
+      "extraction_method": "source-read",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "run_seed_gaps_pipeline",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [],
+      "return_type": "dict",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py",
+      "source_line": 76,
+      "confidence": "T1-low",
+      "extraction_method": "source-read",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "run_universal_sbom_pipeline",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [],
+      "return_type": "dict",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py",
+      "source_line": 81,
+      "confidence": "T1-low",
+      "extraction_method": "source-read",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "run_derived_artifacts_pipeline",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [],
+      "return_type": "dict",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py",
+      "source_line": 86,
+      "confidence": "T1-low",
+      "extraction_method": "source-read",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "run_upstream_discovery_pipeline",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [],
+      "return_type": "dict",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py",
+      "source_line": 91,
+      "confidence": "T1-low",
+      "extraction_method": "source-read",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "read_atlas_dataset",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [
+        "name: str"
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py",
+      "source_line": 96,
+      "confidence": "T1-low",
+      "extraction_method": "source-read",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "list_atlas_pipelines",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [],
+      "return_type": "list[str]",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py",
+      "source_line": 106,
+      "confidence": "T1-low",
+      "extraction_method": "source-read",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "list_atlas_datasets",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [],
+      "return_type": "list[str]",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py",
+      "source_line": 111,
+      "confidence": "T1-low",
+      "extraction_method": "source-read",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "query_vizro_ai",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [
+        "query: str"
+      ],
+      "return_type": "dict",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py",
+      "source_line": 116,
+      "confidence": "T1-low",
+      "extraction_method": "source-read",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "query_trending_candidates",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [
+        "period: str = \"weekly\"",
+        "tier: str = \"1,2\"",
+        "top: int = 25",
+        "not_on_cf: bool = True",
+        "min_stars: int = 500"
+      ],
+      "return_type": "dict",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py",
+      "source_line": 124,
+      "confidence": "T1-low",
+      "extraction_method": "source-read",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "__version__",
+      "export_type": "constant",
+      "source_library": "pyforge-atlas",
+      "params": [],
+      "return_type": "str",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__init__.py",
+      "source_line": 34,
+      "confidence": "T1-low",
+      "extraction_method": "source-read",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "discover_cli_verbs",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [],
+      "return_type": "frozenset[str]",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__main__.py",
+      "source_line": 18,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "AtlasMCPError",
+      "export_type": "class",
+      "source_library": "pyforge-atlas",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/tools.py",
+      "source_line": 111,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "PIPELINE_NAMES",
+      "export_type": "constant",
+      "source_library": "pyforge-atlas",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/tools.py",
+      "source_line": 99,
+      "confidence": "T1-low",
+      "extraction_method": "source-read",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "list_datasets",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [
+        "project_path: Path | str | None = None",
+        "env: str | None = None"
+      ],
+      "return_type": "list[str]",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/tools.py",
+      "source_line": 268,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "list_pipelines",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [
+        "project_path: Path | str | None = None",
+        "env: str | None = None"
+      ],
+      "return_type": "list[str]",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/tools.py",
+      "source_line": 257,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "query_trending_candidates",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [
+        "period: str = \"weekly\"",
+        "tier: str = \"1,2\"",
+        "top: int = 25",
+        "not_on_cf: bool = True",
+        "min_stars: int = 500",
+        "project_path: Path | str | None = None",
+        "env: str | None = None"
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/tools.py",
+      "source_line": 231,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "query_vizro_ai",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [
+        "query: str",
+        "env: Mapping[str, str] | None = None"
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/tools.py",
+      "source_line": 218,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "read_dataset",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [
+        "name: str",
+        "project_path: Path | str | None = None",
+        "env: str | None = None"
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/tools.py",
+      "source_line": 155,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "run_pipeline",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [
+        "name: str",
+        "project_path: Path | str | None = None",
+        "extra_params: dict[str, Any] | None = None",
+        "env: str | None = None"
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/tools.py",
+      "source_line": 128,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "ProvenanceInfo",
+      "export_type": "class",
+      "source_library": "pyforge-atlas",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/provenance.py",
+      "source_line": 63,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "load_with_provenance",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [
+        "catalog: Any",
+        "name: str"
+      ],
+      "return_type": "tuple[Any, ProvenanceInfo]",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/provenance.py",
+      "source_line": 326,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "resolve_for_catalog_dataset",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [
+        "catalog: Any",
+        "name: str",
+        "loaded_value: Any"
+      ],
+      "return_type": "ProvenanceInfo",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/provenance.py",
+      "source_line": 253,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "resolve_for_file",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [
+        "path: str | os.PathLike[str]"
+      ],
+      "return_type": "ProvenanceInfo",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/provenance.py",
+      "source_line": 94,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "resolve_for_snapshot_history",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [
+        "path: str | os.PathLike[str]",
+        "column: str = \"snapshot_at\""
+      ],
+      "return_type": "ProvenanceInfo",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/provenance.py",
+      "source_line": 140,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    }
+  ],
+  "file_entries": [],
+  "last_update": "2026-11-25T22:22:38Z",
+  "update_type": "incremental",
+  "test_report_run_id": null,
+  "files_changed": 8,
+  "exports_affected": 4,
+  "confidence_tier": "Forge",
+  "manual_sections_preserved": 3
+}

@@ -1,5 +1,5 @@
 name: pyforge-atlas
-version: 0.1.0
+version: 0.1.1
 target_version: 0.1.0
 source_type: source
 source_repo: src/shared/packages/pyforge-atlas
@@ -12,9 +12,13 @@ description: >
 doc_urls:
   - url: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/contract.md
     label: atlas public contract (verbs, MCP tools, flags, variables, exit codes)
-forge_tier: Quick
+forge_tier: Forge
 created: '2026-08-25'
 created_by: skf-create-skill
+# Station source is not a bundled skill script or asset: agents use the CLI (operator session 2026-11-18,
+# steward Story 126.5). Without these the detector copies cli/, schemas/ and templates/ into the skill.
+scripts_intent: none
+assets_intent: none
 scope:
   type: specific-modules
   include:
@@ -30,7 +34,7 @@ scope:
     - tests/**
     - '**/__pycache__/**'
   notes: >
-    CAP-15 compile for atlas. cf-atlas-legacy remains a separate legacy-orchestrator
+    spec-pyforge-unifying-strategy:CAP-15 compile for atlas. cf-atlas-legacy remains a separate legacy-orchestrator
     skill and is not this package. Portal django-atlas is out of this story.
     Scope widened 2026-11-01 (steward Story 29.4, EGM audit RUL-CL13):
     mcp/server.py registers the MCP tool names (run_<pipeline>_pipeline,
@@ -43,6 +47,10 @@ scope:
     per-run opt-in that an agent never sets (ATL-R-F1); all thirteen MCP tools
     in context-snippet.md; the exit codes; what the station MCP face runs (the
     thirteen tools and one supervised pipeline run) and does not run.
+    Regenerated 2026-11-25 (steward Story 136.10, DW-steward-136-4-1). Carry:
+    generated text cites canopy:FR-13, canopy:FR-11,
+    spec-pyforge-unifying-strategy:CAP-15 and
+    spec-pyforge-unifying-strategy:CAP-16 in qualified form, as the personas do.
   rationale:
     recommended: specific-modules
     chosen: specific-modules

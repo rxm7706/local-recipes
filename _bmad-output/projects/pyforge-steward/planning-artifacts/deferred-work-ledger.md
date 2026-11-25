@@ -7504,7 +7504,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-11-25 - steward Story 136.4
   reason: a compiled skill is written by its own tool, never by hand (Story 136.4's Never clause); six regenerations are a Story of their own.
-  status: open
+  resolution: 2026-11-25, steward Story 136.10 (branch `named-blocker-rows-2026-11-25`, PR #2388; operator ruling 2026-11-25 "lets address these too") - the six briefs are qualified and the six skills rebuilt by skf-update-skill and exported, one station at a time: warden 0.1.1, atlas 0.1.1, marshal 0.1.2, doctor 0.1.3, herald 0.1.3, scribe 0.1.2. Two ids inside hand-authored [MANUAL] blocks (atlas, marshal) were qualified by hand, a deviation the story spec records. No active skill or brief of the six cites one of the four ids bare.
+  status: resolved
 
 ### DW-steward-136-5-1: Story lines in steward's epics that the page does not resolve
 
@@ -7518,5 +7519,20 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-11-25 - steward Story 136.5
   reason: trace, never count: an arrow is derived from the Story's text and the capability's intent, one Story at a time; none of these lines resolves from the page alone.
+  resolution: 2026-11-25, steward Story 136.11 (branch `named-blocker-rows-2026-11-25`, PR #2388; operator ruling 2026-11-25 "lets address these too") - 123 lines re-keyed for 113 Stories, each id traced to a story spec, the memlog, the Epic's Spec binding, the PRD's Canopy inventory or a provenance heading; an independent review confirmed every id resolves. Stories 12.9 now cite spec-pyforge-steward CAP-78 to CAP-80 (parent CAP-103). What no record resolves, and Story 59.2's capability that the fold dropped, are carried by DW-steward-136-11-1.
+  status: resolved
+
+### DW-steward-136-11-1: Story 59.2's capability was dropped in the fold, and two other Story lines cite no live capability
+
+- source_spec: `planning-artifacts/specs/spec-136-11-the-story-lines-the-page-did-not-resolve-name-their-capabilities.md`
+  summary: Story 59.2 cites `spec-vocabulary-one-name-one-job CAP-2` (one declared source for status sets and exit-code lattices, by the operator decision of 2026-09-14 in that Spec's memlog). The 2026-09-17 steward fold carried that Spec's CAP-1 and CAP-3 to CAP-7 as `spec-pyforge-steward` CAP-132 to CAP-137 and carried CAP-2 into no live Spec, so a shipped capability has no home and Story 59.2 nothing to cite. Story 111.1 cites `spec-foundry-regenerate-not-fold CAP-7`, which that Spec (CAP-1 to CAP-5) no longer defines. Story 41.4 keeps a bare `CAP-12` whose intent is not broker TLS.
+  evidence: `archive/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/.memlog.md:15`; `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md:585` (CAP-132 <- vocabulary CAP-1) and `:588` (CAP-133 <- vocabulary CAP-3); steward Story 136.11's Spec Change Log.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  origin: steward Story 136.11 (branch `named-blocker-rows-2026-11-25`)
+  fix: the operator rules whether the dropped capability is re-minted on `spec-pyforge-steward` (a Dream append, then `bmad-spec`), after which Story 59.2 cites it; find where `spec-foundry-regenerate-not-fold` CAP-7 went in that Spec's memlog and re-key Story 111.1; read Story 41.4 against the Spec it means.
+  owner: steward
+  severity: low
+  promoted: 2026-11-25 - steward Story 136.11
+  reason: named blocker: minting or restoring a capability is a Spec change the operator rules on.
   status: open
 

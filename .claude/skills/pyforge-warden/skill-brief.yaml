@@ -1,5 +1,5 @@
 name: pyforge-warden
-version: 0.1.0
+version: 0.1.1
 target_version: 0.1.0
 source_type: source
 source_repo: src/shared/packages/pyforge-warden
@@ -7,14 +7,18 @@ source_authority: internal
 language: python
 description: >
   Unified dependency-hygiene + vulnerability scanner. Agents use the warden
-  CLI (scan / scan --doctor) and FR-13 grammar `pyforge warden …`, never
+  CLI (scan / scan --doctor) and canopy:FR-13 grammar `pyforge warden …`, never
   importing pyforge.warden internals. The CLI is the sole PR-gate publisher.
 doc_urls:
   - url: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/contract.md
     label: warden public contract (CLI, keys, exit codes, rungs, flags, MCP tools)
-forge_tier: Quick
+forge_tier: Forge
 created: '2026-08-25'
 created_by: skf-create-skill
+# Station source is not a bundled skill script or asset: agents use the CLI (operator session 2026-11-18,
+# steward Story 126.5). Without these the detector copies cli/, schemas/ and templates/ into the skill.
+scripts_intent: none
+assets_intent: none
 scope:
   type: specific-modules
   include:
@@ -27,7 +31,7 @@ scope:
     - tests/**
     - '**/__pycache__/**'
   notes: >
-    CAP-15 compile for a station with no skill on origin/main (Story 10.1).
+    spec-pyforge-unifying-strategy:CAP-15 compile for a station with no skill on origin/main (Story 10.1).
     Public contract is the warden CLI (AD-7). Portal django-warden is out of
     scope. Persona bmad-agent-warden is not SKF-compiled.
     Recompiled in place at 0.1.0 on 2026-11-12 (steward Story 29.5, EGM audit
@@ -40,6 +44,10 @@ scope:
     downgrades) and run --doctor first (WAR-R-F2); the exit-code table, the
     seven rung names, the knobs and how --warn-only changes the exit
     (WAR-R-F4); what the station MCP runner runs (one scan) and does not run.
+    Regenerated 2026-11-25 (steward Story 136.10, DW-steward-136-4-1). Carry:
+    generated text cites canopy:FR-13, canopy:FR-11,
+    spec-pyforge-unifying-strategy:CAP-15 and
+    spec-pyforge-unifying-strategy:CAP-16 in qualified form, as the personas do.
   rationale:
     recommended: specific-modules
     chosen: specific-modules
