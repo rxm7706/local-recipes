@@ -18,6 +18,7 @@ from pyforge.atlas.datasets.sbom_intake import (
     parse_environment_yml,
     parse_intake,
     parse_pip_list_text,
+    parse_pyproject_toml,
     parse_requirements_txt,
 )
 
@@ -337,3 +338,74 @@ def test_requirements_extras_and_url_yield_no_garbage_version():
     # and no dep carries a version starting with a non-digit
     for v in deps.values():
         assert v is None or v[0].isdigit()
+
+
+# ── Story 52.1: the pyproject array and the environment.yml list ─────────────
+
+
+def test_pyproject_dependency_with_extras_does_not_end_the_array():
+    """Story 52.1 (DW-atlas-review-2026-11-24-1, defect 1): the array used to end at any
+    line holding ``]``, so the first dependency with extras hid every one after it."""
+    text = (
+        "[project]\n"
+        'name = "demo"\n'
+        "dependencies = [\n"
+        '    "uvicorn[standard]>=0.30",\n'
+        '    "rich==13.7.0",\n'
+        '    "httpx",\n'
+        "]\n"
+        "\n"
+        "[project.optional-dependencies]\n"
+        'dev = ["pytest>=8"]\n'
+    )
+    deps = parse_pyproject_toml(text)
+    assert [d["name"] for d in deps] == ["uvicorn", "rich", "httpx"]
+    assert all(d["ecosystem"] == "pypi" for d in deps)
+    by_name = {d["name"]: d.get("version") for d in deps}
+    assert by_name["rich"] == "13.7.0"
+    assert by_name["uvicorn"] is None  # extras: no garbage version (the requirements rule)
+
+
+def test_pyproject_with_a_byte_order_mark_parses_the_same(tmp_path):
+    """Story 52.1 (review of the defect-1 fix): a ``pyproject.toml`` saved with a UTF-8
+    byte-order mark (U+FEFF, which ``tomllib`` rejects) yields the same dependencies as the
+    document without it, through the parser and through the dataset's own read."""
+    body = '[project]\ndependencies = ["uvicorn[standard]>=0.30", "rich==13.7.0"]\n'
+    plain = parse_pyproject_toml(body)
+    assert [d["name"] for d in plain] == ["uvicorn", "rich"]
+    assert parse_pyproject_toml("\ufeff" + body) == plain
+
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text(body, encoding="utf-8-sig")
+    out = SbomIntakeDataset(filepath=str(pyproject)).load()
+    assert [d["name"] for d in out["deps"]] == ["uvicorn", "rich"]
+
+
+def test_pyproject_that_does_not_parse_yields_no_dependencies():
+    """Story 52.1: a document TOML cannot read yields no dependencies and never raises."""
+    assert parse_pyproject_toml('[project\ndependencies = ["flask==3.0.0"\n') == []
+    assert parse_pyproject_toml('[project]\ndependencies = "flask"\n') == []
+
+
+def test_environment_yml_strips_a_channel_prefix():
+    """Story 52.1 (defect 3): ``conda-forge::numpy`` used to read as a package named
+    ``conda-forge``."""
+    text = "dependencies:\n  - conda-forge::numpy=1.26.0\n  - bioconda::samtools\n  - scipy\n"
+    deps = parse_environment_yml(text)
+    assert [(d["name"], d.get("version"), d["ecosystem"]) for d in deps] == [
+        ("numpy", "1.26.0", "conda"),
+        ("samtools", None, "conda"),
+        ("scipy", None, "conda"),
+    ]
+
+
+def test_environment_yml_leaves_the_pip_block_on_dedent():
+    """Story 52.1 (defect 3): a conda dependency listed after the ``- pip:`` block used to
+    be tagged pypi, because the block never ended."""
+    text = "dependencies:\n  - numpy\n  - pip:\n    - rich==13.7.0\n    - httpx\n  - scipy=1.13.0\n"
+    by_name = {d["name"]: d for d in parse_environment_yml(text)}
+    assert by_name["numpy"]["ecosystem"] == "conda"
+    assert by_name["rich"]["ecosystem"] == "pypi"
+    assert by_name["httpx"]["ecosystem"] == "pypi"
+    assert by_name["scipy"]["ecosystem"] == "conda"
+    assert by_name["scipy"]["version"] == "1.13.0"

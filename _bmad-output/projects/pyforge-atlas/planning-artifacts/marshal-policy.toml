@@ -533,6 +533,22 @@ harness_preference = ["cursor"]
   "scripts/.spec-surface-baseline.json",
   "_bmad-output/projects/pyforge-*/planning-artifacts/specs/spec-pyforge-*/.memlog.md",
 ]
+"52" = [  # The review's atlas defects are reproduced, then fixed (spec-pyforge-atlas CAP-13, CAP-55, CAP-65, CAP-66, CAP-73; Story 52.1), added 2026-11-25
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/sbom_intake.py",
+  "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/universal_sbom/gate.py",
+  "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vcs_sources.py",
+  "src/shared/packages/pyforge-atlas/src/pyforge/atlas/trending_candidates/__main__.py",
+  "src/shared/packages/pyforge-atlas/src/pyforge/atlas/trending_candidates/query.py",
+  "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/basilisk.py",
+  "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_sbom_intake.py",
+  "src/shared/packages/pyforge-atlas/tests/unit/policy_gate/test_policy_gate.py",
+  "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_vcs_sources.py",
+  "src/shared/packages/pyforge-atlas/tests/unit/trending_candidates/test_main.py",
+  "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_basilisk.py",
+]
 
 [dispatch]
 landing_reverify = "on-code-change"

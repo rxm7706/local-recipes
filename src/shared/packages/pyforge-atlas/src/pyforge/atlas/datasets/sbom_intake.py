@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import json
 import re
+import tomllib
 import unicodedata
 from pathlib import Path
 from typing import Any, Callable
@@ -171,6 +172,7 @@ def parse_environment_yml(text: str, manifest: str = "environment.yml") -> list[
     deps: list[dict[str, Any]] = []
     in_deps = False
     in_pip = False
+    pip_indent = 0
     for raw in normalize_ws(text).splitlines():
         stripped = raw.strip()
         if not stripped or stripped.startswith("#"):
@@ -183,10 +185,15 @@ def parse_environment_yml(text: str, manifest: str = "environment.yml") -> list[
             continue
         if not in_deps:
             continue
+        indent = len(raw) - len(raw.lstrip())
         if re.match(r"^-\s*pip:\s*$", stripped):
             in_pip = True
+            pip_indent = indent
             continue
-        m = re.match(r"^-\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:[=<>!~]+\s*([^\s;#]+))?", stripped)
+        if in_pip and indent <= pip_indent:
+            in_pip = False  # Story 52.1: back at the dependency list's own indentation
+        # Story 52.1: a ``channel::`` prefix (``conda-forge::numpy``) is not the package name.
+        m = re.match(r"^-\s*(?:[^\s:=<>!~]+::)?([A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:[=<>!~]+\s*([^\s;#]+))?", stripped)
         if m and m.group(1) and m.group(1) not in ("python", "pip"):
             eco = "pypi" if in_pip else "conda"
             deps.append(_dep(m.group(1), m.group(2) or None, eco, manifest))
@@ -221,22 +228,32 @@ def parse_pixi_toml(text: str, manifest: str = "pixi.toml") -> list[dict[str, An
 
 
 def parse_pyproject_toml(text: str, manifest: str = "pyproject.toml") -> list[dict[str, Any]]:
-    """PEP 621 ``[project] dependencies`` array (pypi)."""
+    """PEP 621 ``[project] dependencies`` array (pypi).
+
+    Story 52.1: read with ``tomllib``. The line scanner this replaces ended the array at
+    any line holding ``]``, so the first dependency with extras (``"uvicorn[standard]"``)
+    hid every one after it. A leading byte-order mark (U+FEFF, kept by a ``utf-8`` read
+    and rejected by ``tomllib``) is dropped first, so a file saved with one reads the
+    same. A document that does not parse yields no dependencies and never raises. A bare
+    top-level ``dependencies`` array (no ``[project]`` table) is
+    still read, as the scanner read it."""
     deps: list[dict[str, Any]] = []
-    in_deps = False
-    for raw in normalize_ws(text).splitlines():
-        line = raw.strip()
-        if re.match(r"^dependencies\s*=\s*\[", line):
-            in_deps = True
-            line = line.split("[", 1)[1]
-        elif not in_deps:
+    try:
+        doc = tomllib.loads(normalize_ws(text.removeprefix("\ufeff")))
+    except tomllib.TOMLDecodeError:
+        return deps
+    project = doc.get("project")
+    items = project.get("dependencies") if isinstance(project, dict) else None
+    if items is None:
+        items = doc.get("dependencies")
+    if not isinstance(items, list):
+        return deps
+    for item in items:
+        if not isinstance(item, str):
             continue
-        for item in re.findall(r'"([^"]+)"', line):
-            m = _REQ_RE.match(item.strip())
-            if m and m.group(1):
-                deps.append(_dep(m.group(1), m.group(2) or None, "pypi", manifest))
-        if "]" in line:
-            in_deps = False
+        m = _REQ_RE.match(item.strip())
+        if m and m.group(1):
+            deps.append(_dep(m.group(1), m.group(2) or None, "pypi", manifest))
     return deps
 
 

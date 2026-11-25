@@ -721,6 +721,17 @@ def parse_basilisk_packages_response(payload: Any) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=_BASILISK_PACKAGE_COLUMNS)
 
 
+def _payload_item_count(payload: Any) -> int:
+    """How many items ONE ``/v1/packages`` page SERVED — every entry of the ``items``
+    list (or of a bare list), including the ones
+    :func:`parse_basilisk_packages_response` drops (a non-dict, a blank ``name``). The
+    walk measures itself against the envelope ``total`` with this, never with the rows
+    it kept (Story 52.1). ``0`` for anything that is not a list of items."""
+    data = _coerce_payload(payload)
+    items = data.get("items") if isinstance(data, dict) else data
+    return len(items) if isinstance(items, list) else 0
+
+
 def _envelope_int(payload: Any, key: str) -> int | None:
     data = _coerce_payload(payload)
     if not isinstance(data, dict):
@@ -833,13 +844,17 @@ class BasiliskPackagesDataset(ExternalRefreshDataset):
         return lambda: self._do_refresh(fetcher=_public_json)
 
     def _do_refresh(self, fetcher: Callable[[str], Any] | None = None) -> pd.DataFrame:
-        """Walk every page until ``total`` is reached or a short/empty page arrives (a
-        COMPLETE walk). A page-fetch failure or the ``max_pages`` cap ends the walk
-        PARTIAL: with a last-good store on disk an empty frame is returned so
+        """Walk every page until the server has SERVED ``total`` items, or a short/empty
+        page arrives with no ``total`` reported (a COMPLETE walk). A page-fetch failure,
+        the ``max_pages`` cap, or a short/empty page that leaves fewer items served than
+        the reported ``total`` (Story 52.1) ends the walk PARTIAL. Truncation is judged on
+        the items the server served, never on the rows the parser kept: an item it drops
+        (a blank ``name``) does not make a full walk partial. With a last-good store on disk an empty frame is returned so
         ``save()`` keeps last-good; with none, the partial rows are returned and
         :meth:`save` marks the store stale. Never raises."""
         frames: list[pd.DataFrame] = []
-        collected = 0
+        collected = 0  # rows KEPT (the summary's numerator)
+        served = 0  # items the server SERVED, kept or dropped (what ``total`` is judged against)
         offset = 0
         pages = 0
         total: int | None = None
@@ -866,19 +881,29 @@ class BasiliskPackagesDataset(ExternalRefreshDataset):
                 total = _payload_total(payload)
             if served_limit is None:
                 served_limit = _payload_limit(payload)
+            page_items = _payload_item_count(payload)
             frame = parse_basilisk_packages_response(payload)
-            if frame.empty:
-                if pages == 1:
-                    logger.warning("Basilisk /v1/packages first page parsed zero rows (layout break?)")
-                elif total is not None and collected < total:
-                    partial_reason = f"empty page at offset={offset} with {collected}/{total} collected"
-                break  # complete: nothing more to read (or truncated mid-walk)
-            frames.append(frame)
-            collected += len(frame)
-            offset += len(frame)  # advance by rows ACTUALLY served, not by page_size
+            # Count the page BEFORE judging it (Story 52.1): a page whose items the parser
+            # all drops was still served, and must not read as a truncated walk.
+            served += page_items
+            offset += page_items  # advance by items ACTUALLY served, not by page_size or rows kept
+            if frame.empty and pages == 1:
+                logger.warning("Basilisk /v1/packages first page parsed zero rows (layout break?)")
+                break
+            if page_items == 0:
+                if total is not None and served < total:
+                    partial_reason = f"empty page at offset={offset} with {served}/{total} served"
+                break  # nothing served: the end of the catalog, or truncated mid-walk
+            if not frame.empty:
+                frames.append(frame)
+                collected += len(frame)
             effective_page = min(self._page_size, served_limit) if served_limit else self._page_size
-            if len(frame) < effective_page:
-                break  # complete: a short page (against the limit actually served) is the last page
+            if page_items < effective_page:
+                if total is not None and served < total:
+                    # Story 52.1: short of the reported total, a short page is a truncated
+                    # walk, not the last page.
+                    partial_reason = f"short page at offset={offset - page_items} with {served}/{total} served"
+                break  # a short page (against the limit actually served) ends the walk
 
         if partial_reason is not None and frames:
             summary = f"partial catalog walk: {collected}/{total if total is not None else '?'} ({partial_reason})"

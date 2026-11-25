@@ -377,3 +377,32 @@ def test_whitespace_only_build_stamp_falls_back_not_a_masking_error():
         assemble_and_gate({"applicable": False, "findings": [], "errors": []}, _MATCH_REPORT, params, build_stamp="   ")
     assert excinfo.value.alert.evidence["exit_code"] == 1  # the real breach, not a stamp error
     assert excinfo.value.alert.build_stamp == "unknown-build"  # whitespace → safe fallback
+
+
+def test_zero_component_match_is_indeterminate_not_clean():
+    """Story 52.1 (DW-atlas-review-2026-11-24-1, defect 2): a match report whose
+    ``components`` list is empty used to contribute a CLEAN currency rung, so a truncated or
+    unparsable intake left the terminal gate with exit 0. Zero components is indeterminate
+    (frozen exit 1) and halts the run; a report with NO ``components`` key stays
+    not-applicable (FR-16), never a failure."""
+    hygiene = {"applicable": False, "findings": [], "errors": []}
+    empty_match = {**_MATCH_REPORT, "components": [], "buckets": {}}
+    inbox = AuthoringInbox()
+
+    with pytest.raises(DataContractViolation) as excinfo:
+        assemble_and_gate(hygiene, empty_match, {}, alert_sink=lambda a: hand_off(a, inbox), build_stamp=STAMP)
+
+    evidence = excinfo.value.alert.evidence
+    assert evidence["status"] == "indeterminate"
+    assert evidence["exit_code"] == 1  # warden's frozen projection, never a literal in atlas
+    assert evidence["driver"] == "indeterminate:empty-extraction:scan"
+    assert len(inbox.payloads) == 1
+
+    # FR-16: no ``components`` key at all is not-applicable, exit 0.
+    keyless = {k: v for k, v in _MATCH_REPORT.items() if k != "components"}
+    document = assemble_and_gate(hygiene, keyless, {})
+    assert document["exit_code"] == 0
+    assert document["status"]["value"] == "not-applicable"
+    document = assemble_and_gate(hygiene, {}, {})
+    assert document["exit_code"] == 0
+    assert document["status"]["value"] == "not-applicable"

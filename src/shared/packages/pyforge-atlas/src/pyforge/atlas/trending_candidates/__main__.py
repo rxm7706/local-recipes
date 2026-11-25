@@ -164,13 +164,25 @@ def main(argv: list[str] | None = None) -> int:
             # since the outer try carried only a `finally`.
             from . import query
 
-            envelope = query.query_trending_candidates(
-                period=args.period,
-                tier=args.tier,
-                top=args.top,
-                not_on_cf=args.not_on_cf,
-                min_stars=args.min_stars,
-            )
+            # Validated on its own, before the query runs (Story 52.1): a bad filter
+            # value is the ONE failure that exits 1. `validate_filters` touches no
+            # session, catalog or dataset, so a `ValueError` out of it can only be a bad
+            # filter; any exception raised after it -- a plain `ValueError` or a
+            # subclass (`UnicodeDecodeError`, `json.JSONDecodeError`, pyarrow's
+            # `ArrowInvalid`) included -- reaches the broad guard below and exits 2.
+            try:
+                filters = query.validate_filters(
+                    period=args.period,
+                    tier=args.tier,
+                    top=args.top,
+                    not_on_cf=args.not_on_cf,
+                    min_stars=args.min_stars,
+                )
+            except ValueError as exc:
+                print(f"{type(exc).__name__}: {exc}", file=sys.stderr)
+                return 1
+
+            envelope = query.query_trending_candidates(**filters)
             # Serialized INSIDE the guard too (review finding, Story 13.3): a cell
             # `json.dumps` cannot encode (e.g. a Timestamp column) used to escape as a
             # raw traceback from outside it.
@@ -218,16 +230,17 @@ def main(argv: list[str] | None = None) -> int:
                         os.close(devnull)
             return 1
         except Exception as exc:
-            # Broad on purpose: a bad filter value is `ValueError` (the documented
-            # contract), but ANY other failure -- a Kedro session/credential bootstrap
-            # error, an ImportError, an unencodable cell -- must still degrade to a
-            # clean stderr message + exit 1 for a CLI's end user, never a raw
-            # traceback. The type is prefixed because several of these carry a message
-            # that is meaningless alone (review finding, Story 13.3: a bootstrap
-            # `KeyError` printed the bare line `'atlas'`, and a zero-message exception
-            # printed an empty one).
+            # Broad on purpose: ANY failure but a bad filter value (handled above) and
+            # a closed stdout pipe -- a Kedro session/credential bootstrap error, an
+            # ImportError, an unencodable cell, a `ValueError` from the load -- must
+            # still degrade to a clean stderr message for a CLI's end user, never a raw
+            # traceback, and exits 2, the frozen domain's code for an error (Story
+            # 52.1; it used to share the bad-filter 1). The type is prefixed because several of these
+            # carry a message that is meaningless alone (review finding, Story 13.3: a
+            # bootstrap `KeyError` printed the bare line `'atlas'`, and a zero-message
+            # exception printed an empty one).
             print(f"{type(exc).__name__}: {exc}", file=sys.stderr)
-            return 1
+            return 2
         return 0
     finally:
         if args.json:

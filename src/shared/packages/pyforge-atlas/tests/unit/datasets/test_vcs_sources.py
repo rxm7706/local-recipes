@@ -290,6 +290,16 @@ def test_luarocks_extract_is_numeric_not_lexicographic_on_multi_digit_components
     assert _luarocks_extract(payload) == "1.10-1"
 
 
+def test_luarocks_latest_prefers_a_numeric_version_over_scm():
+    """Story 52.1 (DW-atlas-review-2026-11-24-1, defect 4): the sort key ranks a non-digit
+    run above a digit run, so ``scm-1`` (the rolling source rockspec) used to beat every
+    numeric release. A numeric version wins when one exists; ``scm``/``dev`` are the
+    fallback only when none does."""
+    assert _luarocks_extract({"versions": {"scm-1": {}, "1.10-1": {}, "1.2-1": {}}}) == "1.10-1"
+    assert _luarocks_extract({"versions": {"dev-1": {}, "0.9-2": {}, "scm-1": {}}}) == "0.9-2"
+    assert _luarocks_extract({"versions": {"scm-1": {}}}) == "scm-1"
+
+
 def test_all_ten_endpoint_specs_percent_encode(tmp_path):
     """A slash-bearing identifier never produces a raw '/' in the built path (every
     builder routes the identifier through urllib.parse.quote)."""

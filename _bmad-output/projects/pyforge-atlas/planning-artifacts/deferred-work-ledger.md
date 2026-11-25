@@ -5456,7 +5456,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: medium
   promoted: 2026-11-24 — doctor Story 61.1 (the documentation review, branch `docs-verify-2026-11-24`)
   reason: a code, tooling or Spec change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
-  status: open
+  resolved: 2026-11-25 (Story 52.1, branch `review-defects-2026-11-25`; each defect was first written as a test that failed on the tree as it was. (1) reproduced and fixed: `parse_pyproject_toml` parses `[project] dependencies` with `tomllib` after dropping a leading byte-order mark, so a dependency with extras no longer hides the ones after it. (2) reproduced and fixed: a match of zero components is an indeterminate rung, exit 1 through warden's verdict, and halts the run; a report with no `components` key stays not-applicable. (3) reproduced and fixed: `parse_environment_yml` strips a `channel::` prefix and leaves the pip block on dedent. (4) reproduced and fixed: the LuaRocks latest pick ranks a numeric version above `scm` and `dev`. (5) reproduced and fixed: `trending-candidates` validates its filters apart from the query (`query.validate_filters`), so only a bad filter value or a closed stdout pipe exits 1 and every other failure exits 2; its row of `contract.md` reads `0` `1` `2`. (6) reproduced and fixed: a Basilisk walk that ends with fewer items served than the reported total is partial and keeps the last-good store, judged on items served and never on rows kept, with each page counted before it is judged. None was closed as not a defect and none is left open.)
+  status: closed
 
 ### DW-atlas-review-2026-11-24-2: The package `AGENTS.md` calls `pyforge-atlas-test` the whole suite
 

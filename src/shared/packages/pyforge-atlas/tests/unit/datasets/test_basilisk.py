@@ -549,6 +549,113 @@ def test_packages_partial_walk_never_overwrites_a_fuller_last_good(tmp_path):
     assert ds.staleness().reason.startswith("partial catalog walk: 200/450")
 
 
+def test_short_page_below_the_reported_total_is_a_partial_walk(tmp_path):
+    """Story 52.1 (DW-atlas-review-2026-11-24-1, defect 6): a page shorter than the page
+    size used to end the walk COMPLETE even with fewer rows collected than the reported
+    total, so a truncated walk was written over a fuller last-good store as fresh."""
+    _pkgs(tmp_path, fetcher=_paged_fetcher(total=450, size=200), page_size=200).save(
+        RefreshRequest(store="discovery_basilisk_packages_raw", force=True)
+    )
+    assert len(_pkgs(tmp_path).load()) == 450
+
+    calls: list[str] = []
+
+    def truncated(url: str) -> str:
+        calls.append(url)
+        offset = int(url.rsplit("offset=", 1)[-1])
+        if offset == 0:
+            return _page(0, 200, 450)
+        # the second page comes back 50 rows short of the page size: 250 of 450 collected
+        return json.dumps({**json.loads(_page(offset, 50, 450)), "limit": 200})
+
+    ds = _pkgs(tmp_path, fetcher=truncated, page_size=200)
+    ds.save(RefreshRequest(store="discovery_basilisk_packages_raw", force=True))
+    assert len(calls) == 2  # the short page still ends the walk; it is not retried
+    assert len(ds.load()) == 450  # the fuller last-good survived
+    assert ds.is_stale() is True
+    reason = ds.staleness().reason
+    assert reason.startswith("partial catalog walk: 250/450")
+    assert "short page at offset=200" in reason
+
+
+def test_short_page_below_the_reported_total_with_no_last_good_is_persisted_stale(tmp_path):
+    """Story 52.1: with no last-good the truncated rows are still kept (better than
+    nothing), but the store reads stale, never fresh."""
+
+    def truncated(url: str) -> str:
+        return json.dumps({**json.loads(_page(0, 50, 450)), "limit": 200})
+
+    ds = _pkgs(tmp_path, fetcher=truncated, page_size=200)
+    ds.save(RefreshRequest(store="discovery_basilisk_packages_raw", force=True))
+    assert len(ds.load()) == 50
+    assert ds.is_stale() is True
+    assert ds.staleness().reason.startswith("partial catalog walk: 50/450")
+
+
+def test_full_walk_with_a_nameless_item_is_complete_not_partial(tmp_path):
+    """Story 52.1 (review of the defect-6 fix): truncation is judged on items SERVED, not
+    rows kept. The parser drops an item with a blank ``name``; a walk that was served every
+    one of the 450 items is complete, and is written over the last-good store, fresh."""
+    _pkgs(tmp_path, fetcher=_paged_fetcher(total=300, size=200), page_size=200).save(
+        RefreshRequest(store="discovery_basilisk_packages_raw", force=True)
+    )
+    assert len(_pkgs(tmp_path).load()) == 300
+
+    for nameless_at in (449, 10):  # on the short last page, then on a full first page
+        calls: list[str] = []
+
+        def one_nameless(url: str, _at: int = nameless_at, _calls: list[str] = calls) -> str:
+            _calls.append(url)
+            offset = int(url.rsplit("offset=", 1)[-1])
+            page = json.loads(_page(offset, 200, 450))
+            for item in page["items"]:
+                if item["name"] == f"pkg-{_at}":
+                    item["name"] = ""
+            return json.dumps(page)
+
+        ds = _pkgs(tmp_path, fetcher=one_nameless, page_size=200)
+        ds.save(RefreshRequest(store="discovery_basilisk_packages_raw", force=True))
+        assert [u.rsplit("offset=", 1)[-1] for u in calls] == ["0", "200", "400"], nameless_at
+        assert len(ds.load()) == 449, nameless_at  # every served item but the nameless one
+        assert ds.is_stale() is False, nameless_at
+
+
+def test_a_served_page_whose_items_are_all_dropped_is_counted_before_it_is_judged(tmp_path):
+    """Story 52.1 (second review): a page is counted as served BEFORE the empty-frame
+    branch judges it. The last page serves one item and the parser drops it (blank
+    ``name``): all 401 items were served, so the walk is complete and is written over the
+    last-good store, fresh. A page that serves nothing short of the total stays partial."""
+    _pkgs(tmp_path, fetcher=_paged_fetcher(total=300, size=200), page_size=200).save(
+        RefreshRequest(store="discovery_basilisk_packages_raw", force=True)
+    )
+
+    def last_item_nameless(url: str) -> str:
+        offset = int(url.rsplit("offset=", 1)[-1])
+        page = json.loads(_page(offset, 200, 401))
+        for item in page["items"]:
+            if item["name"] == "pkg-400":
+                item["name"] = ""
+        return json.dumps(page)
+
+    ds = _pkgs(tmp_path, fetcher=last_item_nameless, page_size=200)
+    ds.save(RefreshRequest(store="discovery_basilisk_packages_raw", force=True))
+    assert len(ds.load()) == 400  # every served item but the nameless one
+    assert ds.is_stale() is False
+
+    def nothing_after_400(url: str) -> str:
+        offset = int(url.rsplit("offset=", 1)[-1])
+        page = json.loads(_page(offset, 200, 450))
+        if offset >= 400:
+            page["items"] = []
+        return json.dumps(page)
+
+    truncated = _pkgs(tmp_path, fetcher=nothing_after_400, page_size=200)
+    truncated.save(RefreshRequest(store="discovery_basilisk_packages_raw", force=True))
+    assert len(truncated.load()) == 400  # last-good kept
+    assert truncated.is_stale() is True
+    assert "empty page at offset=400 with 400/450 served" in truncated.staleness().reason
+
+
 def test_packages_complete_walk_after_a_partial_clears_stale(tmp_path):
     def flaky(url: str) -> str:
         offset = int(url.rsplit("offset=", 1)[-1])

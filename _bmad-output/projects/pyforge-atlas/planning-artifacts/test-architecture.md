@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: 3a2cbb63ad83afc1
-story_count: 171
+source_fingerprint: 846a4728401bdc5f
+story_count: 172
 test_file_count: 189
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 171
-- **Epics parsed:** 50
+- **Stories parsed:** 172
+- **Epics parsed:** 51
 - **Test files inventoried:** 189 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `3a2cbb63ad83afc1`
+- **Source fingerprint:** `846a4728401bdc5f`
 
 ## Risk Assessment
 
@@ -82,6 +82,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 49: The boards' static pages wear the site's theme (spec-pyforge-atlas CAP-63, FR-71)
 - Epic 50: A host that keeps failing costs a run a bounded time (spec-pyforge-atlas CAP-64, CAP-65; AD-13)
 - Epic 51: A stopped refresh starts where the last one ended (spec-pyforge-atlas CAP-64, CAP-65; AD-13)
+- Epic 52: The review's atlas defects are reproduced, then fixed (spec-pyforge-atlas CAP-13, CAP-55, CAP-65, CAP-66, CAP-73)
 
 ### Low-risk epics
 
@@ -456,6 +457,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 49.1 | The boards' static pages wear the site's theme | none observed |
 | 50.1 | A host that keeps failing costs a run a bounded time | none observed |
 | 51.1 | A stopped refresh starts where the last one ended | none observed |
+| 52.1 | The SBOM intake keeps every dependency and an empty intake does not pass the ... | none observed |
 
 ## Quality Gates
 

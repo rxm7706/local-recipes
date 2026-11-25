@@ -3545,6 +3545,31 @@ So that stopped runs cover every identifier between them and the cause of a 429 
 **And** atlas's package half passes, with a test that stops a run part way twice and fails unless the second run asks the unreached identifiers before any the first run asked, and a test where three identifiers fail every time and the healthy ones are still reached
 **Status:** done
 
+## Epic 52: The review's atlas defects are reproduced, then fixed (spec-pyforge-atlas CAP-13, CAP-55, CAP-65, CAP-66, CAP-73)
+
+Minted 2026-11-25 from the station Dream's entry of the same date on the operator ruling of 2026-11-25: "can we close and complete these too - * DW-doctor-61-1-1: four governance Specs need a re-derive on your render route. * The lower-severity code defects from the review, as open deferred-work rows on eight stations' ledgers." The review of 2026-11-24 at main `7da08791f3` left six atlas defects below high severity as one open row, `DW-atlas-review-2026-11-24-1`: one confirmed by the session lead, five reviewer-reported and not re-traced.
+**HARD boundaries:**
+- Every defect is reproduced by a failing test before it is fixed; one the tree does not show is closed as not a defect, with the test that shows it kept.
+- No flag: each fix restores behaviour a shipped capability already states.
+- No dataset, catalog entry, pipeline or dependency is added (`tomllib` is the standard library's), and no exit code outside the frozen domain.
+- The other manifest readers (`pixi.toml`, requirements, pip and conda lists, the SBOM passthroughs) and the registries other than LuaRocks are untouched.
+
+### Story 52.1: The SBOM intake keeps every dependency and an empty intake does not pass the gate
+
+As the operator who reads atlas's compliance gate, its candidate CLI and its public data build,
+I want the six defects the review of 2026-11-24 named in atlas reproduced and then fixed,
+So that a manifest's whole dependency list reaches the gate, an empty intake cannot read clean, and a crash or a truncated walk says so.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-atlas CAP-13, CAP-55, CAP-65, CAP-66, CAP-73 (realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: every dependency of a manifest reaches the inventory, the gate's exit follows the frozen domain, the latest version is the newest release, and a truncated walk is partial)
+**Surface:** `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/sbom_intake.py`, `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/universal_sbom/gate.py`, `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vcs_sources.py`, `src/shared/packages/pyforge-atlas/src/pyforge/atlas/trending_candidates/__main__.py`, `src/shared/packages/pyforge-atlas/src/pyforge/atlas/trending_candidates/query.py`, `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/basilisk.py`, `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_sbom_intake.py`, `src/shared/packages/pyforge-atlas/tests/unit/policy_gate/test_policy_gate.py`, `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_vcs_sources.py`, `src/shared/packages/pyforge-atlas/tests/unit/trending_candidates/test_main.py`, `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_basilisk.py`, `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/contract.md`
+**Spec:** `planning-artifacts/specs/spec-52-1-the-sbom-intake-keeps-every-dependency-and-an-empty-intake-does-not-pass-the-gate.md`
+**Given** `DW-atlas-review-2026-11-24-1` names six defects: `parse_pyproject_toml` ends the array at any line that holds `]`; `assemble_and_gate` reads a match of zero components as clean; `parse_environment_yml` reads `channel::name` as the channel and keeps the pip block after a dedent; `_luarocks_extract` ranks `scm-1` above numeric versions; `trending-candidates` returns 1 on a crash; and a Basilisk walk that meets a short page below the reported total ends complete
+**When** each is first written as a test that fails on the tree as it is, and then fixed: the pyproject reader parses with `tomllib` after dropping a leading byte-order mark, zero components is indeterminate, a channel prefix is stripped and the pip block ends on dedent, a numeric version outranks `scm`, the filters of `trending-candidates` are validated apart from the query so only a bad filter value exits 1 and any other failure exits 2, and `contract.md`'s row says so, and a page that leaves fewer items served than the reported total ends the walk partial, judged on the items the server served and never on the rows the parser kept
+**Then** a dependency with extras no longer hides the ones after it and a `pyproject.toml` saved with a byte-order mark reads the same as one without, a match of zero components exits 1 as indeterminate and halts the run while a report with no components stays not-applicable, `conda-forge::numpy` is the conda package `numpy` and a conda dependency after the pip block is conda, the LuaRocks latest of `scm-1` and `1.10-1` is `1.10-1`, a crash of `trending-candidates` exits 2 with one stderr line, a `ValueError` that is not a bad filter value included, while a bad filter value keeps 1, and a truncated Basilisk walk keeps the last-good store while a walk served every item is written even when the parser drops some of them
+**And** a defect the tree does not reproduce is recorded in the story spec as not a defect, with the test that shows it kept, and both halves of atlas's suite pass
+**Status:** review
+
 ## Validation note — 2026-08-26 (chain-currency sweep)
 
 Validated against the architecture spine as re-cut today (its `## Currency
