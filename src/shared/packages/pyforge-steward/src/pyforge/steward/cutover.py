@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from collections.abc import Callable
 from datetime import date
 from pathlib import Path
@@ -141,19 +142,70 @@ def plan(ns: argparse.Namespace, root: Path) -> DutyResult:
     return _written(mode, writer(root, ledger), ledger, as_json)
 
 
+_LIVE_STATUS: frozenset[str] = frozenset({"running", "in_progress", "active", "live"})
+# bmad-loop's own run state (``RunState.to_dict()``): a run is over once one of these is true.
+_RUN_OVER_KEYS: tuple[str, ...] = ("finished", "stopped", "crashed")
+
+
+def _is_bmad_loop_run_state(state: Path) -> bool:
+    """``<loop home>/.bmad-loop/runs/<run id>/state.json`` -- the file bmad-loop writes for each run."""
+    parts = state.parts
+    return len(parts) >= 4 and parts[-3] == "runs" and parts[-4] == ".bmad-loop"
+
+
+def _state_reads_running(state: Path) -> bool:
+    run_state = _is_bmad_loop_run_state(state)
+    try:
+        data = json.loads(state.read_text(encoding="utf-8"))
+    except OSError, json.JSONDecodeError:
+        # A run's state that cannot be read cannot be shown over: the flip is refused (Story 132.1).
+        return run_state
+    if not isinstance(data, dict):
+        return run_state
+    if run_state and any(key in data for key in _RUN_OVER_KEYS):
+        return not any(bool(data.get(key)) for key in _RUN_OVER_KEYS)
+    status = str(data.get("status") or data.get("state") or "").lower()
+    if status in _LIVE_STATUS:
+        return True
+    # A run's state that says neither that it is over nor a status is not shown over.
+    return run_state and not status
+
+
+# Marshal's override for where loop homes live (its ``cli/init.py``); steward reads the name, not marshal.
+LOOP_HOME_ROOT_ENV = "BMAD_LOOP_HOME_ROOT"
+
+
+def _loop_home_root(home: Path | None) -> Path:
+    if home is not None:
+        return home
+    override = os.environ.get(LOOP_HOME_ROOT_ENV, "").strip()
+    return Path(override).expanduser() if override else Path.home() / ".bmad-loops"
+
+
+def running_loop_states(home: Path | None = None, repo_root: Path | None = None) -> list[Path]:
+    """Every state file that does not show its loop over, sorted.
+
+    Read under the loop home (``home``, else ``BMAD_LOOP_HOME_ROOT``, else ``~/.bmad-loops``) and, when
+    ``repo_root`` is given, under that checkout's own ``.bmad-loop/runs/`` -- where a bare ``bmad-loop`` or
+    ``bmad-build-auto`` run keeps its state. bmad-loop's run state carries ``finished`` / ``stopped`` /
+    ``crashed`` and no ``status`` key, so a run is running until one of those is true; a paused run counts,
+    since it resumes, and so does a run whose engine died without marking it. Any other ``state.json`` is
+    read by its ``status`` / ``state`` word.
+    """
+    found: set[Path] = set()
+    base = _loop_home_root(home)
+    if base.is_dir():
+        found.update(state for state in base.rglob("state.json") if _state_reads_running(state))
+    if repo_root is not None:
+        runs = repo_root / ".bmad-loop" / "runs"
+        if runs.is_dir():
+            found.update(state for state in runs.glob("*/state.json") if _state_reads_running(state))
+    return sorted(found)
+
+
 def loops_running(home: Path | None = None) -> bool:
-    base = home or (Path.home() / ".bmad-loops")
-    if not base.is_dir():
-        return False
-    for state in base.rglob("state.json"):
-        try:
-            data = json.loads(state.read_text(encoding="utf-8"))
-        except OSError, json.JSONDecodeError:
-            continue
-        status = str(data.get("status") or data.get("state") or "").lower()
-        if status in {"running", "in_progress", "active", "live"}:
-            return True
-    return False
+    """Whether any loop under the loop home is not shown over (:func:`running_loop_states`)."""
+    return bool(running_loop_states(home))
 
 
 def flip_root(
@@ -162,11 +214,18 @@ def flip_root(
     realization: Path,
     *,
     loop_home: Path | None = None,
+    repo_root: Path | None = None,
 ) -> None:
     if target not in CUTOVER_VARIANTS:
         raise CutoverRootError(f"unknown cutover_root variant {target!r}")
-    if loops_running(loop_home):
-        raise CutoverRootError("flip refused: a Marshal loop is running")
+    running = running_loop_states(loop_home, repo_root)
+    if running:
+        # The run is named so an abandoned one can be ended: bmad-loop marks a run over only on a normal
+        # end, a delivered stop or a caught crash, so a killed engine leaves its state unfinished.
+        raise CutoverRootError(
+            f"flip refused: a Marshal loop is running ({running[0]}); "
+            "if that run is abandoned, end it with `bmad-loop stop <run id>` and flip again"
+        )
     payload = json.loads(flags_path.read_text(encoding="utf-8"))
     flags = payload.setdefault("flags", {})
     entry = flags.setdefault(
@@ -224,7 +283,7 @@ class CutoverDuty:
             flags = resolve_flags_path(getattr(ns, "flags", None))
             if flags is None:
                 return DutyResult(ok=False, summary="cutover flip: no flags.json")
-            flip_root(flags, target, root / REALIZATION_LOG)
+            flip_root(flags, target, root / REALIZATION_LOG, repo_root=root)
             return DutyResult(
                 ok=True,
                 summary=f"cutover flip → {read_cutover_root(flags)}",
