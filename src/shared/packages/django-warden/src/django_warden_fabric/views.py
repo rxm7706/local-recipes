@@ -1,4 +1,8 @@
-"""HTTP face: upload + job status/results (Stories 8.1 / 8.2)."""
+"""HTTP face: upload + job status/results (Stories 8.1 / 8.2).
+
+Every view here answers only to a caller whose token carries the warden station
+role (canopy AD-15; Story 28.1 brought the upload and the two job views under it).
+"""
 
 from __future__ import annotations
 
@@ -10,7 +14,6 @@ from pathlib import Path
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse, HttpResponseForbidden, HttpResponseNotFound, JsonResponse
 from django.shortcuts import render
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 from django_pyforge.access import require_station_role
 from django_pyforge.assertion.client import PortalClient
@@ -54,6 +57,26 @@ _WELL_KNOWN_MANIFEST_NAMES = frozenset(
         "conda-lock.yml",
     },
 )
+
+
+# Story 28.1: a manifest or lockfile larger than this never reaches the blob root. A request whose body
+# is over the limit by more than the multipart envelope's allowance is refused before the body is read;
+# one inside the allowance is parsed by Django (which may spool it to its own temp file) and then refused
+# on the file's counted size.
+DEFAULT_MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+MULTIPART_ENVELOPE_ALLOWANCE = 64 * 1024
+
+
+def _max_upload_bytes() -> int:
+    return int(getattr(settings, "COMPLIANCE_FACE_MAX_UPLOAD_BYTES", DEFAULT_MAX_UPLOAD_BYTES))
+
+
+def _declared_length(request: HttpRequest) -> int:
+    """The request's ``Content-Length``, or 0 when it is absent or not a number."""
+    try:
+        return int(request.META.get("CONTENT_LENGTH") or 0)
+    except ValueError:
+        return 0
 
 
 def _blob_root() -> Path:
@@ -148,13 +171,19 @@ def get_audit(request: HttpRequest) -> HttpResponse:
     )
 
 
-@csrf_exempt
 @require_POST
+@require_station_role("warden")
 def upload_manifest(request: HttpRequest) -> HttpResponse:
     """Accept a multipart file upload; store blob; enqueue Celery by key only."""
+    limit = _max_upload_bytes()
+    too_large = JsonResponse({"error": f"manifest exceeds the {limit}-byte upload limit"}, status=413)
+    if _declared_length(request) > limit + MULTIPART_ENVELOPE_ALLOWANCE:
+        return too_large
     uploaded = request.FILES.get("manifest")
     if uploaded is None:
         return JsonResponse({"error": "missing manifest file field"}, status=400)
+    if uploaded.size is not None and uploaded.size > limit:
+        return too_large
     name = Path(uploaded.name).name
     suffix = Path(name).suffix.lower()
     if suffix not in SUPPORTED_SUFFIXES and name not in _WELL_KNOWN_MANIFEST_NAMES:
@@ -177,6 +206,7 @@ def upload_manifest(request: HttpRequest) -> HttpResponse:
 
 
 @require_GET
+@require_station_role("warden")
 def job_status(request: HttpRequest, job_id: str) -> HttpResponse:
     try:
         job = ComplianceJob.objects.get(pk=job_id)
@@ -316,6 +346,7 @@ def fleet_proposal_dismiss(request: HttpRequest, proposal_id: str) -> HttpRespon
 
 
 @require_GET
+@require_station_role("warden")
 def job_report(request: HttpRequest, job_id: str) -> HttpResponse:
     try:
         job = ComplianceJob.objects.get(pk=job_id)
