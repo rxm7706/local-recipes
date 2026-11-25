@@ -203,7 +203,7 @@ def test_agents_md_states_the_session_close_ritual_with_hygiene() -> None:
         ".github/copilot-instructions.md",
         ".cursor/rules/trunk-worktree-pr.mdc",
         ".claude/skills/pyforge-marshal/0.1.1/pyforge-marshal/SKILL.md",
-        ".claude/skills/pyforge-scribe/0.1.0/pyforge-scribe/SKILL.md",
+        ".claude/skills/pyforge-scribe/active/pyforge-scribe/SKILL.md",
     ),
 )
 def test_harness_profile_points_at_the_session_close_ritual(rel: str) -> None:

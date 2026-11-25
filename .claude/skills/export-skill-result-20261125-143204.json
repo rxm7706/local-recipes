@@ -1,0 +1,56 @@
+{
+  "skill": "skf-export-skill",
+  "status": "success",
+  "outputs": [
+    {
+      "type": "skill",
+      "path": ".claude/skills/pyforge-doctor/0.1.2/pyforge-doctor/context-snippet.md"
+    },
+    {
+      "type": "skill",
+      "path": ".claude/skills/pyforge-herald/0.1.2/pyforge-herald/context-snippet.md"
+    },
+    {
+      "type": "skill",
+      "path": ".claude/skills/pyforge-scribe/0.1.1/pyforge-scribe/context-snippet.md"
+    },
+    {
+      "type": "config",
+      "path": "AGENTS.md"
+    },
+    {
+      "type": "manifest",
+      "path": ".claude/skills/.export-manifest.json"
+    }
+  ],
+  "summary": {
+    "skills": [
+      "pyforge-doctor",
+      "pyforge-herald",
+      "pyforge-scribe"
+    ],
+    "always_on_tokens": 1600,
+    "on_trigger_tokens": {
+      "pyforge-doctor": 3235,
+      "pyforge-herald": 6941,
+      "pyforge-scribe": 7702
+    }
+  },
+  "timestamp": "2026-11-25T14:32:04Z",
+  "run_id": "sV2Xo56X",
+  "headless_decisions": [
+    {
+      "gate": "load-skill.confirmation",
+      "default_action": "C",
+      "taken_action": "C",
+      "reason": "headless: no user to prompt"
+    },
+    {
+      "gate": "update-context.write-confirmation",
+      "default_action": "C",
+      "taken_action": "C",
+      "reason": "headless: no user to prompt"
+    }
+  ],
+  "warnings": []
+}

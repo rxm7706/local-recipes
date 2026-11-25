@@ -4,19 +4,11 @@
   "outputs": [
     {
       "type": "skill",
-      "path": ".claude/skills/pyforge-doctor/0.1.1/pyforge-doctor/context-snippet.md"
+      "path": ".claude/skills/pyforge-scribe/0.1.1/pyforge-scribe/context-snippet.md"
     },
     {
       "type": "skill",
-      "path": ".claude/skills/pyforge-herald/0.1.1/pyforge-herald/context-snippet.md"
-    },
-    {
-      "type": "skill",
-      "path": ".claude/skills/pyforge-marshal/0.1.1/pyforge-marshal/context-snippet.md"
-    },
-    {
-      "type": "skill",
-      "path": ".claude/skills/pyforge-steward/0.1.1/pyforge-steward/context-snippet.md"
+      "path": ".claude/skills/pyforge-mason/0.1.1/pyforge-mason/context-snippet.md"
     },
     {
       "type": "config",
@@ -29,20 +21,30 @@
   ],
   "summary": {
     "skills": [
-      "pyforge-doctor",
-      "pyforge-herald",
-      "pyforge-marshal",
-      "pyforge-steward"
+      "pyforge-scribe",
+      "pyforge-mason"
     ],
-    "always_on_tokens": 1571,
+    "always_on_tokens": 1613,
     "on_trigger_tokens": {
-      "pyforge-doctor": 3010,
-      "pyforge-herald": 6699,
-      "pyforge-marshal": 14188,
-      "pyforge-steward": 7005
+      "pyforge-scribe": 8385,
+      "pyforge-mason": 6210
     }
   },
-  "timestamp": "2026-11-18T15:38:52Z",
-  "headless_decisions": [],
+  "timestamp": "2026-11-25T15:44:43Z",
+  "run_id": "EhcEWvBp",
+  "headless_decisions": [
+    {
+      "gate": "load-skill.confirmation",
+      "default_action": "C",
+      "taken_action": "C",
+      "reason": "headless: auto-continue past skill confirmation"
+    },
+    {
+      "gate": "update-context.write-confirmation",
+      "default_action": "C",
+      "taken_action": "C",
+      "reason": "headless: auto-approve context file update"
+    }
+  ],
   "warnings": []
 }
