@@ -172,7 +172,7 @@ development_status:
   5-3-integrate-vizro-ai-expose-the-nl-interface-as-an-mcp-tool: done
   50-1-a-host-that-keeps-failing-costs-a-run-a-bounded-time: done
   51-1-a-stopped-refresh-starts-where-the-last-one-ended: done
-  52-1-the-sbom-intake-keeps-every-dependency-and-an-empty-intake-does-not-pass-the-gate: review
+  52-1-the-sbom-intake-keeps-every-dependency-and-an-empty-intake-does-not-pass-the-gate: done
   6-1-implement-the-a2a-communication-interfaces: done
   6-2-integrate-openlineage-opentelemetry: done
   7-1-complete-the-duckdb-consolidation-prove-the-cold-start-claim: done
@@ -278,7 +278,7 @@ development_status:
   epic-50-retrospective: optional
   epic-51: done
   epic-51-retrospective: optional
-  epic-52: in-progress
+  epic-52: done
   epic-52-retrospective: optional
   epic-6: done
   epic-6-retrospective: done

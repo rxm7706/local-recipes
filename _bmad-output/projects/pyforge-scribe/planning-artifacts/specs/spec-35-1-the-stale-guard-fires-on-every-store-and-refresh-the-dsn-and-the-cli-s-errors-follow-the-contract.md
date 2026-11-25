@@ -2,7 +2,7 @@
 title: "35.1: The stale guard fires on every store, and refresh, the DSN and the CLI's errors follow the contract"
 type: 'fix'
 created: '2026-11-25'
-status: 'in-review'
+status: 'done'
 difficulty: 'medium'
 story: 35-1-the-stale-guard-fires-on-every-store-and-refresh-the-dsn-and-the-cli-s-errors-follow-the-contract
 spec: spec-pyforge-scribe
@@ -175,3 +175,4 @@ One line per defect: the command run on the unchanged tree, its exit code, and `
 - 2026-11-25: the story is implemented and in review.
 - 2026-11-25: defect 1: restored and fixed - `test_recall.py::test_every_store_keeps_compiled_at_across_commit_and_reload` and `::test_every_store_withholds_a_source_committed_after_compiled_at` (flat file, PostgreSQL and plane, no server; exit 1 against the unchanged stores: `AttributeError: 'PostgresGraphStore' object has no attribute 'compiled_at'`, the same for `PlaneGraphStore`, and a grounded answer served after the later commit), with `test_graph_store_pg.py::test_postgres_store_keeps_compiled_at_across_commit_and_reload` and `test_recall_semantic.py::test_postgres_recall_withholds_source_committed_after_compiled_at` against the server; the non-goal is lifted by the memlog correction and re-derive of 2026-11-25 (operator ruling). The stamp is one reserved row of the relation each store already has (`models.COMPILED_AT_ROW_ID`); no column, relation, changeset or runtime DDL; `models.py` joins the surface for the row's id and its docstring.
 - 2026-11-25: defect 3: also closed on the `open_graph_store` path - `graph_store_plugins.py` cut the environment's DSN at its `?` before the PostgreSQL plugin read it, so `SCRIBE_GRAPH_DSN=...?sslmode=require` still connected without `sslmode` from the CLI; `test_graph_store_pg.py::test_open_graph_store_passes_the_dsn_query_string_to_the_driver` (exit 1 before the fix, on `SCRIBE_GRAPH_DSN` and on `DATABASE_URL`) and the DSN now passes through whole; `tests/unit/conftest.py::require_pg_dsn` cut it the same way and hands the store the whole DSN too; `graph_store_plugins.py`, `conftest.py` and `tests/meta/test_live_tree_split.py` (its closed list of skip sites gains the plane stamp test) join the surface. `test_graph_store_plane.py::test_compile_stamp_round_trips_against_live_duckdb` runs the plane store's stamp against real DuckDB (it skips where `duckdb` is absent, as that file's other DuckDB tests do).
+- 2026-11-25: closed. PR #2385 merged as 080f89c4df (`Merge pyforge-steward/133-1 into main`) after its 51 CI checks passed and the full local `pr-preflight` exited 0 on 48 lanes; an independent reviewer read the diff against this spec before the merge, its findings were applied and re-reviewed.

@@ -11879,4 +11879,4 @@ So that no unpushed commit is removed, no crash reads as a verdict, and no red c
 **When** each defect is first reproduced by a failing test, then the scan runs its commit-level check on every branch and reports a tip it cannot resolve as unpreserved work, `main()` returns the usage code with one stderr line for a `FlagConfigError` and the ERROR rung for any other exception, and `check_run_status` reads every page through the call `check_runs()` already pages with
 **Then** `teardown --force` refuses a home branch whose tip no local remote-tracking ref, `origin/main` ancestry or preserve tag holds, naming `git fetch origin` and `--force --abandon <branch>` as the remedy, and proceeds on a tip a local remote-tracking ref holds, a bad `PYFORGE_ENVIRONMENT` exits 2 with no traceback and no invocation exits outside the frozen domain, and a failed required check on a later page reads `failure`
 **And** a defect the tree does not reproduce is recorded in the story spec as not a defect and its code is left alone, and marshal's suite passes
-**Status:** review
+**Status:** done

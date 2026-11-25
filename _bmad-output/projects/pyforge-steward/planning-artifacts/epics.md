@@ -9151,7 +9151,7 @@ So that a failed advance leaves my checkout as it was, and a duty that exits on 
 **Then** a refused advance leaves the recipe byte-identical and says what is missing, `guards lacking --spec` on a missing file exits 1 naming the path, and a `SystemExit` raised inside a duty never returns a code outside the documented domain
 **And** `keys exec` still passes its child's exit code through, recorded on the story spec as not a defect with the contract text and the test that pin it
 **And** a defect the tree does not reproduce is recorded on the story spec as not a defect and no source changes for it, and the row closes naming each outcome
-**Status:** review
+**Status:** done
 
 ### Story 133.2: The workflows and scripts steward runs do what they name
 
@@ -9168,7 +9168,7 @@ So that a publish step, a budget report or a pin refresh does not fail without a
 **Then** the default dispatch of the mapping sync reaches its publish step, the pre-push hook prints the budget report, the fleet sync pushes with a flag git has and ticks once an hour, every pixi task names a file that exists, every `setup-pixi` step pins the workspace's pixi version and `pixi-version-check` knows the site, a failed export leaves `environment.yaml` as it was, and the changes page dates every entry and its snapshot in one zone
 **And** an earlier stash survives the upstream sync on a clean tree, and every workflow states its token permissions
 **And** a defect the tree does not reproduce is recorded on the story spec as not a defect; the image ID recorded as a registry digest is left open on an operator decision and carried to the deferred-work row `DW-steward-133-2-1`; the unregistered hook file lies under `.claude/`, outside this surface, so the story records what it found and it is carried to `DW-steward-review-2026-11-24-4`
-**Status:** review
+**Status:** done
 
 ### Story 133.3: The platform suite's test stage runs without a container engine, on a UTF-8 database
 
@@ -9184,7 +9184,7 @@ So that the stage runs under any locale and fails only on a test.
 **When** each is first reproduced on the unchanged tree, and then the engine is checked only for the stages that call it, `initdb` is given UTF-8 and a fixed locale, and the Redis test is traced on a clean main
 **Then** `--test` with no engine on `PATH` and `LC_ALL=C` passes its prerequisite check and builds a UTF-8 cluster, a stage that uses the engine still exits 2 naming it, and the Redis test passes or its cause is fixed where it lies in this surface
 **And** a defect the tree does not reproduce is recorded on the story spec as not a defect, and the row closes naming each outcome
-**Status:** review
+**Status:** done
 
 ### Story 133.4: The front door streams its child, the diff guards read the merge base, and the portals read the caller's identity
 
@@ -9200,4 +9200,4 @@ So that a streaming verb streams, a branch behind `main` is not red for commits 
 **When** each of the first five is first reproduced by a test that fails on the unchanged tree, the sixth is checked against its carve-out, and then the front door hands its child the caller's stdio and resolves the script beside the running interpreter, the guards diff against the merge base, the marshal portal reads the subject through the host's claims reader, the deck-export routes resolve roles through the configured claims getter, and the sidecar verifies the station scope, with the how-to and the chart comments that said it ran no check corrected
 **Then** a front-door child's output arrives as it is written and its stdin is the caller's, a bad `PYFORGE_ENVIRONMENT` is one line and the usage code, a branch behind its base is judged on its own changes and a path with a space is read whole, two callers of the marshal portal carry two subjects, a revoked role is refused on the deck-export routes at the next request, and a sidecar call outside the caller's station scope is refused
 **And** a defect the tree does not reproduce, or one a dated and named carve-out already covers, is recorded on the story spec as not a defect; no changed file under `src/platform/` imports `pyforge`; and core's, the kit's and every station's suite pass
-**Status:** review
+**Status:** done

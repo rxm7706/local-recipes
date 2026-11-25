@@ -2,7 +2,7 @@
 title: '133.3: The platform suite''s test stage runs without a container engine, on a UTF-8 database'
 type: 'fix'
 created: '2026-11-25'
-status: 'in-review'
+status: 'done'
 story: 133-3-the-platform-suite-s-test-stage-runs-without-a-container-engine-on-a-utf-8-database
 spec: spec-pyforge-steward
 difficulty: 'easy'
@@ -118,3 +118,4 @@ Ledger key: `133-3-the-platform-suite-s-test-stage-runs-without-a-container-engi
 - 2026-11-25: defect 3: reproduced and fixed - `pytest tests/test_redis_cache_eviction_broker_survival.py` on the file as it is on main (`git diff main` on it empty) raised `redis.exceptions.OutOfMemoryError` at the tail loop's first SET, every run, on osx-arm64 with redis-server 8.10.2 (libc allocator); the reviewer reproduced it independently, 3 of 3 runs. Cause: an empty server already uses about 0.9 MB of the test's own `CACHE_MAXMEMORY = "1mb"`, so the first 50 kB SET is refused with nothing to evict; the cause is the test's limit, not the product. The limit is now `"4mb"`, the value the shared-instance test already uses; no assertion is weakened or removed, and the fill still requires a real eviction. Not checked on linux-64.
 - 2026-11-25: hosts. Every reproduction above ran on a macOS laptop (osx-arm64) with no docker or podman on `PATH`, the PostgreSQL and redis-server binaries from the `platform-dev` environment, on a throwaway cluster. AC1, AC2, AC4 and AC5 exit 0 on that host. AC3, the full `LC_ALL=C ... platform-ci-local -- --test` stage, was not run in the implementation pass: the session lead runs it after this pass and AC3 is proven by that run. One thing that run should watch: the local cluster is now `C`-collated on every host, where CI's `postgres:17` service is `en_US.utf8`; `-E UTF8` alone also closes defect 2 and leaves UTF-8 hosts as they were, should a collation-sensitive test turn up.
 - 2026-11-25: the story is implemented and in review. Left to the session lead under the rulings above: the AC3 run, the `pixi.toml` task description and its generated page, and closing `DW-steward-review-2026-11-24-3`.
+- 2026-11-25: closed. PR #2385 merged as 080f89c4df (`Merge pyforge-steward/133-1 into main`) after its 51 CI checks passed and the full local `pr-preflight` exited 0 on 48 lanes; an independent reviewer read the diff against this spec before the merge, its findings were applied and re-reviewed.

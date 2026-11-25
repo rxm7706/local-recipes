@@ -4403,4 +4403,4 @@ So that a re-run after a failed real upload reaches pypi instead of failing the 
 **When** each defect is first reproduced by a test that fails on the unfixed tree, the version check takes the index base of the target it serves and the reference is derived from that base, and one test holds the five verbs' exit to `contract.md`'s exit-code table
 **Then** a `pypi-test` target whose version TestPyPI already has reads `terminal` with a `test.pypi.org` reference and no upload, the `pypi` target after it is attempted, a `pypi` target still asks pypi.org, and a repository with no known JSON index reads `pending` with no upload
 **And** `ship_pypi`'s docstring names the index base as the second difference between the two targets, defect 2 is recorded as not a defect in the story spec's change log with `contract.md` § *Exit codes* as its evidence, `DW-mason-review-2026-11-24-1` reads closed in its ledger with the commit that closed it, and the operator's decision whether a failed wrapped tool projects to exit 1 is carried by `DW-mason-41-1-1`
-**Status:** review
+**Status:** done

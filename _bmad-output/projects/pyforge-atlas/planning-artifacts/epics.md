@@ -3568,7 +3568,7 @@ So that a manifest's whole dependency list reaches the gate, an empty intake can
 **When** each is first written as a test that fails on the tree as it is, and then fixed: the pyproject reader parses with `tomllib` after dropping a leading byte-order mark, zero components is indeterminate, a channel prefix is stripped and the pip block ends on dedent, a numeric version outranks `scm`, the filters of `trending-candidates` are validated apart from the query so only a bad filter value exits 1 and any other failure exits 2, and `contract.md`'s row says so, and a page that leaves fewer items served than the reported total ends the walk partial, judged on the items the server served and never on the rows the parser kept
 **Then** a dependency with extras no longer hides the ones after it and a `pyproject.toml` saved with a byte-order mark reads the same as one without, a match of zero components exits 1 as indeterminate and halts the run while a report with no components stays not-applicable, `conda-forge::numpy` is the conda package `numpy` and a conda dependency after the pip block is conda, the LuaRocks latest of `scm-1` and `1.10-1` is `1.10-1`, a crash of `trending-candidates` exits 2 with one stderr line, a `ValueError` that is not a bad filter value included, while a bad filter value keeps 1, and a truncated Basilisk walk keeps the last-good store while a walk served every item is written even when the parser drops some of them
 **And** a defect the tree does not reproduce is recorded in the story spec as not a defect, with the test that shows it kept, and both halves of atlas's suite pass
-**Status:** review
+**Status:** done
 
 ## Validation note — 2026-08-26 (chain-currency sweep)
 

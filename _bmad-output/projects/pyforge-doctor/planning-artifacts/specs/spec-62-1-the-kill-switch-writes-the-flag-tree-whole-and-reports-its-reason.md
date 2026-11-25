@@ -2,7 +2,7 @@
 title: '62.1: The kill switch writes the flag tree whole and reports its reason'
 type: 'fix'
 created: '2026-11-25'
-status: 'in-review'
+status: 'done'
 story: 62-1-the-kill-switch-writes-the-flag-tree-whole-and-reports-its-reason
 spec: spec-pyforge-doctor
 difficulty: 'easy'
@@ -117,3 +117,4 @@ Ledger key: `62-1-the-kill-switch-writes-the-flag-tree-whole-and-reports-its-rea
 - 2026-11-25: defect 2: reproduced and fixed - `pixi run --frozen -e pyforge-doctor pytest "src/shared/packages/pyforge-doctor/tests/unit/test_flag_kill_switch.py::test_kill_switch_result_line_names_the_reason" -q` exited 1 on the unchanged tree (stdout was `disabled <flag> in <path> (ENABLED -> DISABLED)`, no reason); the result line now ends `; reason: <reason>`, and the test exits 0.
 - 2026-11-25: review of the first implementation, lead's rulings applied. Each case below exited 1 before its fix (the three AC2a tests, 3 failed) and exits 0 after: the replace lands on the resolved path, so a symlinked tree is written through instead of being swapped for a regular file while its target stayed ENABLED; the reason is printed on one line (whitespace runs fold to one space); an `OSError` from the replace (a directory the process cannot write) is the named refusal `doctor flags kill-switch: cannot replace <path>: <error>` at exit 2 with the tree byte-identical, where it was the last-resort net's internal error. The `--reason` and verb help texts name the result line. `contract.md` moved by hand under the lead's ruling, which retires this story's "never hand-edit `contract.md`": the `pyforge.core.atomic_write` row and "Nine `pyforge.core` modules" in § Bridges and import closure, and the `--reason` and `doctor flags kill-switch` rows; `contract.md` joined the surface. No environment variable, flag, option, exit code or verb was added.
 - 2026-11-25: the story is implemented and in review. Not this story's to write, left with the lead: the row's closure in the deferred-work ledger, the ledger key, the memlog and spec-surface stamp for `contract.md`, and the epics and Dream wording.
+- 2026-11-25: closed. PR #2385 merged as 080f89c4df (`Merge pyforge-steward/133-1 into main`) after its 51 CI checks passed and the full local `pr-preflight` exited 0 on 48 lanes; an independent reviewer read the diff against this spec before the merge, its findings were applied and re-reviewed.

@@ -2,7 +2,7 @@
 title: '133.4: The front door streams its child, the diff guards read the merge base, and the portals read the caller''s identity'
 type: 'fix'
 created: '2026-11-25'
-status: 'in-review'
+status: 'done'
 story: 133-4-the-front-door-streams-its-child-the-diff-guards-read-the-merge-base-and-the-portals-read-the-caller-s-identity
 spec: spec-pyforge-unifying-strategy
 difficulty: 'medium'
@@ -156,3 +156,4 @@ Ledger key: `133-4-the-front-door-streams-its-child-the-diff-guards-read-the-mer
 - 2026-11-25: defect 5: reproduced and fixed - `src/platform/tests/test_mcp_host_sidecar.py::test_mcp_host_refuses_a_call_with_no_assertion`, `::test_mcp_host_refuses_an_assertion_minted_for_another_station` and `::test_mcp_host_refuses_when_no_verifier_key_resolves` failed on the unchanged tree (200 each). `mcp_host/app.py` calls `authorize_station_scope` on every station `POST`: 401 without an assertion, 403 for another station's, 503 with no public key. Under the ruling, `docs/how-to/reach-a-station-mcp-endpoint.md` (`verified: 2026-11-25`), the comments in `_helpers.tpl`, `mcp-host-networkpolicy.yaml` and `mcp_host/settings.py`, and the docstring of `_assert_mcp_host_network_policy_admits_web_only` now say so.
 - 2026-11-25: defect 6: not a defect - the import at `django_atlas_portal/board.py:18-20` is covered by a dated, named carve-out that still holds: `spec-pyforge-unifying-strategy/SPEC.md` § "`pyforge.*` import carve-outs (2026-09-10, Story 48.7)" (lines 940-945, and line 917); the allow-list `_STATION_PYFORGE_ALLOWED["atlas"]` at `src/platform/tests/test_station_portal_shells.py:115`, enforced by `test_new_portals_are_client_only_and_projection`; and `src/platform/tests/test_host_board_row_isolation.py::test_atlas_vizro_cli_is_not_mounted_on_host_urlconf`, which asserts the two imports are present. Both tests pass; `board.py` is unchanged (session lead's ruling, 2026-11-25).
 - 2026-11-25: the story is implemented and in review. Not run in this pass: AC5's full `platform-ci-local -- --test` and AC6's `pyforge-station-tests` (other stations are mid-edit in the shared worktree); the named platform tests, core's and the kit's package halves and steward's package half pass.
+- 2026-11-25: closed. PR #2385 merged as 080f89c4df (`Merge pyforge-steward/133-1 into main`) after its 51 CI checks passed and the full local `pr-preflight` exited 0 on 48 lanes; an independent reviewer read the diff against this spec before the merge, its findings were applied and re-reviewed.

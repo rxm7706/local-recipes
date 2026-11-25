@@ -161,7 +161,7 @@ development_status:
   53-1-every-page-carries-the-one-header-and-dark-is-the-default: done
   53-2-every-page-reads-at-phone-width-and-names-itself: done
   53-3-kedro-viz-opens-under-the-site-header-with-a-way-back: done
-  54-1-herald-deck-pull-commit-commits-and-three-cli-defects-are-closed: review
+  54-1-herald-deck-pull-commit-commits-and-three-cli-defects-are-closed: done
   6-1-implement-herald-cli-dispatcher: done
   6-2-implement-shared-argument-conventions: done
   6-3-implement-cli-authentication-authorization: done
@@ -276,7 +276,7 @@ development_status:
   epic-52-retrospective: optional
   epic-53: done
   epic-53-retrospective: optional
-  epic-54: in-progress
+  epic-54: done
   epic-54-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional

@@ -2599,7 +2599,7 @@ So that no herald command fails after it has recorded its state, loses what I en
 **When** each of the five is reproduced by a failing test, and each one reproduced is fixed: the commit set is the deck directory alone, the etag is recorded after the commit, and a pull that stages nothing makes no commit; `herald-ship-local` sends the day's recorded compute, token and wall-clock figures and shipped capabilities in its on-ship body, read from the progress store under `--repo-root`, and the handler's specified same-day replace (`webhook.py`) is unchanged; a date that is not `YYYY-MM-DD` is refused at entry and a stored malformed `shipped_date` is left out of a ranged listing; `progress --update` with no station is a usage error; and `deck exports` on an unknown slug exits with the code `contract.md` documents
 **Then** `deck pull --commit` commits the deck, a commit that fails leaves the etag unrecorded, a deck that already matches HEAD is reported as not committed (`(nothing to commit)`, exit 0) with its etag recorded, a same-day ship from the checkout that holds the day's record keeps the figures already recorded, a malformed `--shipped-date` or `--deadline` exits 1 and stores nothing, `progress --update` with no station exits 2 and writes nothing, `deck exports` on an unknown slug exits 2 as `contract.md` documents for `DeckUsageError`, and herald's package half passes
 **And** all five were reproduced and none is closed as not a defect; a ship from a checkout other than the one that holds the day's record still resets the day's figures, and the compiled station skill's stale `--commit` sentence is not edited here (`DW-herald-54-1-1`)
-**Status:** review
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

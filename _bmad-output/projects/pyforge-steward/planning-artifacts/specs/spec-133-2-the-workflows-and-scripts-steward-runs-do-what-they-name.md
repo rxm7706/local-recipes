@@ -2,7 +2,7 @@
 title: '133.2: The workflows and scripts steward runs do what they name'
 type: 'fix'
 created: '2026-11-25'
-status: 'in-review'
+status: 'done'
 story: 133-2-the-workflows-and-scripts-steward-runs-do-what-they-name
 spec: spec-pyforge-steward
 difficulty: 'medium'
@@ -185,3 +185,4 @@ Ledger key: `133-2-the-workflows-and-scripts-steward-runs-do-what-they-name`.
 - 2026-11-25: defect 12: left open - outside this surface (the hooks directory is not edited in this change). Found: `.claude/hooks/post-tool-call.py` exists and `grep -c post-tool-call .claude/settings.json .cursor/hooks.json` prints 0 for both, so no harness runs it, though conda-forge-expert's `tests/unit/test_provenance_hook.py` tests it. Decision needed, by the session lead under the open hook row `DW-steward-review-2026-11-24-4`: register it as a PostToolUse hook or retire it with its tests.
 - 2026-11-25: still naming the removed task, not edited by this story: `.claude/skills/conda-forge-expert/quickref/commands-cheatsheet.md:746` (under `.claude/`; a conda-forge-expert edit with its CHANGELOG entry, for the lead to place).
 - 2026-11-25: the story is implemented and in review: ten defects reproduced and fixed, two left open as written above.
+- 2026-11-25: closed. PR #2385 merged as 080f89c4df (`Merge pyforge-steward/133-1 into main`) after its 51 CI checks passed and the full local `pr-preflight` exited 0 on 48 lanes; an independent reviewer read the diff against this spec before the merge, its findings were applied and re-reviewed.
