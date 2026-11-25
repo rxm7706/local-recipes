@@ -3,7 +3,7 @@ sources:
   - src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py
   - src/shared/packages/pyforge-warden/src/pyforge/warden/verdict.py
   - _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/contract.md
-verified: 2026-11-18
+verified: 2026-11-24
 ---
 
 # How to scan for compliance with warden

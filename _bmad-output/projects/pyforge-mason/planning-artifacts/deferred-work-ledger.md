@@ -2251,3 +2251,17 @@ status: open
   severity: low
   promoted: 2026-11-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-mason-review-2026-11-24-1: The pypi-test rehearsal asks pypi.org whether the version shipped
+
+- source_spec: `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-61-1-the-shelf-the-front-doors-and-the-dossier-say-what-the-tree-does.md` (found by the review that story carries)
+  summary: `pypi_index.py` hardcodes the pypi.org JSON index (lead confirmed the constant), so `package ship --to pypi-test,pypi` checks the wrong index for the rehearsal: a re-run after a failed real upload re-uploads to TestPyPI, fails on "file exists" and gates pypi for that version (reviewer-traced, not executed). Reviewer-reported: `recipe build/scan/optimize/update/submit` exit 0 when the wrapped tool failed (documented as AD-4), while `package ship --to conda-forge --yes` exits 1 on the same state.
+  evidence: `src/shared/packages/pyforge-mason/src/pyforge/mason/pypi_index.py:50`; `package.py:555-561`; `cli.py:1108,1284-1480`.
+  location: src/shared/packages/pyforge-mason/src/pyforge/mason/pypi_index.py:50
+  origin: the repository review of 2026-11-24 at main `7da08791f3` (nine read-only reviewers; findings marked reviewer-reported were not re-traced by the session lead); written by doctor Story 61.1
+  fix: pass the index base into the version check and derive the reference from it; decide whether a failed wrapped tool projects to exit 1.
+  owner: mason
+  severity: medium
+  promoted: 2026-11-24 — doctor Story 61.1 (the documentation review, branch `docs-verify-2026-11-24`)
+  reason: a code, tooling or Spec change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
+  status: open

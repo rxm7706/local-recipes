@@ -1319,3 +1319,17 @@ verified: 2026-11-11 — still-open — DW-FU-5-1: no review of 5-1-actionable-d
   reason: Story 26.2 writes no new product test and edits no `SPEC.md` (its Never); the SBOM half needs a ruling or a re-derive.
   status: open
   verified: 2026-11-11 — still-open — `git grep -n -e job_report -e report_json -e sbom_json -- src/platform/tests 'src/shared/packages/*/tests'` exits 0 and every hit sets `report_json` by hand in src/platform/tests/test_warden_fleet_proposals.py; tasks.py:174 still returns `report_json, "{}", int(code)`.
+
+### DW-warden-review-2026-11-24-1: The upload path marks an unscannable manifest succeeded, and four smaller defects in the web face and the actuator
+
+- source_spec: `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-61-1-the-shelf-the-front-doors-and-the-dossier-say-what-the-tree-does.md` (found by the review that story carries)
+  summary: reviewer-reported, left out of Story 28.1 (which closed the access gap only). (1) The upload allowlist is wider than warden's discovery names and the job discards the scan's exit code, so a `requirements.txt` ends `SUCCEEDED` with status not-applicable; `sbom_json` is always `{}` and `?kind=sbom` returns it with 200. (2) Uploaded blobs are never deleted. (3) A failed fix-PR open leaves its branch, and later runs skip the finding; a missing base sha yields a parentless commit; the bearer follows cross-host redirects. (4) An approved fleet proposal can stay `APPROVED` forever if the worker dies. (5) Whole-run actuator failures lose their cause.
+  evidence: `src/shared/packages/django-warden/src/django_warden_fabric/views.py:44-53`; `tasks.py:54-118,152-172,280-375,502-563`; `proposals.py:113-154`; `src/shared/packages/pyforge-warden/src/pyforge/warden/actuator.py`.
+  location: src/shared/packages/django-warden/src/django_warden_fabric/tasks.py
+  origin: the repository review of 2026-11-24 at main `7da08791f3` (nine read-only reviewers; findings marked reviewer-reported were not re-traced by the session lead); written by doctor Story 61.1
+  fix: derive the allowlist from discovery and fail a job with no manifest; populate the SBOM or return 404; delete the blob after the job; delete the ref on a failed PR open; allow a stale proposal to be re-approved or dismissed.
+  owner: warden
+  severity: medium
+  promoted: 2026-11-24 — doctor Story 61.1 (the documentation review, branch `docs-verify-2026-11-24`)
+  reason: a code, tooling or Spec change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
+  status: open

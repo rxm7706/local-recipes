@@ -43,7 +43,7 @@ deferred: []
 
 **Problem:** Every documentation detector and generator reads green at main `7da08791f3`, yet a read of each page against the tree found about 48 pages and files that state something the tree contradicts: commands that fail or do nothing as written, environments described as carrying what they do not, paths that are gone, and published measurements the tree no longer supports.
 
-**Approach:** Re-verify each finding of the 2026-11-24 review against the tree, correct the page with the smallest edit that makes it true, and move its `verified:` date. Leave a page alone when the tree does not support the finding. Record on each of the four governance Specs with stale text a memlog entry naming the correction.
+**Approach:** Re-verify each finding of the 2026-11-24 review against the tree, correct the page with the smallest edit that makes it true, and move its `verified:` date. Leave a page alone when the tree does not support the finding. Record the four governance Specs with stale text, and the code defects this change does not fix, as deferred-work rows on the owning stations' ledgers.
 
 Ledger key: `61-1-the-shelf-the-front-doors-and-the-dossier-say-what-the-tree-does`.
 
@@ -66,7 +66,7 @@ Ledger key: `61-1-the-shelf-the-front-doors-and-the-dossier-say-what-the-tree-do
 **Given** pages that give a command that fails or does nothing as written, describe an environment as carrying what it does not, cite a path that is gone, or publish a measurement the tree no longer supports, while every documentation detector reads green
 **When** each finding of the 2026-11-24 review is re-verified against the tree and its page corrected, with the page's `verified:` date moved
 **Then** the documentation detectors and the seven generators' `--check` exit 0, and the Pages site's `pages-check` exits 0 with the dossier's section numbers intact
-**And** each of the four governance Specs with stale present-tense text carries a memlog entry naming the correction its next re-derive makes
+**And** the four governance Specs with stale present-tense text, and every code defect the review found that this change does not fix, are open rows in the owning stations' deferred-work ledgers
 
 - **AC1 — The documentation detectors read green.** Expected: exit 0 for each.
 

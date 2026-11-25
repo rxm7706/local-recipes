@@ -4114,7 +4114,7 @@ So that a page that reads current to the detectors is also true.
 **Given** pages that give a command that fails or does nothing as written, describe an environment as carrying what it does not, cite a path that is gone, or publish a measurement the tree no longer supports, while every documentation detector reads green
 **When** each finding of the 2026-11-24 review is re-verified against the tree and its page corrected, with the page's `verified:` date moved
 **Then** `docs-currency-check`, `docs-map-hygiene-check`, `governance-currency`, `dreams-hygiene-check` and the seven generators' `--check` exit 0, and the Pages site's `pages-check` exits 0 with the dossier's section numbers intact
-**And** each of the four governance Specs with stale present-tense text carries a memlog entry naming the correction its next re-derive makes
+**And** the four governance Specs with stale present-tense text, and every code defect the review found that this change does not fix, are open rows in the owning stations' deferred-work ledgers
 **Status:** review
 
 

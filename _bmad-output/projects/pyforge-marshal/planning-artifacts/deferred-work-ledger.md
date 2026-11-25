@@ -9486,3 +9486,17 @@ status: open
   severity: low
   promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
   status: open
+
+### DW-marshal-review-2026-11-24-1: `teardown --force` can orphan unpushed commits, and two smaller CLI defects
+
+- source_spec: `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-61-1-the-shelf-the-front-doors-and-the-dossier-say-what-the-tree-does.md` (found by the review that story carries)
+  summary: three marshal defects from the review. (1) The preserve scan skips a branch whenever a same-named branch exists on origin, without comparing tips, and treats a `resolve_ref` error as nothing to preserve, so `teardown --force` can delete a home branch holding unpushed commits (lead read the lines; the failure path is traced, not executed). (2) `marshal` exits 1 with a traceback on a bad `PYFORGE_ENVIRONMENT` (reproduced: `PYFORGE_ENVIRONMENT=bogus marshal status`), where 1 is the UNEVALUABLE verdict rung. (3) `check_run_status` reads one page of check runs, so a failed required check beyond the first 30 reads as not yet concluded.
+  evidence: (1) `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/teardown_preserve.py:189,193-196`. (2) `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py:372-463` catches no `FlagConfigError`. (3) `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/forge_gh.py:302-340`; the sibling `check_runs()` paginates.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/teardown_preserve.py:189
+  origin: the repository review of 2026-11-24 at main `7da08791f3` (nine read-only reviewers; findings marked reviewer-reported were not re-traced by the session lead); written by doctor Story 61.1
+  fix: (1) always run the commit-level preserve check and turn a `resolve_ref` failure into a refusal; (2) catch `FlagConfigError` as usage and add a last-resort handler returning the ERROR rung; (3) build `check_run_status` on the paginated call.
+  owner: marshal
+  severity: medium
+  promoted: 2026-11-24 — doctor Story 61.1 (the documentation review, branch `docs-verify-2026-11-24`)
+  reason: a code, tooling or Spec change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
+  status: open

@@ -693,7 +693,7 @@ verify_commands = [
   "docs/explanation/**",
   "docs/foundry/**",
   "docs/governance/**",
-  "docs/governance/*/.memlog.md",
+  "_bmad-output/projects/pyforge-*/planning-artifacts/deferred-work-ledger.md",
   "docs/how-to/**",
   "docs/map.yaml",
   "docs/reference/**",

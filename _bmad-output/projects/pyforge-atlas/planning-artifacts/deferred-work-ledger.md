@@ -5443,3 +5443,31 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-11-10 — cutover readiness landing (atlas Story 46.1)
   reason: recorded, not blocked: the satellite is retired, never built (rule R4: each gap is a deferred-work row).
   status: open
+
+### DW-atlas-review-2026-11-24-1: The SBOM intake drops dependencies and an empty intake passes the gate
+
+- source_spec: `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-61-1-the-shelf-the-front-doors-and-the-dossier-say-what-the-tree-does.md` (found by the review that story carries)
+  summary: atlas defects from the review. (1) `parse_pyproject_toml` ends the dependency array at any line containing `]`, so the first dependency with extras stops the parse and later packages never reach the SBOM or the gate (lead confirmed the line). Reviewer-reported: (2) a zero-component match reads clean at the terminal gate, exit 0, so a truncated or unparsable intake passes; (3) `parse_environment_yml` reads `channel::name` as a package named for the channel and tags conda deps after the pip block as pypi; (4) the LuaRocks latest pick prefers `scm-1` over numeric versions; (5) `trending-candidates` exits 1 on a crash where the frozen domain says 2; (6) a Basilisk catalog walk can end complete while truncated.
+  evidence: `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/sbom_intake.py:238`; `pipelines/universal_sbom/gate.py` (`assemble_and_gate`); `datasets/vcs_sources.py:73,345`; `trending_candidates/__main__.py`; `datasets/basilisk.py:686,876-881`.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/sbom_intake.py:238
+  origin: the repository review of 2026-11-24 at main `7da08791f3` (nine read-only reviewers; findings marked reviewer-reported were not re-traced by the session lead); written by doctor Story 61.1
+  fix: parse with `tomllib`; make zero components indeterminate; strip a channel prefix and leave the pip block on dedent; return 2 on a crash.
+  owner: atlas
+  severity: medium
+  promoted: 2026-11-24 — doctor Story 61.1 (the documentation review, branch `docs-verify-2026-11-24`)
+  reason: a code, tooling or Spec change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
+  status: open
+
+### DW-atlas-review-2026-11-24-2: The package `AGENTS.md` calls `pyforge-atlas-test` the whole suite
+
+- source_spec: `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-61-1-the-shelf-the-front-doors-and-the-dossier-say-what-the-tree-does.md` (found by the review that story carries)
+  summary: the `bmad:context` block of `src/shared/packages/pyforge-atlas/AGENTS.md` says `pyforge-atlas-test` is the whole suite with `kedro-test` its alias; `pyforge-atlas-test` runs the package half only and `kedro-test` depends on both halves. The block is refreshed by `bmad-project-context`, never by hand, so the documentation story left it.
+  evidence: `src/shared/packages/pyforge-atlas/AGENTS.md:71`; `pixi.toml` `[feature.pyforge-atlas.tasks.pyforge-atlas-test]` and `kedro-test`.
+  location: src/shared/packages/pyforge-atlas/AGENTS.md:71
+  origin: the repository review of 2026-11-24 at main `7da08791f3` (nine read-only reviewers; findings marked reviewer-reported were not re-traced by the session lead); written by doctor Story 61.1
+  fix: refresh the block with `bmad-project-context` so it names `kedro-test` as the whole suite.
+  owner: atlas
+  severity: low
+  promoted: 2026-11-24 — doctor Story 61.1 (the documentation review, branch `docs-verify-2026-11-24`)
+  reason: named blocker: a `bmad:context` block is written only by its skill.
+  status: open

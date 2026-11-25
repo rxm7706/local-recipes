@@ -809,9 +809,10 @@ Folded Dreams: [[bmad-drift-new-artifact-shape]], [[bmad-method-version-drift]],
   `spec-pyforge-doctor` (the documentation currency capability, CAP-84; no text change) and decomposes as Epic 61, one
   story: each finding is re-verified against the tree before its page moves, the page's `verified:` date moves with it,
   and no detector, generator or station code changes. A page another station owns is corrected here as documentation
-  only. Four governance Specs carry present-tense text about files that are gone; each gets a memlog entry that names
-  the correction, and its `SPEC.md` moves only at its next re-derive. The code defects the review found below high
-  severity are not in this change: each waits for a Dream entry on the station that owns it.
+  only. Four governance Specs carry present-tense text about files that are gone; a `SPEC.md` moves only by its memlog
+  and re-derive together, so those corrections are a deferred-work row (`DW-doctor-61-1-1`). The code defects the
+  review found below high severity are not in this change: each is an open row on its station's deferred-work
+  ledger and waits for a Dream entry on the station that owns it.
 
 ## 2026-10-26 — A spike report is not a corrupt file, and the classifier can't yet tell the difference (folded from bmad-drift-new-artifact-shape)
 

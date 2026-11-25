@@ -586,3 +586,17 @@ sibling ledgers and the detector both use.
   promoted: 2026-11-11 — Story 31.3 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
   reason: another station's Spec and files.
   status: open
+
+### DW-scribe-review-2026-11-24-1: Recall's stale guard never fires on the Postgres and plane stores
+
+- source_spec: `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-61-1-the-shelf-the-front-doors-and-the-dossier-say-what-the-tree-does.md` (found by the review that story carries)
+  summary: reviewer-reported: `compiled_at` is set only when the store has that attribute, and `PostgresGraphStore` and `PlaneGraphStore` have none, so a stale answer is never withheld on the backends that serve `--semantic`. Also: `index refresh` fingerprints fewer targets than graphify ingests, so an edit under `src/platform/**` or `scripts/**` reads unchanged; the DSN split drops `sslmode`; lock and plugin errors escape as tracebacks.
+  evidence: `src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py:241-242,1170`; `recall.py:299-302`; `cli.py:170-174,537,556-559`; `graph_store_pg.py:62-63`.
+  location: src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py:241
+  origin: the repository review of 2026-11-24 at main `7da08791f3` (nine read-only reviewers; findings marked reviewer-reported were not re-traced by the session lead); written by doctor Story 61.1
+  fix: persist `compiled_at` in both stores; fingerprint every graphify target; keep the DSN query string.
+  owner: scribe
+  severity: medium
+  promoted: 2026-11-24 — doctor Story 61.1 (the documentation review, branch `docs-verify-2026-11-24`)
+  reason: a code, tooling or Spec change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
+  status: open

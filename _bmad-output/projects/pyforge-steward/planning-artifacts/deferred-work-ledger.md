@@ -7363,3 +7363,73 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   reason: it is a capability to design, not a defect to correct; the operator chooses the shape.
   resolution: 2026-11-21, steward Epic 127 (Story 127.1, commit ae43f482b4; Story 127.2) — operator ruling of 2026-11-21, "Platform host": the `django-steward` portal declares `pyforge.steward.dashboard` for the host, the platform's settings install every portal's declared apps, the eight corridor migrations map to Liquibase changesets `pyforge-steward:1` to `:7`, and the sqlmigrate gate counts the station app as first-party. The duties run from `src/platform/` in `-e platform-dev` with the platform's settings (checked against PostgreSQL 17.11); the corridor how-to gives that setup and keeps SQLite as the laptop fallback. The row's guess that either choice was a new capability does not hold: the ruling realizes CAP-139, CAP-141 and CAP-143 as written.
   status: resolved
+
+### DW-steward-review-2026-11-24-1: `suite advance` mutates the checkout then always fails, and steward returns codes outside its domain
+
+- source_spec: `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-61-1-the-shelf-the-front-doors-and-the-dossier-say-what-the-tree-does.md` (found by the review that story carries)
+  summary: reviewer-reported steward defects. (1) `steward suite advance` without `--dry-run` rewrites the recipe and builds, then its default publish step always returns not ok, so it leaves an edited checkout and opens no PR. (2) `keys exec` relays the child's raw exit code, so a child exiting 3 or 70 reads as steward's refusal or crash; `steward guards lacking --spec <missing>` exits 70 on a user-input error; `main()` returns any integer a duty raises as `SystemExit`.
+  evidence: `src/shared/packages/pyforge-steward/src/pyforge/steward/suite_advance.py:117-246,397-405`; `keys.py:1309-1310`; `guards.py:199-217`; `cli.py:2020-2026`.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/suite_advance.py
+  origin: the repository review of 2026-11-24 at main `7da08791f3` (nine read-only reviewers; findings marked reviewer-reported were not re-traced by the session lead); written by doctor Story 61.1
+  fix: refuse before the autotick when no publish path is configured (or work in a worktree with `--repo`); clamp relayed and raised codes to the documented domain; catch `OSError`/`ValueError` in the guards duty.
+  owner: steward
+  severity: medium
+  promoted: 2026-11-24 — doctor Story 61.1 (the documentation review, branch `docs-verify-2026-11-24`)
+  reason: a code, tooling or Spec change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
+  status: open
+
+### DW-steward-review-2026-11-24-2: Workflow and script defects: a dead publish branch, a task that does not exist, a push flag git lacks
+
+- source_spec: `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-61-1-the-shelf-the-front-doors-and-the-dossier-say-what-the-tree-does.md` (found by the review that story carries)
+  summary: defects in repo tooling steward runs or owns; the lead confirmed each cited line. (1) `sync-pypi-mappings.yml` compares the boolean input `create_pr` to strings, so neither publish step may run on the default dispatch. (2) `scripts/pre_push_preflight.sh:137` calls a pixi task `preflight`; the task is `preflight-budget`, and `|| true` hides the error, so the budget report never prints. (3) `scripts/fleet_poll_sync.sh:33` uses `git push --ff-only`, which is not a push option. (4) `scripts/fleet-poll-hourly.sh` ticks every two hours. (5) `pixi.toml` task `sync-upstream-public-fork` points at a script that does not exist. (6) 35 `setup-pixi` steps carry no `pixi-version` (29 in `pyforge-station-tests.yml`). (7) `scripts/bump_pixi_version.py:112` truncates `environment.yaml` before the export runs. (8) `scripts/pages_changes.py:96,136` mixes the committer's offset with UTC, so the changes page can date an entry after its own snapshot. Reviewer-reported and not re-traced: the promotion script records the image ID as the registry digest; `sync-upstream-conda-forge.sh` pops a stash unconditionally; five workflows have no `permissions:` block; `.claude/hooks/post-tool-call.py` is registered nowhere.
+  evidence: `.github/workflows/sync-pypi-mappings.yml:19-23,83,133`; `scripts/pre_push_preflight.sh:137`; `scripts/fleet_poll_sync.sh:33`; `scripts/fleet-poll-hourly.sh:28-42`; `pixi.toml` `[feature.local-recipes.tasks.sync-upstream-public-fork]`; `scripts/bump_pixi_version.py:60,112-119`; `scripts/pages_changes.py:96,136`; `scripts/platform-golden-path-promotion.sh:30`.
+  location: .github/workflows/sync-pypi-mappings.yml:83
+  origin: the repository review of 2026-11-24 at main `7da08791f3` (nine read-only reviewers; findings marked reviewer-reported were not re-traced by the session lead); written by doctor Story 61.1
+  fix: one Story per owning Spec: use `inputs.create_pr` as a boolean; call `preflight-budget`; drop `--ff-only`; drop the trailing sleep; remove or restore the dead task; pin `pixi-version` at every `setup-pixi`; write the export only on exit 0; use one zone for both dates.
+  owner: steward
+  severity: medium
+  promoted: 2026-11-24 — doctor Story 61.1 (the documentation review, branch `docs-verify-2026-11-24`)
+  reason: a code, tooling or Spec change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
+  status: open
+
+### DW-steward-review-2026-11-24-3: `platform-ci-local -- --test` needs a container engine it never uses, and builds an ASCII database under a C locale
+
+- source_spec: `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-61-1-the-shelf-the-front-doors-and-the-dossier-say-what-the-tree-does.md` (found by the review that story carries)
+  summary: two host defects met on a macOS laptop while Story 28.1's tests were run. The script exits 2 when docker is not on `PATH` even for `--test`, a stage that calls the engine only in cleanup; and it runs `initdb` with no encoding, so under a `C` locale the throwaway cluster is `SQL_ASCII` and two policy tests error on a Unicode escape. With `LC_ALL=en_US.UTF-8` and a no-op engine the stage ran: 1,513 passed, 1 failed (`tests/test_redis_cache_eviction_broker_survival.py::test_broker_survives_cache_eviction_when_split`, a Redis `maxmemory` error not traced to a cause and not checked against main).
+  evidence: `scripts/platform-ci-local.sh:376` (the engine check, before the stage switch) and `:385` (`initdb -D ... -U postgres --auth=trust`).
+  location: scripts/platform-ci-local.sh:376
+  origin: the repository review of 2026-11-24 at main `7da08791f3` (nine read-only reviewers; findings marked reviewer-reported were not re-traced by the session lead); written by doctor Story 61.1
+  fix: check the engine only for the stages that use it; pass `-E UTF8 --locale=C` (or `C.UTF-8`) to `initdb`; trace the Redis test on a clean main.
+  owner: steward
+  severity: low
+  promoted: 2026-11-24 — doctor Story 61.1 (the documentation review, branch `docs-verify-2026-11-24`)
+  reason: a code, tooling or Spec change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
+  status: open
+
+### DW-steward-review-2026-11-24-4: The session hook misses command forms its rules name
+
+- source_spec: `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-61-1-the-shelf-the-front-doors-and-the-dossier-say-what-the-tree-does.md` (found by the review that story carries)
+  summary: reviewer-reported, by probing the hook; the lead did not re-run the probes. `.claude/hooks/pre-shell.py` matchers anchored on the first token are skipped by an environment-assignment prefix, `git -c`/`-C`, `env`, a subshell or an absolute path (commit on main, `pixi add`, `uv run`, outward `gh`); `gh api` with `-X` after the endpoint or `--field=` forms passes the outward-write rule; `--method=DELETE`, `git fetch -p -P`, `git branch -Df` and `git push origin +:ref` pass the protected-ref rule; a commit message on stdin passes the attribution check. It also refuses harmless commands (a redirection read as a remote; any token ending `submit_pr.sh`). The server rulesets remain the guarantee for protected refs.
+  evidence: `.claude/hooks/pre-shell.py:465-488,585,643,686,912,954-957,1006-1007,1091,1103,1362-1428,1464-1468,1527,1619-1621`; the declared source is `docs/governance/guild-roster.json` `session_denials`.
+  location: .claude/hooks/pre-shell.py
+  origin: the repository review of 2026-11-24 at main `7da08791f3` (nine read-only reviewers; findings marked reviewer-reported were not re-traced by the session lead); written by doctor Story 61.1
+  fix: normalise each subcommand once (strip assignments and wrappers, basename the executable, use the existing git-subcommand helper) and scan all tokens for the method and field flags; a governance act where the denial list moves.
+  owner: governance
+  severity: medium
+  promoted: 2026-11-24 — doctor Story 61.1 (the documentation review, branch `docs-verify-2026-11-24`)
+  reason: a code, tooling or Spec change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
+  status: open
+
+### DW-steward-review-2026-11-24-5: Kernel and portal defects: the `pyforge` front door buffers its child, the diff guards use a two-dot diff, two portals misread identity
+
+- source_spec: `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-61-1-the-shelf-the-front-doors-and-the-dossier-say-what-the-tree-does.md` (found by the review that story carries)
+  summary: reviewer-reported defects in code no station ledger owns. (1) `pyforge <station> ...` captures all child output, gives the child no stdin and resolves the script by bare name, so streaming and interactive verbs differ from the station CLI; a bad `PYFORGE_ENVIRONMENT` is a traceback. (2) The testing kit's branch diff guards diff against the tip of the base, so a local branch behind `origin/main` false-reds, and paths with spaces break. (3) `django-marshal` reads `request.idp_sub`, which nothing sets (lead confirmed), so every caller runs as one subject and shares one rate-limit bucket. (4) `django-herald`'s deck-export routes read roles from the session, skipping the live IdP re-read production wires. (5) The MCP sidecar does not call `authorize_station_scope`; protection rests on the network policy. (6) `django-atlas/board.py` imports `pyforge.steward.dashboard` at module level.
+  evidence: `src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py:179,200-223`; `src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/branch_diff_guard.py:110,127,155,187,224`; `src/shared/packages/django-marshal/src/django_marshal_portal/views.py:24-25`; `src/shared/packages/django-herald/src/django_herald_portal/deck_export_routes.py:51-63`; `src/platform/mcp_host/app.py`; `src/shared/packages/django-atlas/src/django_atlas_portal/board.py:18-20`.
+  location: src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py:200
+  origin: the repository review of 2026-11-24 at main `7da08791f3` (nine read-only reviewers; findings marked reviewer-reported were not re-traced by the session lead); written by doctor Story 61.1
+  fix: inherit stdio or `exec` the child and resolve it beside `sys.executable`; diff against the merge base; read the subject through `claims_from_request`; resolve roles through the configured claims getter; verify the assertion in the sidecar.
+  owner: control-plane
+  severity: medium
+  promoted: 2026-11-24 — doctor Story 61.1 (the documentation review, branch `docs-verify-2026-11-24`)
+  reason: a code, tooling or Spec change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
+  status: open
