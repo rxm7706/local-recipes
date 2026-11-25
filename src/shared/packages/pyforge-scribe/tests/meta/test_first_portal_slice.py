@@ -10,7 +10,7 @@ from http import HTTPStatus
 from pathlib import Path
 
 import pytest
-from pyforge.testing_kit import changed_paths_since
+from pyforge.testing_kit import changed_paths_since, pyforge_import_offenders
 
 # Story 33.1 (spec-pyforge-scribe CAP-31, relay of spec-pyforge-steward:CAP-175): the module reads the repository
 # outside this package, so it runs in the live-tree half.
@@ -210,7 +210,11 @@ def test_recall_cli_argv_mode_is_optional() -> None:
 
 
 def test_chrome_home_post_renders_cited_recall_results() -> None:
-    pytest.importorskip("django")
+    pytest.importorskip(
+        "django",
+        reason="django is not in this environment; the portal render runs in "
+        "`pixi run -e pyforge-foundry-full scribe-plane-and-portal-test`",
+    )
     from django.conf import settings
 
     if not settings.configured:
@@ -338,13 +342,7 @@ def test_portal_job_and_cursor_rule_inherit_default_recall() -> None:
 def test_src_platform_has_no_pyforge_import() -> None:
     root = _repo_root()
     changed = changed_paths_since(root, pathspec="src/platform")
-    offenders: list[str] = []
-    for rel in changed:
-        path = root / rel
-        if path.suffix != ".py" or not path.is_file():
-            continue
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-        offenders.extend(f"{rel}: {hit}" for hit in _pyforge_package_imports(tree))
+    offenders = pyforge_import_offenders(changed, root)
     # Story 34.1: the AST walk is the guard. A text search of the diff also matched a
     # string that only mentions the phrase (a warden setup snippet in a platform test),
     # and reds a branch that edits near it though no import was added.

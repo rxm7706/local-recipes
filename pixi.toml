@@ -1796,6 +1796,11 @@ cmd = "python -m pyforge.steward.preflight"
 description = "Story 117.5 (spec-pyforge-steward CAP-175): read .steward/preflight-runs.jsonl and report lanes whose journal median exceeds 1.5× docs/governance/preflight-budgets.toml (newest run, or --run <id>). Exit 0 when evaluable (warn only, D3), 2 when the journal cannot be evaluated. pre_push_preflight.sh runs this after a green pr-preflight; not a detector or PR gate."
 cmd = "python -m pyforge.steward.preflight --budget"
 
+[feature.guild-tasks.tasks.steward-share-tree-test]
+description = "Steward Story 136.6 (spec-pyforge-steward CAP-175; DW-steward-cutover-2026-11-10-8, DW-steward-cutover-2026-11-10-12): the two steward tests that read the Guild environment's installed bmad share packages (.pixi/envs/pyforge-guild/share), by node id. They skip in pyforge-steward-test, whose environment carries no bmad share package, so this task is where they run: -e pyforge-guild, locally and as a step of the lint-types job. scripts/run_named_tests.py fails the run when a named test skips, so a missing share package is a red step, never a silent pass."
+cmd = "python scripts/run_named_tests.py src/shared/packages/pyforge-steward/tests/unit/test_provision_module_installers.py::test_live_share_skill_names_are_disjoint_across_installer_modules src/shared/packages/pyforge-steward/tests/unit/test_provision_module_installers.py::test_live_utility_skills_share_tree_matches_the_ten_expected_names"
+env = { PYTHONPATH = "src/shared/packages/pyforge-steward/src:scripts" }
+
 [feature.local-recipes.tasks.eval-quality-smoke]
 description = "Story 45.2: compiles the shipped bmad-eval-quality dev corpus's own worked example (satisfied-declarations.json) plus this repo's own pilot contract (evals/review-catches-planted-defect/contract.json) — a cheap sanity check that the installed eval-quality CLI and this pilot's contract still agree with the published EvalContract schema. Not a gate: never joins detectors/detectors-ci. See evals/review-catches-planted-defect/driver.py."
 cmd = "python evals/review-catches-planted-defect/driver.py smoke"
@@ -1815,44 +1820,6 @@ cmd = "python scripts/promote_sprint_status.py"
 [feature.guild-tasks.tasks.retired-console-check]
 description = "FR-7 / Story 30.2: fail if the retired Guildhall generator, data.js, or the four dashboard-gen/watch/check/drift pixi tasks are reintroduced. Kedro-Viz is out of scope."
 cmd = "python -m pyforge.doctor.sources dashboard-drift"
-
-[feature.local-recipes.tasks.dashboard-serve]
-description = "Serve the pyforge-atlas Vizro dashboard locally (DW-D2-3's missing entrypoint): builds via the same build_dashboard() the 34-page dashboard-dryrun gate exercises, then .run()s a local dev server -- foreground, 127.0.0.1:8050 by default (-- --port N to change), no daemon. dashboard-dryrun proves the OBJECT builds; this is how you LOOK at it."
-cmd = "python scripts/dashboard_serve.py"
-env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src" }
-
-[feature.local-recipes.tasks.dashboard-dryrun]
-description = "Wave D verify gate (Story D2, FR-9 / AD-8 / AD-17 / NFR-8): dashboard-dryrun — build the BSL-driven Vizro Dashboard OBJECT offline (no server, no .run()), assert each expected page is present w/ a stable id+title (deterministic layout), pages are BSL-driven (loaders route through the D1 semantic models, proven vs an independent BSL query), the factory-status page reads the real sprint-status.yaml + carries a build timestamp (AD-17), and the agent-legibility structural props hold. Runs in local-recipes (the env carrying vizro + boring_semantic_layer). Full 34-page inventory shipped (Story 20.5 CAP-7 + Story 21.9 CAP-5 — closes DW-D2-1); Story 22.5 adds identity catalog/ops/workbook canvas-vs-Vizro parity coverage (test_identity_parity.py). This suite also runs the Playwright e2e + §2.1 semantic-HTML/ARIA navigation check (test_dashboard_e2e.py), which launches a real local server -- not fully offline despite the gate's name. --frozen."
-cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/integration/dashboard -q"
-env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src:src/shared/packages/pyforge-testing-kit/src" }
-
-[feature.local-recipes.tasks.vizro-ai-dryrun]
-description = "Wave D verify gate (Story D3, FR-9 / AD-7 / AD-8 / Q3 §11): vizro-ai-dryrun — offline, no-network, no-live-LLM. Asserts the query_vizro_ai MCP tool is registered (FastMCP server + audit + package export) and callable; with NO backend env configured returns the structured 'backend not configured — attended Q3 bring-up (DW-D3)' advisory (no network, no crash, no fabricated chart); the backend resolver reads the endpoint from repo model-backend config (OPENAI_BASE_URL/ANTHROPIC_BASE_URL env) with NO hardcoded public host baked in (Q3 §11 load-bearing invariant); the tool body stays AD-7-thin (only the _nl seam); and the NL query is grounded in the D1 BSL models (AD-8). The live NL->chart invocation + the dashboard NL query field are the attended Q3 event (DW-D3). Offline, --frozen."
-cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/unit/nl -q"
-env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src:src/shared/packages/pyforge-testing-kit/src" }
-
-[feature.local-recipes.tasks.wasm-build]
-description = "Wave G build step (Story G1, FR-14): build the self-contained, backend-free DuckDB-WASM read-surface artifact into src/shared/packages/pyforge-atlas/wasm/build/ (gitignored). npm-installs @duckdb/duckdb-wasm + esbuild, bundles the browser ESM (inlining apache-arrow), copies the MVP wasm module + worker, VENDORS the matching parquet extension locally (so the runtime never hits extensions.duckdb.org), and materializes the demo Parquet from wasm/data/feedstock_health.csv. BUILD-TIME network is allowed (npm + the extension host); the artifact it produces runs fully OFFLINE. Run this once before wasm-smoke."
-cmd = "python src/shared/packages/pyforge-atlas/wasm/build.py"
-
-[feature.local-recipes.tasks.wasm-smoke]
-description = "Wave G verify gate (Story G1, FR-14 / AD-11 / AD-21): wasm-smoke — a Playwright HEADLESS Chromium load-and-query against the built wasm artifact (run `wasm-build` first). Proves the intelligence read surface loads and its query runs CLIENT-SIDE in the browser with NO backend: serves wasm/build/ over a loopback static host, drives the pre-provisioned Chromium, BLOCKS + asserts zero non-loopback requests (offline / no-CDN proof), waits for the in-browser DuckDB-WASM query to reach ready (an in-page error FAILS, never silently passes), and asserts the client-side ci_red result (D1 feedstock-health semantics). Full Vizro-in-Pyodide render is deferred (DW-G1). Offline at runtime, --frozen."
-cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/integration/wasm -q"
-env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src" }
-
-[feature.local-recipes.tasks.publish]
-description = "Wave G build step (Story G2, FR-14 / AD-2): emit the host-agnostic static-host layout — chunked Parquet + a single-owner manifest.json — for the demo core_feedstock_health dataset into src/shared/packages/pyforge-atlas/src/pyforge/atlas/publish/_site/ (gitignored). The emitter targets a filesystem PATH ('the static host filesystem'); WHICH host serves it (GitHub Pages public path, or an enterprise mirror) is a deploy choice, never baked in. Fully local + offline. The LIVE GitHub Pages publish is the ATTENDED boundary event and is DEFERRED (DW-G2)."
-cmd = "python -m pyforge.atlas.publish"
-env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src" }
-
-[feature.local-recipes.tasks.publish-range]
-description = "Wave G verify gate (Story G2, FR-14 / AD-2 / AD-21): publish-range — prove the emitted static-host layout is consumed via HTTP RANGE. Emits the chunked Parquet + manifest to a tmp dir, serves it over a Range-capable loopback host, points a DuckDB httpfs client at it, and asserts (a) consumption is via 206 Partial Content reading STRICTLY FEWER bytes than the whole file (a whole-file 200 FAILS), (b) the chunk path is discovered FROM the manifest + matches its checksums, (c) host-agnostic (same dir, two bases), (d) the D1 ci_red result is correct over the range-served Parquet — plus determinism + edge cases (empty/multi-chunk/corruption/past-EOF/non-Range fallback). httpfs LOADed OFFLINE from cache (skips if unprovisioned locally, fails under CI). Live publish DEFERRED (DW-G2). --frozen."
-cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/integration/publish -q"
-# PUBLISH_RANGE_REQUIRED: the AUTHORITATIVE gate must FAIL (not skip) if httpfs is
-# unprovisioned, so it can never exit 0 having proven nothing about HTTP Range — the
-# load-bearing G2 claim (Reviewer-A skip-to-green). Ad-hoc local runs use the bare pytest.
-env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src", PUBLISH_RANGE_REQUIRED = "1" }
-
 
 [feature.local-recipes.tasks.submit-pr]
 description = "Submit a recipe PR to conda-forge/staged-recipes (use --dry-run first). Runs prepare-pr internally then opens the PR."
@@ -3081,6 +3048,43 @@ cwd = "src/shared/packages/pyforge-atlas"
 description = "Build all three artifacts: conda + wheel + sdist"
 depends-on = ["pyforge-atlas-build-conda", "pyforge-atlas-build-dist"]
 
+[feature.pyforge-atlas.tasks.dashboard-serve]
+description = "Serve the pyforge-atlas Vizro dashboard locally (DW-D2-3's missing entrypoint): builds via the same build_dashboard() the 34-page dashboard-dryrun gate exercises, then .run()s a local dev server -- foreground, 127.0.0.1:8050 by default (-- --port N to change), no daemon. dashboard-dryrun proves the OBJECT builds; this is how you LOOK at it."
+cmd = "python scripts/dashboard_serve.py"
+env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src" }
+
+[feature.pyforge-atlas.tasks.dashboard-dryrun]
+description = "Wave D verify gate (Story D2, FR-9 / AD-8 / AD-17 / NFR-8): dashboard-dryrun — build the BSL-driven Vizro Dashboard OBJECT offline (no server, no .run()), assert each expected page is present w/ a stable id+title (deterministic layout), pages are BSL-driven (loaders route through the D1 semantic models, proven vs an independent BSL query), the factory-status page reads the real sprint-status.yaml + carries a build timestamp (AD-17), and the agent-legibility structural props hold. Runs in pyforge-atlas (the env carrying vizro + boring_semantic_layer). Full 34-page inventory shipped (Story 20.5 CAP-7 + Story 21.9 CAP-5 — closes DW-D2-1); Story 22.5 adds identity catalog/ops/workbook canvas-vs-Vizro parity coverage (test_identity_parity.py). This suite also runs the Playwright e2e + §2.1 semantic-HTML/ARIA navigation check (test_dashboard_e2e.py), which launches a real local server -- not fully offline despite the gate's name. --frozen."
+cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/integration/dashboard -q"
+env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src:src/shared/packages/pyforge-testing-kit/src" }
+
+[feature.pyforge-atlas.tasks.vizro-ai-dryrun]
+description = "Wave D verify gate (Story D3, FR-9 / AD-7 / AD-8 / Q3 §11): vizro-ai-dryrun — offline, no-network, no-live-LLM. Asserts the query_vizro_ai MCP tool is registered (FastMCP server + audit + package export) and callable; with NO backend env configured returns the structured 'backend not configured — attended Q3 bring-up (DW-D3)' advisory (no network, no crash, no fabricated chart); the backend resolver reads the endpoint from repo model-backend config (OPENAI_BASE_URL/ANTHROPIC_BASE_URL env) with NO hardcoded public host baked in (Q3 §11 load-bearing invariant); the tool body stays AD-7-thin (only the _nl seam); and the NL query is grounded in the D1 BSL models (AD-8). The live NL->chart invocation + the dashboard NL query field are the attended Q3 event (DW-D3). Offline, --frozen."
+cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/unit/nl -q"
+env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src:src/shared/packages/pyforge-testing-kit/src" }
+
+[feature.pyforge-atlas.tasks.wasm-build]
+description = "Wave G build step (Story G1, FR-14): build the self-contained, backend-free DuckDB-WASM read-surface artifact into src/shared/packages/pyforge-atlas/wasm/build/ (gitignored). npm-installs @duckdb/duckdb-wasm + esbuild, bundles the browser ESM (inlining apache-arrow), copies the MVP wasm module + worker, VENDORS the matching parquet extension locally (so the runtime never hits extensions.duckdb.org), and materializes the demo Parquet from wasm/data/feedstock_health.csv. BUILD-TIME network is allowed (npm + the extension host); the artifact it produces runs fully OFFLINE. Run this once before wasm-smoke."
+cmd = "python src/shared/packages/pyforge-atlas/wasm/build.py"
+
+[feature.pyforge-atlas.tasks.wasm-smoke]
+description = "Wave G verify gate (Story G1, FR-14 / AD-11 / AD-21): wasm-smoke — a Playwright HEADLESS Chromium load-and-query against the built wasm artifact (run `wasm-build` first). Proves the intelligence read surface loads and its query runs CLIENT-SIDE in the browser with NO backend: serves wasm/build/ over a loopback static host, drives the pre-provisioned Chromium, BLOCKS + asserts zero non-loopback requests (offline / no-CDN proof), waits for the in-browser DuckDB-WASM query to reach ready (an in-page error FAILS, never silently passes), and asserts the client-side ci_red result (D1 feedstock-health semantics). Full Vizro-in-Pyodide render is deferred (DW-G1). Offline at runtime, --frozen."
+cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/integration/wasm -q"
+env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src" }
+
+[feature.pyforge-atlas.tasks.publish]
+description = "Wave G build step (Story G2, FR-14 / AD-2): emit the host-agnostic static-host layout — chunked Parquet + a single-owner manifest.json — for the demo core_feedstock_health dataset into src/shared/packages/pyforge-atlas/src/pyforge/atlas/publish/_site/ (gitignored). The emitter targets a filesystem PATH ('the static host filesystem'); WHICH host serves it (GitHub Pages public path, or an enterprise mirror) is a deploy choice, never baked in. Fully local + offline. The LIVE GitHub Pages publish is the ATTENDED boundary event and is DEFERRED (DW-G2)."
+cmd = "python -m pyforge.atlas.publish"
+env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src" }
+
+[feature.pyforge-atlas.tasks.publish-range]
+description = "Wave G verify gate (Story G2, FR-14 / AD-2 / AD-21): publish-range — prove the emitted static-host layout is consumed via HTTP RANGE. Emits the chunked Parquet + manifest to a tmp dir, serves it over a Range-capable loopback host, points a DuckDB httpfs client at it, and asserts (a) consumption is via 206 Partial Content reading STRICTLY FEWER bytes than the whole file (a whole-file 200 FAILS), (b) the chunk path is discovered FROM the manifest + matches its checksums, (c) host-agnostic (same dir, two bases), (d) the D1 ci_red result is correct over the range-served Parquet — plus determinism + edge cases (empty/multi-chunk/corruption/past-EOF/non-Range fallback). httpfs LOADed OFFLINE from cache (skips if unprovisioned locally, fails under CI). Live publish DEFERRED (DW-G2). --frozen."
+cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/integration/publish -q"
+# PUBLISH_RANGE_REQUIRED: the AUTHORITATIVE gate must FAIL (not skip) if httpfs is
+# unprovisioned, so it can never exit 0 having proven nothing about HTTP Range — the
+# load-bearing G2 claim (Reviewer-A skip-to-green). Ad-hoc local runs use the bare pytest.
+env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src", PUBLISH_RANGE_REQUIRED = "1" }
+
 # --- pyforge-doctor (Doctor): pixi build workspace member (warden mirror, Story 1.1) ---
 # Source + package manifest live in ./src/shared/packages/pyforge-doctor (its
 # own [package] table, no [workspace]) — same src/shared/packages convention as
@@ -3317,6 +3321,11 @@ env = { PYTHONPATH = "src/shared/packages/pyforge-scribe/src:scripts" }
 [feature.pyforge-scribe.tasks.pyforge-scribe-live-test]
 description = "The live-tree half of the pyforge.scribe suite (steward Story 124.1, spec-pyforge-steward:CAP-175, ruling D2; marking story scribe 33.1): every unit or meta module marked pytest.mark.live_tree (it reads planning artifacts, the team memory, the instruction files, pixi.toml or the host's changesets), not slow, under --cov writing .steward/coverage/scribe-live.json for pyforge-scribe-coverage-gate to merge with the package half's report. Its postgres tests need PostgreSQL 17 with pgvector at SCRIBE_GRAPH_DSN (`pixi run -e pyforge-scribe-pg scribe-pg-up` first) and fail, never skip, without it."
 cmd = "pytest src/shared/packages/pyforge-scribe/tests/unit src/shared/packages/pyforge-scribe/tests/meta -q -m \"live_tree and not slow\" --cov=pyforge.scribe --cov-branch --cov-report=json:.steward/coverage/scribe-live.json"
+env = { PYTHONPATH = "src/shared/packages/pyforge-scribe/src:scripts" }
+
+[feature.pyforge-scribe.tasks.scribe-plane-and-portal-test]
+description = "Steward Story 136.6 (spec-pyforge-steward CAP-175; DW-scribe-cutover-2026-11-10-2): scribe's plane GraphStore tests that open a real DuckDB file through atlas's writer, and its portal render test, by node id. They importorskip duckdb, pyforge.atlas.duckdb_writer and django, which -e pyforge-scribe does not carry, so they skip in pyforge-scribe-test and pyforge-scribe-live-test; this task is where they run: -e pyforge-foundry-full, locally and as a step of the lint-types job. Run it in pyforge-foundry-full only: scripts/run_named_tests.py fails the run when a named test skips, so in -e pyforge-scribe it is red by design."
+cmd = "python scripts/run_named_tests.py src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plane.py::test_stale_round_trips_against_live_duckdb src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plane.py::test_compile_stamp_round_trips_against_live_duckdb src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plane.py::test_read_only_open_never_calls_connect_writer src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plane.py::test_plugin_honors_write_false src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plane.py::test_plugin_write_string_false_is_not_writer src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py::test_chrome_home_post_renders_cited_recall_results"
 env = { PYTHONPATH = "src/shared/packages/pyforge-scribe/src:scripts" }
 
 [feature.pyforge-scribe.tasks.pyforge-scribe-coverage-gate]

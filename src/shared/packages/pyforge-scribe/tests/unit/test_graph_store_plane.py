@@ -6,6 +6,10 @@ skips (not fails) when the `duckdb` extra isn't installed -- unlike the
 `postgres` durable-driver suite, duckdb is not a `pyforge-scribe` pixi
 dependency, so a hard `pytest.fail` here would break the default
 `pyforge-scribe-test` task.
+
+Steward Story 136.6: the five tests below that open a real DuckDB file skip in
+`-e pyforge-scribe` and run in `pixi run -e pyforge-foundry-full
+scribe-plane-and-portal-test`, a step of the lint-types job, where a skip fails.
 """
 
 from __future__ import annotations
@@ -20,6 +24,9 @@ from pyforge.core.hooks import PluginError
 from pyforge.scribe.graph_store_plane import ATLAS_DUCKDB_NAME, PlaneGraphStore, PlaneGraphStorePlugin
 from pyforge.scribe.models import COMPILED_AT_ROW_ID, GraphNode
 from pyforge.scribe.recall import _answer_semantic, answer
+
+#: Where the DuckDB round trips run (steward Story 136.6); each importorskip below says so.
+_RUNS_IN = "not in this environment; it runs in `pixi run -e pyforge-foundry-full scribe-plane-and-portal-test`"
 
 
 def test_chroma_and_memory_paths_fail(tmp_path: Path) -> None:
@@ -45,8 +52,8 @@ def test_recall_callers_do_not_isinstance_the_driver() -> None:
 
 
 def test_stale_round_trips_against_live_duckdb(tmp_path: Path) -> None:
-    pytest.importorskip("duckdb")
-    pytest.importorskip("pyforge.atlas.duckdb_writer")
+    pytest.importorskip("duckdb", reason=_RUNS_IN)
+    pytest.importorskip("pyforge.atlas.duckdb_writer", reason=_RUNS_IN)
     plane_path = tmp_path / ATLAS_DUCKDB_NAME
     node = GraphNode(
         id="memory:feedback/x",
@@ -77,8 +84,8 @@ def test_stale_round_trips_against_live_duckdb(tmp_path: Path) -> None:
 
 def test_compile_stamp_round_trips_against_live_duckdb(tmp_path: Path) -> None:
     """Story 35.1: the stamp is one reserved row of `scribe_nodes`, never a node, and a stampless commit drops it."""
-    duckdb = pytest.importorskip("duckdb")
-    pytest.importorskip("pyforge.atlas.duckdb_writer")
+    duckdb = pytest.importorskip("duckdb", reason=_RUNS_IN)
+    pytest.importorskip("pyforge.atlas.duckdb_writer", reason=_RUNS_IN)
     plane_path = tmp_path / ATLAS_DUCKDB_NAME
     store_path = tmp_path / "graph.json"
     stamp = datetime(2026, 11, 25, 12, 30, tzinfo=timezone.utc)
@@ -141,8 +148,8 @@ def test_compile_stamp_round_trips_against_live_duckdb(tmp_path: Path) -> None:
 
 
 def test_read_only_open_never_calls_connect_writer(tmp_path: Path) -> None:
-    pytest.importorskip("duckdb")
-    pytest.importorskip("pyforge.atlas.duckdb_writer")
+    pytest.importorskip("duckdb", reason=_RUNS_IN)
+    pytest.importorskip("pyforge.atlas.duckdb_writer", reason=_RUNS_IN)
     from pyforge.atlas import duckdb_writer
 
     plane_path = tmp_path / ATLAS_DUCKDB_NAME
@@ -179,8 +186,8 @@ def _seed_plane(plane_path: Path, store_path: Path) -> None:
 
 
 def test_plugin_honors_write_false(tmp_path: Path) -> None:
-    pytest.importorskip("duckdb")
-    pytest.importorskip("pyforge.atlas.duckdb_writer")
+    pytest.importorskip("duckdb", reason=_RUNS_IN)
+    pytest.importorskip("pyforge.atlas.duckdb_writer", reason=_RUNS_IN)
     plane_path = tmp_path / ATLAS_DUCKDB_NAME
     _seed_plane(plane_path, tmp_path / "graph.json")
     plugin = PlaneGraphStorePlugin()
@@ -200,8 +207,8 @@ def test_plugin_honors_write_false(tmp_path: Path) -> None:
 
 
 def test_plugin_write_string_false_is_not_writer(tmp_path: Path) -> None:
-    pytest.importorskip("duckdb")
-    pytest.importorskip("pyforge.atlas.duckdb_writer")
+    pytest.importorskip("duckdb", reason=_RUNS_IN)
+    pytest.importorskip("pyforge.atlas.duckdb_writer", reason=_RUNS_IN)
     plane_path = tmp_path / ATLAS_DUCKDB_NAME
     _seed_plane(plane_path, tmp_path / "graph.json")
     plugin = PlaneGraphStorePlugin()

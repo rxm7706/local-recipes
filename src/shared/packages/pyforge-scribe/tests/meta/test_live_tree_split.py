@@ -51,9 +51,12 @@ _PLANE_TESTS = (
     "test_plugin_honors_write_false",
     "test_plugin_write_string_false_is_not_writer",
 )
+#: Steward Story 136.6: the task that runs the tests these sites skip in -e pyforge-scribe (a skip fails it).
+_PLANE_AND_PORTAL_TASK = "scribe-plane-and-portal-test"
+_RUNS_IN = f"it runs in `pixi run -e pyforge-foundry-full {_PLANE_AND_PORTAL_TASK}`, a step of the lint-types job"
 _PLANE_REASON = (
-    "the plane store needs duckdb and atlas's DuckDB writer, which -e pyforge-scribe does not carry "
-    "(DW-scribe-cutover-2026-11-10-2)"
+    "the plane store needs duckdb and atlas's DuckDB writer, which -e pyforge-scribe does not carry; "
+    f"{_RUNS_IN} (DW-scribe-cutover-2026-11-10-2)"
 )
 _WIN32_STUB = "win32: the stub claude is a shebang script"
 _NO_GIT = "no git binary on PATH: the git-listed skill glob cannot be staged"
@@ -69,8 +72,8 @@ SKIP_SITES: Mapping[tuple[str, str, str], str] = {
         "meta/test_first_portal_slice.py",
         "test_chrome_home_post_renders_cited_recall_results",
         "importorskip(django)",
-    ): "the portal render needs django, which -e pyforge-scribe does not carry; a django-scribe lane is requested "
-    "from steward-station (DW-scribe-cutover-2026-11-10-2)",
+    ): f"the portal render needs django, which -e pyforge-scribe does not carry; {_RUNS_IN} "
+    "(DW-scribe-cutover-2026-11-10-2)",
     (
         "meta/test_instruction_surface_parity.py",
         "test_runtime_mode_check_is_silent_without_claude_on_path",
@@ -543,6 +546,13 @@ def test_the_suite_splits_on_live_tree_and_postgres_and_skips_only_listed_sites(
 
 def test_every_listed_skip_site_says_why() -> None:
     assert all(reason.strip() for reason in SKIP_SITES.values())
+
+
+def test_every_importorskip_site_names_the_task_that_runs_its_test() -> None:
+    """Steward Story 136.6: a test that skips for a missing import here runs in a named task elsewhere."""
+    sites = {key: reason for key, reason in SKIP_SITES.items() if key[2].startswith("importorskip(")}
+    assert len(sites) == 2 * len(_PLANE_TESTS) + 1
+    assert [key for key, reason in sites.items() if _PLANE_AND_PORTAL_TASK not in reason] == []
 
 
 def test_the_server_param_of_graph_store_factory_carries_both_marks() -> None:

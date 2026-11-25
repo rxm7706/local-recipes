@@ -18,7 +18,7 @@ What it does (all output under ``build/``, which is gitignored):
      (the statically-hosted Parquet the client-side query reads).
   6. Copy ``index.html`` into ``build/``.
 
-Run: ``pixi run -e local-recipes wasm-build`` (or ``python wasm/build.py``).
+Run: ``pixi run -e pyforge-atlas wasm-build`` (or ``python wasm/build.py``).
 """
 
 from __future__ import annotations
@@ -125,7 +125,7 @@ def main() -> int:
     shutil.copy2(HERE / "index.html", BUILD / "index.html")
 
     print(f"\nBuilt WASM artifact → {BUILD}")
-    print("Verify with: pixi run -e local-recipes wasm-smoke")
+    print("Verify with: pixi run -e pyforge-atlas wasm-smoke")
     return 0
 
 

@@ -253,10 +253,11 @@ def test_supported_installer_modules_have_disjoint_skill_names():
 
 #: The two share-tree tests below read the pyforge-guild env's installed share data. They are
 #: Guild-environment tests: the pyforge-steward feature carries no bmad share package, so they skip
-#: where the Guild env is not installed and run where it is (Story 123.3).
+#: where the Guild env is not installed and run where it is (Story 123.3). Story 136.6: the task that
+#: runs them is `steward-share-tree-test`, a step of the lint-types job, and a skip fails it.
+_GUILD_SHARE_TASK = "it runs in `pixi run -e pyforge-guild steward-share-tree-test`, where a skip fails"
 _GUILD_SHARE_SKIP = (
-    "pyforge-guild pixi env share data not present (.pixi/envs/pyforge-guild/share); "
-    "this share-tree test runs where the Guild env is installed"
+    f"pyforge-guild pixi env share data not present (.pixi/envs/pyforge-guild/share); {_GUILD_SHARE_TASK}"
 )
 
 
@@ -280,7 +281,7 @@ def test_live_share_skill_names_are_disjoint_across_installer_modules():
             continue
         share_root = share / backend.share_package
         if not share_root.is_dir():
-            pytest.skip(f"share package {backend.share_package} missing")
+            pytest.skip(f"share package {backend.share_package} missing; {_GUILD_SHARE_TASK}")
         for skill in _installer_skill_names(backend, share_root=share_root):
             assert skill not in claimed, f"skill {skill!r} claimed by both {claimed[skill]!r} and {name!r}"
             claimed[skill] = name
@@ -325,7 +326,7 @@ def test_live_utility_skills_share_tree_matches_the_ten_expected_names():
     assert isinstance(backend, CondaInstallBackend)
     share_root = share / backend.share_package
     if not share_root.is_dir():
-        pytest.skip(f"share package {backend.share_package} missing")
+        pytest.skip(f"share package {backend.share_package} missing; {_GUILD_SHARE_TASK}")
 
     discovered = set(_installer_skill_names(backend, share_root=share_root))
     assert discovered == _UTILITY_SKILLS_EXPECTED_NAMES

@@ -384,7 +384,7 @@ pixi run -e pyforge-atlas parity-diff
 pixi run -e pyforge-atlas dagster-dryrun
 pixi run -e pyforge-atlas bsl-metric-check
 pixi run -e pyforge-atlas duckdb-singularity
-pixi run -e local-recipes wasm-smoke
+pixi run -e pyforge-atlas wasm-smoke
 pixi run -e pyforge-atlas query-plane-parity
 ```
 
