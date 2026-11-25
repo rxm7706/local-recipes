@@ -553,3 +553,46 @@ def test_default_open_pr_opens_a_reviewable_pr_and_never_merges(tmp_path: Path, 
     assert refused["pr_url"] is None
     assert refused["merged"] is False
     assert refused["stderr"] == "no auth"
+
+
+# ---------------------------------------------------------------------------
+# Story 133.1 (DW-steward-review-2026-11-24-1, defect 1): the default publish stage always answers not ok on a live
+# run, so a live advance with no publish path used to rewrite the recipe and build before it failed. It now refuses
+# at publish before the autotick runs.
+# ---------------------------------------------------------------------------
+
+
+def test_a_live_advance_with_no_publish_path_refuses_before_it_edits(tmp_path: Path):
+    repo = _stale_repo(tmp_path)
+    recipe = repo / "recipes" / "bmad-method" / "recipe.yaml"
+    before = recipe.read_bytes()
+    ran: list[str] = []
+
+    def autotick(repo_dir: Path, package: str, mode: str, dry_run: bool) -> dict[str, object]:
+        ran.append("autotick")
+        (repo_dir / "recipes" / package / "recipe.yaml").write_text("context:\n  version: '9.9.9'\n", encoding="utf-8")
+        return {"ok": True, "mode": mode, "dry_run": dry_run}
+
+    def build(*_a: object) -> dict[str, object]:
+        ran.append("build")
+        return {"ok": True}
+
+    hooks = AdvanceHooks(autotick=autotick, build=build, test=_ok_stage, listing=_ok_stage, open_pr=_ok_open_pr)
+    report = run_advance(repo, "bmad-method", dry_run=False, baseline=True, hooks=hooks)
+
+    assert ran == []
+    assert recipe.read_bytes() == before
+    assert report.ok is False
+    assert report.pr_url is None
+    assert [s["stage"] for s in report.stages] == ["resolve", "publish"]
+    assert report.stages[-1]["ok"] is False
+    assert "operator credentials" in report.stages[-1]["error"]
+    assert report.summary.startswith("suite advance: refused before autotick for bmad-method: no publish path")
+    assert "operator credentials" in report.summary
+
+
+def test_a_dry_run_with_no_publish_path_still_walks_the_whole_chain(tmp_path: Path):
+    hooks = AdvanceHooks(**{**_success_hooks().__dict__, "publish": None})
+    report = run_advance(_stale_repo(tmp_path), "bmad-method", dry_run=True, baseline=True, hooks=hooks)
+    assert report.ok is True
+    assert [s["stage"] for s in report.stages] == list(sa._STAGE_ORDER)

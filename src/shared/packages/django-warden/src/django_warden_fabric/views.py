@@ -35,8 +35,8 @@ from .fleet_project_items import load_project_numbers_from_config
 from .mcp_asgi import DEFAULT_AUDIT_TARGET, RUN_AUDIT_TOOL, WARDEN_STATION
 from .models import ComplianceJob, FixProposal
 from .phases import current_progress
-from .proposals import ProposalRefusedError, approve_proposal, dismiss_proposal
-from .tasks import SUPPORTED_SUFFIXES, run_compliance_job, run_fleet_inventory, run_fleet_project_items
+from .proposals import ProposalRefusedError, approve_proposal, dismiss_proposal, stale_approved_proposals
+from .tasks import run_compliance_job, run_fleet_inventory, run_fleet_project_items, supported_manifest_names
 
 logger = logging.getLogger(__name__)
 
@@ -46,18 +46,6 @@ FLEET_INVENTORY_CONFIG_REFUSAL = "fleet inventory target config is missing or in
 
 # Story 16.5: the same fixed message for the project-items action's unusable config.
 FLEET_PROJECT_ITEMS_CONFIG_REFUSAL = "fleet project-items target config is missing or invalid; see the server log"
-
-_WELL_KNOWN_MANIFEST_NAMES = frozenset(
-    {
-        "requirements.txt",
-        "environment.yaml",
-        "pixi.toml",
-        "pyproject.toml",
-        "pixi.lock",
-        "conda-lock.yml",
-    },
-)
-
 
 # Story 28.1: a manifest or lockfile larger than this never reaches the blob root. A request whose body
 # is over the limit by more than the multipart envelope's allowance is refused before the body is read;
@@ -185,8 +173,7 @@ def upload_manifest(request: HttpRequest) -> HttpResponse:
     if uploaded.size is not None and uploaded.size > limit:
         return too_large
     name = Path(uploaded.name).name
-    suffix = Path(name).suffix.lower()
-    if suffix not in SUPPORTED_SUFFIXES and name not in _WELL_KNOWN_MANIFEST_NAMES:
+    if name not in supported_manifest_names():
         return JsonResponse({"error": f"unsupported format: {name}"}, status=400)
 
     storage_key = f"{uuid.uuid4().hex}/{name}"
@@ -279,10 +266,8 @@ def start_fleet_project_items(request: HttpRequest) -> HttpResponse:
     )
 
 
-@require_GET
-@require_station_role("warden")
-def fleet_proposal_queue(request: HttpRequest) -> HttpResponse:
-    """List queued fleet fix proposals (HTMX shell)."""
+def _render_fleet_proposals(request: HttpRequest) -> HttpResponse:
+    """The proposals section: the queue, and the stale approvals an operator may dismiss (Story 29.1)."""
     proposals = FixProposal.objects.filter(state=FixProposal.State.QUEUED).order_by(
         "created_at",
     )
@@ -291,9 +276,17 @@ def fleet_proposal_queue(request: HttpRequest) -> HttpResponse:
         "warden_fabric/fleet_proposals.html",
         {
             "proposals": proposals,
+            "stale_approvals": stale_approved_proposals(),
             "approve_enabled": _fleet_fix_proposals_enabled(),
         },
     )
+
+
+@require_GET
+@require_station_role("warden")
+def fleet_proposal_queue(request: HttpRequest) -> HttpResponse:
+    """List queued fleet fix proposals and stale approvals (HTMX shell)."""
+    return _render_fleet_proposals(request)
 
 
 @require_POST
@@ -309,17 +302,7 @@ def fleet_proposal_approve(request: HttpRequest, proposal_id: str) -> HttpRespon
         approve_proposal(proposal_id, sub)
     except ProposalRefusedError as exc:
         return HttpResponse(str(exc), status=409)
-    proposals = FixProposal.objects.filter(state=FixProposal.State.QUEUED).order_by(
-        "created_at",
-    )
-    return render(
-        request,
-        "warden_fabric/fleet_proposals.html",
-        {
-            "proposals": proposals,
-            "approve_enabled": _fleet_fix_proposals_enabled(),
-        },
-    )
+    return _render_fleet_proposals(request)
 
 
 @require_POST
@@ -332,17 +315,7 @@ def fleet_proposal_dismiss(request: HttpRequest, proposal_id: str) -> HttpRespon
         dismiss_proposal(proposal_id)
     except ProposalRefusedError as exc:
         return HttpResponse(str(exc), status=409)
-    proposals = FixProposal.objects.filter(state=FixProposal.State.QUEUED).order_by(
-        "created_at",
-    )
-    return render(
-        request,
-        "warden_fabric/fleet_proposals.html",
-        {
-            "proposals": proposals,
-            "approve_enabled": _fleet_fix_proposals_enabled(),
-        },
-    )
+    return _render_fleet_proposals(request)
 
 
 @require_GET
@@ -358,5 +331,9 @@ def job_report(request: HttpRequest, job_id: str) -> HttpResponse:
             status=409,
         )
     kind = request.GET.get("kind", "report")
-    body = job.sbom_json if kind == "sbom" else job.report_json
-    return HttpResponse(body, content_type="application/json")
+    if kind == "sbom":
+        # Story 29.1: the scan's own SBOM or nothing -- an empty document is not one.
+        if job.sbom_json.strip() in ("", "{}"):
+            return JsonResponse({"error": "no sbom for this job"}, status=404)
+        return HttpResponse(job.sbom_json, content_type="application/json")
+    return HttpResponse(job.report_json, content_type="application/json")

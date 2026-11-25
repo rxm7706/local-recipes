@@ -38,7 +38,7 @@ from __future__ import annotations
 
 import json
 import subprocess
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 from pathlib import Path
 
 from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
@@ -134,6 +134,43 @@ def _view_pr(repo_value: str, number: int) -> PrInfo:
     context = f"gh pr view {number} --repo {repo_value}"
     data = _parse_json(view.stdout, context=context)
     return _pr_info_from_json(data, context=context)
+
+
+def _paged_check_run_entries(repo_value: str, ref_value: str) -> Iterator[tuple[object, str]]:
+    """Every raw ``check_runs[]`` entry on ``ref_value``, all pages, each with the ``gh api`` call it came from.
+
+    The one paged read ``check_runs()`` and ``check_run_status()`` share (Story 121.1): pages
+    ``commits/<ref>/check-runs?per_page=100&page=N`` by hand until ``total_count`` is reached, and
+    raises ``ForgeCommandError`` on anything that stops the read being the COMPLETE set -- a
+    non-zero exit, a non-object payload, a missing ``check_runs`` list or ``total_count``, a page
+    that ends before ``total_count`` is met, or paging past the runaway guard."""
+    base = f"repos/{repo_value}/commits/{ref_value}/check-runs"
+    seen = 0
+    for page in range(1, _CHECK_RUNS_MAX_PAGES + 1):
+        endpoint = f"{base}?per_page={_CHECK_RUNS_PER_PAGE}&page={page}"
+        context = f"gh api {endpoint}"
+        result = _run(["gh", "api", endpoint], timeout_s=_GH_READ_TIMEOUT_S)
+        if result.returncode != 0:
+            raise ForgeCommandError(f"{context} failed: {result.stderr.strip()}")
+        data = _parse_json(result.stdout, context=context)
+        if not isinstance(data, Mapping):
+            raise ForgeCommandError(f"{context}: gh returned a non-object payload: {data!r}")
+        entries = data.get("check_runs")
+        if not isinstance(entries, list):
+            raise ForgeCommandError(f"{context}: gh returned a payload with no check_runs list: {data!r}")
+        total = data.get("total_count")
+        if not isinstance(total, int) or isinstance(total, bool) or total < 0:
+            raise ForgeCommandError(f"{context}: gh returned a payload with no usable total_count: {data!r}")
+        for entry in entries:
+            yield entry, context
+        seen += len(entries)
+        if seen >= total:
+            return
+        if not entries:
+            raise ForgeCommandError(f"{context}: gh returned an empty page after {seen} of {total} check runs")
+    raise ForgeCommandError(
+        f"gh api {base}: more than {_CHECK_RUNS_MAX_PAGES} pages of check runs -- refusing to page further"
+    )
 
 
 def _check_run_from_json(entry: object, *, context: str) -> CheckRun:
@@ -300,22 +337,12 @@ class GhForge:
             )
 
     def check_run_status(self, repo: ForgeRef, ref: ForgeRef, check_name: ForgeRef) -> str | None:
-        repo_value, ref_value, check_name_value = repo.value, ref.value, check_name.value
-        result = _run(
-            ["gh", "api", f"repos/{repo_value}/commits/{ref_value}/check-runs"],
-            timeout_s=_GH_READ_TIMEOUT_S,
-        )
-        if result.returncode != 0:
-            raise ForgeCommandError(
-                f"gh api repos/{repo_value}/commits/{ref_value}/check-runs failed: {result.stderr.strip()}"
-            )
-        context = f"gh api repos/{repo_value}/commits/{ref_value}/check-runs"
-        data = _parse_json(result.stdout, context=context)
-        if not isinstance(data, Mapping):
-            raise ForgeCommandError(f"{context}: gh returned a non-object payload: {data!r}")
-        runs = data.get("check_runs")
-        if not isinstance(runs, list):
-            return None
+        # Story 121.1 (DW-marshal-review-2026-11-24-1): read EVERY page, the
+        # way check_runs() does. One unpaged read (30 runs) answered None --
+        # "not yet concluded" -- for a required check whose failed run sat on
+        # a later page; a read that cannot be shown complete now raises.
+        check_name_value = check_name.value
+        runs = [entry for entry, _context in _paged_check_run_entries(repo.value, ref.value)]
         matching = [run for run in runs if isinstance(run, Mapping) and run.get("name") == check_name_value]
         if not matching:
             return None
@@ -352,31 +379,9 @@ class GhForge:
         ``total_count`` is met, or paging past the runaway guard) raises
         ``ForgeCommandError`` -- never a partial tuple a caller could read as
         green (AD-8)."""
-        repo_value, ref_value = repo.value, ref.value
-        base = f"repos/{repo_value}/commits/{ref_value}/check-runs"
-        runs: list[CheckRun] = []
-        for page in range(1, _CHECK_RUNS_MAX_PAGES + 1):
-            endpoint = f"{base}?per_page={_CHECK_RUNS_PER_PAGE}&page={page}"
-            context = f"gh api {endpoint}"
-            result = _run(["gh", "api", endpoint], timeout_s=_GH_READ_TIMEOUT_S)
-            if result.returncode != 0:
-                raise ForgeCommandError(f"{context} failed: {result.stderr.strip()}")
-            data = _parse_json(result.stdout, context=context)
-            if not isinstance(data, Mapping):
-                raise ForgeCommandError(f"{context}: gh returned a non-object payload: {data!r}")
-            entries = data.get("check_runs")
-            if not isinstance(entries, list):
-                raise ForgeCommandError(f"{context}: gh returned a payload with no check_runs list: {data!r}")
-            total = data.get("total_count")
-            if not isinstance(total, int) or isinstance(total, bool) or total < 0:
-                raise ForgeCommandError(f"{context}: gh returned a payload with no usable total_count: {data!r}")
-            runs.extend(_check_run_from_json(entry, context=context) for entry in entries)
-            if len(runs) >= total:
-                return tuple(runs)
-            if not entries:
-                raise ForgeCommandError(f"{context}: gh returned an empty page after {len(runs)} of {total} check runs")
-        raise ForgeCommandError(
-            f"gh api {base}: more than {_CHECK_RUNS_MAX_PAGES} pages of check runs -- refusing to page further"
+        return tuple(
+            _check_run_from_json(entry, context=context)
+            for entry, context in _paged_check_run_entries(repo.value, ref.value)
         )
 
     def merge_pr(

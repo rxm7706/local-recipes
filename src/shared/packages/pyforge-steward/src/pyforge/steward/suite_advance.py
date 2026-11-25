@@ -3,6 +3,11 @@
 Chains autotick (tag | head) → build → test → publish → listing verify →
 open a reviewable PR. Never auto-merges. Foreign stages are injectable so
 unit tests never touch the network or ``gh``.
+
+A live run (no ``--dry-run``) with no publish hook refuses after resolve, before
+the autotick edits the recipe (Story 133.1): the default publish stage has no
+publish path, ``anaconda upload`` being the operator's step. The CLI injects no
+publish hook, so ``steward suite advance`` without ``--dry-run`` refuses, exit 1.
 """
 
 from __future__ import annotations
@@ -306,6 +311,17 @@ def run_advance(
             "mode": mode,
         }
     )
+
+    # Story 133.1: the default publish stage has no publish path and answers not ok on a live run, so refuse here,
+    # before the autotick rewrites the recipe and the build runs. A dry run and an injected publish hook go on.
+    if not dry_run and hooks.publish is None:
+        missing = dict(_default_publish(repo, package, dry_run))
+        report.stages.append({"stage": "publish", **missing})
+        report.summary = (
+            f"suite advance: refused before autotick for {package}: no publish path is configured "
+            f"({missing['error']}); nothing was edited or built"
+        )
+        return report
 
     stage_runners: list[tuple[str, Callable[[], Mapping[str, Any]]]] = [
         (

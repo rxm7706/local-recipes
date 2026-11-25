@@ -882,6 +882,25 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   the runner's address is the cause (the first throttled run with this change will say), and how many runs full
   coverage takes. Owner `spec-pyforge-atlas`; binds CAP-64 and CAP-65 (realized, no text change: AD-13's last-good
   rows made to converge) and decomposes as Epic 51, one story.
+- **2026-11-25 (the review's atlas defects are reproduced, then fixed) — Found:** the repository review of 2026-11-24
+  at main `7da08791f3` left six atlas defects below high severity as one open deferred-work row,
+  `DW-atlas-review-2026-11-24-1`. The session lead confirmed one line: `parse_pyproject_toml` ends the dependency
+  array at any line that holds `]`, so the first dependency with extras stops the parse and the packages after it
+  never reach the SBOM or the gate. Five are reviewer-reported and not re-traced: a match of zero components reads
+  clean at the terminal gate, so a truncated or unparsable intake exits 0; `parse_environment_yml` reads
+  `channel::name` as a package named for the channel and tags conda dependencies after the pip block as pypi; the
+  LuaRocks latest pick prefers `scm-1` over numeric versions; `trending-candidates` exits 1 on a crash where the
+  frozen domain says 2; and a Basilisk catalog walk can end complete while truncated. **Ruled** (operator ruling of
+  2026-11-25: "can we close and complete these too - * DW-doctor-61-1-1: four governance Specs need a re-derive on your render route. * The lower-severity code defects from the review, as open deferred-work rows on eight stations' ledgers."). **For atlas:** this entry binds `spec-pyforge-atlas` CAP-13 (realized, no text change),
+  CAP-55 (realized, no text change), CAP-65 (realized, no text change), CAP-66 (realized, no text change) and
+  CAP-73 (realized, no text change) and decomposes as Epic 52, one story: the pyproject reader parses with
+  `tomllib`, a match of zero components is indeterminate, the environment reader strips a channel prefix and leaves
+  the pip block on dedent, the LuaRocks pick puts a numeric version above `scm`, a crash of `trending-candidates`
+  exits 2 with its row of `contract.md` moved to match, and a short page below the reported total ends the walk
+  partial. Every defect is reproduced by a failing test before it is fixed, and one the tree does not show is closed
+  as not a defect, with the test that shows it kept. **Constraints:** no flag is added (each fix restores behaviour
+  a shipped capability already states), no dataset, catalog entry or exit code outside the frozen domain is added,
+  and `pixi.toml`'s scanner and the other manifest readers are not in this change.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 

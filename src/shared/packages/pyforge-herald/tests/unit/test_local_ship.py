@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import time
+from datetime import UTC, datetime
 from io import BytesIO
 from pathlib import Path
 from unittest.mock import patch
@@ -18,7 +19,7 @@ from urllib.error import HTTPError, URLError
 import pytest
 from pyforge.core import cutover_root, roster
 
-from pyforge.herald import local_ship, webhook, webhook_host
+from pyforge.herald import local_ship, progress, webhook, webhook_host
 
 A_SLUG = "rxm7706/local-recipes"
 SHA = "a" * 40
@@ -294,8 +295,7 @@ def test_main_exits_nonzero_and_prints_both_when_one_request_fails(
     assert printed["on_pr_close"]["status"] is None
 
 
-@pytest.mark.usefixtures("checkout")
-def test_default_url_is_the_rendered_host_port(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_default_url_is_the_rendered_host_port(checkout: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     assert local_ship.DEFAULT_HOST_URL == "http://127.0.0.1:8001"
     monkeypatch.delenv("HERALD_WEBHOOK_URL", raising=False)
     monkeypatch.setenv("HERALD_WEBHOOK_SECRET", "s")
@@ -305,7 +305,11 @@ def test_default_url_is_the_rendered_host_port(monkeypatch: pytest.MonkeyPatch) 
         with patch.object(local_ship, "deliver_landing", return_value=ok) as deliver:
             assert local_ship.main([]) == 0
     assert deliver.call_args.args[0] == "http://127.0.0.1:8001"
-    assert deliver.call_args.kwargs == {"repo": A_SLUG}
+    # Story 54.1: the ship also names the checkout's progress store, whose figures for the day it carries.
+    assert deliver.call_args.kwargs == {
+        "repo": A_SLUG,
+        "progress_path": checkout.resolve() / progress.DEFAULT_PROGRESS_PATH,
+    }
 
 
 @pytest.mark.usefixtures("checkout")
@@ -442,3 +446,67 @@ def test_main_reads_the_roster_of_its_repo_root(
     close_body = json.loads(post.call_args_list[1].args[2])
     assert close_body["event_id"] == f"{cutover_root.FORGE_SLUGS['foundry']}@{SHA}"
     assert "on_pr_close" in capsys.readouterr().out
+
+
+# --- Story 54.1: a ship keeps the figures the day already recorded --------------------------------------------------
+
+
+def _record_today(root: Path, station: str) -> progress.Progress:
+    return progress.upsert(
+        root / progress.DEFAULT_PROGRESS_PATH,
+        station=station,
+        date=datetime.now(UTC).date().isoformat(),
+        shipped_capabilities=["S-1.1"],
+        compute_hours=6.0,
+        token_spend=1_200_000,
+        wall_clock_hours=2.5,
+        unblock_narrative="entered by hand",
+    )
+
+
+def test_a_ship_keeps_the_figures_recorded_earlier_that_day(
+    checkout: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """DW-herald-review-2026-11-24-1 (2): the on-ship handler replaces the day's record by specification, so the
+    payload is the whole truth for the day. A body of ``station`` and ``unblock_narrative`` alone reset the figures."""
+    _record_today(checkout, "herald")
+    monkeypatch.setenv("HERALD_WEBHOOK_SECRET", "s")
+
+    def _deliver(url: str, _secret: bytes, body: bytes) -> tuple[int, dict[str, object]]:
+        if url.endswith("/on-ship"):
+            response = webhook.handle_on_ship(checkout, json.loads(body))
+            return response.status, dict(response.body)
+        return 201, {}
+
+    with patch.object(local_ship, "resolve_landing_commit", return_value=_herald_landing()):
+        with patch.object(local_ship, "post_signed", side_effect=_deliver):
+            assert local_ship.main(["--url", "http://127.0.0.1:9"]) == 0
+    capsys.readouterr()
+
+    (stored,) = progress.read_all(checkout / progress.DEFAULT_PROGRESS_PATH)
+    assert list(stored.shipped_capabilities) == ["S-1.1"]
+    assert (stored.compute_hours, stored.token_spend, stored.wall_clock_hours) == (6.0, 1_200_000, 2.5)
+    assert stored.unblock_narrative == _herald_landing().subject
+
+
+def test_the_on_ship_body_is_station_and_narrative_alone_when_the_day_has_no_record(tmp_path: Path) -> None:
+    landing = _herald_landing()
+    _record_today(tmp_path, "warden")  # another station's record is not this ship's
+    body = json.loads(local_ship.build_on_ship_body(landing, progress_path=tmp_path / progress.DEFAULT_PROGRESS_PATH))
+    assert body == {"station": "herald", "unblock_narrative": landing.subject}
+    assert json.loads(local_ship.build_on_ship_body(landing)) == body
+
+
+def test_main_refuses_before_any_post_when_the_progress_store_is_unreadable(
+    checkout: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A store that cannot be read is a refusal, never a ship that resets the day."""
+    store = checkout / progress.DEFAULT_PROGRESS_PATH
+    store.parent.mkdir(parents=True, exist_ok=True)
+    store.write_bytes(b"not a database")
+    monkeypatch.setenv("HERALD_WEBHOOK_SECRET", "s")
+    with patch.object(local_ship, "resolve_landing_commit", return_value=_herald_landing()):
+        with patch.object(local_ship, "post_signed") as post:
+            assert local_ship.main(["--url", "http://127.0.0.1:9"]) == 1
+    assert post.call_count == 0
+    assert "refusing to ship" in capsys.readouterr().err

@@ -16,6 +16,7 @@ from unittest.mock import MagicMock
 from unittest.mock import patch
 
 import pytest
+from django_pyforge.assertion.crypto import mint_assertion
 from django_pyforge.flags import ENV_FLAGD_PATH
 from django_pyforge.flags import ENV_FLAGS_PATH
 from django_pyforge.flags import configure_file_provider
@@ -186,10 +187,17 @@ def test_mcp_host_sidecar_herald_absent_returns_404_json(
         await send({"type": "http.response.body", "body": b"{}"})
 
     monkeypatch.setitem(mcp_host_module._apps, "atlas", _atlas_stub)  # noqa: SLF001
+    # Steward Story 133.4: the sidecar verifies the assertion the host forwards.
+    assertion = mint_assertion(
+        sub="agent-sidecar", roles=["pyforge:station:atlas"], station="atlas"
+    )
     init = mcp_client.post(
         "/stations/atlas/mcp",
         json={"jsonrpc": "2.0", "id": 1, "method": "initialize"},
-        headers={"content-type": "application/json"},
+        headers={
+            "content-type": "application/json",
+            "authorization": f"Bearer {assertion}",
+        },
     )
     assert init.status_code == HTTPStatus.OK
     assert reached

@@ -1719,6 +1719,30 @@ verify_commands = [
   "src/shared/packages/pyforge-steward/src/pyforge/steward/cutover.py",
   "src/shared/packages/pyforge-steward/tests/unit/test_cutover.py",
 ]
+"133" = [  # The review's lower-severity defects are reproduced, then fixed or closed (spec-pyforge-steward CAP-1, CAP-22, CAP-55, CAP-167, CAP-168, CAP-175; spec-pyforge-unifying-strategy CAP-3, CAP-4, CAP-5, CAP-6, CAP-12), added 2026-11-25
+  ".github/workflows/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/development-guide.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml",
+  "docs/how-to/pixi-tasks.md",
+  "docs/how-to/reach-a-station-mcp-endpoint.md",
+  "environment.yaml",
+  "pixi.toml",
+  "scripts/**",
+  "scripts/.spec-surface-baseline.json",
+  "src/platform/deploy/charts/platform/templates/_helpers.tpl",
+  "src/platform/deploy/charts/platform/templates/mcp-host-networkpolicy.yaml",
+  "src/platform/mcp_host/**",
+  "src/platform/tests/**",
+  "src/shared/packages/django-atlas/**",
+  "src/shared/packages/django-herald/**",
+  "src/shared/packages/django-marshal/**",
+  "src/shared/packages/pyforge-core/**",
+  "src/shared/packages/pyforge-steward/**",
+  "src/shared/packages/pyforge-testing-kit/**",
+  "tests/scripts/**",
+]
 
 # dispatch (Story 85.1 / CAP-286 knobs), added 2026-10-13: steward's verify-fix turn gets 45 minutes, not the
 # 15-minute default. pyforge-steward-test alone runs ~4 minutes (2482 tests), so a fix turn that must re-run it two or

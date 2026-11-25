@@ -37,7 +37,11 @@ GROUP = "warden"
 CONSUMER = "warden-1"
 STALE_CONSUMER = "stale-consumer"
 DATASCHEMA = "https://example.invalid/schemas/recipe-audit.json"
-CACHE_MAXMEMORY = "1mb"
+# Headroom for the server's own baseline plus several payloads: an empty
+# redis-server already uses about 0.95 MB where it is built on the libc allocator
+# (osx-arm64), so under 1mb the first 50 kB SET was refused with nothing to evict
+# and the fill never reached an eviction (Story 133.3).
+CACHE_MAXMEMORY = "4mb"
 BROKER_MAXMEMORY = "32mb"
 # Shared-instance regression needs headroom so allkeys-lru can eventually evict
 # broker keys after cache-pressure keys rotate — 1mb OOMs before that happens.

@@ -37,6 +37,12 @@ EXIT_INTERNAL = 70  # EX_SOFTWARE — a crash, never conflated with EXIT_FAILED
 # meaningful, just distinct and documented.
 EXIT_BUDGET_NOT_CONFIGURED = 3
 
+# Every code steward documents (contract.md § Exit codes). A `SystemExit` raised inside main() with an integer
+# outside it is projected to EXIT_INTERNAL (Story 133.1): a duty must not exit (AD-8), and argparse raises 0 or 2.
+_DOCUMENTED_EXITS = frozenset(
+    {EXIT_OK, EXIT_FAILED, EXIT_USAGE, EXIT_BUDGET_NOT_CONFIGURED, EXIT_INTERNAL, EXIT_INTERRUPTED}
+)
+
 # The refusal code two flag-gated duties share, defined beside each duty and only requested through
 # `DutyResult.details["exit_code"]` (main() acts on it): `ci.EXIT_CI_REFUSAL` (3, Story 99.3: the
 # `ci` flag is off, or gh cannot read) and `pages_duty.EXIT_PAGES_REFUSAL` (3, Story 102.3:
@@ -1805,7 +1811,8 @@ def _add_suite_subparsers(suite_parser: argparse.ArgumentParser) -> None:
         help=(
             "CAP-22: advance one stale suite package end-to-end "
             "(autotick tag|head → build → test → publish → listing → "
-            "reviewable PR; never auto-merged)"
+            "reviewable PR; never auto-merged); without --dry-run it refuses before "
+            "the autotick while no publish path is configured"
         ),
     )
     advance.add_argument(
@@ -2023,7 +2030,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         code = exc.code
         if code is None:
             return EXIT_OK
-        return code if isinstance(code, int) else EXIT_USAGE
+        if not isinstance(code, int):
+            return EXIT_USAGE
+        if code not in _DOCUMENTED_EXITS:
+            print(f"steward: SystemExit({code}) is outside the documented exit codes", file=sys.stderr)
+            return EXIT_INTERNAL
+        return code
     except FlagOff as exc:
         # A flag-gated capability was invoked while its flag reads OFF
         # (spec-feature-flag-governance Q3): steward's usage code, never a new

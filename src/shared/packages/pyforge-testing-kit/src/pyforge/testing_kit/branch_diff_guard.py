@@ -29,6 +29,11 @@ no longer opts out of ``pyforge-core``'s subprocess sole-ownership scan.
 the ``CalledProcessError`` the old ``check_output`` calls raised, so a failing
 ``git`` is still loud.
 
+A diff is taken from the merge base of the base and ``HEAD``, never the base's
+tip (steward Story 133.4): a branch behind its base is judged on its own changes,
+not on the commits it lacks. Path lists are read NUL-separated (``-z``), so a
+path with a space or a non-ASCII character arrives whole and unquoted.
+
 ``pytest`` is needed for skip-on-missing-base-ref (the whole point of this
 module), but it is imported INSIDE ``_require_ref`` rather than at module
 scope: the kit does not declare it (every consumer is itself a pytest test
@@ -88,6 +93,21 @@ def _require_ref(root: Path, ref: str) -> None:
         pytest.skip(f"{ref} is not available in this checkout; the diff guard needs the base ref")
 
 
+def _diff_base(root: Path, base: str) -> str:
+    """The commit a diff of this branch starts from: the merge base of ``base`` and ``HEAD``.
+
+    ``base`` itself when the two share no commit in reach (a shallow checkout, an unborn ``HEAD``) -- the
+    guard then reads the base's tip, as it did before, instead of failing."""
+    found = _git(root, "merge-base", base, "HEAD")
+    sha = found.stdout.strip()
+    return sha if found.returncode == 0 and sha else base
+
+
+def _paths(listing: str) -> list[str]:
+    """The paths of a ``-z`` (NUL-separated) git listing, each whole."""
+    return [path for path in listing.split("\0") if path]
+
+
 def _pathspec_args(pathspec: str | tuple[str, ...] | None) -> list[str]:
     if pathspec is None:
         return []
@@ -102,12 +122,12 @@ def diff_text_since(
     pathspec: str | tuple[str, ...] | None = None,
     require: str | None = None,
 ) -> str:
-    """Raw ``git diff <base> [-- pathspec...]`` text. Skips the calling test
+    """Raw ``git diff <merge-base> [-- pathspec...]`` text. Skips the calling test
     when the base ref (``require``, defaulting to ``base``) is not resolvable
     in this checkout -- never raises ``CalledProcessError``."""
     base = _full(base)
     _require_ref(root, _full(require) if require else base)
-    return _git_out(root, "diff", base, *_pathspec_args(pathspec))
+    return _git_out(root, "diff", _diff_base(root, base), *_pathspec_args(pathspec))
 
 
 def changed_paths_since(
@@ -119,16 +139,16 @@ def changed_paths_since(
     include_untracked: bool = False,
     always_include: tuple[str, ...] = (),
 ) -> list[str]:
-    """Paths changed since ``base`` under ``pathspec`` (repo-wide if
+    """Paths changed since the merge base with ``base`` under ``pathspec`` (repo-wide if
     ``None``). Skips the calling test (never raises ``CalledProcessError``)
     when the base ref is not resolvable in this checkout."""
     base = _full(base)
     _require_ref(root, _full(require) if require else base)
-    named = _git_out(root, "diff", "--name-only", base, *_pathspec_args(pathspec))
-    changed = {line for line in named.splitlines() if line.strip()}
+    named = _git_out(root, "diff", "--name-only", "-z", _diff_base(root, base), *_pathspec_args(pathspec))
+    changed = set(_paths(named))
     if include_untracked:
-        untracked = _git_out(root, "ls-files", "--others", "--exclude-standard", *_pathspec_args(pathspec))
-        changed |= {line for line in untracked.splitlines() if line.strip()}
+        untracked = _git_out(root, "ls-files", "--others", "--exclude-standard", "-z", *_pathspec_args(pathspec))
+        changed |= set(_paths(untracked))
     changed |= set(always_include)
     return sorted(changed)
 
@@ -184,7 +204,7 @@ def commit_subject(root: Path, sha: str) -> str:
 
 
 def commit_files(root: Path, sha: str) -> list[str]:
-    return _git_out(root, "show", "--format=", "--name-only", sha).split()
+    return _paths(_git_out(root, "show", "--format=", "--name-only", "-z", sha))
 
 
 # `retro:` or `retro(<scope>):` -- see unsanctioned_commits.__doc__.
@@ -221,7 +241,7 @@ def unsanctioned_commits(
         files = commit_files(root, sha)
         if not (_RETRO_SUBJECT.match(subject) and changelog_path in files):
             bad.append(f"{sha[:10]} {subject}")
-    dirty = _git_out(root, "diff", "--name-only", "HEAD", *_pathspec_args(pathspec)).split()
+    dirty = _paths(_git_out(root, "diff", "--name-only", "-z", "HEAD", *_pathspec_args(pathspec)))
     if dirty:
         bad.append("uncommitted: " + ", ".join(dirty))
     return bad

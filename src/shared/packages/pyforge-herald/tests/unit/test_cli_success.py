@@ -421,3 +421,31 @@ def test_validate_never_checks_auth(capsys, tmp_path, monkeypatch):
 )
 def test_success_subcommand_help_exits_0(capsys, argv):
     assert cli.main(argv) == 0
+
+
+# --- Story 54.1: --shipped-date is YYYY-MM-DD at entry ------------------------
+
+
+def test_create_with_a_malformed_shipped_date_exits_1_and_stores_nothing(capsys, tmp_path):
+    rc = cli.main(["success", "--repo-root", str(tmp_path), "create", "warden", "--shipped-date", "next tuesday"])
+    assert rc == 1
+    assert "YYYY-MM-DD" in capsys.readouterr().err
+    assert claims.read_all(tmp_path / claims.DEFAULT_CLAIMS_PATH) == []
+
+
+def test_list_date_range_over_existing_rows_does_not_raise(capsys, tmp_path):
+    """A row stored before the entry check keeps its date as written; the
+    ranged listing leaves it out, as it does an unset date, and exits 0."""
+    from dataclasses import replace
+
+    path = tmp_path / claims.DEFAULT_CLAIMS_PATH
+    assert cli.main(["success", "--repo-root", str(tmp_path), "create", "warden", "--shipped-date", "2026-08-05"]) == 0
+    assert cli.main(["success", "--repo-root", str(tmp_path), "create", "marshal", "--shipped-date", "2026-08-06"]) == 0
+    stored = [replace(c, shipped_date="tomorrow") if c.project_name == "marshal" else c for c in claims.read_all(path)]
+    claims._write_all(path, stored)
+    capsys.readouterr()
+    rc = cli.main(["success", "--repo-root", str(tmp_path), "--date-range", "2026-08-01..2026-08-31", "list"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "warden" in out
+    assert "marshal" not in out

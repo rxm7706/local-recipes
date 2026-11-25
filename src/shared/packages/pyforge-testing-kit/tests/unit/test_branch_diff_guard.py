@@ -309,3 +309,77 @@ def test_a_full_ref_head_or_local_branch_passes_through(repo: Path) -> None:
 def test_the_skip_names_the_full_ref_it_looked_for(repo: Path) -> None:
     with pytest.raises(pytest.skip.Exception, match="refs/remotes/origin/main is not available"):
         changed_paths_since(repo)
+
+
+# --- steward Story 133.4 (DW-steward-review-2026-11-24-5, defect 2): the merge base, and whole paths -----------------
+
+
+def _branch_behind_its_base(repo: Path) -> None:
+    """``origin/main`` moves on by one commit the branch lacks; the branch adds one file of its own."""
+    _git(repo, "checkout", "-q", "-b", "upstream")
+    (repo / "upstream_only.py").write_text("u = 1\n", encoding="utf-8")
+    (repo / "base.py").write_text("x = 99\n", encoding="utf-8")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-q", "-m", "upstream moves on")
+    _make_origin_main(repo)
+    _git(repo, "checkout", "-q", "-b", "work", "main")
+    (repo / "mine.py").write_text("m = 1\n", encoding="utf-8")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-q", "-m", "my change")
+
+
+def test_a_branch_behind_its_base_is_judged_on_its_own_changes(repo: Path) -> None:
+    _branch_behind_its_base(repo)
+    assert changed_paths_since(repo) == ["mine.py"]
+    text = diff_text_since(repo)
+    assert "mine.py" in text
+    assert "upstream_only.py" not in text
+    assert "x = 99" not in text
+
+
+def test_a_branch_behind_its_base_still_reports_its_uncommitted_changes(repo: Path) -> None:
+    _branch_behind_its_base(repo)
+    (repo / "mine.py").write_text("m = 2\n", encoding="utf-8")
+    assert changed_paths_since(repo) == ["mine.py"]
+    assert "+m = 2" in diff_text_since(repo)
+
+
+def test_a_base_sharing_no_history_with_head_is_diffed_at_its_tip(repo: Path) -> None:
+    # A shallow checkout can hold the base with no common ancestor in reach: the guard still answers, from the tip.
+    _git(repo, "checkout", "-q", "--orphan", "island")
+    (repo / "island.py").write_text("i = 1\n", encoding="utf-8")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-q", "-m", "an unrelated root")
+    _make_origin_main(repo)
+    _git(repo, "checkout", "-q", "main")
+    assert changed_paths_since(repo) == ["island.py"]
+
+
+def test_a_changed_path_with_a_space_or_a_non_ascii_name_is_read_whole(repo: Path) -> None:
+    _make_origin_main(repo)
+    (repo / "src").mkdir()
+    (repo / "src" / "two words.py").write_text("a = 1\n", encoding="utf-8")
+    (repo / "src" / "café.py").write_text("b = 1\n", encoding="utf-8")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-q", "-m", "add awkward names")
+    (repo / "src" / "left alone.py").write_text("c = 1\n", encoding="utf-8")
+    assert changed_paths_since(repo, pathspec="src", include_untracked=True) == [
+        "src/café.py",
+        "src/left alone.py",
+        "src/two words.py",
+    ]
+    (sha,) = commits_since(repo)
+    assert sorted(commit_files(repo, sha)) == ["src/café.py", "src/two words.py"]
+
+
+def test_unsanctioned_commits_reads_a_path_with_a_space_whole(repo: Path) -> None:
+    _make_origin_main(repo)
+    surface = "the surface"
+    changelog = f"{surface}/CHANGE LOG.md"
+    (repo / surface).mkdir()
+    (repo / changelog).write_text("v1\n", encoding="utf-8")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-q", "-m", "retro: bump the surface")
+    assert unsanctioned_commits(repo, pathspec=surface, changelog_path=changelog) == []
+    (repo / changelog).write_text("v2\n", encoding="utf-8")
+    assert unsanctioned_commits(repo, pathspec=surface, changelog_path=changelog) == [f"uncommitted: {changelog}"]

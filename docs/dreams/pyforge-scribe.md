@@ -307,6 +307,25 @@ owner of the facts (the register, `pipeline-truth`), Doctor of any ambient verdi
   snippet in a platform test that runs inside the warden environment). Steward's twin guard dropped the same search for
   the same reason. **For scribe:** binds `spec-pyforge-scribe` CAP-31 (realized, no text change; relay of
   spec-pyforge-steward:CAP-175) and decomposes as Epic 34, one story.
+- **2026-11-25 (the stale guard fires on every store) — Found:** the repository review of 2026-11-24 at main
+  `7da08791f3` left one open row on scribe's ledger, DW-scribe-review-2026-11-24-1, reviewer-reported and not
+  re-traced. It names four defects. `compile_graph` sets `compiled_at` only on a store that has the attribute, and the
+  PostgreSQL and plane stores have none, so recall never withholds a node whose source was committed after the compile
+  on the backends that serve `--semantic`. `scribe index refresh` fingerprints one graphify target where the ingest
+  walks three, so an edit under `src/platform/` or `scripts/` reads unchanged. The DSN is cut at its `?`, which drops
+  `sslmode`. A capture or graph-store lock timeout and a graph-store plugin error leave the CLI as tracebacks. **Ruled** (operator ruling of 2026-11-25: "can we close and complete these too - * DW-doctor-61-1-1: four governance Specs need a re-derive on your render route. * The lower-severity code defects from the review, as open deferred-work rows on eight stations' ledgers."). **For scribe:** this entry binds `spec-pyforge-scribe`
+  CAP-3, CAP-4, CAP-9 and CAP-33 (realized, no text change) and CAP-26, which is amended. CAP-26 listed
+  "PostgreSQL / plane `compiled_at` columns" as a non-goal, so the first defect, the stale guard on those two
+  stores, was reproduced and at first left open. **Ruled** the same day, in session (operator ruling of 2026-11-25:
+  "amend the scribe Spec too and restore that fix"): CAP-26 now says every shipped store (flat file, PostgreSQL,
+  plane) keeps the compile time in the schema it already has, its non-goal names a dedicated column or a schema
+  change, the text moves through a memlog correction and a re-derive, never a hand edit, and the fix is restored.
+  The entry decomposes as Epic 35, one story: every defect is reproduced by a failing test before it is fixed, and one
+  the tree does not show is closed as not a defect, with what was run recorded in the story spec. **Constraints:** no
+  flag is added (a fix restores what the Spec states); the PostgreSQL store stays DML-only, so no relation and no
+  column is added for `compiled_at` on any store: the stamp is one reserved row of the node relation the PostgreSQL
+  and the plane store already have, and it is never a graph node;
+  no GraphStore Protocol method is added; no exit code outside `contract.md` is minted.
 
 ## 2026-10-26 — Dream — PyForge Scribe: Team Memory Management (folded from pyforge-scribe-team-memory)
 

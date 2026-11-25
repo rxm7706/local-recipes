@@ -423,6 +423,17 @@ verify_commands = [
   "docs/explanation/enterprise-deployment.md",
   "docs/reference/pixi-config-jfrog.example.toml",
 ]
+"41" = [  # The pypi-test rehearsal asks the index it uploads to (spec-pyforge-mason CAP-3, CAP-5), added 2026-11-25
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py",
+  "src/shared/packages/pyforge-mason/src/pyforge/mason/package.py",
+  "src/shared/packages/pyforge-mason/src/pyforge/mason/pypi_index.py",
+  "src/shared/packages/pyforge-mason/tests/unit/test_cli.py",
+  "src/shared/packages/pyforge-mason/tests/unit/test_package.py",
+  "src/shared/packages/pyforge-mason/tests/unit/test_pypi_index.py",
+]
 
 "19" = [  # Mason has its own skills, and conda-forge-expert is one of them (spec-pyforge-mason CAP-29), added 2026-09-28
   "src/shared/packages/pyforge-mason/**",

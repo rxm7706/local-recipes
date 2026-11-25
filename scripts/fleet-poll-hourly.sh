@@ -38,5 +38,4 @@ while true; do
     fi
     echo "AGENT_LOOP_TICK_fleet-poll {\"prompt\":$(printf '%s' "$PROMPT" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')}"
   } >>"$LOG_FILE" 2>&1
-  sleep 3600
 done

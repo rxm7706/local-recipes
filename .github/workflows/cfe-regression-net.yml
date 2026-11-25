@@ -123,6 +123,7 @@ jobs:
 
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: local-recipes
           cache: true
 
@@ -146,6 +147,7 @@ jobs:
 
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-guild
           cache: true
 

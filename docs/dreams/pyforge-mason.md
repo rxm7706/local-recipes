@@ -843,6 +843,22 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   `spec-pyforge-mason` (the CFE seam, no text change) and decomposes as Epic 40, one story, with the skill's retro and
   CHANGELOG entry.
 
+- **2026-11-25 (the pypi-test rehearsal asks the index it uploads to) — Found:** the repository review of 2026-11-24
+  at main `7da08791f3` left one mason row below high severity, `DW-mason-review-2026-11-24-1`, with two findings.
+  `pypi_index.py` asks only pypi.org whether a version exists, so `package ship --to pypi-test,pypi` checks the
+  wrong index for the rehearsal: after a rehearsal that uploaded and a real upload that failed, a re-run uploads to
+  TestPyPI again, fails on a file that exists, and gates pypi for that version (reviewer-traced, not run). The
+  reviewer also reported that `recipe build`, `scan`, `optimize`, `update` and `submit` exit 0 when the wrapped tool
+  failed while `package ship --to conda-forge --yes` exits 1 on the same state; the code and `contract.md` record
+  that exit as decided. **Ruled** (operator ruling of 2026-11-25: "can we close and complete these too - * DW-doctor-61-1-1: four governance Specs need a re-derive on your render route. * The lower-severity code defects from the review, as open deferred-work rows on eight stations' ledgers."). **For mason:** this entry binds
+  `spec-pyforge-mason` (the dual-ship motion, CAP-3 (realized, no text change); the CLI shell and output contract,
+  CAP-5 (realized, no text change)) and decomposes as Epic 41, one story: the version check takes the index a target
+  uploads to, the rehearsal's reference names that index, and each of the five recipe verbs is held by a test to the
+  exit `contract.md` states. Every defect is reproduced before it is fixed, and one the tree does not show is closed
+  as not a defect. **Constraints:** no flag is added (a fix), no AD moves, and no exit code changes in this story:
+  projecting a failed wrapped tool to exit 1 would change the contract the MCP face reads by `data.returncode`, and
+  that is an operator decision with its own entry here.
+
 ## One-chain fold — 2026-09-17
 
 Station Dream status is `specified` (Spec `spec-pyforge-mason` is `ready`). Mason-owned satellite Dreams archive in place with Consolidated-into banners. Practice Dream `packaging-factory` is archived into this station Dream (CHAIN-STANDARD precedence; no new station Dream minted). Recipe work stays `conda-forge-expert`; this fold is planning-chain only.

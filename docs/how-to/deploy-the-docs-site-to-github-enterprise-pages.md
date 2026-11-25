@@ -5,7 +5,7 @@ sources:
   - docs/foundry/marketplace/README.md
   - src/shared/packages/pyforge-steward/src/pyforge/steward/catalog.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py
-verified: 2026-11-24
+verified: 2026-11-25
 ---
 
 # Deploy the docs site to GitHub Enterprise Pages

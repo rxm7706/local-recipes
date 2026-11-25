@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: bb5274f2abdc939b
-story_count: 489
+source_fingerprint: dcab267154e35f74
+story_count: 493
 test_file_count: 167
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 489
-- **Epics parsed:** 132
+- **Stories parsed:** 493
+- **Epics parsed:** 133
 - **Test files inventoried:** 167 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `bb5274f2abdc939b`
+- **Source fingerprint:** `dcab267154e35f74`
 
 ## Risk Assessment
 
@@ -155,6 +155,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 130: The changes page has its input, and the marketplace wears the site's theme (spec-pyforge-steward CAP-168, CAP-171)
 - Epic 131: Playwright's browsers come from pixi (spec-pyforge-steward CAP-5)
 - Epic 132: The flip's loop guard reads the state bmad-loop writes (spec-python-foundry-cutover fnd:CAP-8)
+- Epic 133: The review's lower-severity defects are reproduced, then fixed or closed (spec-pyforge-steward CAP-1, CAP-22, CAP-55, CAP-167, CAP-168, CAP-175; spec-pyforge-unifying-strategy CAP-3, CAP-4, CAP-5, CAP-6, CAP-12)
 
 ### Low-risk epics
 
@@ -834,6 +835,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 130.2 | The marketplace's pages wear the site's theme | none observed |
 | 131.1 | Playwright's browsers install from pixi on linux-64, osx-arm64 and win-64 | none observed |
 | 132.1 | cutover flip reads bmad-loop's own run state | none observed |
+| 133.1 | Suite advance refuses before it edits, and steward's exit codes stay in its d... | none observed |
+| 133.2 | The workflows and scripts steward runs do what they name | none observed |
+| 133.3 | The platform suite's test stage runs without a container engine, on a UTF-8 d... | none observed |
+| 133.4 | The front door streams its child, the diff guards read the merge base, and th... | none observed |
 
 ## Quality Gates
 

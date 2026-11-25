@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from pyforge.steward.cli import DUTIES, build_parser, resolve_duty
+from pyforge.steward.cli import DUTIES, build_parser, main, resolve_duty
 from pyforge.steward.guards import (
     FIRST_LIBRARY_CATEGORY,
     LIBRARY,
@@ -149,3 +149,40 @@ def test_not_a_detectors_ci_member() -> None:
     assert start != -1, "detectors-ci task block not found in pixi.toml"
     ci_block = pixi[start : start + 800]
     assert "guards" not in ci_block
+
+
+# Story 133.1 (DW-steward-review-2026-11-24-1, defect 3): a path the duty cannot read is the caller's input error, a
+# failed duty naming the path -- never an exception that main() reports as a crash (exit 70).
+
+
+def test_lacking_with_a_missing_spec_is_a_failed_duty_naming_the_path(tmp_path: Path) -> None:
+    missing = tmp_path / "no-such" / "SPEC.md"
+    result = GuardsDuty().run(build_parser().parse_args(["guards", "lacking", "--spec", str(missing)]))
+    assert result.ok is False
+    assert str(missing) in result.summary
+    assert result.summary.startswith("guards lacking: cannot read")
+
+
+def test_lacking_with_a_spec_that_is_not_utf8_is_a_failed_duty(tmp_path: Path) -> None:
+    spec = tmp_path / "SPEC.md"
+    spec.write_bytes(b"hub_guards:\n  - \xff\xfe\n")
+    result = GuardsDuty().run(build_parser().parse_args(["guards", "lacking", "--spec", str(spec)]))
+    assert result.ok is False
+    assert str(spec) in result.summary
+
+
+def test_lacking_with_a_missing_spec_exits_1_not_70(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    missing = tmp_path / "SPEC.md"
+    assert main(["guards", "lacking", "--spec", str(missing)]) == 1
+    err = capsys.readouterr().err
+    assert str(missing) in err
+    assert "Traceback" not in err
+
+
+def test_source_ground_with_a_missing_text_file_is_a_failed_duty_naming_the_path(tmp_path: Path) -> None:
+    missing = tmp_path / "no-such.md"
+    argv = ["guards", "source-ground", "--text", str(missing), "--repo", str(tmp_path)]
+    result = GuardsDuty().run(build_parser().parse_args(argv))
+    assert result.ok is False
+    assert str(missing) in result.summary
+    assert result.summary.startswith("guards source-ground: cannot read")

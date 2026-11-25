@@ -149,3 +149,85 @@ def test_teardown_loop_on_origin_not_unpreserved(
     monkeypatch.chdir(repo)
     exit_code = run_teardown(_teardown_namespace("acme"), vcs=GitVcs(), fs=LocalFs())
     assert exit_code == EXIT_OK
+
+
+def _push_loop_branch_unmerged(repo: Path, home: Path) -> None:
+    (home / "extra.txt").write_text("x\n", encoding="utf-8")
+    _git(home, "add", "extra.txt")
+    _git(home, "commit", "-m", "loop tip")
+    _git(repo, "push", "origin", "loop/acme:loop/acme")
+    _git(repo, "fetch", "origin")
+
+
+@flag_states(_FLAG)
+def test_teardown_force_proceeds_when_a_local_remote_tracking_ref_holds_the_home_branch_tip(
+    git_pair: tuple[Path, Path], capsys, flag_provider: dict[str, bool], monkeypatch: pytest.MonkeyPatch
+):
+    """Story 121.1: an unmerged home branch with a tip a local remote-tracking ref holds is preserved."""
+    if not flag_provider[_FLAG]:
+        pytest.skip("preserve_refs flag off in this parametrization")
+    _patch_preserve_flag(monkeypatch, flag_provider)
+    repo, home = git_pair
+    _push_loop_branch_unmerged(repo, home)
+    monkeypatch.chdir(repo)
+    exit_code = run_teardown(_teardown_namespace("acme", force=True), vcs=GitVcs(), fs=LocalFs())
+    assert exit_code == EXIT_OK
+    assert _git(repo, "branch", "--list", "loop/acme").stdout.strip() == ""
+
+
+@flag_states(_FLAG)
+def test_teardown_force_refuses_home_branch_ahead_of_origin(
+    git_pair: tuple[Path, Path], capsys, flag_provider: dict[str, bool], monkeypatch: pytest.MonkeyPatch
+):
+    """Story 121.1 (DW-marshal-review-2026-11-24-1, defect 1): loop/acme is on origin, but the local
+    tip carries a commit origin does not hold -- ``teardown --force`` refuses and the branch survives."""
+    if not flag_provider[_FLAG]:
+        pytest.skip("preserve_refs flag off in this parametrization")
+    _patch_preserve_flag(monkeypatch, flag_provider)
+    repo, home = git_pair
+    _push_loop_branch_unmerged(repo, home)
+    (home / "unpushed.txt").write_text("y\n", encoding="utf-8")
+    _git(home, "add", "unpushed.txt")
+    _git(home, "commit", "-m", "unpushed work")
+    unpushed = _git(home, "rev-parse", "HEAD").stdout.strip()
+    monkeypatch.chdir(repo)
+    exit_code = run_teardown(_teardown_namespace("acme", force=True), vcs=GitVcs(), fs=LocalFs())
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-006" in out
+    assert "loop/acme" in out
+    assert "git fetch origin" in out
+    assert "--force --abandon loop/acme" in out
+    assert _git(repo, "rev-parse", "--verify", "refs/heads/loop/acme").stdout.strip() == unpushed
+
+
+@flag_states(_FLAG)
+def test_teardown_force_refuses_until_a_fetch_when_no_local_remote_tracking_ref_holds_the_tip(
+    git_pair: tuple[Path, Path], capsys, flag_provider: dict[str, bool], monkeypatch: pytest.MonkeyPatch
+):
+    """Story 121.1 (fail-closed ruling): the scan reads local refs only. Origin holds the tip, but
+    with no local remote-tracking ref holding it ``teardown --force`` refuses and names the remedy;
+    after ``git fetch origin`` restores the tracking ref the same teardown proceeds."""
+    if not flag_provider[_FLAG]:
+        pytest.skip("preserve_refs flag off in this parametrization")
+    _patch_preserve_flag(monkeypatch, flag_provider)
+    repo, home = git_pair
+    _push_loop_branch_unmerged(repo, home)
+    pushed = _git(home, "rev-parse", "HEAD").stdout.strip()
+    _git(repo, "update-ref", "-d", "refs/remotes/origin/loop/acme")
+    monkeypatch.chdir(repo)
+
+    exit_code = run_teardown(_teardown_namespace("acme", force=True), vcs=GitVcs(), fs=LocalFs())
+
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-006" in out
+    assert "git fetch origin" in out
+    assert "--force --abandon loop/acme" in out
+    assert _git(repo, "rev-parse", "--verify", "refs/heads/loop/acme").stdout.strip() == pushed
+
+    _git(repo, "fetch", "origin")
+    exit_code = run_teardown(_teardown_namespace("acme", force=True), vcs=GitVcs(), fs=LocalFs())
+
+    assert exit_code == EXIT_OK
+    assert _git(repo, "branch", "--list", "loop/acme").stdout.strip() == ""

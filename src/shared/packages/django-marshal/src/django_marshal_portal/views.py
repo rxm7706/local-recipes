@@ -3,6 +3,8 @@ from django.shortcuts import render
 from django.views.decorators.http import require_GET
 from django_pyforge.access import require_station_role
 from django_pyforge.assertion.client import PortalClient
+from django_pyforge.assertion.schema import CLAIM_SUB
+from django_pyforge.roles import claims_from_request
 
 from django_marshal_portal.mcp_asgi import WATCH_TOOL
 
@@ -22,7 +24,9 @@ def watch_report(request: HttpRequest) -> HttpResponse:
     run = (request.GET.get("run") or "").strip() or None
     fleet = request.GET.get("fleet") in {"1", "true", "on", "yes"}
     roles = list(getattr(request, "idp_roles", []) or [])
-    sub = getattr(request, "idp_sub", None) or "marshal-portal"
+    # The caller's own subject, read from this request's claims (steward Story 133.4): nothing sets an
+    # ``idp_sub`` attribute, so every caller used to run as ``marshal-portal`` and share its rate-limit bucket.
+    sub = (claims_from_request(request) or {}).get(CLAIM_SUB) or "marshal-portal"
     report = PortalClient().call(
         "marshal",
         WATCH_TOOL,

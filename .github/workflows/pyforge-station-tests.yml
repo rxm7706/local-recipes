@@ -651,6 +651,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-core
           cache: true
       - run: pixi run --frozen -e pyforge-core pyforge-core-package-test
@@ -667,6 +668,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-core
           cache: true
       - run: pixi run --frozen -e pyforge-core pyforge-core-live-test
@@ -694,6 +696,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-testing-kit
           cache: true
       - run: pixi run --frozen -e pyforge-testing-kit pyforge-testing-kit-package-test
@@ -711,6 +714,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-testing-kit
           cache: true
       - run: pixi run --frozen -e pyforge-testing-kit pyforge-testing-kit-live-test
@@ -741,6 +745,7 @@ jobs:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-atlas
           cache: true
       # Three of atlas's gates fail loud (never silently skip) when their
@@ -813,6 +818,7 @@ jobs:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-atlas
           cache: true
       - run: pixi run --frozen -e pyforge-atlas pyforge-atlas-live-test
@@ -840,6 +846,7 @@ jobs:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-atlas
           cache: true
       - uses: actions/download-artifact@v8
@@ -879,6 +886,7 @@ jobs:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-doctor
           cache: true
       - run: pixi run --frozen -e pyforge-doctor pyforge-doctor-test
@@ -915,6 +923,7 @@ jobs:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-doctor
           cache: true
       # Story 57.3: the live writer-lock proof reads `git merge-base refs/remotes/origin/main HEAD`
@@ -953,6 +962,7 @@ jobs:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-doctor
           cache: true
       - uses: actions/download-artifact@v8
@@ -1003,6 +1013,7 @@ jobs:
       # tests are live-tree modules and run in herald-live-test, with the docs-site install.
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-herald
           cache: true
       # DW-14-2-1: the render gate's real-browser tests need Chromium. Steward Story 112.1 / CAP-174's shape
@@ -1063,6 +1074,7 @@ jobs:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-herald site
           cache: true
       # test_skf_validators_pass invokes `uv run` directly (not a pixi
@@ -1100,6 +1112,7 @@ jobs:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-herald
           cache: true
       - uses: actions/download-artifact@v8
@@ -1148,6 +1161,7 @@ jobs:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-marshal
           cache: true
       # Seed verbs + integration harnesses create real commits; GHA runners
@@ -1182,6 +1196,7 @@ jobs:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-marshal
           cache: true
       # Seed verbs + integration harnesses create real commits; GHA runners
@@ -1214,6 +1229,7 @@ jobs:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-marshal
           cache: true
       - uses: actions/download-artifact@v8
@@ -1253,6 +1269,7 @@ jobs:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-mason
           cache: true
       - run: pixi run --frozen -e pyforge-mason pyforge-mason-test
@@ -1281,6 +1298,7 @@ jobs:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-mason
           cache: true
       - run: pixi run --frozen -e pyforge-mason pyforge-mason-live-test
@@ -1316,6 +1334,7 @@ jobs:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-mason
           cache: true
       - uses: actions/download-artifact@v8
@@ -1355,6 +1374,7 @@ jobs:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-scribe
           cache: true
       - run: pixi run --frozen -e pyforge-scribe pyforge-scribe-test
@@ -1404,6 +1424,7 @@ jobs:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-scribe
           cache: true
       - name: Enable pgvector extension
@@ -1434,6 +1455,7 @@ jobs:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-scribe
           cache: true
       - uses: actions/download-artifact@v8
@@ -1482,6 +1504,7 @@ jobs:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-steward
           cache: true
       - run: pixi run --frozen -e pyforge-steward pyforge-steward-test
@@ -1520,6 +1543,7 @@ jobs:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-steward
           cache: true
       - run: pixi run --frozen -e pyforge-steward pyforge-steward-live-test
@@ -1548,6 +1572,7 @@ jobs:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-steward
           cache: true
       - uses: actions/download-artifact@v8
@@ -1587,6 +1612,7 @@ jobs:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-warden
           cache: true
       - run: pixi run --frozen -e pyforge-warden pyforge-warden-test
@@ -1617,6 +1643,7 @@ jobs:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-warden
           cache: true
       - run: pixi run --frozen -e pyforge-warden pyforge-warden-live-test
@@ -1643,6 +1670,7 @@ jobs:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-warden
           cache: true
       - uses: actions/download-artifact@v8
@@ -1709,6 +1737,7 @@ jobs:
 
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-steward
           cache: true
 

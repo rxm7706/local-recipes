@@ -7,6 +7,7 @@ import io
 import json
 import logging
 import os
+import shutil
 import tempfile
 import traceback
 from collections.abc import Iterator
@@ -50,27 +51,18 @@ _OSV_DB_CACHE_ENV = "OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY"
 _SKIPPED_ERROR_PREFIX = "skipped: "
 _SKIPPED_ARCHIVED = f"{_SKIPPED_ERROR_PREFIX}archived"
 
-SUPPORTED_SUFFIXES = frozenset(
-    {
-        ".txt",
-        ".toml",
-        ".yaml",
-        ".yml",
-        ".lock",
-        ".json",
-    },
-)
 
-_WELL_KNOWN_MANIFEST_NAMES = frozenset(
-    {
-        "requirements.txt",
-        "environment.yaml",
-        "pixi.toml",
-        "pyproject.toml",
-        "pixi.lock",
-        "conda-lock.yml",
-    },
-)
+def supported_manifest_names() -> frozenset[str]:
+    """The file names an upload may carry: the ones warden's discovery reads (Story 29.1).
+
+    Warden's own accessor, never a second list here: the fixed manifest names, plus
+    the native non-Python lockfile names only while warden's flag has discovery read
+    them. A blob stored while the flag was on and scanned after it went off is
+    refused by the job's own name check."""
+    # Lazy: platform host must import without pyforge installed (Story 10.1 boundary).
+    from pyforge.warden.discovery import discovered_manifest_names  # noqa: PLC0415
+
+    return frozenset(discovered_manifest_names())
 
 
 def _blob_path(storage_key: str) -> Path:
@@ -86,9 +78,34 @@ def _validate_manifest_blob(path: Path, storage_key: str) -> None:
     if not path.is_file():
         msg = f"missing blob for key {storage_key}"
         raise FileNotFoundError(msg)
-    if path.suffix.lower() not in SUPPORTED_SUFFIXES and path.name not in (_WELL_KNOWN_MANIFEST_NAMES):
+    if path.name not in supported_manifest_names():
         msg = f"unsupported manifest: {path.name}"
         raise ValueError(msg)
+
+
+def _remove_blob(storage_key: str) -> None:
+    """The uploaded file and its per-upload directory do not outlive the job (Story 29.1)."""
+    root = Path(getattr(settings, "COMPLIANCE_FACE_BLOB_ROOT", tempfile.gettempdir())).resolve()
+    path = (root / storage_key).resolve()
+    if root not in path.parents:
+        return
+    if path.parent == root:
+        with contextlib.suppress(OSError):
+            path.unlink(missing_ok=True)
+        return
+    shutil.rmtree(path.parent, ignore_errors=True)
+
+
+def _require_a_scanned_manifest(report_json: str, exit_code: int) -> None:
+    """Raise when the scan read no manifest: such a report says nothing about the upload (Story 29.1)."""
+    try:
+        document = json.loads(report_json)
+    except json.JSONDecodeError:
+        document = None
+    if isinstance(document, dict) and document.get("resolved_scan_set"):
+        return
+    msg = f"warden scan read no manifest in the upload (exit {exit_code})"
+    raise ValueError(msg)
 
 
 @shared_task(bind=True, name="warden_fabric.run_job")
@@ -105,7 +122,8 @@ def run_compliance_job(self, job_id: str) -> str:
         advance(job, "materialize")
         target = path.parent
         advance(job, "scan")
-        report_json, sbom_json, _exit = _run_warden_engines(target)
+        report_json, sbom_json, exit_code = _run_warden_engines(target, with_sbom=True)
+        _require_a_scanned_manifest(report_json, exit_code)
 
         advance(job, "sbom")
         job.report_json = report_json
@@ -123,6 +141,8 @@ def run_compliance_job(self, job_id: str) -> str:
         job.error = f"{exc.__class__.__name__}: {exc}"
         job.save(update_fields=["status", "error", "updated_at"])
         raise
+    finally:
+        _remove_blob(job.storage_key)
 
 
 @contextlib.contextmanager
@@ -154,8 +174,13 @@ def _run_warden_engines(
     target: Path,
     *,
     fix_prs_dry_run: bool = False,
+    with_sbom: bool = False,
 ) -> tuple[str, str, int]:
-    """Call EXISTING warden CLI scan — never reimplement analyzers."""
+    """Call EXISTING warden CLI scan — never reimplement analyzers.
+
+    Story 29.1: ``with_sbom`` asks the scan for its own CycloneDX document
+    (``--sbom-output``); the second value is that document, or ``""`` when the
+    scan was not asked for one or wrote none."""
     # Lazy: platform host must import without pyforge installed (Story 10.1
     # boundary; Django check/migrate run in the platform-only env).
     from pyforge.warden.cli import main as warden_main  # noqa: PLC0415
@@ -165,13 +190,22 @@ def _run_warden_engines(
         argv.append("--fix-prs-dry-run")
     out = io.StringIO()
     err = io.StringIO()
-    with _osv_db_cache_env(), contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-        code = warden_main(argv)
+    sbom_json = ""
+    with contextlib.ExitStack() as stack:
+        sbom_path: Path | None = None
+        if with_sbom:
+            sbom_dir = stack.enter_context(tempfile.TemporaryDirectory(prefix="warden-sbom-"))
+            sbom_path = Path(sbom_dir) / "sbom.json"
+            argv.extend(["--sbom-output", str(sbom_path)])
+        with _osv_db_cache_env(), contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = warden_main(argv)
+        if sbom_path is not None and sbom_path.is_file():
+            sbom_json = sbom_path.read_text(encoding="utf-8")
     report_json = out.getvalue().strip() or "{}"
     if code not in (0, 1, 2):
         msg = f"warden scan exited {code}: {err.getvalue()[:500]}"
         raise RuntimeError(msg)
-    return report_json, "{}", int(code)
+    return report_json, sbom_json, int(code)
 
 
 @shared_task(
@@ -539,8 +573,15 @@ def open_fix_proposal(self, proposal_id: str) -> str:
         actuation = _run_fix_actuator(scan, proposal.finding_id, clone_dir=clone_dir)
         matching = [outcome for outcome in actuation.outcomes if outcome.finding_id == proposal.finding_id]
         if not matching:
+            # Story 29.1: a failure that stopped the run before any proposal was tried is
+            # one failed record naming no finding; its detail is this proposal's cause.
+            whole_run = [
+                outcome.detail
+                for outcome in actuation.outcomes
+                if outcome.finding_id == "" and outcome.status == "failed" and outcome.detail
+            ]
             proposal.state = FixProposal.State.FAILED
-            proposal.error = "actuator produced no outcome for finding"
+            proposal.error = whole_run[0] if whole_run else "actuator produced no outcome for finding"
             proposal.save(update_fields=["state", "error", "updated_at"])
             return str(proposal.id)
         (outcome,) = matching

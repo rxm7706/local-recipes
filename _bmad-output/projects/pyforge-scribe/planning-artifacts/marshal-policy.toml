@@ -252,6 +252,27 @@ verify_commands = [
   "scripts/.spec-surface-baseline.json",
   "src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py",
 ]
+"35" = [  # the stale guard fires on every store, and refresh, the DSN and the CLI's errors follow the contract (spec-pyforge-scribe CAP-26, CAP-33, CAP-9, CAP-3, CAP-4), added 2026-11-25
+  "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-scribe/planning-artifacts/sprint-status-ledger.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
+  "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py",
+  "src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_pg.py",
+  "src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_plane.py",
+  "src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_plugins.py",
+  "src/shared/packages/pyforge-scribe/src/pyforge/scribe/models.py",
+  "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py",
+  "src/shared/packages/pyforge-scribe/tests/meta/test_live_tree_split.py",
+  "src/shared/packages/pyforge-scribe/tests/unit/conftest.py",
+  "src/shared/packages/pyforge-scribe/tests/unit/test_cli.py",
+  "src/shared/packages/pyforge-scribe/tests/unit/test_compile.py",
+  "src/shared/packages/pyforge-scribe/tests/unit/test_extras_cocoindex_flow.py",
+  "src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_pg.py",
+  "src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plane.py",
+  "src/shared/packages/pyforge-scribe/tests/unit/test_recall.py",
+  "src/shared/packages/pyforge-scribe/tests/unit/test_recall_semantic.py",
+]
 
 [model_tier_map.heavy]
 dev = { harness = "cursor", model = "composer-2.5-fast" }

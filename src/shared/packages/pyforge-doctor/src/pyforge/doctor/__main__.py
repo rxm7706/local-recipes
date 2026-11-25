@@ -318,7 +318,7 @@ def _build_parser() -> tuple[
     flags_sub = flags_parser.add_subparsers(dest="flags_command", required=True)
     kill_switch_parser = flags_sub.add_parser(
         "kill-switch",
-        help="disable one FILE-resolver flag and record the kill-switch metric",
+        help="disable one FILE-resolver flag, print the reason on the result line and record the kill-switch metric",
     )
     kill_switch_parser.add_argument(
         "--flag",
@@ -328,7 +328,7 @@ def _build_parser() -> tuple[
     kill_switch_parser.add_argument(
         "--reason",
         required=True,
-        help="short operator reason recorded on the kill-switch metric label",
+        help="short operator reason, printed on the result line and recorded on the kill-switch metric label",
     )
     kill_switch_parser.add_argument(
         "--flags-path",
@@ -915,7 +915,18 @@ def _run_flags(args: argparse.Namespace) -> int:
     except KeyError as exc:
         _stderr(f"doctor flags kill-switch: {exc}")
         return 2
-    _write_stdout(f"disabled {result.flag} in {result.path} ({result.previous_state} -> {result.new_state})\n")
+    except OSError as exc:
+        # Story 62.1: the tree is replaced, not rewritten in place, so its directory must take a new file. Where
+        # it cannot (or the tree cannot be read), that is a named refusal with the tree untouched, never the
+        # last-resort net's "internal error".
+        _stderr(f"doctor flags kill-switch: cannot replace {flags_path}: {exc}")
+        return 2
+    # Story 62.1: the reason is on the result line -- the counter dies with this one-shot process. Whitespace
+    # runs (a newline included) fold to one space, so the result stays one line whatever the reason holds.
+    _write_stdout(
+        f"disabled {result.flag} in {result.path} ({result.previous_state} -> {result.new_state}); "
+        f"reason: {' '.join(args.reason.split())}\n"
+    )
     return 0
 
 

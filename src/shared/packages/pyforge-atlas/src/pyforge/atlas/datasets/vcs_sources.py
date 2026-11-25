@@ -338,11 +338,16 @@ def _luarocks_extract(payload: Any) -> str | None:
     via a NUMERIC-AWARE comparator (never ``next(iter(versions))`` on unordered dict
     iteration, and never a raw lexicographic ``sorted()`` — review fix #1: a plain
     string sort mis-ranks multi-digit components, e.g. "1.10-1" sorting below
-    "1.2-1")."""
+    "1.2-1").
+
+    Story 52.1: the sort key ranks a non-digit run above a digit run, so ``scm-1`` /
+    ``dev-1`` (rolling source rockspecs) beat every numeric release. A version that
+    starts with a digit wins when one exists; the others are the fallback only."""
     if isinstance(payload, dict):
         versions = payload.get("versions")
         if isinstance(versions, dict) and versions:
-            return str(max(versions.keys(), key=_version_sort_key))
+            numeric = [v for v in versions if str(v)[:1].isdigit()]
+            return str(max(numeric or versions.keys(), key=_version_sort_key))
     return None
 
 

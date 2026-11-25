@@ -8214,3 +8214,27 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   `BMAD_LOOP_HOME_ROOT`, a bare run in the checkout's own `.bmad-loop/runs/` is read too, and the refusal names the
   state file and how to end a run that was abandoned without being marked over. Steward
   reads the file bmad-loop writes and imports nothing of marshal's. No flag is added: the guard is the gate.
+- **2026-11-25 (the review's lower-severity defects are reproduced, then fixed or closed) — Found:** the code review
+  of main `7da08791f3` left four open rows on steward's deferred-work ledger that name code, not text:
+  `DW-steward-review-2026-11-24-1` (`suite advance` edits the checkout and then always fails its publish step,
+  `guards lacking --spec` exits 70 on a missing file and `main()` returns any integer a duty raises as `SystemExit`;
+  `keys exec` relaying its child's code was reported too and is the documented pass-through),
+  `DW-steward-review-2026-11-24-2` (workflow and script defects: a boolean input compared to strings, a pixi task that
+  does not exist, a push flag git lacks, a two-hour tick, a task pointing at no script, `setup-pixi` steps with no
+  `pixi-version`, an export truncated before it runs, two time zones on one page, and four reviewer-reported items),
+  `DW-steward-review-2026-11-24-3` (`platform-ci-local -- --test` asks for a container engine it does not use and
+  builds an ASCII database under a `C` locale) and `DW-steward-review-2026-11-24-5` (kernel and portal code: the
+  `pyforge` front door buffers its child, the testing kit's diff guards diff against the tip of the base, two portals
+  misread the caller's identity, the MCP sidecar does not check the station scope, and a portal imports a station
+  dashboard at module level). Most were reported by a reviewer and not re-traced by the session lead.
+  **Ruled** (operator ruling of 2026-11-25: "can we close and complete these too - * DW-doctor-61-1-1: four governance Specs need a re-derive on your render route. * The lower-severity code defects from the review, as open deferred-work rows on eight stations' ledgers."). **For steward:** this entry binds `spec-pyforge-steward` (CAP-1, the
+  `keys` CLI; CAP-22, the end-to-end advance; CAP-55, the guard library; CAP-167, the pin path; CAP-168, the Pages
+  workflow; CAP-175, the preflight and the platform suite; each realized, no text change) and
+  `spec-pyforge-unifying-strategy` (CAP-3, CAP-4, CAP-5, CAP-6 and CAP-12; each realized, no text change), with
+  `spec-pyforge-core:CAP-11`, `spec-pyforge-marshal:CAP-272` and `spec-pyforge-testing-charter:CAP-3` read and not
+  changed, and decomposes as Epic 133, four stories, one per row: steward's own duties (133.1), the workflows and
+  scripts steward runs (133.2), the platform suite's local replay (133.3), and the kernel, the testing kit, three
+  portals and the MCP sidecar (133.4). Every defect is reproduced before it is fixed: a test or a command that fails
+  on the unchanged tree comes first, and a defect the tree does not show is closed as not a defect, with the reason
+  written on its story spec. Each is a fix, so no flag is added. The session hook's row
+  (`DW-steward-review-2026-11-24-4`, owner governance) is not in this Epic.

@@ -96,6 +96,68 @@ def test_bad_tier_message_names_the_bad_value(capsys):
     assert captured.err.startswith("ValueError: ")
 
 
+def test_crash_exits_2_with_one_stderr_line(seed_catalog, monkeypatch, capsys):
+    """Story 52.1 (DW-atlas-review-2026-11-24-1, defect 5): a crash used to exit 1, the
+    code the frozen domain (`degradation-contract.md`, CAP-13) keeps for a policy fail; an
+    error is 2. A bad filter value (`ValueError`, the documented contract) keeps 1 --
+    `test_bad_tier_exits_1_with_stderr_message` above."""
+    seed_catalog(_FIXTURE_DF)
+
+    def boom(**_kwargs):
+        raise RuntimeError("session bootstrap failed")
+
+    monkeypatch.setattr(query, "query_trending_candidates", boom)
+
+    for argv in (["--json"], []):
+        exit_code = main(argv)
+        captured = capsys.readouterr()
+
+        assert exit_code == 2, argv
+        assert captured.out == ""
+        assert captured.err == "RuntimeError: session bootstrap failed\n"
+
+
+def test_a_value_error_that_is_not_a_bad_filter_exits_2(seed_catalog, monkeypatch, capsys):
+    """Story 52.1 (review of the defect-5 fix): only a bad FILTER value exits 1. A
+    `ValueError` raised once the filters have passed -- a plain one, or a subclass such as
+    `UnicodeDecodeError` from a corrupt store -- is an error like any other: exit 2."""
+    seed_catalog(_FIXTURE_DF)
+
+    for exc in (
+        ValueError("corrupt parquet footer"),
+        UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte"),
+    ):
+
+        def boom(_exc=exc, **_kwargs):
+            raise _exc
+
+        monkeypatch.setattr(query, "query_trending_candidates", boom)
+
+        exit_code = main(["--json"])
+        captured = capsys.readouterr()
+
+        assert exit_code == 2, exc
+        assert captured.out == ""
+        assert captured.err == f"{type(exc).__name__}: {exc}\n"
+
+
+def test_every_bad_filter_value_exits_1_before_any_load(monkeypatch, capsys):
+    """Story 52.1: each of the CLI's filters is validated on its own, before the query
+    runs -- the query function is never reached with a bad value."""
+    reached: list[dict] = []
+    monkeypatch.setattr(query, "query_trending_candidates", lambda **kw: reached.append(kw))
+
+    for argv in (["--tier", "bogus"], ["--period", "yearly"], ["--top", "0"], ["--min-stars", "-1"]):
+        exit_code = main(argv)
+        captured = capsys.readouterr()
+
+        assert exit_code == 1, argv
+        assert captured.out == ""
+        assert captured.err.startswith("ValueError: "), argv
+        assert captured.err.count("\n") == 1, argv
+    assert reached == []
+
+
 def test_json_stdout_stays_parseable_when_a_warning_is_logged(seed_catalog, capsys):
     """Follow-up review finding, Story 13.3 (verified live): kedro's rich handler is on
     the ROOT logger and writes to STDOUT, and the root level is WARNING -- so the old
@@ -237,11 +299,13 @@ def test_a_buffered_broken_pipe_exits_1_and_spares_the_hosts_own_stdout_fd(seed_
 
 # Stubs the query seam so the probe stays a pure-stdlib CLI run: no kedro bootstrap, no
 # catalog, no data — the only thing under test is what the interpreter does with a
-# buffered stdout whose reader is gone.
+# buffered stdout whose reader is gone. The seam is two calls since Story 52.1 (the CLI
+# validates the filters on their own, then runs the query), so the stub carries both.
 _BROKEN_PIPE_PROBE = """
 import sys, types
 import pyforge.atlas.trending_candidates as pkg
 stub = types.ModuleType("pyforge.atlas.trending_candidates.query")
+stub.validate_filters = lambda **kw: kw
 stub.query_trending_candidates = lambda **kw: {"count": 0, "candidates": [], "filters": kw}
 sys.modules[stub.__name__] = stub
 pkg.query = stub

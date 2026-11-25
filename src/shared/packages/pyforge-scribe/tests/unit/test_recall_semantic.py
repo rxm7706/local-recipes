@@ -137,3 +137,46 @@ def test_unknown_recall_mode_raises(cited_repo: Path) -> None:
     store = FlatFileGraphStore(cited_repo / "graph.json")
     with pytest.raises(ValueError, match="unknown recall mode"):
         answer("canine", store, repo_root=cited_repo, mode="fuzzy")
+
+
+# --- Story 35.1, defect 1: the commit-after-compile guard fires on the store that serves --semantic ---
+
+
+@pytest.mark.postgres
+def test_postgres_recall_withholds_source_committed_after_compiled_at(
+    tmp_path: Path, pg_dsn: str, cited_repo: Path
+) -> None:
+    import os
+    import subprocess
+
+    def _git(*args: str, date: str | None = None) -> None:
+        env = os.environ.copy()
+        if date:
+            env.update({"GIT_AUTHOR_DATE": date, "GIT_COMMITTER_DATE": date})
+        subprocess.run(["git", *args], cwd=str(cited_repo), check=True, capture_output=True, text=True, env=env)
+
+    _git("init", "-q")
+    _git("config", "user.email", "test@example.com")
+    _git("config", "user.name", "Test")
+    _git("add", "notes")
+    _git("commit", "-q", "-m", "notes", date="2026-01-01T00:00:00+00:00")
+
+    store = PostgresGraphStore(pg_dsn, tmp_path / "ignored")
+    store.reset()
+    store.compiled_at = datetime(2026, 1, 2, tzinfo=timezone.utc)
+    store.upsert_node(_node("memory:project/dog", "dog", "notes/dog.md"))
+    store.commit()
+
+    served = PostgresGraphStore(pg_dsn, tmp_path / "ignored")
+    assert served.compiled_at == datetime(2026, 1, 2, tzinfo=timezone.utc)
+    assert answer("dog", served, repo_root=cited_repo, mode="lexical").node_id == "memory:project/dog"
+    assert answer("canine", served, repo_root=cited_repo, mode="semantic").node_id == "memory:project/dog"
+
+    (cited_repo / "notes" / "dog.md").write_text("the family dog, renamed at noon", encoding="utf-8")
+    _git("add", "notes")
+    _git("commit", "-q", "-m", "after compile", date="2026-01-03T00:00:00+00:00")
+
+    after = PostgresGraphStore(pg_dsn, tmp_path / "ignored")
+    assert [n.stale for n in after.iter_nodes()] == [False], "the guard, not the stored bit"
+    assert answer("dog", after, repo_root=cited_repo, mode="lexical").grounded is False
+    assert answer("canine", after, repo_root=cited_repo, mode="semantic").grounded is False

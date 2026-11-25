@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: 236684b90c3adc9c
-story_count: 139
+source_fingerprint: 1269326efd72e7d4
+story_count: 140
 test_file_count: 47
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 139
-- **Epics parsed:** 40
+- **Stories parsed:** 140
+- **Epics parsed:** 41
 - **Test files inventoried:** 47 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `236684b90c3adc9c`
+- **Source fingerprint:** `1269326efd72e7d4`
 
 ## Risk Assessment
 
@@ -72,6 +72,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 38: Mason's oracle travels: a written public contract and a suite split by what it reads (spec-pyforge-mason CAP-5, CAP-7; relay of spec-pyforge-steward:CAP-175)
 - Epic 39: Mason's cutover seam: the native factory-island build is a capability, and conda-forge-expert waits for its own Spec (spec-pyforge-mason CAP-36)
 - Epic 40: The conda-forge-expert scripts read the pixi configuration pixi reads (spec-pyforge-mason CAP-1)
+- Epic 41: The pypi-test rehearsal asks the index it uploads to (spec-pyforge-mason CAP-3, CAP-5)
 
 ### Low-risk epics
 
@@ -272,6 +273,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 39.1 | The factory-island build is a mason capability, and its error names only what... | none observed |
 | 39.2 | conda-forge-expert gets its own Spec after the root of record flips | none observed |
 | 40.1 | The CFE scripts merge the pixi config layers, and the MCP reference names the... | none observed |
+| 41.1 | The pypi-test rehearsal asks the index it uploads to, and a wrapped tool's fa... | none observed |
 
 ## Quality Gates
 

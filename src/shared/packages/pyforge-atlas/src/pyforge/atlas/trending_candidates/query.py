@@ -87,6 +87,29 @@ def _validate_not_on_cf(not_on_cf: bool) -> bool:
     return not_on_cf
 
 
+def validate_filters(
+    *,
+    period: str = "weekly",
+    tier: str = "1,2",
+    top: int = 25,
+    not_on_cf: bool = True,
+    min_stars: int = 500,
+) -> dict[str, Any]:
+    """Validate and normalize the five filters, touching no session, catalog or dataset.
+
+    Raises ``ValueError`` naming the bad value. Story 52.1: this is the ONE place a bad
+    filter value is raised, so the CLI can call it by itself and keep exit 1 for a bad
+    filter alone; a ``ValueError`` from the load or the filtering that follows is an
+    error like any other. Idempotent: the returned values pass through it unchanged."""
+    return {
+        "period": _validate_period(period),
+        "tier": _validate_tier(tier),
+        "top": _validate_top(top),
+        "not_on_cf": _validate_not_on_cf(not_on_cf),
+        "min_stars": _validate_min_stars(min_stars),
+    }
+
+
 def _tier_tokens(tier: str) -> set[str]:
     return {t.strip() for t in tier.split(",")}
 
@@ -138,7 +161,7 @@ def query_trending_candidates(
     """Filter/sort/cap the CAP-2 classified candidate set (tier-taxonomy.md's
     Operator-surface parameters table).
 
-    Validates every filter FIRST — an unrecognized ``tier`` token, or a ``period``/
+    Validates every filter FIRST (:func:`validate_filters`) — an unrecognized ``tier`` token, or a ``period``/
     ``top``/``min_stars`` outside its valid range, raises ``ValueError`` naming the bad
     value BEFORE any dataset load (fail fast, Boundaries & Constraints). Then loads
     ``trending_candidates_classified`` through the identical seam ``read_dataset`` uses
@@ -174,11 +197,9 @@ def query_trending_candidates(
     (CAP-1/CAP-2's never-hard-fail posture). An empty-but-present dataset degrades the
     same way through the ordinary empty-DataFrame filter path.
     """
-    period = _validate_period(period)
-    tier = _validate_tier(tier)
-    top = _validate_top(top)
-    not_on_cf = _validate_not_on_cf(not_on_cf)
-    min_stars = _validate_min_stars(min_stars)
+    filters = validate_filters(period=period, tier=tier, top=top, not_on_cf=not_on_cf, min_stars=min_stars)
+    period, tier, top = filters["period"], filters["tier"], filters["top"]
+    not_on_cf, min_stars = filters["not_on_cf"], filters["min_stars"]
 
     with _session.bootstrapped_session(project_path, env=env) as s:
         catalog = _session.loaded_catalog(s)

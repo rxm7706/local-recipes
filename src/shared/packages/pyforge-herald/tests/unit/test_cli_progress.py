@@ -270,3 +270,32 @@ def test_prompt_unblock_narrative_on_eof_returns_empty_string():
         raise EOFError
 
     assert cli._prompt_unblock_narrative("warden", "2026-08-08", reader=_raise_eof) == ""
+
+
+# --- Story 54.1: `--update` with no station is a usage error ------------------
+
+
+def test_update_with_no_station_exits_2_and_writes_nothing(capsys, monkeypatch, tmp_path):
+    """DW-herald-review-2026-11-24-1 (4): the call fell through to the
+    listing and exited 0, having recorded nothing."""
+    monkeypatch.setenv(auth.TOKEN_ENV_VAR, "operator:tok")
+    rc = cli.main(["progress", "--update", "--compute-hours", "3.5", "--unblock-narrative", "x"])
+    assert rc == 2
+    captured = capsys.readouterr()
+    assert "--update" in captured.err
+    assert "station" in captured.err
+    assert captured.out == ""
+    assert not (tmp_path / ".herald").exists()
+
+
+def test_update_with_only_the_station_filter_exits_2(capsys, monkeypatch):
+    """`--station` filters the listing; it does not name the station `--update` writes."""
+    monkeypatch.setenv(auth.TOKEN_ENV_VAR, "operator:tok")
+    assert cli.main(["progress", "--update", "--station", "warden", "--unblock-narrative", "x"]) == 2
+    assert "No progress recorded" in _show_after(capsys)
+
+
+def _show_after(capsys) -> str:
+    capsys.readouterr()
+    assert cli.main(["progress", "warden"]) == 0
+    return capsys.readouterr().out

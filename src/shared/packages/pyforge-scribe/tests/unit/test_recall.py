@@ -932,3 +932,265 @@ def test_recall_withholds_source_committed_after_compiled_at(tmp_path: Path) -> 
 
     after = answer("why did we drop Kuzu", FlatFileGraphStore(store_path), repo_root=tmp_path)
     assert after.grounded is False
+
+
+# --- Story 35.1, defect 1: every shipped store keeps the compile time, and recall's guard fires on each ---
+#
+# No server and no DuckDB here: the PostgreSQL store runs on an in-memory stand-in for psycopg, the plane store on
+# an in-memory stand-in for its DuckDB connection. Each stand-in holds the rows of the ONE relation the store already
+# has, so a stamp that survives a reload was written through that relation, as a row.
+
+
+class _Cursor:
+    def __init__(self, rows: list[tuple]) -> None:
+        self._rows = rows
+
+    def fetchone(self) -> tuple | None:
+        return self._rows[0] if self._rows else None
+
+    def fetchall(self) -> list[tuple]:
+        return list(self._rows)
+
+
+class _FakeSqlText(str):
+    def format(self, *args: object, **kwargs: object) -> _FakeSqlText:  # type: ignore[override]
+        return _FakeSqlText(str.format(self, *args, **kwargs))
+
+
+class _FakeSqlModule:
+    SQL = _FakeSqlText
+
+    @staticmethod
+    def Identifier(name: str) -> str:  # noqa: N802 -- psycopg.sql's own spelling
+        return f'"{name}"'
+
+
+class _FakePgConnection:
+    """The statements `PostgresGraphStore` issues, against rows kept by id. Columns as `graph_nodes` has them."""
+
+    def __init__(self, rows: dict[str, tuple]) -> None:
+        self._rows = rows
+
+    def __enter__(self) -> _FakePgConnection:
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        return None
+
+    def transaction(self) -> _FakePgConnection:
+        return self
+
+    def execute(self, query: object, params: tuple = ()) -> _Cursor:
+        text = " ".join(str(query).split())
+        assert not any(word in text.upper() for word in ("CREATE ", "ALTER ", "DROP ")), f"DDL at runtime: {text}"
+        if text.startswith("SELECT to_regclass"):
+            return _Cursor([(params[0],)])
+        if text.startswith("SELECT pg_advisory_xact_lock"):
+            return _Cursor([])
+        if text.startswith("DELETE FROM"):
+            self._rows.clear()
+            return _Cursor([])
+        if text.startswith("INSERT INTO"):
+            assert len(params) == 10, "graph_nodes has ten columns; a stamp must not need an eleventh"
+            self._rows[str(params[0])] = tuple(params)
+            return _Cursor([])
+        assert text.startswith("SELECT id, kind, title, text, citation, valid_from, valid_until, superseded_by, stale")
+        rows = [row[:8] + (row[9],) for _id, row in sorted(self._rows.items())]
+        if "WHERE" in text:  # query_similar: embedded, current, not stale
+            rows = [
+                row[:8] + (row[9],)
+                for _id, row in sorted(self._rows.items())
+                if row[8] is not None and row[6] is None and row[9] is False and row[0] not in params
+            ]
+        return _Cursor(rows)
+
+
+class _FakePlaneConnection:
+    """The statements `PlaneGraphStore` issues, against `scribe_nodes` and `scribe_embeddings` kept by id."""
+
+    def __init__(self, tables: dict[str, dict[str, list]]) -> None:
+        self._tables = tables
+
+    def execute(self, query: str, params: list | None = None) -> _Cursor:
+        text = " ".join(query.split())
+        if text.startswith(("CREATE TABLE IF NOT EXISTS", "ALTER TABLE scribe_nodes ADD COLUMN IF NOT EXISTS stale")):
+            return _Cursor([])  # the store's own pre-existing bootstrap, unchanged by Story 35.1
+        for table in ("scribe_nodes", "scribe_embeddings"):
+            if text == f"DELETE FROM {table}":
+                self._tables[table].clear()
+                return _Cursor([])
+            if text.startswith(f"INSERT INTO {table} VALUES"):
+                assert params is not None
+                assert len(params) == (9 if table == "scribe_nodes" else 2), f"{table} gained a column"
+                self._tables[table][str(params[0])] = list(params)
+                return _Cursor([])
+        if text.startswith("SELECT n.id FROM scribe_embeddings e JOIN scribe_nodes n"):
+            nodes = self._tables["scribe_nodes"]
+            hits = [
+                (node_id,)
+                for node_id in sorted(self._tables["scribe_embeddings"])
+                if node_id in nodes and nodes[node_id][6] is None and not nodes[node_id][8]
+            ]
+            return _Cursor(hits)
+        assert text.startswith("SELECT id, kind, title, text, citation, valid_from, valid_until, superseded_by, stale")
+        return _Cursor([tuple(row) for _id, row in sorted(self._tables["scribe_nodes"].items())])
+
+    def close(self) -> None:
+        return None
+
+
+@pytest.fixture(params=["flatfile", "postgres", "plane"])
+def stamped_store(request: pytest.FixtureRequest, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """`(open, raw_ids)`: `open()` is a fresh store over the same backing; `raw_ids()` the ids the backing holds."""
+    kind = request.param
+    if kind == "flatfile":
+        path = tmp_path / "graph.json"
+
+        def _raw_flat() -> set[str]:
+            return set(json.loads(path.read_text(encoding="utf-8"))["nodes"]) if path.is_file() else set()
+
+        return (lambda: FlatFileGraphStore(path)), _raw_flat
+    if kind == "postgres":
+        from types import SimpleNamespace
+
+        from pyforge.scribe import graph_store_pg
+
+        rows: dict[str, tuple] = {}
+        fake = SimpleNamespace(
+            connect=lambda _dsn: _FakePgConnection(rows),
+            errors=SimpleNamespace(InsufficientPrivilege=PermissionError),
+        )
+        monkeypatch.setattr(graph_store_pg, "_import_psycopg", lambda: (fake, _FakeSqlModule))
+        return (
+            lambda: graph_store_pg.PostgresGraphStore("postgres://fake/scribe_graph", tmp_path / "not-json")
+        ), lambda: set(rows)
+
+    from pyforge.scribe import graph_store_plane
+
+    tables: dict[str, dict[str, list]] = {"scribe_nodes": {}, "scribe_embeddings": {}}
+    monkeypatch.setattr(
+        graph_store_plane.PlaneGraphStore, "_open_plane", lambda self, path, *, write: _FakePlaneConnection(tables)
+    )
+    return (
+        lambda: graph_store_plane.PlaneGraphStore(tmp_path / graph_store_plane.ATLAS_DUCKDB_NAME, tmp_path / "g.json")
+    ), lambda: set(tables["scribe_nodes"])
+
+
+def _kuzu_repo(tmp_path: Path) -> tuple[Path, object]:
+    """A git repository holding one captured memory, committed on 2026-01-01; returns `(memory_root, commit_later)`."""
+    memory_root = tmp_path / ".claude" / "memory"
+    memory_root.mkdir(parents=True)
+    (memory_root / "MEMORY.md").write_text(
+        "# Team Memory Index\n\n## Feedback\n\n## Project\n\n## Reference\n", encoding="utf-8"
+    )
+    capture(
+        memory_root,
+        "project",
+        "We dropped Kuzu because it was archived upstream after an acquisition.",
+        slug="kuzu-drop",
+    )
+
+    def _git(*args: str, date: str | None = None) -> None:
+        env = os.environ.copy()
+        if date:
+            env.update({"GIT_AUTHOR_DATE": date, "GIT_COMMITTER_DATE": date})
+        subprocess.run(["git", *args], cwd=str(tmp_path), check=True, capture_output=True, text=True, env=env)
+
+    _git("init", "-q")
+    _git("config", "user.email", "test@example.com")
+    _git("config", "user.name", "Test")
+    (tmp_path / ".gitignore").write_text("graph.json\nnot-json\ng.json\n*.lock\n", encoding="utf-8")
+    _git("add", "-A")
+    _git("commit", "-q", "-m", "capture", date="2026-01-01T00:00:00+00:00")
+
+    def _commit_later(citation: str) -> None:
+        source = tmp_path / citation
+        source.write_text(source.read_text(encoding="utf-8") + "\n# noon landing\n", encoding="utf-8")
+        _git("add", "-A")
+        _git("commit", "-q", "-m", "after compile", date="2026-01-03T00:00:00+00:00")
+
+    return memory_root, _commit_later
+
+
+_STAMP = datetime(2026, 1, 2, 3, 4, 5, 678901, tzinfo=timezone.utc)
+
+
+def test_every_store_keeps_compiled_at_across_commit_and_reload(tmp_path: Path, stamped_store) -> None:
+    from pyforge.scribe.models import COMPILED_AT_ROW_ID
+
+    open_store, raw_ids = stamped_store
+    memory_root, _commit_later = _kuzu_repo(tmp_path)
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=open_store(),
+        transcript_root=tmp_path / "no-transcripts",
+        compiled_at=_STAMP,
+    )
+
+    reloaded = open_store()
+    assert reloaded.compiled_at == _STAMP
+
+    # The stamp is never a node: not in a scan, a citation lookup, a similarity ranking, or the compile's count.
+    ids = [node.id for node in reloaded.iter_nodes()]
+    assert "memory:project/kuzu-drop" in ids
+    assert COMPILED_AT_ROW_ID not in ids
+    assert not any(node_id.startswith("scribe:") for node_id in ids)
+    assert reloaded.query_by_citation("") == []
+    assert COMPILED_AT_ROW_ID not in [node.id for node in reloaded.query_similar("kuzu compiled_at scribe", limit=64)]
+    assert result.node_count == len(ids)
+    assert raw_ids() - set(ids) <= {COMPILED_AT_ROW_ID}, "the backing holds the nodes and at most the one stamp row"
+
+    # A second commit of the reloaded store carries the stamp forward; a reset drops it, in memory and on reload.
+    reloaded.commit()
+    assert open_store().compiled_at == _STAMP
+    cleared = open_store()
+    cleared.reset()
+    assert cleared.compiled_at is None
+    cleared.commit()
+    assert open_store().compiled_at is None
+    assert raw_ids() == set()
+
+
+def test_every_store_withholds_a_source_committed_after_compiled_at(tmp_path: Path, stamped_store) -> None:
+    open_store, _raw_ids = stamped_store
+    memory_root, commit_later = _kuzu_repo(tmp_path)
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=open_store(),
+        transcript_root=tmp_path / "no-transcripts",
+        compiled_at=_STAMP,
+    )
+
+    reloaded = open_store()
+    memory_only = frozenset({"memory"})  # the commit node of the same change has no source file to compare
+    semantic = bool(reloaded.query_similar("why did we drop Kuzu"))
+    assert answer("why did we drop Kuzu", reloaded, repo_root=tmp_path).grounded is True
+    if semantic:
+        served = answer("why did we drop Kuzu", reloaded, repo_root=tmp_path, mode="semantic", kinds=memory_only)
+        assert served.node_id == "memory:project/kuzu-drop"
+
+    cited = next(n for n in reloaded.iter_nodes() if n.id == "memory:project/kuzu-drop")
+    assert cited.stale is False
+    commit_later(cited.citation)
+
+    after = open_store()
+    assert next(n for n in after.iter_nodes() if n.id == cited.id).stale is False, "the guard, not the stored bit"
+    assert answer("why did we drop Kuzu", after, repo_root=tmp_path).grounded is False
+    if semantic:
+        withheld = answer("why did we drop Kuzu", after, repo_root=tmp_path, mode="semantic", kinds=memory_only)
+        assert withheld.grounded is False
+
+
+@pytest.mark.parametrize("stamped_store", ["postgres", "plane"], indirect=True)
+def test_no_relational_store_accepts_a_node_under_the_reserved_stamp_id(stamped_store) -> None:
+    from pyforge.scribe.models import COMPILED_AT_ROW_ID
+
+    open_store, raw_ids = stamped_store
+    store = open_store()
+    store.reset()
+    with pytest.raises(ValueError, match="reserved"):
+        store.upsert_node(_node(id=COMPILED_AT_ROW_ID))
+    store.commit()
+    assert raw_ids() == set()

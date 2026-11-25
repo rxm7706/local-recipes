@@ -139,6 +139,20 @@ def test_deck_pull_commit_flag_reports_committed_in_stdout(monkeypatch, capsys):
     assert "committed" in out
 
 
+def test_deck_pull_commit_flag_says_so_when_there_was_nothing_to_commit(monkeypatch, capsys):
+    """Story 54.1: `--commit` on a pull whose deck already matches HEAD exits
+    0 and names the outcome, never the bare "(committed)"."""
+
+    def _fake_pull(transport, *, slug, repo_root, commit):
+        return _fake_pull_result(committed=False)
+
+    monkeypatch.setattr(deck_pipeline, "pull_prototype", _fake_pull)
+    assert cli.main(["deck", "pull", "pyforge-warden", "--commit"]) == 0
+    out = capsys.readouterr().out
+    assert "(nothing to commit)" in out
+    assert "(committed)" not in out
+
+
 def test_deck_pull_without_commit_flag_does_not_mention_committed_in_stdout(monkeypatch, capsys):
     def _fake_pull(transport, *, slug, repo_root, commit):
         return _fake_pull_result(committed=commit)

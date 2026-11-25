@@ -257,8 +257,9 @@ def _build_parser() -> _HeraldArgumentParser:
         "--commit",
         action="store_true",
         help=(
-            "commit the pulled + re-derived files to git (default: leave "
-            "them uncommitted; never commits when the pull was unchanged)"
+            "commit the pulled + re-derived presentations/<slug>/ files to git "
+            "(default: leave them uncommitted; never commits when the pull "
+            "was unchanged or the deck already matches HEAD)"
         ),
     )
     pull.add_argument(
@@ -931,7 +932,12 @@ def _run_deck_pull(args: argparse.Namespace) -> int:
         if result.unchanged:
             print(f"pull {args.slug} ({result.artifact}): unchanged")
         else:
-            suffix = " (committed)" if result.committed else ""
+            if result.committed:
+                suffix = " (committed)"
+            elif args.commit:
+                suffix = " (nothing to commit)"
+            else:
+                suffix = ""
             print(f"pulled {args.slug} ({result.artifact}) -> {result.local_path}{suffix}")
 
     return dispatch(operation)
@@ -1153,7 +1159,9 @@ def _run_deck_exports(args: argparse.Namespace) -> int:
         try:
             text = deck_publish.exports_as_json(args.slug, store=store)
         except FileNotFoundError as exc:
-            raise errors.HeraldError(str(exc)) from exc
+            # Story 54.1: an unknown slug is the usage error (exit 2) it is
+            # on `deck publish`, not a plain `HeraldError` (exit 1).
+            raise errors.DeckUsageError(str(exc)) from exc
         except OSError as exc:
             raise errors.DeckPublishError(str(exc)) from exc
         print(text, end="")
@@ -1442,7 +1450,18 @@ def _run_progress(args: argparse.Namespace) -> int:
     """``herald progress`` (Moment 2, Stories 8.1-8.3). Three shapes:
     ``<station>`` (latest record), ``<station> --update`` (write, operator
     role required), and no station / ``--list`` (filtered listing,
-    read-only). Listing never checks auth (AD-16); only ``--update`` does."""
+    read-only). Listing never checks auth (AD-16); only ``--update`` does.
+
+    ``--update`` with no positional station is a usage error, exit 2 (Story
+    54.1): it used to fall through to the listing and exit 0 with nothing
+    recorded. ``--station`` filters the listing; it never names the station
+    ``--update`` writes."""
+    if args.update and args.station_arg is None:
+        print(
+            f"{TOOL_NAME}: progress --update requires a station: herald progress <station> --update",
+            file=sys.stderr,
+        )
+        return 2
 
     def operation() -> None:
         if args.station_arg is not None:

@@ -3488,7 +3488,8 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: low
   promoted: 2026-11-24 — doctor Story 61.1 (the documentation review, branch `docs-verify-2026-11-24`)
   reason: named blocker: a `SPEC.md` re-derive runs on the operator-approved render route, which this session cannot write (the Edit hook and the permission classifier refuse it, as on 2026-11-18).
-  status: open
+  resolution: 2026-11-25, branch `review-defects-2026-11-25` (the change that carries doctor Story 62.1; operator rulings of 2026-11-25 "can we close and complete these too" and, in session, "DW-doctor-61-1-1 stays open; it needs you to run or allow that render - allowed") — each of the four Specs took a memlog correction entry and an anchor-asserting re-derive of `SPEC.md` in the same change, every finding re-verified at main `3551065c0c` and confirmed, none ruled not a defect and none left open; no capability is added, removed or renumbered. (1) `spec-coverage-gate-independence`: corrected - the Why is dated to its seed day with a dated paragraph that names `scripts/coverage_gate.py`, `docs/governance/coverage-thresholds.toml` and the retired `coverage-gates.yml`, and CAP-1 and CAP-4 success name each station's `<station>-gate` job in `pyforge-station-tests.yml` (a job of its own, where this row's evidence said a step of each station job). (2) `spec-pyforge-charter`: corrected - CAP-3's success says doctor Story 21.4 closed the `chain.py` mirror; the "one `guild` Dream" claim is corrected in three places (CAP-3 intent, CAP-7 success, a Non-goal) to what §5 as amended admits and `guild_dreams` names; the realization paragraph names the three chain-standard markers. (3) `spec-feature-flag-governance`: corrected - the Why's paragraph is dated to its rule date and put in the past tense, and one dated sentence says the tree holds 105 flags and no `.steward/flags.json` exists. (4) `spec-one-chain-per-station`: corrected - the `surface: []` comment names where the two doctor sources live, CAP-3(d) states the CAP-11 archive form, and the Non-goal forbids rewriting what a shipped story delivered, not renumbering.
+  status: resolved
 
 ### DW-doctor-61-1-2: `doctor flags kill-switch` writes the flag tree non-atomically and its recorded metric is lost
 
@@ -3502,4 +3503,19 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: low
   promoted: 2026-11-24 — doctor Story 61.1 (the documentation review, branch `docs-verify-2026-11-24`)
   reason: a code, tooling or Spec change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
+  resolution: 2026-11-25, branch `review-defects-2026-11-25` (doctor Story 62.1) — both defects reproduced against the tree before any fix, none ruled not a defect and none left open. (1) The non-atomic write: reproduced and fixed - `test_disable_flag_replaces_the_tree_in_one_step` exited 1 on the unchanged tree (a write failing part-way left `flags.json` truncated); `disable_flag` now replaces the tree in one step through `pyforge.core.atomic_write` at its resolved path with the file's own mode kept, so a symlinked tree is written through, and a directory that cannot take the replacement is the named refusal `doctor flags kill-switch: cannot replace <path>: <error>` at exit 2 with the file byte-identical. (2) The lost reason: reproduced and fixed - `test_kill_switch_result_line_names_the_reason` exited 1 on the unchanged tree (the result line carried no reason); the result line now ends `; reason: <reason>` on one line, and the `--reason` help and `contract.md` say so. Not taken from this row's fix line: the reason is not journaled to a file and the metric is not pushed (the flag tree stays the actuator's one write under CAP-96 and NFR-1); the counter is unchanged.
+  status: resolved
+
+### DW-doctor-62-1-1: The compiled doctor skill does not describe the kill switch's result line or its refusal
+
+- source_spec: `planning-artifacts/specs/spec-62-1-the-kill-switch-writes-the-flag-tree-whole-and-reports-its-reason.md` (found while the story closed)
+  summary: the compiled station skill's `flags kill-switch` passage predates doctor Story 62.1: it does not say the reason is printed on the result line or that a tree whose directory cannot take the replacement is a named refusal at exit 2, and its source anchor for `_run_flags` has shifted.
+  evidence: `.claude/skills/pyforge-doctor/active/pyforge-doctor/SKILL.md` lines 88-93 against `src/shared/packages/pyforge-doctor/src/pyforge/doctor/__main__.py` (`_run_flags`) and `actuators/flag_kill_switch.py`.
+  location: .claude/skills/pyforge-doctor/active/pyforge-doctor/SKILL.md
+  origin: doctor Story 62.1 (the deferred defects of the 2026-11-24 review, branch `review-defects-2026-11-25`)
+  fix: one operator-attended `skf-update-skill` run for pyforge-doctor.
+  owner: doctor
+  severity: low
+  promoted: 2026-11-25 — doctor Story 62.1 (branch `review-defects-2026-11-25`)
+  reason: named blocker: an SKF-compiled skill is regenerated by its own tool, operator-attended.
   status: open

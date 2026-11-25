@@ -11,6 +11,7 @@ from django.test import RequestFactory
 from django_marshal_portal import mcp_asgi as marshal_mcp
 from django_marshal_portal import views as marshal_views
 from django_pyforge.assertion.client import PortalClient
+from django_pyforge.roles import group_claim_name
 
 PORTAL = (
     Path(__file__).resolve().parents[2]
@@ -135,6 +136,32 @@ def test_watch_report_renders_injected_envelope(
     assert "21.5 -- done" in body
     assert "21.6" in body
     assert "first observation" in body
+
+
+def test_watch_report_carries_each_callers_own_subject(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Steward Story 133.4: the subject is read from the caller's claims.
+
+    The view read ``request.idp_sub``, which nothing sets, so every caller ran
+    as ``marshal-portal`` and shared that subject's rate-limit bucket.
+    """
+    subjects: list[str] = []
+
+    def fake_call(self, station, job, body, **kwargs):
+        subjects.append(kwargs["sub"])
+        return {"command": "watch", "verdict": "clean", "data": {}, "findings": []}
+
+    monkeypatch.setattr(PortalClient, "call", fake_call)
+    for caller in ("operator-one", "operator-two"):
+        request = RequestFactory().get("/stations/marshal/watch/")
+        request.idp_token_claims = {
+            "sub": caller,
+            group_claim_name(): ["pyforge:station:marshal"],
+        }
+        response = marshal_views.watch_report(request)
+        assert response.status_code == HTTPStatus.OK
+    assert subjects == ["operator-one", "operator-two"]
 
 
 def test_watch_report_requires_marshal_role() -> None:

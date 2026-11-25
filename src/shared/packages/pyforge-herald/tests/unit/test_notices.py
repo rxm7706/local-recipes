@@ -521,3 +521,20 @@ def test_an_unreadable_index_is_never_reported_as_a_missing_notice(tmp_path: Pat
     with pytest.raises(HeraldError, match="could not be opened") as excinfo:
         call(tmp_path)
     assert wrong_message not in str(excinfo.value)
+
+
+# --- Story 54.1: a deadline is YYYY-MM-DD at entry ----------------------------
+
+
+@pytest.mark.parametrize("bad", ["next quarter", "2026-9-1", "20260901", "2026-09-01T00:00:00", "2026-02-30"])
+def test_author_refuses_a_deadline_that_is_not_iso_and_stores_nothing(tmp_path: Path, bad: str):
+    """DW-herald-review-2026-11-24-1 (3): `--deadline` is documented as
+    YYYY-MM-DD and was stored as given."""
+    with pytest.raises(HeraldError, match="YYYY-MM-DD"):
+        _author(tmp_path, deadline=bad)
+    assert notices.list_notices(tmp_path) == []
+    assert not (tmp_path / "notices").exists()
+
+
+def test_author_accepts_no_deadline(tmp_path: Path):
+    assert _author(tmp_path, deadline=None).deadline is None

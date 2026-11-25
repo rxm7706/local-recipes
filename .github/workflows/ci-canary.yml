@@ -9,6 +9,10 @@ on:
     - cron: '0 4 * * *'  # nightly since Story 117.6 (CAP-175, ruling D1): the image builds left the PR path and are built here every day
   workflow_dispatch:
 
+# Read-only token (steward Story 133.2): no job here writes to the repository.
+permissions:
+  contents: read
+
 jobs:
   plan:
     # ci-surfaces: ci-canary.plan
@@ -23,6 +27,7 @@ jobs:
 
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          pixi-version: v0.80.0
           environments: pyforge-guild
           cache: true
 
@@ -73,6 +78,7 @@ jobs:
       - uses: prefix-dev/setup-pixi@v0.11.2
         if: matrix.id == 'station-tests.guild-container'
         with:
+          pixi-version: v0.80.0
           environments: pyforge-steward
           cache: true
 

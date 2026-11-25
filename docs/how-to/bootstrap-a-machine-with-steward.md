@@ -4,7 +4,7 @@ sources:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/session.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/contract.md
-verified: 2026-11-24
+verified: 2026-11-25
 ---
 
 # How to bootstrap a machine with steward

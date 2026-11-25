@@ -16,9 +16,11 @@ import pytest
 from typer.testing import CliRunner
 
 import pyforge.scribe.cli as cli_module
+import pyforge.scribe.promote as promote_module
 from pyforge.scribe.cli import app
 from pyforge.scribe.extras import cocoindex_flow as cocoindex_module
 from pyforge.scribe.extras import graphify as graphify_module
+from pyforge.scribe.graph_store import FlatFileGraphStore
 
 runner = CliRunner()
 
@@ -925,7 +927,9 @@ def test_index_refresh_on_mode_one_changed_source_refreshes_only_that_artifact(
         }
     }
     monkeypatch.setattr(graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes))
-    move_list_source = tmp_path / "src" / "platform" / "app.py"
+    # Outside every graphify target (Story 35.1: `src/platform` is one, so an
+    # edit there now recomputes graphify-ingest too).
+    move_list_source = tmp_path / "tools" / "app.py"
     move_list_source.parent.mkdir(parents=True)
     move_list_source.write_text("x = 1\n", encoding="utf-8")
 
@@ -1124,3 +1128,203 @@ def test_index_refresh_declare_cocoindex_unavailable_exits_2(tmp_path: Path, mon
 
     assert result.exit_code == 2
     assert "cocoindex" in _combined_output(result).lower()
+
+
+# --- Story 35.1: refresh fingerprints every graphify target; errors exit 2 ---
+
+
+def test_index_refresh_fingerprints_every_graphify_target(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Defect 2: with no `--target`, an edit under any target the ingest walks recomputes graphify-ingest."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("SCRIBE_COCOINDEX_EXTRA", "1")
+    monkeypatch.setattr(cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule())
+    fake_nodes = {
+        "python:example": {
+            "label": "example",
+            "source_file": "src/shared/packages/example.py",
+            "source_location": "L1",
+        }
+    }
+    monkeypatch.setattr(graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes))
+    assert len(graphify_module.DEFAULT_GRAPHIFY_TARGETS) == 3
+    for rel in graphify_module.DEFAULT_GRAPHIFY_TARGETS:
+        (tmp_path / rel).mkdir(parents=True)
+        (tmp_path / rel / "example.py").write_text("x = 1\n", encoding="utf-8")
+
+    assert runner.invoke(app, ["index", "refresh"]).exit_code == 0
+
+    for rel in graphify_module.DEFAULT_GRAPHIFY_TARGETS:
+        (tmp_path / rel / "edited.py").write_text("y = 2\n", encoding="utf-8")
+        result = runner.invoke(app, ["index", "refresh"])
+        assert result.exit_code == 0
+        refreshed = _combined_output(result).split("skipped (unchanged):")[0]
+        assert "graphify-ingest" in refreshed, f"an edit under {rel.as_posix()} read unchanged"
+
+    settled = runner.invoke(app, ["index", "refresh"])
+    assert "skipped (unchanged): move-list, graphify-ingest" in _combined_output(settled)
+
+
+def test_index_refresh_absent_graphify_target_is_not_a_missing_source(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 35.1: a named target the tree lacks is skipped, as the ingest skips it, and one that appears is a change."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("SCRIBE_COCOINDEX_EXTRA", "1")
+    monkeypatch.setattr(cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule())
+    monkeypatch.setattr(graphify_module, "_import_graphify", lambda: _FakeGraphifyModule({}))
+    target = tmp_path / "src" / "shared" / "packages"
+    target.mkdir(parents=True)
+    (target / "example.py").write_text("x = 1\n", encoding="utf-8")
+
+    first = runner.invoke(app, ["index", "refresh"])
+    assert first.exit_code == 0
+    assert "does not exist" not in _combined_output(first)
+
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts" / "tool.py").write_text("y = 2\n", encoding="utf-8")
+    second = runner.invoke(app, ["index", "refresh"])
+    assert "graphify-ingest" in _combined_output(second).split("skipped (unchanged):")[0]
+
+
+def test_capture_lock_timeout_exits_2_without_a_traceback(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Defect 4: the capture lock's `TimeoutError` is one line on stderr and exit 2."""
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+
+    def _locked_out(*args, **kwargs):
+        raise TimeoutError("timed out waiting for capture lock: /tmp/pyforge-scribe-x.lock")
+
+    monkeypatch.setattr(cli_module, "capture_write", _locked_out)
+
+    result = runner.invoke(app, ["capture", "--type", "project", "--text", "a decision"])
+
+    assert result.exit_code == 2
+    assert isinstance(result.exception, SystemExit)
+    output = _combined_output(result)
+    assert "timed out waiting for capture lock" in output
+    assert "Traceback" not in output
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["recall", "anything"],
+        ["graph", "compile"],
+        ["index", "build"],
+        ["index", "refresh"],
+    ],
+)
+def test_graph_store_plugin_error_exits_2_without_a_traceback(
+    argv: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Defect 4: a `PluginError` from `open_graph_store` is one line on stderr and exit 2."""
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+    monkeypatch.delenv("SCRIBE_COCOINDEX_EXTRA", raising=False)
+    monkeypatch.setenv("PYFORGE_GRAPHSTORE_OWNER", "nobody-owns-this")
+    target = tmp_path / "src" / "shared" / "packages"
+    target.mkdir(parents=True)
+    (target / "example.py").write_text("x = 1\n", encoding="utf-8")
+    monkeypatch.setattr(graphify_module, "_import_graphify", lambda: _FakeGraphifyModule({}))
+
+    result = runner.invoke(app, argv)
+
+    assert result.exit_code == 2
+    assert isinstance(result.exception, SystemExit)
+    output = _combined_output(result)
+    assert "nobody-owns-this" in output
+    assert "Traceback" not in output
+
+
+def test_index_refresh_on_mode_plugin_error_exits_2_without_a_traceback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Defect 4, the cocoindex-on path: the derive step's `PluginError` leaves the same way."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("SCRIBE_COCOINDEX_EXTRA", "1")
+    monkeypatch.setenv("PYFORGE_GRAPHSTORE_OWNER", "nobody-owns-this")
+    monkeypatch.setattr(cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule())
+    target = tmp_path / "src" / "shared" / "packages"
+    target.mkdir(parents=True)
+    (target / "example.py").write_text("x = 1\n", encoding="utf-8")
+    monkeypatch.setattr(graphify_module, "_import_graphify", lambda: _FakeGraphifyModule({}))
+
+    result = runner.invoke(app, ["index", "refresh"])
+
+    assert result.exit_code == 2
+    assert isinstance(result.exception, SystemExit)
+    assert "nobody-owns-this" in _combined_output(result)
+
+
+def test_capture_promote_lock_timeout_exits_2_without_a_traceback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Defect 4, the `--promote` path: it writes through the same locked `capture()`."""
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+    source_root = tmp_path / "source"
+    source_root.mkdir()
+    _scaffold_source_entry(
+        source_root,
+        "feedback_run_tests_first.md",
+        "---\n"
+        "name: run-tests-first\n"
+        "description: I prefer running the tests before opening a PR.\n"
+        "type: feedback\n"
+        "---\n"
+        "I prefer that contributors run the full test suite before opening a PR.\n",
+    )
+
+    def _locked_out(*args, **kwargs):
+        raise TimeoutError("timed out waiting for capture lock: /tmp/pyforge-scribe-x.lock")
+
+    monkeypatch.setattr(promote_module, "capture_write", _locked_out)
+
+    result = runner.invoke(app, ["capture", "--promote", "--source", str(source_root)], input="y\n")
+
+    assert result.exit_code == 2
+    assert isinstance(result.exception, SystemExit)
+    output = _combined_output(result)
+    assert "timed out waiting for capture lock" in output
+    assert "Traceback" not in output
+    assert list((tmp_path / ".claude" / "memory" / "feedback").glob("*.md")) == []
+
+
+@pytest.mark.parametrize(
+    ("argv", "cocoindex"),
+    [
+        (["graph", "compile"], False),
+        (["index", "build"], False),
+        (["index", "refresh"], False),
+        (["index", "refresh"], True),
+    ],
+)
+def test_graph_store_lock_timeout_exits_2_without_a_traceback(
+    argv: list[str], cocoindex: bool, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Defect 4: the flat-file store's commit lock `TimeoutError` is one line on stderr and exit 2."""
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+    monkeypatch.delenv("PYFORGE_GRAPHSTORE_OWNER", raising=False)
+    if cocoindex:
+        monkeypatch.setenv("SCRIBE_COCOINDEX_EXTRA", "1")
+        monkeypatch.setattr(cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule())
+    else:
+        monkeypatch.delenv("SCRIBE_COCOINDEX_EXTRA", raising=False)
+    target = tmp_path / "src" / "shared" / "packages"
+    target.mkdir(parents=True)
+    (target / "example.py").write_text("x = 1\n", encoding="utf-8")
+    monkeypatch.setattr(graphify_module, "_import_graphify", lambda: _FakeGraphifyModule({}))
+
+    def _locked_out(self) -> None:
+        raise TimeoutError("timed out waiting for graph-store lock: /tmp/graph.json.lock")
+
+    monkeypatch.setattr(FlatFileGraphStore, "commit", _locked_out)
+
+    result = runner.invoke(app, argv)
+
+    assert result.exit_code == 2
+    assert isinstance(result.exception, SystemExit)
+    output = _combined_output(result)
+    assert "timed out waiting for graph-store lock" in output
+    assert "Traceback" not in output

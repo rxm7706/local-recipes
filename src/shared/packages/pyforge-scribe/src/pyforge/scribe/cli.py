@@ -22,6 +22,7 @@ import typer
 from pyforge.core.atomic_write import atomic_write_text
 from pyforge.core.cutover_root import resolve_flags_path
 from pyforge.core.flags import disabled_help, kill_switch_on
+from pyforge.core.hooks import PluginError
 
 from pyforge.scribe import __version__
 from pyforge.scribe import catalog as estate_catalog
@@ -38,7 +39,7 @@ from pyforge.scribe.extras.cocoindex_flow import (
     refresh_incremental,
 )
 from pyforge.scribe.extras.graphify import (
-    DEFAULT_GRAPHIFY_TARGET,
+    DEFAULT_GRAPHIFY_TARGETS,
     GraphifyUnavailableError,
     build_graph_report,
     ingest_repo,
@@ -169,7 +170,7 @@ def capture_cmd(
 
     try:
         result = capture_write(_MEMORY_ROOT, capture_type, text)
-    except ValueError as exc:
+    except (ValueError, TimeoutError) as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(code=2) from exc
     typer.echo(f"captured: {result.path}")
@@ -199,7 +200,11 @@ def _run_promote(source: Path | None) -> None:
         typer.echo("Cancelled -- no files written.")
         raise typer.Exit(code=0)
 
-    results = apply_promotion(_MEMORY_ROOT, proposal)
+    try:
+        results = apply_promotion(_MEMORY_ROOT, proposal)
+    except (ValueError, TimeoutError) as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=2) from exc
     for result, entry in zip(results, proposal.promotable):
         typer.echo(f"promoted: {result.path}")
         typer.echo(f"pointer-stub: {entry.source_path}")
@@ -310,7 +315,7 @@ def graph_compile(
         # runbook cron line's own `flock -n` skip semantics.
         typer.echo(f"skipped: {exc}", err=True)
         raise typer.Exit(code=0) from exc
-    except ValueError as exc:
+    except (ValueError, PluginError, TimeoutError) as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(code=2) from exc
     for warning in result.warnings:
@@ -362,10 +367,10 @@ def recall_cmd(
     """Answer from the compiled graph with a resolvable citation, or report
     no grounded coverage (Story 2.4, AD-8) -- zero network calls (AD-6)."""
     repo_root = Path.cwd()
-    store = open_graph_store(default_store_path(repo_root))
     mode = "semantic" if semantic else "lexical"
     kinds = frozenset(kind) if kind else None
     try:
+        store = open_graph_store(default_store_path(repo_root))
         result = recall_answer(
             query,
             store,
@@ -375,7 +380,7 @@ def recall_cmd(
             kinds=kinds,
             surface=surface,
         )
-    except ValueError as exc:
+    except (ValueError, PluginError) as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(code=2) from exc
     if result.grounded:
@@ -423,7 +428,7 @@ def index_build(target: Path | None = _TARGET_OPTION) -> None:
     warnings: list[str] = []
     try:
         count = _write_graph_index(repo_root, target, warnings)
-    except GraphifyUnavailableError as exc:
+    except (GraphifyUnavailableError, PluginError, TimeoutError) as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(code=2) from exc
     for warning in warnings:
@@ -522,7 +527,7 @@ def index_refresh(target: Path | None = _TARGET_OPTION, declare: Path | None = _
     if not cocoindex_extra_enabled():
         try:
             graph_count = _write_graph_index(repo_root, target, warnings)
-        except GraphifyUnavailableError as exc:
+        except (GraphifyUnavailableError, PluginError, TimeoutError) as exc:
             typer.echo(str(exc), err=True)
             raise typer.Exit(code=2) from exc
         move_count = _write_move_list(repo_root)
@@ -534,7 +539,13 @@ def index_refresh(target: Path | None = _TARGET_OPTION, declare: Path | None = _
         )
         return
 
-    graph_target = target if target is not None else DEFAULT_GRAPHIFY_TARGET
+    # The fingerprinted sources are the targets `ingest_repo` walks: `--target`
+    # alone when given, else every one of the named list that exists (Story 35.1).
+    graph_targets: tuple[Path, ...] = (
+        (target,)
+        if target is not None
+        else tuple(rel for rel in DEFAULT_GRAPHIFY_TARGETS if (repo_root / rel).is_dir())
+    )
     # Per-artifact counts for the report line below, captured by each
     # derive() closure as it actually runs -- kept CLI-local (never threaded
     # through `DerivedArtifact`/`RefreshResult`, which stay opaque per the
@@ -555,13 +566,13 @@ def index_refresh(target: Path | None = _TARGET_OPTION, declare: Path | None = _
         ),
         DerivedArtifact(
             name="graphify-ingest",
-            sources=(repo_root / graph_target,),
+            sources=tuple(repo_root / graph_target for graph_target in graph_targets),
             derive=_derive_graph_index,
         ),
     ]
     try:
         result = refresh_incremental(repo_root, artifacts, warnings=warnings)
-    except (GraphifyUnavailableError, CocoindexUnavailableError) as exc:
+    except (GraphifyUnavailableError, CocoindexUnavailableError, PluginError, TimeoutError) as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(code=2) from exc
     for warning in warnings:

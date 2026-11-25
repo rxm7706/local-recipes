@@ -68,6 +68,7 @@ def _run_sync(repo: Path, env: dict) -> subprocess.CompletedProcess[str]:
     cmd = f'source "{SYNC_SH}" && fleet_poll_sync "{repo}"'
     return subprocess.run(
         ["bash", "-c", cmd],
+        check=False,
         capture_output=True,
         text=True,
         env=env,
@@ -163,3 +164,103 @@ def test_fleet_poll_sync_mutation_if_merge_ff_only_removed(tmp_path: Path):
     sync = SYNC_SH.read_text(encoding="utf-8")
     if "merge --ff-only origin/main" not in sync:
         pytest.fail("expected merge --ff-only origin/main in fleet_poll_sync.sh")
+
+
+# Steward Story 133.2 (DW-steward-review-2026-11-24-2, defects 3 and 4).
+
+
+def test_fleet_poll_sync_pushes_the_loop_branch_to_origin(tmp_path: Path):
+    """``git push --ff-only`` is not a push option: git refused it, ``2>/dev/null || true`` hid the refusal, and
+    a loop branch ahead of its remote was never pushed."""
+    remote, home, env = _init_clone_with_remote(tmp_path)
+    (home / "local-only.txt").write_text("ahead\n", encoding="utf-8")
+    _git(home, "add", "local-only.txt", env=env)
+    _git(home, "commit", "-qm", "local commit on loop/acme", env=env)
+    tip = _git(home, "rev-parse", "HEAD", env=env)
+    assert _git(remote, "rev-parse", "refs/heads/loop/acme", env=env) != tip
+
+    result = _run_sync(home, env)
+    assert result.returncode == 0, result.stderr
+    assert _git(remote, "rev-parse", "refs/heads/loop/acme", env=env) == tip
+    assert _git(remote, "rev-parse", "refs/heads/main", env=env) != tip  # never main
+
+
+def test_fleet_poll_sync_uses_no_push_flag_git_lacks():
+    sync = SYNC_SH.read_text(encoding="utf-8")
+    pushes = [
+        line.strip()
+        for line in sync.splitlines()
+        if " push " in line and not line.lstrip().startswith("#")
+    ]
+    assert pushes, "expected fleet_poll_sync.sh to push the loop branch"
+    assert [line for line in pushes if "--ff-only" in line] == []
+    assert [
+        line for line in pushes if "--force" in line or " -f " in line or "+" in line
+    ] == []
+
+
+def test_fleet_poll_hourly_never_sleeps_more_than_an_hour_between_ticks(tmp_path: Path):
+    """The loop slept to the next half hour, ticked, then slept a further hour before sleeping to the next half
+    hour again: one tick every two hours. Run with a fake clock stopped at :30:00 and a fake ``sleep`` that records
+    its argument in the tick log and ends the loop on its fourth call."""
+    import itertools
+    import shutil
+
+    scripts = tmp_path / "repo" / "scripts"
+    scripts.mkdir(parents=True)
+    shutil.copy(SYNC_SH, scripts / SYNC_SH.name)
+    shutil.copy(HOURLY_SH, scripts / HOURLY_SH.name)
+    log = tmp_path / "repo" / ".cursor" / "fleet-poll.log"
+    fakebin = tmp_path / "bin"
+    fakebin.mkdir()
+    (fakebin / "date").write_text(
+        "#!/usr/bin/env bash\n"
+        'case "${1:-}" in\n'
+        "  +%-M) echo 30 ;;\n"
+        "  +%-S) echo 0 ;;\n"
+        "  *) echo 2020-01-01T00:30:00Z ;;\n"
+        "esac\n",
+        encoding="utf-8",
+    )
+    (fakebin / "sleep").write_text(
+        "#!/usr/bin/env bash\n"
+        f'log="{log}"\n'
+        'mkdir -p "$(dirname "$log")"\n'
+        'if [ "$(grep -c "^SLEEP " "$log" 2>/dev/null || true)" -ge 3 ]; then kill -TERM "$PPID"; exit 0; fi\n'
+        'echo "SLEEP $1" >> "$log"\n',
+        encoding="utf-8",
+    )
+    for name in ("date", "sleep"):
+        (fakebin / name).chmod(0o755)
+    env = {
+        **_git_env(),
+        "PATH": f"{fakebin}{os.pathsep}{os.environ['PATH']}",
+        "HOME": str(tmp_path / "home"),
+    }
+    subprocess.run(
+        ["bash", str(scripts / HOURLY_SH.name)],
+        check=False,
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=60,
+    )
+    events = [
+        line
+        for line in log.read_text(encoding="utf-8").splitlines()
+        if line.startswith(("SLEEP ", "=== fleet-poll"))
+    ]
+    ticks = [
+        index
+        for index, line in enumerate(events)
+        if line.startswith("=== fleet-poll tick")
+    ]
+    assert len(ticks) >= 2, events
+    for earlier, later in itertools.pairwise(ticks):
+        slept = sum(
+            int(line.split()[1])
+            for line in events[earlier:later]
+            if line.startswith("SLEEP ")
+        )
+        assert 0 < slept <= 3600, events
+    assert len(ticks) == 3, events  # three sleeps, three ticks: one an hour

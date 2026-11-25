@@ -235,10 +235,11 @@ def test_add_labels_raises_on_failure(forge, monkeypatch):
 def test_check_run_status_returns_the_matching_conclusion(forge, monkeypatch):
     payload = json.dumps(
         {
+            "total_count": 2,
             "check_runs": [
                 {"name": "environment-yaml-sync", "conclusion": "success"},
                 {"name": "other-check", "conclusion": "failure"},
-            ]
+            ],
         }
     )
     run = _ScriptedRun([_completed([], stdout=payload)])
@@ -248,7 +249,7 @@ def test_check_run_status_returns_the_matching_conclusion(forge, monkeypatch):
 
 
 def test_check_run_status_returns_none_when_no_such_check(forge, monkeypatch):
-    payload = json.dumps({"check_runs": [{"name": "other-check", "conclusion": "success"}]})
+    payload = json.dumps({"total_count": 1, "check_runs": [{"name": "other-check", "conclusion": "success"}]})
     run = _ScriptedRun([_completed([], stdout=payload)])
     monkeypatch.setattr(forge_gh_module, "_run", run)
     status = forge.check_run_status(_REPO, ForgeRef("deadbeef"), ForgeRef("no-such-check"))
@@ -256,7 +257,7 @@ def test_check_run_status_returns_none_when_no_such_check(forge, monkeypatch):
 
 
 def test_check_run_status_returns_none_when_conclusion_still_pending(forge, monkeypatch):
-    payload = json.dumps({"check_runs": [{"name": "slow-check", "conclusion": None}]})
+    payload = json.dumps({"total_count": 1, "check_runs": [{"name": "slow-check", "conclusion": None}]})
     run = _ScriptedRun([_completed([], stdout=payload)])
     monkeypatch.setattr(forge_gh_module, "_run", run)
     status = forge.check_run_status(_REPO, ForgeRef("deadbeef"), ForgeRef("slow-check"))
@@ -271,11 +272,11 @@ def test_check_run_status_raises_on_gh_failure(forge, monkeypatch):
 
 
 def test_check_run_status_uses_the_repo_commit_check_runs_endpoint(forge, monkeypatch):
-    run = _ScriptedRun([_completed([], stdout=json.dumps({"check_runs": []}))])
+    run = _ScriptedRun([_completed([], stdout=json.dumps({"total_count": 0, "check_runs": []}))])
     monkeypatch.setattr(forge_gh_module, "_run", run)
     forge.check_run_status(_REPO, ForgeRef("deadbeef"), ForgeRef("x"))
     (argv,) = run.calls
-    assert argv == ["gh", "api", "repos/acme/widgets/commits/deadbeef/check-runs"]
+    assert argv == ["gh", "api", "repos/acme/widgets/commits/deadbeef/check-runs?per_page=100&page=1"]
 
 
 def test_check_run_status_prefers_the_most_recent_run_over_response_order(forge, monkeypatch):
@@ -287,6 +288,7 @@ def test_check_run_status_prefers_the_most_recent_run_over_response_order(forge,
     regardless of response order."""
     payload = json.dumps(
         {
+            "total_count": 2,
             "check_runs": [
                 {
                     "name": "environment-yaml-sync",
@@ -298,7 +300,7 @@ def test_check_run_status_prefers_the_most_recent_run_over_response_order(forge,
                     "conclusion": "failure",
                     "started_at": "2026-08-06T00:00:00Z",
                 },
-            ]
+            ],
         }
     )
     run = _ScriptedRun([_completed([], stdout=payload)])
@@ -310,16 +312,53 @@ def test_check_run_status_prefers_the_most_recent_run_over_response_order(forge,
 def test_check_run_status_treats_a_missing_started_at_as_oldest(forge, monkeypatch):
     payload = json.dumps(
         {
+            "total_count": 2,
             "check_runs": [
                 {"name": "x", "conclusion": "failure"},
                 {"name": "x", "conclusion": "success", "started_at": "2026-08-06T00:00:00Z"},
-            ]
+            ],
         }
     )
     run = _ScriptedRun([_completed([], stdout=payload)])
     monkeypatch.setattr(forge_gh_module, "_run", run)
     status = forge.check_run_status(_REPO, ForgeRef("deadbeef"), ForgeRef("x"))
     assert status == "success"
+
+
+def test_check_run_status_reads_a_failed_required_check_on_a_later_page(forge, monkeypatch):
+    """Story 121.1 (DW-marshal-review-2026-11-24-1, defect 3): the named check's failed run sits past
+    the first page. One unpaged read answered ``None`` -- "not yet concluded", a WARN that lets a
+    landing proceed -- for a required check that had failed. Every page is read, as ``check_runs()`` reads."""
+    first_page = [_recorded_check_run(f"job-{i}", "completed", "success", run_id=i) for i in range(1, 101)]
+    second_page = [_recorded_check_run("environment-yaml-sync", "completed", "failure", run_id=101)]
+    run = _ScriptedRun(
+        [
+            _completed([], stdout=json.dumps({"total_count": 101, "check_runs": first_page})),
+            _completed([], stdout=json.dumps({"total_count": 101, "check_runs": second_page})),
+        ]
+    )
+    monkeypatch.setattr(forge_gh_module, "_run", run)
+    status = forge.check_run_status(_REPO, ForgeRef("deadbeef"), ForgeRef("environment-yaml-sync"))
+    assert status == "failure"
+    assert [argv[-1] for argv in run.calls] == [
+        "repos/acme/widgets/commits/deadbeef/check-runs?per_page=100&page=1",
+        "repos/acme/widgets/commits/deadbeef/check-runs?per_page=100&page=2",
+    ]
+
+
+def test_check_run_status_raises_when_a_later_page_fails_never_a_partial_answer(forge, monkeypatch):
+    """A read that stops short of ``total_count`` is not an answer: the named check may be on the
+    page that failed, so ``None`` (or the first page's conclusion) would be a guess."""
+    first_page = [_recorded_check_run(f"job-{i}", "completed", "success", run_id=i) for i in range(1, 101)]
+    run = _ScriptedRun(
+        [
+            _completed([], stdout=json.dumps({"total_count": 150, "check_runs": first_page})),
+            _completed([], returncode=1, stderr="rate limited"),
+        ]
+    )
+    monkeypatch.setattr(forge_gh_module, "_run", run)
+    with pytest.raises(ForgeCommandError, match="rate limited"):
+        forge.check_run_status(_REPO, ForgeRef("deadbeef"), ForgeRef("job-1"))
 
 
 # --- check_runs (Story 80.1, CAP-284) ---------------------------------------

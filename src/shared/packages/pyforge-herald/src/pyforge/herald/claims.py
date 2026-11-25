@@ -392,7 +392,8 @@ def list_claims(
     """Every stored claim, optionally filtered by ``status`` and/or a
     ``(start, end)`` inclusive range over ``shipped_date``. A claim with no
     ``shipped_date`` is excluded whenever ``date_range`` is given -- an
-    unset date cannot be tested against a range."""
+    unset date cannot be tested against a range, and neither can a stored
+    date that does not parse."""
     claims = read_all(claims_path)
     if status is not None:
         claims = [c for c in claims if c.status == status]
@@ -402,7 +403,13 @@ def list_claims(
         for c in claims:
             if c.shipped_date is None:
                 continue
-            shipped = date.fromisoformat(c.shipped_date)
+            try:
+                shipped = date.fromisoformat(c.shipped_date)
+            except ValueError:
+                # A row stored before `create` checked the date (Story 54.1)
+                # is never rewritten; like an unset date, one that does not
+                # parse cannot be tested against a range.
+                continue
             if start <= shipped <= end:
                 filtered.append(c)
         claims = filtered
@@ -463,6 +470,17 @@ def _write_all(claims_path: Path, claims: Sequence[Claim]) -> None:
         raise errors.HeraldError(f"claims could not be written to {claims_path}: {exc}") from exc
 
 
+def _is_iso_date(value: str) -> bool:
+    """``YYYY-MM-DD`` exactly. Round-tripped, not merely parsed:
+    ``date.fromisoformat`` also accepts ``20260801`` and week dates, which
+    the listing and the dashboard's raw string comparison do not expect
+    (the same check ``webhook._problem_on_pr_close_shipped`` applies)."""
+    try:
+        return date.fromisoformat(value).isoformat() == value
+    except ValueError:
+        return False
+
+
 def create(
     claims_path: Path,
     *,
@@ -486,6 +504,9 @@ def create(
     validation fails fast without first contending on the write lock."""
     if not project_name.strip():
         raise errors.HeraldError("project_name must not be empty")
+    if shipped_date is not None and not _is_iso_date(shipped_date):
+        # Story 54.1: refused at entry -- `list_claims` parses it later.
+        raise errors.HeraldError(f"shipped_date {shipped_date!r} must be an ISO 8601 date (YYYY-MM-DD)")
     for e in evidence:
         if e.type not in EVIDENCE_TYPES:
             raise errors.HeraldError(f"evidence type {e.type!r} must be one of {EVIDENCE_TYPES}")

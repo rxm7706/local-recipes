@@ -63,10 +63,14 @@ supersession runs, every still-CURRENT node whose citation resolves to a
 git-tracked repo file gets one more git-timestamp comparison: if that
 file's latest commit is authored after `compiled_at`, the moment this
 compile started (never the node's `valid_from`), the node is re-upserted
-with `stale=True` (`models.GraphNode.stale`). The flat-file store keeps
-`compiled_at`, and `recall.py` withholds at recall time a current node
-whose source gained a commit after it (CAP-26), so a commit landed between
-nightlies is never served before the next compile flags it. A node Story
+with `stale=True` (`models.GraphNode.stale`). Every shipped store keeps
+`compiled_at` (Story 35.1): the flat file as a key of its JSON document,
+the PostgreSQL and plane stores as one reserved row of the node relation
+they already have (`models.COMPILED_AT_ROW_ID`), never a column. `recall.py`
+withholds at recall time a current node whose source gained a commit after
+it (CAP-26), so a commit landed between nightlies is never served before
+the next compile flags it; a third-party store with no `compiled_at`
+attribute is not stamped and degrades to the stored bit. A node Story
 2.3 already invalidated (a declared `supersedes:` edge points at it) is
 skipped -- it is not current, so it was never a staleness candidate in the
 first place. This is the same

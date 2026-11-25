@@ -813,6 +813,21 @@ Folded Dreams: [[bmad-drift-new-artifact-shape]], [[bmad-method-version-drift]],
   and re-derive together, so those corrections are a deferred-work row (`DW-doctor-61-1-1`). The code defects the
   review found below high severity are not in this change: each is an open row on its station's deferred-work
   ledger and waits for a Dream entry on the station that owns it.
+- **2026-11-25 (the kill switch writes the flag tree whole) — Found:** the repository review of 2026-11-24 at main
+  `7da08791f3` reported two defects in `doctor flags kill-switch`, Doctor's one actuator, and they are the open row
+  `DW-doctor-61-1-2`. The actuator rewrites `flags.json` in place with `write_text`, so a reader that opens the tree
+  during the write can see a truncated file and fall back to the flag's default, which for a kill switch is on, during
+  the very write meant to turn it off. And the reason the operator gives is recorded only on an in-process Prometheus
+  counter, in a command that exits a moment later, so nothing that outlives the process carries it. Both were
+  reviewer-reported and not re-traced.
+  **Ruled** (operator ruling of 2026-11-25: "can we close and complete these too - * DW-doctor-61-1-1: four governance Specs need a re-derive on your render route. * The lower-severity code defects from the review, as open deferred-work rows on eight stations' ledgers."). **For doctor:** this entry binds `spec-pyforge-doctor` (the
+  kill switch as Doctor's one actuator, CAP-96; realized, no text change) and decomposes as Epic 62, one story: the
+  tree is replaced in one step through the kernel's atomic write, and the command's own output line carries the
+  reason. Every defect is reproduced against the tree before it is fixed, and one the tree does not show is closed
+  as not a defect. **Constraints:** the flag tree stays the actuator's one write (a journal file would be a third
+  sanctioned write and a change to CAP-96 and NFR-1, which this entry does not make), the counter stays, and no flag
+  is added. The other row of that review on this ledger, `DW-doctor-61-1-1`, is a re-derive of four governance Specs
+  and is not this epic's.
 
 ## 2026-10-26 — A spike report is not a corrupt file, and the classifier can't yet tell the difference (folded from bmad-drift-new-artifact-shape)
 

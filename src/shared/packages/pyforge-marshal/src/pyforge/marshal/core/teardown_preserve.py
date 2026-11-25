@@ -45,7 +45,14 @@ class TeardownPreserveScan:
 
 
 def _commit_needs_preserve(vcs: VcsPort, repo_root: Path, tip: str) -> bool:
-    """True when ``tip`` would be orphaned if its only ref were removed."""
+    """True when ``tip`` would be orphaned if its only ref were removed.
+
+    Reads local refs only (Story 121.1, fail closed): ``tip`` is safe when it is
+    an ancestor of the local ``origin/main``, a preserve/archive tag contains it,
+    or a local remote-tracking ref contains it. Origin is never asked live, so a
+    tip origin holds but no local remote-tracking ref does still needs preserve
+    until a ``git fetch origin``.
+    """
     if vcs.is_commit_ancestor(repo_root, tip, _ORIGIN_MAIN):
         return False
     if vcs.commit_contained_in_tag_prefixes(repo_root, tip, _PRESERVE_ARCHIVE_PREFIXES):
@@ -185,19 +192,35 @@ def scan_teardown_unpreserved(
         if nested.branch:
             branches_to_check.add(nested.branch)
 
+    # Story 121.1: every branch takes the commit-level check, the home branch
+    # included -- a same-named branch on origin does not prove a local
+    # remote-tracking ref holds the local tip -- and a tip that cannot be
+    # resolved is reported, never read as nothing to preserve. Each message
+    # names its remedy.
     for br in sorted(branches_to_check):
-        if br == branch and vcs.remote_branch_exists(repo_root, br):
-            continue
         try:
             tip = vcs.resolve_ref(repo_root, br)
-        except Exception:
+        except Exception as exc:
+            items.append(
+                TeardownUnpreservedItem(
+                    abandon_token=br,
+                    message=(
+                        f"branch {br} tip cannot be resolved ({exc}); its commits cannot be shown preserved"
+                        f" -- pass --force --abandon {br} to tear down without them"
+                    ),
+                )
+            )
             continue
         if not _commit_needs_preserve(vcs, repo_root, tip):
             continue
         items.append(
             TeardownUnpreservedItem(
                 abandon_token=br,
-                message=f"branch {br} holds commits no durable ref reaches",
+                message=(
+                    f"branch {br} holds commits no durable ref reaches (no local remote-tracking ref,"
+                    " origin/main ancestry or preserve tag holds its tip) -- run `git fetch origin` if"
+                    f" origin already holds them, or pass --force --abandon {br} to give them up"
+                ),
             )
         )
 

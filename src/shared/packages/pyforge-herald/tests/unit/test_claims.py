@@ -1326,3 +1326,31 @@ def test_revalidate_all_refuses_a_duplicate_id_written_during_validation(tmp_pat
 
     with pytest.raises(errors.HeraldError, match="duplicate claim ids"):
         claims.revalidate_all(claims_path, validate=validate_then_clone_the_claim)
+
+
+# --- Story 54.1: a shipped date is YYYY-MM-DD at entry -----------------------
+
+
+@pytest.mark.parametrize("bad", ["tomorrow", "2026-8-1", "20260801", "2026-08-01T00:00:00", "2026-02-30", ""])
+def test_create_refuses_a_shipped_date_that_is_not_iso_and_stores_nothing(tmp_path, bad):
+    """DW-herald-review-2026-11-24-1 (3): the string was stored as given and
+    `list_claims`' `date.fromisoformat` raised on it at a later listing."""
+    path = tmp_path / "herald.db"
+    with pytest.raises(errors.HeraldError, match="YYYY-MM-DD"):
+        claims.create(path, project_name="warden", shipped_date=bad)
+    assert claims.read_all(path) == []
+
+
+def test_list_claims_date_range_does_not_raise_on_a_stored_malformed_date(tmp_path):
+    """A row stored before the entry check is never rewritten; like an unset
+    date, a date that does not parse cannot be tested against a range."""
+    import datetime as dt
+
+    path = tmp_path / "herald.db"
+    in_range = claims.create(path, project_name="warden", shipped_date="2026-08-05")
+    legacy = claims.create(path, project_name="marshal", shipped_date="2026-08-06")
+    stored = [replace(c, shipped_date="tomorrow") if c.id == legacy.id else c for c in claims.read_all(path)]
+    claims._write_all(path, stored)
+    result = claims.list_claims(path, date_range=(dt.date(2026, 8, 1), dt.date(2026, 8, 31)))
+    assert [c.id for c in result] == [in_range.id]
+    assert {c.shipped_date for c in claims.list_claims(path)} == {"2026-08-05", "tomorrow"}

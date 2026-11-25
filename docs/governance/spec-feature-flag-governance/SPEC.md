@@ -8,7 +8,7 @@ status: ready   # 2026-09-28 — seeded `draft` from the intake triage (docs/dre
                 # instance of the Charter §5 shape, after coverage-gate-independence and
                 # one-chain-per-station.
 created: "2026-09-28"
-updated: "2026-10-26"   # CAP-7 executed: the retrofit rulings R1-R8 (memlog, operator ruling 2026-10-26). Prior "2026-10-15" CAP-2 gains the retirement path
+updated: "2026-11-25"   # The Why is dated to the rule date and says what the tree holds today (DW-doctor-61-1-1, operator ruling 2026-11-25); no capability text changes. Prior "2026-10-26" CAP-7 executed: the retrofit rulings R1-R8 (memlog, operator ruling 2026-10-26). Prior "2026-10-15" CAP-2 gains the retirement path
 owner-dream: docs/dreams/feature-flag-governance.md
 fold-exemption: governance   # a gate over every Smith's stories (Charter §5, the 2026-09-14 shape); chain-sprawl-check reads it here too
 surface: []     # Empty by construction: spec-surface-check reads only planning-artifacts Specs
@@ -36,7 +36,8 @@ open_questions: []
 > Dream in `sources:`. It was ruled the same session and is now the complete contract for what to
 > build, test and validate. The Dream in the frontmatter is for traceability only. Re-derived
 > 2026-10-15 for CAP-2's retirement path, and again the same day after its independent review.
-> Re-derived 2026-10-26 for CAP-7's execution rulings (R1–R8).
+> Re-derived 2026-10-26 for CAP-7's execution rulings (R1–R8). Re-derived 2026-11-25 to date the
+> Why (DW-doctor-61-1-1); no capability text changes.
 
 # SPEC — every capability ships behind a flag, and a gate no station owns checks that it does
 
@@ -44,10 +45,12 @@ open_questions: []
 
 The estate can already flip behaviour without a redeploy. Steward Epic 26 realized
 `spec-pyforge-unifying-strategy` CAP-13 with an OpenFeature FILE provider over one JSON tree
-(canopy:AD-11: *"Two trees is a review-blocking finding. No egress."*). Almost nothing uses it,
-though. The tree holds two flags: a demonstration and the cutover root. No story spec names a flag,
-no check reads one, no flag carries an owner or a cleanup date, and a second tree has grown in
-steward (`.steward/flags.json`, Story 65.1).
+(canopy:AD-11: *"Two trees is a review-blocking finding. No egress."*). On the rule date,
+2026-09-28, almost nothing used it. The tree held two flags: a demonstration and the cutover root.
+No story spec named a flag, no check read one, no flag carried an owner or a cleanup date, and a
+second tree had grown in steward (`.steward/flags.json`, Story 65.1). That is the case the ruling
+answered, not today's tree: on 2026-11-25 `src/platform/config/flags.json` holds 105 flags and no
+`.steward/flags.json` exists.
 
 The operator ruled on 2026-09-28 that every capability ships behind a flag and that a gate enforces
 it. That gate refuses stories from all eight Smiths. No Smith can own a rule that refuses its own

@@ -15,7 +15,7 @@ sources:
   - src/platform/config/settings/base.py
   - src/platform/db/sqlmigrate-map.yaml
   - src/shared/packages/django-steward/src/django_steward_portal/station_apps.py
-verified: 2026-11-21
+verified: 2026-11-25
 ---
 
 # How to move vendor extracts through the corridor

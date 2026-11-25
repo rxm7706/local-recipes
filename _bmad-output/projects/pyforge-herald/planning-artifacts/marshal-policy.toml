@@ -725,6 +725,28 @@ verify_commands = [
   "_bmad-output/projects/pyforge-*/planning-artifacts/specs/spec-pyforge-*/.memlog.md",
 ]
 
+"54" = [  # deck pull --commit commits, and three CLI defects close (spec-pyforge-herald CAP-1, CAP-4, CAP-11, CAP-12, CAP-13, CAP-38, CAP-54; Story 54.1), added 2026-11-25
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "src/shared/packages/pyforge-herald/src/pyforge/herald/claims.py",
+  "src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py",
+  "src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py",
+  "src/shared/packages/pyforge-herald/src/pyforge/herald/local_ship.py",
+  "src/shared/packages/pyforge-herald/src/pyforge/herald/notices.py",
+  "src/shared/packages/pyforge-herald/src/pyforge/herald/webhook.py",
+  "src/shared/packages/pyforge-herald/tests/unit/test_claims.py",
+  "src/shared/packages/pyforge-herald/tests/unit/test_cli_notice_epic10.py",
+  "src/shared/packages/pyforge-herald/tests/unit/test_cli_progress.py",
+  "src/shared/packages/pyforge-herald/tests/unit/test_cli_pull.py",
+  "src/shared/packages/pyforge-herald/tests/unit/test_cli_success.py",
+  "src/shared/packages/pyforge-herald/tests/unit/test_deck_exports_handlers.py",
+  "src/shared/packages/pyforge-herald/tests/unit/test_deck_pipeline.py",
+  "src/shared/packages/pyforge-herald/tests/unit/test_local_ship.py",
+  "src/shared/packages/pyforge-herald/tests/unit/test_notices.py",
+  "src/shared/packages/pyforge-herald/tests/unit/test_webhook.py",
+]
+
 [dispatch]
 landing_reverify = "on-code-change"
 

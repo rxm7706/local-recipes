@@ -318,3 +318,26 @@ def _env_help(duty: str) -> str:
 @pytest.mark.parametrize("duty", ["setup", "initrepo", "validate-fast"])
 def test_env_help_names_the_default_the_duty_uses(duty: str) -> None:
     assert f"(default: {bootstrap._DEFAULT_PIXI_ENV})" in _env_help(duty)
+
+
+# Story 133.1 (DW-steward-review-2026-11-24-1, defect 4): a duty must not raise SystemExit (AD-8); when one does,
+# main() returns a documented code, never whatever integer the duty picked.
+
+
+@pytest.mark.parametrize("raised", [99, 4, 255, -1])
+def test_a_system_exit_raised_inside_a_duty_never_returns_its_own_code(monkeypatch, capsys, raised):
+    class Exiting:
+        name = "keys"
+
+        def run(self, ns):
+            raise SystemExit(raised)
+
+    monkeypatch.setattr("pyforge.steward.cli.resolve_duty", lambda n: Exiting())
+    assert main(["keys"]) == EXIT_INTERNAL
+    assert f"SystemExit({raised})" in capsys.readouterr().err
+
+
+def test_the_parsers_own_exits_keep_their_codes(capsys):
+    assert main(["--version"]) == EXIT_OK
+    assert main(["keys", "--no-such-flag"]) == EXIT_USAGE
+    assert main(["no-such-duty"]) == EXIT_USAGE

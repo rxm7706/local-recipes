@@ -1024,6 +1024,18 @@ verify_commands = [
   "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_environment_yaml.py",
   "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification_live_tree.py",
 ]
+"121" = [  # teardown, the front door and the required-check read fail closed (spec-pyforge-marshal:CAP-287, CAP-304, CAP-210), added 2026-11-25.
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/forge_gh.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/teardown_preserve.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_cli.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_forge_gh.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_init_teardown_preserve.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_teardown_preserve.py",
+]
 
 [[landing_rules]]
 name = "maintenance-label"

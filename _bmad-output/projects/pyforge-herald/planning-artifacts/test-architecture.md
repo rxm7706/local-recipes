@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: 7b040a76b344f2e3
-story_count: 163
+source_fingerprint: c734fb3238953c7e
+story_count: 164
 test_file_count: 102
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-herald`
-- **Stories parsed:** 163
-- **Epics parsed:** 53
+- **Stories parsed:** 164
+- **Epics parsed:** 54
 - **Test files inventoried:** 102 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `7b040a76b344f2e3`
+- **Source fingerprint:** `c734fb3238953c7e`
 
 ## Risk Assessment
 
@@ -76,6 +76,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 51: The dossier's figures are counted and its cutover claims are bound to the ledgers (spec-pyforge-herald CAP-46; spec-python-foundry-cutover:CAP-14)
 - Epic 52: Herald's suite and package stand as an oracle a second root can run (relay of spec-pyforge-steward:CAP-175; no herald CAP)
 - Epic 53: The Pages site reads as one product (spec-pyforge-herald CAP-63)
+- Epic 54: deck pull --commit commits, and three CLI defects close (spec-pyforge-herald CAP-1, CAP-4, CAP-11, CAP-12, CAP-13, CAP-38, CAP-54)
 
 ### Low-risk epics
 
@@ -364,6 +365,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 53.1 | Every page carries the one header, and dark is the default | none observed |
 | 53.2 | Every page reads at phone width and names itself | none observed |
 | 53.3 | Kedro-Viz opens under the site header, with a way back | none observed |
+| 54.1 | herald deck pull --commit commits, and three CLI defects are closed | none observed |
 
 ## Quality Gates
 

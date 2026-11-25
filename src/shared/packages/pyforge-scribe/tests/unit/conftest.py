@@ -102,7 +102,8 @@ def _provision(dsn: str) -> None:
 
 
 def require_pg_dsn() -> str:
-    dsn = (os.environ.get("SCRIBE_GRAPH_DSN") or _DEFAULT_PG_DSN).split("?", 1)[0]
+    # Whole, as the store receives it (Story 35.1): a query string (`sslmode`) is part of the DSN under test.
+    dsn = (os.environ.get("SCRIBE_GRAPH_DSN") or _DEFAULT_PG_DSN).strip()
     try:
         import psycopg
 

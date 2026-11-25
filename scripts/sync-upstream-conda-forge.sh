@@ -20,7 +20,10 @@ echo "=> Fetching from upstream..."
 git fetch "$UPSTREAM_REMOTE"
 
 echo "=> Stashing any unstaged changes..."
+# On a clean tree `git stash` saves nothing; remember the stash tip so only a stash made here is popped.
+STASH_BEFORE=$(git rev-parse -q --verify refs/stash || true)
 git stash -q
+STASH_AFTER=$(git rev-parse -q --verify refs/stash || true)
 
 # Find the common ancestor between our local branch and upstream/main
 COMMON_ANCESTOR=$(git merge-base HEAD "$UPSTREAM_REMOTE/$BRANCH_NAME")
@@ -42,7 +45,9 @@ else
     exit 1
 fi
 
-echo "=> Restoring stashed changes (if any)..."
-git stash pop -q || true
+if [ "$STASH_AFTER" != "$STASH_BEFORE" ]; then
+    echo "=> Restoring stashed changes..."
+    git stash pop -q || true
+fi
 
 echo "=> Sync complete!"

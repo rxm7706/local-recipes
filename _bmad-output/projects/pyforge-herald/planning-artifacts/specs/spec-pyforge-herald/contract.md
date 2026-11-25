@@ -179,7 +179,7 @@ The closed set `herald` exits with.
 |---|---|
 | `0` | success; `--help` and `--version` |
 | `1` | no command given; any `HeraldError` the exit-code map does not name |
-| `2` | a usage error (argparse's own exit: unknown verb or flag, missing argument); `DeckUsageError`; a verb whose flag is off; `deck exports` without `--json` |
+| `2` | a usage error (argparse's own exit: unknown verb or flag, missing argument); `DeckUsageError`; a verb whose flag is off; `deck exports` without `--json`; `progress --update` without a station |
 | `3` | a conflict: `SeedConflictError`, `PullConflictError`, `ExportConflictError` |
 | `4` | a transport failure: `TransportError` and every class under it |
 

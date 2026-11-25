@@ -30,5 +30,5 @@ fleet_poll_sync() {
     fi
   fi
 
-  git -C "$dir" push --ff-only origin "$branch" 2>/dev/null || true
+  git -C "$dir" push origin "$branch" 2>/dev/null || true
 }

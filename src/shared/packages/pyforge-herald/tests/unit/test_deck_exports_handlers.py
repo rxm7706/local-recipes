@@ -262,3 +262,23 @@ def test_attach_routes_mid_stream_store_error_closes_body(tmp_path: Path, _patch
     response = _run_async(_call())
     assert response.status_code == 200
     assert response.content == b"partial"
+
+
+# --- Story 54.1: `herald deck exports` on an unknown slug is a usage error ----
+
+
+def test_cli_deck_exports_unknown_slug_exits_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """DW-herald-review-2026-11-24-1 (5): `DeckUsageError` is the documented
+    class for an unknown slug on `deck publish` and `deck exports` (exit 2,
+    `contract.md` § Exit codes); `deck exports` raised a plain `HeraldError`."""
+    from pyforge.herald import cli, deck_store, errors
+
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_bool_tree(tmp_path, enabled=True)))
+    monkeypatch.setattr(deck_store, "open_deck_store", lambda: deck_store.MemoryDeckStore())
+    assert cli.main(["deck", "exports", "nosuch", "--json"]) == 2
+    captured = capsys.readouterr()
+    assert "nosuch" in captured.err
+    assert captured.out == ""
+    assert errors.exit_code_for(errors.DeckUsageError("x")) == 2

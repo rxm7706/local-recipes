@@ -10,12 +10,15 @@ status: ready   # 2026-09-16 — seeded `draft` the morning the token-savings fo
                 # because its Dream is guild-owned (chain.py `_expected_spec_dir`: guild ->
                 # docs/governance/spec-<slug>/) — the second instance of the 09-14 §5 shape.
 created: "2026-09-16"
-updated: "2026-11-11"   # AMENDED 2026-11-11 (steward Story 120.3, on the operator rulings of 2026-11-10 and the 2026-11-01 marker ruling): CAP-6 names the CHAIN-STANDARD section 4 markers; CAP-9 names section 0, the factory-doc set and the three CAP markers; the Evergreen and portable Constraint names B as rxm7706/python-foundry and A as the writer until the flip. Prior "2026-10-26": AMENDED 2026-10-26: CAP-5 (requirements cite defined CAPs only; the 2026-10-25 constraint-arrow rulings reversed by dated amendment, CHAIN-STANDARD section 12). Prior "2026-09-29"
+updated: "2026-11-25"   # CORRECTED 2026-11-25 (DW-doctor-61-1-1, operator ruling 2026-11-25): the surface comment names where the two doctor sources live; CAP-3 (d) states CAP-11's verbatim fold and move in place of the banner; the first Non-goal no longer forbids the renumbering CAP-3 (g) requires. Prior "2026-11-11": AMENDED 2026-11-11 (steward Story 120.3, on the operator rulings of 2026-11-10 and the 2026-11-01 marker ruling): CAP-6 names the CHAIN-STANDARD section 4 markers; CAP-9 names section 0, the factory-doc set and the three CAP markers; the Evergreen and portable Constraint names B as rxm7706/python-foundry and A as the writer until the flip. Prior "2026-10-26": AMENDED 2026-10-26: CAP-5 (requirements cite defined CAPs only; the 2026-10-25 constraint-arrow rulings reversed by dated amendment, CHAIN-STANDARD section 12). Prior "2026-09-29"
 owner-dream: docs/dreams/one-chain-per-station.md
-surface: []     # Deliberately empty until the mechanism stories land: chain-sprawl-check and
-                # fr-without-cap will be doctor sources (declared here when they exist, the way
-                # coverage-gate-independence declares its evaluator); the per-station fold PRs
-                # touch surfaces already governed by each station's own Spec and stay there.
+surface: []     # Empty by construction: spec-surface-check reads only planning-artifacts Specs,
+                # so this guild Spec declares none. The two mechanism sources exist:
+                # chain-sprawl-check (doctor Story 25.1) and fr-without-cap (doctor Stories 25.2
+                # and 50.1) live in pyforge/doctor/sources/one_chain.py, under
+                # spec-pyforge-doctor's surface; the per-station fold PRs touched surfaces
+                # already governed by each station's own Spec. (Until 2026-11-25 this comment
+                # said the two sources "will be" built and declared here.)
 companions:
   - CHAIN-STANDARD.md   # CAP-9 — the one page every fold conforms to; CAP-10 §9 is lock / mop / exemption
 sources:
@@ -86,8 +89,11 @@ the PRD as the BMAD artifact it is, derived rather than duplicated.
     `covers-dreams:` on `spec-pyforge-<s>` for every folded Dream; (b) CAPs
     re-minted sequentially with provenance for every open *and* shipped Spec
     (`CAP-n ← spec-old CAP-m, shipped <date>`); (c) old Spec folders become
-    `absorbed` pointers keeping their memlogs; (d) Dreams archived in place
-    with `Consolidated into` banners pointing at `pyforge-<s>.md`; (e) surface
+    `absorbed` pointers keeping their memlogs; (d) each folded Dream's whole
+    body carried verbatim into a dated section of `pyforge-<s>.md`, and its
+    file moved to `archive/docs/dreams/` with no banner (CAP-11, 2026-09-29,
+    which superseded the step this line named until 2026-11-25: Dreams
+    archived in place with `Consolidated into` banners); (e) surface
     manifests merged with scoped baseline stamps; (f) PRD re-derived with
     FR ← CAP; (g) `epics.md` re-derived with epics and stories renumbered
     sequentially, story-spec files renamed with their stories, and the ledger
@@ -295,7 +301,10 @@ the PRD as the BMAD artifact it is, derived rather than duplicated.
 
 ## Non-goals
 
-- Rewriting shipped stories or renumbering existing epics.
+- Rewriting what a shipped story delivered. A fold renumbers epics and
+  stories (CAP-3 (g)); done work keeps its status, not its number. *(Until
+  2026-11-25 this read "Rewriting shipped stories or renumbering existing
+  epics", the wording from before the 2026-09-16 rebase ruling.)*
 - Touching `implementation-artifacts/` (Tier 3).
 - Any change on B (`python-foundry`) — this Spec prepares A's contract; B
   re-derives (`spec-foundry-regenerate-not-fold`).

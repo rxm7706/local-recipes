@@ -5,7 +5,7 @@ sources:
   - scripts/flag_gate_check.py
   - docs/governance/flag-rule-baseline.json
   - src/shared/packages/pyforge-core/tests/unit/test_flags.py
-verified: 2026-11-24
+verified: 2026-11-25
 ---
 
 # The story-spec flag block

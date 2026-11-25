@@ -4380,3 +4380,27 @@ So that the conda-forge-expert items of `DW-doctor-59-3-1` closes in this change
 **Then** a mirror set only in a user-level config reaches `auth_headers_for`'s host gate and the resolver; the CFE meta and unit suites exit 0; the enterprise deployment page and the JFrog template say what the scripts now do
 **And** the conda-forge-expert items of `DW-doctor-59-3-1` reads resolved in its ledger with the commit that closed it
 **Status:** done
+
+## Epic 41: The pypi-test rehearsal asks the index it uploads to (spec-pyforge-mason CAP-3, CAP-5)
+
+Minted 2026-11-25 from the station Dream's entry of the same date on the operator ruling of 2026-11-25: "can we close and complete these too - * DW-doctor-61-1-1: four governance Specs need a re-derive on your render route. * The lower-severity code defects from the review, as open deferred-work rows on eight stations' ledgers." The repository review of 2026-11-24 left one mason row below high severity, `DW-mason-review-2026-11-24-1`: the version check before a rehearsal upload asks pypi.org, and five recipe verbs exit 0 when the wrapped tool failed. The first was reproduced and fixed; the second is what `contract.md` § *Exit codes* states, so it closed as not a defect (ruling of the session lead, 2026-11-25).
+**HARD boundaries:**
+- Every defect is reproduced by a failing test or command before it is fixed; one the tree does not show is closed as not a defect, with the command that showed it.
+- No flag, no new exit code and no AD moves; `urllib.request` stays in `pypi_index.py` alone.
+- No exit code changes: a failed wrapped tool projecting to exit 1 is an operator decision with its own Dream entry.
+
+### Story 41.1: The pypi-test rehearsal asks the index it uploads to, and a wrapped tool's failure exits as the contract says
+
+As the operator who ships a package with `package ship --to pypi-test,pypi`,
+I want the version check before each upload to ask the index that upload goes to, and each recipe verb's exit on a failed wrapped tool held to what `contract.md` states,
+So that a re-run after a failed real upload reaches pypi instead of failing the rehearsal on a file TestPyPI already has, and `DW-mason-review-2026-11-24-1` closes.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-3 (realized, no text change), CAP-5 (realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: a repeat ship reads the rehearsal as `terminal` when TestPyPI already has the version, as CAP-3's rehearsal gate intends)
+**Surface:** `src/shared/packages/pyforge-mason/src/pyforge/mason/pypi_index.py`, `src/shared/packages/pyforge-mason/src/pyforge/mason/package.py`, `src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py`, `src/shared/packages/pyforge-mason/tests/unit/test_pypi_index.py`, `src/shared/packages/pyforge-mason/tests/unit/test_package.py`, `src/shared/packages/pyforge-mason/tests/unit/test_cli.py`, `planning-artifacts/specs/spec-pyforge-mason/contract.md`
+**Spec:** `planning-artifacts/specs/spec-41-1-the-pypi-test-rehearsal-asks-the-index-it-uploads-to-and-a-wrapped-tool-s-failure-exits-as-the-contract-says.md`
+**Given** `pypi_index.version_exists` builds its URL from the pypi.org JSON index alone, `ship_pypi` calls it for the `pypi-test` target and writes a `https://pypi.org/project/` reference for it, and the reviewer reported that `recipe build`, `scan`, `optimize`, `update` and `submit` exit 0 when the wrapped tool failed
+**When** each defect is first reproduced by a test that fails on the unfixed tree, the version check takes the index base of the target it serves and the reference is derived from that base, and one test holds the five verbs' exit to `contract.md`'s exit-code table
+**Then** a `pypi-test` target whose version TestPyPI already has reads `terminal` with a `test.pypi.org` reference and no upload, the `pypi` target after it is attempted, a `pypi` target still asks pypi.org, and a repository with no known JSON index reads `pending` with no upload
+**And** `ship_pypi`'s docstring names the index base as the second difference between the two targets, defect 2 is recorded as not a defect in the story spec's change log with `contract.md` § *Exit codes* as its evidence, `DW-mason-review-2026-11-24-1` reads closed in its ledger with the commit that closed it, and the operator's decision whether a failed wrapped tool projects to exit 1 is carried by `DW-mason-41-1-1`
+**Status:** review

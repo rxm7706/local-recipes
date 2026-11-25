@@ -69,8 +69,8 @@ SITES: tuple[Site, ...] = (
           r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
     _site("kedro-viz-publish.yml setup-pixi (publish + vizro jobs)", ".github/workflows/kedro-viz-publish.yml",  # atlas 30.2 (2026-10-15): the vizro job, registered the day it was added
           r"pixi-version: v" + _PIXI_VERSION, hits=2, kind="exact"),
-    _site("detectors.yml setup-pixi", ".github/workflows/detectors.yml",  # PR #1043: pixi-first detectors env
-          r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
+    _site("detectors.yml setup-pixi (2 jobs)", ".github/workflows/detectors.yml",  # PR #1043: pixi-first detectors env; steward 133.2: the scripts-test job
+          r"pixi-version: v" + _PIXI_VERSION, hits=2, kind="exact"),
     _site("lint-types.yml setup-pixi", ".github/workflows/lint-types.yml",  # steward 66.1 (2026-09-20): registered on the day it was added, not found by a sweep later
           r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
     _site("platform-ci.yml setup-pixi (4 jobs)", ".github/workflows/platform-ci.yml",  # PR #1043: four jobs sat on 0.77.0 unregistered while requires-pixi said >=0.78.0
@@ -78,6 +78,19 @@ SITES: tuple[Site, ...] = (
     _site("platform-deploy.yml setup-pixi", ".github/workflows/platform-deploy.yml",
           r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
     _site("substrate-nightly.yml setup-pixi", ".github/workflows/substrate-nightly.yml",  # marshal 46.1 (2026-09-24): registered on the day it was added
+          r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
+    # steward Story 133.2 (DW-steward-review-2026-11-24-2): 36 setup-pixi steps carried no pixi-version and
+    # installed whatever pixi was newest that day. Each is pinned and registered here, one hit per step;
+    # tests/scripts/test_workflows_and_scripts_do_what_they_name.py reds a step with no pin or no site.
+    _site("pyforge-station-tests.yml setup-pixi (29 jobs)", ".github/workflows/pyforge-station-tests.yml",
+          r"pixi-version: v" + _PIXI_VERSION, hits=29, kind="exact"),
+    _site("cfe-regression-net.yml setup-pixi (2 jobs)", ".github/workflows/cfe-regression-net.yml",
+          r"pixi-version: v" + _PIXI_VERSION, hits=2, kind="exact"),
+    _site("ci-canary.yml setup-pixi (2 jobs)", ".github/workflows/ci-canary.yml",
+          r"pixi-version: v" + _PIXI_VERSION, hits=2, kind="exact"),
+    _site("copilot-setup-steps.yml setup-pixi", ".github/workflows/copilot-setup-steps.yml",
+          r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
+    _site("marshal-local-recipes-seed-oracle.yml setup-pixi", ".github/workflows/marshal-local-recipes-seed-oracle.yml",
           r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
     _site("sync-pypi-mappings/action.yml setup-pixi", ".github/actions/sync-pypi-mappings/action.yml",
           r"pixi-version: v" + _PIXI_VERSION, kind="exact"),

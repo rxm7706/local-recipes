@@ -13967,6 +13967,22 @@ row; the `steward setup` read rules) · [[pyforge-scribe]] (the
   cross-surface tests counted a platform run that never happened; the environment-yaml fake matched `steward` and
   `provision` the same way. Each now matches a whole token of the command. Binds spec-pyforge-marshal:CAP-170 (realized,
   no text change); decomposed as Epic 120, one story.
+- **2026-11-25 (teardown, the front door and the required-check read fail closed) — Found:** the code review of main
+  `7da08791f3` left three marshal defects below high severity as one open row, `DW-marshal-review-2026-11-24-1`.
+  The teardown preserve scan skips the home branch whenever a branch of the same name is on origin, without comparing
+  tips, and reads a `resolve_ref` error as nothing to preserve, so `teardown --force` can remove a branch holding
+  unpushed commits (read and traced, not run). `marshal` exits 1 under a traceback on a bad `PYFORGE_ENVIRONMENT`
+  (reproduced with `PYFORGE_ENVIRONMENT=bogus marshal status`), and 1 is the UNEVALUABLE rung. `check_run_status`
+  reads one page of check runs, so a failed required check past the first 30 reads as not yet concluded.
+  **Ruled** (operator ruling of 2026-11-25: "can we close and complete these too - * DW-doctor-61-1-1: four governance Specs need a re-derive on your render route. * The lower-severity code defects from the review, as open deferred-work rows on eight stations' ledgers."). **For marshal:** this entry binds `spec-pyforge-marshal`
+  (CAP-287, nothing removes a working copy a preserve tag does not hold (realized, no text change); CAP-304, the
+  public contract and its exit codes (realized, no text change); CAP-210, landing refuses on a red required check
+  (realized, no text change)) and decomposes as Epic 121, one story: the scan always runs its commit-level check
+  and a tip it cannot resolve refuses the teardown, a flag configuration error is a usage error and any other
+  exception leaves by the ERROR rung, and `check_run_status` reads every page. Every defect is reproduced by a
+  failing test before it is fixed, and one the tree does not show is closed as not a defect, its code left alone.
+  **Constraints:** no flag is added (a fix that restores a fail-closed read), the exit domain gains no code, and
+  `contract.md` does not move.
 
 ## 2026-11-10 — The Spec says what marshal is, and its roots come from one place
 

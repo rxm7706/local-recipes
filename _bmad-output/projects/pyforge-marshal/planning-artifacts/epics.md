@@ -11856,3 +11856,27 @@ So that a test reads the command marshal ran, not the directory it ran from.
 **Then** the cross-surface and environment-yaml tests pass in a worktree whose path names those commands, and still count every real invocation
 **And** marshal's suite passes
 **Status:** done
+
+## Epic 121: Teardown, the front door and the required-check read fail closed (spec-pyforge-marshal:CAP-287, CAP-304, CAP-210)
+
+Minted 2026-11-25 from the station Dream's entry of the same date on the operator ruling of 2026-11-25: "can we close and complete these too - * DW-doctor-61-1-1: four governance Specs need a re-derive on your render route. * The lower-severity code defects from the review, as open deferred-work rows on eight stations' ledgers." The review of main `7da08791f3` left three marshal defects below high severity as the open row `DW-marshal-review-2026-11-24-1`.
+**HARD boundaries:**
+- Each defect is reproduced by a failing test before its code changes; one the tree does not reproduce is recorded as not a defect and its code is left alone.
+- The frozen exit domain gains no code and `contract.md` does not move.
+- No flag is added, and the preserve scan stays behind the flag it already has.
+
+### Story 121.1: Teardown compares tips, a bad environment is a usage error, and a required check is read on every page
+
+As the operator who tears a loop home down, runs `marshal` under a mistyped environment, or lands on a pull request with more than one page of checks,
+I want the preserve scan to compare tips and refuse on a tip it cannot resolve, a flag configuration error to exit as usage, and a required check to be read on every page,
+So that no unpushed commit is removed, no crash reads as a verdict, and no red check reads as pending.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-287, CAP-304 and CAP-210 (realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: it restores the fail-closed teardown scan, the frozen exit domain and the full required-check read)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/teardown_preserve.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/forge_gh.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_teardown_preserve.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_init_teardown_preserve.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_cli.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_forge_gh.py`
+**Spec:** `planning-artifacts/specs/spec-121-1-teardown-compares-tips-a-bad-environment-is-a-usage-error-and-a-required-check-is-read-on-every-page.md`
+**Given** the preserve scan skips the home branch whenever a branch of the same name is on origin, without comparing tips, and reads a `resolve_ref` error as nothing to preserve; `main()` catches no `FlagConfigError`, so `PYFORGE_ENVIRONMENT=bogus marshal status` exits 1, the UNEVALUABLE rung, under a traceback; and `check_run_status` reads one page of check runs, so a required check past the first 30 reads as not yet concluded
+**When** each defect is first reproduced by a failing test, then the scan runs its commit-level check on every branch and reports a tip it cannot resolve as unpreserved work, `main()` returns the usage code with one stderr line for a `FlagConfigError` and the ERROR rung for any other exception, and `check_run_status` reads every page through the call `check_runs()` already pages with
+**Then** `teardown --force` refuses a home branch whose tip no local remote-tracking ref, `origin/main` ancestry or preserve tag holds, naming `git fetch origin` and `--force --abandon <branch>` as the remedy, and proceeds on a tip a local remote-tracking ref holds, a bad `PYFORGE_ENVIRONMENT` exits 2 with no traceback and no invocation exits outside the frozen domain, and a failed required check on a later page reads `failure`
+**And** a defect the tree does not reproduce is recorded in the story spec as not a defect and its code is left alone, and marshal's suite passes
+**Status:** review

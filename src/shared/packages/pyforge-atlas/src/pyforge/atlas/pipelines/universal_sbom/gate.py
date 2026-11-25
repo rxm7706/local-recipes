@@ -360,9 +360,30 @@ def assemble_and_gate(
     match_components = match.get("components")
     if match_components is not None:
         coverage.append(models.AxisCoverage("currency", 1, 1, len(match_components), len(match_components), None))
-        # Currency is a flag-activated gate (OFF in v1): populated, informational,
-        # never blocking — it contributes a clean rung, never a finding.
-        rungs.append((models.Status.CLEAN, None))
+        if len(match_components) == 0:
+            # Story 52.1: a match of ZERO components is a truncated or unparsable intake, never a
+            # clean one — indeterminate (warden's own empty-extraction finding and driver, by
+            # import), which the frozen projection maps to exit 1. No ``components`` key at all
+            # stays not-applicable below (FR-16).
+            findings.append(
+                models.Finding(
+                    id=models.EMPTY_EXTRACTION_DRIVER_ID,
+                    axis=models.AXIS_INGESTION,
+                    message="the SBOM match report holds zero components (an empty or unparsable intake)",
+                    subject=None,
+                    severity=None,
+                )
+            )
+            rungs.append(
+                (
+                    models.Status.INDETERMINATE,
+                    models.StatusDriver(models.AXIS_INGESTION, models.EMPTY_EXTRACTION_DRIVER_ID),
+                )
+            )
+        else:
+            # Currency is a flag-activated gate (OFF in v1): populated, informational,
+            # never blocking — it contributes a clean rung, never a finding.
+            rungs.append((models.Status.CLEAN, None))
     else:
         coverage.append(models.AxisCoverage("currency", 0, 0, 0, 0, None))
         rungs.append((models.Status.NOT_APPLICABLE, None))

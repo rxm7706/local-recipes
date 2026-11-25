@@ -1,9 +1,12 @@
 {{/*
-Story 42.1 (CAP-4, red-team X-5): mcp-host answers MCP with no auth of its
-own, so the namespace must not be able to reach it. Only `web` -- the pod that
-runs dispatch_station_mcp, which verifies the assertion before it proxies --
-may open :8090. mTLS or a mesh policy for that hop is deferred to the steward
-deploy profile; this is the floor, not the ceiling.
+Story 42.1 (CAP-4, red-team X-5): the namespace must not be able to reach
+mcp-host. Only `web` -- the pod that runs dispatch_station_mcp, which verifies
+the assertion and charges the rate limit before it proxies -- may open :8090.
+Since steward Story 133.4 mcp-host also verifies the forwarded assertion
+itself (401 without one, 403 for another station's, 503 with no public key),
+so this policy is no longer the only check; it stays because the rate limit
+runs only in `web`. mTLS or a mesh policy for that hop is deferred to the
+steward deploy profile.
 */}}
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import urllib.request
+from email.message import Message
 from typing import Any
 from urllib.error import HTTPError
 
@@ -174,14 +175,23 @@ def test_open_pull_request_runs_the_five_call_sequence(monkeypatch: pytest.Monke
     assert transport.requests[2].get_header("Content-type") == "application/json"
 
 
-def test_open_pull_request_falls_back_to_main_and_no_parent_on_malformed_payloads(
+def test_open_pull_request_falls_back_to_main_on_a_malformed_repo_payload(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    transport = _install(monkeypatch, ["not-a-repo-dict"], [], {"sha": "new-sha"}, {}, {"html_url": "u"})
+    transport = _install(monkeypatch, ["not-a-repo-dict"], _BASE_BRANCH, {"sha": "new-sha"}, {}, {"html_url": "u"})
     assert _client().open_pull_request(_PROPOSAL) == "u"
     assert transport.requests[1].full_url.endswith("/branches/main")
-    assert transport.payload(2) == {"message": _PROPOSAL.title, "tree": None, "parents": []}
+    assert transport.payload(2) == {"message": _PROPOSAL.title, "tree": "tree-sha", "parents": ["base-sha"]}
     assert transport.payload(4)["base"] == "main"
+
+
+@pytest.mark.parametrize("base_branch", [[], {}, {"commit": "not-a-dict"}, {"commit": {"sha": None}}])
+def test_missing_base_sha_fails_before_any_commit(monkeypatch: pytest.MonkeyPatch, base_branch: object) -> None:
+    """Story 29.1: no base sha is a failed open, never a commit with ``parents: []``."""
+    transport = _install(monkeypatch, {"default_branch": "trunk"}, base_branch)
+    with pytest.raises(ForgeResponseError, match="trunk"):
+        _client().open_pull_request(_PROPOSAL)
+    assert [r.get_method() for r in transport.requests] == ["GET", "GET"]
 
 
 def test_open_pull_request_tolerates_a_commit_with_no_tree(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -248,3 +258,76 @@ def test_run_actuator_records_a_branch_exists_as_skipped_not_failed(monkeypatch:
     assert outcome.status == "skipped"
     assert "already exists" in (outcome.detail or "")
     assert outcome.pr_url is None
+
+
+def _ref_url() -> str:
+    return f"https://api.example/repos/owner/name/git/refs/heads/{_branch_name(_PROPOSAL.finding_id)}"
+
+
+def test_failed_open_deletes_the_ref_it_created(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story 29.1: a pull-request POST that raises after the ref was created leaves no branch behind."""
+    transport = _install(monkeypatch, *_open_replies(pull=_http_error(502)), None)
+    with pytest.raises(HTTPError):
+        _client().open_pull_request(_PROPOSAL)
+    last = transport.requests[-1]
+    assert (last.get_method(), last.full_url) == ("DELETE", _ref_url())
+    assert [r.get_method() for r in transport.requests].count("DELETE") == 1
+
+
+@pytest.mark.parametrize("pull", [{}, {"number": 9}, ["not-a-dict"]])
+def test_an_accepted_open_with_no_url_keeps_its_branch(monkeypatch: pytest.MonkeyPatch, pull: object) -> None:
+    """Story 29.1: a 2xx with no url may be an opened pull request, and deleting its head
+    branch would close it -- the open fails loudly and the ref is left alone."""
+    transport = _install(monkeypatch, *_open_replies(pull=pull))
+    with pytest.raises(ForgeResponseError, match="returned no url"):
+        _client().open_pull_request(_PROPOSAL)
+    assert transport.requests[-1].get_method() == "POST"
+    assert transport.requests[-1].full_url.endswith("/pulls")
+    assert "DELETE" not in [r.get_method() for r in transport.requests]
+
+
+def test_a_failed_ref_delete_keeps_the_open_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    transport = _install(monkeypatch, *_open_replies(pull=_http_error(502)), _http_error(500))
+    with pytest.raises(HTTPError) as caught:
+        _client().open_pull_request(_PROPOSAL)
+    assert caught.value.code == 502
+    assert transport.requests[-1].get_method() == "DELETE"
+
+
+def test_run_actuator_after_a_failed_open_tries_the_finding_again(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The failed open left no branch, so the next run opens the PR instead of skipping the finding."""
+    finding = Finding(
+        id=_PROPOSAL.finding_id,
+        axis="vulnerability",
+        message="pdos-vuln-fixture: PDOS-FIXTURE-0001 (severity critical)",
+        subject="pdos-vuln-fixture",
+        severity=Severity(tier=SeverityTier.CRITICAL, raw="CVSS:3.1/…"),
+    )
+    transport = _install(monkeypatch, [], *_open_replies(pull=_http_error(502)), None, [], *_open_replies())
+    first = run_actuator([finding], dry_run=False, client=_client(), fix_target_resolution_enabled=False)
+    second = run_actuator([finding], dry_run=False, client=_client(), fix_target_resolution_enabled=False)
+    assert [outcome.status for outcome in first.outcomes] == ["failed"]
+    assert [outcome.status for outcome in second.outcomes] == ["opened"]
+    assert [r.get_method() for r in transport.requests].count("DELETE") == 1
+
+
+def test_bearer_is_not_sent_to_another_host_on_redirect(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story 29.1: the token rides the request to the configured API host only -- urllib's own
+    redirect handling builds the follow-up request, and that request carries no bearer."""
+    transport = _install(monkeypatch, [])
+    _client().existing_open_pr(_PROPOSAL.finding_id)
+    (request,) = transport.requests
+    assert request.get_header("Authorization") == "Bearer tok"
+    redirected = urllib.request.HTTPRedirectHandler().redirect_request(
+        request,
+        None,  # type: ignore[arg-type]
+        302,
+        "Found",
+        Message(),
+        "https://elsewhere.example/repos/owner/name/pulls",
+    )
+    assert redirected is not None
+    assert redirected.host == "elsewhere.example"
+    assert not redirected.has_header("Authorization")
+    assert redirected.get_header("Authorization") is None
+    assert redirected.get_header("User-agent") == actuator._USER_AGENT

@@ -46,6 +46,7 @@ SERVER_PROBE = "require_pg_dsn"
 
 _PLANE_TESTS = (
     "test_stale_round_trips_against_live_duckdb",
+    "test_compile_stamp_round_trips_against_live_duckdb",
     "test_read_only_open_never_calls_connect_writer",
     "test_plugin_honors_write_false",
     "test_plugin_write_string_false_is_not_writer",

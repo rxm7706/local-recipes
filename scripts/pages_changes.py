@@ -5,10 +5,10 @@ Reads ``git log --first-parent`` on the built commit and writes ``docs-site/src/
 shape herald's ``parseChanges`` reads (herald Story 43.6; ``docs-site/src/lib/agent-surface.ts``):
 ``{"generated_at", "window_days", "merges": [{"date", "station", "subject", "sha"}]}``, newest first. A merge is
 listed when it sits on the first-parent line and its committer time is within ``--window-days`` before the built
-commit's committer time. ``generated_at`` is that commit's committer time and the window is anchored on it, never
-on the wall clock, so a second run on the same commit writes the same bytes and a scheduled build of an unmoved
-tree still skips its deploy. The station is read from ``Merge <station>/<E-S> into main``; any other merge is
-``other``. No network and no ``gh``.
+commit's committer time. ``generated_at`` is that commit's committer time, in UTC like every entry's ``date``, and
+the window is anchored on it, never on the wall clock, so a second run on the same commit writes the same bytes
+and a scheduled build of an unmoved tree still skips its deploy. The station is read from
+``Merge <station>/<E-S> into main``; any other merge is ``other``. No network and no ``gh``.
 
 Exit 0 wrote the file; 1 git could not read the ref (named on stderr); 3 the checkout's history is too shallow
 for the window (the first-parent line stops on a shallow commit inside it, whose parents git cannot see, so it
@@ -93,10 +93,14 @@ def changes_document(
         raise ChangesError(
             f"--window-days {window_days}: the window is at least one day"
         )
-    generated_at = _git(repo, "log", "-1", "--format=%cI", ref, "--").strip()
-    if not generated_at:
+    committed_at = _git(repo, "log", "-1", "--format=%cI", ref, "--").strip()
+    if not committed_at:
         raise ChangesError(f"{ref}: no commit time read from git")
-    cutoff = datetime.fromisoformat(generated_at) - timedelta(days=window_days)
+    built_at = datetime.fromisoformat(committed_at)
+    # One zone for the snapshot and its entries (steward Story 133.2): each entry's date is UTC, so the snapshot
+    # is written in UTC too. Left in the committer's offset, an entry could be dated a day after its snapshot.
+    generated_at = built_at.astimezone(UTC).isoformat()
+    cutoff = built_at - timedelta(days=window_days)
     # NUL between fields and (-z) between commits: a commit message cannot hold one, so no subject splits a record
     fields = _git(
         repo, "log", "-z", "--first-parent", "--format=%H%x00%P%x00%cI%x00%s", ref, "--"

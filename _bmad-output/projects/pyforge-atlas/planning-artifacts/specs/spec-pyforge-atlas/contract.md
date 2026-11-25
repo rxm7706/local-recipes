@@ -382,7 +382,7 @@ nothing synced, `4` on a local read or write error. Every argparse entry point a
 | Entry point | Codes | Meaning |
 |---|---|---|
 | `pyforge atlas` | `0` `1` `2` | `0` success, and `--version`; `2` a kill-switch refusal before Kedro runs; otherwise Click's own codes (`1` a failed or aborted command, `2` usage). |
-| `python -m pyforge.atlas.trending_candidates` | `0` `1` | `1` any failure, a bad filter value included, as one stderr line. |
+| `python -m pyforge.atlas.trending_candidates` | `0` `1` `2` | `1` a bad filter value or a closed stdout pipe; `2` any other error; each failure but the closed pipe is one stderr line. |
 | `python -m pyforge.atlas.trending_candidates.handoff_main` | `0` `1` `2` `130` | `1` an ineligible candidate, a missing or failing health screen, or a dataset not yet ingested; `2` any other error. |
 | `python -m pyforge.atlas.query_plane_boot` | `0` `1` `2` `130` | `1` a typed refusal (a second writer, or `duckdb-server` not provisioned); `130` also on SIGTERM while supervising. |
 | `python -m pyforge.atlas.publish` | `0` `1` | `1` the seed CSV is missing. |

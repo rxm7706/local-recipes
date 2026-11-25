@@ -675,7 +675,7 @@ def test_ship_pypi_happy_path_uploads_and_returns_terminal_result():
         result = ship_pypi("/proj", environ=_SHIP_ENVIRON)
 
     mock_build.assert_called_once_with("/proj", target="library")
-    mock_exists.assert_called_once_with("pkg", "0.1.0")
+    mock_exists.assert_called_once_with("pkg", "0.1.0", index_base="https://pypi.org")
     mock_upload.assert_called_once_with(
         (_SHIP_BUILD_RESULT.wheel_path, _SHIP_BUILD_RESULT.sdist_path),
         repository_url=None,
@@ -852,7 +852,7 @@ def test_ship_pypi_already_shipped_skips_upload_and_returns_terminal():
     ):
         result = ship_pypi("/proj", environ=_SHIP_ENVIRON)
 
-    mock_exists.assert_called_once_with("pkg", "0.1.0")
+    mock_exists.assert_called_once_with("pkg", "0.1.0", index_base="https://pypi.org")
     mock_upload.assert_not_called()
     assert result.target == "pypi"
     assert result.state == ShipState.TERMINAL
@@ -1002,6 +1002,149 @@ def test_ship_pypi_without_repository_url_still_forwards_none_to_twine_upload():
         ship_pypi("/proj", environ=_SHIP_ENVIRON)
 
     assert mock_upload.call_args.kwargs["repository_url"] is None
+
+
+# --- Story 41.1: the version check asks the index the target uploads to ----
+
+
+def _fake_index(present_on):
+    """A `version_exists` double that answers per index base: `True` for a
+    base in `present_on`, `False` for any other."""
+
+    def _version_exists(name, version, *, index_base="https://pypi.org", timeout=None):
+        return index_base in present_on
+
+    return _version_exists
+
+
+def test_rehearsal_index_pypi_test_asks_test_pypi_org_and_reads_terminal_without_uploading():
+    """The version is on TestPyPI and not on pypi.org: the rehearsal must
+    read TERMINAL with a test.pypi.org reference and upload nothing."""
+    with (
+        patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT),
+        patch(
+            "pyforge.mason.package.pypi_index.version_exists",
+            side_effect=_fake_index({"https://test.pypi.org"}),
+        ) as mock_exists,
+        patch("pyforge.mason.package.twine.upload") as mock_upload,
+    ):
+        result = ship_pypi("/proj", environ=_SHIP_ENVIRON, repository_url=_TESTPYPI_URL)
+
+    mock_exists.assert_called_once_with("pkg", "0.1.0", index_base="https://test.pypi.org")
+    mock_upload.assert_not_called()
+    assert result.target == "pypi-test"
+    assert result.state == ShipState.TERMINAL
+    assert result.reference == "https://test.pypi.org/project/pkg/0.1.0/"
+    assert "test.pypi.org already has pkg 0.1.0" in result.message
+
+
+def test_rehearsal_index_pypi_test_uploads_when_only_pypi_org_has_the_version():
+    """The mirror case: pypi.org's answer says nothing about TestPyPI."""
+    upload_result = TwineUploadResult(returncode=0, url="https://test.pypi.org/project/pkg/0.1.0/", stdout="ok")
+    with (
+        patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT),
+        patch(
+            "pyforge.mason.package.pypi_index.version_exists",
+            side_effect=_fake_index({"https://pypi.org"}),
+        ),
+        patch("pyforge.mason.package.twine.upload", return_value=upload_result) as mock_upload,
+    ):
+        result = ship_pypi("/proj", environ=_SHIP_ENVIRON, repository_url=_TESTPYPI_URL)
+
+    mock_upload.assert_called_once()
+    assert result.state == ShipState.TERMINAL
+    assert result.reference == "https://test.pypi.org/project/pkg/0.1.0/"
+
+
+def test_rehearsal_index_pypi_target_still_asks_pypi_org():
+    with (
+        patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT),
+        patch(
+            "pyforge.mason.package.pypi_index.version_exists",
+            side_effect=_fake_index({"https://pypi.org"}),
+        ) as mock_exists,
+        patch("pyforge.mason.package.twine.upload") as mock_upload,
+    ):
+        result = ship_pypi("/proj", environ=_SHIP_ENVIRON)
+
+    mock_exists.assert_called_once_with("pkg", "0.1.0", index_base="https://pypi.org")
+    mock_upload.assert_not_called()
+    assert result.target == "pypi"
+    assert result.state == ShipState.TERMINAL
+    assert result.reference == "https://pypi.org/project/pkg/0.1.0/"
+    assert "pypi.org already has pkg 0.1.0" in result.message
+
+
+def test_rehearsal_index_pypi_test_undeterminable_names_test_pypi_org():
+    with (
+        patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT),
+        patch("pyforge.mason.package.pypi_index.version_exists", return_value=None),
+        patch("pyforge.mason.package.twine.upload") as mock_upload,
+    ):
+        result = ship_pypi("/proj", environ=_SHIP_ENVIRON, repository_url=_TESTPYPI_URL)
+
+    mock_upload.assert_not_called()
+    assert result.target == "pypi-test"
+    assert result.state == ShipState.PENDING
+    assert result.reference is None
+    assert "test.pypi.org already has pkg 0.1.0" in result.message
+
+
+def test_rehearsal_index_unknown_repository_reads_pending_and_uploads_nothing():
+    """A repository URL with no known JSON index: never an assumption in
+    either direction, so no index is asked and nothing is uploaded."""
+    with (
+        patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT),
+        patch("pyforge.mason.package.pypi_index.version_exists", return_value=False) as mock_exists,
+        patch("pyforge.mason.package.twine.upload") as mock_upload,
+    ):
+        result = ship_pypi(
+            "/proj",
+            environ=_SHIP_ENVIRON,
+            repository_url="https://upload.example.invalid/legacy/",
+        )
+
+    mock_exists.assert_not_called()
+    mock_upload.assert_not_called()
+    assert result.target == "pypi-test"
+    assert result.state == ShipState.PENDING
+    assert result.reference is None
+    assert "https://upload.example.invalid/legacy/" in result.message
+
+
+def test_rehearsal_index_rerun_after_a_failed_real_upload_attempts_pypi_again(tmp_path):
+    """The reviewer's trace: the rehearsal uploaded, the real upload failed,
+    and the operator runs `--to pypi-test,pypi --yes` again. TestPyPI has
+    the version, pypi.org does not: the rehearsal reads TERMINAL with no
+    second upload to TestPyPI, and the `pypi` target is attempted."""
+    real_upload = TwineUploadResult(returncode=0, url="https://pypi.org/project/pkg/0.1.0/", stdout="ok")
+    with (
+        patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT),
+        patch(
+            "pyforge.mason.package.pypi_index.version_exists",
+            side_effect=_fake_index({"https://test.pypi.org"}),
+        ),
+        patch("pyforge.mason.package.twine.upload", return_value=real_upload) as mock_upload,
+    ):
+        results = ship(
+            "pypi-test,pypi",
+            confirm=True,
+            environ=_SHIP_ENVIRON,
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            start_directory=tmp_path,
+        )
+
+    assert [(r.target, r.state) for r in results] == [
+        ("pypi-test", ShipState.TERMINAL),
+        ("pypi", ShipState.TERMINAL),
+    ]
+    assert results[0].reference == "https://test.pypi.org/project/pkg/0.1.0/"
+    mock_upload.assert_called_once_with(
+        (_SHIP_BUILD_RESULT.wheel_path, _SHIP_BUILD_RESULT.sdist_path),
+        repository_url=None,
+    )
 
 
 # --- Story 3.5: ship_channel -----------------------------------------------

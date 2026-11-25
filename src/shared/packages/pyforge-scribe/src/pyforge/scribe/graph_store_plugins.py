@@ -67,7 +67,8 @@ def open_graph_store(
     context: dict = {"store_path": store_path}
     dsn = os.environ.get(_DSN_ENV) or os.environ.get("DATABASE_URL")
     if dsn:
-        context["dsn"] = dsn.split("?", 1)[0]
+        # Whole, query string included: ``sslmode`` and the other libpq parameters ride there (Story 35.1).
+        context["dsn"] = dsn
     plane = os.environ.get(_PLANE_PATH_ENV)
     if plane:
         context["plane_path"] = plane

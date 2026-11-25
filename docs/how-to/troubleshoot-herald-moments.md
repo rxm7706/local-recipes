@@ -5,7 +5,7 @@ sources:
   - src/shared/packages/pyforge-herald/src/pyforge/herald/db.py
   - src/shared/packages/pyforge-herald/src/pyforge/herald/evidence.py
   - src/shared/packages/pyforge-herald/tests/unit/test_auth.py
-verified: 2026-11-24
+verified: 2026-11-25
 ---
 
 # How to troubleshoot Herald's progress, claims and notices
@@ -164,7 +164,7 @@ An unknown station, claim or notice component is a plain `HeraldError`, exit cod
 
 ```
 $ herald progress bogus-station
-herald: HeraldError: Station 'bogus-station' not found. Available: warden, atlas, marshal, mason, doctor, scribe, steward, herald. Use --list to see recorded stations.
+herald: HeraldError: Station 'bogus-station' not found. Available: herald, marshal, atlas, warden, mason, doctor, scribe, steward. Use --list to see recorded stations.
 ```
 
 `herald progress <station> --update` runs the same check after the operator-role gate, so it refuses a station outside the list and writes nothing.

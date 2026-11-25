@@ -277,7 +277,19 @@ AD-26) -- a fixed constant, never a flag or environment variable (D-13
 forbids a config file as the alternative twine mechanism; spec Always
 boundary: "no flag, no env var"). `ship()`'s own `_ship_one` closure
 forwards this verbatim as `ship_pypi`'s `repository_url` argument for every
-`PYPI_TEST` target -- the ONE place this constant is read."""
+`PYPI_TEST` target; `_INDEX_BASE_BY_REPOSITORY_URL` below is its one other
+reader."""
+
+_INDEX_BASE_BY_REPOSITORY_URL: dict[str | None, str] = {
+    None: pypi_index.PYPI_INDEX_BASE,
+    _TESTPYPI_REPOSITORY_URL: "https://test.pypi.org",
+}
+"""The JSON index each upload repository's version check asks (Story 41.1):
+`ship_pypi`'s `repository_url` -> the index base `pypi_index.version_exists`
+queries and the project-page reference is built from. `None` is twine's own
+default repository, pypi.org. A repository URL absent from this mapping has
+no known JSON index: `ship_pypi` reads `PENDING` for it and uploads nothing
+(AD-10: "never an assumption in either direction")."""
 
 
 def parse_ship_targets(value: str) -> tuple[ShipTarget, ...]:
@@ -479,10 +491,12 @@ def ship_pypi(
 
     `canonical` -- `"pypi-test"` when `repository_url` is given, else
     `"pypi"` -- is computed ONCE, immediately after the credential check,
-    and used at all three `ShipTargetResult(target=...)` construction sites
-    below (Story 3.9) -- the ONLY difference between a real PyPI ship and a
-    TestPyPI rehearsal anywhere in this function's own logic; every other
-    line runs identically for both.
+    and used at every `ShipTargetResult(target=...)` construction site
+    below (Story 3.9). It is one of the two differences between a real PyPI
+    ship and a TestPyPI rehearsal in this function's own logic; the other is
+    the index base the interrogation asks and the reference is built from
+    (Story 41.1, last paragraph). Every other line runs identically for
+    both.
 
     When both credentials are present, calls `build(project_path,
     target=target)` unconditionally (FR-15, reused rather than duplicated
@@ -503,12 +517,14 @@ def ship_pypi(
     from `build_result.wheel_path`'s own filename via `packaging.utils.
     parse_wheel_filename` (the same parse `engines.pep517` already trusts --
     `PackageBuildResult` itself carries no separate name field) and calls
-    `pypi_index.version_exists(name, build_result.wheel_version)`. Three-way
-    outcome: `True` (PyPI already has this exact name/version) -> the upload
-    is SKIPPED and this function returns `TERMINAL` with `reference=
-    f"https://pypi.org/project/{name}/{version}/"` (mirrors the shape
-    `twine`'s own "View at:" URL already produces); `False` (PyPI does not
-    have it) -> `twine.upload` runs exactly as before this story; `None`
+    `pypi_index.version_exists(name, build_result.wheel_version,
+    index_base=index_base)`, where `index_base` is the index of the upload
+    repository (pypi.org for the `pypi` target only; Story 41.1). Three-way
+    outcome: `True` (that index already has this exact name/version) -> the
+    upload is SKIPPED and this function returns `TERMINAL` with `reference=
+    f"{index_base}/project/{name}/{version}/"` (mirrors the shape
+    `twine`'s own "View at:" URL already produces); `False` (that index does
+    not have it) -> `twine.upload` runs exactly as before this story; `None`
     (the interrogation itself could not be completed -- a timeout, a DNS
     failure, an unexpected HTTP status) -> this function returns `PENDING`
     naming the reason, and `twine.upload` is NEVER called (AD-10: "never an
@@ -534,6 +550,14 @@ def ship_pypi(
     for its own two engines). `pypi_index.version_exists` itself never
     raises (its own docstring), so no new exception surface is introduced by
     this story's interrogation step.
+
+    Story 41.1: the interrogation asks the index this call uploads to. The
+    index base comes from `_INDEX_BASE_BY_REPOSITORY_URL[repository_url]`
+    (pypi.org for `None`, test.pypi.org for the TestPyPI upload URL) and is
+    passed to `pypi_index.version_exists(..., index_base=...)`; the
+    `TERMINAL` reference and both interrogation messages are built from that
+    same base. A `repository_url` the mapping does not hold returns
+    `PENDING` naming it, with neither the index nor `twine.upload` called.
     """
     missing = [name for name in _REQUIRED_SHIP_PYPI_CREDENTIALS if not environ.get(name, "").strip()]
     if missing:
@@ -552,13 +576,26 @@ def ship_pypi(
         )
 
     pypi_name, _, _, _ = parse_wheel_filename(Path(build_result.wheel_path).name)
-    exists = pypi_index.version_exists(str(pypi_name), build_result.wheel_version)
+    index_base = _INDEX_BASE_BY_REPOSITORY_URL.get(repository_url)
+    if index_base is None:
+        return ShipTargetResult(
+            target=canonical,
+            state=ShipState.PENDING,
+            reference=None,
+            message=(
+                f"no known JSON index for the repository {repository_url}, so whether it "
+                f"already has {pypi_name} {build_result.wheel_version} could not be "
+                "determined; upload was not attempted"
+            ),
+        )
+    index_host = index_base.removeprefix("https://")
+    exists = pypi_index.version_exists(str(pypi_name), build_result.wheel_version, index_base=index_base)
     if exists is True:
         return ShipTargetResult(
             target=canonical,
             state=ShipState.TERMINAL,
-            reference=f"https://pypi.org/project/{pypi_name}/{build_result.wheel_version}/",
-            message=(f"pypi already has {pypi_name} {build_result.wheel_version}; upload was not attempted"),
+            reference=f"{index_base}/project/{pypi_name}/{build_result.wheel_version}/",
+            message=(f"{index_host} already has {pypi_name} {build_result.wheel_version}; upload was not attempted"),
         )
     if exists is None:
         return ShipTargetResult(
@@ -566,7 +603,7 @@ def ship_pypi(
             state=ShipState.PENDING,
             reference=None,
             message=(
-                f"could not determine whether pypi already has {pypi_name} "
+                f"could not determine whether {index_host} already has {pypi_name} "
                 f"{build_result.wheel_version} (network error, timeout, or an "
                 "unexpected response); upload was not attempted"
             ),

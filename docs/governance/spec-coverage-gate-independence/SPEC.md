@@ -7,7 +7,7 @@ status: ready   # 2026-09-14 — seeded `draft` in the morning; ruled and flippe
                 # docs/governance/ beside spec-pyforge-charter because its Dream is guild-owned
                 # (chain.py `_expected_spec_dir`: guild -> docs/governance/spec-<slug>/).
 created: "2026-09-14"
-updated: "2026-11-11"   # RE-DERIVED 2026-11-11 (steward Story 120.3): the memlog's three events of 2026-10-08 and 2026-10-09 (Stories 71.4, 71.6, 76.4) are recorded in the Canonical contract note; no capability text changes. Prior "2026-09-27"
+updated: "2026-11-25"   # RE-DERIVED 2026-11-25 (DW-doctor-61-1-1, operator ruling 2026-11-25): the Why is dated to the seed day and says where the evaluator, the thresholds and the workflow stand today; CAP-1 and CAP-4 success name pyforge-station-tests.yml where they named the retired coverage-gates.yml; no capability is added, removed or re-scoped. Prior "2026-11-11": RE-DERIVED 2026-11-11 (steward Story 120.3): the memlog's three events of 2026-10-08 and 2026-10-09 (Stories 71.4, 71.6, 76.4) are recorded in the Canonical contract note; no capability text changes. Prior "2026-09-27"
 owner-dream: docs/dreams/coverage-gate-independence.md
 surface:        # Declared 2026-09-20 by doctor Story 24.1 (CAP-1/CAP-2): the evaluator and
                 # its thresholds moved outside every pyforge.<station> package. All four
@@ -49,11 +49,16 @@ open_questions: []
 > 71.6 (the station test task's `-n`/`--dist` flags) and the Story 76.4 landing repair (the first
 > run's `--ignore`, and the ignored paths run alone): driver internals of
 > `scripts/coverage_gates_ci.py` under CAP-1's surface that change no floor, evaluate path or
-> workflow caller, so no capability text changes.
+> workflow caller, so no capability text changes. Re-derived 2026-11-25 (DW-doctor-61-1-1): the
+> Why is dated to its seed day, and CAP-1 and CAP-4 success name the workflow that carries the
+> gate today; no capability is added, removed or re-scoped.
 
 # SPEC — the gate that judges a station never ships inside it
 
 ## Why
+
+*The two paragraphs below are the case as it stood on the seed day, 2026-09-14, kept as written.
+The paragraph after them says where each named file stands on 2026-11-25.*
 
 `pyforge/marshal/coverage_gate.py` and `coverage_thresholds.toml` ship inside the marshal package,
 and `.github/workflows/coverage-gates.yml:90` runs that gate across all eight stations — marshal
@@ -67,6 +72,13 @@ own planning tree**, so relocating there moves the violation one package over. D
 either — Doctor is constitutionally advisory (*"findings stay advisory — not a second PR gate"*), so
 a blocking gate there trades one violation for another. And `pyforge.marshal.coverage_gate` is named
 in an AD-3/AD-4 import-linter contract, so the move amends a declared layering rule.
+
+**As of 2026-11-25** none of those files stands where the seed found it. The evaluator is
+`scripts/coverage_gate.py` and the thresholds are `docs/governance/coverage-thresholds.toml`
+(doctor Story 24.1, 2026-09-20), and marshal's import-linter contract dropped
+`pyforge.marshal.coverage_gate` in the same change. `coverage-gates.yml` is retired (steward
+Story 117.2): the gate runs as each station's `<station>-gate` job in
+`.github/workflows/pyforge-station-tests.yml`, which calls `scripts/coverage_gates_ci.py`.
 
 ## What the investigation CLEARED (recorded so it is not re-litigated)
 
@@ -86,7 +98,9 @@ in an AD-3/AD-4 import-linter contract, so the move amends a declared layering r
     guild-owned Spec's surface, physically outside every `pyforge.<station>` package (the
     `scripts/` drivers move with it out of `spec-pyforge-testing-charter`'s surface).
   - *success:* no `pyforge.<station>` module is the evaluator of that same station's CI gate; the
-    eight `pyforge-<station>-coverage-gate` pixi tasks and `coverage-gates.yml` call the new home;
+    eight `pyforge-<station>-coverage-gate` pixi tasks and each station's gate job in
+    `pyforge-station-tests.yml` call the new home (until 2026-11-25 this line named
+    `coverage-gates.yml`, which steward Story 117.2 retired);
     the AD-3/AD-4 import-linter contract that names `pyforge.marshal.coverage_gate` is amended with
     its reasoning in the same change. *(Ruled: the host is the Guild. `pyforge-gates` — a ninth
     package with no Smith — was rejected as the `owner: crew` shape.)*
@@ -113,8 +127,9 @@ in an AD-3/AD-4 import-linter contract, so the move amends a declared layering r
     gate passed having judged nothing.
   - *success:* with a local branch or tag named `origin/main` at HEAD, the driver's touched-module list is the
     one the remote-tracking ref gives; with none, every list is unchanged; a push event's sha still passes
-    through; no pixi task argument changes, and `coverage-gates.yml`'s station selection (a diff the driver
-    never sees) names `refs/remotes/origin/${GITHUB_BASE_REF}` too.
+    through; no pixi task argument changes, and the station selection of `pyforge-station-tests.yml` (a diff
+    the driver never sees; it lived in `coverage-gates.yml` until steward Story 117.2 retired that workflow)
+    names `refs/remotes/origin/${GITHUB_BASE_REF}` too.
 
 ## Constraints
 

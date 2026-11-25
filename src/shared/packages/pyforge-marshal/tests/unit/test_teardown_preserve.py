@@ -133,14 +133,21 @@ def test_scan_unpromoted_scratch_and_debt_tags(tmp_path: Path, monkeypatch: pyte
     assert "preserve/acme/1.1/dispatch-abc12345" in result.preserve_debt_tags
 
 
-def test_scan_branch_unpreserved_and_origin_skips_primary(tmp_path: Path) -> None:
+def test_scan_branch_unpreserved_and_tracking_ref_held_tip_skips_primary(tmp_path: Path) -> None:
+    """Story 121.1: a same-named branch on origin is no proof; only a tip a local remote-tracking ref
+    (or origin/main ancestry, or a preserve tag) holds is preserved."""
     repo = tmp_path / "repo"
     home = tmp_path / "home"
     repo.mkdir()
     home.mkdir()
-    vcs = FakeVcs(repo_root=repo)
+
+    class _Vcs(FakeVcs):
+        def commit_contained_in_remote_refs(self, repo_root: Path, commit: str) -> bool:
+            return commit == "pushed-tip"
+
+    vcs = _Vcs(repo_root=repo)
     vcs.remote_branches = {"loop/acme"}
-    vcs.refs["loop/acme"] = "orphan-tip"
+    vcs.refs["loop/acme"] = "pushed-tip"
     vcs.refs["orphan-branch"] = "orphan-tip2"
 
     result = _scan(repo_root=repo, home=home, branch="orphan-branch", vcs=vcs)
@@ -150,6 +157,26 @@ def test_scan_branch_unpreserved_and_origin_skips_primary(tmp_path: Path) -> Non
 
     on_origin = _scan(repo_root=repo, home=home, branch="loop/acme", vcs=vcs)
     assert "loop/acme" not in {i.abandon_token for i in on_origin.items}
+
+
+def test_scan_reports_home_branch_on_origin_whose_local_tip_origin_does_not_hold(tmp_path: Path) -> None:
+    """Story 121.1 (DW-marshal-review-2026-11-24-1, defect 1): the home branch is on origin by name,
+    but its local tip is ahead of anything a durable ref reaches -- unpushed commits teardown would orphan."""
+    repo = tmp_path / "repo"
+    home = tmp_path / "home"
+    repo.mkdir()
+    home.mkdir()
+    vcs = FakeVcs(repo_root=repo)
+    vcs.remote_branches = {"loop/acme"}
+    vcs.refs["loop/acme"] = "unpushed-tip"
+
+    result = _scan(repo_root=repo, home=home, branch="loop/acme", vcs=vcs)
+
+    assert [i.abandon_token for i in result.items] == ["loop/acme"]
+    assert "no durable ref reaches" in result.items[0].message
+    # the refusal names both remedies: refresh the local remote-tracking refs, or abandon by name
+    assert "git fetch origin" in result.items[0].message
+    assert "--force --abandon loop/acme" in result.items[0].message
 
 
 def test_scan_nested_bmad_loop_branch_and_worktree_fallback(tmp_path: Path) -> None:
@@ -179,7 +206,8 @@ def test_scan_nested_bmad_loop_branch_and_worktree_fallback(tmp_path: Path) -> N
     assert any(i.abandon_token == "bmad-loop/run1/story" for i in result.items)
 
 
-def test_scan_resolve_ref_failure_skips_branch(tmp_path: Path) -> None:
+def test_scan_resolve_ref_failure_reports_branch_as_unpreserved(tmp_path: Path) -> None:
+    """Story 121.1: a tip the scan cannot resolve is not "nothing to preserve" -- the teardown refuses."""
     repo = tmp_path / "repo"
     home = tmp_path / "home"
     repo.mkdir()
@@ -193,7 +221,10 @@ def test_scan_resolve_ref_failure_skips_branch(tmp_path: Path) -> None:
 
     result = _scan(repo_root=repo, home=home, branch="missing-branch", vcs=vcs)
 
-    assert result.items == ()
+    assert [i.abandon_token for i in result.items] == ["missing-branch"]
+    assert "cannot be resolved" in result.items[0].message
+    assert "missing" in result.items[0].message
+    assert "--force --abandon missing-branch" in result.items[0].message
 
 
 def test_commit_needs_preserve_respects_durable_refs(tmp_path: Path) -> None:

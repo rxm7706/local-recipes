@@ -5,7 +5,8 @@ sources:
   - src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/tools.py
   - src/shared/packages/pyforge-atlas/tools/bootstrap.py
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/contract.md
-verified: 2026-11-18
+  - src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py
+verified: 2026-11-25
 ---
 
 # How to run the atlas pipelines and read their datasets
@@ -85,7 +86,7 @@ The CLI has no verb that lists or reads datasets. Use one of these:
 
 The MCP tools are served at `POST /stations/atlas/mcp` on the platform host. [Reach a station's MCP endpoint](reach-a-station-mcp-endpoint.md) shows how to start the host and send a request.
 
-Call the `pyforge-atlas` binary directly for the shell. The `pyforge` front door captures output and passes no stdin, so `pyforge atlas ipython` is not interactive, and a long `pyforge atlas run` prints its log only when it exits.
+The `pyforge` front door gives the same shell. It hands its child the terminal's own stdin, stdout and stderr, so `pyforge atlas ipython` is interactive too, and a long `pyforge atlas run` prints its log as it runs.
 
 Dataset declarations live in `src/shared/packages/pyforge-atlas/conf/base/catalog.yml`.
 

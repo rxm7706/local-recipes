@@ -26,6 +26,10 @@ import mcp_host.app as mcp_host_app_module  # noqa: E402
 from mcp_host.app import app as mcp_host_app  # noqa: E402
 
 
+def _tools_list() -> dict:
+    return {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}
+
+
 def _initialize(revision: str) -> dict:
     return {
         "jsonrpc": "2.0",
@@ -37,6 +41,14 @@ def _initialize(revision: str) -> dict:
             "clientInfo": {"name": "fixture-client", "version": "0"},
         },
     }
+
+
+def _bearer(station: str = "atlas") -> dict[str, str]:
+    """The header the host forwards: the assertion it verified for ``station``."""
+    assertion = mint_assertion(
+        sub="agent-sidecar", roles=[f"pyforge:station:{station}"], station=station
+    )
+    return {"authorization": f"Bearer {assertion}"}
 
 
 def test_sidecar_base_url_none_when_unset(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -68,11 +80,61 @@ def test_mcp_host_initialize_echoes_handshake(mcp_client: TestClient) -> None:
         headers={
             "accept": "application/json, text/event-stream",
             "content-type": "application/json",
+            **_bearer(),
         },
     )
     assert response.status_code == HTTPStatus.OK
     result = response.json().get("result") or {}
     assert result.get("protocolVersion") == "2025-06-18"
+
+
+def test_mcp_host_refuses_a_call_with_no_assertion(mcp_client: TestClient) -> None:
+    """Steward Story 133.4: the sidecar verifies the assertion itself.
+
+    The network policy was the only thing between the namespace and a
+    station's tools; a call that reaches the port without an assertion is
+    refused here too.
+    """
+    for body in (_initialize("2025-06-18"), _tools_list()):
+        response = mcp_client.post(
+            "/stations/atlas/mcp",
+            json=body,
+            headers={
+                "accept": "application/json, text/event-stream",
+                "content-type": "application/json",
+            },
+        )
+        assert response.status_code == HTTPStatus.UNAUTHORIZED
+        assert response.json() == {"error": "assertion required"}
+
+
+def test_mcp_host_refuses_an_assertion_minted_for_another_station(
+    mcp_client: TestClient,
+) -> None:
+    """A call outside the caller's station scope: 403, never routed."""
+    response = mcp_client.post(
+        "/stations/atlas/mcp",
+        json=_tools_list(),
+        headers={
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            **_bearer("steward"),
+        },
+    )
+    assert response.status_code == HTTPStatus.FORBIDDEN
+    assert response.json() == {"error": "wrong audience"}
+
+
+def test_mcp_host_refuses_when_no_verifier_key_resolves(
+    mcp_client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """No public key is a 503, never a pass."""
+    headers = {"content-type": "application/json", **_bearer()}
+    monkeypatch.setattr("django_pyforge.mcp_auth.resolve_public_pem", lambda: "")
+    response = mcp_client.post(
+        "/stations/atlas/mcp", json=_tools_list(), headers=headers
+    )
+    assert response.status_code == HTTPStatus.SERVICE_UNAVAILABLE
 
 
 def test_mcp_host_modern_header_accepted(mcp_client: TestClient) -> None:
@@ -88,6 +150,7 @@ def test_mcp_host_modern_header_accepted(mcp_client: TestClient) -> None:
             "accept": "application/json, text/event-stream",
             "content-type": "application/json",
             "mcp-protocol-version": "2026-07-28",
+            **_bearer(),
         },
     )
     assert response.status_code < HTTPStatus.INTERNAL_SERVER_ERROR
@@ -101,7 +164,7 @@ def test_mcp_host_unsupported_revision(mcp_client: TestClient) -> None:
     response = mcp_client.post(
         "/stations/atlas/mcp",
         json=_initialize("2099-01-01"),
-        headers={"content-type": "application/json"},
+        headers={"content-type": "application/json", **_bearer()},
     )
     assert response.status_code == HTTPStatus.BAD_REQUEST
     error = response.json()["error"]
