@@ -144,6 +144,8 @@ Artifacts land under `%CONDA_BLD_PATH%` (default `C:\bld`).
 
 Skip this step if you only author recipes. To contribute to a PyForge Guild station (atlas, doctor, herald, marshal, mason, scribe, steward, warden), run this bootstrap sequence once after `pixi install -e pyforge-foundry-full`. The atlas-heavy steps need the `local-recipes` env installed too.
 
+To check first that the machine has everything station work needs, follow [Onboard a machine](onboard-a-machine.md): `pixi run -e pyforge-guild pyforge steward init` names each missing piece and its fix.
+
 ```bash
 pixi run -e pyforge-guild detectors-ci        # the CI-safe detector subset; exit 0 is the merge bar
 pixi run -e local-recipes health-check        # checks the git upstream remote, gh auth, Docker, MCP scripts, API reachability

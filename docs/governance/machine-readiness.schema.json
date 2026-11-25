@@ -1,0 +1,238 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:local-recipes:governance:machine-readiness",
+  "title": "Machine readiness",
+  "description": "The profiles and checks `steward init` reads (spec-pyforge-steward CAP-183). Referential rules a schema cannot state (a row's profile, its needs, an environment, a register package, a session finding) are held by pyforge.steward.machine.validate_data and by steward's tests/meta/test_machine_readiness_data.py.",
+  "type": "object",
+  "required": ["version", "profiles", "checks"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "profiles": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "$ref": "#/$defs/id" },
+      "additionalProperties": { "$ref": "#/$defs/profile" }
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/check" }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "platform": { "enum": ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"] },
+    "platforms": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/platform" }
+    },
+    "words": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "profile": {
+      "type": "object",
+      "required": ["title", "requires"],
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string", "minLength": 1 },
+        "requires": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/id" } },
+        "platforms": { "$ref": "#/$defs/platforms" }
+      }
+    },
+    "check": {
+      "type": "object",
+      "required": ["id", "profile", "class", "severity", "what", "probe", "remedy"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "profile": { "$ref": "#/$defs/id" },
+        "class": { "enum": ["software", "configuration", "environment", "usable"] },
+        "severity": { "enum": ["required", "advisory"] },
+        "cost": { "enum": ["cheap", "deep"] },
+        "platforms": { "$ref": "#/$defs/platforms" },
+        "needs": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/id" } },
+        "what": { "type": "string", "minLength": 1 },
+        "probe": {
+          "oneOf": [
+            { "$ref": "#/$defs/probe" },
+            { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/probe" } }
+          ]
+        },
+        "remedy": { "$ref": "#/$defs/remedy" },
+        "declared_in": { "type": "string", "minLength": 1 }
+      }
+    },
+    "remedy": {
+      "type": "object",
+      "required": ["command", "who"],
+      "additionalProperties": false,
+      "properties": {
+        "command": { "type": "string", "minLength": 1 },
+        "who": { "enum": ["agent", "operator"] },
+        "where": { "enum": ["any", "primary-checkout"] },
+        "note": { "type": "string", "minLength": 1 },
+        "doc": { "type": "string", "pattern": "^docs/.+\\.md(#.+)?$" }
+      }
+    },
+    "tool_candidate": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "version_argv": { "$ref": "#/$defs/words" },
+        "label": { "type": "string", "minLength": 1 }
+      }
+    },
+    "floor": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["pixi-requires"],
+          "additionalProperties": false,
+          "properties": { "pixi-requires": { "const": true } }
+        },
+        {
+          "type": "object",
+          "required": ["literal"],
+          "additionalProperties": false,
+          "properties": { "literal": { "type": "string", "pattern": "^[0-9]+(\\.[0-9]+)+$" } }
+        }
+      ]
+    },
+    "probe": {
+      "type": "object",
+      "required": ["kind"],
+      "oneOf": [
+        {
+          "required": ["kind", "name"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "tool" },
+            "name": { "type": "string", "minLength": 1 },
+            "version_argv": { "$ref": "#/$defs/words" },
+            "floor": { "$ref": "#/$defs/floor" },
+            "found_note": { "type": "string", "minLength": 1 }
+          }
+        },
+        {
+          "required": ["kind", "any_of"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "tool" },
+            "any_of": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/tool_candidate" } },
+            "floor": { "$ref": "#/$defs/floor" },
+            "found_note": { "type": "string", "minLength": 1 }
+          }
+        },
+        {
+          "required": ["kind", "argv"],
+          "dependentRequired": { "miss_note": ["stdout_match"] },
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "command" },
+            "argv": { "$ref": "#/$defs/words" },
+            "env": { "type": "string", "minLength": 1 },
+            "expect_exit": { "type": "integer", "minimum": 0 },
+            "stdout_match": { "type": "string", "minLength": 1 },
+            "miss_note": { "type": "string", "minLength": 1 },
+            "timeout_s": { "type": "number", "exclusiveMinimum": 0 },
+            "exit_notes": {
+              "type": "object",
+              "propertyNames": { "pattern": "^[0-9]+$" },
+              "additionalProperties": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        {
+          "required": ["kind", "names"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "environments" },
+            "names": { "$ref": "#/$defs/words" }
+          }
+        },
+        {
+          "required": ["kind", "from"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "environments" },
+            "from": { "const": "preflight-lanes" }
+          }
+        },
+        {
+          "required": ["kind", "name"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "session-finding" },
+            "name": { "enum": ["gh-auth", "bmad-method", "token-kit", "codegraph-index"] }
+          }
+        },
+        {
+          "required": ["kind", "package"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "register-probe" },
+            "package": { "type": "string", "minLength": 1 }
+          }
+        },
+        {
+          "additionalProperties": false,
+          "properties": { "kind": { "const": "env-sync" } }
+        },
+        {
+          "required": ["kind", "keys"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "git-config" },
+            "keys": { "$ref": "#/$defs/words" }
+          }
+        },
+        {
+          "required": ["kind", "types"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "git-hooks" },
+            "types": { "$ref": "#/$defs/words" }
+          }
+        },
+        {
+          "additionalProperties": false,
+          "properties": { "kind": { "const": "locale-utf8" } }
+        },
+        {
+          "required": ["kind", "var", "file"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "env-or-file" },
+            "var": { "type": "string", "pattern": "^[A-Z_][A-Z0-9_]*$" },
+            "file": { "type": "string", "minLength": 1 },
+            "key": { "type": "string", "pattern": "^[A-Z_][A-Z0-9_]*$" }
+          }
+        },
+        {
+          "required": ["kind", "path"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "file" },
+            "path": { "type": "string", "minLength": 1 }
+          }
+        },
+        {
+          "required": ["kind", "key", "min"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "sysctl" },
+            "key": { "type": "string", "pattern": "^[a-z0-9_]+(\\.[a-z0-9_]+)+$" },
+            "min": { "type": "integer", "minimum": 0 }
+          }
+        }
+      ]
+    }
+  }
+}

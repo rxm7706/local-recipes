@@ -8,6 +8,10 @@ pages:
     quadrant: tutorials
     owner: fleet
     kind: authored
+  - path: tutorials/onboard-a-machine.md
+    quadrant: tutorials
+    owner: steward
+    kind: authored
   - path: tutorials/local-platform-development.md
     quadrant: tutorials
     owner: fleet
@@ -275,8 +279,8 @@ pages:
     sources:
       - .github/workflows
     stamp:
-      derived_at: '2026-11-18T02:54:00-06:00'
-      tree: e488c0fae251ff51c6a86f7f72897958e1b68d69
+      derived_at: '2026-11-25T07:52:06-06:00'
+      tree: 21087f55c97147b8ff6cb9e15f2ae41b8d076913-dirty
   - path: reference/judgement-vocabulary.md
     quadrant: reference
     owner: doctor
@@ -317,8 +321,8 @@ pages:
       - pixi.toml
       - src/shared/packages
     stamp:
-      derived_at: '2026-11-18T02:54:00-06:00'
-      tree: e488c0fae251ff51c6a86f7f72897958e1b68d69
+      derived_at: '2026-11-25T07:52:06-06:00'
+      tree: 21087f55c97147b8ff6cb9e15f2ae41b8d076913-dirty
   - path: reference/station-verify-commands.md
     quadrant: reference
     owner: fleet

@@ -37,7 +37,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from .bootstrap import repo_root
+from .bootstrap import _REMEDIES, _missing_remedy, prereq_remedies, repo_root
 from .interfaces import DutyResult
 
 if TYPE_CHECKING:
@@ -49,6 +49,7 @@ _DEFAULT_PIXI_ENV = "pyforge-guild"
 _GUILD_ENV_RELATIVE_PATH = Path(".pixi/envs") / _DEFAULT_PIXI_ENV
 _ACTIVE_PROJECT_MARKER_RELATIVE_PATH = Path("_bmad/custom/.active-project")
 _SEED_CHECK_ARGV = ("pixi", "run", "--frozen", "-e", _DEFAULT_PIXI_ENV, "marshal", "seed", "check", "--json")
+_SEED_CHECK_AS_IS_ARGV = ("pixi", "run", "--as-is", "-e", _DEFAULT_PIXI_ENV, "marshal", "seed", "check", "--json")
 _SEED_CHECK_TIMEOUT_S = 60.0
 #: Finding (2)'s drift task gets the timeout ``upgrade.py``'s default runner gave it.
 _DRIFT_CHECK_TIMEOUT_S = 60.0
@@ -74,6 +75,12 @@ class SessionFinding:
         }
 
 
+def _install_remedy(name: str, root: Path | None) -> str:
+    """A missing tool's remedy: its desktop data row's, the one ``steward init`` and ``validate-fast`` print (the code
+    table only when no data file loads under ``root``), so every surface prints one remedy per tool (Story 135.1)."""
+    return _missing_remedy(name, prereq_remedies(root) if root is not None else _REMEDIES)
+
+
 def _pixi_guild_finding(root: Path) -> SessionFinding:
     """Finding (1): pixi present + pyforge-guild materialized at the frozen lock."""
     if shutil.which("pixi") is None:
@@ -81,7 +88,7 @@ def _pixi_guild_finding(root: Path) -> SessionFinding:
             name="pixi-guild",
             ok=False,
             detail="pixi is not on PATH",
-            remedy="install-pixi: curl -fsSL https://pixi.sh/install.sh | bash",
+            remedy=_install_remedy("pixi", root),
         )
     env_dir = root / _GUILD_ENV_RELATIVE_PATH
     if not env_dir.is_dir():
@@ -197,19 +204,32 @@ def _kit_status_is_silent(item: dict[str, Any]) -> bool:
     return isinstance(status, str) and status in _SILENT_KIT_STATUSES
 
 
-def _seed_kit_findings(root: Path) -> tuple[SessionFinding, SessionFinding]:
+def _run_seed_check_as_is(root: Path) -> subprocess.CompletedProcess[str]:
+    """The same seed check with ``--as-is``: it never installs the Guild env (``steward init``, Story 135.1)."""
+    return subprocess.run(
+        list(_SEED_CHECK_AS_IS_ARGV),
+        cwd=str(root),
+        capture_output=True,
+        text=True,
+        timeout=_SEED_CHECK_TIMEOUT_S,
+    )
+
+
+def _seed_kit_findings(root: Path, *, as_is: bool = False) -> tuple[SessionFinding, SessionFinding]:
     """Findings (3) token-kit and (5) codegraph-index — ONE ``marshal seed check --json`` call.
 
     Any ``kit`` entry whose status is not silent (``_SILENT_KIT_STATUSES``) surfaces as a
     non-ok token-kit finding naming it; a ``layer-off`` entry is reported in the detail
     but never fails the finding (Story 81.1). The same call's ``codegraph-index`` entry
-    drives the codegraph-index finding by the same rule.
+    drives the codegraph-index finding by the same rule. ``as_is`` runs the seed check with
+    ``pixi run --as-is``, which never installs: ``steward init`` asks for it (Story 135.1).
     """
     kit_remedy = f"pixi run -e {_DEFAULT_PIXI_ENV} marshal seed kit --apply"
+    argv = _SEED_CHECK_AS_IS_ARGV if as_is else _SEED_CHECK_ARGV
     try:
-        result = _run_seed_check(root)
+        result = _run_seed_check_as_is(root) if as_is else _run_seed_check(root)
     except (OSError, subprocess.TimeoutExpired) as exc:
-        detail = f"{' '.join(_SEED_CHECK_ARGV)} could not run: {exc}"
+        detail = f"{' '.join(argv)} could not run: {exc}"
         unreachable = SessionFinding(name="token-kit", ok=False, detail=detail, remedy=kit_remedy)
         return unreachable, SessionFinding(name="codegraph-index", ok=False, detail=detail, remedy=kit_remedy)
 
@@ -218,13 +238,13 @@ def _seed_kit_findings(root: Path) -> tuple[SessionFinding, SessionFinding]:
     except json.JSONDecodeError, TypeError:
         tail_lines = (result.stderr or result.stdout or "").strip().splitlines()
         tail = "; ".join(tail_lines[-3:]) if tail_lines else "no output"
-        detail = f"{' '.join(_SEED_CHECK_ARGV)} returned unparseable output: {tail}"
+        detail = f"{' '.join(argv)} returned unparseable output: {tail}"
         unreachable = SessionFinding(name="token-kit", ok=False, detail=detail, remedy=kit_remedy)
         return unreachable, SessionFinding(name="codegraph-index", ok=False, detail=detail, remedy=kit_remedy)
 
     kit, problem = _seed_check_kit(payload)
     if kit is None:
-        detail = f"{' '.join(_SEED_CHECK_ARGV)} {problem}"
+        detail = f"{' '.join(argv)} {problem}"
         unreachable = SessionFinding(name="token-kit", ok=False, detail=detail, remedy=kit_remedy)
         return unreachable, SessionFinding(name="codegraph-index", ok=False, detail=detail, remedy=kit_remedy)
 
@@ -262,13 +282,13 @@ def _seed_kit_findings(root: Path) -> tuple[SessionFinding, SessionFinding]:
                 detail = f"codegraph-index: layer-off -- {item_detail}" if item_detail else "codegraph-index: layer-off"
             codegraph_finding = SessionFinding(name="codegraph-index", ok=True, detail=detail)
     except AttributeError:
-        detail = f"{' '.join(_SEED_CHECK_ARGV)} returned a malformed kit entry"
+        detail = f"{' '.join(argv)} returned a malformed kit entry"
         unreachable = SessionFinding(name="token-kit", ok=False, detail=detail, remedy=kit_remedy)
         return unreachable, SessionFinding(name="codegraph-index", ok=False, detail=detail, remedy=kit_remedy)
     return kit_finding, codegraph_finding
 
 
-def _gh_auth_finding() -> SessionFinding:
+def _gh_auth_finding(*, root: Path | None = None) -> SessionFinding:
     """Finding (4): gh auth status + gh api rate_limit.
 
     AC6: an unauthenticated or exhausted session is a finding — every failure mode
@@ -281,7 +301,7 @@ def _gh_auth_finding() -> SessionFinding:
             name="gh-auth",
             ok=False,
             detail="gh is not on PATH",
-            remedy="install-gh: https://github.com/cli/cli#installation (or apt/snap install gh)",
+            remedy=_install_remedy("gh", root),
         )
 
     try:
@@ -385,6 +405,44 @@ def _scribe_reachability_finding(root: Path) -> SessionFinding:
     )
 
 
+#: The findings ``steward init`` composes as rows of ``docs/governance/machine-readiness.yaml`` (Story 135.1,
+#: spec-pyforge-steward CAP-183). The other three are a session's, not a machine's: the Guild environment is an
+#: ``environments`` row there, and the Tier-3 feed and scribe recall belong to the session in hand.
+MACHINE_FINDING_NAMES: tuple[str, ...] = ("gh-auth", "bmad-method", "token-kit", "codegraph-index")
+
+
+def _run_drift_check_as_is(argv: Sequence[str], cwd: Path) -> subprocess.CompletedProcess[str]:
+    """The drift task with ``--as-is`` (no install, no lock write) put after ``pixi run``."""
+    words = list(argv)
+    if words[:2] == ["pixi", "run"] and "--as-is" not in words:
+        words[2:2] = ["--as-is"]
+    return _run_drift_check(words, cwd)
+
+
+def machine_findings(root: Path, names: Sequence[str]) -> dict[str, SessionFinding]:
+    """The named findings for ``steward init``, each run so that it installs nothing.
+
+    The verdicts are this module's own (never written a second time); what differs from ``session check`` is that
+    the two in-environment probes run ``pixi run --as-is``, so a readiness report cannot bring an environment
+    current. ``token-kit`` and ``codegraph-index`` come from one seed check. An unknown name is a ``ValueError``.
+    """
+    unknown = [name for name in names if name not in MACHINE_FINDING_NAMES]
+    if unknown:
+        raise ValueError(f"unknown session finding(s): {', '.join(unknown)}")
+    found: dict[str, SessionFinding] = {}
+    if "gh-auth" in names:
+        found["gh-auth"] = _gh_auth_finding(root=root)
+    if "bmad-method" in names:
+        found["bmad-method"] = _bmad_method_finding(root, _run_drift_check_as_is)
+    if "token-kit" in names or "codegraph-index" in names:
+        kit, codegraph = _seed_kit_findings(root, as_is=True)
+        if "token-kit" in names:
+            found["token-kit"] = kit
+        if "codegraph-index" in names:
+            found["codegraph-index"] = codegraph
+    return found
+
+
 def gather_session_findings(*, root: Path, project: str | None = None) -> tuple[SessionFinding, ...]:
     """Compose all seven session-precondition findings. Never raises for an ordinary probe failure."""
     kit_finding, codegraph_finding = _seed_kit_findings(root)
@@ -392,7 +450,7 @@ def gather_session_findings(*, root: Path, project: str | None = None) -> tuple[
         _pixi_guild_finding(root),
         _bmad_method_finding(root),
         kit_finding,
-        _gh_auth_finding(),
+        _gh_auth_finding(root=root),
         codegraph_finding,
         _tier3_feed_finding(root=root, project=project),
         _scribe_reachability_finding(root),

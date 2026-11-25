@@ -1,0 +1,576 @@
+# Machine readiness: what a machine needs for each kind of PyForge work.
+#
+# Read by `steward init` (spec-pyforge-steward CAP-183, steward Stories 135.1 and 135.2) and held to
+# machine-readiness.schema.json. One row is one check; adding a requirement is a row here, and only a new KIND of
+# probe is code (src/shared/packages/pyforge-steward/src/pyforge/steward/machine.py). This file sits beside the
+# realization register and points into it (`register-probe`) where a probe already exists there: that register is
+# keyed by pixi package, and host software, configuration and environments are not packages. It lives under
+# docs/governance/ with the register it composes; a second root rebuilds it there (mode: rebuild).
+#
+# A profile is ready when every `required` row of it, and of the profiles it requires, is ok. Statuses: ok, fail,
+# blocked (a `needs` row is not ok, or the row's environment is not materialized), skipped (a `cost: deep` row
+# without --deep) and na (the row does not apply to this platform). `steward init` installs nothing and writes
+# nothing: a probe inside an environment runs `pixi run --as-is` and only when that environment is materialized.
+#
+# Row fields:
+#   id          kebab-case, unique
+#   profile     a key of `profiles`
+#   class       software | configuration | environment | usable
+#   severity    required | advisory (advisory never changes the exit code)
+#   cost        cheap (default) | deep (runs only with --deep)
+#   platforms   the row applies only there; elsewhere its status is na
+#   needs       ids of earlier rows that must be ok first (a row whose probe runs through pixi needs pixi)
+#   what        one sentence
+#   probe       one probe, or a list of probes that must all be ok; each names its `kind`
+#   remedy      command (exact), who (agent | operator), where (any | primary-checkout), note, doc.
+#               `{env}` in a command is printed once per environment the probe found missing.
+#   declared_in the tracked file a floor or a list in the row is read from (a meta-test holds the two together)
+#
+# Probe kinds (closed): tool, command, environments, session-finding, register-probe, env-sync, git-config,
+# git-hooks, locale-utf8, env-or-file, file, sysctl. `{found:<id>}` in a command's argv is the tool the row <id>
+# found; `{platform}` in a command's argv, stdout_match or miss_note is this machine's pixi platform name. A command's
+# miss_note replaces its last output line in the detail when stdout_match finds nothing.
+version: 1
+
+profiles:
+  desktop:
+    title: a clone, the environments, the station CLIs, the tests and the full preflight
+    requires: []
+  container:
+    title: build and run the platform image and its compose stack
+    requires: [desktop]
+  pod:
+    title: the platform chart on a kind cluster
+    requires: [container]
+  ocp:
+    title: OpenShift Local (crc and oc)
+    requires: [container]
+  nkp:
+    title: "`steward deploy nic` on kind"
+    requires: [container]
+    platforms: [linux-64]
+
+checks:
+  # ── desktop ────────────────────────────────────────────────────────────────────────────────────────────────
+  - id: pixi
+    profile: desktop
+    class: software
+    severity: required
+    what: pixi is on PATH at or above the workspace floor.
+    probe: {kind: tool, name: pixi, floor: {pixi-requires: true}}
+    declared_in: pixi.toml
+    remedy:
+      command: curl -fsSL https://pixi.sh/install.sh | sh
+      who: operator
+      note: "below the floor, run `pixi self-update` instead"
+
+  - id: git
+    profile: desktop
+    class: software
+    severity: required
+    what: git is on PATH (outside pixi, for the clone, worktrees and hooks).
+    probe: {kind: tool, name: git}
+    remedy:
+      command: pixi global install git
+      who: operator
+      note: "or the OS package manager (macOS: `xcode-select --install`)"
+
+  - id: gh
+    profile: desktop
+    class: software
+    severity: required
+    what: gh is on PATH.
+    probe: {kind: tool, name: gh}
+    remedy:
+      command: pixi global install gh
+      who: operator
+
+  - id: gh-auth
+    profile: desktop
+    class: configuration
+    severity: required
+    needs: [gh]
+    what: gh is signed in and has API budget left (a probe that cannot read never passes).
+    probe: {kind: session-finding, name: gh-auth}
+    remedy:
+      command: gh auth login
+      who: operator
+
+  - id: git-identity
+    profile: desktop
+    class: configuration
+    severity: required
+    needs: [git]
+    what: git user.name and user.email are set (read by presence; the values are never printed).
+    probe: {kind: git-config, keys: [user.name, user.email]}
+    remedy:
+      command: git config --global user.name "<name>" && git config --global user.email "<email>"
+      who: operator
+
+  - id: git-hooks
+    profile: desktop
+    class: configuration
+    severity: required
+    needs: [git]
+    what: the commit-msg and pre-push hooks are installed in the shared hooks directory.
+    probe: {kind: git-hooks, types: [commit-msg, pre-push]}
+    declared_in: scripts/precommit_config_check.py
+    remedy:
+      command: pixi run -e pyforge-guild pyforge steward setup --env pyforge-guild
+      who: agent
+      where: primary-checkout
+      doc: docs/how-to/bootstrap-a-machine-with-steward.md
+
+  - id: locale-utf8
+    profile: desktop
+    class: configuration
+    severity: advisory
+    platforms: [linux-64, linux-aarch64, osx-64, osx-arm64]
+    what: the shell's locale names UTF-8 through LC_ALL, LC_CTYPE or LANG (a C locale broke a bare initdb and non-ASCII git arguments).
+    probe: {kind: locale-utf8}
+    remedy:
+      command: export LANG=en_US.UTF-8
+      who: operator
+      note: add the line to the shell profile so every new shell has it
+
+  - id: env-guild
+    profile: desktop
+    class: environment
+    severity: required
+    needs: [pixi]
+    what: pyforge-guild, the session default environment, is in the lock for this platform and materialized.
+    probe: {kind: environments, names: [pyforge-guild]}
+    remedy:
+      command: pixi install --frozen -e {env}
+      who: agent
+
+  - id: env-preflight-lanes
+    profile: desktop
+    class: environment
+    severity: required
+    needs: [pixi]
+    what: every environment a full pr-preflight lane runs in is in the lock for this platform and materialized.
+    probe: {kind: environments, from: preflight-lanes}
+    declared_in: pixi.toml
+    remedy:
+      command: pixi install --frozen -e {env}
+      who: agent
+      doc: docs/how-to/run-and-read-pr-preflight.md
+
+  - id: env-yaml-sync
+    profile: desktop
+    class: configuration
+    severity: required
+    needs: [pixi]
+    what: environment.yaml matches pixi.toml (what `steward provision --verify` reports).
+    probe: {kind: env-sync}
+    remedy:
+      command: pixi run -e pyforge-steward pyforge steward estate reconcile
+      who: agent
+      note: a drift here is the checkout's state, not the machine's
+
+  - id: bmad-method
+    profile: desktop
+    class: configuration
+    severity: required
+    needs: [env-guild]
+    what: the installed BMAD core matches its pin (the exit code of bmad-drift-check).
+    probe: {kind: session-finding, name: bmad-method}
+    remedy:
+      command: pixi run -e pyforge-guild bmad-drift-check
+      who: agent
+      note: "this prints what drifted, which is the checkout's state and not the machine's; applying an upgrade (`pyforge steward upgrade bmad-core --apply`) is the operator's"
+
+  - id: station-clis
+    profile: desktop
+    class: usable
+    severity: required
+    needs: [env-guild]
+    what: the Guild station CLIs answer (steward, marshal, scribe, herald, doctor, mason).
+    probe:
+      - {kind: command, env: pyforge-guild, argv: [steward, --version]}
+      - {kind: command, env: pyforge-guild, argv: [marshal, --version]}
+      - {kind: command, env: pyforge-guild, argv: [scribe, --version]}
+      - {kind: command, env: pyforge-guild, argv: [herald, --version]}
+      - {kind: command, env: pyforge-guild, argv: [pyforge, doctor, --version]}
+      - {kind: command, env: pyforge-guild, argv: [pyforge, mason, doctor]}
+    remedy:
+      command: pixi install --frozen -e pyforge-guild
+      who: agent
+
+  - id: station-clis-own-env
+    profile: desktop
+    class: usable
+    severity: required
+    needs: [pixi]
+    what: atlas and warden answer in their own environments.
+    probe:
+      - {kind: command, env: pyforge-atlas, argv: [pyforge, atlas, --version]}
+      - {kind: command, env: pyforge-warden, argv: [warden, --version]}
+    remedy:
+      command: pixi install --frozen -e {env}
+      who: agent
+
+  - id: warden-doctor
+    profile: desktop
+    class: configuration
+    severity: advisory
+    needs: [pixi]
+    what: warden's own environment self-check reports no problem (read from its exit code; a scan can run without it but composes indeterminate where a scanner or its offline database is missing).
+    probe:
+      kind: command
+      env: pyforge-warden
+      argv: [warden, scan, --doctor]
+      timeout_s: 120
+      exit_notes:
+        "2": "warden's doctor reports a problem; `pixi run -e pyforge-warden warden scan --doctor` prints each one"
+    remedy:
+      command: OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY="<a cache directory>" bash scripts/platform-provision-osv-offline-db.sh
+      who: operator
+      note: "that provisions the offline OSV database, the usual problem on a new machine (it downloads; a scan itself stays offline); export the variable in the shell profile afterwards"
+      doc: docs/how-to/scan-for-compliance-with-warden.md
+
+  - id: mason-recipe
+    profile: desktop
+    class: usable
+    severity: advisory
+    needs: [env-guild]
+    what: mason's recipe verb is available in pyforge-guild (mason's own doctor finds conda-forge-expert's import floor complete there).
+    probe:
+      kind: command
+      env: pyforge-guild
+      argv: [pyforge, mason, --format, json, doctor]
+      stdout_match: '"cfe_import_floor_satisfied": true'
+      miss_note: "mason's doctor finds the CFE import floor incomplete in pyforge-guild, so its recipe verb is unavailable there (`pixi run -e pyforge-guild pyforge mason doctor` names the missing package)"
+    remedy:
+      command: pixi install --frozen -e pyforge-mason
+      who: agent
+      note: "pyforge-mason carries the whole floor, so `pixi run -e pyforge-mason pyforge mason recipe ...` works; this row stays WARN until pyforge-guild carries it too, a pixi.toml change that is the operator's"
+
+  - id: token-kit
+    profile: desktop
+    class: configuration
+    severity: advisory
+    needs: [env-guild]
+    what: the token-economy kit and the codegraph index are present (what `steward session check` reds on).
+    probe:
+      - {kind: session-finding, name: token-kit}
+      - {kind: session-finding, name: codegraph-index}
+    remedy:
+      command: pixi run -e pyforge-guild marshal seed kit --apply
+      who: agent
+      note: "the caveman half is the operator's: `caveman-install --only claude --with-hooks`"
+
+  - id: scribe-pg
+    profile: desktop
+    class: usable
+    severity: required
+    needs: [pixi]
+    what: the scribe PostgreSQL cluster answers on 127.0.0.1:5433 (scribe's live lane and the coverage gate need it).
+    probe:
+      kind: command
+      env: pyforge-scribe-pg
+      argv: [python, scripts/scribe_pg.py, status]
+      stdout_match: '\[scribe-pg\] listening on'
+    remedy:
+      command: pixi run -e pyforge-scribe-pg scribe-pg-up
+      who: agent
+      note: the task installs pyforge-scribe-pg when it is absent and starts the cluster under var/scribe-pg/
+
+  - id: platform-servers
+    profile: desktop
+    class: usable
+    severity: required
+    needs: [pixi]
+    what: the platform test stage's PostgreSQL and Redis binaries run at the locked versions.
+    probe:
+      - {kind: register-probe, package: postgresql}
+      - {kind: register-probe, package: redis-server}
+    remedy:
+      command: pixi install --frozen -e {env}
+      who: agent
+      doc: docs/tutorials/local-platform-development.md
+
+  - id: playwright-chromium
+    profile: desktop
+    class: usable
+    severity: required
+    needs: [pixi]
+    what: Chromium launches from the lock's browser packages (atlas's dashboard e2e, herald's browser check).
+    probe: {kind: register-probe, package: playwright}
+    remedy:
+      command: pixi install --frozen -e {env}
+      who: agent
+
+  - id: manticore-studio
+    profile: desktop
+    class: usable
+    severity: advisory
+    needs: [env-guild]
+    what: Herald's manticore studio is installed and wired (only video work needs it).
+    probe: {kind: register-probe, package: bmad-manticore}
+    remedy:
+      command: pixi run -e pyforge-guild pyforge steward provision --module manticore
+      who: operator
+      note: the studio machine needs uv, node and git
+      doc: docs/how-to/manticore-studio.md
+
+  - id: estate-verified
+    profile: desktop
+    class: usable
+    severity: advisory
+    needs: [env-guild]
+    what: the last `steward estate verify` journal confirms this platform (the default tier installed and its lanes ran here, not only a solved lock).
+    probe:
+      kind: command
+      env: pyforge-guild
+      argv: [pyforge, steward, estate, status]
+      stdout_match: '(?m)^{platform}: .*verdict=confirmed'
+      miss_note: "no estate verify has confirmed {platform}; another platform's run marks it lock-solved at best (`pixi run -e pyforge-guild pyforge steward estate status` prints each platform's verdict)"
+    remedy:
+      command: pixi run -e pyforge-steward pyforge steward estate verify
+      who: agent
+      note: "it installs the default tier into a detached worktree, runs its lanes and writes a journal under .steward/estate-refresh/; a red row in that journal names the environment or lane to fix (long-running)"
+      doc: docs/how-to/refresh-the-estate.md
+
+  # ── container ──────────────────────────────────────────────────────────────────────────────────────────────
+  - id: engine
+    profile: container
+    class: software
+    severity: required
+    what: a container engine, docker or podman, is on PATH.
+    probe:
+      kind: tool
+      any_of:
+        - {name: docker}
+        - {name: podman}
+      found_note: "pass `--engine {name}` to scripts/platform-ci-local.sh, or set PLATFORM_CI_LOCAL_ENGINE={name}"
+    remedy:
+      command: brew install podman && podman machine init
+      who: operator
+      note: "macOS shown; Docker Desktop also serves, and on Linux follow https://podman.io/docs/installation"
+
+  - id: engine-daemon
+    profile: container
+    class: usable
+    severity: required
+    needs: [engine]
+    what: the engine's daemon or machine answers.
+    probe: {kind: command, argv: ["{found:engine}", info], timeout_s: 30}
+    remedy:
+      command: podman machine start
+      who: operator
+      note: with Docker, start Docker Desktop (or the docker service) instead
+
+  - id: engine-runs-amd64
+    profile: container
+    class: usable
+    severity: required
+    cost: deep
+    needs: [engine-daemon]
+    what: the engine runs a linux/amd64 container, which every Containerfile here pins (emulated on arm64); --deep pulls one small image and removes the container when it exits.
+    probe:
+      kind: command
+      argv: ["{found:engine}", run, --rm, --platform, linux/amd64, busybox, "true"]
+      timeout_s: 180
+    remedy:
+      command: "{found:engine} run --privileged --rm tonistiigi/binfmt --install amd64"
+      who: operator
+      note: "that registers QEMU on a Linux arm64 host; Docker Desktop and a podman machine on macOS carry their own emulation, enabled in their settings"
+
+  - id: compose
+    profile: container
+    class: software
+    severity: required
+    what: a compose front end for src/platform/compose/compose.yml is on PATH.
+    probe:
+      kind: tool
+      any_of:
+        - {name: docker, version_argv: [compose, version], label: docker compose}
+        - {name: podman-compose}
+    remedy:
+      command: brew install podman-compose
+      who: operator
+      note: "macOS shown; Docker Desktop ships `docker compose`"
+
+  - id: compose-langflow-secret
+    profile: container
+    class: configuration
+    severity: required
+    what: LANGFLOW_SUPERUSER_PASSWORD is set for the compose platform service (read by presence; the value is never read out).
+    probe: {kind: env-or-file, var: LANGFLOW_SUPERUSER_PASSWORD, file: src/platform/compose/.env}
+    declared_in: src/platform/compose/compose.yml
+    remedy:
+      command: printf 'LANGFLOW_SUPERUSER_PASSWORD=%s\n' '<a local value>' >> src/platform/compose/.env
+      who: operator
+      note: the file is gitignored; choose the value yourself
+
+  - id: env-container-stages
+    profile: container
+    class: environment
+    severity: required
+    needs: [pixi]
+    what: the environments platform-ci-local's test, container and promotion stages use are in the lock for this platform and materialized.
+    probe: {kind: environments, names: [platform-ci-test, platform-dev, pyforge-warden]}
+    declared_in: scripts/platform-ci-local.sh
+    remedy:
+      command: pixi install --frozen -e {env}
+      who: agent
+
+  # ── pod ────────────────────────────────────────────────────────────────────────────────────────────────────
+  - id: kind
+    profile: pod
+    class: software
+    severity: required
+    what: kind is on PATH at or above the version CI pins (the one tool pixi does not provision, pap:AD-16).
+    probe: {kind: tool, name: kind, version_argv: [version], floor: {literal: "0.32.0"}}
+    declared_in: .github/workflows/platform-ci.yml
+    remedy:
+      command: brew install kind
+      who: operator
+      note: "macOS shown; elsewhere https://kind.sigs.k8s.io/docs/user/quick-start/#installation"
+
+  - id: kubectl-helm
+    profile: pod
+    class: software
+    severity: required
+    needs: [pixi]
+    what: helm and kubectl run from platform-dev.
+    probe:
+      - {kind: register-probe, package: kubernetes-helm}
+      - {kind: command, env: platform-dev, argv: [kubectl, version, --client]}
+    remedy:
+      command: pixi install --frozen -e {env}
+      who: agent
+
+  - id: chart-renders
+    profile: pod
+    class: usable
+    severity: required
+    needs: [kubectl-helm]
+    what: the platform chart renders with its three images pinned and the dev flag tree (the values every render must name).
+    probe:
+      kind: command
+      env: platform-dev
+      argv:
+        - helm
+        - template
+        - platform
+        - src/platform/deploy/charts/platform
+        - --set
+        - image.tag=readiness
+        - --set
+        - sidecar.image.tag=readiness
+        - --set
+        - mcpHost.image.tag=readiness
+        - --set-file
+        - flags.tree=src/platform/config/flags.json
+        - --set-file
+        - flags.overlays=src/platform/config/flag-overlays.json
+        - --set
+        - flags.environment=dev
+    remedy:
+      command: pixi run -e platform-dev helm template platform src/platform/deploy/charts/platform --set image.tag=readiness --set sidecar.image.tag=readiness --set mcpHost.image.tag=readiness --set-file flags.tree=src/platform/config/flags.json --set-file flags.overlays=src/platform/config/flag-overlays.json --set flags.environment=dev
+      who: agent
+      note: this prints the render error, which is the chart's defect and not the machine's
+
+  - id: cluster-reachable
+    profile: pod
+    class: usable
+    severity: required
+    cost: deep
+    needs: [kubectl-helm]
+    what: a cluster answers the current kubeconfig.
+    probe: {kind: command, env: platform-dev, argv: [kubectl, cluster-info], timeout_s: 30}
+    remedy:
+      command: kind create cluster
+      who: operator
+
+  # ── ocp ────────────────────────────────────────────────────────────────────────────────────────────────────
+  - id: crc
+    profile: ocp
+    class: software
+    severity: required
+    what: crc is on PATH at or above the documented baseline.
+    probe: {kind: tool, name: crc, version_argv: [version], floor: {literal: "2.63.0"}}
+    declared_in: docs/how-to/ocp-cluster-bringup.md
+    remedy:
+      command: crc setup
+      who: operator
+      note: "install crc first from https://github.com/crc-org/crc/releases (or Podman Desktop's OpenShift Local extension)"
+      doc: docs/how-to/ocp-cluster-bringup.md
+
+  - id: oc
+    profile: ocp
+    class: software
+    severity: required
+    what: oc is on PATH.
+    probe: {kind: tool, name: oc, version_argv: [version, --client]}
+    remedy:
+      command: eval $(crc oc-env)
+      who: operator
+      note: run it in each shell that needs oc
+
+  - id: crc-pull-secret
+    profile: ocp
+    class: configuration
+    severity: required
+    what: the OpenShift pull secret file exists (read by presence; its content is never read out).
+    probe: {kind: file, path: ~/.config/openshift/pull-secret.json}
+    remedy:
+      command: mkdir -p ~/.config/openshift && chmod 700 ~/.config/openshift
+      who: operator
+      note: "then save the pull secret from the Red Hat console as ~/.config/openshift/pull-secret.json and record it in .steward/keys-inventory.yaml"
+      doc: docs/how-to/ocp-cluster-bringup.md
+
+  - id: crc-running
+    profile: ocp
+    class: usable
+    severity: required
+    cost: deep
+    needs: [crc, oc]
+    what: the cluster runs and oc is signed in.
+    probe:
+      - {kind: command, argv: [crc, status], stdout_match: Running, timeout_s: 60}
+      - {kind: command, argv: [oc, whoami], timeout_s: 30}
+    remedy:
+      command: crc start -p ~/.config/openshift/pull-secret.json
+      who: operator
+      note: "then `oc login` with the credentials `crc console --credentials` prints"
+      doc: docs/how-to/ocp-cluster-bringup.md
+
+  # ── nkp (linux-64 only: nic is in pyforge-steward on linux-64) ─────────────────────────────────────────────
+  - id: nic
+    profile: nkp
+    class: usable
+    severity: required
+    needs: [pixi]
+    what: pyforge-steward is materialized and `steward deploy nic validate` passes on the tracked config.
+    probe:
+      - {kind: environments, names: [pyforge-steward]}
+      - kind: command
+        env: pyforge-steward
+        argv: [pyforge, steward, deploy, nic, validate, --config, src/platform/deploy/nic/my-nebari-local.yaml]
+        timeout_s: 120
+        exit_notes:
+          "2": "steward refused: the kill switch pyforge.steward.nkp_deploy is off (the operator's to flip) or the config path is wrong"
+    remedy:
+      command: pixi install --frozen -e pyforge-steward
+      who: agent
+      note: the kill switch pyforge.steward.nkp_deploy is the operator's
+      doc: docs/how-to/host-nebari.md
+
+  - id: nkp-docker
+    profile: nkp
+    class: software
+    severity: required
+    what: Docker (NIC's kind provider needs it by name) is on PATH and the inotify instance limit is at least 1024.
+    probe:
+      - {kind: tool, name: docker}
+      - {kind: sysctl, key: fs.inotify.max_user_instances, min: 1024}
+    declared_in: docs/how-to/host-nebari.md
+    remedy:
+      command: sudo sysctl -w fs.inotify.max_user_instances=1024
+      who: operator
+      note: persist it under /etc/sysctl.d/; install Docker first when it is the missing half
+      doc: docs/how-to/host-nebari.md

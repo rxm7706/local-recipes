@@ -193,7 +193,8 @@ def test_initrepo_pixi_install_failure_names_remedy(tmp_path: Path, monkeypatch:
 
 @pytest.mark.parametrize("as_json", [False, True])
 def test_init_duty_reports_a_missing_repo_root(monkeypatch: pytest.MonkeyPatch, as_json: bool) -> None:
-    monkeypatch.setattr(bootstrap, "gather_prereqs", _raise(RuntimeError("repo root not found")))
+    # Story 135.1: the duty's report is machine.py's, which finds the root itself.
+    monkeypatch.setattr("pyforge.steward.machine.repo_root", _raise(RuntimeError("repo root not found")))
     result = InitDuty().run(_ns(as_json=as_json))
     assert result.ok is False
     if as_json:

@@ -6,10 +6,12 @@ sequence with zero improvised steps between verbs.
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import pytest
 
+from pyforge.steward import machine
 from pyforge.steward.bootstrap import initrepo_steps, setup_steps
 from pyforge.steward.cli import EXIT_OK, main
 
@@ -55,7 +57,20 @@ def test_clean_container_sequence_is_fully_composed(repo_root: Path, monkeypatch
         lambda **_: "steward 0.1.0",
     )
 
-    assert main(["init"]) == EXIT_OK
+    # Story 135.1: `init` reads its checks from the tracked data file; the bootstrap sequence gates on the software
+    # rows, with the tools answered by a fake so the step does not depend on the machine the suite runs on.
+    monkeypatch.setattr(
+        machine,
+        "production_deps",
+        lambda root: machine.MachineDeps(
+            root=root,
+            runner=lambda argv, _cwd, _timeout: subprocess.CompletedProcess(
+                list(argv), 0, stdout="tool 99.0.0", stderr=""
+            ),
+            which=lambda name: f"/usr/bin/{name}",
+        ),
+    )
+    assert main(["init", "--class", "software"]) == EXIT_OK
     setup = setup_steps(dest=repo_root, url=None, env="local-recipes")
     assert all(step.ok for step in setup)
     onboard = initrepo_steps(root=repo_root, env="local-recipes")

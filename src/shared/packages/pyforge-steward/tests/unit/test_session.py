@@ -13,6 +13,7 @@ from pathlib import Path
 
 import pytest
 
+from pyforge.steward import bootstrap
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
 from pyforge.steward.session import (
     SessionDuty,
@@ -55,6 +56,27 @@ def test_pixi_guild_finding_missing_pixi(tmp_path: Path, monkeypatch: pytest.Mon
     assert finding.ok is False
     assert finding.remedy is not None
     assert "install-pixi" in finding.remedy
+
+
+def test_a_missing_tools_remedy_is_its_data_row_the_one_init_and_validate_fast_print(
+    repo_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 135.1: one remedy per tool. With the data file loaded, the session's pixi and gh remedies are
+    ``bootstrap.prereq_remedies`` -- the desktop rows' commands -- never a second hand-written copy."""
+    monkeypatch.setattr("pyforge.steward.session.shutil.which", lambda _name: None)
+    remedies = bootstrap.prereq_remedies(repo_root)
+    assert remedies is not bootstrap._REMEDIES  # the data file loaded, so this is the data path
+    assert _pixi_guild_finding(repo_root).remedy == remedies["pixi"]["missing"]
+    assert _gh_auth_finding(root=repo_root).remedy == remedies["gh"]["missing"]
+    assert remedies["gh"]["missing"] != bootstrap._REMEDIES["gh"]["missing"]  # the data row, not the code table
+
+
+def test_a_missing_tools_remedy_falls_back_to_the_code_table_without_a_data_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("pyforge.steward.session.shutil.which", lambda _name: None)
+    assert _pixi_guild_finding(tmp_path).remedy == bootstrap._REMEDIES["pixi"]["missing"]
+    assert _gh_auth_finding(root=tmp_path).remedy == bootstrap._REMEDIES["gh"]["missing"]
 
 
 def test_pixi_guild_finding_env_not_materialized(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

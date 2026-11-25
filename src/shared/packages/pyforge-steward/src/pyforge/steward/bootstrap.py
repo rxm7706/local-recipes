@@ -1,7 +1,12 @@
 """Steward's machine-bootstrap duty helpers (Epic 17, Story 17.1).
 
-``steward init`` reports host prereqs (pixi/git/gh/podman) with named
-remedies; pixi's floor is read from the same ``requires-pixi`` pin that
+``steward init`` reports whether this machine is ready for a kind of work, one
+profile at a time; its checks are rows of ``docs/governance/machine-readiness.yaml``
+and ``machine.py`` runs them (Story 135.1, spec-pyforge-steward CAP-183). The
+duty stays here; ``gather_prereqs`` is the default profile's software rows
+(pixi, git, gh), which ``validate-fast`` and ``initrepo`` gate on: a container
+engine is the ``container`` profile's, never a prerequisite of desktop work.
+Pixi's floor is read from the same ``requires-pixi`` pin that
 ``scripts/pixi_version_registry.py`` treats as master (AD-1: derive, never
 hand-pin a second floor).
 
@@ -23,6 +28,7 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from .interfaces import DutyResult
 from .provision import check_environment_sync, materialize_environment
@@ -43,11 +49,15 @@ _REQUIRES_PIXI_RE = re.compile(r'requires-pixi = ">=([^"]+)"')
 _SHELL_INIT_MARKER = "# pyforge-steward shell-init"
 _VERSION_RE = re.compile(r"(\d+\.\d+\.\d+)")
 
-_PREREQ_ORDER: tuple[str, ...] = ("pixi", "git", "gh", "podman")
+# The prerequisites, and their remedies, of a checkout that carries no machine-readiness data file (``initrepo`` and
+# ``validate-fast`` take any pixi project with ``--repo``). Where the data file loads, both come from its
+# default-profile software rows (``prereq_names``, ``prereq_remedies``), so a tool has one remedy whichever verb
+# prints it; tests/meta/test_machine_readiness_data.py holds the tool list equal to those rows.
+_PREREQ_ORDER: tuple[str, ...] = ("pixi", "git", "gh")
 
 _REMEDIES: dict[str, dict[str, str]] = {
     "pixi": {
-        "missing": "install-pixi: curl -fsSL https://pixi.sh/install.sh | bash",
+        "missing": "install-pixi: curl -fsSL https://pixi.sh/install.sh | sh",
         "below-floor": "upgrade-pixi: pixi self-update (or reinstall from https://pixi.sh)",
     },
     "git": {
@@ -55,9 +65,6 @@ _REMEDIES: dict[str, dict[str, str]] = {
     },
     "gh": {
         "missing": "install-gh: https://github.com/cli/cli#installation (or apt/snap install gh)",
-    },
-    "podman": {
-        "missing": "install-podman: https://podman.io/docs/installation",
     },
 }
 
@@ -141,8 +148,15 @@ def _tool_version(name: str, path: str) -> str | None:
     return _first_version(proc.stdout) or _first_version(proc.stderr)
 
 
-def check_prereq(name: str, *, pixi_floor: str) -> PrereqResult:
-    """Check one prereq and attach a named remedy on failure."""
+def _missing_remedy(name: str, remedies: dict[str, dict[str, str]]) -> str:
+    """The named remedy of a missing tool; one the table lacks points at the verb that prints its row's remedy."""
+    known = remedies.get(name)
+    return known["missing"] if known else f"install-{name}: run `steward init` for the remedy of the {name} check"
+
+
+def check_prereq(name: str, *, pixi_floor: str, remedies: dict[str, dict[str, str]] | None = None) -> PrereqResult:
+    """Check one prereq and attach a named remedy on failure (from ``remedies``, else the code table)."""
+    remedies = _REMEDIES if remedies is None else remedies
     path = shutil.which(name)
     if path is None:
         return PrereqResult(
@@ -150,7 +164,7 @@ def check_prereq(name: str, *, pixi_floor: str) -> PrereqResult:
             ok=False,
             found=None,
             required=pixi_floor if name == "pixi" else None,
-            remedy=_REMEDIES[name]["missing"],
+            remedy=_missing_remedy(name, remedies),
         )
 
     version = _tool_version(name, path)
@@ -160,7 +174,7 @@ def check_prereq(name: str, *, pixi_floor: str) -> PrereqResult:
             ok=False,
             found=path,
             required=pixi_floor if name == "pixi" else None,
-            remedy=_REMEDIES[name]["missing"],
+            remedy=_missing_remedy(name, remedies),
         )
 
     if name == "pixi":
@@ -170,7 +184,7 @@ def check_prereq(name: str, *, pixi_floor: str) -> PrereqResult:
             ok=ok,
             found=version,
             required=pixi_floor,
-            remedy=None if ok else _REMEDIES["pixi"]["below-floor"],
+            remedy=None if ok else (remedies.get("pixi") or _REMEDIES["pixi"])["below-floor"],
         )
 
     return PrereqResult(
@@ -182,31 +196,50 @@ def check_prereq(name: str, *, pixi_floor: str) -> PrereqResult:
     )
 
 
+def _prereq_rows(root: Path) -> tuple[tuple[str, dict[str, Any]], ...]:
+    """The data file's default-profile software tools with their rows' remedies; empty when it does not load."""
+    # Imported here: ``machine`` imports this module for the version helpers.
+    from . import machine
+
+    try:
+        return machine.desktop_software_rows(root)
+    except machine.DataFileError:
+        return ()
+
+
+def prereq_names(root: Path) -> tuple[str, ...]:
+    """The tools ``gather_prereqs`` checks: the data file's default-profile software rows, else ``_PREREQ_ORDER``.
+
+    The fallback serves a checkout with no data file of its own (or one that does not load): ``steward init`` is the
+    verb that refuses on a broken data file, and a gate over another pixi project must still name its prerequisites.
+    """
+    return tuple(name for name, _remedy in _prereq_rows(root)) or _PREREQ_ORDER
+
+
+def _remedies_of(rows: tuple[tuple[str, dict[str, Any]], ...]) -> dict[str, dict[str, str]]:
+    remedies: dict[str, dict[str, str]] = {}
+    for name, remedy in rows:
+        command = str(remedy["command"])
+        remedies[name] = {
+            "missing": f"install-{name}: {command}",
+            "below-floor": f"upgrade-{name}: {remedy.get('note') or command}",
+        }
+    return remedies
+
+
+def prereq_remedies(root: Path) -> dict[str, dict[str, str]]:
+    """Each prerequisite's named remedies: its desktop row's ``remedy`` (the command; below a floor, the row's note,
+    which names the upgrade), so ``validate-fast`` and ``initrepo`` print what ``steward init`` prints. A checkout
+    with no data file of its own falls back to the code table ``_REMEDIES``."""
+    return _remedies_of(_prereq_rows(root)) or _REMEDIES
+
+
 def gather_prereqs(*, root: Path | None = None) -> tuple[PrereqResult, ...]:
     floor = pixi_floor_version(root=root)
-    return tuple(check_prereq(name, pixi_floor=floor) for name in _PREREQ_ORDER)
-
-
-def format_init_report(results: tuple[PrereqResult, ...], *, as_json: bool) -> str:
-    all_ok = all(r.ok for r in results)
-    if as_json:
-        payload = {
-            "ok": all_ok,
-            "prereqs": [r.to_dict() for r in results],
-        }
-        return json.dumps(payload, indent=2)
-
-    lines = ["steward init: prereq report"]
-    for row in results:
-        if row.ok:
-            detail = f"{row.found}"
-            if row.required:
-                detail += f" (floor >= {row.required})"
-            lines.append(f"  ok   {row.name}: {detail}")
-        else:
-            lines.append(f"  FAIL {row.name}: {row.remedy}")
-    lines.append("steward init: PASS" if all_ok else "steward init: FAIL")
-    return "\n".join(lines)
+    rows = _prereq_rows(root or repo_root())
+    names = tuple(name for name, _remedy in rows) or _PREREQ_ORDER
+    remedies = _remedies_of(rows) or _REMEDIES
+    return tuple(check_prereq(name, pixi_floor=floor, remedies=remedies) for name in names)
 
 
 def shell_init_script(*, root: Path | None = None) -> str:
@@ -256,25 +289,14 @@ def format_shell_init(*, as_json: bool, root: Path | None = None) -> str:
 
 
 class InitDuty:
-    """``steward init`` — prereq detection with named remedies."""
+    """``steward init`` -- one readiness verdict per chosen profile, each failing check with its remedy."""
 
     name = "init"
 
     def run(self, ns: argparse.Namespace) -> DutyResult:
-        try:
-            results = gather_prereqs()
-        except RuntimeError as exc:
-            message = f"init: {exc}"
-            if ns.json:
-                return DutyResult(ok=False, summary=json.dumps({"ok": False, "error": message}, indent=2))
-            return DutyResult(ok=False, summary=message)
+        from . import machine
 
-        all_ok = all(r.ok for r in results)
-        return DutyResult(
-            ok=all_ok,
-            summary=format_init_report(results, as_json=ns.json),
-            details={"prereqs": [r.to_dict() for r in results]},
-        )
+        return machine.run_init(ns)
 
 
 class ShellInitDuty:

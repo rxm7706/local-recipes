@@ -31,7 +31,7 @@ Use the `pr-preflight` task to run, on your machine, the lanes CI would run for 
 
 ### What a full run needs on your machine
 
-A full-scope run includes three lanes that need something a fresh checkout does not have. Without them the lane is red for a reason that is not your change.
+A full-scope run includes three lanes that need something a fresh checkout does not have. Without them the lane is red for a reason that is not your change. `pixi run -e pyforge-guild pyforge steward init` checks all three, and every environment a lane runs in, before you start; see [Onboard a machine](../tutorials/onboard-a-machine.md).
 
 | Lane | Needs | Get it |
 | --- | --- | --- |

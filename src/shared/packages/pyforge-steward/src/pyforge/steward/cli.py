@@ -180,8 +180,9 @@ _HELP = {
         "autotick→build→test→publish→listing→reviewable PR (never auto-merged)"
     ),
     "init": (
-        "machine bootstrap — report pixi/git/gh/podman prereqs with named "
-        "remedies; pixi floor from pixi_version_registry (Story 17.1)"
+        "machine readiness — one verdict per profile (desktop, container, pod, ocp, nkp) from the checks of "
+        "docs/governance/machine-readiness.yaml, each failing check with its remedy and who may run it; "
+        "read-only (Story 17.1, Story 135.1)"
     ),
     "shell-init": ("emit idempotent PATH/completions/env shell snippet to stdout for eval (Story 17.1)"),
     "setup": ("machine bootstrap — clone (when missing), pixi install, and pre-commit hooks (Story 17.2)"),
@@ -404,6 +405,45 @@ def build_parser() -> argparse.ArgumentParser:
                 action="store_true",
                 help="emit JSON instead of human-readable text",
             )
+            if name == "init":
+                duty_parser.add_argument(
+                    "--profile",
+                    action="append",
+                    default=None,
+                    metavar="NAME",
+                    help=(
+                        "the kind of work to check, repeatable: a profile of docs/governance/machine-readiness.yaml "
+                        "(desktop, container, pod, ocp, nkp) with the profiles it requires, or `all` "
+                        "(default: desktop)"
+                    ),
+                )
+                duty_parser.add_argument(
+                    "--class",
+                    dest="check_class",
+                    action="append",
+                    default=None,
+                    choices=("software", "configuration", "environment", "usable"),
+                    help="run only the checks of this class, repeatable (with every check one of them needs)",
+                )
+                duty_parser.add_argument(
+                    "--deep",
+                    action="store_true",
+                    help=(
+                        "also run the checks marked deep: ask a cluster, and start one throwaway linux/amd64 "
+                        "container, which pulls one small image; without it they report skipped and never block"
+                    ),
+                )
+                duty_parser.add_argument(
+                    "--list",
+                    action="store_true",
+                    help="print the profiles and their checks from the data file and probe nothing (every profile unless --profile)",
+                )
+                duty_parser.add_argument(
+                    "--repo",
+                    default=None,
+                    metavar="PATH",
+                    help="the checkout to judge (default: current repo root)",
+                )
             if name == "setup":
                 duty_parser.add_argument(
                     "--url",
