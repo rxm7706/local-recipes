@@ -32,7 +32,7 @@ Ledger key: `28-1-the-upload-and-the-job-views-answer-only-to-the-warden-role`.
 
 ### Living CAP citations
 
-- spec-pyforge-warden CAP-16 (realized, no text change); canopy AD-15; no warden FR.
+- spec-pyforge-warden CAP-16 (realized, no text change); canopy:AD-15; no warden FR.
 
 ## Boundaries & Constraints
 
@@ -61,7 +61,7 @@ Ledger key: `28-1-the-upload-and-the-job-views-answer-only-to-the-warden-role`.
 
 ## Binding
 
-- Capabilities: spec-pyforge-warden CAP-16 (realized, no text change); canopy AD-15; no warden FR.
+- Capabilities: spec-pyforge-warden CAP-16 (realized, no text change); canopy:AD-15; no warden FR.
 - Dream: `docs/dreams/pyforge-warden.md`, the 2026-11-24 entry (the upload answers only to the warden role); operator rulings of 2026-11-24.
 - Epic: Epic 28, minted with this story.
 - Ledger key: `28-1-the-upload-and-the-job-views-answer-only-to-the-warden-role`.

@@ -1549,7 +1549,7 @@ As the operator who runs the compliance web face for people who hold the warden 
 I want the upload, the job status and the job report to refuse a caller without that role,
 So that nobody without it can store a file, enqueue a scan or read a report.
 
-**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-warden CAP-16 (realized, no text change); canopy AD-15 (the switcher is not the gate); no warden FR
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-warden CAP-16 (realized, no text change); canopy:AD-15 (the switcher is not the gate); no warden FR
 **Flag:** `flag-exempt: detector-or-gate` (an access check is a gate; a gated gate is a silent green (roster list))
 **Surface:** `src/shared/packages/django-warden/src/django_warden_fabric/views.py`, `src/platform/tests/test_warden_portal_upload_gate.py`
 **Spec:** `planning-artifacts/specs/spec-28-1-the-upload-and-the-job-views-answer-only-to-the-warden-role.md`
