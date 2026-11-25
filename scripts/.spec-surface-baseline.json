@@ -2772,7 +2772,7 @@
    "docs/dashboard/README.md": "cb70e19c69f4e5ae6b82a1f72a12672a5d8b49d4",
    "docs/reference/library-llms-full.md": "53bf041ca959113430a21796a4d95f69e62e91dc",
    "environment.yaml": "f99dc805fb754121638f8352c7061e0ef49a7dfb",
-   "pixi.toml": "b3b8ce831d35e1a1ed7cdde45a3d0a66f6582660",
+   "pixi.toml": "1a2d766074f760cb8983893377831a46a0a88bb9",
    "scripts/.ad-citation-baseline.json": "685db30063a76e6a36e8ed25a938bd92c3dfa4cf",
    "scripts/ad_citation_check.py": "505a75a95dcb42b9ebe6a8c4bc9255152d2cb43e",
    "scripts/bmad-loop-worktree": "87bce267cac861accebffa6e29e7bc1ecaa398ab",
@@ -3380,7 +3380,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "b9727dd3400caa1129ccceda781b8a90aa5bee8a"
+  "memlog": "39ee7652d263b2d56ba7f4d3d5dbffca86ab90ce"
  },
  "pyforge-marshal/spec-pyforge-testing-charter": {
   "files": {
