@@ -8238,3 +8238,49 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   on the unchanged tree comes first, and a defect the tree does not show is closed as not a defect, with the reason
   written on its story spec. Each is a fix, so no flag is added. The session hook's row
   (`DW-steward-review-2026-11-24-4`, owner governance) is not in this Epic.
+- **2026-11-25 (the open rows close, and one verb says whether a machine is ready) — Found:** two things, on a new
+  macOS laptop. First, the review of main `7da08791f3` and the stories that closed it left six rows open that no story
+  carried: `DW-steward-133-2-1` (the promotion script records the local image ID under `images.*.digest`, an operator
+  decision), `DW-steward-review-2026-11-24-4` (the session hook `.claude/hooks/pre-shell.py` is skipped by a prefix or a
+  second spelling of a flag, and `.claude/hooks/post-tool-call.py` is registered by no harness), `DW-doctor-62-1-1`,
+  `DW-herald-54-1-1` and `DW-scribe-35-1-1` (three compiled station skills that predate their code) and
+  `DW-atlas-review-2026-11-24-2` (the atlas package's `AGENTS.md` calls the package half the whole suite). Second, the
+  laptop met what it lacked one failing lane at a time: no docker or podman, no `gh` on `PATH`, a `C` locale, no token
+  kit, no hooks, a stopped scribe cluster and no browsers. `steward init` checks four tools from a list written in
+  `bootstrap.py` and fails every machine without podman, and `validate-fast` and `initrepo` fail with it; nothing says
+  whether gh is signed in, an environment is in the lock for this platform and materialized, or a container engine, a
+  cluster tool or a pull secret is there, and the path from a bare machine to a working one is spread over six pages.
+  **Ruled** (operator rulings of 2026-11-25, in session: "fix all these issues / left open items"; on
+  `DW-steward-133-2-1`, "Registry digest": record the registry manifest digest after a push, record the image ID under a
+  separate `image_id` key and leave `digest` empty when nothing is pushed, and the deploy verifier checks whichever is
+  present; on the machine, "this machine is missing several software / configutation items - becuase it was a new machine - shouldnt there be a way to check that all required software (docker, ocp etc) and all required configuration (gh, env variables) and all enviornments resolved and work on this new machine" and "doccumentations procedures, autmation enviornment setup and checks should be part of onboarding a new developer, a new machine to build. test, verify and run pyforge locally - on a desktop, as a container, as a pod etc", answered "Plan and build now"). **For steward:** this entry binds `spec-pyforge-steward` twice. The open
+  rows bind capabilities that already state the behaviour (CAP-5, the closed `session_denials` list; CAP-165, the
+  protected refs; CAP-175, the platform suite's local replay and each station's two-halved suite; each realized, no
+  text change), `spec-pyforge-unifying-strategy` (CAP-15, every station teaches an agent its own work, and the
+  Constraint that deploys pin an image digest with a recorded Warden verdict; no text change), with
+  `spec-pyforge-doctor:CAP-96`, `spec-pyforge-herald:CAP-1`, `spec-pyforge-scribe:CAP-26` and
+  `spec-pyforge-scribe:CAP-27` read and not changed, and decompose as Epic 134, four stories: the promotion's digest
+  (134.1), the session hook (134.2), the three station skills (134.3) and the atlas package's agent instructions
+  (134.4). The hook is tightened only: the two false denials its row names loosen a safety hook and stay an open row
+  for the operator, and `session_denials` gains no rule and loses none. A compiled skill and a `bmad:context` block are
+  written by their own skills, never by hand. Each is a fix, so no flag is added. `DW-mason-41-1-1` ("Exit 1 on
+  failure") is mason's own Story, on mason's Dream. The machine check is a **new capability** on `spec-pyforge-steward`,
+  CAP-183, minted from this entry: one read-only verb says whether this machine can do desktop, container or pod work,
+  from a tracked list of checks. `steward init [--profile NAME ...] [--class CLASS ...] [--deep] [--list] [--json]`
+  reports five profiles (`desktop`; `container`, which requires it; `pod`, `ocp` and `nkp`, which require `container`,
+  `nkp` on linux-64 only) from the rows of `docs/governance/machine-readiness.yaml`, in four classes: required
+  software, required configuration, environments, and usable. Every row that is not ok names its remedy as an exact
+  command and says whether an agent may run it or it is the operator's; an installer and a sign-in are always the
+  operator's. The verb installs nothing and writes nothing, composes the checks other verbs already make (`session
+  check`, `provision --verify`, the realization register's probes, another station's own doctor read by exit code) and
+  never writes one twice; adding a requirement is a row, and only a new kind of probe is code. `init` is extended and
+  no duty is added, so the duty count stays 31; a bare `init` is the desktop profile, so `validate-fast` and `initrepo`
+  no longer need a container engine. It amends what CAP-48's `init` reports and works with CAP-5, CAP-152, CAP-167 and
+  CAP-176. The data file sits beside the realization register under `docs/governance/`, not under `docs/foundry/`: it
+  describes this root's machines and is `A-only` until `pyforge.cutover_root` flips to `foundry`, when the second root
+  rebuilds it. A readiness check is a detector, so it runs behind no flag (`flag-exempt: detector-or-gate`). It
+  decomposes as Epic 135, three stories built in order: the tracked checks and the desktop profile (135.1), the
+  container, pod, ocp and nkp profiles (135.2), and one tutorial, `docs/tutorials/onboard-a-machine.md`, that takes a
+  bare machine to a ready verdict per profile, with the steward skill regenerated (135.3). Out of scope: installing or
+  signing in to anything, starting a cluster or a database, cloud targets, and replacing `session check`, `estate
+  verify` or the preflight.

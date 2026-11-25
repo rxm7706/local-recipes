@@ -91,13 +91,44 @@ pixi run -e platform-dev helm install platform src/platform/deploy/charts/platfo
 ```
 
 **Golden-path CD (Story 43.4):** Platform CI's `golden-path-promotion` job
-uploads one artifact (`golden-path-promotion.json`) with the three chart
-image digests and the Warden verdict for the commit. Deploy only that digest
-via `.github/workflows/platform-deploy.yml` (`workflow_dispatch` with the
-CI run id and digests) — the workflow refuses a digest that is not recorded
-with a Warden verdict. Sidecar images use `sidecar.image.digest` and
-`mcpHost.image.digest` the same way. Optional registry push:
-`PLATFORM_CI_PUSH_REGISTRY=true` + `PLATFORM_CI_REGISTRY` repo variable.
+uploads one artifact (`golden-path-promotion.json`) with the Warden verdict for
+the commit and, for each of the three chart images (`images.platform`,
+`images.sidecar`, `images.mcpHost`), two different values under two keys
+(Story 134.1):
+
+- `image_id` is the engine's local image ID. It is always recorded. It names
+  nothing a registry serves, so it is never put after `@`.
+- `digest` is the registry manifest digest. It exists only after a push, so it
+  is recorded only when the job pushed the image and is an empty string
+  otherwise. The push is optional: set the repository variables
+  `PLATFORM_CI_PUSH_REGISTRY=true` and `PLATFORM_CI_REGISTRY`. The job pushes
+  before it records, and `pushed_ref` holds the reference that was pushed.
+  The record fails when the pushed reference is not the same image as the
+  local one (their image IDs differ), so one image's ID is never paired with
+  another image's digest.
+
+The artifact's `schema` stays `platform-golden-path-promotion/v1`: `image_id`
+and `pushed_ref` are additions. An artifact written before Story 134.1 has no
+`image_id` key and held the image ID under `digest`; the verifier reads that
+value as an image ID, never as a digest.
+
+Deploy through `.github/workflows/platform-deploy.yml` (`workflow_dispatch`
+with the CI run id). `scripts/platform-deploy-verify-promotion.py` refuses any
+Warden verdict but `clean`, then compares whichever value the artifact holds
+for each image:
+
+| The artifact records | Give the workflow | Outcome |
+|---|---|---|
+| a `digest` for all three images | `platform_digest`, `sidecar_digest`, `mcp_host_digest` | verified, then the chart is rendered with `image.digest`, `sidecar.image.digest` and `mcpHost.image.digest` set to the digests read back from the artifact |
+| only `image_id` (nothing was pushed) | `platform_image_id`, `sidecar_image_id`, `mcp_host_image_id` | the verdict and the image IDs are verified; the render step then fails, saying a registry deploy needs a pushed digest |
+
+A requested digest the artifact does not hold is refused, and so is an image ID
+where the artifact records a digest. The verifier also refuses, with its own
+`::error::` line, an artifact that is not JSON, whose `images` is not a mapping,
+or whose image entry is not a mapping. The chart itself refuses an
+`image.digest` that is not `sha256:` and 64 hex characters; a docker image ID
+has that same form, which is why the two are kept apart in the artifact
+rather than told apart by the chart.
 
 **Feature flags per environment (Story 76.1).** The chart mounts one
 ConfigMap, `<release>-flags`, holding `src/platform/config/flags.json` rendered

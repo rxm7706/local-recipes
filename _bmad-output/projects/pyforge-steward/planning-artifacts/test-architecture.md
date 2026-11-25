@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: dcab267154e35f74
-story_count: 493
-test_file_count: 167
+source_fingerprint: 8b6c1be15e48bc02
+story_count: 500
+test_file_count: 169
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 493
-- **Epics parsed:** 133
-- **Test files inventoried:** 167 under `src/shared/packages/pyforge-steward/tests/`
+- **Stories parsed:** 500
+- **Epics parsed:** 135
+- **Test files inventoried:** 169 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `dcab267154e35f74`
+- **Source fingerprint:** `8b6c1be15e48bc02`
 
 ## Risk Assessment
 
@@ -156,6 +156,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 131: Playwright's browsers come from pixi (spec-pyforge-steward CAP-5)
 - Epic 132: The flip's loop guard reads the state bmad-loop writes (spec-python-foundry-cutover fnd:CAP-8)
 - Epic 133: The review's lower-severity defects are reproduced, then fixed or closed (spec-pyforge-steward CAP-1, CAP-22, CAP-55, CAP-167, CAP-168, CAP-175; spec-pyforge-unifying-strategy CAP-3, CAP-4, CAP-5, CAP-6, CAP-12)
+- Epic 135: One verb says whether this machine is ready for desktop, container or pod work (spec-pyforge-steward CAP-183)
 
 ### Low-risk epics
 
@@ -169,6 +170,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 122: The steward Spec says what the code does (spec-pyforge-steward CAP-179, CAP-180; the markers and text of existing capabilities)
 - Epic 123: The steward suite is an oracle a second root can run (spec-pyforge-steward CAP-181, CAP-182)
 - Epic 125: The preflight answers on the laptop it is documented for (spec-pyforge-steward CAP-175)
+- Epic 134: The review's open rows close (spec-pyforge-steward CAP-5, CAP-165, CAP-175; spec-pyforge-unifying-strategy CAP-15)
 
 ## Test Inventory
 
@@ -189,6 +191,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/meta/test_invariants.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_lint_types_django_tables.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_lint_types_mypy_cache_per_environment.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_machine_readiness_data.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_marp_in_guild_env_story_63_8.py` | meta | 63.8 |
 | `src/shared/packages/pyforge-steward/tests/meta/test_no_station_assumes_local_recipes.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_object_store_seam_boundaries.py` | meta | none observed |
@@ -263,6 +266,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_keys_rotate.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_lint_types_mypy_cache.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_lint_types_not_yet_clean.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_machine.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_marketplace_flag_env.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_marketplace_listing.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_marketplace_manifests.py` | unit | none observed |
@@ -839,6 +843,13 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 133.2 | The workflows and scripts steward runs do what they name | none observed |
 | 133.3 | The platform suite's test stage runs without a container engine, on a UTF-8 d... | none observed |
 | 133.4 | The front door streams its child, the diff guards read the merge base, and th... | none observed |
+| 134.1 | The promotion records the registry digest after a push, and the image ID when... | none observed |
+| 134.2 | The session hook reads every form of a command its rules name | none observed |
+| 134.3 | The doctor, herald and scribe station skills describe the code as it is | none observed |
+| 134.4 | The atlas package's agent instructions name kedro-test as the whole suite | none observed |
+| 135.1 | Steward init reads its checks from a tracked file and reports the desktop pro... | none observed |
+| 135.2 | The container, pod, ocp and nkp profiles say what each needs | none observed |
+| 135.3 | One onboarding tutorial takes a bare machine to a ready verdict per profile | none observed |
 
 ## Quality Gates
 

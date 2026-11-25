@@ -191,6 +191,7 @@ same change.
 | CAP-180 | `restore.py`, `revoke.py`, `cli.py` | package | `unit/test_restore_duty.py`, `unit/test_revoke_duty.py` | |
 | CAP-181 | — | live-tree | `meta/test_oracle_map.py` | This companion. |
 | CAP-182 | `root_layout.py`, `bootstrap.py`, `catalog.py`, `ci.py`, `corridor.py`, `marketplace_pages.py`, `measures.py`, `preflight_ci.py`, `sync.py`, `upgrade.py` | package | `meta/test_portability.py` | `root_layout.py` names the layout and the repository; the others derive from it. |
+| CAP-183 | `machine.py`, `bootstrap.py`, `session.py`, `cli.py` | package, live-tree | `unit/test_machine.py`, `meta/test_machine_readiness_data.py`, `unit/test_bootstrap.py`, `unit/test_bootstrap_setup_flow.py` | `steward init`'s profiles. The data file is `docs/governance/machine-readiness.yaml`; the container, pod, ocp and nkp profiles reach READY only on a machine that has their software, which is an attended run recorded on the story specs. |
 
 ## Capabilities of other Specs this package realizes
 
