@@ -9364,7 +9364,7 @@ So that one module names the layout and no other spells it segment by segment.
 **When** both modules derive the directory from `root_layout.STATION_PACKAGES_DIR` and the two `LAYOUT_EXCEPTIONS` entries are deleted
 **Then** `LAYOUT_EXCEPTIONS` is empty, `test_portability.py` passes, every path the two modules returned before is the same path, and no steward module but `root_layout.py` joins those three segments
 **And** the memlog of `spec-pyforge-steward` records that CAP-182's marker drops the qualifier naming `DW-steward-123-2-2`, and the row reads resolved
-**Status:** ready-for-dev
+**Status:** done
 
 ### Story 136.2: Three steward package-data files cite today's capability ids
 
@@ -9380,7 +9380,7 @@ So that every id in steward's package resolves in `spec-pyforge-steward`.
 **When** each citation is re-keyed to the station Spec's id by the provenance map and the test reads the three files
 **Then** no file under the steward package cites `spec-sprint-ledger-query-module`, `spec-build-league-scorecard` or `spec-self-hosted-bmad-marketplace` as a live id, the three files cite spec-pyforge-steward:CAP-148, CAP-45 and CAP-117, and a test fails when one of them cites an absorbed Spec again
 **And** `oracle-map.md`'s CAP-179 row note says the test holds help, output, comments, docstrings and the three data files, and the row reads resolved
-**Status:** ready-for-dev
+**Status:** done
 
 ### Story 136.3: The host's ingest imports steward's transport by its public name
 
@@ -9396,7 +9396,7 @@ So that the carve-out can shrink without every station suite turning red.
 **When** the kit's diff guard admits the four carved-out files and nothing else, and the pipeline imports `default_transport`
 **Then** the pipeline imports the public name, every one of the 20 guards passes on this branch, a test shows the guard still reds a changed `src/platform` file outside the four that imports `pyforge`, and the allowlist is written in one place two tests read
 **And** the carve-out does not grow: the four paths are the four of `PLATFORM_PYFORGE_IMPORTERS`, and the row reads resolved under DW-steward-74-1, which stays open
-**Status:** ready-for-dev
+**Status:** done
 
 ### Story 136.4: The eight station personas cite their requirements and capabilities in qualified form
 
@@ -9412,7 +9412,7 @@ So that `FR-13` in a persona cannot be read as the station's own FR-13.
 **When** the four ids are qualified in the eight personas, their `customize.toml` and the template, and each suite's persona test asserts the qualified form
 **Then** no persona `SKILL.md` or `customize.toml` cites one of the four ids bare, every persona contract test passes, and a test fails when a persona cites one bare again
 **And** no other persona line changes, no compiled `pyforge-<station>` skill is hand-edited, and the row reads resolved
-**Status:** ready-for-dev
+**Status:** done
 
 ### Story 136.5: Story lines in steward's epics cite today's capability ids
 
@@ -9428,7 +9428,7 @@ So that a Story minted before the fold resolves in `spec-pyforge-steward` withou
 **When** each line citing an absorbed Spec is re-keyed through the Spec's provenance headings, and each bare id the page resolves is qualified
 **Then** no Story FR/AD line cites an absorbed steward Spec's capability as a live id, every re-keyed id is a capability `spec-pyforge-steward` defines, and the lines left unresolved are counted by kind in the story's change log
 **And** no Story key, heading, status or acceptance line changes, `chain-completeness-check`, `story-status-check` and `ledger-regression-check` pass, and the row reads resolved, naming any remainder as a new row if one is left
-**Status:** ready-for-dev
+**Status:** done
 
 ### Story 136.6: The tests that ran in no CI job run in one
 
@@ -9444,7 +9444,7 @@ So that a test that skips in its own station's environment is not a test that ru
 **When** each test is run by node id as a step of an existing CI job whose environment holds its imports, through a pixi task, and the step fails when a named test skips
 **Then** the two share-tree tests pass in a job on `pyforge-guild`, the five scribe tests pass in the job on `pyforge-foundry-full`, each locally through its pixi task, and no CI job, ci-surfaces row, budget or dependency is added
 **And** a skip of any of the seven fails its step, each skip reason and scribe's skip-site guard name the task that runs the test, `docs/reference/github-workflows.md` says so, and the three rows read resolved
-**Status:** ready-for-dev
+**Status:** done
 
 ### Story 136.7: Each sharded suite splits by recorded durations
 
@@ -9460,7 +9460,7 @@ So that no shard runs far longer than its siblings because it drew the slow test
 **When** each file is written by one full unsharded run of its task with `--store-durations`
 **Then** `tests/durations/` holds a non-empty durations file for every `--durations-path` the workflow names, and a test fails when the workflow names one that is missing or empty
 **And** no shard count or workflow command changes, the README says how a file is refreshed, and the row reads resolved
-**Status:** ready-for-dev
+**Status:** done
 
 ### Story 136.8: The seven atlas gate tasks run in atlas's own environment
 
@@ -9476,4 +9476,4 @@ So that an atlas gate does not need the 10 GB recipe-factory environment.
 **When** each task whose dependencies `pyforge-atlas` already solves is moved to `[feature.pyforge-atlas.tasks]` unchanged, and `gate-contract.md` and every caller name the new environment
 **Then** each moved task resolves and runs in `-e pyforge-atlas`, is no longer defined under `feature.local-recipes`, and `gate-contract.md`'s table and its meta-test agree with `pixi.toml`
 **And** no dependency is added or moved, the lock is unchanged or passes `pixi lock --check` with the pinned pixi, a task that could not move is named with its reason, and the row reads resolved or names what is left
-**Status:** ready-for-dev
+**Status:** done

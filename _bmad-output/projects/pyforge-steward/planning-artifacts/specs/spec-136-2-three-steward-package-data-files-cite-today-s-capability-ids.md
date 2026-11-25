@@ -2,7 +2,7 @@
 title: '136.2: Three steward package-data files cite today''s capability ids'
 type: 'fix'
 created: '2026-11-25'
-status: 'in-review'
+status: 'done'
 story: 136-2-three-steward-package-data-files-cite-today-s-capability-ids
 spec: spec-pyforge-steward
 difficulty: 'easy'
@@ -93,3 +93,4 @@ Ledger key: `136-2-three-steward-package-data-files-cite-today-s-capability-ids`
 - 2026-11-25: implemented: the three citations now read `spec-pyforge-steward:CAP-148`, `spec-pyforge-steward:CAP-45` and `spec-pyforge-steward:CAP-117`. One more comment in `catalog/catalog.yaml` (line 69, `spec CAP-5 / CAP-121`, the absorbed marketplace Spec's fifth id beside today's) is collapsed to `spec-pyforge-steward:CAP-121`, a re-key the provenance map holds. `test_cap_citations.py` gains `DATA_FILE_CAPABILITIES`, `data_file_findings`, `test_package_data_files_cite_todays_ids` and a `fires` test (an absorbed Spec cited again, an undefined id, the file's own capability not cited qualified), and three `MODULE_FAMILIES` entries so the re-key guard reads the three files' changed lines. `oracle-map.md`'s CAP-179 note names help, output, comments, docstrings and the three data files.
 - 2026-11-25: AC1 exit 1 (no line matches). AC2 exit 1: 16 passed, 1 failed, and the failure is not this story's: `test_comments_and_docstrings_cite_todays_ids` names `tests/meta/test_steward_persona.py:250`, a comment Story 136.4 added in this worktree that cites a bare `CAP-15`. With that one test left out (`-k`), the module exits 0 (16 passed), this story's two new tests and `test_rekey_pairs_follow_the_provenance_map` among them. AC2 needs a re-run once Story 136.4 qualifies that comment.
 - 2026-11-25: `lint-types`: ruff, ruff-format and mypy `ok` for pyforge-steward (the task exits 1 on `pyforge-atlas` mypy, another story's file). `test_sprint_ledger_query.py`, `test_catalog.py` and `test_public_contract.py` pass; `pyforge-steward-test` (the package half) exit 0. `test_station_tests_trigger_map.py` has two failures naming `src/platform/ingest/github_projects/*` read from `pyforge-testing-kit/tests/unit/test_branch_diff_guard.py`, neither file this story's. Left for the session lead: the `DW-steward-122-4-1` row, the memlog reconcile and the scoped stamps.
+- 2026-11-25: closed. Implemented, independently reviewed against this spec (a read-only reviewer over the whole diff), its findings applied; the deferred-work row or rows are closed in their ledgers by the session lead, and the full local `pr-preflight` gates the PR that lands it (branch `named-blocker-rows-2026-11-25`).

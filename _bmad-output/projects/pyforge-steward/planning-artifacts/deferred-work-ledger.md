@@ -7099,7 +7099,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
   reason: named blocker: the guard in eight station suites refuses any edit of that host file, and no story of this change owns them all.
-  status: open
+  resolution: 2026-11-25, steward Story 136.3 (branch `named-blocker-rows-2026-11-25`; operator ruling 2026-11-25 "All 22 rows") - pipeline.py imports default_transport. The testing kit's pyforge_import_offenders admits the four carved-out files, held in one constant steward's seam test also reads, and only for pyforge.steward.keys and pyforge.steward.sync; any other pyforge import in them, and any other src/platform importer, still reds. The carve-out DW-steward-74-1 stays open and did not grow.
+  status: resolved
   verified: 2026-11-13 — still-open — src/platform/ingest/github_projects/pipeline.py:12 still imports `_default_transport`; src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py:472 holds the public name.
 
 ### DW-steward-cutover-2026-11-10-4: Host and portal truth for Story 121.5: undeclared imports, by-name loads, A paths and a check that scans nothing
@@ -7172,7 +7173,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
   reason: named blocker: adding the share packages to the steward feature is an estate-pin decision for the estate-refresh lane.
-  status: open
+  resolution: 2026-11-25, steward Story 136.6 (branch `named-blocker-rows-2026-11-25`; operator ruling 2026-11-25 "All 22 rows"; "No new lane") - the two share-tree tests run by node id through the pixi task steward-share-tree-test, a step of the lint-types job, which already installs pyforge-guild; a skip, or a named test that does not run, fails the step. No job, ci-surfaces row or dependency was added.
+  status: resolved
 
 ### DW-steward-cutover-2026-11-10-9: Story FR/AD lines in steward's epics.md cite absorbed-Spec or bare capability ids
 
@@ -7186,7 +7188,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
   reason: named blocker: a planning story of its own; this change re-keys code citations only.
-  status: open
+  resolution: 2026-11-25, steward Story 136.5 (branch `named-blocker-rows-2026-11-25`; operator ruling 2026-11-25 "All 22 rows") - recounted as 255 lines of the three kinds among 486 Story FR/AD lines (the row's 383 came from a script that was not kept). 105 lines moved: 110 absorbed ids re-keyed through the Spec's provenance headings and 12 bare ids qualified where the Epic heading names one Spec. What the page does not resolve is left and carried by DW-steward-136-5-1.
+  status: resolved
 
 ### DW-steward-cutover-2026-11-10-10: The eight station personas cite bare FR-13, FR-11, CAP-15 and CAP-16
 
@@ -7200,7 +7203,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
   reason: named blocker: a fleet-wide change across eight suites' tests, not a line in one unit's story.
-  status: open
+  resolution: 2026-11-25, steward Story 136.4 (branch `named-blocker-rows-2026-11-25`; operator ruling 2026-11-25 "All 22 rows") - the eight personas and their customize.toml cite canopy:FR-13, canopy:FR-11, spec-pyforge-unifying-strategy:CAP-15 and spec-pyforge-unifying-strategy:CAP-16; nine persona test modules assert the qualified form and steward's fails on a bare id. No persona template exists. The compiled station skills that cite a bare form are carried by DW-steward-136-4-1.
+  status: resolved
   verified: 2026-11-13 — still-open — .claude/skills/bmad-agent-scribe/SKILL.md:10 and :47 still cite the bare ids.
 
 ### DW-steward-cutover-2026-11-10-11: tests/durations/ holds only its README, so every sharded job splits by test count
@@ -7215,7 +7219,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
   reason: named blocker: each file needs a full unsharded run after every marking story of this change; nothing is red without them.
-  status: open
+  resolution: 2026-11-25, steward Story 136.7 (branch `named-blocker-rows-2026-11-25`; operator ruling 2026-11-25 "All 22 rows") - the six durations files are written, each from one full unsharded run of its task; tests/scripts/test_durations_files.py fails when the workflow names a file that is missing or empty.
+  status: resolved
 
 ### DW-steward-cutover-2026-11-10-12: django-scribe has no test lane, so scribe's portal render test runs nowhere
 
@@ -7229,7 +7234,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
   reason: named blocker: a new lane is a new ci-surfaces row with a budget, a governance act outside this change's no-new-behaviour scope.
-  status: open
+  resolution: 2026-11-25, steward Story 136.6 (branch `named-blocker-rows-2026-11-25`; operator ruling 2026-11-25 "All 22 rows"; "No new lane") - the portal render test runs with scribe's five plane tests through the pixi task scribe-plane-and-portal-test in -e pyforge-foundry-full, a step of the lint-types job, which already installs that environment. No django-scribe lane or ci-surfaces row was added.
+  status: resolved
 
 ### DW-steward-121-6-1: modes.md § Marker tokens and the generator disagree on a provenance parenthetical beside a pinned marker
 
@@ -7271,7 +7277,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
   reason: named blocker: the files and the companion are outside every remaining story's files in this change.
-  status: open
+  resolution: 2026-11-25, steward Story 136.2 (branch `named-blocker-rows-2026-11-25`; operator ruling 2026-11-25 "All 22 rows") - the schema, measures.yaml and catalog.yaml cite spec-pyforge-steward:CAP-148, CAP-45 and CAP-117; test_cap_citations.py reads the three files and fails when one cites an absorbed Spec; oracle-map.md's CAP-179 note says what the test holds.
+  status: resolved
   verified: 2026-11-13 — still-open — src/shared/packages/pyforge-steward/measures/measures.yaml:1 and src/shared/packages/pyforge-steward/catalog/catalog.yaml:1 still carry the absorbed ids; oracle-map.md:190's note is unchanged.
 
 ### DW-steward-123-2-2: Two steward modules still spell the station-packages directory segment by segment
@@ -7286,7 +7293,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-11-13 — Story 122.5 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
   reason: named blocker: neither file was in any story's files in this change's parallel waves.
-  status: open
+  resolution: 2026-11-25, steward Story 136.1 (branch `named-blocker-rows-2026-11-25`; operator ruling 2026-11-25 "All 22 rows") - five_tier.py and preflight_suite_reduction.py derive the directory from root_layout.STATION_PACKAGES_DIR, LAYOUT_EXCEPTIONS in tests/meta/test_portability.py is empty, and spec-pyforge-steward CAP-182's marker drops the qualifier that named this row (rendered from the memlog).
+  status: resolved
   verified: 2026-11-13 — still-open — src/shared/packages/pyforge-steward/tests/meta/test_portability.py:46-49 lists both files; `pixi run --frozen -e pyforge-steward env PYTHONPATH=src/shared/packages/pyforge-steward/src:scripts pytest src/shared/packages/pyforge-steward/tests/meta/test_portability.py -q` exit 0 (37 passed).
 
 ### DW-steward-125-1-1: The adoption register's `bmad-manticore` row fails the live suite on a host without the studio
@@ -7467,6 +7475,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-11-25 - steward Story 134.2
   reason: named blocker: loosening the session hook is the operator's, never an agent's.
   status: open
+  verified: 2026-11-25 - still-open - a patch for both forms was written and handed to the operator on 2026-11-25 (32 new test cases; every existing case of tests/scripts/test_pre_shell_hook.py keeps its result); an agent does not apply it. `git apply --check DW-steward-134-2-1-hook.patch` exit 0 on this branch; the two denials still stand at .claude/hooks/pre-shell.py:1764 and .claude/hooks/pre-shell.py:1939.
 
 ### DW-steward-135-3-1: The compiled steward skill does not describe the onboarding check
 
@@ -7480,4 +7489,34 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-11-25 - steward Story 135.3
   reason: named blocker: the regeneration's metadata write needs the operator's permission.
+  resolution: 2026-11-25, closed on the operator's attended ask (branch `named-blocker-rows-2026-11-25`; operator ruling 2026-11-25 "All 22 rows") - skf-update-skill built pyforge-steward 0.1.2 (its metadata.json write went through) and skf-export-skill exported it: the init paragraph, duty table, CLI line and exit table carry --profile, --class, --deep, --list, --repo and exits 0 to 3; the three [MANUAL] blocks are byte-identical to 0.1.1; active serves 0.1.2.
+  status: resolved
+
+### DW-steward-136-4-1: Six compiled station skills and briefs cite the persona ids bare
+
+- source_spec: `planning-artifacts/specs/spec-136-4-the-eight-station-personas-cite-their-requirements-and-capabilities-in-qualified-form.md`
+  summary: the personas now cite `canopy:FR-13`, `canopy:FR-11`, `spec-pyforge-unifying-strategy:CAP-15` and `spec-pyforge-unifying-strategy:CAP-16`, but the compiled station skills of atlas, doctor, marshal and warden, and the `skill-brief.yaml` of atlas, doctor, herald, marshal, scribe and warden, still cite one or more of the four ids bare.
+  evidence: `git grep -n -w -E "FR-13 grammar|CAP-15 content" -- '.claude/skills/pyforge-*'` on 2026-11-25; steward Story 136.4's Spec Change Log lists the files.
+  location: .claude/skills/pyforge-atlas/skill-brief.yaml
+  origin: steward Story 136.4 (branch `named-blocker-rows-2026-11-25`)
+  fix: qualify the ids in each `skill-brief.yaml`, then regenerate each compiled skill with `skf-update-skill` and `skf-export-skill`, one station at a time.
+  owner: steward
+  severity: low
+  promoted: 2026-11-25 - steward Story 136.4
+  reason: a compiled skill is written by its own tool, never by hand (Story 136.4's Never clause); six regenerations are a Story of their own.
   status: open
+
+### DW-steward-136-5-1: Story lines in steward's epics that the page does not resolve
+
+- source_spec: `planning-artifacts/specs/spec-136-5-story-lines-in-steward-s-epics-cite-today-s-capability-ids.md`
+  summary: after Story 136.5, 46 Story FR/AD lines of steward's `epics.md` cite 82 bare capability ids under an Epic heading that names no Spec or more than one, 102 lines cite no capability, Story 12.9 keeps three absorbed ids (re-keying them would make the adjacent unqualified `parent CAP-6` read as a steward id), and Story 59.2 cites `spec-vocabulary-one-name-one-job CAP-2`, which no provenance heading of `spec-pyforge-steward` names.
+  evidence: steward Story 136.5's Spec Change Log (counts by kind before and after).
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
+  origin: steward Story 136.5 (branch `named-blocker-rows-2026-11-25`)
+  fix: read each Story against the Spec and name its capability; rule where `spec-vocabulary-one-name-one-job CAP-2` went.
+  owner: steward
+  severity: low
+  promoted: 2026-11-25 - steward Story 136.5
+  reason: trace, never count: an arrow is derived from the Story's text and the capability's intent, one Story at a time; none of these lines resolves from the page alone.
+  status: open
+

@@ -173,9 +173,9 @@ development_status:
   50-1-a-host-that-keeps-failing-costs-a-run-a-bounded-time: done
   51-1-a-stopped-refresh-starts-where-the-last-one-ended: done
   52-1-the-sbom-intake-keeps-every-dependency-and-an-empty-intake-does-not-pass-the-gate: done
-  53-1-the-two-live-companions-sit-in-the-station-spec-folder: ready-for-dev
-  53-2-the-lineage-producer-is-a-layout-free-identifier: ready-for-dev
-  53-3-atlas-s-comments-cite-the-test-layout-and-the-specs-that-exist: ready-for-dev
+  53-1-the-two-live-companions-sit-in-the-station-spec-folder: done
+  53-2-the-lineage-producer-is-a-layout-free-identifier: done
+  53-3-atlas-s-comments-cite-the-test-layout-and-the-specs-that-exist: done
   6-1-implement-the-a2a-communication-interfaces: done
   6-2-integrate-openlineage-opentelemetry: done
   7-1-complete-the-duckdb-consolidation-prove-the-cold-start-claim: done
@@ -283,7 +283,7 @@ development_status:
   epic-51-retrospective: optional
   epic-52: done
   epic-52-retrospective: optional
-  epic-53: in-progress
+  epic-53: done
   epic-53-retrospective: optional
   epic-6: done
   epic-6-retrospective: done

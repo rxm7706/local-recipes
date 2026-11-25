@@ -2,7 +2,7 @@
 title: '136.1: Steward''s last two modules derive the station-packages directory from the root layout'
 type: 'fix'
 created: '2026-11-25'
-status: 'in-review'
+status: 'done'
 story: 136-1-steward-s-last-two-modules-derive-the-station-packages-directory-from-the-root-layout
 spec: spec-pyforge-steward
 difficulty: 'easy'
@@ -94,3 +94,4 @@ Ledger key: `136-1-steward-s-last-two-modules-derive-the-station-packages-direct
 - 2026-11-25: AC1 exit 1 (no line matches). AC2 exit 0 (37 passed). `lint-types`: ruff, ruff-format and mypy `ok` for pyforge-steward; the task as a whole exits 1 on `pyforge-atlas` mypy (`src/pyforge/atlas/observability.py:419`, a file another story is editing in this worktree). Touched modules (`test_preflight_suite_reduction.py`, `test_five_tier_check.py`, `test_preflight_concurrency.py`, `test_preflight_inherited_pytest_addopts.py`) pass; `test_preflight_concurrency.py`'s two-second timing test failed once under load (5.3 s) and passed on the re-run. `pyforge-steward-test` exit 0 (2161 passed, 14 skipped; 33 passed).
 - 2026-11-25: left for the session lead: the `spec-pyforge-steward` SPEC marker and memlog line for CAP-182, the `DW-steward-123-2-2` row, the capability ledger and the scoped stamps. Noticed and not changed (outside this story's surface): `root_layout.py`'s module docstring, lines 6 to 8, still says the two modules spell the directory out segment by segment under `DW-steward-123-2-2`; that sentence is now stale.
 - 2026-11-25: session lead: `root_layout.py`'s module docstring, which still said the two modules spell the path out under `DW-steward-123-2-2`, now says the test excepts no module (a stale line in the file the story's capability names; `test_portability.py` exit 0).
+- 2026-11-25: closed. Implemented, independently reviewed against this spec (a read-only reviewer over the whole diff), its findings applied; the deferred-work row or rows are closed in their ledgers by the session lead, and the full local `pr-preflight` gates the PR that lands it (branch `named-blocker-rows-2026-11-25`).

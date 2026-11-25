@@ -1841,7 +1841,7 @@ pages port against the spines — BSL-routed, reading canonical datasets or the 
 `query-plane-catalog` ruling's per-call choice **Then** all 28 pages render with stable
 ids/titles **And** the DW-D2-3 residual executes: the §2.1 semantic-HTML/ARIA browser-agent
 navigation check plus a data-present visual pass through
-`pixi run -e local-recipes dashboard-serve` (`scripts/dashboard_serve.py`, the DW-D2-3
+`pixi run -e pyforge-atlas dashboard-serve` (`scripts/dashboard_serve.py`, the DW-D2-3
 serve entrypoint, evidence-update 2026-08-26) **And** Vizro stays outside the Canopy host
 (this file's Canopy obligation 3) and Django imports no Vizro.
 
@@ -2042,7 +2042,7 @@ test file?*
 **Surface:** `src/shared/packages/pyforge-atlas/src/pyforge/atlas/views/` (delete), `src/shared/packages/pyforge-atlas/tests/unit/views/` (delete), `src/shared/packages/pyforge-atlas/tests/unit/catalog/test_no_inline_io.py` (the Story 14.3 ASGI-containment test and its positive control both name `views/asgi.py`), `src/shared/packages/pyforge-atlas/pyproject.toml` (`bokeh`/`tornado`/`starlette` run-deps, declared for `views/` only), `src/shared/packages/pyforge-atlas/pixi.toml` (the mirrored AUD-ATLAS-010 run-dependency lines)
 **Given** the `views/` package has **no importer anywhere outside `tests/unit/views/`** — no CLI verb, no pixi task, no ASGI mount, even though `views/__init__.py:10-13` describes `asgi.py::app` as a mount target — and it reaches the legacy SQLite `cf_atlas.db` through `views/cli_bridge.py`, whose own docstring (`:11-17`) records that its dynamic-import shape keeps the F1 DuckDB-singularity gate green *while the loaded script imports `sqlite3`* — a private, non-BSL read against the CAP-19 ruling "no private DuckDB … BSL is the dashboard/agent SQL contract" and against `spec-pyforge-atlas`'s own Non-goal "Continued SQLite"
 **When** the package and its unit-test directory are deleted, the `test_no_inline_io.py` assertions that exist only to fence `views/asgi.py` go with them, and the run-dependencies declared solely for this module (`bokeh`, `tornado`, `starlette` — verified to have zero other importer in `src/`, `tests/` or `tools/`) are dropped from **both** `pyproject.toml` and the member `pixi.toml`, kept byte-for-byte in step per AUD-ATLAS-010
-**Then** `grep -rn "atlas\.views"` across the repo returns nothing, `pixi run -e local-recipes dashboard-dryrun` stays green, `pixi run -e pyforge-atlas pyforge-atlas-test` stays green, and the F1 singularity gate is green **with no dynamic-import evasion left in the tree to keep it that way**
+**Then** `grep -rn "atlas\.views"` across the repo returns nothing, `pixi run -e pyforge-atlas dashboard-dryrun` stays green, `pixi run -e pyforge-atlas pyforge-atlas-test` stays green, and the F1 singularity gate is green **with no dynamic-import evasion left in the tree to keep it that way**
 **And** the supersession is recorded, not merely performed: `spec-atlas-query-dashboards` notes CAP-1..CAP-4 superseded by the live Vizro/BSL board and moves `in-progress` → `shipped` on the strength of CAP-5..CAP-7; atlas ledger entries `DW-14-2-1` and `DW-14-3-2` close citing this story; the Dream (`docs/dreams/atlas-query-dashboards.md`, already `archived` / `archived-reason: retired`) keeps the narrative record
 **And** nothing is resurrected on the way out: the pluggable-widget-registry idea is re-introduced only if a Vizro page actually asks for it, and `httpx` stays declared in the root `pixi.toml` — it is named there as *also* required by Story 16.2's `tools/lasuite_bringup.py`, so pruning the starlette test must not take it.
 **And** the page-count literals the same surfaces carry are made current on the way through: `PAGE_INVENTORY` in `dashboard/app.py` holds **34** `PageDef` entries (Epic 22's three identity pages), while `app.py:13`'s docstring says 28 and the root `pixi.toml:1065` / `:1070` task descriptions say 31 — the literals are replaced by the measured count (or by wording that does not quote a number), closing the page-count open question `spec-pyforge-atlas` raised on 2026-09-09 (fleet readiness re-derive; chain-currency runbook § overtaken)
@@ -3828,7 +3828,7 @@ So that a live contract is not read from `archive/`.
 **When** both are moved into `specs/spec-pyforge-atlas/`, listed in `companions:`, and every reference is re-pointed
 **Then** `git ls-files` lists both under `specs/spec-pyforge-atlas/` only, the Spec's `companions:` names them, CAP-43, CAP-54 and CAP-55 cite the new paths, and no tracked file outside `archive/` and the memlogs names either archive path
 **And** the three record companions stay archived, the docs link gate and `spec-surface-check` pass, and the row reads resolved
-**Status:** ready-for-dev
+**Status:** done
 
 ### Story 53.2: The lineage producer is a layout-free identifier
 
@@ -3844,7 +3844,7 @@ So that the producer is true on either root and never points at a page that does
 **When** a test that fails on the unchanged tree is written, and the constant, the tests that pin it and `contract.md` move to `urn:local-recipes:pyforge-atlas`
 **Then** every event and facet atlas emits carries `urn:local-recipes:pyforge-atlas` as its producer, no file under the package names the old URL, and `contract.md` records the value the code has
 **And** an event with the URN producer is built and serialized by the OpenLineage client in a test, the contract meta-test passes, and the row reads resolved
-**Status:** ready-for-dev
+**Status:** done
 
 ### Story 53.3: Atlas's comments cite the test layout and the specs that exist
 
@@ -3860,4 +3860,4 @@ So that a citation leads somewhere.
 **When** every `#` comment and config citation is corrected, and each docstring citation is corrected wherever the touched-module coverage floor still holds
 **Then** each remaining test-path citation under the package resolves with `git ls-files`, each spec citation names a file that exists, and atlas's coverage gate passes on the branch
 **And** no statement of code changes (a module's AST differs only in docstrings), the modules whose docstrings were left are listed with their coverage, and the row reads resolved or is replaced by one row naming exactly those modules
-**Status:** ready-for-dev
+**Status:** done

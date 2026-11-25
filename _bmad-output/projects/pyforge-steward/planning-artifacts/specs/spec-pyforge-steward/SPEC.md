@@ -45,6 +45,7 @@ covers-dreams:
 surface:
   - src/shared/packages/pyforge-steward/**
   - scripts/lint_types.py
+  - scripts/run_named_tests.py
   - scripts/target_version_check.py
   - scripts/precommit_config_check.py
   - scripts/commit_msg_hook.py

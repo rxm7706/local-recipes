@@ -2,7 +2,7 @@
 title: '53.2: The lineage producer is a layout-free identifier'
 type: 'fix'
 created: '2026-11-25'
-status: 'in-review'
+status: 'done'
 story: 53-2-the-lineage-producer-is-a-layout-free-identifier
 spec: spec-pyforge-atlas
 difficulty: 'easy'
@@ -100,3 +100,4 @@ Ledger key: `53-2-the-lineage-producer-is-a-layout-free-identifier`.
 - 2026-11-25: change: `observability.PRODUCER = "urn:local-recipes:pyforge-atlas"`; `contract.md` § Lineage producer records the URN. The new test serializes every captured event with the OpenLineage client's `Serde` and found the `atlasNodeMetrics` run facet still carrying the client library's producer (the open row DW-E2-3), so `AtlasNodeMetricsRunFacet.__attrs_post_init__` now stamps `PRODUCER` when none is given (through `getattr`/`setattr`: mypy cannot see the base class's field where openlineage is not installed, and a `producer=` call argument reds the guild mypy lane). DW-E2-3 is met by this change; its ledger row is the session lead's to close. The client adds its own `tags` run facet with its own producer; the test excludes it by name. No namespace, schema URL or flag changed.
 - 2026-11-25: tests added: 4 in `tests/unit/observability/test_observability_fixtures.py`, 1 in `tests/meta/test_public_contract.py`. Touched modules: observability, catalog `test_no_inline_io.py` and the contract meta-test, 51 passed, exit 0. Working-tree coverage gate (`coverage_gates_ci.py --paths-file`, the one AST-changed source module `pyforge.atlas.observability`, 92.9% in the package half): exit 0. `lint-types` for pyforge-atlas: ruff, ruff-format and mypy ok; the task as a whole exits 1 on `ruff-format` findings in pyforge-steward and pyforge-testing-kit files this story does not touch.
 - 2026-11-25: AC1 exit 1 (no line matches, as expected); AC2 exit 0; AC3 exit 0 (2995 passed, 27 skipped; 53 passed, 5 skipped). `pyforge-atlas-live-test` exit 0. The memlog reconcile, the scoped stamp and the ledger row are the session lead's.
+- 2026-11-25: closed. Implemented, independently reviewed against this spec (a read-only reviewer over the whole diff), its findings applied; the deferred-work row or rows are closed in their ledgers by the session lead, and the full local `pr-preflight` gates the PR that lands it (branch `named-blocker-rows-2026-11-25`).

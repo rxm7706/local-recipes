@@ -2,7 +2,7 @@
 title: '136.6: The tests that ran in no CI job run in one'
 type: 'fix'
 created: '2026-11-25'
-status: 'in-review'
+status: 'done'
 story: 136-6-the-tests-that-ran-in-no-ci-job-run-in-one
 spec: spec-pyforge-steward
 difficulty: 'medium'
@@ -106,3 +106,6 @@ Ledger key: `136-6-the-tests-that-ran-in-no-ci-job-run-in-one`.
 - 2026-11-25: skip reasons name the task: steward's `_GUILD_SHARE_SKIP` and its two `share package … missing` skips; scribe's ten plane `importorskip` calls and the portal's one carry a `reason=`; no `importorskip` was removed. Scribe's guard `tests/meta/test_live_tree_split.py`: `_PLANE_REASON` and the portal entry name the task (the portal entry no longer says a lane is requested), and `test_every_importorskip_site_names_the_task_that_runs_its_test` holds them to it. `docs/reference/github-workflows.md` was regenerated and shows the workflow's eleventh path; its generator lists triggers and job ids, not steps, so the page cannot say more than that.
 - 2026-11-25: AC1 `steward-share-tree-test` in `-e pyforge-guild`: exit 0, 2 passed. AC2 `scribe-plane-and-portal-test` in `-e pyforge-foundry-full` (installed from the lock with `pixi install --frozen`): exit 0, 6 passed; duckdb, `pyforge.atlas.duckdb_writer` and django all import there. AC3 `pyforge steward ci status`: exit 0. Also exit 0: scribe's two touched modules in `-e pyforge-scribe` (32 passed, 5 skipped); the steward modules that read the workflow, the trigger map, the preflight selection and the installers (207 passed); the `tests/scripts` modules over workflows, generated docs and the task registry (149 passed, 2 skipped); `governance-currency`.
 - 2026-11-25: `lint-types` exit 1 on one file this story does not touch: `ruff-format` would reformat `src/shared/packages/pyforge-testing-kit/tests/unit/test_branch_diff_guard.py`, which another change in this worktree is editing; every other leg is ok. The three deferred-work rows, the governing Specs' memlog reconcile and the scoped stamps are not done here.
+- 2026-11-25: closed. Implemented, independently reviewed against this spec (a read-only reviewer over the whole diff), its findings applied; the deferred-work row or rows are closed in their ledgers by the session lead, and the full local `pr-preflight` gates the PR that lands it (branch `named-blocker-rows-2026-11-25`).
+- 2026-11-25: session lead, on the review's findings. `scripts/run_named_tests.py` matched a count; it now matches each named node id to a case of the report, so a deselected test is not hidden by a parametrized sibling (three new tests, `tests/scripts/test_run_named_tests.py` exit 0, 10 passed); both tasks exit 0 after it. `scripts/run_named_tests.py` and its test are new files outside the surface first declared, added to it here. `docs/reference/github-workflows.md` is a generated page that lists a workflow's trigger paths, not its steps, so "says so" is met by the regenerated page naming the new path and by the two tasks' descriptions in `docs/how-to/pixi-tasks.md`.
+

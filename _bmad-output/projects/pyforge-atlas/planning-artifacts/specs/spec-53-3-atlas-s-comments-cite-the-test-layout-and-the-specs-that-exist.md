@@ -2,7 +2,7 @@
 title: '53.3: Atlas''s comments cite the test layout and the specs that exist'
 type: 'fix'
 created: '2026-11-25'
-status: 'in-review'
+status: 'done'
 story: 53-3-atlas-s-comments-cite-the-test-layout-and-the-specs-that-exist
 spec: spec-pyforge-atlas
 difficulty: 'medium'
@@ -97,3 +97,4 @@ Ledger key: `53-3-atlas-s-comments-cite-the-test-layout-and-the-specs-that-exist
 - 2026-11-25: left, because each is a string literal and changing it changes a statement: `parity/legacy_surface.py` lines 64 and 74 (`scope_note=` values holding `spec §3.3`), `tests/unit/catalog/test_catalog_resolution.py` line 59 (an assertion message holding `tests/catalog/conftest.py`), `tests/unit/orchestration/conftest.py` line 96 and `tests/unit/test_admission.py` line 354 (the generated stub's text holding `tests/orchestration/conftest.py`). After the sweep the row's grep counts 3 hits in 2 files, all among these.
 - 2026-11-25: no statement changed: for all 71 files' Python modules the AST with docstrings stripped equals `git show HEAD:<file>`, except the three files Story 53.2 changes (`observability.py` and its two test modules). Working-tree coverage gate over the AST-changed files: one touched module, `pyforge.atlas.observability` (Story 53.2's), exit 0. `lint-types` for pyforge-atlas: ruff, ruff-format and mypy ok.
 - 2026-11-25: AC1 exit 0 (46 cited paths, 0 unresolved); AC2 exit 0 (as written it diffs `origin/main...HEAD` and sees no uncommitted file, so the working-tree run above is the verdict that counts until the commit); AC3 exit 0 (2995 passed, 27 skipped; 53 passed, 5 skipped). `pyforge-atlas-live-test` exit 0 (341, 164 and 103 passed).
+- 2026-11-25: closed. Implemented, independently reviewed against this spec (a read-only reviewer over the whole diff), its findings applied; the deferred-work row or rows are closed in their ledgers by the session lead, and the full local `pr-preflight` gates the PR that lands it (branch `named-blocker-rows-2026-11-25`).

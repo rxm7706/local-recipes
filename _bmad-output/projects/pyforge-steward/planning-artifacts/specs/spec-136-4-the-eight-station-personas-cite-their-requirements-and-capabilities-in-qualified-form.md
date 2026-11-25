@@ -2,7 +2,7 @@
 title: '136.4: The eight station personas cite their requirements and capabilities in qualified form'
 type: 'fix'
 created: '2026-11-25'
-status: 'in-review'
+status: 'done'
 story: 136-4-the-eight-station-personas-cite-their-requirements-and-capabilities-in-qualified-form
 spec: spec-pyforge-steward
 difficulty: 'medium'
@@ -97,3 +97,4 @@ Ledger key: `136-4-the-eight-station-personas-cite-their-requirements-and-capabi
 - 2026-11-25: compiled station skills and briefs that still cite one of the four ids bare, left for their own regeneration: `.claude/skills/pyforge-{atlas,doctor,herald,marshal,scribe,warden}/skill-brief.yaml`; `pyforge-atlas/0.1.0`, `pyforge-doctor/{0.1.0,0.1.1,0.1.2}`, `pyforge-marshal/{0.1.0,0.1.1}`, `pyforge-warden/0.1.0` (each `<version>/pyforge-<station>/SKILL.md`).
 - 2026-11-25: not done by this implementer, left to the landing: the memlog surface reconciles and scoped stamps, the deferred-work row `DW-steward-cutover-2026-11-10-10`, and the ledger.
 - 2026-11-25: session lead: AC2 gains `--import-mode=importlib`, since pytest refuses four modules of one basename in one run otherwise; AC1's count is the verdict (`grep -c` exits 1 on a count of 0). The comment the story added to `test_steward_persona.py` named two of the ids bare and reddened steward's `test_cap_citations.py`; reworded, that module exits 0.
+- 2026-11-25: closed. Implemented, independently reviewed against this spec (a read-only reviewer over the whole diff), its findings applied; the deferred-work row or rows are closed in their ledgers by the session lead, and the full local `pr-preflight` gates the PR that lands it (branch `named-blocker-rows-2026-11-25`).

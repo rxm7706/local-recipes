@@ -179,28 +179,35 @@ def existed_at_ref(root: Path, path: str, *, ref: str = ORIGIN_MAIN) -> bool:
     return _git(root, "cat-file", "-e", f"{_full(ref)}:{path}").returncode == 0
 
 
+#: What a carved-out host file may import from ``pyforge``: the credential and the GraphQL transport
+#: of steward's sync, the breach DW-steward-74-1 dates. A third module in one of the four files is a
+#: new breach, and the guard reds it like any other.
+_CARVE_OUT_MODULES = frozenset({"pyforge.steward.keys", "pyforge.steward.sync"})
+
+
 def pyforge_import_offenders(paths: list[str], root: Path) -> list[str]:
     """Which of ``paths`` (repo-relative) contain a top-level ``import
     pyforge`` / ``from pyforge...`` -- ``"rel:lineno"`` entries, never a
     crash on a non-Python or already-deleted path. A path in
     ``PLATFORM_PYFORGE_IMPORTERS`` (matched exactly, as the repo-relative
-    POSIX path) is admitted; every other path is judged."""
+    POSIX path) is admitted for the two modules the carve-out names
+    (``_CARVE_OUT_MODULES``) and judged for any other ``pyforge`` import;
+    every other path is judged for all of them."""
     offenders: list[str] = []
     for rel in paths:
-        if rel in PLATFORM_PYFORGE_IMPORTERS:
-            continue
+        admitted = _CARVE_OUT_MODULES if rel in PLATFORM_PYFORGE_IMPORTERS else frozenset()
         path = root / rel
         if path.suffix != ".py" or not path.is_file():
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
-                names = [alias.name.split(".")[0] for alias in node.names]
+                modules = [alias.name for alias in node.names]
             elif isinstance(node, ast.ImportFrom) and node.module:
-                names = [node.module.split(".")[0]]
+                modules = [node.module]
             else:
                 continue
-            if "pyforge" in names:
+            if any(module.split(".")[0] == "pyforge" and module not in admitted for module in modules):
                 offenders.append(f"{rel}:{node.lineno}")
     return offenders
 

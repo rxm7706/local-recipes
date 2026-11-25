@@ -2,7 +2,7 @@
 title: '136.5: Story lines in steward''s epics cite today''s capability ids'
 type: 'fix'
 created: '2026-11-25'
-status: 'in-review'
+status: 'done'
 story: 136-5-story-lines-in-steward-s-epics-cite-today-s-capability-ids
 spec: spec-pyforge-steward
 difficulty: 'medium'
@@ -89,3 +89,4 @@ Ledger key: `136-5-story-lines-in-steward-s-epics-cite-today-s-capability-ids`.
 - 2026-11-25: the change. 105 lines changed, each only in its citation tokens (checked: the text outside the FR/AD segment is identical, the segment with its capability ids masked is identical, and the `### Story`, `## Epic` and `**Status:**` lines, the 508 stories, the line count and every line from Epic 136's heading on are unchanged). 110 absorbed ids re-keyed to `spec-pyforge-steward CAP-n` by their one provenance heading: 83 written with the Spec's name (one in the form `spec-jira-github-projects-sync, CAP-1`, three in backticks) and 27 by prefix (`sld:` 8, which a Surface line under Epic 48 on the page declares for secure-live-dashboards; `suite:` 18, by the one Spec the heading of Epic 39, 46 or 47 names; `hub:` 1, whose own line names `spec-intelligence-hub`). 12 bare ids qualified with `spec-pyforge-unifying-strategy`, the one Spec the heading of Epic 40, 48 or 49 names, each defined there.
 - 2026-11-25: after. 2 absorbed, 46 bare, 102 none, 336 qualified. Left unresolved, by reason: 82 bare ids on 46 lines whose Epic heading names no Spec or more than one; 102 lines with no capability id, untouched; 3 absorbed ids on Story 12.9's line (`spec-ocp-as-a-portability-profile CAP-1, CAP-2, CAP-3 (parent CAP-6 / pap:AD-11)`), because re-keying them would make the unqualified `parent CAP-6` read as a steward id; 1 absorbed id on Story 59.2's line (`spec-vocabulary-one-name-one-job CAP-2`), which no provenance heading carries. Untouched and not counted as unresolved: 76 ids under a live prefix (`pap:`, `fnd:`, `fcl:`, `fnr:` and other stations'), 28 arrows, 3 provenance notes. So the acceptance clause "no Story FR/AD line cites an absorbed steward Spec's capability as a live id" holds but for those two lines, which need a ruling and a new row.
 - 2026-11-25: verdicts, each from its exit code: `chain-completeness-check` 0, `story-status-check` 0, `ledger-regression-check` 0, `dream-chain-check` 0, `chain-currency-sweep-check` 0. Not done here, left to the landing session: the deferred-work row, the memlog surface reconcile and the scoped stamps.
+- 2026-11-25: closed. Implemented, independently reviewed against this spec (a read-only reviewer over the whole diff), its findings applied; the deferred-work row or rows are closed in their ledgers by the session lead, and the full local `pr-preflight` gates the PR that lands it (branch `named-blocker-rows-2026-11-25`).

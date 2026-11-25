@@ -144,7 +144,7 @@ def test_pyforge_import_offenders_admits_a_carved_out_file(repo: Path, rel: str)
 )
 def test_pyforge_import_offenders_still_reds_a_platform_file_outside_the_carve_out(repo: Path, rel: str):
     carved = next(path for path in sorted(PLATFORM_PYFORGE_IMPORTERS) if path.endswith("/pipeline.py"))
-    _write(repo, carved, "import pyforge.steward\n")
+    _write(repo, carved, "from pyforge.steward.sync import default_transport\n")
     _write(repo, rel, "import os\nfrom pyforge.steward.sync import default_transport\n")
     assert pyforge_import_offenders([carved, rel], repo) == [f"{rel}:2"]
 
@@ -423,3 +423,20 @@ def test_unsanctioned_commits_reads_a_path_with_a_space_whole(repo: Path) -> Non
     assert unsanctioned_commits(repo, pathspec=surface, changelog_path=changelog) == []
     (repo / changelog).write_text("v2\n", encoding="utf-8")
     assert unsanctioned_commits(repo, pathspec=surface, changelog_path=changelog) == [f"uncommitted: {changelog}"]
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "import pyforge.marshal",
+        "from pyforge.marshal.dispatch import run",
+        "from pyforge.steward import sync",
+        "from pyforge.steward.sync.inner import thing",
+        "import pyforge",
+    ],
+)
+def test_a_carved_out_file_is_admitted_only_for_the_modules_the_carve_out_names(repo: Path, line: str):
+    # Steward Story 136.3 (review): the carve-out dates two imports, not the four files' whole future.
+    rel = sorted(PLATFORM_PYFORGE_IMPORTERS)[0]
+    _write(repo, rel, f"from pyforge.steward.keys import HostScopedCredential\n{line}\n")
+    assert pyforge_import_offenders([rel], repo) == [f"{rel}:2"]

@@ -59,7 +59,11 @@ def planted(tmp_path: Path) -> Path:
 def _run(planted: Path, *tests: str) -> subprocess.CompletedProcess[str]:
     node_ids = [f"{planted}::{test}" for test in tests]
     return subprocess.run(
-        [sys.executable, str(SCRIPT), *node_ids], cwd=planted.parent, capture_output=True, text=True, check=False
+        [sys.executable, str(SCRIPT), *node_ids],
+        cwd=planted.parent,
+        capture_output=True,
+        text=True,
+        check=False,
     )
 
 
@@ -69,7 +73,9 @@ def test_every_named_test_passing_exits_zero(planted: Path) -> None:
 
 
 @pytest.mark.parametrize("skipping", ["test_skips", "test_skips_for_an_import"])
-def test_a_named_test_that_skips_fails_the_run_and_is_named(planted: Path, skipping: str) -> None:
+def test_a_named_test_that_skips_fails_the_run_and_is_named(
+    planted: Path, skipping: str
+) -> None:
     done = _run(planted, "test_passes", skipping)
     assert done.returncode == 1, done.stdout + done.stderr
     assert f"{skipping}: " in done.stderr and "a skip fails this run" in done.stderr
@@ -86,21 +92,67 @@ def test_a_node_id_that_no_longer_exists_fails_the_run(planted: Path) -> None:
     assert done.returncode == 4, done.stdout + done.stderr
 
 
-@pytest.mark.parametrize("argv", [[], ["-k", "anything"]], ids=("no-node-id", "an-option"))
-def test_no_node_id_or_an_option_is_a_usage_error(runner: ModuleType, argv: list[str]) -> None:
+@pytest.mark.parametrize(
+    "argv", [[], ["-k", "anything"]], ids=("no-node-id", "an-option")
+)
+def test_no_node_id_or_an_option_is_a_usage_error(
+    runner: ModuleType, argv: list[str]
+) -> None:
     assert runner.main(argv) == runner.USAGE_EXIT
 
 
-def test_fewer_tests_than_node_ids_fails(runner: ModuleType) -> None:
-    code, problems = runner.verdict(["a::one", "a::two"], 0, 1, [])
-    assert code == 1 and problems == ["2 node ids were named and 1 tests ran"]
+def test_a_named_test_no_case_ran_fails_and_is_named(runner: ModuleType) -> None:
+    code, problems = runner.verdict(0, ["a.py::two"], [])
+    assert code == 1 and problems == ["named and did not run: a.py::two"]
 
 
-def test_the_report_reader_counts_cases_and_names_each_skip(runner: ModuleType, tmp_path: Path) -> None:
+def test_the_report_reader_names_each_skip_and_each_node_id_with_no_case(
+    runner: ModuleType, tmp_path: Path
+) -> None:
     report = tmp_path / "junit.xml"
     report.write_text(
-        '<testsuites><testsuite><testcase classname="m" name="test_a"/>'
-        '<testcase classname="m" name="test_b"><skipped message="why"/></testcase></testsuite></testsuites>',
+        '<testsuites><testsuite><testcase classname="pkg.tests.test_m" name="test_a"/>'
+        '<testcase classname="pkg.tests.test_m" name="test_p[1]"/><testcase classname="pkg.tests.test_m" name="test_p[2]"/>'
+        '<testcase classname="pkg.tests.test_m.TestK" name="test_in_class"/>'
+        '<testcase classname="pkg.tests.test_m" name="test_b"><skipped message="why"/></testcase></testsuite></testsuites>',
         encoding="utf-8",
     )
-    assert runner.skipped_cases(report) == (2, ["m::test_b: why"])
+    node_ids = [
+        "pkg/tests/test_m.py::test_a",
+        "pkg/tests/test_m.py::test_p",
+        "pkg/tests/test_m.py::TestK::test_in_class",
+        "pkg/tests/test_m.py::test_b",
+        "pkg/tests/test_m.py::test_deselected",
+        "pkg/tests/test_other.py::test_a",
+    ]
+    not_run, skipped = runner.read_report(report, node_ids)
+    assert not_run == [
+        "pkg/tests/test_m.py::test_deselected",
+        "pkg/tests/test_other.py::test_a",
+    ]
+    assert skipped == ["pkg.tests.test_m::test_b: why"]
+
+
+def test_a_deselected_test_is_not_hidden_by_a_parametrized_sibling(
+    tmp_path: Path,
+) -> None:
+    # The review's scenario: three cases of one named test must not stand in for a second named test that never ran.
+    path = tmp_path / "test_planted.py"
+    path.write_text(
+        "import pytest\n\n\n@pytest.mark.parametrize('n', [1, 2, 3])\ndef test_param(n):\n    assert n\n\n\n"
+        "def test_other():\n    assert True\n",
+        encoding="utf-8",
+    )
+    done = subprocess.run(
+        [sys.executable, str(SCRIPT), f"{path}::test_param", f"{path}::test_other"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+        env={
+            **__import__("os").environ,
+            "PYTEST_ADDOPTS": "--deselect test_planted.py::test_other",
+        },
+    )
+    assert done.returncode == 1, done.stdout + done.stderr
+    assert "named and did not run" in done.stderr and "test_other" in done.stderr

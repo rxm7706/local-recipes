@@ -2,7 +2,7 @@
 title: '136.3: The host''s ingest imports steward''s transport by its public name'
 type: 'fix'
 created: '2026-11-25'
-status: 'in-review'
+status: 'done'
 story: 136-3-the-host-s-ingest-imports-steward-s-transport-by-its-public-name
 spec: spec-pyforge-steward
 difficulty: 'medium'
@@ -103,3 +103,6 @@ Ledger key: `136-3-the-host-s-ingest-imports-steward-s-transport-by-its-public-n
 - 2026-11-25: AC3 as written exits 1: `pyforge-testing-kit-test` is not a task of `-e pyforge-guild`. `pixi run --frozen -e pyforge-testing-kit pyforge-testing-kit-test` exits 0 (94 passed in the package half, 40 in the live-tree half).
 - 2026-11-25: the 20 guards, and warden's `test_portal_audit_start_get.py::test_src_platform_has_no_pyforge_import` and scribe's `test_first_portal_slice.py::test_src_platform_has_no_pyforge_import`, run by node id with `pipeline.py` changed: marshal 3, steward 5, doctor 3, herald 1, scribe 3, mason 3 in `-e pyforge-guild`, warden 3 in `-e pyforge-warden`, atlas 1 in `-e pyforge-atlas`; every run exit 0. `pixi run --frozen -e pyforge-guild lint-types` exits 1 on one lane only, mypy over `pyforge-atlas` (`observability.py:419`, a file this story does not touch and another change in this worktree is editing); ruff, ruff-format and mypy are `ok` for every other package, the kit and steward included.
 - 2026-11-25: session lead: two Acceptance commands corrected, the criteria unchanged. AC1 reads `src/platform/ingest`, since `src/platform/tests/test_station_port_no_loopback.py` holds an unrelated test name that contains the string; AC3 runs in `-e pyforge-testing-kit`, the environment that carries the task. The kit's new test builds the four carved-out paths from their segments, because steward's trigger-map scan takes a whole tracked path in a package-half test for a read of the host; `test_station_tests_trigger_map.py` exit 0 (60 passed) after it, the kit's guard module exit 0 (44 passed).
+- 2026-11-25: closed. Implemented, independently reviewed against this spec (a read-only reviewer over the whole diff), its findings applied; the deferred-work row or rows are closed in their ledgers by the session lead, and the full local `pr-preflight` gates the PR that lands it (branch `named-blocker-rows-2026-11-25`).
+- 2026-11-25: session lead, on the review's finding: a carved-out file was skipped unread, so a new `pyforge` import in one of the four passed the guards. The kit now admits a carved-out file only for `pyforge.steward.keys` and `pyforge.steward.sync`, the two modules the carve-out dates; five new cases red any other import (`pyforge-testing-kit-test` exit 0).
+
