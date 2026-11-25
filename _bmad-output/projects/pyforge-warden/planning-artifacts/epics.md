@@ -1557,7 +1557,7 @@ So that nobody without it can store a file, enqueue a scan or read a report.
 **When** the three views carry the role check, the upload drops its CSRF exemption, and a file over `COMPLIANCE_FACE_MAX_UPLOAD_BYTES` (default 20 MiB) is refused
 **Then** a caller with no token or another station's role gets 403 from all three and nothing is stored or enqueued, a warden-role upload returns 202 with its job id, and an oversized file gets 413 and never reaches the blob root (a body over the limit by more than the multipart allowance is refused before it is read)
 **And** a cookie-authenticated POST with no CSRF token is refused when checks are enforced
-**Status:** review
+**Status:** done
 
 ## Currency validation — 2026-08-26
 
