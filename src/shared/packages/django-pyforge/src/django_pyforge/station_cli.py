@@ -191,9 +191,11 @@ def _mason_build(target: str, root: Path) -> tuple[str, ...]:
 
 
 def _judge_build(report: dict[str, Any], stderr: str) -> dict[str, Any]:
-    """``mason recipe build`` exits 0 whatever the build did: ``data.returncode`` is the verdict.
+    """``data.returncode`` is the verdict: the build's own code, and the one a failure names.
 
-    Mason forwards the build's log to its own stderr, so the cause is there.
+    ``mason recipe build`` exits 1 when the build failed (ruling 2026-11-25) and prints
+    the same report, so the row takes exit 1 as a result and the run fails here, by the
+    build's code. Mason forwards the build's log to its own stderr, so the cause is there.
     """
     data = report.get("data")
     if not isinstance(data, dict) or "returncode" not in data:
@@ -264,6 +266,7 @@ STATION_VERBS: dict[tuple[str, str], StationVerb] = {
             "start_build",
             MASON_ENVIRONMENT,
             _mason_build,
+            result_codes=frozenset({0, 1}),  # mason exits 1 on a failed build, report and all
             at_most_once=True,
             judge=_judge_build,
         ),
