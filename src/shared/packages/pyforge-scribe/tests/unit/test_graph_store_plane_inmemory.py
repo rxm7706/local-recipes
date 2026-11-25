@@ -140,7 +140,7 @@ def _node(node_id: str, title: str, text: str, **fields: object) -> GraphNode:
         "kind": "memory",
         "title": title,
         "text": text,
-        "citation": f".claude/memory/feedback/{title}.md",
+        "citation": f"notes/feedback/{title}.md",
         "valid_from": _FROM,
     }
     values.update(fields)
@@ -256,7 +256,7 @@ def test_commit_writes_every_field_and_a_reader_loads_the_same_nodes(tmp_path: P
         "memory",
         "old",
         "an earlier ruling",
-        ".claude/memory/feedback/old.md",
+        "notes/feedback/old.md",
         _FROM.isoformat(),
         ended.isoformat(),
         "memory:feedback/dog",
@@ -415,7 +415,7 @@ def test_upsert_replaces_by_id_and_iter_nodes_orders_by_id(tmp_path: Path, plane
 
 def test_query_by_citation_returns_exactly_the_nodes_citing_it(tmp_path: Path, plane: _Plane) -> None:
     store = PlaneGraphStore(*_paths(tmp_path))
-    shared = "docs/dreams/pyforge-scribe.md"
+    shared = "notes/shared-source.md"
     one = _node("doc:one", "one", "first", citation=shared)
     two = _node("doc:two", "two", "second", citation=shared)
     other = _node("doc:other", "other", "third")
