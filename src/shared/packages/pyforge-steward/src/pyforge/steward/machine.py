@@ -38,6 +38,8 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from pyforge.core.errors import PyforgeError
+from pyforge.core.process import PosixProcess, ProcessError
 
 from .bootstrap import _first_version, _version_gte, pixi_floor_version, repo_root
 from .interfaces import DutyResult
@@ -113,7 +115,7 @@ _REMEDY_ALLOWED = frozenset({"command", "who", "where", "note", "doc"})
 _PROFILE_ALLOWED = frozenset({"title", "requires", "platforms"})
 
 
-class DataFileError(Exception):
+class DataFileError(PyforgeError, Exception):
     """The data file is absent, unreadable or breaks its schema; the verb cannot judge."""
 
 
@@ -121,21 +123,18 @@ Runner = Callable[[Sequence[str], Path, float], "subprocess.CompletedProcess[str
 
 
 def _default_runner(argv: Sequence[str], cwd: Path, timeout: float) -> subprocess.CompletedProcess[str]:
-    """Run one probe command. Never raises: a launch error reads as 127, a timeout as 124."""
+    """Run one probe command through ``pyforge.core.process``. Never raises: a launch error reads as 127, a timeout as 124."""
     try:
-        return subprocess.run(  # noqa: S603
-            list(argv),
-            cwd=str(cwd),
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-            stdin=subprocess.DEVNULL,
-            check=False,
+        result = PosixProcess().run(list(argv), cwd=cwd, timeout_s=timeout)
+    except ProcessError as exc:
+        if isinstance(exc.__cause__, subprocess.TimeoutExpired):
+            return subprocess.CompletedProcess(
+                list(argv), _EXIT_TIMEOUT, stdout="", stderr=f"timeout after {timeout:g}s"
+            )
+        return subprocess.CompletedProcess(
+            list(argv), _EXIT_NO_LAUNCH, stdout="", stderr=f"could not launch: {exc.__cause__ or exc}"
         )
-    except subprocess.TimeoutExpired:
-        return subprocess.CompletedProcess(list(argv), _EXIT_TIMEOUT, stdout="", stderr=f"timeout after {timeout:g}s")
-    except (OSError, subprocess.SubprocessError) as exc:
-        return subprocess.CompletedProcess(list(argv), _EXIT_NO_LAUNCH, stdout="", stderr=f"could not launch: {exc}")
+    return subprocess.CompletedProcess(list(argv), result.returncode, stdout=result.stdout, stderr=result.stderr)
 
 
 def host_platform(system: str | None = None, machine: str | None = None) -> str:
