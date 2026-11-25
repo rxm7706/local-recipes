@@ -196,6 +196,65 @@ def test_list_forbidden_with_portal_session_wrong_role(
     assert response.status_code == HTTPStatus.FORBIDDEN
 
 
+def _role_revoked_at_the_idp(request: object) -> dict[str, object]:
+    """A wired userinfo hook: the identity provider no longer gives any role."""
+    return {"sub": "herald-operator", "groups": []}
+
+
+def _claims_unconfirmed(request: object) -> None:
+    """A wired userinfo hook that cannot confirm the caller's claims."""
+    return
+
+
+@override_settings(
+    PYFORGE_ASSERTION_PRIVATE_KEY=GOLDEN_PRIVATE_PEM,
+    PYFORGE_ASSERTION_PUBLIC_KEY=GOLDEN_PUBLIC_PEM,
+    IDP_USERINFO=_role_revoked_at_the_idp,
+)
+def test_list_forbidden_once_the_idp_no_longer_gives_the_role(
+    deck_export_row,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Steward Story 133.4: the roles come through the configured claims getter.
+
+    The session still holds the herald role it was given at login; the live
+    re-read production wires (``IDP_USERINFO``) says it is gone.
+    """
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_flag_tree(tmp_path, enabled=True)))
+    cookies = _session_cookies(
+        sub="herald-operator",
+        groups=[prefixed_station("herald")],
+    )
+    response = _herald_get(
+        "/stations/herald/api/v1/deck-exports",
+        cookies=cookies,
+    )
+    assert response.status_code == HTTPStatus.FORBIDDEN
+
+
+@override_settings(
+    PYFORGE_ASSERTION_PRIVATE_KEY=GOLDEN_PRIVATE_PEM,
+    PYFORGE_ASSERTION_PUBLIC_KEY=GOLDEN_PUBLIC_PEM,
+    IDP_USERINFO=_claims_unconfirmed,
+)
+def test_list_requires_identity_when_the_idp_cannot_confirm_the_session(
+    deck_export_row,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_flag_tree(tmp_path, enabled=True)))
+    cookies = _session_cookies(
+        sub="herald-operator",
+        groups=[prefixed_station("herald")],
+    )
+    response = _herald_get(
+        "/stations/herald/api/v1/deck-exports",
+        cookies=cookies,
+    )
+    assert response.status_code == HTTPStatus.UNAUTHORIZED
+
+
 @override_settings(
     PYFORGE_ASSERTION_PRIVATE_KEY=GOLDEN_PRIVATE_PEM,
     PYFORGE_ASSERTION_PUBLIC_KEY=GOLDEN_PUBLIC_PEM,

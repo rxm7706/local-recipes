@@ -115,7 +115,7 @@ def test_the_window_is_anchored_on_the_built_commit_not_the_clock(tmp_path: Path
     proc = _run(repo, out)
     assert proc.returncode == 0, proc.stderr
     document = json.loads(out.read_text(encoding="utf-8"))
-    assert document["generated_at"] == "2020-02-14T12:00:00+01:00"  # the built commit's committer time
+    assert document["generated_at"] == "2020-02-14T11:00:00+00:00"  # the built commit's committer time, in UTC
     assert document["window_days"] == 30
     assert document["merges"] == [
         {
@@ -137,7 +137,7 @@ def test_the_window_is_anchored_on_the_built_commit_not_the_clock(tmp_path: Path
     assert [m["sha"] for m in json.loads(out.read_text(encoding="utf-8"))["merges"]][-1] == shas["old"]
     assert _run(repo, out, "--ref", shas["plain"]).returncode == 0
     earlier = json.loads(out.read_text(encoding="utf-8"))
-    assert earlier["generated_at"] == "2020-01-14T12:00:00+01:00"
+    assert earlier["generated_at"] == "2020-01-14T11:00:00+00:00"
     assert [m["sha"] for m in earlier["merges"]] == [shas["old"]]
 
 
@@ -278,3 +278,34 @@ def test_a_pull_request_s_synthetic_merge_commit_is_not_listed(tmp_path: Path) -
     merges = json.loads(out.read_text(encoding="utf-8"))["merges"]
     assert synthetic not in [merge["sha"] for merge in merges]
     assert [merge["sha"] for merge in merges] == listed
+
+
+def test_no_entry_is_dated_after_its_snapshot(tmp_path: Path) -> None:
+    """Story 133.2: ``generated_at`` kept the committer's offset while each entry's date was UTC, so a built merge
+    committed late in the evening west of Greenwich was listed a day after the snapshot that holds it. Both are
+    UTC now; the instant, and so the window, is unchanged."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "main")
+    _commit(repo, "root", "2020-02-01")
+    _git(repo, "checkout", "-q", "-b", "late")
+    _commit(repo, "work on late", "2020-02-02")
+    _git(repo, "checkout", "-q", "main")
+    # 20:00 at UTC-08:00 on the 14th is 04:00 UTC on the 15th
+    _git(
+        repo,
+        "merge",
+        "-q",
+        "--no-ff",
+        "-m",
+        "Merge pyforge-steward/133-2 into main",
+        "late",
+        date="2020-02-14T20:00:00-08:00",
+    )
+    out = tmp_path / "changes.json"
+    assert _run(repo, out).returncode == 0
+    document = json.loads(out.read_text(encoding="utf-8"))
+    _assert_parse_changes_accepts(document)
+    assert [merge["date"] for merge in document["merges"]] == ["2020-02-15"]
+    assert all(merge["date"] <= document["generated_at"][:10] for merge in document["merges"]), document
+    assert document["generated_at"] == "2020-02-15T04:00:00+00:00"  # the same instant, in the entries' zone

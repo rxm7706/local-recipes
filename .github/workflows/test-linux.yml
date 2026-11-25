@@ -96,6 +96,10 @@ env:
   CI: github_actions
   AZURE: False
 
+# Read-only token (steward Story 133.2): no job here writes to the repository.
+permissions:
+  contents: read
+
 jobs:
   detect-recipes:
     runs-on: ubuntu-latest

@@ -134,4 +134,4 @@ if ! pixi run --frozen -e pyforge-guild pr-preflight; then
 fi
 
 # Story 117.5 (CAP-175): per-lane budget report from the journal — warn only, never blocks the push (D3).
-pixi run --frozen -e pyforge-guild preflight --budget || true
+pixi run --frozen -e pyforge-guild preflight-budget || true

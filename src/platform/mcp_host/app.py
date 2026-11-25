@@ -8,6 +8,12 @@ discovered through Django's own app registry, the SAME
 without one keeps the generic identity-stub face slice 1 shipped
 (CAP-2 -- Django setup failing for any reason must never break a station
 that doesn't need it).
+
+Every station call is authorized here as the host authorizes it (steward
+Story 133.4): ``authorize_station_scope`` verifies the assertion the host
+forwards -- its signature, its expiry and its ``mcp:<station>`` audience --
+before the request reaches a station's app. The network policy still limits
+who can open the port; it is no longer the only check.
 """
 
 from __future__ import annotations
@@ -22,6 +28,8 @@ from typing import TYPE_CHECKING
 from typing import Any
 from typing import Self
 
+from django_pyforge.mcp_auth import TransportRefusal
+from django_pyforge.mcp_auth import authorize_station_scope
 from django_pyforge.mcp_dual_era import asgi_for_station
 from django_pyforge.mcp_dual_era import match_station_mcp
 from django_pyforge.mcp_dual_era import mcp_child_scope
@@ -197,4 +205,15 @@ async def app(scope: Scope, receive: Receive, send: Send) -> None:
     if station is None or station not in _apps:
         await send_http(send, HTTPStatus.NOT_FOUND, b"unknown station mcp path")
         return
+    # A method that cannot carry a JSON-RPC call needs no assertion: the station app answers it 405.
+    if scope.get("method", "POST") == "POST":
+        authorized = authorize_station_scope(dict(scope), station)
+        if isinstance(authorized, TransportRefusal):
+            await send_http(
+                send,
+                authorized.status,
+                authorized.body(),
+                extra_headers=authorized.headers() or None,
+            )
+            return
     await _apps[station](mcp_child_scope(scope, station), receive, send)

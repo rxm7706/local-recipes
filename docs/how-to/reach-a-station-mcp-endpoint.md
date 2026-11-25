@@ -15,7 +15,7 @@ sources:
   - src/shared/packages/django-pyforge/src/django_pyforge/roles.py
   - src/shared/packages/django-pyforge/src/django_pyforge/station_cli.py
   - src/shared/packages/django-pyforge/src/django_pyforge/rate_limit.py
-verified: 2026-11-21
+verified: 2026-11-25
 ---
 
 # Reach a station's MCP endpoint
@@ -43,9 +43,11 @@ middleware runs in front of it. For a path of exactly `/stations/<station>/mcp`,
    in-process. A station with no face loaded is not answered by this dispatch, and the request
    falls through to the rest of the host's routing.
 
-The sidecar, `src/platform/mcp_host/app.py`, serves the same path on its own port. Its transport
-runs no assertion check: the host verifies the assertion before the hop, so reach a station
-through the host, never the sidecar's port. When Django starts in
+The sidecar, `src/platform/mcp_host/app.py`, serves the same path on its own port. It verifies the
+forwarded assertion itself, with the same check as the host (`django_pyforge/mcp_auth.py`): `401`
+without one, `403` for another station's, `503` when the sidecar has no
+`PYFORGE_ASSERTION_PUBLIC_KEY`. The rate limit runs only in the host, so reach a station through
+the host, never the sidecar's port. When Django starts in
 the sidecar (it needs `DJANGO_SECRET_KEY` and `DATABASE_URL`, `mcp_host/settings.py`), marshal
 gets its real tools; every other station, and marshal when Django does not start, answers from
 the fallback identity server, whose one tool, `station_face`, returns the station's name.
@@ -87,7 +89,9 @@ DATABASE_URL="${DATABASE_URL:-postgres:///platform}" \
   pixi run --frozen -e mcp-host mcp-host-serve &
 ```
 
-`mcp-host-serve` runs `uvicorn mcp_host.app:app` on `127.0.0.1:8090` from `src/platform/`.
+`mcp-host-serve` runs `uvicorn mcp_host.app:app` on `127.0.0.1:8090` from `src/platform/`. Start it
+from the shell of step 1: the sidecar reads `PYFORGE_ASSERTION_PUBLIC_KEY` from its environment, and
+without it every station call through it answers `503 verifier not configured`.
 `curl -s http://127.0.0.1:8090/health` prints `{"status":"ok"}` once it is up. Skip
 `DJANGO_SECRET_KEY` and `DATABASE_URL` if you only need the fallback identity server (`station_face`).
 
@@ -215,7 +219,7 @@ and you check the verb by hand.
 | `401 assertion required` | No `Authorization: Bearer` header. |
 | `401 assertion refused` | The token is not a valid assertion, or it has expired. |
 | `403 wrong audience` | The assertion was minted for another station. |
-| `503 verifier not configured` | The host has no `PYFORGE_ASSERTION_PUBLIC_KEY`. |
+| `503 verifier not configured` | The host, or the sidecar it forwards to, has no `PYFORGE_ASSERTION_PUBLIC_KEY`. |
 | `429` with `Retry-After` | The assertion's `sub` used up its calls; wait the named seconds. |
 | `502 mcp-host sidecar unreachable` | `MCP_HOST_SIDECAR_BASE_URL` is set and nothing answers there. |
 | JSON-RPC error `-32022` | An unsupported protocol revision (step 5). |

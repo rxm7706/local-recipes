@@ -60,6 +60,10 @@ env:
   CONDA_BLD_PATH: D:\bld
   MINIFORGE_HOME: D:\Miniforge
 
+# Read-only token (steward Story 133.2): no job here writes to the repository.
+permissions:
+  contents: read
+
 jobs:
   detect-recipes:
     runs-on: ubuntu-latest

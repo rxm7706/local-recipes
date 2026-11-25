@@ -7,11 +7,14 @@ from typing import Any
 
 from django.conf import settings
 from django.contrib.sessions.backends.db import SessionStore
+from django.http import HttpRequest
 from django_pyforge.assertion.crypto import verify_assertion
 from django_pyforge.assertion.exceptions import AssertionRefusedError
 from django_pyforge.assertion.schema import audience_for
 from django_pyforge.roles import (
+    IDP_TOKEN_CLAIMS_ATTR,
     IDP_TOKEN_CLAIMS_SESSION_KEY,
+    claims_from_request,
     parse_role_claims,
     role_names,
     roles_from_request,
@@ -35,7 +38,14 @@ class Forbidden(AuthError):
 
 
 def resolve_herald_roles(headers: Mapping[str, str], cookies: Mapping[str, str]) -> frozenset[str]:
-    """Bearer service assertion or portal browser session (``IDP_TOKEN_CLAIMS``)."""
+    """Bearer service assertion or portal browser session (``IDP_TOKEN_CLAIMS``).
+
+    A browser session's roles are read through the configured claims getter
+    (``DJANGO_PYFORGE_IDP_CLAIMS_GETTER``), as every portal view reads them, so
+    the live identity-provider re-read applies here too (steward Story 133.4):
+    a role the provider no longer gives is refused at the next request, whatever
+    the session stored at login.
+    """
     auth = headers.get("authorization") or headers.get("Authorization")
     if isinstance(auth, str) and auth.lower().startswith("bearer "):
         token = auth[7:].strip()
@@ -53,14 +63,15 @@ def resolve_herald_roles(headers: Mapping[str, str], cookies: Mapping[str, str])
     if not session_key:
         raise Unauthorized("identity required")
     store = SessionStore(session_key=session_key)
-    claims = store.get(IDP_TOKEN_CLAIMS_SESSION_KEY)
-    if not isinstance(claims, dict):
+    if not isinstance(store.get(IDP_TOKEN_CLAIMS_SESSION_KEY), dict):
         raise Unauthorized("identity required")
-
-    class _Req:
-        idp_token_claims = claims
-
-    return roles_from_request(_Req())  # type: ignore[arg-type]
+    request = HttpRequest()
+    request.session = store
+    claims = claims_from_request(request)
+    if claims is None:
+        raise Unauthorized("identity required")
+    setattr(request, IDP_TOKEN_CLAIMS_ATTR, claims)
+    return roles_from_request(request)
 
 
 def assert_herald_access(headers: Mapping[str, str], cookies: Mapping[str, str]) -> None:

@@ -4,6 +4,10 @@ front door (Story 22.1, FR-13, canopy AD-14).
 Dispatch only: map the station token to that distribution's primary console
 script and forward the remaining argv through ``PosixProcess``. Station
 duty logic stays in the station packages.
+
+The child is the station's own CLI, so it runs as that CLI would (steward Story
+133.4): it inherits this process's stdin, stdout and stderr, and its script is
+the one beside the running interpreter when there is one, before ``PATH``.
 """
 
 from __future__ import annotations
@@ -16,7 +20,7 @@ from pathlib import Path
 
 from pyforge.core import roster
 from pyforge.core.errors import PyforgeError
-from pyforge.core.flags import kill_switch_on
+from pyforge.core.flags import UnknownEnvironmentError, kill_switch_on
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 EXIT_USAGE = 2
@@ -197,6 +201,18 @@ def _resolve_primary(station: str, mapping: Mapping[str, str]) -> str | None:
     return primary_console_script(f"pyforge-{station}", scripts)
 
 
+def _beside_interpreter(script: str) -> str:
+    """``script`` as the file of that name beside the running interpreter, when there is one.
+
+    A bare name resolves off ``PATH``, which finds nothing when the environment is not activated and can find
+    another environment's script of the same name. A name that already carries a directory is left alone.
+    """
+    if not sys.executable or Path(script).name != script:
+        return script
+    candidate = Path(sys.executable).parent / script
+    return str(candidate) if candidate.is_file() else script
+
+
 def main(
     argv: Sequence[str] | None = None,
     *,
@@ -206,15 +222,25 @@ def main(
     cwd: Path | None = None,
 ) -> int:
     args = list(sys.argv if argv is None else argv)
-    runner = process if process is not None else PosixProcess()
     workdir = cwd if cwd is not None else Path.cwd()
     try:
         child = dispatch_argv(args, script_map=script_map, packages_root=packages_root)
     except DispatchError as exc:
         print(str(exc), file=sys.stderr)
         return EXIT_USAGE
+    except UnknownEnvironmentError as exc:
+        # A bad PYFORGE_ENVIRONMENT, met reading the front-door kill switch: one line, never a traceback.
+        print(str(exc), file=sys.stderr)
+        return EXIT_USAGE
+    child[0] = _beside_interpreter(child[0])
     try:
-        result = runner.run(child, cwd=workdir)
+        if process is None:
+            # The child's output is not captured: flush ours first so the two stay in order.
+            sys.stdout.flush()
+            sys.stderr.flush()
+            result = PosixProcess().run(child, cwd=workdir, inherit_stdio=True)
+        else:
+            result = process.run(child, cwd=workdir)
     except ProcessError as exc:
         print(str(exc), file=sys.stderr)
         return EXIT_NOT_FOUND

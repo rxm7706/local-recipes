@@ -1289,10 +1289,6 @@ env = { PYTHONWARNINGS = "ignore:Kedro is not yet fully compatible" }  # suppres
 description = "Sync with upstream conda-forge/staged-recipes and rebase local commits"
 cmd = "bash scripts/sync-upstream-conda-forge.sh"
 
-[feature.local-recipes.tasks.sync-upstream-public-fork]
-description = "Pull the latest from the public GitHub fork and merge/rebase the local commits"
-cmd = "bash scripts/sync-public-fork.sh"
-
 [feature.local-recipes.tasks.verify-env]
 description = "Verify that the shell is running inside the local-recipes pixi environment"
 cmd = "bash scripts/ensure-local-recipes-env.sh"
@@ -1501,7 +1497,7 @@ cmd = "python scripts/deck_trio.py"
 env = { PYTHONPATH = "src/shared/packages/pyforge-herald/src:src/shared/packages/pyforge-core/src" }  # Story 23.3: imports pyforge.herald.stamps, which imports pyforge.core.atomic_write -- both paths listed explicitly (mirrors this file's other PYTHONPATH entries) rather than relying on pyforge-core arriving as pyforge-doctor's transitive run-dep
 
 [feature.guild-tasks.tasks.platform-ci-local]
-description = "Replay Platform CI (.github/workflows/platform-ci.yml) locally — the test job step for step, the three image builds, the container job's runtime smokes, and golden-path-promotion + the deploy verifier — against an ephemeral PostgreSQL 17/Redis 7 from platform-dev. Zero Actions minutes. Stages: --test --images --container --promotion (default all); --engine podman. Docker or podman on the host."
+description = "Replay Platform CI (.github/workflows/platform-ci.yml) locally — the test job step for step, the three image builds, the container job's runtime smokes, and golden-path-promotion + the deploy verifier — against an ephemeral PostgreSQL 17/Redis 7 from platform-dev. Zero Actions minutes. Stages: --test --images --container --promotion (default all); --engine podman. Docker or podman on the host for the images, container and promotion stages; --test needs none."
 cmd = "bash scripts/platform-ci-local.sh"
 
 [feature.guild-tasks.tasks.claude-instruction-mode-check]

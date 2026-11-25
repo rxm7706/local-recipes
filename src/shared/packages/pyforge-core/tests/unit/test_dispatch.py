@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import json
+import os
+import subprocess
+import sys
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -17,6 +21,17 @@ from pyforge.core.dispatch import (
     primary_console_script,
 )
 from pyforge.core.process import ProcessError, ProcessResult
+
+# The interpreter running this suite, read before any test points ``sys.executable`` elsewhere.
+REAL_PYTHON = sys.executable
+
+
+@pytest.fixture(autouse=True)
+def _no_script_beside_the_interpreter(tmp_path_factory, monkeypatch):
+    """Steward Story 133.4: the front door looks beside ``sys.executable`` first, so an environment that
+    installs a station would hand these tests an absolute path. Each test starts with an empty directory there."""
+    empty = tmp_path_factory.mktemp("interpreter-bin")
+    monkeypatch.setattr(sys, "executable", str(empty / "python"))
 
 
 class _FakeProcess:
@@ -222,3 +237,94 @@ def test_help_empty_map_lists_all_roster_environments():
     assert "not installed here:" in msg
     for station in ("atlas", "doctor", "herald", "marshal", "mason", "scribe", "steward", "warden"):
         assert f"{station} (-e pyforge-{station})" in msg
+
+
+# --- steward Story 133.4 (DW-steward-review-2026-11-24-5, defect 1) --------------------------------------------------
+
+
+def _child_script(tmp_path: Path, body: str) -> Path:
+    """An executable Python script standing in for a station's console script."""
+    script = tmp_path / "fake-station"
+    script.write_text(f"#!{REAL_PYTHON}\n{body}", encoding="utf-8")
+    script.chmod(0o755)
+    return script
+
+
+def _front_door(script: Path, *args: str) -> list[str]:
+    """``pyforge fake <args>`` run for real, with no injected process, mapped to ``script``."""
+    code = (
+        "import sys\n"
+        "from pyforge.core.dispatch import main\n"
+        f"raise SystemExit(main(['pyforge', 'fake', *sys.argv[1:]], script_map={{'fake': {str(script)!r}}}))\n"
+    )
+    return [REAL_PYTHON, "-c", code, *args]
+
+
+def test_the_front_door_streams_its_child_output_as_it_is_written(tmp_path):
+    release = tmp_path / "release"
+    script = _child_script(
+        tmp_path,
+        "import pathlib, sys, time\n"
+        "print('first', flush=True)\n"
+        "release = pathlib.Path(sys.argv[1])\n"
+        "deadline = time.monotonic() + 5\n"
+        "while time.monotonic() < deadline and not release.exists():\n"
+        "    time.sleep(0.05)\n"
+        "print('released' if release.exists() else 'never released', flush=True)\n"
+        "raise SystemExit(3)\n",
+    )
+    with subprocess.Popen(_front_door(script, str(release)), stdout=subprocess.PIPE, text=True) as door:
+        assert door.stdout is not None
+        first = door.stdout.readline()  # arrives while the child still waits, or only once it has given up
+        release.touch()
+        rest = door.stdout.read()
+        code = door.wait(timeout=30)
+    assert first == "first\n"
+    assert rest == "released\n", "the child's first line arrived only after the child exited"
+    assert code == 3
+
+
+def test_the_front_door_hands_its_child_the_callers_stdin(tmp_path):
+    script = _child_script(tmp_path, "import sys\nsys.stdout.write(sys.stdin.read().upper())\n")
+    done = subprocess.run(
+        _front_door(script), input="typed by the caller\n", capture_output=True, text=True, check=False
+    )
+    assert done.returncode == 0, done.stderr
+    assert done.stdout == "TYPED BY THE CALLER\n"
+
+
+def test_main_runs_the_script_beside_the_interpreter_not_one_off_path(tmp_path, monkeypatch):
+    bin_dir = tmp_path / "env" / "bin"
+    bin_dir.mkdir(parents=True)
+    (bin_dir / "steward").write_text("#!/bin/sh\n", encoding="utf-8")
+    monkeypatch.setattr(sys, "executable", str(bin_dir / "python"))
+    proc = _FakeProcess()
+    code = main(["pyforge", "steward", "keys", "list"], process=proc, script_map=MAP, cwd=tmp_path)
+    assert code == 0
+    assert proc.calls == [([str(bin_dir / "steward"), "keys", "list"], tmp_path)]
+
+
+def test_main_keeps_the_bare_name_when_no_script_sits_beside_the_interpreter(tmp_path):
+    proc = _FakeProcess()
+    main(["pyforge", "steward", "keys", "list"], process=proc, script_map=MAP, cwd=tmp_path)
+    assert proc.calls == [(["steward", "keys", "list"], tmp_path)]
+
+
+def test_main_bad_environment_is_one_line_and_the_usage_code(tmp_path, monkeypatch, capsys):
+    def _no_dist(name: str):
+        raise dispatch_module.PackageNotFoundError(name)
+
+    tree = tmp_path / "flags.json"
+    tree.write_text(json.dumps({"flags": {}}), encoding="utf-8")
+    monkeypatch.setattr(dispatch_module, "distribution", _no_dist)
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(tree))
+    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "bogus")
+    proc = _FakeProcess()
+    code = main(["pyforge", "warden", "scan"], process=proc, script_map=GUILD_FIVE)
+    assert code == EXIT_USAGE
+    assert proc.calls == []
+    err = capsys.readouterr().err
+    assert err.count("\n") == 1
+    assert "PYFORGE_ENVIRONMENT 'bogus'" in err
+    assert "Traceback" not in err
+    assert os.environ["PYFORGE_ENVIRONMENT"] == "bogus"

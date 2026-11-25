@@ -31,6 +31,7 @@ partial rewrite.
 from __future__ import annotations
 
 import argparse
+import http.client
 import re
 import subprocess
 import sys
@@ -59,7 +60,8 @@ def verify_image_exists(version: str) -> bool | None:
             return resp.status == 200
     except urllib.error.HTTPError as exc:
         return exc.code == 200
-    except Exception:
+    except (OSError, http.client.HTTPException, ValueError, KeyError):
+        # no network, a malformed or truncated HTTP response, a body that is not JSON, no token in it
         return None
 
 
@@ -109,14 +111,16 @@ def bump(version: str) -> int:
     env_site = next(s for s in SITES if s.derived)
     print(f"\nregenerating {env_site.path.relative_to(REPO_ROOT)} "
           f"(pixi project export conda-environment -e build)...")
-    with env_site.path.open("w", encoding="utf-8") as fh:
-        result = subprocess.run(
-            ["pixi", "project", "export", "conda-environment", "-e", "build"],
-            cwd=REPO_ROOT, stdout=fh, stderr=subprocess.PIPE, text=True, timeout=60,
-        )
+    # Capture first, write on exit 0 only: opening the file before the export ran left it empty when the
+    # export failed or could not start (steward Story 133.2).
+    result = subprocess.run(
+        ["pixi", "project", "export", "conda-environment", "-e", "build"],
+        cwd=REPO_ROOT, capture_output=True, text=True, timeout=60, check=False,
+    )
     if result.returncode != 0:
         print(f"ABORT: environment.yaml export failed:\n{result.stderr}", file=sys.stderr)
         return 2
+    env_site.path.write_text(result.stdout, encoding="utf-8")
 
     return 0
 
@@ -141,7 +145,7 @@ def main() -> int:
     print("\nre-checking...")
     check = subprocess.run(
         [sys.executable, str(REPO_ROOT / "scripts" / "pixi_version_check.py")],
-        cwd=REPO_ROOT,
+        cwd=REPO_ROOT, check=False,
     )
     return check.returncode
 

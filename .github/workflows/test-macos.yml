@@ -100,6 +100,10 @@ env:
   DEFAULT_OSX_64_DEPLOYMENT_TARGET: '11.0'
   DEFAULT_OSX_ARM64_DEPLOYMENT_TARGET: '11.0'
 
+# Read-only token (steward Story 133.2): no job here writes to the repository.
+permissions:
+  contents: read
+
 jobs:
   detect-recipes:
     runs-on: ubuntu-latest

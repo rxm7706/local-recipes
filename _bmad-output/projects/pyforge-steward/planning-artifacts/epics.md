@@ -9126,3 +9126,78 @@ So that the writer lock never moves under a live or paused run.
 **Then** an unfinished or paused run refuses the flip with "flip refused: a Marshal loop is running" and the state file's path, a finished, stopped or crashed run does not, and a state serialised from the installed `bmad_loop.model.RunState` reads running until it is finished
 **And** the loop home follows `BMAD_LOOP_HOME_ROOT` when it is set, a `state.json` outside a run directory is read by its status word as before, and one that is a list is read past instead of raising
 **Status:** done
+
+## Epic 133: The review's lower-severity defects are reproduced, then fixed or closed (spec-pyforge-steward CAP-1, CAP-22, CAP-55, CAP-167, CAP-168, CAP-175; spec-pyforge-unifying-strategy CAP-3, CAP-4, CAP-5, CAP-6, CAP-12)
+
+Minted 2026-11-25 from the station Dream's entry of the same date on the operator ruling of 2026-11-25: "can we close and complete these too - * DW-doctor-61-1-1: four governance Specs need a re-derive on your render route. * The lower-severity code defects from the review, as open deferred-work rows on eight stations' ledgers." Four open rows on steward's deferred-work ledger name code defects the review of main `7da08791f3` reported; most were not re-traced by the session lead. One story carries each row.
+**HARD boundaries:**
+- Every defect is reproduced before it is fixed: a test or a command that fails on the unchanged tree comes first. A defect the tree does not show is closed as not a defect, with the reason on the story spec.
+- No Spec text, capability or architecture decision moves; a fix that would need one stops and is reported.
+- No flag: each story restores behaviour a capability already states.
+- The session hook's row (`DW-steward-review-2026-11-24-4`, owner governance) is not in this Epic.
+
+### Story 133.1: Suite advance refuses before it edits, and steward's exit codes stay in its domain
+
+As the operator who runs steward's duties from a shell or a script,
+I want `suite advance` to refuse before it rewrites a recipe when it has no way to publish, and every steward exit code to mean what the contract says,
+So that a failed advance leaves my checkout as it was, and a duty that exits on its own or meets a missing file never returns a code the contract does not list.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-22, CAP-1 and CAP-55 (realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: an advance that cannot publish changes nothing, and a `SystemExit` raised inside a duty returns only a documented exit code)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/suite_advance.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/guards.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py`, `src/shared/packages/pyforge-steward/tests/unit/test_suite_advance.py`, `src/shared/packages/pyforge-steward/tests/unit/test_guards.py`, `src/shared/packages/pyforge-steward/tests/unit/test_cli.py`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-133-1-suite-advance-refuses-before-it-edits-and-steward-s-exit-codes-stay-in-its-domain.md`
+**Given** `DW-steward-review-2026-11-24-1` reports that `suite advance` without `--dry-run` rewrites the recipe and builds before a publish step that always returns not ok, that `keys exec` relays its child's raw exit code, that `guards lacking --spec <missing file>` exits 70, and that `main()` returns any integer a duty raises as `SystemExit`
+**When** defects 1, 3 and 4 are each first reproduced by a test that fails on the unchanged tree, defect 2 is found to be the documented contract, and then the advance refuses before its autotick when no publish path is configured, a `SystemExit` integer raised inside a duty outside the documented domain is projected into it, and the guards duty reports an unreadable `--spec` as a failed duty
+**Then** a refused advance leaves the recipe byte-identical and says what is missing, `guards lacking --spec` on a missing file exits 1 naming the path, and a `SystemExit` raised inside a duty never returns a code outside the documented domain
+**And** `keys exec` still passes its child's exit code through, recorded on the story spec as not a defect with the contract text and the test that pin it
+**And** a defect the tree does not reproduce is recorded on the story spec as not a defect and no source changes for it, and the row closes naming each outcome
+**Status:** review
+
+### Story 133.2: The workflows and scripts steward runs do what they name
+
+As the operator who relies on the repository's workflows, hooks and helper scripts,
+I want each one to run the step, task or git command it names,
+So that a publish step, a budget report or a pin refresh does not fail without a word.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-175, CAP-167 and CAP-168 (realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: each workflow step, pixi task and script runs what its own text says it runs)
+**Surface:** `.github/workflows/**`, `scripts/pre_push_preflight.sh`, `scripts/fleet_poll_sync.sh`, `scripts/fleet-poll-hourly.sh`, `scripts/bump_pixi_version.py`, `scripts/pixi_version_registry.py`, `scripts/pages_changes.py`, `scripts/sync-upstream-conda-forge.sh`, `pixi.toml`, `environment.yaml`, `docs/how-to/pixi-tasks.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/development-guide.md`, `tests/scripts/**`, `src/shared/packages/pyforge-steward/tests/unit/test_pages_changes.py`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-133-2-the-workflows-and-scripts-steward-runs-do-what-they-name.md`
+**Given** `DW-steward-review-2026-11-24-2` lists eight defects the lead confirmed by line (a boolean `create_pr` compared to strings in `sync-pypi-mappings.yml`, a call to a pixi task `preflight` that does not exist, `git push --ff-only`, a fleet poll that ticks every two hours, the task `sync-upstream-public-fork` pointing at no script, `setup-pixi` steps with no `pixi-version`, `environment.yaml` truncated before its export runs, two time zones in `pages_changes.py`) and four a reviewer reported (an image ID recorded as a registry digest, an unconditional `git stash pop`, workflows with no `permissions:` block, a hook file registered nowhere)
+**When** each of the ten this story fixes (1 to 8, 10 and 11) is first reproduced by a test under `tests/scripts/` or a command that fails on the unchanged tree, and then fixed inside this surface
+**Then** the default dispatch of the mapping sync reaches its publish step, the pre-push hook prints the budget report, the fleet sync pushes with a flag git has and ticks once an hour, every pixi task names a file that exists, every `setup-pixi` step pins the workspace's pixi version and `pixi-version-check` knows the site, a failed export leaves `environment.yaml` as it was, and the changes page dates every entry and its snapshot in one zone
+**And** an earlier stash survives the upstream sync on a clean tree, and every workflow states its token permissions
+**And** a defect the tree does not reproduce is recorded on the story spec as not a defect; the image ID recorded as a registry digest is left open on an operator decision and carried to the deferred-work row `DW-steward-133-2-1`; the unregistered hook file lies under `.claude/`, outside this surface, so the story records what it found and it is carried to `DW-steward-review-2026-11-24-4`
+**Status:** review
+
+### Story 133.3: The platform suite's test stage runs without a container engine, on a UTF-8 database
+
+As a developer who runs the platform suite on a laptop with no container engine,
+I want `platform-ci-local -- --test` to ask only for what the test stage uses and to build its database in UTF-8,
+So that the stage runs under any locale and fails only on a test.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-175 (realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: the test stage runs on the laptop it is documented for, whatever the locale)
+**Surface:** `scripts/platform-ci-local.sh`, `tests/scripts/test_platform_ci_local_host.py`, `src/platform/tests/test_redis_cache_eviction_broker_survival.py`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-133-3-the-platform-suite-s-test-stage-runs-without-a-container-engine-on-a-utf-8-database.md`
+**Given** `DW-steward-review-2026-11-24-3` reports that the script exits 2 when its container engine is not on `PATH` even for `--test`, that `initdb` runs with no encoding so a `C` locale gives an `SQL_ASCII` cluster and two policy tests error, and that one Redis eviction test failed with a `maxmemory` error not traced to a cause
+**When** each is first reproduced on the unchanged tree, and then the engine is checked only for the stages that call it, `initdb` is given UTF-8 and a fixed locale, and the Redis test is traced on a clean main
+**Then** `--test` with no engine on `PATH` and `LC_ALL=C` passes its prerequisite check and builds a UTF-8 cluster, a stage that uses the engine still exits 2 naming it, and the Redis test passes or its cause is fixed where it lies in this surface
+**And** a defect the tree does not reproduce is recorded on the story spec as not a defect, and the row closes naming each outcome
+**Status:** review
+
+### Story 133.4: The front door streams its child, the diff guards read the merge base, and the portals read the caller's identity
+
+As an operator and an agent who reach the stations through `pyforge <station>`, the portals and the MCP sidecar,
+I want the front door to behave as the station's own CLI does, the branch guards to judge only my branch's changes, and each portal and the sidecar to act for the caller production identifies,
+So that a streaming verb streams, a branch behind `main` is not red for commits it lacks, and no two callers share one subject or pass a check they should meet.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-unifying-strategy CAP-5, CAP-6, CAP-12, CAP-4 and CAP-3 (realized, no text change); reads `spec-pyforge-core:CAP-11`, `spec-pyforge-marshal:CAP-272` and `spec-pyforge-testing-charter:CAP-3` (no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: the one command grammar reaches each station CLI unchanged, the guards judge the branch's own diff, and portal and sidecar calls carry the caller's identity and roles)
+**Surface:** `src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py`, `src/shared/packages/pyforge-core/src/pyforge/core/process.py`, `src/shared/packages/pyforge-core/tests/**`, `src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/branch_diff_guard.py`, `src/shared/packages/pyforge-testing-kit/tests/unit/test_branch_diff_guard.py`, `src/shared/packages/django-marshal/src/django_marshal_portal/views.py`, `src/shared/packages/django-herald/src/django_herald_portal/deck_export_routes.py`, `src/shared/packages/django-atlas/src/django_atlas_portal/board.py`, `src/platform/mcp_host/app.py`, `src/platform/mcp_host/settings.py`, `src/platform/deploy/charts/platform/templates/_helpers.tpl`, `src/platform/deploy/charts/platform/templates/mcp-host-networkpolicy.yaml`, `docs/how-to/reach-a-station-mcp-endpoint.md`, `src/platform/tests/**`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-133-4-the-front-door-streams-its-child-the-diff-guards-read-the-merge-base-and-the-portals-read-the-caller-s-identity.md`
+**Given** `DW-steward-review-2026-11-24-5` reports that `pyforge <station> ...` captures all child output, gives the child no stdin, resolves its script by bare name and shows a traceback on a bad `PYFORGE_ENVIRONMENT`; that the testing kit's guards diff against the tip of the base and break on paths with spaces; that `django-marshal` reads `request.idp_sub`, which nothing sets; that `django-herald`'s deck-export routes read roles from the session and skip the live re-read; that the MCP sidecar does not call `authorize_station_scope`; and that `django-atlas/board.py` imports `pyforge.steward.dashboard` at module level
+**When** each of the first five is first reproduced by a test that fails on the unchanged tree, the sixth is checked against its carve-out, and then the front door hands its child the caller's stdio and resolves the script beside the running interpreter, the guards diff against the merge base, the marshal portal reads the subject through the host's claims reader, the deck-export routes resolve roles through the configured claims getter, and the sidecar verifies the station scope, with the how-to and the chart comments that said it ran no check corrected
+**Then** a front-door child's output arrives as it is written and its stdin is the caller's, a bad `PYFORGE_ENVIRONMENT` is one line and the usage code, a branch behind its base is judged on its own changes and a path with a space is read whole, two callers of the marshal portal carry two subjects, a revoked role is refused on the deck-export routes at the next request, and a sidecar call outside the caller's station scope is refused
+**And** a defect the tree does not reproduce, or one a dated and named carve-out already covers, is recorded on the story spec as not a defect; no changed file under `src/platform/` imports `pyforge`; and core's, the kit's and every station's suite pass
+**Status:** review

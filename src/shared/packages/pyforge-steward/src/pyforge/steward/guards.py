@@ -198,7 +198,10 @@ class GuardsDuty:
         if verb == "lacking":
             spec_path = getattr(ns, "spec", None)
             if spec_path:
-                text = Path(spec_path).read_text(encoding="utf-8")
+                try:
+                    text = Path(spec_path).read_text(encoding="utf-8")
+                except (OSError, ValueError) as exc:
+                    return DutyResult(ok=False, summary=f"guards lacking: cannot read {spec_path}: {exc}")
                 declared = parse_hub_guards(text)
                 if declared is None:
                     return DutyResult(
@@ -214,7 +217,10 @@ class GuardsDuty:
                 details={"lacking": list(gaps)},
             )
         root = Path(ns.repo).resolve() if getattr(ns, "repo", None) else Path.cwd()
-        text = Path(ns.text).read_text(encoding="utf-8")
+        try:
+            text = Path(ns.text).read_text(encoding="utf-8")
+        except (OSError, ValueError) as exc:
+            return DutyResult(ok=False, summary=f"guards source-ground: cannot read {ns.text}: {exc}")
         result = source_ground(text, root)
         return DutyResult(
             ok=result.grounded,

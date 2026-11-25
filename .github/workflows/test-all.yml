@@ -64,6 +64,10 @@ on:
           - '3.13'
           - '3.14'
 
+# Read-only token (steward Story 133.2): no job here writes to the repository.
+permissions:
+  contents: read
+
 jobs:
   # Check for skip keywords and detect recipes
   preflight:

@@ -35,6 +35,23 @@ def test_run_returns_process_result_for_a_passing_command(process, tmp_path):
     assert result.stderr == ""
 
 
+# --- inherit_stdio: the child writes to the caller's streams and reads the caller's stdin (steward Story 133.4) ---
+
+
+def test_run_inherit_stdio_leaves_the_output_on_the_callers_streams(process, tmp_path, capfd):
+    code = "import sys; print('out'); sys.stderr.write('err\\n'); sys.exit(4)"
+    result = process.run([sys.executable, "-c", code], cwd=tmp_path, inherit_stdio=True)
+    assert result == ProcessResult(returncode=4, stdout="", stderr="")
+    streams = capfd.readouterr()
+    assert streams.out == "out\n"
+    assert streams.err == "err\n"
+
+
+def test_run_inherit_stdio_still_raises_process_error_for_a_missing_executable(process, tmp_path):
+    with pytest.raises(ProcessError, match="executable not found"):
+        process.run(["definitely-not-a-real-binary-xyz"], cwd=tmp_path, inherit_stdio=True)
+
+
 # --- a failing command: never raises, reports the real exit code -------------
 
 

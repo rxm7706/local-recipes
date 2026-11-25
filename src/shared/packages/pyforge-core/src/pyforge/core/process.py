@@ -212,6 +212,13 @@ class PosixProcess:
     concrete class takes ``env=`` -- ``ProcessPort`` is unchanged, since other
     stations' fakes implement it.
 
+    ``inherit_stdio=True`` (steward Story 133.4) is the second option only this
+    class takes: the child reads this process's stdin and writes straight to its
+    stdout and stderr, so its output arrives as it is written and a prompt can be
+    answered. Nothing is captured -- the result's ``stdout``/``stderr`` are empty.
+    The ``pyforge`` front door is its one caller; the default stays capture with a
+    closed stdin.
+
     No default ``timeout_s``: a caller's own command duration is entirely
     caller-defined, so ``run`` defaults to ``None`` (no timeout) rather than
     inventing an arbitrary ceiling.
@@ -224,6 +231,7 @@ class PosixProcess:
         cwd: Path,
         timeout_s: float | None = None,
         env: Mapping[str, str] | None = None,
+        inherit_stdio: bool = False,
     ) -> ProcessResult:
         if not argv:
             # A whitespace-only command shlex.split()s to an empty list --
@@ -238,7 +246,8 @@ class PosixProcess:
             result = subprocess.run(
                 list(argv),
                 cwd=cwd,
-                capture_output=True,
+                # inherit_stdio leaves all three streams the caller's own (see the class docstring).
+                capture_output=not inherit_stdio,
                 text=True,
                 encoding="utf-8",
                 errors="replace",
@@ -252,7 +261,7 @@ class PosixProcess:
                 # input block forever waiting on input that can never
                 # arrive, on top of this method's own unbounded-by-default
                 # timeout_s.
-                stdin=subprocess.DEVNULL,
+                stdin=None if inherit_stdio else subprocess.DEVNULL,
                 # check=False, explicit (ruff PLW1510): this method's own
                 # contract is "NEVER raises for a non-zero exit" -- a raised
                 # CalledProcessError would violate it, so the implicit
@@ -274,7 +283,7 @@ class PosixProcess:
             # a non-executable file, ENOEXEC on a corrupt binary -- all must
             # land in ProcessError, never escape raw.
             raise ProcessError(f"cannot launch {list(argv)!r}: {exc}") from exc
-        return ProcessResult(returncode=result.returncode, stdout=result.stdout, stderr=result.stderr)
+        return ProcessResult(returncode=result.returncode, stdout=result.stdout or "", stderr=result.stderr or "")
 
     def run_bytes(
         self,

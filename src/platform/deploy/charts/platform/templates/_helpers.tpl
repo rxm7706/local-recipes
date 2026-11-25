@@ -521,7 +521,9 @@ Postgres the web pod uses -- the app-role DML URL (never MIGRATION_DATABASE_URL;
 this sidecar only reads/writes RunState/McpHandle rows, it never migrates).
 DJANGO_SECRET_KEY is required by Django itself even though this sidecar
 serves no Django views; PYFORGE_ASSERTION_PUBLIC_KEY is optional (absent
-means every publish call is refused, matching the web pod's own posture).
+means every station MCP call is refused with 503 and every publish call is
+refused, matching the web pod's own posture: the sidecar verifies the
+forwarded assertion itself, steward Story 133.4).
 */}}
 {{- define "platform.mcpHostEnv" -}}
 - name: DJANGO_SECRET_KEY

@@ -1138,10 +1138,11 @@ def _assert_mcp_host_network_policy_admits_web_only(
 ) -> None:
     """Story 42.1 / red-team X-5: exactly one NetworkPolicy selects the
     mcp-host pods and its only ingress rule admits the ``web`` component of
-    THIS release on TCP/8090. mcp-host carries no auth of its own, so any
-    second admitted peer -- another component, another namespace, or any pod
-    that merely wears the ``web`` component label -- is a namespace-wide (or
-    cluster-wide) unauthenticated MCP server.
+    THIS release on TCP/8090. mcp-host verifies the forwarded assertion
+    itself (steward Story 133.4) but charges no rate limit, so any second
+    admitted peer -- another component, another namespace, or any pod that
+    merely wears the ``web`` component label -- reaches the station faces
+    past the host's rate limit.
     """
     policies = [
         doc

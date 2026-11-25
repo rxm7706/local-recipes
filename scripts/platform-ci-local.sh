@@ -30,7 +30,9 @@
 # PLATFORM_CI_LOCAL_REDIS_PORT (16379); torn down on exit. The app container
 # runs with host networking and binds 8000, as the image does. Tools come from
 # the pixi envs the workflow uses (platform-ci-test, platform-dev,
-# pyforge-warden); docker or podman must be on the host.
+# pyforge-warden); docker or podman must be on the host for the images,
+# container and promotion stages. The test stage builds and runs no image and
+# needs no engine (Story 133.3).
 #
 # Keep in step with the workflow: every step name below is the workflow's own.
 set -uo pipefail
@@ -266,7 +268,10 @@ _is_our_redis() {
 
 stop_services() {
   local pid pgdir="$WORK/pg"
-  "$ENGINE" rm -f "$APP" 9>&- >/dev/null 2>&1 || true
+  # No engine on the host means no app container to remove (Story 133.3).
+  if command -v "$ENGINE" >/dev/null 2>&1; then
+    "$ENGINE" rm -f "$APP" 9>&- >/dev/null 2>&1 || true
+  fi
   if [ -f "$WORK/redis.pid" ]; then
     pid="$(cat "$WORK/redis.pid" 2>/dev/null || true)"
     if [ -n "$pid" ] && _is_our_redis "$pid"; then
@@ -347,6 +352,14 @@ run_platform_ci_local() {
     done
   }
 
+  _stages_use_engine() {
+    local s
+    for s in "${STAGES[@]}"; do
+      case "$s" in images|container|promotion) return 0 ;; esac
+    done
+    return 1
+  }
+
   ensure_envs() {
     local e before after state sync_log rc
     while IFS= read -r e; do
@@ -373,7 +386,10 @@ run_platform_ci_local() {
       echo "env ${e}: ${state}"
       printf 'INFO\tenv\t%s: %s\n' "$e" "$state" >>"$RESULTS"
     done < <(_envs_for_stages)
-    command -v "$ENGINE" >/dev/null 2>&1 || { echo "$ENGINE is not on PATH" >&2; exit 2; }
+    # Only a stage that builds or runs an image needs the engine; the test stage does neither (Story 133.3).
+    if _stages_use_engine; then
+      command -v "$ENGINE" >/dev/null 2>&1 || { echo "$ENGINE is not on PATH" >&2; exit 2; }
+    fi
   }
 
   start_services() {
@@ -382,7 +398,9 @@ run_platform_ci_local() {
     _refuse_port_in_use "$PG_PORT" "postgresql"
     _refuse_port_in_use "$REDIS_PORT" "redis"
     rm -rf "$pgdata" "$WORK/redis"; mkdir -p "$WORK/redis"
-    "$DEV/initdb" -D "$pgdata" -U postgres --auth=trust 9>&- >"$WORK/initdb.log" 2>&1
+    # The encoding and locale are named, never left to the host: under a C locale a bare initdb builds an
+    # SQL_ASCII cluster, which refuses the Unicode escapes the policy suite sends (Story 133.3).
+    "$DEV/initdb" -D "$pgdata" -U postgres --auth=trust -E UTF8 --locale=C 9>&- >"$WORK/initdb.log" 2>&1
     "$DEV/pg_ctl" -D "$pgdata" -l "$WORK/pg.log" -w \
       -o "-c unix_socket_directories='' -h 127.0.0.1 -p $PG_PORT" start 9>&- >/dev/null
     for i in $(seq 1 30); do

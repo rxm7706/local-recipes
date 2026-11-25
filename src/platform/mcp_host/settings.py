@@ -37,6 +37,8 @@ INSTALLED_APPS = [
 ]
 
 # CAP-18 host assertion verify (django_pyforge.assertion.crypto.verify_assertion,
-# reached via supervisor.publish_held_run). Optional like the web image's own
-# wiring -- absent means every publish call raises AssertionRefusedError.
+# reached via supervisor.publish_held_run) and the station-scope check
+# mcp_host.app runs on every station call (steward Story 133.4). Optional like
+# the web image's own wiring -- absent means every station MCP call answers 503
+# and every publish call raises AssertionRefusedError.
 PYFORGE_ASSERTION_PUBLIC_KEY = env.str("PYFORGE_ASSERTION_PUBLIC_KEY", default="")
