@@ -54,6 +54,7 @@ installed or loaded from this tree's core source (see `_cutover_root()`).
 
 from __future__ import annotations
 
+import bisect
 import importlib.util
 import json
 import os
@@ -132,7 +133,7 @@ def build_context(harness: str, kind: str, payload: dict[str, Any]) -> Context:
         else:
             file_path = payload.get("file_path")
 
-    subcommands = split_subcommands(command) if command else []
+    subcommands = normalised_subcommands(command) if command else []
     repo_root = find_repo_root(cwd)
     mcp_tool_name: Optional[str] = None
     mcp_tool_input: dict[str, Any] = {}
@@ -307,6 +308,138 @@ def _shell_c_payload(tokens: list[str]) -> Optional[str]:
     return None
 
 
+# Steward Story 134.2 (DW-steward-review-2026-11-24-4): every subcommand is also read in
+# its normal form, so a rule anchored on the executable is not skipped by what stands
+# before it. The normal form is ADDED beside the tokens as written, never put in their
+# place: a rule that matched the written form still matches it.
+_ASSIGNMENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*\+?=")
+_NORMAL_FORM_WRAPPERS: dict[str, tuple[str, ...]] = {
+    **_WRAPPERS,
+    "time": ("-f", "--format", "-o", "--output"),
+    "builtin": (),
+}
+_SHELL_LEADERS = frozenset({"(", "{", "!", "if", "then", "elif", "else", "while", "until", "do"})
+
+
+def _command_tokens(tokens: list[str]) -> list[str]:
+    """`tokens` without the environment assignments that stand before the executable."""
+    i = 0
+    while i < len(tokens) and _ASSIGNMENT_RE.match(tokens[i]):
+        i += 1
+    return tokens[i:]
+
+
+def _normal_form(tokens: list[str]) -> list[str]:
+    """The assignments a command carries, then the command with its executable reduced to
+    a basename: leading assignments, the prefix commands (`env`, `command`, `time`, `nice`,
+    `nohup`, `exec`, `timeout`, `sudo`, `builtin`), a subshell or brace opener, `!` and the
+    shell keywords that stand before a command are taken off. `[]` when no command is left
+    (`env` alone) or the line only looks a command up (`command -v <name>`)."""
+    toks = list(tokens)
+    assignments: list[str] = []
+    opened = False
+    for _ in range(len(tokens) + 1):  # each pass takes at least one token off or stops
+        if not toks:
+            return []
+        head = toks[0]
+        if head in _SHELL_LEADERS:
+            opened = opened or head == "("
+            toks = toks[1:]
+            continue
+        if len(head) > 1 and head[0] in "({" and head.lstrip("({"):
+            opened = opened or "(" in head[: len(head) - len(head.lstrip("({"))]
+            toks = [head.lstrip("({"), *toks[1:]]
+            continue
+        if _ASSIGNMENT_RE.match(head):
+            assignments.append(head)
+            toks = toks[1:]
+            continue
+        name = os.path.basename(head)
+        if name not in _NORMAL_FORM_WRAPPERS:
+            break
+        takes_arg = _NORMAL_FORM_WRAPPERS[name]
+        i = 1
+        while i < len(toks):
+            tok = toks[i]
+            if name == "env" and tok in ("-S", "--split-string") and i + 1 < len(toks):
+                toks = [*toks[: i + 1], *_tokenize(toks[i + 1]), *toks[i + 2 :]]
+                i += 1
+            elif name == "env" and tok.startswith("--split-string="):
+                toks = [*toks[:i], "-S", *_tokenize(tok.split("=", 1)[1]), *toks[i + 1 :]]
+                i += 1
+            elif name == "command" and tok in ("-v", "-V"):
+                return []
+            elif tok in takes_arg:
+                i += 2
+            elif tok.startswith("-"):
+                i += 1
+            elif name == "env" and _ASSIGNMENT_RE.match(tok):
+                assignments.append(tok)
+                i += 1
+            elif name == "timeout" and tok[:1].isdigit():
+                i += 1  # the DURATION operand
+                break
+            else:
+                break
+        toks = toks[i:]
+    if not toks:
+        return []
+    if opened:
+        while toks and toks[-1] in (")", "}"):
+            toks = toks[:-1]
+        if not toks:
+            return []
+        toks = [*toks[:-1], toks[-1].rstrip(")") or toks[-1]]
+    return [*assignments, os.path.basename(toks[0]) or toks[0], *toks[1:]]
+
+
+def _background_segments(tokens: list[str]) -> list[list[str]]:
+    """`a & b` holds two commands; `_split_respecting_quotes` leaves a lone `&` in place."""
+    if "&" not in tokens:
+        return []
+    segments: list[list[str]] = []
+    current: list[str] = []
+    for tok in tokens:
+        if tok == "&":
+            if current:
+                segments.append(current)
+            current = []
+        else:
+            current.append(tok)
+    if current:
+        segments.append(current)
+    return segments
+
+
+def normalised_subcommands(command: str, _depth: int = 0) -> list[list[str]]:
+    """`split_subcommands(command)`, each list followed by its normal form where the two
+    differ, and by the commands of a `bash -c` payload only the normal form shows."""
+    result: list[list[str]] = []
+    seen: set[tuple[str, ...]] = set()
+
+    def add(tokens: list[str]) -> None:
+        key = tuple(tokens)
+        if tokens and key not in seen:
+            seen.add(key)
+            result.append(tokens)
+
+    for written in split_subcommands(command):
+        add(written)
+        for tokens in (written, *_background_segments(written)):
+            add(tokens)
+            normal = _normal_form(tokens)
+            if not normal:
+                continue
+            add(normal)
+            if _depth >= 8 or _shell_c_payload(tokens) is not None:
+                continue  # `split_subcommands` already read this payload
+            inner = _shell_c_payload(_command_tokens(normal))
+            if inner is not None:
+                for sub in normalised_subcommands(inner, _depth + 1):
+                    add(sub)
+    return result
+
+
 def _contains(tokens: list[str], seq: list[str]) -> bool:
     n = len(seq)
     return any(tokens[i : i + n] == seq for i in range(len(tokens) - n + 1))
@@ -344,7 +477,8 @@ def _git(args: list[str], cwd: str) -> Optional[str]:
         out = subprocess.run(
             ["git", *args], cwd=cwd, capture_output=True, text=True, timeout=5
         )
-    except (OSError, subprocess.SubprocessError):
+    # ValueError: a NUL in a `git -C` path; it degrades as a missing directory does.
+    except (OSError, ValueError, subprocess.SubprocessError):
         return None
     if out.returncode != 0:
         return None
@@ -444,6 +578,13 @@ def _commit_msg_hook(repo_root: Path):
 
 
 _BUNDLED_SHORT_M_RE = re.compile(r"^-[a-zA-Z]*m$")
+_BUNDLED_SHORT_F_RE = re.compile(r"^-[a-zA-Z]*F$")
+_STDIN_NAMES = ("-", "/dev/stdin", "/dev/fd/0", "/proc/self/fd/0")
+_HEREDOC_OPEN_RE = re.compile(
+    r"<<(?!<)-?[ \t]*(?P<quote>['\"]?)(?P<tag>[A-Za-z_][A-Za-z0-9_]*)(?P=quote)"
+)
+_STDIN_WRITERS = frozenset({"echo", "printf"})
+_MESSAGE_FILE_LIMIT = 1_000_000  # bytes of a message file read for the attribution check
 
 
 def _extract_commit_message(tokens: list[str], cwd: str) -> Optional[str]:
@@ -462,6 +603,12 @@ def _extract_commit_message(tokens: list[str], cwd: str) -> Optional[str]:
             parts.append(tok.split("=", 1)[1])
             i += 1
             continue
+        # `-m<msg>` in one token (`-m"..."` once the shell has joined it); checked from
+        # the `commit` verb on, so a global `-m...` before it is never read as a message.
+        if tok.startswith("-m") and len(tok) > 2 and "commit" in tokens[:i]:
+            parts.append(tok[2:])
+            i += 1
+            continue
         if tok in ("-F", "--file"):
             if i + 1 < len(tokens):
                 parts.append(_read_message_file(tokens[i + 1], cwd))
@@ -476,15 +623,104 @@ def _extract_commit_message(tokens: list[str], cwd: str) -> Optional[str]:
     return "\n".join(parts) if parts else None
 
 
+def _commit_reads_stdin(tokens: list[str]) -> bool:
+    """`git commit -F -` in any spelling: the message is whatever stands on stdin."""
+    for i, tok in enumerate(tokens):
+        if (
+            (tok in ("-F", "--file") or _BUNDLED_SHORT_F_RE.fullmatch(tok))
+            and i + 1 < len(tokens)
+            and tokens[i + 1] in _STDIN_NAMES
+        ):
+            return True
+        if tok.startswith("--file=") and tok.split("=", 1)[1] in _STDIN_NAMES:
+            return True
+        if tok.startswith("-F") and tok[2:] in _STDIN_NAMES:
+            return True
+    return False
+
+
+def _heredoc_bodies(text: str) -> list[str]:
+    """The body of every here-document in `text`, in one linear pass (Story 134.2).
+
+    A body runs from the line after its `<<TAG` opener to the first later line that is
+    TAG alone (blanks and tabs aside). An opener with no terminator runs to the end of
+    the text, as bash runs it, and ends the scan: every later body stands inside it. A
+    backreferencing regex re-scanned to the end for each unterminated opener, which grew
+    with the square of the command length."""
+    lines = text.split("\n")
+    line_starts: list[int] = []
+    offset = 0
+    terminators: dict[str, list[int]] = {}  # TAG -> indexes of the lines that are TAG alone
+    for index, line in enumerate(lines):
+        line_starts.append(offset)
+        offset += len(line) + 1
+        word = line.strip(" \t")
+        if word:
+            terminators.setdefault(word, []).append(index)
+    bodies: list[str] = []
+    pos = 0
+    while True:
+        opener = _HEREDOC_OPEN_RE.search(text, pos)
+        if opener is None:
+            break
+        line_index = bisect.bisect_right(line_starts, opener.end()) - 1
+        if line_index + 1 >= len(lines):  # no newline after the opener: no body
+            pos = opener.start() + 1
+            continue
+        body_line = line_index + 1
+        candidates = terminators.get(opener.group("tag"), [])
+        found = bisect.bisect_left(candidates, body_line)
+        body_start = line_starts[body_line]
+        if found == len(candidates):
+            bodies.append(text[body_start:])
+            break
+        end_line = candidates[found]
+        bodies.append(text[body_start : line_starts[end_line]])
+        pos = line_starts[end_line] + len(lines[end_line])
+    return bodies
+
+
+def _stdin_text_in_command(command: str, tokens: list[str], cwd: str) -> str:
+    """What the command text itself puts on a commit's stdin (Story 134.2): the body of a
+    here-document, a here-string, the arguments of an `echo`/`printf` and a file named by
+    `< file` or `cat file`. A message the text does not carry cannot be read before the
+    command runs; the `commit-msg` git hook remains the guarantee for it."""
+    parts: list[str] = _heredoc_bodies(command)
+    for i, tok in enumerate(tokens):
+        if tok == "<<<" and i + 1 < len(tokens):
+            parts.append(tokens[i + 1])
+        elif tok.startswith("<<<") and len(tok) > 3:
+            parts.append(tok[3:])
+        elif tok == "<" and i + 1 < len(tokens):
+            parts.append(_read_message_file(tokens[i + 1], cwd))
+        elif tok.startswith("<") and not tok.startswith("<<") and len(tok) > 1:
+            parts.append(_read_message_file(tok[1:], cwd))
+    for other in split_subcommands(command):
+        cmd = _command_tokens(_normal_form(other) or other)
+        if not cmd:
+            continue
+        if cmd[0] in _STDIN_WRITERS:
+            for arg in cmd[1:]:
+                parts.append(arg.replace("\\n", "\n"))
+        elif cmd[0] == "cat":
+            for arg in cmd[1:]:
+                if not arg.startswith(("-", "<")):
+                    parts.append(_read_message_file(arg, cwd))
+    return "\n".join(p for p in parts if p)
+
+
 def _read_message_file(name: str, cwd: str) -> str:
-    if name == "-":
+    if name in _STDIN_NAMES:
         return ""
-    path = Path(name)
-    if not path.is_absolute():
-        path = Path(cwd) / path
     try:
-        return path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
+        path = Path(os.path.expanduser(name))
+        if not path.is_absolute():
+            path = Path(cwd) / path
+        if not path.is_file():  # never a device or a pipe: reading one would not return
+            return ""
+        with path.open("rb") as handle:
+            return handle.read(_MESSAGE_FILE_LIMIT).decode("utf-8", errors="replace")
+    except (OSError, ValueError):
         return ""
 
 
@@ -521,7 +757,8 @@ def _pixi_run_env(tokens: list[str]) -> tuple[Optional[str], list[str]]:
 
 
 def match_guild_task_via_local_recipes(ctx: Context, rule: dict[str, Any]) -> Optional[str]:
-    for tokens in ctx.subcommands:
+    for written in ctx.subcommands:
+        tokens = _command_tokens(written)
         if len(tokens) < 2 or tokens[0] != "pixi" or tokens[1] != "run":
             continue
         env, rest = _pixi_run_env(tokens)
@@ -581,7 +818,8 @@ def match_adhoc_package_install(ctx: Context, rule: dict[str, Any]) -> Optional[
 
 
 def match_pixi_add_or_update(ctx: Context, rule: dict[str, Any]) -> Optional[str]:
-    for tokens in ctx.subcommands:
+    for written in ctx.subcommands:
+        tokens = _command_tokens(written)
         if len(tokens) >= 2 and tokens[0] == "pixi" and tokens[1] in ("add", "update"):
             return str(rule["reason"])
     return None
@@ -639,15 +877,25 @@ def match_bmad_switch_unsafe(ctx: Context, rule: dict[str, Any]) -> Optional[str
 
 def match_git_commit_guardrail(ctx: Context, rule: dict[str, Any]) -> Optional[str]:
     reasons = rule["reason"]
-    for tokens in ctx.subcommands:
-        if len(tokens) < 2 or tokens[0] != "git" or tokens[1] != "commit":
+    for written in ctx.subcommands:
+        tokens = _command_tokens(written)
+        if not tokens or tokens[0] != "git":
             continue
-        state = git_checkout_state(ctx.cwd)
+        # `git -c k=v commit`, `git -C dir commit`: one form, read through the helper
+        # every other git rule uses; the checkout judged is the one `-C` names.
+        sub = _git_subcommand_tokens(tokens)
+        if not sub or sub[0] != "commit":
+            continue
+        git_cwd = _git_commit_cwd(tokens, ctx.cwd)
+        state = git_checkout_state(git_cwd)
         if state is not None:
             branch, in_worktree = state
             if branch == "main" or not in_worktree:
                 return str(reasons["checkout"])
-        message = _extract_commit_message(tokens, ctx.cwd)
+        message = _extract_commit_message(tokens, git_cwd)
+        if _commit_reads_stdin(sub) and ctx.command:
+            carried = _stdin_text_in_command(ctx.command, tokens, git_cwd)
+            message = "\n".join(p for p in (message, carried) if p)
         if message:
             hook = _commit_msg_hook(ctx.repo_root)
             if hook is not None and hook.offending_lines(message):
@@ -682,7 +930,8 @@ def match_gh_pr_create_missing_repo(ctx: Context, rule: dict[str, Any]) -> Optio
 
 
 def match_uv_run_outside_repo_root(ctx: Context, rule: dict[str, Any]) -> Optional[str]:
-    for tokens in ctx.subcommands:
+    for written in ctx.subcommands:
+        tokens = _command_tokens(written)
         if len(tokens) >= 2 and tokens[0] == "uv" and tokens[1] == "run":
             toplevel = _git(["rev-parse", "--show-toplevel"], ctx.cwd)
             if toplevel is None:
@@ -822,7 +1071,8 @@ def _git_exit_code(args: list[str], cwd: str) -> Optional[int]:
         out = subprocess.run(
             ["git", *args], cwd=cwd, capture_output=True, text=True, timeout=5
         )
-    except (OSError, subprocess.SubprocessError):
+    # ValueError: a NUL in a `git -C` path; it degrades as a missing directory does.
+    except (OSError, ValueError, subprocess.SubprocessError):
         return None
     return out.returncode
 
@@ -851,6 +1101,12 @@ def _resolve_ref_tip(refname: str, cwd: str, *, remote: str = "origin") -> Optio
     return None
 
 
+# git's global options that take their value as the next token. `-c <name>=<value>`,
+# `--namespace <name>` and `--config-env <name>=<var>` were read as the subcommand
+# before Story 134.2, so `git -c k=v push ...` reached no rule.
+_GIT_VALUE_OPTIONS = ("-C", "-c", "--git-dir", "--work-tree", "--namespace", "--config-env")
+
+
 def _git_subcommand_tokens(tokens: list[str]) -> Optional[list[str]]:
     i = 0
     while i < len(tokens):
@@ -859,7 +1115,7 @@ def _git_subcommand_tokens(tokens: list[str]) -> Optional[list[str]]:
             continue
         j = i + 1
         while j < len(tokens):
-            if tokens[j] in ("-C", "--git-dir", "--work-tree") and j + 1 < len(tokens):
+            if tokens[j] in _GIT_VALUE_OPTIONS and j + 1 < len(tokens):
                 j += 2
                 continue
             if tokens[j].startswith("-C") and len(tokens[j]) > 2:
@@ -874,6 +1130,36 @@ def _git_subcommand_tokens(tokens: list[str]) -> Optional[list[str]]:
             return tokens[j:]
         return None
     return None
+
+
+def _is_short_cluster_with(tok: str, letters: str) -> bool:
+    """A short-option token (`-D`, `-Df`, `-fd`) that carries one of `letters`."""
+    return bool(re.fullmatch(r"-[A-Za-z]+", tok)) and any(ch in tok[1:] for ch in letters)
+
+
+def _git_commit_cwd(tokens: list[str], default_cwd: str) -> str:
+    """The directory `git ... commit` runs in: the last `-C <dir>` among git's global
+    options, each read against the one before it, as git does."""
+    cwd = Path(default_cwd)
+    try:
+        j = tokens.index("git") + 1
+    except ValueError:
+        return default_cwd
+    while j < len(tokens):
+        tok = tokens[j]
+        if tok == "-C" and j + 1 < len(tokens):
+            cwd = cwd / os.path.expanduser(tokens[j + 1])
+            j += 2
+        elif tok.startswith("-C") and len(tok) > 2:
+            cwd = cwd / os.path.expanduser(tok[2:])
+            j += 1
+        elif tok in _GIT_VALUE_OPTIONS and j + 1 < len(tokens):
+            j += 2
+        elif tok.startswith("-"):
+            j += 1
+        else:
+            break
+    return str(cwd)
 
 
 def _push_delete_target_ref(tok: str) -> str:
@@ -892,7 +1178,7 @@ def _ref_deletions_in_push(args: list[str]) -> list[str]:
     i = 0
     while i < len(args):
         tok = args[i]
-        if tok in ("--delete", "-d"):
+        if tok in ("--delete", "-d") or _is_short_cluster_with(tok, "d"):
             delete_mode = True
             i += 1
             continue
@@ -909,7 +1195,8 @@ def _ref_deletions_in_push(args: list[str]) -> list[str]:
             continue
         if ":" in tok:
             left, right = tok.split(":", 1)
-            if left == "" and right:
+            # `:<ref>` deletes, and so does `+:<ref>` (the `+` only forces it)
+            if left.lstrip("+") == "" and right:
                 if right.startswith("refs/"):
                     refs.append(right)
                 elif right.startswith("refs/heads/"):
@@ -940,7 +1227,7 @@ def _is_loop_home(path: Path) -> bool:
     try:
         resolved = Path(os.path.realpath(os.path.expanduser(str(path))))
         root = Path(os.path.realpath(str(_LOOP_HOMES_ROOT)))
-    except OSError:
+    except (OSError, ValueError):  # ValueError: an embedded NUL; unusable, as a missing path
         return False
     return resolved == root or root in resolved.parents
 
@@ -953,11 +1240,13 @@ def _gh_api_delete_ref(tokens: list[str]) -> Optional[str]:
     for i, tok in enumerate(tokens):
         if tok in ("-X", "--method") and i + 1 < len(tokens):
             method = tokens[i + 1].upper()
+        elif tok.startswith("--method="):
+            method = tok.split("=", 1)[1].upper()
         elif tok.startswith("-X") and len(tok) > 2:
-            method = tok[2:].upper()
+            method = tok[2:].lstrip("=").upper()
         if "git/refs/heads/" in tok or "git/refs/tags/" in tok:
             endpoint = tok
-    if method != "DELETE" or endpoint is None:
+    if endpoint is None or (method != "DELETE" and "DELETE" not in _gh_api_methods(tokens)):
         return None
     if "git/refs/heads/" in endpoint:
         branch = endpoint.split("git/refs/heads/", 1)[1].strip("/")
@@ -1002,8 +1291,8 @@ def _git_prune_covers_protected(verb: str, rest: list[str], prefixes: set[str]) 
         for tok in rest:
             if ":" in tok and _prune_refspec_covers_protected(tok, prefixes):
                 return True
-    if verb == "fetch" and "--prune" in rest:
-        if "--prune-tags" not in rest:
+    if verb == "fetch" and ("--prune" in rest or any(_is_short_cluster_with(t, "p") for t in rest)):
+        if "--prune-tags" not in rest and not any(_is_short_cluster_with(t, "P") for t in rest):
             return False
         for tok in rest:
             if tok.startswith("refs/") and _prune_refspec_covers_protected(tok, prefixes):
@@ -1044,6 +1333,27 @@ def _gh_pr_merge_deletes_loop_head(tokens: list[str]) -> bool:
     return False
 
 
+def _branch_or_tag_deletions(verb: str, rest: list[str]) -> list[str]:
+    """Full refnames `git branch`/`git tag`/`git update-ref` delete, with the delete flag
+    wherever it stands and in a bundle (`-Df`, `-f -D`, `--no-deref -d`; Story 134.2)."""
+    refs: list[str] = []
+    if verb == "branch" and any(t == "--delete" or _is_short_cluster_with(t, "dD") for t in rest):
+        refs.extend(_branch_refname(t) for t in rest if not t.startswith("-"))
+    elif verb == "tag" and any(t == "--delete" or _is_short_cluster_with(t, "d") for t in rest):
+        refs.extend(_tag_refname(t) for t in rest if not t.startswith("-"))
+    elif verb == "update-ref" and "-d" in rest:
+        skip = False
+        for tok in rest:
+            if skip:
+                skip = False
+            elif tok == "-m":
+                skip = True
+            elif not tok.startswith("-"):
+                refs.append(tok)
+                break
+    return refs
+
+
 def _collect_ref_deletions_from_tokens(tokens: list[str]) -> list[str]:
     refs: list[str] = []
     git_rest = _git_subcommand_tokens(tokens)
@@ -1052,18 +1362,8 @@ def _collect_ref_deletions_from_tokens(tokens: list[str]) -> list[str]:
         rest = git_rest[1:]
         if verb == "push":
             refs.extend(_ref_deletions_in_push(rest))
-        elif verb == "branch" and rest and rest[0] in ("-d", "-D", "--delete"):
-            for branch in rest[1:]:
-                if branch.startswith("-"):
-                    continue
-                refs.append(_branch_refname(branch))
-        elif verb == "tag" and rest and rest[0] in ("-d", "--delete"):
-            for tag in rest[1:]:
-                if tag.startswith("-"):
-                    continue
-                refs.append(_tag_refname(tag))
-        elif verb == "update-ref" and len(rest) >= 2 and rest[0] == "-d":
-            refs.append(rest[1])
+        else:
+            refs.extend(_branch_or_tag_deletions(verb, rest))
     deleted = _gh_api_delete_ref(tokens)
     if deleted:
         refs.append(deleted)
@@ -1088,21 +1388,10 @@ def match_protected_ref_deletion(ctx: Context, rule: dict[str, Any]) -> Optional
                         return reason
             elif verb == "fetch" and _git_prune_covers_protected("fetch", rest, prefixes):
                 return reason
-            elif verb == "branch" and rest and rest[0] in ("-d", "-D", "--delete"):
-                for branch in rest[1:]:
-                    if branch.startswith("-"):
-                        continue
-                    if _is_protected_ref(_branch_refname(branch), prefixes):
+            elif verb in ("branch", "tag", "update-ref"):
+                for ref in _branch_or_tag_deletions(verb, rest):
+                    if _is_protected_ref(ref, prefixes):
                         return reason
-            elif verb == "tag" and rest and rest[0] in ("-d", "--delete"):
-                for tag in rest[1:]:
-                    if tag.startswith("-"):
-                        continue
-                    if _is_protected_ref(_tag_refname(tag), prefixes):
-                        return reason
-            elif verb == "update-ref" and len(rest) >= 2 and rest[0] == "-d":
-                if _is_protected_ref(rest[1], prefixes):
-                    return reason
             elif verb == "worktree" and len(rest) >= 2 and rest[0] == "remove":
                 target = _worktree_remove_target(rest[1:])
                 if target is not None and _is_loop_home(target):
@@ -1229,6 +1518,9 @@ def _git_effective_cwd(tokens: list[str], default_cwd: str) -> str:
                 return str(Path(default_cwd) / tokens[j][2:])
             if tokens[j].startswith("--git-dir=") or tokens[j].startswith("--work-tree="):
                 j += 1
+                continue
+            if tokens[j] in ("-c", "--namespace", "--config-env") and j + 1 < len(tokens):
+                j += 2
                 continue
             break
         break
@@ -1413,17 +1705,41 @@ def _gh_api_has_explicit_get(body: list[str]) -> bool:
     return False
 
 
+_GH_API_WRITE_METHODS = ("POST", "PUT", "PATCH", "DELETE")
+
+
+def _gh_api_methods(tokens: list[str]) -> list[str]:
+    """Every HTTP method a `gh api` line names, wherever it stands and however it is
+    spelled: `-X V`, `-XV`, `-X=V`, `--method V`, `--method=V` (Story 134.2)."""
+    methods: list[str] = []
+    for i, tok in enumerate(tokens):
+        if tok in ("-X", "--method"):
+            if i + 1 < len(tokens):
+                methods.append(tokens[i + 1].upper())
+        elif tok.startswith("--method="):
+            methods.append(tok.split("=", 1)[1].upper())
+        elif tok.startswith("-X") and len(tok) > 2:
+            methods.append(tok[2:].lstrip("=").upper())
+    return methods
+
+
 def _gh_api_is_write(tokens: list[str]) -> bool:
     _, body = _strip_env_prefix(tokens)
+    # A write method anywhere on the line is a write, even beside an explicit GET: gh
+    # keeps the last value it is given, and a reader cannot tell which one wins.
+    if any(m in _GH_API_WRITE_METHODS for m in _gh_api_methods(body[2:])):
+        return True
     if _gh_api_has_explicit_get(body):
         return False
     method = _gh_api_http_method(body)
     if method != "GET":
-        return method in ("POST", "PUT", "PATCH", "DELETE")
+        return method in _GH_API_WRITE_METHODS
     for tok in body[2:]:
         if tok in ("-f", "-F", "--field", "--raw-field", "--input"):
             return True
         if tok.startswith(("-f", "-F")) and len(tok) > 2:
+            return True
+        if tok.startswith(("--field=", "--raw-field=", "--input=")):
             return True
     return False
 
@@ -1578,7 +1894,9 @@ def _tokens_have_yes(tokens: list[str]) -> bool:
 
 
 def _is_mason_invocation(tokens: list[str]) -> bool:
-    low = [Path(t).name for t in tokens]
+    low = [Path(t).name for t in _command_tokens(tokens)]
+    if not low:
+        return False
     if low[:2] == ["pyforge", "mason"]:
         return True
     if low[0] == "mason":
@@ -1609,13 +1927,14 @@ def _mason_submit_denied(tokens: list[str]) -> bool:
 
 
 def _cfe_submit_denied(tokens: list[str]) -> bool:
-    if len(tokens) >= 2 and tokens[0] == "pixi" and tokens[1] == "run":
-        env, rest = _pixi_run_env(tokens)
-        if env != "local-recipes":
-            return False
+    command = _command_tokens(tokens)
+    if len(command) >= 2 and command[0] == "pixi" and command[1] == "run":
+        env, rest = _pixi_run_env(command)
         task = next((tok for tok in rest if not tok.startswith("-")), None)
-        if task in ("submit-pr", "prepare-pr") and "--dry-run" not in tokens:
+        if env == "local-recipes" and task in ("submit-pr", "prepare-pr") and "--dry-run" not in tokens:
             return True
+        if env != "local-recipes" and len(command) == len(tokens):
+            return False  # as before Story 134.2, for the form with no assignment before it
     for tok in tokens:
         if tok.endswith("submit_pr.sh"):
             return True
@@ -1628,11 +1947,13 @@ def _cfe_submit_denied(tokens: list[str]) -> bool:
 def match_outward_package_submission(ctx: Context, rule: dict[str, Any]) -> Optional[str]:
     reason = str(rule["reason"])
     for tokens in ctx.subcommands:
-        low = [Path(t).name.lower() for t in tokens]
+        low = [Path(t).name.lower() for t in _command_tokens(tokens)]
         if low and low[0] == "feedrattler":
             if len(low) >= 2 and low[1] in ("--help", "--version", "-h"):
-                continue
-            return reason
+                if len(low) == len(tokens):
+                    continue
+            else:
+                return reason
         if low and low[0] == "conda-smithy" and len(low) >= 2:
             if low[1] in _CONDA_SMITHY_OUTWARD:
                 return reason
@@ -1757,10 +2078,12 @@ def _chain_path(ctx: Context, rule: dict[str, Any]) -> Optional[str]:
     globs = rule.get("paths")
     if not isinstance(globs, list) or not globs or not all(isinstance(g, str) and g for g in globs):
         raise RuntimeError(f"session_denials entry {rule.get('id')!r} declares no 'paths' glob list")
-    target = os.path.realpath(_resolve_against_cwd(ctx.cwd, ctx.file_path))
     try:
+        # realpath raises ValueError on an embedded NUL: an unusable path, judged as one
+        # outside the checkout (as `_is_loop_home` judges it a missing one).
+        target = os.path.realpath(_resolve_against_cwd(ctx.cwd, ctx.file_path))
         rel = Path(target).relative_to(os.path.realpath(ctx.repo_root)).as_posix()
-    except ValueError:
+    except (OSError, ValueError):
         return None
     return rel if any(_chain_glob_to_re(g).match(rel) for g in globs) else None
 

@@ -22,6 +22,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -838,6 +839,19 @@ def test_rm_rf_worktree_allowed(fake_repo: Path, tmp_path: Path) -> None:
     assert result.returncode == 0
 
 
+def test_rm_rf_loop_home_path_with_nul_does_not_crash(fake_repo: Path, tmp_path: Path) -> None:
+    """`os.path.realpath` raises ValueError on an embedded NUL: the loop-home check must
+    degrade as it does for a missing path, and the same path without the NUL still denies."""
+    loop_home = tmp_path / ".bmad-loops" / "pyforge-atlas"
+    loop_home.mkdir(parents=True)
+    env = {"HOME": str(tmp_path)}
+    nul = _run(_claude_bash(f"rm -rf {loop_home}/a\x00b", fake_repo), fake_repo, env_extra=env)
+    assert nul.returncode == 0, nul.stderr
+    assert "Traceback" not in nul.stderr
+    clean = _run(_claude_bash(f"rm -rf {loop_home}/ab", fake_repo), fake_repo, env_extra=env)
+    assert _claude_deny_reason(clean) is not None
+
+
 def test_gh_pr_merge_delete_branch_explicit_loop_head_denied(fake_repo: Path) -> None:
     cmd = "gh pr merge 12 --delete-branch --head loop/pyforge-marshal"
     assert _claude_deny_reason(_run(_claude_bash(cmd, fake_repo), fake_repo)) is not None
@@ -1489,6 +1503,20 @@ def test_chain_write_outside_the_checkout_is_not_judged(fake_repo: Path, tmp_pat
     assert result.stdout.strip() == ""
 
 
+def test_chain_write_path_with_nul_does_not_crash(fake_repo: Path, tmp_path: Path) -> None:
+    """`os.path.realpath` raises ValueError on an embedded NUL: the chain-path matcher must
+    degrade as it does for a path outside the checkout, and the same path without the NUL
+    still denies."""
+    tree = _flag_tree(tmp_path / "flipped", "foundry")
+    env = {"PYFORGE_FLAGS_PATH": str(tree)}
+    rel = _CHAIN_PATHS[0]
+    nul = _run(_claude_write(str(fake_repo / rel) + "\x00x", fake_repo), fake_repo, env)
+    assert nul.returncode == 0, nul.stderr
+    assert "Traceback" not in nul.stderr
+    clean = _run(_claude_write(str(fake_repo / rel), fake_repo), fake_repo, env)
+    assert _claude_deny_reason(clean) == _chain_reason("off_writer", "foundry")
+
+
 def test_chain_write_default_source_denies(fake_repo: Path) -> None:
     """No PYFORGE_FLAGS_PATH and no tree in the checkout: `root_of_record()` answers the default,
     which proves no writer."""
@@ -1524,3 +1552,557 @@ def test_slug_parity_hook_reads_core_forge_slugs(hook_module) -> None:
     """The hook's own slug is core's `FORGE_SLUGS[roots.this]`, never a literal of its own."""
     roots = json.loads(REAL_ROSTER.read_text(encoding="utf-8"))["roots"]
     assert hook_module._this_forge_slug() == _core_forge_slugs()[roots["this"]]
+
+
+# --------------------------------------------------------------------------
+# Steward Story 134.2 (DW-steward-review-2026-11-24-4): the hook reads every
+# form of a command its rules name. Each case is data on the hook's stdin --
+# no refused command is ever run. A case id names the reported form.
+# --------------------------------------------------------------------------
+
+
+def _real_rule_reason(rule_id: str, key: Optional[str] = None) -> str:
+    real = json.loads(REAL_ROSTER.read_text(encoding="utf-8"))
+    for rule in real["session_denials"]:
+        if rule["id"] == rule_id:
+            reason = rule["reason"]
+            return str(reason[key]) if key else str(reason)
+    raise KeyError(rule_id)
+
+
+# Item 1: the six prefixes the row names, then the same class met while fixing.
+_PREFIXES_134_2 = {
+    "assignment": "FOO=1 {cmd}",
+    "env": "env FOO=1 {cmd}",
+    "command": "command {cmd}",
+    "time": "time {cmd}",
+    "subshell": "( {cmd} )",
+    "absolute-path": "/usr/bin/{cmd}",
+    "env-options": "env -u FOO -i BAR=2 {cmd}",
+    "subshell-glued": "({cmd})",
+    "brace-group": "{{ {cmd}; }}",
+    "nice": "nice -n 5 {cmd}",
+    "nohup": "nohup {cmd}",
+    "exec": "exec {cmd}",
+    "time-p": "time -p {cmd}",
+    "shell-keyword": "if true; then {cmd}; fi",
+    "negation": "! {cmd}",
+    "background": "sleep 1 & {cmd}",
+    "assignment-in-shell-c": "FOO=1 bash -c '{cmd}'",
+    "stacked": "FOO=1 env BAR=2 time /usr/bin/{cmd}",
+}
+_PREFIX_IDS_134_2 = list(_PREFIXES_134_2)
+
+
+def _prefixed(prefix_id: str, command: str) -> str:
+    return _PREFIXES_134_2[prefix_id].format(cmd=command)
+
+
+@pytest.mark.parametrize("prefix_id", _PREFIX_IDS_134_2)
+def test_134_2_prefixed_git_commit_on_main_denied(fake_repo: Path, prefix_id: str) -> None:
+    command = _prefixed(prefix_id, "git commit -m ok")
+    result = _run(_claude_bash(command, fake_repo), fake_repo)
+    assert result.returncode == 0
+    assert _claude_deny_reason(result) == _real_rule_reason("git-commit-guardrail", "checkout")
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git -c user.name=x commit -m ok",
+        "git -C . commit -m ok",
+        "git --no-pager commit -m ok",
+        "git -c user.name=x -C . commit -m ok",
+        "FOO=1 /usr/bin/git -c user.name=x commit -m ok",
+    ],
+)
+def test_134_2_git_global_options_before_commit_denied(fake_repo: Path, command: str) -> None:
+    result = _run(_claude_bash(command, fake_repo), fake_repo)
+    assert _claude_deny_reason(result) == _real_rule_reason("git-commit-guardrail", "checkout")
+
+
+def test_134_2_git_dash_c_primary_checkout_from_a_worktree_denied(
+    fake_repo: Path, fake_worktree: Path
+) -> None:
+    """`git -C <primary> commit` run from a worktree commits on the primary checkout."""
+    result = _run(_claude_bash(f"git -C {fake_repo} commit -m ok", fake_worktree), fake_worktree)
+    assert _claude_deny_reason(result) == _real_rule_reason("git-commit-guardrail", "checkout")
+
+
+@pytest.mark.parametrize("prefix_id", _PREFIX_IDS_134_2)
+@pytest.mark.parametrize("verb", ["add numpy", "update"])
+def test_134_2_prefixed_pixi_add_or_update_denied(fake_repo: Path, prefix_id: str, verb: str) -> None:
+    result = _run(_claude_bash(_prefixed(prefix_id, f"pixi {verb}"), fake_repo), fake_repo)
+    assert result.returncode == 0
+    assert _claude_deny_reason(result) == _real_rule_reason("pixi-add-or-update")
+
+
+@pytest.mark.parametrize("prefix_id", _PREFIX_IDS_134_2)
+def test_134_2_prefixed_uv_run_outside_repo_root_denied(fake_repo: Path, prefix_id: str) -> None:
+    subdir = fake_repo / "subdir"
+    result = _run(_claude_bash(_prefixed(prefix_id, "uv run pytest"), subdir), subdir)
+    assert result.returncode == 0
+    assert _claude_deny_reason(result) == _real_rule_reason("uv-run-outside-repo-root")
+
+
+@pytest.mark.parametrize("prefix_id", _PREFIX_IDS_134_2)
+def test_134_2_prefixed_outward_github_write_denied(fake_repo: Path, prefix_id: str) -> None:
+    command = _prefixed(prefix_id, "gh pr comment 1 --repo conda-forge/x-feedstock --body y")
+    result = _run(_claude_bash(command, fake_repo), fake_repo)
+    assert result.returncode == 0
+    assert _claude_deny_reason(result) == _real_rule_reason("outward-github-write")
+
+
+@pytest.mark.parametrize("prefix_id", _PREFIX_IDS_134_2)
+def test_134_2_prefixed_gh_pr_merge_squash_denied(fake_repo: Path, prefix_id: str) -> None:
+    result = _run(_claude_bash(_prefixed(prefix_id, "gh pr merge 123 --squash"), fake_repo), fake_repo)
+    assert result.returncode == 0
+    assert _claude_deny_reason(result) == _real_rule_reason("gh-pr-merge-squash")
+
+
+@pytest.mark.parametrize("prefix_id", ["assignment", "env", "time", "subshell", "absolute-path"])
+def test_134_2_prefixed_guild_task_via_local_recipes_denied(fake_repo: Path, prefix_id: str) -> None:
+    command = _prefixed(prefix_id, "pixi run -e local-recipes detectors-ci")
+    reason = _claude_deny_reason(_run(_claude_bash(command, fake_repo), fake_repo))
+    assert reason is not None and "pyforge-guild detectors-ci" in reason
+
+
+@pytest.mark.parametrize("prefix_id", ["assignment", "env", "time", "subshell", "absolute-path"])
+def test_134_2_prefixed_outward_package_submission_denied(fake_repo: Path, prefix_id: str) -> None:
+    for inner in ("feedrattler x-feedstock", "pixi run -e local-recipes submit-pr x"):
+        result = _run(_claude_bash(_prefixed(prefix_id, inner), fake_repo), fake_repo)
+        assert _claude_deny_reason(result) == _real_rule_reason("outward-package-submission"), inner
+
+
+def test_134_2_env_gh_repo_names_the_foreign_repository(fake_repo: Path) -> None:
+    """`env GH_REPO=<foreign> gh ...`: the assignment `env` carries still names the target."""
+    result = _run(_claude_bash("env GH_REPO=conda-forge/x gh issue comment 1 -b y", fake_repo), fake_repo)
+    assert _claude_deny_reason(result) == _real_rule_reason("outward-github-write")
+
+
+# Item 2: `gh api` -- the method wherever it stands, and the `=` field forms.
+_FOREIGN_COMMENTS = "repos/conda-forge/x/issues/1/comments"
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        f"gh api {_FOREIGN_COMMENTS} -X POST",
+        f"gh api {_FOREIGN_COMMENTS} -XPOST",
+        f"gh api {_FOREIGN_COMMENTS} --method POST",
+        f"gh api {_FOREIGN_COMMENTS} --method=POST",
+        f"gh api -XPOST {_FOREIGN_COMMENTS}",
+        f"gh api {_FOREIGN_COMMENTS} --method=delete",
+        f"gh api -H 'Accept: application/vnd.github+json' {_FOREIGN_COMMENTS} -X PATCH",
+        "gh api repos/conda-forge/x/pulls --field=title=t",
+        "gh api repos/conda-forge/x/pulls --raw-field=title=t",
+        "gh api repos/conda-forge/x/pulls -f=title=t",
+        "gh api repos/conda-forge/x/pulls -F=title=t",
+        "gh api repos/conda-forge/x/pulls --input=body.json",
+        "gh api repos/conda-forge/x/pulls --field title=t",
+        f"FOO=1 /usr/local/bin/gh api {_FOREIGN_COMMENTS} --method=POST",
+        # A write method anywhere on the line wins over an explicit GET (gh keeps the
+        # last value it is given): review finding 1 of Story 134.2.
+        "gh api --method GET repos/other/repo/issues/1 -X DELETE",
+        "gh api -X GET repos/other/repo/issues --method POST -f title=x",
+        "gh api -X GET -X POST repos/other/repo/issues",
+        "gh api --method=GET repos/other/repo/issues --method=PATCH",
+        "gh api repos/other/repo/issues -X GET -XPUT",
+        "gh api repos/other/repo/issues -f title=x -X GET --method DELETE",
+        "gh api -X=GET repos/other/repo/issues -X=POST",
+        "gh api -X POST repos/other/repo/issues -X GET",
+        "gh api --method DELETE -X GET repos/other/repo/issues/1",
+    ],
+)
+def test_134_2_gh_api_write_read_wherever_it_stands(fake_repo: Path, command: str) -> None:
+    result = _run(_claude_bash(command, fake_repo), fake_repo)
+    assert result.returncode == 0
+    assert _claude_deny_reason(result) == _real_rule_reason("outward-github-write")
+
+
+# Item 3: deletion forms. The local-repository endpoint isolates the protected-ref rule:
+# the outward-write rule allows a write to this checkout's own repository.
+_LOCAL_LOOP_REF = "repos/rxm7706/local-recipes/git/refs/heads/loop/x"
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        f"gh api --method=DELETE {_LOCAL_LOOP_REF}",
+        f"gh api {_LOCAL_LOOP_REF} --method=DELETE",
+        f"gh api {_LOCAL_LOOP_REF} --method DELETE",
+        f"gh api {_LOCAL_LOOP_REF} -X DELETE",
+        f"gh api {_LOCAL_LOOP_REF} -XDELETE",
+        f"gh api {_LOCAL_LOOP_REF} -X=DELETE",
+        "git fetch -p -P origin",
+        "git fetch -pP origin",
+        "git fetch --prune -P origin",
+        "git fetch -p --prune-tags origin",
+        "git branch -Df attempt-preserve/run-1",
+        "git branch -fD loop/x",
+        "git branch -f -D loop/x",
+        "git branch -r -d loop/x",
+        "git branch --force --delete loop/x",
+        "git update-ref --no-deref -d refs/heads/loop/x",
+        "git update-ref -m gone -d refs/heads/loop/x",
+        "git push origin +:refs/heads/loop/x",
+        "git push origin +:loop/x",
+        "git push origin +:refs/tags/preserve/a",
+        "git push -fd origin loop/x",
+        "git tag -f -d archive/x",
+        "git -c core.pager=cat push origin --delete loop/x",
+        "git -c core.pager=cat branch -D loop/x",
+        "/usr/bin/git push origin --delete loop/x",
+        "FOO=1 env /usr/bin/git branch -D loop/x",
+    ],
+)
+def test_134_2_protected_ref_deletion_forms_denied(fake_repo: Path, command: str) -> None:
+    result = _run(_claude_bash(command, fake_repo), fake_repo)
+    assert result.returncode == 0
+    assert _claude_deny_reason(result) == _real_rule_reason("protected-ref-deletion")
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git branch -Df fix/x",
+        "git branch -f -D fix/x",
+        "git push origin +:fix/x",
+        "git update-ref --no-deref -d refs/heads/fix/x",
+        "git -c core.pager=cat branch -D fix/x",
+        "/usr/bin/git branch -D fix/x",
+    ],
+)
+def test_134_2_unreachable_ref_deletion_forms_denied(fake_repo: Path, command: str) -> None:
+    _ensure_origin_main(fake_repo)
+    _git(["switch", "-c", "fix/x"], fake_repo)
+    _git(["commit", "--allow-empty", "-m", "orphan-only"], fake_repo)
+    _git(["switch", "main"], fake_repo)
+    result = _run(_claude_bash(command, fake_repo), fake_repo)
+    assert _claude_deny_reason(result) == _real_rule_reason("unreachable-ref-deletion", "unreachable")
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git -c core.pager=cat push fork b",
+        "git -c core.pager=cat -c a.b=c push fork b",
+        "/usr/bin/git push fork b",
+        "( git push fork b )",
+    ],
+)
+def test_134_2_outward_git_push_forms_denied(push_fixture: Path, command: str) -> None:
+    result = _run(_claude_bash(command, push_fixture), push_fixture)
+    assert _claude_deny_reason(result) == _real_rule_reason("outward-git-push")
+
+
+# Item 4: a commit message the command text carries on stdin.
+_ATTRIBUTION = "Co-Authored-By: Claude <noreply@anthropic.com>"
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        f"git commit -F - <<'EOF'\nfix: something\n\n{_ATTRIBUTION}\nEOF",
+        f"git commit -F - <<EOF\nfix: something\n\n{_ATTRIBUTION}\nEOF\n",
+        f"git commit --file=- <<-'MSG'\n\tfix: something\n\n\t{_ATTRIBUTION}\n\tMSG",
+        f"git commit -aF - <<'EOF'\nfix: something\n\n{_ATTRIBUTION}\nEOF",
+        f"cat <<'EOF' | git commit -F -\nfix: something\n\n{_ATTRIBUTION}\nEOF",
+        f'git commit -F - <<< "fix: something\n\n{_ATTRIBUTION}"',
+        f"git commit --file - <<<'fix: something\n\n{_ATTRIBUTION}'",
+        f"printf 'fix: something\\n\\n{_ATTRIBUTION}\\n' | git commit -F -",
+        f"printf '%s\\n' 'fix: something' '' '{_ATTRIBUTION}' | git commit -F -",
+        f"echo -e 'fix: something\\n\\n{_ATTRIBUTION}' | git commit -F -",
+        f"echo '{_ATTRIBUTION}' | git commit --file=-",
+        f"echo '{_ATTRIBUTION}' | git commit -F /dev/stdin",
+        f"echo '{_ATTRIBUTION}' | FOO=1 /usr/bin/git -c user.name=x commit -F -",
+        f"git commit -m'fix: something\n\n{_ATTRIBUTION}'",
+    ],
+)
+def test_134_2_commit_message_on_stdin_read_for_attribution(fake_worktree: Path, command: str) -> None:
+    result = _run(_claude_bash(command, fake_worktree), fake_worktree)
+    assert result.returncode == 0
+    assert _claude_deny_reason(result) == _real_rule_reason("git-commit-guardrail", "attribution")
+
+
+def test_134_2_unterminated_here_document_reads_to_the_end(fake_worktree: Path) -> None:
+    """bash runs an unterminated here-document to the end of the text; so does the scan."""
+    command = f"git commit -F - <<'EOF'\nfix: something\n\n{_ATTRIBUTION}\n"
+    result = _run(_claude_bash(command, fake_worktree), fake_worktree)
+    assert _claude_deny_reason(result) == _real_rule_reason("git-commit-guardrail", "attribution")
+
+
+# The pattern the linear scan replaced (review finding 3); kept here as the oracle.
+_OLD_HEREDOC_RE = re.compile(
+    r"<<(?!<)-?[ \t]*(?P<quote>['\"]?)(?P<tag>[A-Za-z_][A-Za-z0-9_]*)(?P=quote)[^\n]*\n"
+    r"(?P<body>.*?)^[ \t]*(?P=tag)[ \t]*$",
+    re.DOTALL | re.MULTILINE,
+)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        f"git commit -F - <<'EOF'\nfix: something\n\n{_ATTRIBUTION}\nEOF",
+        f"git commit -F - <<EOF\nfix: something\n\n{_ATTRIBUTION}\nEOF\n",
+        f"git commit --file=- <<-'MSG'\n\tfix: something\n\n\t{_ATTRIBUTION}\n\tMSG",
+        f"cat <<'EOF' | git commit -F -\nfix: something\n\n{_ATTRIBUTION}\nEOF",
+        "git commit -F - <<'EOF'\nfix: something\n\nA clean body.\nEOF",
+        "cat <<A <<B\na\nA\nb\nB\n",
+        "cat <<A\none\nA\ncat <<\"B\"\ntwo\n  B  \nrest",
+        "cat <<EOF\n\nEOF",
+        'git commit -m "$(cat <<\'EOF\'\nfix\n\nEOF\n)"',
+        "cat <<<word",
+        "",
+    ],
+)
+def test_134_2_here_document_scan_matches_the_old_pattern(hook_module, text: str) -> None:
+    """Where every here-document is terminated, the linear scan finds exactly the bodies the
+    old pattern found."""
+    old = [m.group("body") for m in _OLD_HEREDOC_RE.finditer(text)]
+    assert hook_module._heredoc_bodies(text) == old
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "cat <<EOF",
+        "cat <<EOF\nno terminator",
+        "cat <<A\nopen\ncat <<B\nb\nB\n",
+        "cat <<EOFX\nbody\nEOF\n",
+        "cat <<'A'\n" * 50 + "tail",
+    ],
+)
+def test_134_2_here_document_scan_reads_more_never_less(hook_module, text: str) -> None:
+    """With an unterminated here-document the scan reads to the end of the text, as bash
+    does: every body the old pattern found still stands inside what the scan returns."""
+    old = [m.group("body") for m in _OLD_HEREDOC_RE.finditer(text)]
+    new = hook_module._heredoc_bodies(text)
+    assert all(any(body in found for found in new) for body in old)
+
+
+def test_134_2_many_unterminated_here_documents_scan_quickly(fake_worktree: Path) -> None:
+    """The old pattern re-scanned to the end for each `<<TAG` with no terminator (quadratic);
+    10,000 of them took about 18 s. The linear scan returns well inside the bound."""
+    import time
+
+    command = "git commit -F - " + "<<A\n" * 10_000 + "x" * 50 + " <<B" * 10_000
+    started = time.monotonic()
+    result = _run(_claude_bash(command, fake_worktree), fake_worktree)
+    elapsed = time.monotonic() - started
+    assert result.returncode == 0, result.stderr
+    assert elapsed < 10.0, elapsed
+
+
+def test_134_2_commit_message_file_redirected_to_stdin_read(fake_worktree: Path) -> None:
+    (fake_worktree / "msg.txt").write_text(f"fix: something\n\n{_ATTRIBUTION}\n", encoding="utf-8")
+    for command in ("git commit -F - < msg.txt", "git commit -F - <msg.txt", "cat msg.txt | git commit -F -"):
+        result = _run(_claude_bash(command, fake_worktree), fake_worktree)
+        assert _claude_deny_reason(result) == _real_rule_reason("git-commit-guardrail", "attribution"), command
+
+
+# Every command that was allowed and should stay allowed is still allowed.
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git commit -F - <<'EOF'\nfix: something\n\nA clean body.\nEOF",
+        "printf 'fix: something\\n' | git commit -F -",
+        "git commit -F - < no-such-file.txt",
+        "FOO=1 git commit -m ok",
+        "git commit -F",
+        "git commit -F -",
+        "git commit -F - < /dev/zero",
+        "cat /dev/zero | git commit -F -",
+        "env FOO=1 git commit -m ok",
+        "time git commit -m ok",
+        "( git commit -m ok )",
+        "/usr/bin/git commit -m ok",
+        "git -c user.name=x commit -m ok",
+        "git --no-pager commit -m 'fix: a (parenthesised) note'",
+        "grep -n 'Co-Authored-By' docs/x.md",
+        "git log --grep='Co-Authored-By' && git commit -m ok",
+    ],
+)
+def test_134_2_commit_in_a_worktree_off_main_stays_allowed(fake_worktree: Path, command: str) -> None:
+    result = _run(_claude_bash(command, fake_worktree), fake_worktree)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == ""
+
+
+def test_134_2_git_dash_c_worktree_commit_from_the_primary_checkout_stays_allowed(
+    fake_repo: Path, fake_worktree: Path
+) -> None:
+    for command in (
+        f"git -C {fake_worktree} commit -m ok",
+        f"git -c user.name=x -C {fake_worktree} commit -m ok",
+        f"git --no-pager -C {fake_worktree} commit -m ok",
+        f"FOO=1 git -C {fake_worktree} commit -m ok",
+    ):
+        result = _run(_claude_bash(command, fake_repo), fake_repo)
+        assert result.returncode == 0, result.stderr
+        assert result.stdout.strip() == "", command
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "PYFORGE_PREFLIGHT_SKIP=1 git push origin b",
+        "PYFORGE_PREFLIGHT_SKIP=1 git push -u origin b",
+        "PYFORGE_PREFLIGHT_SCOPE=full git push origin b",
+        "env PYFORGE_PREFLIGHT_SKIP=1 git push origin b",
+        "git -c core.pager=cat push origin b",
+        "/usr/bin/git push origin b",
+        "( git push origin b )",
+        "git push origin b:b",
+        "git push origin +b",
+        "git push home b",
+    ],
+)
+def test_134_2_documented_pushes_stay_allowed(push_fixture: Path, command: str) -> None:
+    result = _run(_claude_bash(command, push_fixture), push_fixture)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == ""
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "BMAD_ACTIVE_PROJECT=pyforge-steward pixi run -e pyforge-guild story-status-check",
+        "BMAD_ACTIVE_PROJECT=pyforge-steward pixi run --frozen -e pyforge-guild detectors-ci",
+        "PYFORGE_PREFLIGHT_SCOPE=full pixi run -e pyforge-guild pr-preflight",
+        "time pixi run -e pyforge-guild story-status-check",
+        "env FOO=1 pixi run -e local-recipes recipe-build",
+        "FOO=1 pixi run -e local-recipes resolve-name mypy",
+        "FOO=1 pixi run -e local-recipes submit-pr x --dry-run",
+        "pixi run add numpy",
+        "FOO=1 pixi list",
+        "FOO=1 uv run pytest",
+        "env FOO=1 uv run pytest",
+        "( uv run pytest )",
+        "/usr/bin/uv run pytest",
+        "gh pr create --repo rxm7706/local-recipes --title x --body y",
+        "FOO=1 gh pr create --repo rxm7706/local-recipes --title x --body y",
+        "env FOO=1 gh pr create --repo=rxm7706/local-recipes --title x --body y",
+        "/usr/bin/gh pr create -R rxm7706/local-recipes --title x --body y",
+        "( gh pr create --repo rxm7706/local-recipes --title x --body y )",
+        "gh pr edit 7 --repo rxm7706/local-recipes --add-label maintenance",
+        "gh pr merge 7 --merge --repo rxm7706/local-recipes --subject 'Merge a/1-2 into main'",
+        "time gh pr merge 123 --merge",
+        "GH_REPO=rxm7706/local-recipes gh pr comment 1 --body y",
+        "env GH_REPO=rxm7706/local-recipes gh pr comment 1 --body y",
+        "gh api rate_limit",
+        "gh api repos/conda-forge/x/pulls",
+        "gh api repos/conda-forge/x/pulls --paginate --jq '.[].title'",
+        "gh api repos/conda-forge/x/pulls -q .",
+        "gh api -H 'Accept: application/vnd.github+json' repos/conda-forge/x/pulls",
+        "gh api -X GET search/issues -f q=x",
+        "gh api search/issues --method GET -f q=x",
+        "gh api search/issues --method=GET --field=q=x",
+        "gh api graphql -f query='mutation { x }'",
+        "FOO=1 /usr/bin/gh api repos/conda-forge/x/pulls",
+        "gh api -X PATCH repos/rxm7706/local-recipes/pulls/1 -f title=t",
+        "gh api repos/rxm7706/local-recipes/pulls/1 --method=PATCH --field=title=t",
+        "gh api repos/rxm7706/local-recipes/git/refs/heads/feature-y --method=GET",
+        "command -v feedrattler",
+        "command -V pixi",
+        "command -v uv",
+        "feedrattler --help",
+        "git fetch -p origin",
+        "git fetch --prune origin",
+        "git fetch origin",
+        "git fetch -q --tags origin",
+        "git branch -m old new",
+        "git branch --sort=-committerdate",
+        "git branch -a",
+        "git branch -vv",
+        "git tag -l 'd*'",
+        "git tag -n",
+        "git update-ref refs/heads/x HEAD",
+        "git -c core.pager=cat status",
+        "git -c core.pager=cat log -1",
+        "( cd subdir && ls )",
+        "{ ls; }",
+        "if true; then ls; fi",
+        "sleep 1 & ls",
+        "! true",
+        "nohup ls",
+        "time",
+        "env",
+        "env -i",
+        "exec",
+        "command",
+        "FOO=1",
+        "FOO=1 BAR=2",
+        "(",
+        "( )",
+        "&",
+        "& &",
+        "{",
+        "then",
+        "echo 'unbalanced",
+        'echo "unbalanced',
+        "env -S",
+        "env -S 'ls -la'",
+        "timeout 5",
+        "nice -n",
+        "git",
+        "git -c",
+        "git -C",
+        "git status -F",
+        "git push origin +:",
+        "gh api",
+        "gh api -X",
+        "gh api --method=",
+        "<<<",
+        "cat <<EOF",
+        "cat <<'EOF'\nhello\nEOF",
+        "x=$(git rev-parse HEAD)",
+        "echo $((1+2))",
+        # A NUL in a `git -C` path degrades as a missing directory does: review finding 2.
+        "git -C /tmp/a\u0000b commit -m x",
+        "git -C /tmp/a\u0000b status",
+    ],
+)
+def test_134_2_allowed_forms_stay_allowed_and_the_hook_exits_cleanly(fake_repo: Path, command: str) -> None:
+    result = _run(_claude_bash(command, fake_repo), fake_repo)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == ""
+    cursor = _run(_cursor_bash(command, fake_repo), fake_repo)
+    assert cursor.returncode == 0, cursor.stderr
+    assert cursor.stdout.strip() == ""
+
+
+def test_134_2_merged_branch_and_tag_deletions_stay_allowed(fake_repo: Path) -> None:
+    main_tip = _ensure_origin_main(fake_repo)
+    _git(["branch", "feature/x", main_tip], fake_repo)
+    _git(["update-ref", "refs/remotes/origin/feature/x", main_tip], fake_repo)
+    _git(["tag", "feature-tag", main_tip], fake_repo)
+    for command in (
+        "git branch -d feature/x",
+        "git branch -Df feature/x",
+        "git branch -f -d feature/x",
+        "git push origin --delete feature/x",
+        "git push origin +:feature/x",
+        "git push origin :feature/x",
+        "git update-ref --no-deref -d refs/heads/feature/x",
+        "git tag -d feature-tag",
+        "FOO=1 /usr/bin/git branch -d feature/x",
+    ):
+        result = _run(_claude_bash(command, fake_repo), fake_repo)
+        assert result.returncode == 0, result.stderr
+        assert result.stdout.strip() == "", command
+
+
+def test_134_2_normal_forms_keep_the_original_tokens(hook_module) -> None:
+    """Tightening only: every token list the hook read before is still read; the
+    normal form is added beside it, never in its place."""
+    command = "FOO=1 env BAR=2 /usr/bin/pixi add numpy && ( git status )"
+    before = hook_module.split_subcommands(command)
+    after = hook_module.normalised_subcommands(command)
+    for tokens in before:
+        assert tokens in after
+    assert ["FOO=1", "BAR=2", "pixi", "add", "numpy"] in after
+    assert ["git", "status"] in after
+    assert hook_module.normalised_subcommands("ls -la") == [["ls", "-la"]]
