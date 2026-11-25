@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import json
+import stat
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+from pyforge.core.atomic_write import atomic_write_text
 
 if TYPE_CHECKING:
     from prometheus_client import Counter
@@ -20,7 +23,12 @@ class KillSwitchResult:
 
 
 def disable_flag(path: Path, flag: str) -> KillSwitchResult:
-    """Disable one flag in the FILE resolver tree and record the kill-switch metric."""
+    """Disable one flag in the FILE resolver tree, replacing the file in one step.
+
+    The write lands on the tree's real path (a symlinked tree stays a symlink and its target is replaced) with
+    the file's own mode kept. It needs a new file in that directory: an ``OSError`` propagates to the caller,
+    the tree untouched. ``kill_switch`` is the caller that also counts the activation.
+    """
     tree = json.loads(path.read_text(encoding="utf-8"))
     flags = tree.setdefault("flags", {})
     entry = flags.get(flag)
@@ -29,7 +37,12 @@ def disable_flag(path: Path, flag: str) -> KillSwitchResult:
         raise KeyError(msg)
     previous = str(entry.get("state", "ENABLED"))
     entry["state"] = "DISABLED"
-    path.write_text(json.dumps(tree, indent=2) + "\n", encoding="utf-8")
+    # Story 62.1: replaced in one step (tmp file, then os.replace), the file's own mode kept -- a reader never
+    # sees a truncated tree and falls back to the flag's default while it is being turned off. The replace lands
+    # on the resolved path: os.replace on a symlink would swap the link for a regular file and leave the tree
+    # every reader opens still ENABLED.
+    target = path.resolve()
+    atomic_write_text(target, json.dumps(tree, indent=2) + "\n", mode=stat.S_IMODE(target.stat().st_mode))
     return KillSwitchResult(
         flag=flag,
         path=path,

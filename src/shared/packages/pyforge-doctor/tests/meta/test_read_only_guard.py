@@ -16,9 +16,11 @@ a single named flag's state in a caller-supplied flags-tree file). Both
 predate this file's own NFR-1 blanket rule as named, bounded exceptions,
 never a general license to write. This is a best-effort STATIC AST scan for
 filesystem-write call sites: ``open(..., "w"/"a"/"x"/...)``, ``Path.write_text``/
-``Path.write_bytes``, and the common ``os``/``shutil`` mutation calls
+``Path.write_bytes``, the common ``os``/``shutil`` mutation calls
 (``remove``/``unlink``/``rename``/``mkdir``/``makedirs``/``chmod``/
-``copy*``/``move``/``rmtree``).
+``copy*``/``move``/``rmtree``), and the kernel's atomic write
+(``pyforge.core.atomic_write``'s ``atomic_write``/``atomic_write_bytes``/
+``atomic_write_text``, Story 62.1 -- the kill switch's one write).
 
 Positively proves the detector fires on synthetic violations — the guard is
 alive, not vacuous — mirroring the sole-ownership meta-test's own style.
@@ -62,6 +64,10 @@ _WRITE_METHOD_NAMES = frozenset(
         "chmod",
     }
 )
+
+# Story 62.1: the kernel's one atomic-write primitive and its two wrappers (``pyforge.core.atomic_write``) -- a
+# write call site like ``Path.write_text``, in the exempt modules and in every other.
+_KERNEL_ATOMIC_WRITE_NAMES = frozenset({"atomic_write", "atomic_write_bytes", "atomic_write_text"})
 
 
 def _package_modules() -> list[Path]:
@@ -120,8 +126,27 @@ def _write_method_violations(tree: ast.Module) -> list[int]:
     return violations
 
 
+def _kernel_atomic_write_violations(tree: ast.Module) -> list[int]:
+    """Story 62.1: a call of the kernel's atomic write (``pyforge.core.atomic_write``) is a write call site,
+    by name (``atomic_write_text(...)``) or through a module (``aw.atomic_write_text(...)``)."""
+    violations: list[int] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        name = (
+            node.func.id
+            if isinstance(node.func, ast.Name)
+            else node.func.attr
+            if isinstance(node.func, ast.Attribute)
+            else None
+        )
+        if name in _KERNEL_ATOMIC_WRITE_NAMES:
+            violations.append(node.lineno)
+    return violations
+
+
 def _read_only_violations(tree: ast.Module) -> list[int]:
-    return sorted(_open_call_violations(tree) + _write_method_violations(tree))
+    return sorted(_open_call_violations(tree) + _write_method_violations(tree) + _kernel_atomic_write_violations(tree))
 
 
 def test_package_scan_surface_is_not_empty():
@@ -208,3 +233,26 @@ def test_guard_does_not_fire_on_benign_read_only_calls():
         "Path('a.txt').open()\n"
     )
     assert _read_only_violations(ast.parse(benign)) == []
+
+
+def test_guard_fires_on_synthetic_kernel_atomic_write_violation():
+    """Story 62.1: the kernel's atomic write (``pyforge.core.atomic_write``) is a write call site under any of its
+    three names, called by name or through the module -- so the kill switch's exemption still narrows a real
+    permission, and a third module that writes through the kernel is still a violation."""
+    synthetic = (
+        "from pyforge.core import atomic_write as aw\n"
+        "from pyforge.core.atomic_write import atomic_write, atomic_write_bytes, atomic_write_text\n"
+        "atomic_write_text(path, 'y')\n"
+        "atomic_write_bytes(path, b'y')\n"
+        "atomic_write(path, fn)\n"
+        "aw.atomic_write_text(path, 'y')\n"
+    )
+    assert _read_only_violations(ast.parse(synthetic)) == [3, 4, 5, 6]
+
+
+def test_flag_kill_switch_writes_only_through_the_kernel_atomic_write():
+    """Story 62.1 (DW-doctor-61-1-2): the actuator's one write is the kernel's atomic replace, never a
+    truncate-then-write (``Path.write_text``, a write-mode ``open``) a concurrent reader could see half of."""
+    tree = _parse(PACKAGE_DIR / "actuators" / "flag_kill_switch.py")
+    assert _kernel_atomic_write_violations(tree), "flag_kill_switch.py does not write through pyforge.core.atomic_write"
+    assert _read_only_violations(tree) == sorted(_kernel_atomic_write_violations(tree))

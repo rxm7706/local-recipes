@@ -90,7 +90,7 @@ the current working directory (it takes no target), which the `*-check` pixi tas
 | `doctor diagnose` | one target: gather, grade, and with `--prescribe` partition, rank and name a root cause (CAP-3, CAP-5, CAP-8) |
 | `doctor backlog-intake` | tracked deferred-work entries that name one epic or story, fleet wide (CAP-10) |
 | `doctor flags` | the feature-flag actuator group; its one verb is below |
-| `doctor flags kill-switch` | disable one flag of the FILE-resolver tree and count it (CAP-96, Doctor's one actuator) |
+| `doctor flags kill-switch` | disable one flag of the FILE-resolver tree, replacing the file in one step, print the reason on the result line and count it (CAP-96, Doctor's one actuator) |
 | `python -m pyforge.doctor.sources` | the sources dispatcher: run one `DISPATCH` Source (CAP-93) |
 
 ### `doctor` options
@@ -120,7 +120,7 @@ the current working directory (it takes no target), which the `*-check` pixi tas
 | `doctor backlog-intake` | `path` | positional, optional | `.` |
 | `doctor backlog-intake` | `--json` | flag | one schema-valid DoctorReport on stdout |
 | `doctor flags kill-switch` | `--flag` | option, required | the flag key to disable |
-| `doctor flags kill-switch` | `--reason` | option, required | the operator's reason, recorded on the metric label |
+| `doctor flags kill-switch` | `--reason` | option, required | the operator's reason, printed on the result line (on one line) and recorded on the metric label |
 | `doctor flags kill-switch` | `--flags-path` | option | absent; the tree `django_pyforge.flags.resolve_tree_path()` names |
 
 ### Sources dispatcher options
@@ -363,7 +363,7 @@ The one computed environment read:
 
 Every import that leaves the package and the standard library. `pyproject.toml` declares `jsonschema`, `mcp`,
 `PyYAML` and `pyforge-core`; `pyforge-warden` is the optional `gate` extra (AD-1); `prometheus_client` and
-`django_pyforge` are undeclared and guarded. Eight `pyforge.core` modules are imported; no other station's package is,
+`django_pyforge` are undeclared and guarded. Nine `pyforge.core` modules are imported; no other station's package is,
 except warden's engines through the one declared relay (`tests/meta/test_source_independence.py`).
 
 | Import | Kind | Imported by | For |
@@ -376,6 +376,7 @@ except warden's engines through the one declared relay (`tests/meta/test_source_
 | `pyforge.core.roster` | required | `sources/chain.py`, `sources/one_chain.py` | `STATIONS` |
 | `pyforge.core.cutover_root` | required | `sources/capability_ledger.py`, `sources/writer_lock.py` | `root_of_record`, `LOCAL_DEV_RELATIVE`, `CutoverRootError` (spec-pyforge-core:CAP-13) |
 | `pyforge.core.flags` | required | `sources/writer_lock.py` | `OVERLAYS_FILE_NAME`, a file name; no flag is read |
+| `pyforge.core.atomic_write` | required | `actuators/flag_kill_switch.py` | `atomic_write_text`: the flag tree replaced in one step at its resolved path, its mode kept (CAP-96; spec-pyforge-core:CAP-2) |
 | `pyforge.warden.engines` | optional (`gate` extra), function-local | `sources/warden.py` | `run_doctor_checks` and its `DoctorCheck` rows; absent, one FAIL `pyforge-warden` |
 | `django_pyforge.flags` | optional, function-local | `__main__.py` | `resolve_tree_path` for `doctor flags kill-switch` without `--flags-path` |
 | `prometheus_client` | optional, guarded | `actuators/flag_kill_switch.py` | the `pyforge_doctor_flag_kill_switch_total{flag, reason}` counter |

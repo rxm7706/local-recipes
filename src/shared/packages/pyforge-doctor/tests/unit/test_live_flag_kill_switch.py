@@ -56,7 +56,9 @@ def test_cli_kill_switch_edits_the_tree_itself_not_a_rendered_copy(tmp_path: Pat
 
     assert rc == 0
     assert json.loads(tree.read_text(encoding="utf-8"))["flags"]["pyforge.three_surfaces"]["state"] == "DISABLED"
-    assert str(tree) in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert str(tree) in out
+    assert out.rstrip("\n").endswith("; reason: test")  # Story 62.1: the reason is on the result line
     # the overlay is a value document: the actuator leaves it alone
     assert json.loads((tmp_path / "flag-overlays.json").read_text(encoding="utf-8"))["production"] == {
         "pyforge.three_surfaces": "on"

@@ -4117,6 +4117,30 @@ So that a page that reads current to the detectors is also true.
 **And** the four governance Specs with stale present-tense text, and every code defect the review found that this change does not fix, are open rows in the owning stations' deferred-work ledgers
 **Status:** done
 
+## Epic 62: The kill switch writes the flag tree whole and reports its reason (spec-pyforge-doctor CAP-96)
+
+Minted 2026-11-25 from the station Dream's entry of the same date on the operator ruling of 2026-11-25: "can we close and complete these too - * DW-doctor-61-1-1: four governance Specs need a re-derive on your render route. * The lower-severity code defects from the review, as open deferred-work rows on eight stations' ledgers." The repository review of 2026-11-24 reported that `doctor flags kill-switch` rewrites the flag tree in place, so a reader can see it truncated, and that the reason it records lives only on a counter in a process that exits.
+**HARD boundaries:**
+- A defect is reproduced against the tree before it is fixed; one the tree does not show is closed as not a defect, with the command that showed it.
+- The flag tree stays the actuator's one write: no journal file, no new environment variable, no flag.
+- The `pyforge_doctor_flag_kill_switch_total` counter, the verb's options and its exit codes are untouched.
+
+### Story 62.1: The kill switch writes the flag tree whole and reports its reason
+
+As the operator who turns a capability off with `doctor flags kill-switch`,
+I want the flag tree replaced in one step and the reason I gave printed with the result,
+So that no reader sees a half-written tree while the switch is thrown, and the reason outlives the command.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-doctor CAP-96 (realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: a reader of the flag tree sees the old tree or the new one, never a partial one, and the operator's reason is on record after the command exits)
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/actuators/flag_kill_switch.py`, `src/shared/packages/pyforge-doctor/src/pyforge/doctor/__main__.py`, `src/shared/packages/pyforge-doctor/tests/unit/test_flag_kill_switch.py`, `src/shared/packages/pyforge-doctor/tests/unit/test_live_flag_kill_switch.py`, `src/shared/packages/pyforge-doctor/tests/meta/test_read_only_guard.py`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/contract.md`
+**Spec:** `planning-artifacts/specs/spec-62-1-the-kill-switch-writes-the-flag-tree-whole-and-reports-its-reason.md`
+**Given** `disable_flag` writes `flags.json` with `Path.write_text`, which truncates the file before it writes, and `record_kill_switch_metric` increments a counter that no scrape reads before the one-shot command exits
+**When** each of the two defects of `DW-doctor-61-1-2` is first reproduced against the tree, and then the tree is written through `pyforge.core.atomic_write` with the file's own mode kept, and the command's result line names the reason
+**Then** a failure during the write leaves `flags.json` byte-identical and no temporary file beside it, a symlinked tree is still a symlink and its target reads DISABLED, a tree whose directory the process cannot write is a named refusal at exit 2 with the file byte-identical, the one result line of a successful run carries the flag, the path, the state change and the reason, and the read-only guard still proves the actuator module writes and still fails when a third module does
+**And** a defect the tree does not reproduce is recorded as not a defect in the story spec and in the row, and `DW-doctor-61-1-2` reads resolved in doctor's ledger with the commit that closed it
+**Status:** review
+
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
