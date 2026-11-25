@@ -4453,3 +4453,70 @@ def test_environment_text_output_names_every_repeated_platform(verb_argv, engine
     out = capsys.readouterr().out
     assert "linux-64" in out
     assert "osx-arm64" in out
+
+
+# --- Story 41.1: a failed wrapped tool exits as contract.md's table says ----
+
+_FAILED_CFE_RESULT = CfeResult(returncode=1, stdout="tool failed", stderr="", json_body=None)
+
+_FAILED_SHIP_TARGET = ShipTargetResult(
+    target="conda-forge",
+    state=ShipState.FAILED,
+    reference=None,
+    message="submission failed",
+)
+
+
+@pytest.mark.parametrize(
+    ("patched", "wrapped_result", "argv", "expected_exit"),
+    [
+        # contract.md, `EXIT_OK`: "The command ran. For most verbs this says
+        # nothing about the delegated tool: read `data.returncode`".
+        (
+            "pyforge.mason.cli.recipe.build",
+            BuildResult(
+                mode="native",
+                config="linux64",
+                returncode=1,
+                stdout="build failed",
+                artifact_dir="build_artifacts/linux64",
+            ),
+            ["recipe", "build", "recipes/foo"],
+            EXIT_OK,
+        ),
+        ("pyforge.mason.cli.recipe.scan", _FAILED_CFE_RESULT, ["recipe", "scan", "recipes/foo"], EXIT_OK),
+        ("pyforge.mason.cli.recipe.optimize", _FAILED_CFE_RESULT, ["recipe", "optimize", "recipes/foo"], EXIT_OK),
+        ("pyforge.mason.cli.recipe.update", _FAILED_CFE_RESULT, ["recipe", "update", "recipes/foo"], EXIT_OK),
+        # contract.md, *Ship states*: "`recipe submit` exits 0 in every state".
+        ("pyforge.mason.cli.recipe.submit", _FAILED_SHIP_TARGET, ["recipe", "submit", "recipes/foo", "--yes"], EXIT_OK),
+        # contract.md, `EXIT_FAILED`: the outcome projected by "`package
+        # ship` (a target is `failed`)".
+        (
+            "pyforge.mason.cli.package.ship",
+            (_FAILED_SHIP_TARGET,),
+            ["package", "ship", "--to", "conda-forge", "--yes"],
+            EXIT_FAILED,
+        ),
+    ],
+    ids=["recipe-build", "recipe-scan", "recipe-optimize", "recipe-update", "recipe-submit", "package-ship"],
+)
+def test_wrapped_tool_exit_is_the_one_the_contract_table_states(patched, wrapped_result, argv, expected_exit, capsys):
+    """The wrapped tool ran and failed. `contract.md` § *Exit codes* names
+    the four projecting verbs (`recipe validate`, `environment lock`,
+    `environment check`, `package ship`); every other verb exits 0 and
+    carries the failure as data, under an envelope whose status is `ok`."""
+    with patch(patched, return_value=wrapped_result) as mock_tool:
+        rc = main([*argv, "--format", "json"])
+
+    mock_tool.assert_called_once()
+    assert rc == expected_exit
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["status"] == "ok"
+    assert doc["errors"] == []
+    data = doc["data"]
+    if "targets" in data:
+        assert [t["state"] for t in data["targets"]] == ["failed"]
+    elif "state" in data:
+        assert data["state"] == "failed"
+    else:
+        assert data["returncode"] == 1

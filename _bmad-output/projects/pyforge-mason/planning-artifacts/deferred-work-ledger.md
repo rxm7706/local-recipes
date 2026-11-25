@@ -2264,4 +2264,18 @@ status: open
   severity: medium
   promoted: 2026-11-24 — doctor Story 61.1 (the documentation review, branch `docs-verify-2026-11-24`)
   reason: a code, tooling or Spec change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
+  status: closed
+  resolution: 2026-11-25 — Story 41.1 (41-1-the-pypi-test-rehearsal-asks-the-index-it-uploads-to-and-a-wrapped-tool-s-failure-exits-as-the-contract-says), branch `review-defects-2026-11-25`. Defect 1 (the rehearsal's version check asks pypi.org): reproduced and fixed — `pytest tests/unit/test_pypi_index.py tests/unit/test_package.py -q -k rehearsal_index` exited 1 with 9 failed on the unchanged tree and exits 0 after; `pypi_index.version_exists` takes `index_base`, and `package.py::ship_pypi` derives it from `repository_url` and builds the reference and both messages from it. Defect 2 (`recipe build/scan/optimize/update/submit` exit 0 when the wrapped tool failed): not a defect — `pytest tests/unit/test_cli.py -q -k wrapped_tool_exit` exits 0 on the unchanged tree, and `planning-artifacts/specs/spec-pyforge-mason/contract.md` § *Exit codes* (`EXIT_OK`, `EXIT_FAILED`) and § *Ship states* state those exits; `cli.py` and `contract.md` are unchanged. The `fix:` line's open question, whether a failed wrapped tool projects to exit 1, is the operator's and is carried to DW-mason-41-1-1
+
+### DW-mason-41-1-1: Whether a failed wrapped tool should project to exit 1 is undecided. `recipe build`, `scan`, `optimize`, `update` and `submit` exit 0 with the failure as data (`data.returncode`, or the ship state), while `package ship` with a `failed` target exits 1; `contract.md` § *Exit codes* documents today's behaviour as intended, and Story 41.1 pins it with a test. Changing it changes the contract the MCP face reads, so it is the operator's decision and needs its own Dream entry.
+
+- source_spec: `planning-artifacts/specs/spec-41-1-the-pypi-test-rehearsal-asks-the-index-it-uploads-to-and-a-wrapped-tool-s-failure-exits-as-the-contract-says.md`
+  summary: Whether a failed wrapped tool should project to exit 1 is undecided. `recipe build`, `scan`, `optimize`, `update` and `submit` exit 0 with the failure as data (`data.returncode`, or the ship state), while `package ship` with a `failed` target exits 1; `contract.md` § *Exit codes* documents today's behaviour as intended, and Story 41.1 pins it with a test. Changing it changes the contract the MCP face reads, so it is the operator's decision and needs its own Dream entry.
+  evidence: `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/contract.md` § *Exit codes* (`EXIT_OK`: "For most verbs this says nothing about the delegated tool: read `data.returncode`"; `EXIT_FAILED` names `recipe validate`, `environment lock`, `environment check` and `package ship` alone) and § *Ship states*; `src/shared/packages/pyforge-mason/tests/unit/test_cli.py` (`-k wrapped_tool_exit`, 6 cases, exit 0).
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/contract.md
+  origin: written by mason's station closer, Story 41.1, from the `fix:` line of DW-mason-review-2026-11-24-1 (its second half, left undecided by the ruling of 2026-11-25); the build wrote no frontmatter row
+  owner: mason
+  severity: low
+  promoted: 2026-11-25 — Story 41.1 (mason's station closer), branch `review-defects-2026-11-25`
+  reason: an operator decision: no code changes until it is made.
   status: open

@@ -138,3 +138,36 @@ def test_version_exists_forwards_an_explicit_timeout():
         pypi_index.version_exists("pkg", "0.1.0", timeout=5.0)
 
     assert mock_urlopen.call_args.kwargs["timeout"] == 5.0
+
+
+# --- Story 41.1: the index base is the caller's, pypi.org by default ---------
+
+
+def test_rehearsal_index_version_exists_asks_the_base_it_is_given():
+    with patch(
+        "pyforge.mason.pypi_index.urllib.request.urlopen",
+        return_value=MagicMock(),
+    ) as mock_urlopen:
+        result = pypi_index.version_exists("pkg", "0.1.0", index_base="https://test.pypi.org")
+
+    assert result is True
+    assert mock_urlopen.call_args.args[0] == "https://test.pypi.org/pypi/pkg/0.1.0/json"
+
+
+def test_rehearsal_index_version_exists_defaults_to_pypi_org():
+    assert pypi_index.PYPI_INDEX_BASE == "https://pypi.org"
+    with patch(
+        "pyforge.mason.pypi_index.urllib.request.urlopen",
+        return_value=MagicMock(),
+    ) as mock_urlopen:
+        pypi_index.version_exists("pkg", "0.1.0")
+
+    assert mock_urlopen.call_args.args[0] == "https://pypi.org/pypi/pkg/0.1.0/json"
+
+
+def test_rehearsal_index_version_exists_still_never_raises_for_another_base():
+    with patch(
+        "pyforge.mason.pypi_index.urllib.request.urlopen",
+        side_effect=urllib.error.URLError("no route"),
+    ):
+        assert pypi_index.version_exists("pkg", "0.1.0", index_base="https://test.pypi.org") is None

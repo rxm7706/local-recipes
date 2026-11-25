@@ -29,8 +29,14 @@ own JSON index is a fully public, unauthenticated endpoint (unlike the
 none of `engines.twine`/`engines.pixi`'s own AD-14 credential-inheritance
 machinery -- there is simply no credential to inherit.
 
-`version_exists(name, version, *, timeout=None) -> bool | None`'s three-way
-outcome (AD-10: "never an assumption in either direction"): a `200` response
+Story 41.1: the index asked is the caller's. `version_exists` takes
+`index_base` (default `PYPI_INDEX_BASE`, pypi.org), so a TestPyPI rehearsal
+asks `https://test.pypi.org/pypi/<name>/<version>/json` -- the index it
+uploads to -- and pypi.org's answer is never read as TestPyPI's.
+`package.py` owns which upload repository maps to which base.
+
+`version_exists(name, version, *, index_base=PYPI_INDEX_BASE, timeout=None)
+-> bool | None`'s three-way outcome (AD-10: "never an assumption in either direction"): a `200` response
 means the exact `name`/`version` combination already exists on PyPI ->
 `True`; a `404` (`HTTPError.code == 404`) means it conclusively does not ->
 `False`; anything else -- a non-404 `HTTPError`, a `URLError` (DNS failure,
@@ -47,8 +53,14 @@ from __future__ import annotations
 import urllib.error
 import urllib.request
 
-_PYPI_JSON_INDEX_URL_TEMPLATE = "https://pypi.org/pypi/{name}/{version}/json"
-"""PyPI's own public, unauthenticated per-release JSON endpoint -- returns
+PYPI_INDEX_BASE = "https://pypi.org"
+"""The default index base (Story 41.1): scheme and host, no trailing slash.
+`package.py` reads it to name the `pypi` target's index; the JSON endpoint
+and the project page are both built from a base of this shape."""
+
+_PYPI_JSON_INDEX_URL_TEMPLATE = "{index_base}/pypi/{name}/{version}/json"
+"""A Warehouse index's public, unauthenticated per-release JSON endpoint
+(pypi.org and test.pypi.org serve the same path) -- returns
 `200` with a JSON body when `name`/`version` exists, `404` when it does not.
 Never parsed here: only the HTTP status code this module's own `urlopen`
 call raises or does not raise is consulted (module docstring); the response
@@ -62,10 +74,19 @@ adds, distinct from `engines.twine.upload`/`engines.pixi.upload`'s own 300s
 allowance for a real file transfer)."""
 
 
-def version_exists(name: str, version: str, *, timeout: float | None = None) -> bool | None:
+def version_exists(
+    name: str,
+    version: str,
+    *,
+    index_base: str = PYPI_INDEX_BASE,
+    timeout: float | None = None,
+) -> bool | None:
     """Query PyPI's own public JSON index for `name`==`version` (Story 3.7,
     FR-18, AD-10) -- see module docstring for the full three-way outcome and
     why this module alone is permitted to import `urllib.request`.
+
+    `index_base` is the index asked (Story 41.1): pypi.org by default, the
+    base `package.py` derives from the upload repository otherwise.
 
     `timeout` defaults to `_VERSION_EXISTS_TIMEOUT_SECONDS` when `None`,
     mirroring every engine adapter's own per-operation-default convention
@@ -77,7 +98,7 @@ def version_exists(name: str, version: str, *, timeout: float | None = None) -> 
     ship attempt.
     """
     resolved_timeout = timeout if timeout is not None else _VERSION_EXISTS_TIMEOUT_SECONDS
-    url = _PYPI_JSON_INDEX_URL_TEMPLATE.format(name=name, version=version)
+    url = _PYPI_JSON_INDEX_URL_TEMPLATE.format(index_base=index_base, name=name, version=version)
     try:
         with urllib.request.urlopen(url, timeout=resolved_timeout):
             return True
