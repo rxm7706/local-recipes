@@ -7,7 +7,7 @@ sources:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_nic_packs.py
   - src/shared/packages/pyforge-steward/tests/integration/nkp_probes.py
   - src/shared/packages/pyforge-steward/tests/integration/conftest.py
-verified: 2026-11-24
+verified: 2026-11-25
 ---
 
 # Host Nebari (NKP on kind)

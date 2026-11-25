@@ -5,7 +5,7 @@ sources:
   - src/shared/packages/pyforge-steward/tests/unit/test_cli.py
   - src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py
   - src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py
-verified: 2026-11-18
+verified: 2026-11-25
 ---
 
 # Station CLI Operations

@@ -3,7 +3,7 @@ sources:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/__main__.py
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/verdict.py
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/contract.md
-verified: 2026-11-18
+verified: 2026-11-25
 ---
 
 # How to diagnose with doctor

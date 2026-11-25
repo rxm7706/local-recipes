@@ -3,7 +3,7 @@ sources:
   - docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md
   - docs/governance/spec-one-chain-per-station/SPEC.md
   - docs/governance/guild-roster.json
-verified: 2026-11-24
+verified: 2026-11-25
 ---
 
 # Why one chain is a lock, and a fold is mop

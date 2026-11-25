@@ -8,7 +8,7 @@ sources:
   - scripts/platform-ci-local.sh
   - .github/workflows/platform-ci.yml
   - .github/workflows/pyforge-station-tests.yml
-verified: 2026-11-23
+verified: 2026-11-25
 ---
 
 # Recipe testing and builds
@@ -187,7 +187,8 @@ pixi run -e pyforge-guild platform-ci-local -- --images --container --engine pod
 Run it before pushing any `src/platform`, Containerfile or `pixi.toml` change: Platform CI
 triggers on those paths and builds three images per run. The four stage flags are `--test`,
 `--images`, `--container` and `--promotion`; with none, all four run. Docker or podman must
-be on the host. Images are built from a git-exported context (`git ls-files`, minus
+be on the host for `--images`, `--container` and `--promotion`; `--test` builds and runs no
+image and needs no container engine. Images are built from a git-exported context (`git ls-files`, minus
 `recipes/`), because a raw `docker build .` from a developer checkout walks the whole
 `.pixi/` tree. Logs land under `${TMPDIR:-/tmp}/platform-ci-local/`.
 

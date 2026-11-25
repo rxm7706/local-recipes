@@ -2,7 +2,7 @@
 sources:
   - src/platform/compose/compose.yml
   - src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py
-verified: 2026-11-17
+verified: 2026-11-25
 ---
 
 # PyForge Ecosystem Architecture

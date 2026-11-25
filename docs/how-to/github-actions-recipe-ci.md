@@ -6,7 +6,7 @@ sources:
   - .github/workflows/test-windows.yml
   - .github/workflows/sync-pypi-mappings.yml
   - .github/workflows/platform-deploy.yml
-verified: 2026-11-17
+verified: 2026-11-25
 ---
 
 # GitHub Actions recipe CI

@@ -6,7 +6,7 @@ sources:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py
   - docs/governance/guild-roster.json
-verified: 2026-11-24
+verified: 2026-11-25
 ---
 
 # How to use steward duties that need operator consent

@@ -4,7 +4,7 @@ sources:
   - .ci_support
   - test-recipes.py
   - .github/workflows/test-linux.yml
-verified: 2026-11-17
+verified: 2026-11-25
 ---
 
 # Local-Recipes Developer Guide
