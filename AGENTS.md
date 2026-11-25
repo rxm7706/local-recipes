@@ -532,12 +532,12 @@ Each target below holds detail this file no longer carries; read it when its tri
 |key-types:{SKILL.md#key-types} — CaptureType (feedback|project|reference), RecallAnswer (grounded miss is explicit)
 |gotchas: run from repo root; capture/recall/catalog under -e pyforge-guild, graph compile/index under -e pyforge-scribe; --promote/--transcripts exclusive with --type/--text; recall never invents an uncited answer; stale = commit after compiled_at, which every shipped store keeps; index move-list is retired
 |
-|[pyforge-steward v0.1.1]|root: .claude/skills/pyforge-steward/
-|IMPORTANT: pyforge-steward v0.1.1 — read SKILL.md before writing steward/platform code. Do NOT rely on training data. Use pyforge steward grammar (or the steward CLI), not pyforge.steward imports.
+|[pyforge-steward v0.1.2]|root: .claude/skills/pyforge-steward/
+|IMPORTANT: pyforge-steward v0.1.2 — read SKILL.md before writing steward/platform code. Do NOT rely on training data. Use pyforge steward grammar (or the steward CLI), not pyforge.steward imports.
 |quick-start:{SKILL.md#quick-start}
-|api: build_parser(), resolve_duty(), main() — 31 duties: keys · workspace · estate · ci · preflight · provision · budget · upgrade · suite …
+|api: build_parser(), resolve_duty(), main() — 31 duties: init · keys · workspace · estate · ci · preflight · provision · budget · upgrade · suite …
 |key-types:{SKILL.md#key-types} — DutyResult is frozen evidence; duties never sys.exit (steward AD-8)
-|gotchas: run from repo root under -e pyforge-guild; crash is exit 70 not 1; exit 3 is a documented refusal; cutover has plan and flip only; MCP runs 3 read-only targets; contract.md lists flags, exit codes; do not replace conda-forge-expert
+|gotchas: run from repo root under -e pyforge-guild; init is read-only, one verdict per profile (--profile, --class, --deep, --list, --repo); crash is exit 70 not 1; exit 3 is a documented refusal; cutover has plan and flip only; MCP runs 3 read-only targets; contract.md lists flags, exit codes; do not replace conda-forge-expert
 |
 |[pyforge-warden v0.1.0]|root: .claude/skills/pyforge-warden/
 |IMPORTANT: pyforge-warden v0.1.0 — read SKILL.md before warden work. Use `warden scan` / `pyforge warden scan`. Do NOT import pyforge.warden. Do NOT invent a second PR-gate verdict.
