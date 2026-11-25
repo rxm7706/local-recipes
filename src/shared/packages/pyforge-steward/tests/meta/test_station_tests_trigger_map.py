@@ -1526,8 +1526,9 @@ _H: dict[str, tuple[tuple[str, ...], str]] = {
         "build_pipeline_truth_report walks the suite roster, installed skills and planning records",
     ),
     "BOOTSTRAP_INPUTS": (
-        ("pixi.toml", ".pre-commit-config.yaml", ".github/workflows/*.yml"),
-        "the bootstrap prerequisites and setup steps read the pixi floor, hooks and workflows from the root",
+        ("pixi.toml", ".pre-commit-config.yaml", ".github/workflows/*.yml", "docs/governance/machine-readiness.yaml"),
+        "the bootstrap prerequisites and setup steps read the pixi floor, hooks and workflows from the root, and "
+        "(Story 135.1) the prerequisite rows and remedies from the machine-readiness data file",
     ),
     "FIVE_TIER": (
         ("docs/dreams/**", "docs/governance/**", "AGENTS.md", *_PLAN),
@@ -1729,6 +1730,25 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
             "GIT_PLATFORM_DIFF"
         ],
         "src/shared/packages/pyforge-steward/tests/meta/test_five_tier_check.py": _H["FIVE_TIER"],
+        # Stories 135.1 and 135.2 (spec-pyforge-steward CAP-183): load_data, the bootstrap prerequisite rows and
+        # `init --list` read the data file from the root; the test holds each row to the files it is declared in.
+        "src/shared/packages/pyforge-steward/tests/meta/test_machine_readiness_data.py": (
+            (
+                "docs/governance/machine-readiness.yaml",
+                "docs/governance/machine-readiness.schema.json",
+                "docs/governance/realization-register.yaml",
+                "pixi.toml",
+                ".github/workflows/platform-ci.yml",
+                "docs/how-to/host-nebari.md",
+                "docs/how-to/ocp-cluster-bringup.md",
+                "scripts/platform-ci-local.sh",
+                "scripts/precommit_config_check.py",
+                "src/platform/compose/compose.yml",
+            ),
+            "Stories 135.1 and 135.2 (spec-pyforge-steward CAP-183): steward init's loader, bootstrap's prerequisite "
+            "rows and the --list listing read the machine-readiness data file from the root; each row is held to "
+            "its schema, pixi.toml, the realization register and the file its floor or list is declared in",
+        ),
         "src/shared/packages/pyforge-steward/tests/meta/test_oracle_map.py": (
             (
                 "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/**",

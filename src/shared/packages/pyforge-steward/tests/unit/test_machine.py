@@ -1106,7 +1106,7 @@ def test_init_json_carries_the_verdicts_the_rows_and_the_earlier_prereqs_array(t
     assert (payload["ok"], payload["platform"], payload["data"]) == (
         False,
         "osx-arm64",
-        "docs/governance/machine-readiness.yaml",
+        machine.DATA_REL.as_posix(),
     )
     assert [(p["id"], p["chosen"], p["ready"], p["supported"]) for p in payload["profiles"]] == [
         ("desktop", False, False, True),
@@ -1341,6 +1341,23 @@ def test_the_default_runner_never_raises(tmp_path: Path) -> None:
     gone = machine._default_runner([str(tmp_path / "no-such-program")], tmp_path, 5)
     assert gone.returncode == 127
     assert gone.stderr.startswith("could not launch:")
+
+
+def test_the_default_runner_launches_through_the_kernel_process_seam(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pyforge.core.process import PosixProcess, ProcessResult
+
+    seen: list[tuple[list[str], dict[str, Any]]] = []
+
+    def fake_run(_self: PosixProcess, argv: Sequence[str], **kwargs: Any) -> ProcessResult:
+        seen.append((list(argv), kwargs))
+        return ProcessResult(returncode=3, stdout="out", stderr="err")
+
+    monkeypatch.setattr(PosixProcess, "run", fake_run)
+    done = machine._default_runner(["probe", "--version"], tmp_path, 7)
+    assert seen == [(["probe", "--version"], {"cwd": tmp_path, "timeout_s": 7})]
+    assert (done.args, done.returncode, done.stdout, done.stderr) == (["probe", "--version"], 3, "out", "err")
 
 
 def test_production_deps_are_the_real_seams(tmp_path: Path) -> None:

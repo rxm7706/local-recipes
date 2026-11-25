@@ -494,6 +494,8 @@ jobs:
             docs/governance
             docs/index.md
             docs/map.yaml
+            docs/how-to/host-nebari.md
+            docs/how-to/ocp-cluster-bringup.md
             docs/how-to/pixi-tasks.md
             docs/reference/bmad-estate-llms-full.md
             docs/reference/environments.md
