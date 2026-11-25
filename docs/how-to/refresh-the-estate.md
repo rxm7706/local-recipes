@@ -11,7 +11,7 @@ sources:
   - scripts/pin_policy_check.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/release-cadence.md
-verified: 2026-11-24
+verified: 2026-11-25
 ---
 
 # How to refresh the estate

@@ -8,7 +8,7 @@ sources:
   - scripts/claude_instruction_mode_check.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/claude.toml
   - src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py
-verified: 2026-11-18
+verified: 2026-11-25
 ---
 
 # How to Configure Your Coding Agent for This Repo
