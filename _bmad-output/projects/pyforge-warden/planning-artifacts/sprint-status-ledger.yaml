@@ -74,7 +74,7 @@ development_status:
   26-2-every-warden-capability-names-the-test-modules-that-prove-it: done
   26-3-the-contract-names-what-other-code-imports-where-each-capability-lives-and-the-open-slots: done
   27-1-warden-s-live-tree-readers-run-as-their-own-half: done
-  28-1-the-upload-and-the-job-views-answer-only-to-the-warden-role: review
+  28-1-the-upload-and-the-job-views-answer-only-to-the-warden-role: done
   3-1-configurable-policy: done
   3-2-auditable-expiring-waivers: done
   3-3-waiver-expiry-warn-only-adoption-on-ramp: done
@@ -137,7 +137,7 @@ development_status:
   epic-26-retrospective: optional
   epic-27: done
   epic-27-retrospective: optional
-  epic-28: in-progress
+  epic-28: done
   epic-28-retrospective: optional
   epic-3: done
   epic-3-retrospective: done

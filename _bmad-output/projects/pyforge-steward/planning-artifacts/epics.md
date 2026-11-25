@@ -9125,4 +9125,4 @@ So that the writer lock never moves under a live or paused run.
 **When** a state file under `<loop home>/.bmad-loop/runs/<run id>/` is read by those three keys, and a run state that is unreadable, not an object, or carries neither the keys nor a status counts as running
 **Then** an unfinished or paused run refuses the flip with "flip refused: a Marshal loop is running" and the state file's path, a finished, stopped or crashed run does not, and a state serialised from the installed `bmad_loop.model.RunState` reads running until it is finished
 **And** the loop home follows `BMAD_LOOP_HOME_ROOT` when it is set, a `state.json` outside a run directory is read by its status word as before, and one that is a list is read past instead of raising
-**Status:** review
+**Status:** done

@@ -2,7 +2,7 @@
 title: '61.1: The shelf, the front doors and the dossier say what the tree does'
 type: 'fix'
 created: '2026-11-24'
-status: 'in-review'
+status: 'done'
 story: 61-1-the-shelf-the-front-doors-and-the-dossier-say-what-the-tree-does
 spec: spec-pyforge-doctor
 difficulty: 'medium'
@@ -100,3 +100,4 @@ Ledger key: `61-1-the-shelf-the-front-doors-and-the-dossier-say-what-the-tree-do
 ## Spec Change Log
 
 - 2026-11-24: minted from the station Dream's 2026-11-24 entry and the operator's rulings of the same date; implemented the same day and left `in-review`: implementation and review do not share a session.
+- 2026-11-24: closed. PR #2383 merged as b5019058e3 (`Merge pyforge-doctor/61-1 into main`) after its 43 CI checks passed and the full local `pr-preflight` exited 0; independent reviewers read the diff against this spec before the merge and their findings were applied.

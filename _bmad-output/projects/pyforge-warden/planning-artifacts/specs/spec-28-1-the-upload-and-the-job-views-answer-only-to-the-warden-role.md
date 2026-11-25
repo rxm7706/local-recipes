@@ -2,7 +2,7 @@
 title: '28.1: The upload and the job views answer only to the warden role'
 type: 'fix'
 created: '2026-11-24'
-status: 'in-review'
+status: 'done'
 story: 28-1-the-upload-and-the-job-views-answer-only-to-the-warden-role
 spec: spec-pyforge-warden
 difficulty: 'medium'
@@ -74,3 +74,4 @@ Ledger key: `28-1-the-upload-and-the-job-views-answer-only-to-the-warden-role`.
 ## Spec Change Log
 
 - 2026-11-24: minted from the station Dream's 2026-11-24 entry and the operator's rulings of the same date; implemented the same day and left `in-review`: implementation and review do not share a session.
+- 2026-11-24: closed. PR #2383 merged as b5019058e3 (`Merge pyforge-doctor/61-1 into main`) after its 43 CI checks passed and the full local `pr-preflight` exited 0; independent reviewers read the diff against this spec before the merge and their findings were applied.
