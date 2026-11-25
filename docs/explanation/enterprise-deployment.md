@@ -9,7 +9,10 @@ sources:
   - src/platform/deploy/charts/platform/values.yaml
   - src/platform/deploy/overlays/eso
   - docs/how-to/rotate-platform-secrets.md
-verified: 2026-11-22
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py
+  - .claude/skills/conda-forge-expert/scripts/vulnerability_scanner.py
+  - .claude/skills/conda-forge-expert/scripts/cve_manager.py
+verified: 2026-11-24
 ---
 
 # Enterprise Deployment & Air-Gapped Environments
@@ -451,7 +454,7 @@ conda-forge and PyPI chains also read the merged pixi config (§ 4) after their
 env var; every other chain is env-var only. Either way **nothing is ever
 committed**.
 
-Each `resolve_*_urls()` helper in `_http.py` reads one env var. `ANACONDA_API_BASE_URL` is the exception: `conda_forge_atlas.py` reads it directly (§ 5).
+Each `resolve_*_urls()` helper in `_http.py` reads one env var. Three are read outside `_http.py`: `conda_forge_atlas.py` reads `ANACONDA_API_BASE_URL` directly (§ 5), `vulnerability_scanner.py` reads `OSV_API_BASE_URL` and `cve_manager.py` reads `OSV_VULNS_BUCKET_URL`.
 
 | Env var | Upstream it redirects | Used by |
 |---|---|---|
@@ -474,6 +477,8 @@ Each `resolve_*_urls()` helper in `_http.py` reads one env var. `ANACONDA_API_BA
 | `NUGET_BASE_URL` | NuGet | .NET generator |
 | `ENDOFLIFE_BASE_URL` | `endoflife.date` API | LTS/currency signals |
 | `S3_PARQUET_BASE_URL` | `anaconda-package-data` S3 bucket | download stats (Phase F) |
+| `OSV_API_BASE_URL` | `api.osv.dev` | vulnerability scan (`vulnerability_scanner.py`) |
+| `OSV_VULNS_BUCKET_URL` | `osv-vulnerabilities.storage.googleapis.com` bulk feed | CVE database refresh (`cve_manager.py`) |
 | `<CHANNEL>_BASE_URL` | any anaconda.org channel (uppercase, `-`→`_`; e.g. `BIOCONDA_BASE_URL`, `PYTORCH_BASE_URL`) | cross-channel presence (Phase Q) |
 
 ### Two independent TLS-trust chains
@@ -506,7 +511,7 @@ credentials from a **pre-created** Secret (`values.existingSecret`, default
 `platform-secrets`) via `secretKeyRef`. Story 48.4 documents **who creates
 that Secret** and **how keys rotate** for two deployment profiles.
 
-Full rotation procedures (ordered steps, dual-key assertion overlap, DB role
+Full rotation procedures (ordered steps, the assertion key swap, DB role
 coordination) live in
 [`docs/how-to/rotate-platform-secrets.md`](../how-to/rotate-platform-secrets.md). Platform deploy
 details and the manual `kubectl create secret` quick-start are in
@@ -521,12 +526,12 @@ details and the manual `kubectl create secret` quick-start are in
 |--------|---------|------------------|
 | Individual developer | `~/.config/sops/age/keys.txt` or `SOPS_AGE_KEY_FILE` | Compromise suspicion, offboarding, or annual hygiene |
 | CI deploy job | GitHub Actions / OpenShift secret `SOPS_AGE_KEY` (one line, `AGE-SECRET-KEY-…`) | Same, plus whenever the job's scope changes |
-| Shared ops laptop | OS keychain or hardware token export path recorded in `.steward/keys-inventory.yaml` | `steward keys rotate --scope <name>` on calendar or incident |
+| Shared ops laptop | OS keychain or hardware token export path recorded in `.steward/keys-inventory.yaml` | `steward keys rotate --scope <name> --new-identity <path>` on calendar or incident |
 
 **Inventory.** Steward records metadata (never values) in
 `.steward/keys-inventory.yaml` — scope, provenance (`issued` vs `observed`),
 status, and `last_rotated`. Issue a new age identity with
-`steward keys rotate --scope <name>`; retire without re-encryption via
+`steward keys rotate --scope <name> --new-identity <path>`; retire without re-encryption via
 `steward keys revoke --scope <name>` (see the keys runbook).
 
 **Platform bootstrap (dev).** For local CRC/kind installs, operators still

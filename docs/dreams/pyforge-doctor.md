@@ -797,6 +797,22 @@ Folded Dreams: [[bmad-drift-new-artifact-shape]], [[bmad-method-version-drift]],
   trusts git and the generators stamp what they read; the shelf follows its own style guide; and the chain closes
   with the documentation currency capability shipped. Steward Epic 126 and mason Epic 40 carry the rows those
   stations own.
+- **2026-11-24 (the documentation says what the tree does) — Found:** every documentation detector and all seven
+  page generators read green at main `7da08791f3`, and the Pages site builds, yet a read of each page against the tree
+  it describes found about 48 pages and files that state something the tree contradicts: commands that fail or do
+  nothing as written (`steward keys rotate` without `--new-identity`, `marshal seed update` without `--run`, a tutorial
+  that runs `build-locally.py` on `main`), environments described as carrying what they do not, a published dossier
+  with some twenty stale measurements, a Dream registry README that still teaches one Dream per file, and package
+  READMEs with dead links. The detectors date a page against its sources; none of them reads what the page says.
+  **Ruled** (operator rulings of 2026-11-24: "documentation update and verification - we want to ensure all documents are up to date accurate and verfied to be current", "do a deep code, .md, github pages content review across the entire repo", and, on the review's findings, "Docs and high code"): the documentation defects are corrected in one PR, with the two high code defects the same
+  review found (steward's and warden's own entries of this date). **For doctor:** this entry binds
+  `spec-pyforge-doctor` (the documentation currency capability, CAP-84; no text change) and decomposes as Epic 61, one
+  story: each finding is re-verified against the tree before its page moves, the page's `verified:` date moves with it,
+  and no detector, generator or station code changes. A page another station owns is corrected here as documentation
+  only. Four governance Specs carry present-tense text about files that are gone; a `SPEC.md` moves only by its memlog
+  and re-derive together, so those corrections are a deferred-work row (`DW-doctor-61-1-1`). The code defects the
+  review found below high severity are not in this change: each is an open row on its station's deferred-work
+  ledger and waits for a Dream entry on the station that owns it.
 
 ## 2026-10-26 — A spike report is not a corrupt file, and the classifier can't yet tell the difference (folded from bmad-drift-new-artifact-shape)
 

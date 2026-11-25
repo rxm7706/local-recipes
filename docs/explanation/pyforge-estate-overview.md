@@ -6,7 +6,10 @@ sources:
   - src/platform/deploy/charts/platform/values.yaml
   - src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py
-verified: 2026-11-22
+  - src/shared/packages/pyforge-warden/src/pyforge/warden/models.py
+  - docs/dreams/pyforge-warden.md
+  - src/platform/deploy/charts/platform/templates
+verified: 2026-11-24
 ---
 
 # PyForge Estate Overview
@@ -35,7 +38,7 @@ Work is divided among eight accountable "Smiths" (personas). Each holds a statio
 | **Herald** | The Proclaimer | Bridges Dreams to Claude Design decks (`herald deck`), and records progress, success claims and operational notices (`herald progress` / `success` / `notice`). |
 | **Marshal** | The Commander | The BMAD-loop dispatch/loop supervisor: launches and lands story sessions (`marshal factory dispatch`, `marshal factory drain`, `marshal land`), watches runs (`marshal watch`, `marshal status`), and retires/refreshes loop homes. |
 | **Atlas** | The Navigator | Maps dependencies and charts dual-ecosystem (Python and Conda) data pipelines (Kedro/DuckDB). |
-| **Warden** | The Guardian | Secures the perimeter. Audits six axes of trust (hygiene, security, license, currency, provenance, maintenance) and is the sole PR gate (`warden scan`). |
+| **Warden** | The Guardian | Secures the perimeter. Audits four axes of trust (hygiene, security, license, currency; the Dream's fifth and sixth, provenance and maintenance, are not built) and is the sole PR gate (`warden scan`). |
 | **Mason** | The Artisan Builder | Authors `recipe.yaml` files, resolves environments, and packages artifacts for cross-platform distribution (`mason recipe`, `mason package`, `mason environment`). |
 | **Doctor** | The Physician | Runs pre-flight environment diagnostics and continuously monitors fleet and feedstock health. Findings stay advisory, never a second PR gate. |
 | **Scribe** | The Chronicler | Curates team memory (`.claude/memory/`) into a knowledge graph. Captures decisions and retros for agent and human recall. |
@@ -45,7 +48,7 @@ Work is divided among eight accountable "Smiths" (personas). Each holds a statio
 
 PyForge uses a hexagonal (ports-and-adapters) architecture at the package level and a modular monolith at the platform level. This monolithic design is known as the Canopy.
 
-The system runs on one Django and ASGI process, backed by PostgreSQL and Redis. Since steward Stories 74.1 and 74.2 it can also consume an ops-provided S3-compatible object store (behind the flag `pyforge.steward.object_store_consumer`); the chart names the bucket and prefix and never deploys a store. It has no microservices or scattered process trees.
+The system runs on one Django and ASGI process, backed by PostgreSQL and Redis. Since steward Stories 74.1 and 74.2 it can also consume an ops-provided S3-compatible object store (behind the flag `pyforge.steward.object_store_consumer`); the chart names the bucket and prefix and never deploys a store. It has no per-station microservices or scattered process trees; the chart's other Deployments are the same image in other roles (workers, beat, event consumers), two sidecars (DB-GPT and the MCP host), and the backing services on their own images: the bundled Redis (cache and broker) and, under the default `oidc.profile: bundled`, Keycloak.
 
 ### Platform Host
 

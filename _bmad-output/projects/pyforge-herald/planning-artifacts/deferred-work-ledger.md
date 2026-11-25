@@ -1727,3 +1727,17 @@ deployment.
   severity: low
   promoted: 2026-11-12 — herald Story 50.2 (cutover readiness)
   status: open
+
+### DW-herald-review-2026-11-24-1: `deck pull --commit` cannot commit, and three smaller CLI defects
+
+- source_spec: `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-61-1-the-shelf-the-front-doors-and-the-dossier-say-what-the-tree-does.md` (found by the review that story carries)
+  summary: herald defects from the review. (1) The committer adds `.herald/bridge-state.json`, which `.gitignore` excludes, so `herald deck pull --commit` fails after the pull has recorded the new etag (lead confirmed the committed path and the ignore rule). Reviewer-reported: (2) the on-ship delivery upserts the day's progress record with omitted fields defaulted, resetting compute and token figures recorded earlier that day; (3) `success create --shipped-date` and `notice author --deadline` are stored unvalidated and a malformed date later crashes listing; (4) `progress --update` without a positional station writes nothing and exits 0; `deck exports` on an unknown slug exits 1 where the documented code is 2.
+  evidence: `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py:676-677,774`; `.gitignore:963`; `local_ship.py:155-157` against `webhook.py:684-694`; `claims.py:405,502`; `notices.py:572`; `cli.py:1155,1447-1454`.
+  location: src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py:676
+  origin: the repository review of 2026-11-24 at main `7da08791f3` (nine read-only reviewers; findings marked reviewer-reported were not re-traced by the session lead); written by doctor Story 61.1
+  fix: drop the state path from the commit set and commit before recording the etag; send merged figures on ship; validate dates on create; make the flag misuse a usage error.
+  owner: herald
+  severity: medium
+  promoted: 2026-11-24 — doctor Story 61.1 (the documentation review, branch `docs-verify-2026-11-24`)
+  reason: a code, tooling or Spec change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
+  status: open

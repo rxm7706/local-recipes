@@ -4,8 +4,8 @@ A unified web surface for the Herald CLI: one dashboard with 4-tab navigation
 (Pitch, Progress, Success, Operations) instead of separate web apps per
 Moment. Implements Epic 7 ("Foundation — Web Surface") of the
 `pyforge-herald` PRD — see
-`_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-7-1-web-layout-header-tabs-sidebar-responsive.md`
-and `spec-7-2-web-tooltips-inline-help.md`.
+`_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-7-1-design-implement-web-layout-header-tabs-sidebar-responsive.md`
+and `spec-7-2-implement-web-tooltips-inline-help.md`.
 
 This is a plain React + Vite app (no router/state library) styled with the
 repo's "Modernist" design tokens (Archivo font, `#f3f2f2` background,
@@ -59,9 +59,14 @@ npm run test      # vitest run (component tests: tab switching, sidebar
   sidebar's station/date-range filters. Reads `public/progress.json` (see
   `sync-progress` above) -- there is no live REST API in this
   scaled-down pass.
-- `src/panels/SuccessPanel.jsx`, `OperationsPanel.jsx` — per-tab
-  placeholders. Real data-fetching is Epic 9/10's scope; today they just
-  echo the active sidebar filters and show an empty state.
+- `src/panels/SuccessPanel.jsx` — the Success archive (Story 9.4): claims
+  with their evidence status, filtered by the sidebar's station, search and
+  date-range filters. Fetches the static `success.json` snapshot
+  (`../scripts/export_web_snapshot.py`).
+- `src/panels/OperationsPanel.jsx` — the Operations notice board (Story
+  10.5): notices with a panel-local category filter and the sidebar's
+  date-range filter. Fetches the static `notices.json` snapshot
+  (`../scripts/export_notices_snapshot.py`).
 - `src/hooks/useHashTab.js` — persists the active content tab in the URL
   hash (`#progress`/`#success`/`#operations`) so a reload lands on the same
   tab.

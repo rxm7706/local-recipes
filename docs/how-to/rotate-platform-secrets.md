@@ -5,7 +5,7 @@ sources:
   - src/platform/deploy/overlays/eso/externalsecret-platform-secrets.example.yaml
   - src/shared/packages/django-pyforge/src/django_pyforge/assertion/schema.py
   - src/shared/packages/django-pyforge/src/django_pyforge/assertion/verify.py
-verified: 2026-11-18
+verified: 2026-11-24
 ---
 
 # How to rotate platform secrets and age identities
@@ -101,19 +101,18 @@ The chart expects **three coordinated keys** in the same Secret:
 5. Run migrate hook if needed: `helm upgrade` triggers the pre-upgrade Liquibase Job.
 6. Rolling restart platform Deployments.
 
-## Rotate assertion PEM (dual-key verify)
+## Rotate assertion PEM
 
 Impact: Lane-3 / station MCP assertions; TTL is five minutes (`MAX_TTL_SECONDS` in `django_pyforge.assertion.schema`).
 
 Service assertions use RS256 (`PYFORGE_ASSERTION_PRIVATE_KEY` mints, `PYFORGE_ASSERTION_PUBLIC_KEY` verifies). The chart reads both from the same pre-created Secret as optional keys (`optional: true`): a pod without them still boots, and minting or verifying refuses until they are present.
 
-Dual-key overlap needs no multi-key code:
+There is no dual-key overlap. Each verifier holds one public PEM and checks every assertion against that key alone (`verify_assertion_claims`). Once a verifier has the new public PEM, an assertion signed with the old private key is refused as a bad signature; a verifier still on the old public PEM refuses an assertion signed with the new private key. Keep that window short by moving the minter and every verifier together:
 
-1. **Generate** a new RSA pair (2048+ bits). Keep the old public PEM.
-2. **Publish new public PEM** to every verifier (platform web, mcp-host, station portals reading `PYFORGE_ASSERTION_PUBLIC_KEY`). Verifiers now accept tokens signed with the **old** private key until they expire.
-3. **Wait ≥ 6 minutes** (TTL + clock skew buffer).
-4. **Switch minter** to the new private PEM (`PYFORGE_ASSERTION_PRIVATE_KEY` on the host mint endpoint).
-5. **Verify** a fresh assertion:
+1. **Generate** a new RSA pair (2048+ bits).
+2. **Patch both keys** (`PYFORGE_ASSERTION_PRIVATE_KEY` and `PYFORGE_ASSERTION_PUBLIC_KEY`) in one `platform-secrets` update.
+3. **Restart** the minter and every verifier (platform web, mcp-host, station portals reading `PYFORGE_ASSERTION_PUBLIC_KEY`) in the same rollout. An assertion minted before the restart fails on a restarted verifier; its five-minute TTL bounds how long such a token exists, and the caller needs a fresh one.
+4. **Verify** a fresh assertion:
 
    ```sh
    # After minting a test assertion $TOKEN against station atlas:
@@ -121,27 +120,14 @@ Dual-key overlap needs no multi-key code:
    from django_pyforge.assertion.verify import verify_assertion_claims
    import os
    pem = open(os.environ['PYFORGE_ASSERTION_PUBLIC_KEY_FILE']).read()
-   verify_assertion_claims('$TOKEN', audience='pyforge:station:atlas', public_pem=pem)
+   verify_assertion_claims('$TOKEN', audience='mcp:atlas', public_pem=pem)
    print('ok')
    "
    ```
 
-   Export `PYFORGE_ASSERTION_PUBLIC_KEY_FILE` pointing at the **new** public PEM file.
+   Export `PYFORGE_ASSERTION_PUBLIC_KEY_FILE` pointing at the **new** public PEM file. The audience is `mcp:<station>` (`audience_for` in `django_pyforge.assertion.schema`).
 
-6. **Remove** the old public PEM from verifiers once no errors appear in logs for one full TTL window.
-
-While both keys are live, confirm an old-format token still verifies against the **previous** public PEM before step 6:
-
-```sh
-pixi run -e platform-dev python -c "
-from django_pyforge.assertion.verify import verify_assertion_claims
-old_pem = open('old-public.pem').read()
-verify_assertion_claims('$OLD_TOKEN', audience='pyforge:station:atlas', public_pem=old_pem)
-print('old key ok')
-"
-```
-
-Then confirm new tokens verify only with the new public PEM after step 4.
+5. **Confirm** an assertion signed with the old private key no longer verifies: the same call with `$OLD_TOKEN` and the new public PEM raises `BadSignatureError`.
 
 ## ESO / Vault operators
 

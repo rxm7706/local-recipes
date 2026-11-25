@@ -19,7 +19,8 @@ Run from the repository root (the parent pixi workspace):
 
 ```bash
 pixi run -e pyforge-herald herald deck --help  # CLI help
-pixi run -e pyforge-herald pyforge-herald-test  # run the test suite
+pixi run -e pyforge-herald pyforge-herald-test  # the package half of the test suite
+pixi run -e pyforge-herald pyforge-herald-live-test  # the live-tree half
 ```
 
 The `pyforge-herald` environment is lean by design (`no-default-feature`): it

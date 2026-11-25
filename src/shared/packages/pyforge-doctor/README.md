@@ -18,7 +18,8 @@ for the PRD/architecture.
 Run from the repository root (the parent pixi workspace):
 
 ```bash
-pixi run -e pyforge-doctor pyforge-doctor-test  # run the test suite
+pixi run -e pyforge-doctor pyforge-doctor-test  # the package half of the test suite
+pixi run -e pyforge-doctor pyforge-doctor-live-test  # the live-tree half
 pixi run -e pyforge-doctor doctor --version     # console-script smoke test
 ```
 

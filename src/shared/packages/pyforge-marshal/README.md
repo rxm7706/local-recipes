@@ -118,7 +118,8 @@ from git or rebuild with `marshal seed adopt` if corrupt (`state-invalid` findin
 Run from the repository root (the parent pixi workspace):
 
 ```bash
-pixi run -e pyforge-marshal pyforge-marshal-test         # run the test suite
+pixi run -e pyforge-marshal pyforge-marshal-test         # the package half of the test suite
+pixi run -e pyforge-marshal pyforge-marshal-live-test    # the live-tree half
 pixi run -e pyforge-marshal marshal --version             # console-script smoke test
 pixi run -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml --no-cache  # AD-3/AD-4 contracts
 

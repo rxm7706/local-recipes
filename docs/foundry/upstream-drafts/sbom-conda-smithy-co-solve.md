@@ -9,9 +9,9 @@ PyForge's laptop SBOM (`pyforge-foundry-full`) cannot compose the `conda-smithy`
 ## Reproduce or evidence
 
 - `docs/foundry/sbom-gaps.md:11` — `feature:conda-smithy` upstream
-- `pixi.toml:121-122` — `[feature.conda-smithy.dependencies]` pins `conda-smithy` CalVer 3.x; comment notes 2026.x needs `conda`
-- `pixi.toml:1114-1119` — SBOM comment names conda-smithy caps on py-rattler and conda
-- `pixi.toml:2642` — py-rattler floor comment (conda solver variant caps py-rattler `<0.26`)
+- `pixi.toml:126-127` — `[feature.conda-smithy.dependencies]` pins `conda-smithy` CalVer 3.x; comment notes 2026.x needs `conda`
+- `pixi.toml:1233-1240` — SBOM comment names conda-smithy caps on py-rattler and conda
+- `pixi.toml:2828` — py-rattler floor comment (conda solver variant caps py-rattler `<0.26`)
 
 ## Local workaround
 

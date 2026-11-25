@@ -4,7 +4,8 @@ description: Project-specific documentation conventions based on Google style an
 sources:
   - https://github.com/bmad-code-org/BMAD-METHOD/blob/main/docs/_STYLE_GUIDE.md
   - .claude/skills/bmad-os-diataxis/SKILL.md
-verified: 2026-09-20
+  - docs-site/package.json
+verified: 2026-11-24
 ---
 
 :::note[Provenance]
@@ -246,6 +247,8 @@ your-project/
 
 
 ## Diagrams
+
+This section describes the upstream BMAD-METHOD docs site and is not wired in this repository: there is no `docs-site/src/diagrams/` directory, no `docs/images/` export directory and no `export-readme-diagrams` script in `docs-site/package.json`. Read it as the convention to follow if diagrams are added here; none of its paths or commands resolve today.
 
 Diagrams are hand-authored SVGs, kept in `docs-site/src/diagrams/`, and embedded
 like an image:

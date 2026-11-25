@@ -8202,3 +8202,15 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   locally, and wired into the browser-driving environments behind a local channel. The packages repackage Google's
   Chrome for Testing under its terms, so they are not conda-forge material: they publish to the private channel
   `SelfExplainML`, an operator act; until it is done the lock cannot name them and the PR stays a draft.
+- **2026-11-24 (the flip's loop guard reads the state bmad-loop writes) — Found:** a code review of main
+  `7da08791f3` found that `steward cutover flip` cannot see a running loop. Its guard reads a `status` or `state` word
+  from every `state.json` under `~/.bmad-loops`, and bmad-loop's run state carries neither: it carries `finished`,
+  `stopped` and `crashed`. A run state serialised from the installed `bmad_loop.model.RunState` read as not running,
+  so the writer lock could move under a live run; the tests used a hand-written `{"status": "running"}`.
+  **Ruled** (operator rulings of 2026-11-24: "documentation update and verification - we want to ensure all documents are up to date accurate and verfied to be current", "do a deep code, .md, github pages content review across the entire repo", and, on the review's findings, "Docs and high code"). **For steward:** this entry binds `spec-python-foundry-cutover` (the root-of-record flag is the
+  writer lock, fnd:CAP-8, whose text already says a flip is refused while a loop runs; no text change) and decomposes
+  as Epic 132, one story: a run's state under `<loop home>/.bmad-loop/runs/<run id>/` is running until it reads
+  finished, stopped or crashed, a paused run counts, and a run state that cannot be read refuses the flip. The loop home follows marshal's
+  `BMAD_LOOP_HOME_ROOT`, a bare run in the checkout's own `.bmad-loop/runs/` is read too, and the refusal names the
+  state file and how to end a run that was abandoned without being marked over. Steward
+  reads the file bmad-loop writes and imports nothing of marshal's. No flag is added: the guard is the gate.

@@ -5,6 +5,7 @@ loop and stamps the Realization log (Story 44.12)."""
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import json
 from pathlib import Path
 
@@ -17,10 +18,12 @@ from pyforge.testing_kit.flags import flag_states
 from pyforge.steward import cli
 from pyforge.steward.cutover import (
     LEDGER_WRITE_FLAG,
+    LOOP_HOME_ROOT_ENV,
     REALIZATION_LOG,
     CutoverDuty,
     flip_root,
     loops_running,
+    running_loop_states,
 )
 from pyforge.steward.cutover_ledger import DEFAULT_LEDGER
 from pyforge.steward.interfaces import DutyResult
@@ -223,6 +226,114 @@ def test_loops_running_reads_past_unreadable_and_idle_state(tmp_path: Path) -> N
     assert loops_running(home) is True
 
 
+def _run_state(home: Path, run_id: str, **overrides: object) -> Path:
+    """A state file where bmad-loop writes it, in the shape ``RunState.to_dict()`` gives (Story 132.1)."""
+    payload: dict[str, object] = {
+        "run_id": run_id,
+        "finished": False,
+        "stopped": False,
+        "crashed": False,
+        "paused_reason": None,
+        "tasks": {},
+    }
+    payload.update(overrides)
+    path = home / "pyforge-steward" / ".bmad-loop" / "runs" / run_id / "state.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    return path
+
+
+def test_loops_running_reads_bmad_loops_own_run_state(tmp_path: Path) -> None:
+    """bmad-loop's state has no ``status`` key: an unfinished run is a running loop."""
+    home = tmp_path / "loops"
+    _run_state(home, "r-done", finished=True)
+    _run_state(home, "r-stopped", stopped=True)
+    _run_state(home, "r-crashed", crashed=True)
+    assert loops_running(home) is False
+    _run_state(home, "r-live")
+    assert loops_running(home) is True
+
+
+def test_a_paused_bmad_loop_run_refuses_the_flip(tmp_path: Path) -> None:
+    flags = _flag_tree(tmp_path)
+    home = tmp_path / "loops"
+    _run_state(home, "r-paused", paused_reason="escalation")
+    with pytest.raises(CutoverRootError, match="loop is running"):
+        flip_root(flags, "foundry", tmp_path / "no-dream.md", loop_home=home)
+    assert read_cutover_root(flags) != "foundry"
+
+
+@pytest.mark.parametrize("text", ["{not json", "[]", "{}"])
+def test_a_run_state_that_cannot_be_shown_over_counts_as_running(tmp_path: Path, text: str) -> None:
+    home = tmp_path / "loops"
+    path = _run_state(home, "r-odd")
+    path.write_text(text, encoding="utf-8")
+    assert loops_running(home) is True
+
+
+def test_a_state_file_outside_a_run_directory_that_is_a_list_is_read_past(tmp_path: Path) -> None:
+    home = tmp_path / "loops"
+    (home / "x").mkdir(parents=True)
+    (home / "x" / "state.json").write_text("[]", encoding="utf-8")
+    assert loops_running(home) is False
+
+
+def test_only_a_bmad_loop_run_directory_is_read_by_the_run_keys(tmp_path: Path) -> None:
+    """Outside ``.bmad-loop/runs/<id>/`` a state file is read by its status word, never by the run keys."""
+    home = tmp_path / "loops"
+    for rel, text in (("x/runs/r/state.json", "{}"), ("x/state.json", json.dumps({"finished": False}))):
+        path = home / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+    assert loops_running(home) is False
+
+
+def test_a_state_from_the_installed_bmad_loop_reads_running_until_it_is_over(tmp_path: Path) -> None:
+    """The keys are bmad-loop's own: a rename there fails here wherever bmad-loop is installed (the Guild lane)."""
+    model = pytest.importorskip("bmad_loop.model")
+    required = {
+        field.name: "x"
+        for field in dataclasses.fields(model.RunState)
+        if field.default is dataclasses.MISSING and field.default_factory is dataclasses.MISSING
+    }
+    state = model.RunState(**required)
+    home = tmp_path / "loops"
+    path = home / "pyforge-x" / ".bmad-loop" / "runs" / "r1" / "state.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps(state.to_dict(), default=str), encoding="utf-8")
+    assert loops_running(home) is True
+    for key in ("finished", "stopped", "crashed"):
+        over = dataclasses.replace(state, **{key: True})
+        path.write_text(json.dumps(over.to_dict(), default=str), encoding="utf-8")
+        assert loops_running(home) is False, key
+
+
+def test_the_loop_home_override_is_read(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Marshal's ``BMAD_LOOP_HOME_ROOT`` moves the loop homes; the guard follows it."""
+    moved = tmp_path / "moved"
+    _run_state(moved, "r-live")
+    monkeypatch.setenv("HOME", str(tmp_path / "empty-home"))
+    monkeypatch.delenv(LOOP_HOME_ROOT_ENV, raising=False)
+    assert loops_running() is False
+    monkeypatch.setenv(LOOP_HOME_ROOT_ENV, str(moved))
+    assert loops_running() is True
+
+
+def test_a_run_in_the_checkouts_own_bmad_loop_refuses_the_flip_and_is_named(tmp_path: Path) -> None:
+    """A bare ``bmad-loop`` run keeps its state in the checkout, not under the loop home."""
+    flags = _flag_tree(tmp_path)
+    repo = tmp_path / "repo"
+    state = repo / ".bmad-loop" / "runs" / "r-bare" / "state.json"
+    state.parent.mkdir(parents=True)
+    state.write_text(json.dumps({"finished": False, "stopped": False, "crashed": False}), encoding="utf-8")
+    assert running_loop_states(tmp_path / "no-loops", repo) == [state]
+    with pytest.raises(CutoverRootError, match="loop is running") as refused:
+        flip_root(flags, "foundry", tmp_path / "no-dream.md", loop_home=tmp_path / "no-loops", repo_root=repo)
+    assert str(state) in str(refused.value)
+    assert "bmad-loop stop" in str(refused.value)
+    assert read_cutover_root(flags) != "foundry"
+
+
 def test_loops_running_without_a_loop_home_is_false(tmp_path: Path) -> None:
     assert loops_running(tmp_path / "absent") is False
 
@@ -338,7 +449,8 @@ def test_duty_flip_refused_by_a_running_loop_is_a_failed_result(duty_repo: Path,
     before = flags.read_text(encoding="utf-8")
     result = _run(cutover_verb="flip", to="foundry", flags=str(flags))
     assert result.ok is False
-    assert result.summary == "cutover: flip refused: a Marshal loop is running"
+    assert result.summary.startswith("cutover: flip refused: a Marshal loop is running (")
+    assert str(state) in result.summary
     assert flags.read_text(encoding="utf-8") == before
 
 

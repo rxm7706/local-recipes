@@ -5,7 +5,8 @@ sources:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py
   - scripts/detectors.py
   - tests/scripts/test_exit_code_domains_are_declared.py
-verified: 2026-11-17
+  - scripts/governance_currency_check.py
+verified: 2026-11-24
 ---
 
 # The judgement vocabulary — what each word means, positively
@@ -80,7 +81,7 @@ trap, and it has caused at least one real misread:
 | `pyforge-warden` | `{0, 1, 2, 130}` | error |
 | `pyforge-marshal` | `{0, 1, 2, 3, 4, 130}` | scope-violation (`3` is gate-failed) |
 | argparse, on any of them | `2` | invalid arguments |
-| script-based detectors (`scripts/*_check.py`) | `{0, 1}` or `{0, 1, 2}` | **could not run**, where the script has a `2` (`flag_gate_check.py`, `pixi_version_check.py`); `governance_currency_check.py` returns only `0` or `1` |
+| script-based detectors (`scripts/*_check.py`) | `{0, 1}` or `{0, 1, 2}` | **could not run**, where the script has a `2` (`flag_gate_check.py`, `pixi_version_check.py`); `governance_currency_check.py` returns `0` or `1` and exits `2` only when it crashes |
 
 Doctor's subset of warden's domain is deliberate and documented (the module docstring of Doctor's `verdict.py`: it
 omits warden's policy rung `1` because Doctor reports operability, not policy). The collision

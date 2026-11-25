@@ -9102,3 +9102,27 @@ So that no environment downloads a browser at run time and the browser a test dr
 **Then** every environment resolves one `playwright` version, each recipe builds for linux-64 and osx-arm64 (win-64 built or its blocker named), and a browser check runs on macOS with no `playwright install`
 **And** the lock names the packages only once the operator has published them to `SelfExplainML`; until then the PR is a draft
 **Status:** done
+
+## Epic 132: The flip's loop guard reads the state bmad-loop writes (spec-python-foundry-cutover fnd:CAP-8)
+
+Minted 2026-11-24 from the station Dream's entry of the same date on the operator rulings of 2026-11-24: "documentation update and verification - we want to ensure all documents are up to date accurate and verfied to be current", "do a deep code, .md, github pages content review across the entire repo", and, on the review's findings, "Docs and high code". `steward cutover flip` is refused while a Marshal loop runs, but its guard read a `status` word bmad-loop's run state does not carry, so a live run read as not running.
+**HARD boundaries:**
+- Steward reads the state file bmad-loop writes; it imports nothing of marshal's and shells to no loop CLI.
+- A run state that cannot be shown over refuses the flip; the refusal keeps its opening words and names the state file and how to end an abandoned run.
+- `cutover plan` and the flag tree are untouched.
+
+### Story 132.1: cutover flip reads bmad-loop's own run state
+
+As the operator who flips the root of record by hand,
+I want the flip refused whenever a bmad-loop run under the loop home, or in the checkout's own `.bmad-loop/runs/`, is not finished, stopped or crashed,
+So that the writer lock never moves under a live or paused run.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-python-foundry-cutover fnd:CAP-8 (realized, no text change); no AD moves; no FR
+**Flag:** `flag-exempt: detector-or-gate` (the loop guard is the flip's own gate; a gated gate is a silent green (roster list))
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/cutover.py`, `src/shared/packages/pyforge-steward/tests/unit/test_cutover.py`
+**Spec:** `planning-artifacts/specs/spec-132-1-cutover-flip-reads-bmad-loop-s-own-run-state.md`
+**Given** `loops_running` reads a `status` or `state` word from each `state.json` under the loop home, and bmad-loop's `RunState.to_dict()` carries `finished`, `stopped` and `crashed` and no such word
+**When** a state file under `<loop home>/.bmad-loop/runs/<run id>/` is read by those three keys, and a run state that is unreadable, not an object, or carries neither the keys nor a status counts as running
+**Then** an unfinished or paused run refuses the flip with "flip refused: a Marshal loop is running" and the state file's path, a finished, stopped or crashed run does not, and a state serialised from the installed `bmad_loop.model.RunState` reads running until it is finished
+**And** the loop home follows `BMAD_LOOP_HOME_ROOT` when it is set, a `state.json` outside a run directory is read by its status word as before, and one that is a list is read past instead of raising
+**Status:** review

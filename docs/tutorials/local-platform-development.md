@@ -11,7 +11,9 @@ sources:
   - src/platform/compose/compose.yml
   - .github/workflows/platform-ci.yml
   - scripts/platform-ci-local.sh
-verified: 2026-11-23
+  - pixi.toml
+  - pixi.lock
+verified: 2026-11-24
 ---
 
 # Local Platform Development
@@ -19,7 +21,7 @@ verified: 2026-11-23
 This tutorial guides Platform Builders and New Developers through standing up the `src/platform/` Django application locally. The PyForge platform is the central monolithic host for the enterprise API, Wagtail CMS, and local AI engines.
 
 ## Prerequisites
-- A working `pixi` installation and the laptop SBOM (`pixi install -e pyforge-foundry-full`). Platform work adds `platform-dev` (or `pyforge-foundry-full-stack` on linux-64, which composes it) — not `-e local-recipes`.
+- A working `pixi` installation and the laptop SBOM (`pixi install -e pyforge-foundry-full`). Platform work adds `platform-dev` — not `-e local-recipes`. `pyforge-foundry-full-stack` (linux-64) carries the local servers but neither Wagtail nor Langflow, so it does not replace `platform-dev`.
 - Ensure you have read the [PyForge Ecosystem Architecture](../explanation/pyforge-ecosystem-architecture.md) to understand the relationship between the platform and the CLI stations.
 
 ## Step 1: Provision the Development Environment
@@ -30,7 +32,7 @@ pixi install -e platform-dev
 ```
 
 ## Step 2: Configure the Database
-The platform expects a PostgreSQL instance at `DATABASE_URL` (default `postgres:///platform`, from `src/platform/config/settings/base.py`). `platform-dev` ships the server itself, so run it as a per-user process from that env (`pixi shell -e platform-dev`, then `initdb` / `pg_ctl start`) rather than installing a system PostgreSQL; the container alternative is `docker compose -f src/platform/compose/compose.yml up postgres redis`.
+The platform expects a PostgreSQL instance at `DATABASE_URL` (default `postgres:///platform`, from `src/platform/config/settings/base.py`). `platform-dev` ships the server itself, so run it as a per-user process from that env (`pixi shell -e platform-dev`, then `initdb` / `pg_ctl start`, then `createdb platform` once, since a fresh cluster has no `platform` database) rather than installing a system PostgreSQL; the container alternative is `docker compose -f src/platform/compose/compose.yml up postgres redis`, which creates the database itself.
 
 All `manage.py` commands run from `src/platform/`; `manage.py` defaults to `config.settings.local` and sets `COMPONENT_RUNTIME=local` for that leaf (only that exact value selects local development — anything else is treated as deployed). Apply the migrations:
 ```bash

@@ -1,11 +1,13 @@
 ---
 sources:
   - src/platform/deploy/nic/my-nebari-local.yaml
+  - pixi.toml
+  - pixi.lock
   - src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_nic.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_nic_packs.py
   - src/shared/packages/pyforge-steward/tests/integration/nkp_probes.py
   - src/shared/packages/pyforge-steward/tests/integration/conftest.py
-verified: 2026-11-17
+verified: 2026-11-24
 ---
 
 # Host Nebari (NKP on kind)
@@ -17,7 +19,7 @@ Bring up a local Nebari Kubernetes Platform cluster with the steward `deploy nic
 - Docker. Rootless Docker works, with two host settings the attended run of 2026-10-31 needed (both `sudo`, both persist under `/etc/sysctl.d/`):
   - `fs.inotify.max_user_instances=1024` — rootless Docker charges every container's inotify instances to your uid; at the default 128 the cloudnative-pg, envoy-gateway and metallb controllers crash-loop with `too many open files`.
   - `net.ipv4.ip_unprivileged_port_start=0` only when the NIC config publishes ports 80/443 on the host. NIC 0.14.0's local provider publishes 6443 alone and hands the gateway a MetalLB address on the kind Docker network (`192.168.1.100`), which rootless Docker does not route to the host — reach it with `kubectl port-forward -n envoy-gateway-system svc/<envoy-gateway-service> 443:443 80:80` and `curl --resolve nebari.local:443:127.0.0.1`, or `/etc/hosts` entries for `nebari.local` and `keycloak.nebari.local` pointing at `127.0.0.1`.
-- The `pyforge-steward` pixi environment: it provides `nic`, `kubectl` and `helm`. Run every `deploy nic` verb through it (`pixi run -e pyforge-steward pyforge steward deploy nic …`); without `kubectl` or `helm` on `PATH`, `up` on a config with packs refuses by name before `nic` starts.
+- The `pyforge-steward` pixi environment on a linux-64 host: it provides `kubectl` and `helm` on every platform, and `nic` on linux-64 only (`[feature.pyforge-steward.target.linux-64.dependencies]` in `pixi.toml`). Run every `deploy nic` verb through it (`pixi run -e pyforge-steward pyforge steward deploy nic …`); without `kubectl` or `helm` on `PATH`, `up` on a config with packs refuses by name before `nic` starts.
 - An age identity (`SOPS_AGE_KEY_FILE` or an issued row in `.steward/keys-inventory.yaml`) when the config declares provider credentials.
 
 ## Tracked config

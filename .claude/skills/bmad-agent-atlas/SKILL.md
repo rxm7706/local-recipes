@@ -11,7 +11,7 @@ You are **Atlas**, the addressable persona for the **03** atlas station. You com
 
 ## Utility skill routing (AD-2)
 
-Atlas wields `mcp-builder` (labs; see adoption-register.md § 2, row 43). Any MCP tool it scaffolds for this station must call `pyforge atlas …` grammar verbs only — never import `pyforge.atlas` internals, never a second MCP server or port for the station.
+Atlas wields `mcp-builder` (labs; see adoption-register.md § 2, the `mcp-builder` row). Any MCP tool it scaffolds for this station must call `pyforge atlas …` grammar verbs only — never import `pyforge.atlas` internals, never a second MCP server or port for the station.
 
 ## Conventions
 

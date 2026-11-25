@@ -105,7 +105,7 @@ disable-sharded = true
 # repodata format optimizations:
 # disable-zstd  = true   # if .json.zst fetches return 404
 # disable-bzip2 = true   # if .json.bz2 fetches return 404
-# disable-jlap  = true   # if incremental JLAP patches fail to apply
+# (`disable-jlap` is no longer a key: pixi 0.84.2 ignores it with a warning.)
 
 # ── (3) Channel mirrors — redirect conda.anaconda.org through Artifactory ──
 # Transparently rewrite any reference to conda.anaconda.org to flow through
@@ -208,4 +208,4 @@ index-url = "https://artifactory.example.com/artifactory/api/pypi/pypi/simple"
 #   The conda-forge-expert *runtime* scripts route separately through `_http.py`
 #   via the `*_BASE_URL` env-var family and JFROG_API_KEY / JFROG_USERNAME+
 #   JFROG_PASSWORD auth. Set both if you need end-to-end coverage. See
-#   docs/enterprise-deployment.md § 6 for the runtime layer.
+#   docs/explanation/enterprise-deployment.md § 6 for the runtime layer.

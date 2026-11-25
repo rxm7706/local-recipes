@@ -5,7 +5,7 @@ sources:
   - src/shared/packages/pyforge-herald/src/pyforge/herald/db.py
   - src/shared/packages/pyforge-herald/src/pyforge/herald/evidence.py
   - src/shared/packages/pyforge-herald/tests/unit/test_auth.py
-verified: 2026-11-18
+verified: 2026-11-24
 ---
 
 # How to troubleshoot Herald's progress, claims and notices
@@ -167,7 +167,7 @@ $ herald progress bogus-station
 herald: HeraldError: Station 'bogus-station' not found. Available: warden, atlas, marshal, mason, doctor, scribe, steward, herald. Use --list to see recorded stations.
 ```
 
-That check exists to catch a probable typo on a read; `herald progress <station> --update` itself records progress for a station outside the list.
+`herald progress <station> --update` runs the same check after the operator-role gate, so it refuses a station outside the list and writes nothing.
 
 An unknown subcommand or flag is an argparse-level usage error, exit code 2. Running `herald` with no arguments at all exits 1:
 

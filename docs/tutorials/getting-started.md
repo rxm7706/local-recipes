@@ -1,13 +1,15 @@
 ---
 sources:
   - environment.yaml
+  - pixi.toml
+  - pixi.lock
   - .scripts/run_win_build.bat
   - build-locally.py
   - test-recipes.py
   - scripts/ensure-local-recipes-env.sh
   - .claude/skills/conda-forge-expert/scripts/health_check.py
   - .claude/scripts/conda-forge-expert/native-build.sh
-verified: 2026-11-18
+verified: 2026-11-24
 ---
 
 # Getting started
@@ -41,16 +43,16 @@ pixi run -e local-recipes recipe-build recipes/<name>
 
 ## Understanding the build environments
 
-`rattler-build` (the v1 / `recipe.yaml` engine) lives in the `local-recipes` env, not the minimal `build` env. The `build` env carries only `conda-build`, for legacy `meta.yaml`.
+The recipe-factory tasks (`recipe-build` and the rest) live in the `local-recipes` env, not the minimal `build` env. The `build` env carries both `conda-build` and `rattler-build`, and none of those tasks; use it for legacy `meta.yaml`.
 
 | Environment | What it carries | Use it for |
 | --- | --- | --- |
 | `local-recipes` | The recipe factory (about 10 GB): rattler-build tasks, atlas bootstrap, the full task surface | Everyday `recipe.yaml` builds |
-| `build` | `conda-build` only | Legacy `meta.yaml` sweeps with `test-recipes.py` |
+| `build` | `conda-build` and `rattler-build`, none of the recipe-factory tasks | Legacy `meta.yaml` sweeps with `test-recipes.py` |
 | `pyforge-foundry-full` | Guild stations, detectors, and build/grayskull tooling (the laptop SBOM, fnd:CAP-12) | Station development on a laptop |
 | `pyforge-guild` | The station session default | Detectors and Guild tasks |
 
-The Windows batch route does not use pixi. It provisions its own build tools environment with micromamba if one is not already present, from `environment.yaml`: python 3.14, pixi, conda, conda-libmamba-solver, conda-build, conda-index, conda-forge-ci-setup, conda-forge-pinning, networkx and rattler-build-conda-compat. `environment.yaml` is exported from `pixi.toml` and carries the exact version floors.
+The Windows batch route does not use pixi. It provisions its own build tools environment with micromamba if one is not already present, from `environment.yaml`: python 3.14, pixi, conda, conda-libmamba-solver, conda-build, conda-index, conda-forge-ci-setup, conda-forge-pinning, networkx and rattler-build-conda-compat, among others. `environment.yaml` is exported from `pixi.toml` and carries the exact version floors.
 
 ## Installation
 
@@ -79,6 +81,7 @@ Install only the environments you need. A recipe author needs `local-recipes`; `
 For everyday recipe builds, use the purpose-built pixi tasks:
 
 ```bash
+git checkout -b <branch>                                       # recipe-build-docker runs build-locally.py, which refuses main
 pixi run -e local-recipes recipe-build recipes/<name>          # native rattler-build (fast, no Docker)
 pixi run -e local-recipes recipe-build-docker linux64          # full conda-forge CI fidelity (alma9)
 pixi run -e local-recipes recipe-build-cross recipes/<name> osx-arm64   # cross-platform .conda artifact
@@ -107,7 +110,7 @@ Never mix `meta.yaml` and `recipe.yaml` recipes in one build run; the tooling re
 
 ## Step 2: Build for another platform
 
-The dispatcher selects the backend for the config you name:
+The dispatcher selects the backend for the config you name. Create a branch first; `build-locally.py` refuses to run on `main`.
 
 ```
 python build-locally.py win64
@@ -119,7 +122,7 @@ python build-locally.py --filter win*
 - A `linux*` config runs `.scripts/run_docker_build.sh`, so it needs Docker.
 - An `osx*` config runs `.scripts/run_osx_build.sh` on macOS, and the Docker script on a Linux host.
 
-On Windows you can also run the batch runner directly. Open "Developer Command Prompt for VS", or a PowerShell or cmd with script execution allowed, and from the repo root select a variant (optional) and run it:
+On Windows you can also run the batch runner directly. Open "Developer Command Prompt for VS", or a PowerShell or cmd with script execution allowed, and from the repo root select a variant and run it:
 
 ```
 SET CONFIG=win64
@@ -132,8 +135,8 @@ The runner does six things:
 2. Activates it, and sets strict channel priority and the libmamba solver.
 3. Runs `run_conda_forge_build_setup` to configure conda-forge settings.
 4. Removes recipes also present in the `main` branch, so only the changed and new local recipes build.
-5. Builds all recipes found in `recipes\` through `.ci_support\build_all.py`.
-6. Indexes `%CONDA_BLD_PATH%` for local artifact resolution.
+5. Indexes `%CONDA_BLD_PATH%` for local artifact resolution.
+6. Builds all recipes found in `recipes\` through `.ci_support\build_all.py`.
 
 Artifacts land under `%CONDA_BLD_PATH%` (default `C:\bld`).
 
@@ -179,7 +182,7 @@ local-recipes/
 
 ### Which env builds recipes?
 
-`local-recipes`. It carries `rattler-build`; the `build` env carries only `conda-build` for legacy `meta.yaml`.
+`local-recipes`. It carries the `recipe-build` tasks; the `build` env carries `conda-build` and `rattler-build` but none of those tasks, and serves legacy `meta.yaml`.
 
 ### Do I need Docker?
 

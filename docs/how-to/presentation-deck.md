@@ -11,7 +11,7 @@ sources:
   - src/shared/packages/pyforge-herald/src/pyforge/herald/pptx_pipeline.py
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/infographic-standard.md
   - presentations/agentic-sdlc/package.json
-verified: 2026-11-18
+verified: 2026-11-24
 ---
 
 # Tech Spec: Design-to-Deck — reusable React/Vite presentation workflow (parameterized)
@@ -246,9 +246,9 @@ or the copies drift. Verify with
 after.
 
 **Shipping a `presentations/` PR.** It's a non-recipe change → add the
-`maintenance` + `documentation` labels (the `maintenance`-gated lint is what
-otherwise reds the staged-recipes linter) and confirm `environment.yaml` is in
-sync with `pixi.toml`. See `AGENTS.md` § *Pre-PR Pre-flight Checklist* item 7.
+`maintenance` label (the staged-recipes linter it once gated is retired; the
+label is still the rule) and confirm `environment.yaml` is in sync with
+`pixi.toml`. See `AGENTS.md` § *Pre-PR Pre-flight Checklist* item 7.
 
 ### Artifact dependency tree & editing surfaces (per deck — READ BEFORE EDITING)
 

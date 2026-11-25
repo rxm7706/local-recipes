@@ -280,6 +280,18 @@ One-chain fold: satellite Dreams archived in place with `Consolidated into [[pyf
   Story 44.8. `spec-pyforge-warden` does not co-govern `django-warden`; `contract.md`'s table of where each capability
   lives is enough. **Constraints:** no product behaviour changes and no flag is added; each piece left unbuilt is a
   deferred-work row. Owner `spec-pyforge-warden`. → CAP-27, CAP-28, CAP-29 / Epics 25, 26, 27, specced 2026-11-10.
+- **2026-11-24 (the upload answers only to the warden role) — Found:** a code review of main `7da08791f3` found three
+  views of the compliance web face with no role check: `upload_manifest`, `job_status` and `job_report` in
+  `django-warden`. Every other view in the module carries `require_station_role("warden")`, the platform has no
+  login-required middleware in front of `/stations/`, and the upload was also exempt from the CSRF check and took a
+  file of any size. A caller with no token could store a file, create a job row and enqueue a scan, and anyone
+  holding a job id could read its report. **Ruled** (operator rulings of 2026-11-24: "documentation update and verification - we want to ensure all documents are up to date accurate and verfied to be current", "do a deep code, .md, github pages content review across the entire repo", and, on the review's findings, "Docs and high code"). **For warden:** this entry binds `spec-pyforge-warden`
+  (the service skeleton, CAP-16; no text change) and decomposes as Epic 28, one story: the three views refuse a
+  caller without the warden role, the upload passes the CSRF check like the module's other POST views, and a file
+  over a configured size is refused before it reaches the blob root. **Constraints:** no flag is added (an access check
+  behind a switch is a silent open door) and no model or migration moves. What the same review found below high
+  severity in this face (a job that reads succeeded on an unscannable manifest, the empty SBOM, blob cleanup, a
+  proposal stuck at approved) is not in this change.
 
 ## 2026-10-26 — A web face for the compliance factory — upload a manifest, watch warden and atlas analyze it (folded from compliance-factory-web-face)
 

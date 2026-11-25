@@ -314,6 +314,13 @@ verify_commands = [
   "_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml",
   "scripts/.spec-surface-baseline.json",
 ]
+"28" = [  # The upload and the job views answer only to the warden role (spec-pyforge-warden CAP-16), added 2026-11-24
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "src/platform/tests/test_warden_portal_upload_gate.py",
+  "src/shared/packages/django-warden/src/django_warden_fabric/views.py",
+]
 
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).

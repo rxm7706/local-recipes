@@ -8,7 +8,7 @@ conda-recipe-manager **0.10.6** crashes in `_construct_parse_tree` with `IndexEr
 
 ## Reproduce or evidence
 
-- `.claude/skills/conda-forge-expert/SKILL.md:3871-3881` — G93 and v8.99.1 addendum
+- `.claude/skills/conda-forge-expert/SKILL.md:3930-3940` — G93 and v8.99.1 addendum
 - `.claude/skills/conda-forge-expert/CHANGELOG.md` v8.99.1
 - mason Story 25.2 — refresh-wave / parse crash class
 

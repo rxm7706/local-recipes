@@ -25,7 +25,7 @@ single_station = 90
 full = 240
 
 [lanes]
-"test-ci@pyforge-guild" = 986
+"test-ci@local-recipes" = 986
 "pyforge-steward-test@pyforge-steward" = 698
 "pyforge-steward-live-test@pyforge-steward" = 245
 "pyforge-doctor-test@pyforge-doctor" = 487

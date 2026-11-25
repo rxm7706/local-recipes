@@ -3,9 +3,10 @@ sources:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_verify.py
   - scripts/pre_push_preflight.sh
+  - pixi.toml
   - src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/contract.md
-verified: 2026-11-18
+verified: 2026-11-24
 ---
 
 # How to run and read the pre-push preflight
@@ -148,7 +149,7 @@ Both are gitignored and local to the checkout.
 ## Tips
 
 - `pr-preflight` does not cover the container lanes, atlas's browser gate, herald's browser check or scribe's Postgres bring-up. Run those by hand when your diff touches them.
-- When a scribe lane is red while another preflight is running, rerun it alone (`pixi run -e pyforge-scribe pyforge-scribe-test`) before you treat it as a real failure.
+- When a scribe lane is red while another preflight is running, rerun it alone before you treat it as a real failure: `pixi run -e pyforge-scribe pyforge-scribe-live-test`, the half that holds the Postgres tests, after `pixi run -e pyforge-scribe-pg scribe-pg-up`.
 - `pixi run -e pyforge-guild preflight-budget` reads the journal and reports lanes whose median time is over 1.5 times their budget in `docs/governance/preflight-budgets.toml`. It is a warning, never the preflight's verdict.
 - `steward preflight verify-deferred` was not executed for this page, because it runs the full preflight; its behaviour is taken from `--help`, the module and the station contract.
 - CI's own detectors check is advisory, so a green CI tick is not evidence that the full preflight would pass. The local full run is.

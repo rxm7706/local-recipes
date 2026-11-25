@@ -1535,6 +1535,30 @@ So that the oracle runs where the repository is not, and the live-tree guards fa
 **And** the live-tree half passes in the repository and skips nothing for a missing tree; `pixi run --frozen -e pyforge-warden pyforge-warden-test` and `lint-types` exit 0
 **Status:** done
 
+## Epic 28: The upload and the job views answer only to the warden role (spec-pyforge-warden CAP-16)
+
+Minted 2026-11-24 from the station Dream's entry of the same date on the operator rulings of 2026-11-24: "documentation update and verification - we want to ensure all documents are up to date accurate and verfied to be current", "do a deep code, .md, github pages content review across the entire repo", and, on the review's findings, "Docs and high code". Three views of the compliance web face carried no role check, and the upload was exempt from the CSRF check and took a file of any size.
+**HARD boundaries:**
+- No flag: an access check behind a switch is a silent open door.
+- No model, migration or task changes; the engines the job calls are untouched.
+- The tests live with the platform's tests and import nothing of `pyforge`.
+
+### Story 28.1: The upload and the job views answer only to the warden role
+
+As the operator who runs the compliance web face for people who hold the warden role,
+I want the upload, the job status and the job report to refuse a caller without that role,
+So that nobody without it can store a file, enqueue a scan or read a report.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-warden CAP-16 (realized, no text change); canopy:AD-15 (the switcher is not the gate); no warden FR
+**Flag:** `flag-exempt: detector-or-gate` (an access check is a gate; a gated gate is a silent green (roster list))
+**Surface:** `src/shared/packages/django-warden/src/django_warden_fabric/views.py`, `src/platform/tests/test_warden_portal_upload_gate.py`
+**Spec:** `planning-artifacts/specs/spec-28-1-the-upload-and-the-job-views-answer-only-to-the-warden-role.md`
+**Given** `upload_manifest`, `job_status` and `job_report` carry no `require_station_role("warden")`, the upload is `csrf_exempt`, and no size is checked
+**When** the three views carry the role check, the upload drops its CSRF exemption, and a file over `COMPLIANCE_FACE_MAX_UPLOAD_BYTES` (default 20 MiB) is refused
+**Then** a caller with no token or another station's role gets 403 from all three and nothing is stored or enqueued, a warden-role upload returns 202 with its job id, and an oversized file gets 413 and never reaches the blob root (a body over the limit by more than the multipart allowance is refused before it is read)
+**And** a cookie-authenticated POST with no CSRF token is refused when checks are enforced
+**Status:** review
+
 ## Currency validation — 2026-08-26
 
 Validated against the architecture's 2026-08-26 reconciliation pass (chain-currency

@@ -1712,6 +1712,13 @@ verify_commands = [
   "pixi.toml",
   "recipes/playwright-*/**",
 ]
+"132" = [  # The flip's loop guard reads the state bmad-loop writes (spec-python-foundry-cutover fnd:CAP-8), added 2026-11-24
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "src/shared/packages/pyforge-steward/src/pyforge/steward/cutover.py",
+  "src/shared/packages/pyforge-steward/tests/unit/test_cutover.py",
+]
 
 # dispatch (Story 85.1 / CAP-286 knobs), added 2026-10-13: steward's verify-fix turn gets 45 minutes, not the
 # 15-minute default. pyforge-steward-test alone runs ~4 minutes (2482 tests), so a fix turn that must re-run it two or

@@ -3,7 +3,9 @@ sources:
   - .claude/skills/conda-forge-expert/reference/jinja-functions.md
   - .claude/scripts/conda-forge-expert/native-build.sh
   - .github/workflows/test-all.yml
-verified: 2026-11-18
+  - pixi.toml
+  - pixi.lock
+verified: 2026-11-24
 ---
 
 # Troubleshooting recipe builds
@@ -20,8 +22,8 @@ This page assumes the `local-recipes` env is installed. Task names are listed in
 ## "rattler-build not found"
 
 ```bash
-# rattler-build ships in the local-recipes env (NOT the minimal `build` env,
-# which carries conda-build only)
+# Run rattler-build from the local-recipes env. The minimal `build` env carries
+# conda-build and rattler-build, but none of the recipe-factory tasks.
 pixi run -e local-recipes rattler-build --version
 
 # The everyday build task wraps it for the host platform

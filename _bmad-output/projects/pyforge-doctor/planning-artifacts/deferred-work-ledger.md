@@ -3475,3 +3475,31 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   reason: a code, tooling or compiled-skill change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
   resolution: 2026-11-18, PR #2373 (doctor Story 60.2, commit f25cf73ed2) — a shallow repository reads as one could-not-measure WARN; unstamped pages, missing sources and dead references are reported before any git-dated check and still fail when git cannot answer; a generated row with no usable generator fails. Each has a unit test (the shallow one on a real depth-1 clone).
   status: resolved
+
+### DW-doctor-61-1-1: Four governance Specs describe files and states that are gone
+
+- source_spec: `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-61-1-the-shelf-the-front-doors-and-the-dossier-say-what-the-tree-does.md` (found by the review that story carries)
+  summary: four Guild Specs carry present-tense text the tree contradicts; a `SPEC.md` moves only by a memlog entry and a re-derive in the same change, and scribe's `test_spec_not_behind_memlog` reds a memlog entry without the render, so the corrections wait for the operator's re-derive route.
+  evidence: (1) `docs/governance/spec-coverage-gate-independence/SPEC.md` Why and CAP-1/CAP-4 success name `pyforge/marshal/coverage_gate.py` and `.github/workflows/coverage-gates.yml`; the evaluator is `scripts/coverage_gate.py` and the workflow is retired, the gate being a step of each station job in `pyforge-station-tests.yml`. (2) `docs/governance/spec-pyforge-charter/SPEC.md` CAP-3 calls the `chain.py` mirror outstanding though doctor Story 21.4 closed it; the body says "the one `guild` Dream" while `guild-roster.json` `guild_dreams` holds four; the realization marker reads `(Met <date>)` where the chain standard closes at `(ready|shipped|retired <date>)`. (3) `docs/governance/spec-feature-flag-governance/SPEC.md` Why says the tree holds two flags and cites `.steward/flags.json`; `src/platform/config/flags.json` holds 105 and the second file does not exist. (4) `docs/governance/spec-one-chain-per-station/SPEC.md`: the `surface: []` comment says the two doctor sources "will be" built (they exist in `sources/one_chain.py`); CAP-3(d) names `Consolidated into` banners that CAP-11 removes; a Non-goal forbids renumbering epics that CAP-3(g) requires.
+  location: docs/governance/spec-coverage-gate-independence/SPEC.md
+  origin: the repository review of 2026-11-24 at main `7da08791f3` (nine read-only reviewers; findings marked reviewer-reported were not re-traced by the session lead); written by doctor Story 61.1
+  fix: for each Spec, append the correction to its memlog and re-derive `SPEC.md` with `bmad-spec` in one change; date the historical Why paragraphs instead of rewriting them.
+  owner: governance
+  severity: low
+  promoted: 2026-11-24 — doctor Story 61.1 (the documentation review, branch `docs-verify-2026-11-24`)
+  reason: named blocker: a `SPEC.md` re-derive runs on the operator-approved render route, which this session cannot write (the Edit hook and the permission classifier refuse it, as on 2026-11-18).
+  status: open
+
+### DW-doctor-61-1-2: `doctor flags kill-switch` writes the flag tree non-atomically and its recorded metric is lost
+
+- source_spec: `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-61-1-the-shelf-the-front-doors-and-the-dossier-say-what-the-tree-does.md` (found by the review that story carries)
+  summary: reviewer-reported: the kill-switch actuator writes `flags.json` with `write_text`, so a concurrent reader can see a truncated tree and fall back to the default (ON for a kill switch) during the write meant to turn one off; its "recorded" metric is an in-process Prometheus counter in a one-shot CLI.
+  evidence: `src/shared/packages/pyforge-doctor/src/pyforge/doctor/actuators/flag_kill_switch.py:32,41-57`; help text at `__main__.py:321`.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/actuators/flag_kill_switch.py
+  origin: the repository review of 2026-11-24 at main `7da08791f3` (nine read-only reviewers; findings marked reviewer-reported were not re-traced by the session lead); written by doctor Story 61.1
+  fix: write through `pyforge.core.atomic_write`; journal the reason to a file or push the metric.
+  owner: doctor
+  severity: low
+  promoted: 2026-11-24 — doctor Story 61.1 (the documentation review, branch `docs-verify-2026-11-24`)
+  reason: a code, tooling or Spec change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
+  status: open

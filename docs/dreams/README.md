@@ -33,29 +33,29 @@ docs/dreams/  →  (visual) →  bmad-spec →           Atlas · Warden · Maso
 - **Atlas / Warden / Mason** map dependencies, guard the perimeter, and ship.
 - **Doctor** runs pre-flight diagnostics before the build and monitors fleet &
   feedstock health after it ships.
-- **Live status** — throughout execution, the epic/story progress dashboard is kept
-  updated and published on **GitHub Pages** (`docs/dashboard/` → the program
-  console). Deliveries, notables, successes, roadmaps, and updates are marshalled
-  from there. *(Today the orchestrator — Marshal — owns this run lifecycle; in the
-  persona ideal it is Herald who proclaims the release.)*
+- **Live status** — throughout execution, epic/story progress is each station's
+  `sprint-status-ledger.yaml`, read with `pixi run -e pyforge-guild fleet-picture`;
+  **GitHub Pages** (`docs-site/`) carries the docs shelf and Herald's dossier. *(The
+  static program console under `docs/dashboard/` was retired by steward Story 30.2;
+  Marshal owns the run lifecycle, and Herald proclaims the release.)*
 
 A Dream **motivates** a spec; it never replaces it. The spec remains the build
 contract; the Dream is the "why" behind it.
 
 ## Convention
 
-- One Dream per file: `docs/dreams/<slug>.md`, plain markdown, tracked in git.
-- The Dream's `<slug>` should match its eventual BMAD project slug
-  (`_bmad-output/projects/<slug>/`), so the pair is easy to trace.
+- One Dream per station: `docs/dreams/pyforge-<station>.md`, plain markdown, tracked in git,
+  matching its BMAD project (`_bmad-output/projects/pyforge-<station>/`). New work is a dated
+  entry on that file, never a new file — see **`fold-exemption:`** below for the exceptions.
 - Light frontmatter identifies it:
 
   ```yaml
   ---
   title: <Dream title>
-  type: dream
   type: dream | practice
   owner: herald | marshal | atlas | warden | mason | doctor | scribe | steward | guild
   status: dreamt | pitched | specified | realized | archived
+  fold-exemption: different-owner | different-lifecycle | cross-station-seam | governance   # a new standalone (non-station) Dream only
   blocked-on: <gate>          # optional; backlog qualifier only
   ---
   ```
@@ -88,8 +88,8 @@ contract; the Dream is the "why" behind it.
   "Nothing".)*
 
   **Status is NOT a proxy for work remaining, in either direction — the ledger
-  is.** Two live cases make the point. `bmad-module-provisioning` and
-  `unified-container` both read `dreamt` while their epics were 3/3 and 5/5 done
+  is.** Two cases make the point. `bmad-module-provisioning` and
+  `unified-container` (both since archived) read `dreamt` while their epics were 3/3 and 5/5 done
   and merged. And the reverse direction is now even
   better evidenced than when this example was written: marshal's E7–E12 sat here
   as **36 backlog stories** under `genesis-installer`, which reads `archived`
@@ -97,10 +97,10 @@ contract; the Dream is the "why" behind it.
   it does run) — and as of 2026-09-14 that block is **37 of 37 done**, with
   `genesis-installer` still reading `archived` throughout. The status never moved
   in either direction while the work went from all-unbuilt to all-shipped
-  underneath it. *(Figures re-measured 2026-09-14. Today's largest unbuilt blocks
-  are steward's Epic 44 — 8 blocked + 3 backlog — and herald's Epic 21, 10
-  backlog; both sit under Dreams reading `specified`, which is correct and still
-  tells you nothing about how much is left.)* Neither status is wrong under
+  underneath it. *(Figures re-measured 2026-09-14, when the largest unbuilt blocks
+  were steward's Epic 44 — 8 blocked + 3 backlog — and herald's Epic 21, 10
+  backlog; both sat under Dreams reading `specified`, which was correct and still
+  told you nothing about how much was left.)* Neither status is wrong under
   the definitions above; both are useless for "what is left". For that, read
   `sprint-status-ledger.yaml` or run `pixi run -e pyforge-guild fleet-picture`.
 
@@ -124,8 +124,10 @@ contract; the Dream is the "why" behind it.
   identity. Two rulings had collapsed into one sentence with a swapped last
   word; they now read separately.)* `guild` is reserved for the one Dream that *precedes* the
   stations ([`pyforge-charter.md`](pyforge-charter.md)) **and, since 2026-09-14, for a gate
-  that judges all eight Smiths** ([`coverage-gate-independence.md`](coverage-gate-independence.md)
-  — the Charter §5 amendment of that date: `guild` is legal only where no Smith *can* be
+  that judges all eight Smiths** ([`coverage-gate-independence.md`](coverage-gate-independence.md),
+  then [`one-chain-per-station.md`](one-chain-per-station.md) on 2026-09-16 and
+  [`feature-flag-governance.md`](feature-flag-governance.md) on 2026-09-28
+  — the Charter §5 amendment of 2026-09-14: `guild` is legal only where no Smith *can* be
   accountable because the artifact judges every one of them; cross-cutting or unowned does not
   qualify); `bmad-drift-check` emits `dream-unowned` for anything else claiming it. *(Closed at
   one on 2026-08-08, when `pyforge-genesis` was absorbed into the Charter — Dream § Satellite:
@@ -141,6 +143,15 @@ contract; the Dream is the "why" behind it.
 - **`blocked-on:`** is a **backlog qualifier**, naming the external gate that
   makes an otherwise-available Dream un-pickup-able. It applies only to
   non-realized Dreams.
+
+- **`fold-exemption:`** — one chain per station: a station-owned capability is a dated
+  entry on the station Dream, then a `CAP-n` on the station Spec, then a Story — never a
+  new Dream (`AGENTS.md` § Pre-PR checklist item 6;
+  `docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md` § 1). A new standalone
+  `docs/dreams/<slug>.md` + `spec-<slug>/` pair needs `fold-exemption:` with one value
+  from the **closed** list — `different-owner` · `different-lifecycle` ·
+  `cross-station-seam` · `governance` (`docs/governance/guild-roster.json`
+  `fold_exemptions` is the authority) — and `chain-sprawl-check` reds an unexempted pair.
 
 - Keep it aspirational and readable — a Dream is a narrative, not a task list.
 - **`realized` is not exempt from the chain.** Per
@@ -214,6 +225,6 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 |---|---|---|
 | [`foundry-regenerate-not-fold.md`](foundry-regenerate-not-fold.md) | specified | Launch foundry by regenerating core/steward/marshal from Frames + a thin test oracle — not folding `src/shared/packages/`. Epic 54; 44.4/44.5 parked. CLI+MCP only; invent in local-recipes. |
 | [`foundry-capability-ledger.md`](foundry-capability-ledger.md) | specified | Strangler routing table: rebuild / retire / dated A-only / B-only. Extract inventory. Epic 55; kit with 53.5 Frames + 54.1 case-list. |
-| [`coverage-gate-independence.md`](coverage-gate-independence.md) | specified | **A check that can red a station's PR must not ship inside that station's package.** Found 2026-09-14 by an investigation aimed elsewhere: marshal's verdict lattice was *cleared*, and the violation was one directory up — `pyforge/marshal/coverage_gate.py` + `coverage_thresholds.toml` ship **inside** marshal while `coverage-gates.yml` runs that gate over all eight stations with no `continue-on-error` (Charter §6 verbatim, scope ruled **broad**). Every station-side home failed (`pyforge-core`, `pyforge-testing-kit` *and* `scripts/` are marshal-governed; doctor is advisory), so the question was "who owns a policy that binds all eight". **Ruled the same day:** `owner: guild` by the narrow Charter §5 amendment (a gate that judges all eight Smiths is the Guild's — the only Dream besides the Charter to carry `guild`); Spec at `docs/governance/spec-coverage-gate-independence/`, `ready`, all five questions answered; the mechanism stories are doctor's (§5 outcome/mechanism rule). Sibling ruling: `ledger-regression` is now a scoped blocking step in `detectors.yml`, so the judge's verdict on Marshal has force. |
+| [`coverage-gate-independence.md`](coverage-gate-independence.md) | specified | **A check that can red a station's PR must not ship inside that station's package.** Found 2026-09-14 by an investigation aimed elsewhere: marshal's verdict lattice was *cleared*, and the violation was one directory up — `pyforge/marshal/coverage_gate.py` + `coverage_thresholds.toml` shipped **inside** marshal while `coverage-gates.yml` ran that gate over all eight stations with no `continue-on-error` (Charter §6 verbatim, scope ruled **broad**). Every station-side home failed (`pyforge-core`, `pyforge-testing-kit` *and* `scripts/` are marshal-governed; doctor is advisory), so the question was "who owns a policy that binds all eight". **Ruled the same day:** `owner: guild` by the narrow Charter §5 amendment (a gate that judges all eight Smiths is the Guild's — the first Dream besides the Charter to carry `guild`); Spec at `docs/governance/spec-coverage-gate-independence/`, `ready`, all five questions answered; the mechanism stories are doctor's (§5 outcome/mechanism rule). Sibling ruling: `ledger-regression` is now a scoped blocking step in `detectors.yml`, so the judge's verdict on Marshal has force. |
 | [`one-chain-per-station.md`](one-chain-per-station.md) | specified | **One Dream, one Spec, one PRD, one architecture, one epic chain — per station.** Seeded 2026-09-16 the morning the token-savings fold (PRs #1382/#1383) proved the shape on marshal. Fleet: 171 Dreams / 172 Specs for eight stations while PRD, spine and epics are already one-per-station; the 2026-08-08 61-Dream fold regrew in five weeks because the minting rules compose into a Dream+Spec pair per effort. Six operator rulings: Dream-**append**-first with a closed `fold-exemption:` list and a `chain-sprawl-check` detector; 8 station chains + the Guild's; fold **everything** (shipped included; the decision record survives, derived bodies are disposable); the PRD stays and **derives** from the Spec (FR ← CAP); the fold is the foundry on-ramp; **marshal is the pilot**. `owner: guild` (second instance of the 09-14 §5 shape — the gate grades every Smith's row; Dream-append-first is a *reading* under Charter CAP-1, not an amendment; carries the first `fold-exemption: governance`). Spec **`ready`** at `docs/governance/spec-one-chain-per-station/` — the three OQs ruled the same day: no fifth Dream status (station Dreams read `specified` by the existing rule once their Spec is `in-progress`); `pyforge-core` and the testing kit are marshal-owned `cross-station-seam` exemptions; the Charter's only ritual is CAP-1. Operator constraint: **evergreen standard > historical accuracy > implementation**, eventual consistency station by station, portable to pyforge-foundry; a fold is a **rebase** (CAPs, epics and stories renumber sequentially across all four BMAD phases, re-key map in the PR); **marshal → steward → herald → the rest in parallel**. CAP-9: one companion page, `CHAIN-STANDARD.md` — hierarchy, relations, sequence, one status enum per tier, one name per concept, one id family per job, the fold checklist — every existing ruling with its grandfathering removed. |
 | [`feature-flag-governance.md`](feature-flag-governance.md) | specified | **Every capability ships behind a flag, and a gate that no station owns checks that it does.** Seeded 2026-09-28 from the intake triage (`archive/docs/intake/bmad_feature_flag_governance_prompt.md`). The flag platform already exists: OpenFeature FILE, one tree (canopy:AD-11, steward Epic 26). Nothing uses it yet: the tree holds two flags, no story names a flag, and a second tree (`.steward/flags.json`) breaks AD-11. **Four operator rulings:** every capability, blocking; a closed exemption list plus a retrofit; backlog warns until retrofitted while stories minted after the rule date are refused; the Guild owns it. `owner: guild` is the third instance of the 09-14 §5 shape. Doctor owns the mechanism stories and each Smith owns its retrofit stories. Spec **`ready`** at `docs/governance/spec-feature-flag-governance/`: CAP-1..7 chosen, and all seven open questions were ruled the same session. The gate counts `type: feature` stories and exempts fixes; an OFF verb stays listed and refuses; a flag must be removed 90 days after it is ON everywhere; flags are global only in v1; the retrofit uses one flag per CAP; CI and dispatch start refusing on the same day. The rule date is 2026-09-28. |

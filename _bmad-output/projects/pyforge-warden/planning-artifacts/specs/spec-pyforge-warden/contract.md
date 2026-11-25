@@ -224,6 +224,7 @@ kernel reads exactly seven variables and sets exactly four for engines.
 | `WARDEN_OSV_DB_CACHE_DIRECTORY` | django-warden | setting | `django_warden_fabric/tasks.py` | CAP-29: the per-ecosystem offline databases the fleet worker scans against |
 | `WARDEN_FLEET_APPROVAL_EXPIRY_SECONDS` | django-warden | setting | `django_warden_fabric/fleet.py`, `django_warden_fabric/tasks.py` | CAP-29: the approval expiry, default 604800 (seven days) |
 | `COMPLIANCE_FACE_BLOB_ROOT` | django-warden | setting | `django_warden_fabric/tasks.py`, `django_warden_fabric/views.py` | CAP-16: where uploaded manifests are kept, default the system temp directory |
+| `COMPLIANCE_FACE_MAX_UPLOAD_BYTES` | django-warden | setting | `django_warden_fabric/views.py` | CAP-16: the largest manifest the upload accepts, default 20 MiB; a larger file is refused with 413 and never reaches the blob root |
 
 `PYFORGE_ENVIRONMENT` and `PYFORGE_FLAGS_PATH` reach warden only through `pyforge.core.flags` (section 4), never read by
 warden's own code. The portal's start tool (section 6) hands `OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY` and
