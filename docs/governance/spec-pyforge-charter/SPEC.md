@@ -64,19 +64,23 @@ The Charter governs the *workers*; this Spec governs *the Charter*.
   and 6-9 retired the copy, reasoning preserved at `scripts/fleet_scan.py:995-1003`;
   `generate.py` is gone, with `retired-console-check` existing to fail CI if it returns. The
   Charter's one capability about keeping constants true was being graded against a comparison
-  that cannot be performed.)* *Intent:* a value the Charter fixes (the eight stations, the one
-  `guild` Dream, the Dream statuses and types) is declared once and read everywhere.
+  that cannot be performed.)* *Intent:* a value the Charter fixes (the eight stations, the
+  `guild` Dreams, the Dream statuses and types) is declared once and read everywhere.
   *Success:* `docs/governance/guild-roster.json` is the sole declaration; a hardcoded copy of
   `stations` / `guild_dreams` / `dream_statuses` / `dream_types` anywhere is a finding on
   sight. Live readers today: `scripts/fleet_scan.py:1002-1003`,
-  `pyforge.doctor.sources.factory:1295`, `pyforge.doctor.sources.chain:838-852`. **One
-  unguarded mirror is outstanding:** `pyforge.doctor.sources.chain:96` hardcodes
+  `pyforge.doctor.sources.factory:1295`, `pyforge.doctor.sources.chain:838-852`. **The
+  unguarded mirror recorded here on 2026-09-09 is closed** (doctor Story 21.4, `done`
+  2026-09-10): `chain.py`'s `_load_constitutive` reads `guild_dreams` through
+  `_load_dream_roster`, and the literal survives only as `_CONSTITUTIVE_FALLBACK`, used with a
+  named warning when the roster is unreadable or empty. The superseded text, quoted per CAP-1:
+  "**One unguarded mirror is outstanding:** `pyforge.doctor.sources.chain:96` hardcodes
   `CONSTITUTIVE = frozenset({"pyforge-charter"})` and gates on it at `:634`, while the same
   module reads statuses, types and stations from the roster; it agrees today by luck, not by
   construction, and a second `guild` Dream would leave `chain.py` reporting it unowned while
   `factory.py` and `fleet_scan.py` permit it. A doctor story is minted for the fix (re-point
   `CONSTITUTIVE` at `guild_dreams` through `_load_dream_roster`) — doctor's verb under §5's
-  outcome/mechanism rule, not a guild edit.
+  outcome/mechanism rule, not a guild edit."
 - **CAP-4 — the Lexicon stays exhaustive.** *Intent:* every noun does one job, every job has
   one noun. *Success:* a new organizational concept either maps to one of the seven or the
   Lexicon gains an entry — never a synonym smuggled into prose. **Ruling, 2026-09-09:** *an
@@ -95,9 +99,11 @@ The Charter governs the *workers*; this Spec governs *the Charter*.
   order, and the practice/dream distinction, and matches what the detectors enforce.
 - **CAP-7 — constitutive claims are enforced, not asserted.** *(Absorbed 2026-08-08.)*
   *Intent:* the Charter's own enforcement claims are real. *Success:* `dream-unowned` fires on
-  a Dream with no station, a station outside the eight, or a `guild` that is not this Charter;
+  a Dream with no station, a station outside the eight, or a `guild` the roster's
+  `guild_dreams` does not name (until 2026-11-25 this clause read "a `guild` that is not this
+  Charter"; §5 as amended 2026-09-14 also admits a gate that judges all eight Smiths);
   the Guildhall refuses to publish an unattributable row (§7); and `guild_dreams` as declared
-  in `guild-roster.json` matches the one Dream §5 names (re-based 2026-09-09; the superseded
+  in `guild-roster.json` matches the Dreams §5 admits (re-based 2026-09-09; the superseded
   clause, quoted per CAP-1: "`GUILD_DREAMS` in **both** detectors matches the one Dream §5
   names"). **The Guildhall half is UNBACKED as of 2026-09-09** — the console it gated is
   retired and no successor surface enforces attribution, so §7's central claim is currently an
@@ -154,8 +160,11 @@ The Charter governs the *workers*; this Spec governs *the Charter*.
   document's integrity, not its content.
 - **Gating amendments on tooling.** A constitutional change may precede its enforcement —
   but the gap is recorded, not left implicit.
-- **Extending `guild` beyond this one Dream.** Closed by §5 as amended 2026-08-08; a second
-  `guild` is an unassigned Dream hiding behind a collective noun. **And not retiring it
+- **Extending `guild` beyond what §5 admits.** *(Until 2026-11-25 this read "Extending `guild`
+  beyond this one Dream".)* Closed at one Dream by §5 as amended 2026-08-08, and re-opened on
+  2026-09-14 for one further shape only: a gate that judges all eight Smiths (`guild_dreams`
+  names four Dreams on 2026-11-25). Any other `guild` is an unassigned Dream hiding behind a
+  collective noun. **And not retiring it
   either (2026-09-09):** `guild` names the *absence of a station* — the one legal way for a
   Dream to have no accountable Smith — which is a job no other value does. §5 states the
   reason on the next amendment.
@@ -185,7 +194,9 @@ Advancing would assert exactly the unbacked enforcement CAP-2 exists to refuse."
 left the Spec enum at the 2026-09-17 rebase (§ 4: "the rebase ends the grandfathering";
 `guild-roster.json` keeps it grandfathered only "until next edited", and this is that edit —
 this Spec was its last live use), and `ready` asserts only that the contract binds;
-realization is a capability-level fact, carried per CAP as `(Met <date>)`, so the gaps
+realization is a capability-level fact, carried per CAP as `(ready <date>)` until its success
+is met and `(shipped <date>)` once it is, or `(retired <date>[: <reason>])` (CHAIN-STANDARD § 4;
+until 2026-11-25 this line named a `Met` marker, which is not one of the three), so the gaps
 recorded on 2026-09-09 no longer hold the status. They stand as realization gaps: CAP-3's
 named readers no longer held the constants and a third unguarded mirror had appeared at
 `chain.py:96` (its mechanism has since shipped as doctor Story 21.4, 2026-09-10), and CAP-7's
