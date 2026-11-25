@@ -2,7 +2,7 @@
 title: '136.7: Each sharded suite splits by recorded durations'
 type: 'fix'
 created: '2026-11-25'
-status: 'ready-for-dev'
+status: 'in-review'
 story: 136-7-each-sharded-suite-splits-by-recorded-durations
 spec: spec-pyforge-steward
 difficulty: 'medium'
@@ -83,3 +83,6 @@ Ledger key: `136-7-each-sharded-suite-splits-by-recorded-durations`.
 ## Spec Change Log
 
 - 2026-11-25: minted from the station Dream's 2026-11-25 entry (the rows a lapsed blocker held close) and the operator's ruling of the same date. Not implemented.
+- 2026-11-25: reproduced on the unchanged tree: `ls tests/durations/` listed `README.md` only, while `.github/workflows/pyforge-station-tests.yml` names six files.
+- 2026-11-25: written by the session lead, one full unsharded run per task with `PYTEST_ADDOPTS="--store-durations --durations-path tests/durations/<file>.json"`, one suite at a time, each in its own environment and each read from its exit code: `pyforge-steward-test` exit 0 (2,208 timings), `pyforge-steward-live-test` exit 0 (1,943), `pyforge-doctor-live-test` exit 1 (1,538), `pyforge-marshal-test` exit 0 (13,812), `pyforge-herald-test` then `pyforge-herald-live-test` into the one file the herald job names, both exit 0 (2,360), `pyforge-atlas-test` exit 0 (3,080). The doctor run's one failure was `test_live_sources_docs_shelf.py::test_live_repo_gather_is_clean`, which read the tree while another agent's skill regeneration was mid-write; the module exits 0 on a rerun here and on main, and a failed test still records its timing, so the file is kept.
+- 2026-11-25: added `tests/scripts/test_durations_files.py`: it fails when the workflow names a durations file that is missing, empty or malformed, and when a file is left that no job names (4 passed). The README says how a file is refreshed. No shard count or workflow line changed. The AC command exits 0.
