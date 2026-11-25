@@ -26,6 +26,7 @@ Closed remediation mapping (every other finding family yields NO proposal):
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import os
@@ -43,7 +44,7 @@ from pyforge.core.errors import PyforgeError
 from pyforge.core.flags import read_boolean
 
 from .config import _DEFAULT_FIX_PR_ESTATE_REPOS
-from .fix_solver import FixTargetResolution, FixTargetSolver, PixiVersionOutOfRangeError, resolve_fix_target
+from .fix_solver import FixTargetResolution, FixTargetSolver, resolve_fix_target
 from .manifest_fixup import ManifestFixPlan, prepare_manifest_fix, tree_content_digest
 from .report import _canonical_subject_key
 
@@ -409,7 +410,6 @@ class GitHubForgeClient:
             url = f"{url}?{urlencode(query)}"
         data = json.dumps(payload).encode("utf-8") if payload is not None else None
         headers = {
-            "Authorization": f"Bearer {self._token}",
             "Accept": "application/vnd.github+json",
             "X-GitHub-Api-Version": "2022-11-28",
             "User-Agent": _USER_AGENT,
@@ -417,6 +417,10 @@ class GitHubForgeClient:
         if data is not None:
             headers["Content-Type"] = "application/json"
         request = urllib.request.Request(url, data=data, headers=headers, method=method)
+        # Story 29.1: an unredirected header -- urllib sends it on this request and leaves it
+        # off the request it builds for a redirect, so the token reaches the configured API
+        # host and no other.
+        request.add_unredirected_header("Authorization", f"Bearer {self._token}")
         # The sole authorized egress: mark it so the test harness's carve-out
         # permits the loopback connect, and reset it the instant the call
         # returns (deny is the default again immediately after).
@@ -460,6 +464,10 @@ class GitHubForgeClient:
         base_branch = self._api("GET", f"/repos/{self._repo}/branches/{base}")
         commit = base_branch.get("commit", {}) if isinstance(base_branch, dict) else {}
         base_sha = commit.get("sha") if isinstance(commit, dict) else None
+        if base_sha is None:
+            # Story 29.1: a commit made now would have ``parents: []`` -- an orphan root
+            # commit on the forge. Fail the open before any blob, tree or commit is written.
+            raise ForgeResponseError(f"the forge returned no commit sha for the base branch {base!r}")
         inner = commit.get("commit", {}) if isinstance(commit, dict) else {}
         tree = inner.get("tree", {}) if isinstance(inner, dict) else {}
         base_tree = tree.get("sha") if isinstance(tree, dict) else None
@@ -494,7 +502,7 @@ class GitHubForgeClient:
             payload={
                 "message": proposal.title,
                 "tree": commit_tree,
-                "parents": [base_sha] if base_sha is not None else [],
+                "parents": [base_sha],
             },
         )
         new_sha = new_commit.get("sha") if isinstance(new_commit, dict) else None
@@ -519,17 +527,26 @@ class GitHubForgeClient:
         }
         if draft:
             pull_payload["draft"] = True
-        pull = self._api(
-            "POST",
-            f"/repos/{self._repo}/pulls",
-            payload=pull_payload,
-        )
+        try:
+            pull = self._api(
+                "POST",
+                f"/repos/{self._repo}/pulls",
+                payload=pull_payload,
+            )
+        except Exception:
+            # Story 29.1: the ref this call created must not outlive a pull-request POST that
+            # raised -- left behind, the next run reads it as a prior actuation (422) and
+            # skips the finding. Best effort: the open's own failure is the one reported.
+            with contextlib.suppress(Exception):
+                self._api("DELETE", f"/repos/{self._repo}/git/refs/heads/{branch}")
+            raise
         if isinstance(pull, dict):
             url = pull.get("html_url") or pull.get("url")
             if url is not None:
                 return str(url)
         # A 2xx with no url is not a real success -- fail loudly rather than
-        # record an ``opened`` outcome carrying no evidence of the PR.
+        # record an ``opened`` outcome carrying no evidence of the PR. The ref stays:
+        # the forge accepted the open, and deleting a pull request's head branch closes it.
         raise ForgeResponseError("the forge accepted the PR open but returned no url")
 
 
@@ -544,7 +561,7 @@ def _resolve_upgrade_targets(
     """Returns ``(target_by_id, resolution_by_id, fatal_detail)``.
 
     ``fatal_detail`` is set only for whole-run failures (e.g. pixi out of
-    range). A finding with no acceptable candidate records a resolution with
+    range), as ``<exception type>: <message>``. A finding with no acceptable candidate records a resolution with
     ``target=None`` and is handled per-outcome by the caller."""
     targets: dict[str, str] = {}
     resolutions: dict[str, FixTargetResolution] = {}
@@ -560,8 +577,10 @@ def _resolve_upgrade_targets(
                 scan_target=scan_target,
                 solver=solver,
             )
-        except PixiVersionOutOfRangeError as exc:
-            return {}, {}, str(exc)
+        except Exception as exc:  # noqa: BLE001 -- captured as the run's one failed record
+            # Story 29.1: any failure here stops the run before a proposal is tried (pixi out
+            # of range, a solver that raised); its type and message are the recorded cause.
+            return {}, {}, f"{type(exc).__name__}: {exc}"
         resolutions[finding.id] = resolution
         if resolution.target is not None:
             targets[finding.id] = resolution.target
@@ -729,7 +748,7 @@ def run_actuator(
                         action="",
                         subject="",
                         status="failed",
-                        detail=f"forge resolution failed: {exc}",
+                        detail=f"forge resolution failed: {type(exc).__name__}: {exc}",
                     ),
                 ),
             )

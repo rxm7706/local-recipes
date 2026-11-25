@@ -25,6 +25,7 @@ from pyforge.warden.actuator import (
     resolve_forge,
     run_actuator,
 )
+from pyforge.warden.fix_solver import PixiVersionOutOfRangeError
 from pyforge.warden.models import (
     CurrencyInfo,
     CurrencyVerdict,
@@ -297,6 +298,49 @@ def test_run_actuator_records_a_single_failed_resolution_record():
     assert outcome.status == "failed"
     assert outcome.finding_id == ""
     assert "resolution" in (outcome.detail or "").lower()
+
+
+def test_whole_run_failure_records_its_cause(tmp_path, monkeypatch):
+    """Story 29.1: a failure that stops the run before any proposal is tried lands in
+    ``actuation`` as one ``failed`` record naming the exception's type and message."""
+    finding = _vuln_finding()
+
+    def _exploding_solver(**_kwargs: object) -> str:
+        raise OSError("pixi vanished mid-solve")
+
+    solver_failure = run_actuator(
+        [finding],
+        dry_run=False,
+        client=_FakeForge(),
+        fixed_version_candidates={finding.id: ("1.0.1",)},
+        scan_target=tmp_path,
+        solver=_exploding_solver,
+        fix_target_resolution_enabled=True,
+    )
+    (outcome,) = solver_failure.outcomes
+    assert (outcome.status, outcome.finding_id) == ("failed", "")
+    assert "OSError: pixi vanished mid-solve" in (outcome.detail or "")
+
+    def _out_of_range_solver(**_kwargs: object) -> str:
+        raise PixiVersionOutOfRangeError("pixi 0.1.0 is outside the supported range")
+
+    out_of_range = run_actuator(
+        [finding],
+        dry_run=False,
+        client=_FakeForge(),
+        fixed_version_candidates={finding.id: ("1.0.1",)},
+        scan_target=tmp_path,
+        solver=_out_of_range_solver,
+        fix_target_resolution_enabled=True,
+    )
+    (outcome,) = out_of_range.outcomes
+    assert (outcome.status, outcome.finding_id) == ("failed", "")
+    assert "PixiVersionOutOfRangeError: pixi 0.1.0 is outside the supported range" in (outcome.detail or "")
+
+    unresolved = run_actuator([finding], dry_run=False, env={}, client=None)
+    (outcome,) = unresolved.outcomes
+    assert (outcome.status, outcome.finding_id) == ("failed", "")
+    assert "ForgeResolutionError: no forge token in the environment" in (outcome.detail or "")
 
 
 # --- Actuation.to_json_dict -------------------------------------------------

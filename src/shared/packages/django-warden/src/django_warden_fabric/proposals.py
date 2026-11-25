@@ -5,11 +5,12 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from pyforge.core.flags import read_boolean
 
-from .fleet import FLEET_FIX_PROPOSALS_FLAG
+from .fleet import FLEET_APPROVAL_EXPIRY_DEFAULT_SECONDS, FLEET_APPROVAL_EXPIRY_SETTING, FLEET_FIX_PROPOSALS_FLAG
 from .models import FixProposal, FleetRepoScan, JobStatus
 
 if TYPE_CHECKING:
@@ -106,6 +107,29 @@ def queue_proposals_from_scan(scan: FleetRepoScan) -> int:
     return created
 
 
+def _is_stale_approval(proposal: FixProposal) -> bool:
+    """An ``APPROVED`` proposal whose approval is older than the approval expiry (Story 29.1).
+
+    The one-shot open task records ``OPENED`` or ``FAILED`` within its time limit; a
+    proposal still ``APPROVED`` after ``WARDEN_FLEET_APPROVAL_EXPIRY_SECONDS`` lost its
+    worker, so it may be dismissed. It may not be approved again: the open task refuses
+    any approval of a proposal queued longer than that same setting."""
+    if proposal.state != FixProposal.State.APPROVED:
+        return False
+    expiry = float(getattr(settings, FLEET_APPROVAL_EXPIRY_SETTING, FLEET_APPROVAL_EXPIRY_DEFAULT_SECONDS))
+    approved = proposal.approved_at or proposal.updated_at
+    return (timezone.now() - approved).total_seconds() > expiry
+
+
+def stale_approved_proposals() -> list[FixProposal]:
+    """Every ``APPROVED`` proposal whose approval is stale, oldest first (Story 29.1).
+
+    The proposals page lists these beside the queue so the operator can dismiss one;
+    the rule is ``_is_stale_approval``, the same one ``dismiss_proposal`` applies."""
+    approved = FixProposal.objects.filter(state=FixProposal.State.APPROVED).order_by("created_at")
+    return [proposal for proposal in approved if _is_stale_approval(proposal)]
+
+
 @transaction.atomic
 def approve_proposal(proposal_id: UUID | str, operator: str) -> FixProposal:
     """Mark approved and enqueue the one-shot open task."""
@@ -140,13 +164,13 @@ def approve_proposal(proposal_id: UUID | str, operator: str) -> FixProposal:
 
 @transaction.atomic
 def dismiss_proposal(proposal_id: UUID | str) -> FixProposal:
-    """Close a queued proposal without a forge call."""
+    """Close a queued proposal, or a stale approved one, without a forge call."""
     try:
         proposal = FixProposal.objects.select_for_update().get(pk=proposal_id)
     except FixProposal.DoesNotExist as exc:
         msg = "proposal not found"
         raise ProposalRefusedError(msg) from exc
-    if proposal.state != FixProposal.State.QUEUED:
+    if proposal.state != FixProposal.State.QUEUED and not _is_stale_approval(proposal):
         msg = f"cannot dismiss proposal in state {proposal.state}"
         raise ProposalRefusedError(msg)
     proposal.state = FixProposal.State.DISMISSED

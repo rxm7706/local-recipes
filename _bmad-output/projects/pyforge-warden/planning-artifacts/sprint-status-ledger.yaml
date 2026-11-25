@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: warden
-# stories: 139
+# stories: 142
 development_status:
   1-1-frozen-contract-verdict-lattice-projection-safety: done
   1-2-interfaces-null-engine-regression-harness-socket-deny: done
@@ -75,6 +75,7 @@ development_status:
   26-3-the-contract-names-what-other-code-imports-where-each-capability-lives-and-the-open-slots: done
   27-1-warden-s-live-tree-readers-run-as-their-own-half: done
   28-1-the-upload-and-the-job-views-answer-only-to-the-warden-role: done
+  29-1-an-unscannable-upload-fails-and-the-web-face-and-the-actuator-leave-nothing-behind: review
   3-1-configurable-policy: done
   3-2-auditable-expiring-waivers: done
   3-3-waiver-expiry-warn-only-adoption-on-ramp: done
@@ -139,6 +140,8 @@ development_status:
   epic-27-retrospective: optional
   epic-28: done
   epic-28-retrospective: optional
+  epic-29: in-progress
+  epic-29-retrospective: optional
   epic-3: done
   epic-3-retrospective: done
   epic-4: done

@@ -50,7 +50,9 @@ existed". Every propagated ``OSError`` surfaces as an ``internal-error``
 report in the CLI, exit via ``exit_code_for(error)``.
 
 This module reads the filesystem (existence + directory-tree walk only); no
-subprocess, no network.
+subprocess, no network. ``discovered_manifest_names()`` (Story 29.1) also reads
+the non-Python lockfile flag, so a caller outside the package can admit exactly
+the names a scan would read without keeping a second list.
 """
 
 from __future__ import annotations
@@ -58,6 +60,8 @@ from __future__ import annotations
 import os
 import stat
 from pathlib import Path
+
+from pyforge.core.flags import read_boolean
 
 from .models import ScannedManifest
 
@@ -79,7 +83,7 @@ PIXI_TOML_KIND = "pixi.toml"
 # Story 16.4: non-Python lockfiles (osv-scanner parsers) — appended only when
 # ``discover(..., include_non_python_lockfiles=True)``; flag OFF keeps today's
 # discovery byte-identical (these kinds are never checked).
-from .native_lockfiles import NATIVE_LOCKFILE_KINDS  # noqa: E402
+from .native_lockfiles import NATIVE_LOCKFILE_KINDS, NON_PYTHON_ECOSYSTEMS_FLAG  # noqa: E402
 
 # Checked in this fixed order at every visited directory; the returned tuple
 # preserves it within each directory (the walk visits directories in sorted,
@@ -149,6 +153,20 @@ def _discover_one(target: Path, kind: str) -> ScannedManifest | None:
     return ScannedManifest(path=kind, kind=kind)
 
 
+def _kinds_read(*, include_non_python_lockfiles: bool) -> tuple[str, ...]:
+    """The manifest kinds one discovery checks, in order."""
+    return _DISCOVERED_KINDS + (NATIVE_LOCKFILE_KINDS if include_non_python_lockfiles else ())
+
+
+def discovered_manifest_names() -> tuple[str, ...]:
+    """The manifest file names a scan reads under the current flags (Story 29.1).
+
+    The fixed kinds, plus the native non-Python lockfile names while
+    ``pyforge.warden.non_python_ecosystems`` is on -- the same flag read the scan
+    makes before it calls :func:`discover`. A kind token equals its file name."""
+    return _kinds_read(include_non_python_lockfiles=read_boolean(NON_PYTHON_ECOSYSTEMS_FLAG, default=False))
+
+
 def _visit_directory(directory: Path, root: Path, manifests: list[ScannedManifest]) -> None:
     _visit_directory_with_kinds(directory, root, manifests, _DISCOVERED_KINDS)
 
@@ -204,7 +222,7 @@ def discover(target: Path, *, include_non_python_lockfiles: bool = False) -> tup
     reported as "nothing there" — and found-but-refused states (dangling
     symlink, non-regular file, non-directory/replaced/vanished target,
     symlinked subdirectory) fail closed the same way, at any depth."""
-    kinds = _DISCOVERED_KINDS + (NATIVE_LOCKFILE_KINDS if include_non_python_lockfiles else ())
+    kinds = _kinds_read(include_non_python_lockfiles=include_non_python_lockfiles)
     manifests: list[ScannedManifest] = []
     _visit_directory_with_kinds(target, target, manifests, kinds)
 

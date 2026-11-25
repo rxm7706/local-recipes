@@ -32,4 +32,24 @@
   {% else %}
   <p>No queued proposals.</p>
   {% endif %}
+  {% if stale_approvals %}
+  <h3>Approved, never opened</h3>
+  <p>The approval is older than the approval expiry and no outcome was recorded. Dismiss only.</p>
+  <ul>
+    {% for p in stale_approvals %}
+    <li>
+      <strong>{{ p.repo_full_name }}</strong> — {{ p.finding_id }} ({{ p.action }}), approved {{ p.approved_at|date:"c" }}
+      <form
+        hx-post="{% url 'warden-fleet-proposal-dismiss' p.pk %}"
+        hx-target="#fleet-proposals"
+        hx-swap="outerHTML"
+        style="display:inline"
+      >
+        {% csrf_token %}
+        <button type="submit">Dismiss</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
 </section>

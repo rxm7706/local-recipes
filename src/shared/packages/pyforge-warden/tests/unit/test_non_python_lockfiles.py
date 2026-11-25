@@ -12,10 +12,11 @@ from pyforge.core import flags as core_flags
 from pyforge.core.flags import read_boolean
 
 from pyforge.warden.cli import main as warden_main
-from pyforge.warden.discovery import discover
+from pyforge.warden.discovery import _DISCOVERED_KINDS, discover, discovered_manifest_names
 from pyforge.warden.interfaces import AxisCoverage, EngineResult
 from pyforge.warden.models import AXIS_VULNERABILITY, Ecosystem, ScannedManifest
 from pyforge.warden.native_lockfiles import (
+    NATIVE_LOCKFILE_KINDS,
     NON_PYTHON_ECOSYSTEMS_FLAG,
     NativeLockfileScan,
     _components_from_osv_document,
@@ -91,6 +92,30 @@ def test_flag_on_discovers_package_lock(tmp_path: Path) -> None:
     manifests = discover(project, include_non_python_lockfiles=True)
     assert len(manifests) == 1
     assert manifests[0].kind == "package-lock.json"
+
+
+def test_discovered_manifest_names_follow_the_flag(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story 29.1: the names discovery reads under the current flag, for a caller that
+    must admit exactly those (the compliance upload) without a second list."""
+    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "dev")
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_flag_tree(tmp_path / "off", enabled=False)))
+    assert discovered_manifest_names() == _DISCOVERED_KINDS
+    assert "package-lock.json" not in discovered_manifest_names()
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_flag_tree(tmp_path / "on", enabled=True)))
+    assert discovered_manifest_names() == _DISCOVERED_KINDS + NATIVE_LOCKFILE_KINDS
+
+
+def test_every_discovered_manifest_name_is_one_discover_reads(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The accessor and ``discover`` agree: a file under each name is in the scan set."""
+    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "dev")
+    for enabled in (False, True):
+        monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_flag_tree(tmp_path / f"flags-{enabled}", enabled=enabled)))
+        project = tmp_path / f"repo-{enabled}"
+        project.mkdir()
+        for kind in _DISCOVERED_KINDS + NATIVE_LOCKFILE_KINDS:
+            (project / kind).write_text("", encoding="utf-8")
+        read = discover(project, include_non_python_lockfiles=enabled)
+        assert tuple(manifest.kind for manifest in read) == discovered_manifest_names()
 
 
 def test_native_ecosystem_predicate() -> None:

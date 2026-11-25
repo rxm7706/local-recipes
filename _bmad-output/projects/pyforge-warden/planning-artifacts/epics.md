@@ -1559,6 +1559,31 @@ So that nobody without it can store a file, enqueue a scan or read a report.
 **And** a cookie-authenticated POST with no CSRF token is refused when checks are enforced
 **Status:** done
 
+## Epic 29: The web face and the actuator fail honestly and leave nothing behind (spec-pyforge-warden CAP-12, CAP-16, CAP-17, CAP-24, CAP-29)
+
+Minted 2026-11-25 from the station Dream's entry of the same date on the operator ruling of 2026-11-25: "can we close and complete these too - * DW-doctor-61-1-1: four governance Specs need a re-derive on your render route. * The lower-severity code defects from the review, as open deferred-work rows on eight stations' ledgers." The review of main `7da08791f3` reported five defects below high severity in the compliance web face and the fix-PR actuator; Story 28.1 closed the access gap only, and doctor Story 61.1 wrote the rest as `DW-warden-review-2026-11-24-1`.
+**HARD boundaries:**
+- Every defect is reproduced by a failing test before it is fixed; one the tree does not show is closed as not a defect, with what was run recorded in the story spec.
+- No flag, no model and no migration; a job status and a proposal state never become a verdict.
+- The platform's tests import nothing of `pyforge`, and `django-warden` reaches `pyforge.warden` only through a function-local import.
+
+### Story 29.1: An unscannable upload fails, and the web face and the actuator leave nothing behind
+
+As the operator who runs the compliance web face and approves fleet fix proposals,
+I want a job, a fix-PR open and an approval that cannot do their work to say so and to clean up after themselves,
+So that a succeeded job is a scan that ran, a pull-request POST that failed leaves no branch to hide the finding from the next run, and an approval whose worker died can be closed.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-warden CAP-12, CAP-16, CAP-17, CAP-24, CAP-29 (realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: a job that succeeds only when the scan read a manifest, an SBOM that is the engine's own, a pull-request POST that failed leaving the finding open to the next run, and a stale approval that can be dismissed)
+**Surface:** `src/shared/packages/django-warden/src/django_warden_fabric/views.py`, `src/shared/packages/django-warden/src/django_warden_fabric/tasks.py`, `src/shared/packages/django-warden/src/django_warden_fabric/proposals.py`, `src/shared/packages/django-warden/src/django_warden_fabric/templates/warden_fabric/fleet_proposals.html`, `src/shared/packages/pyforge-warden/src/pyforge/warden/actuator.py`, `src/shared/packages/pyforge-warden/src/pyforge/warden/discovery.py`, `src/platform/tests/test_warden_portal_job_outcomes.py`, `src/platform/tests/test_warden_fleet_proposal_recovery.py`, `src/platform/tests/test_warden_fleet_proposal_stale_portal.py`, `src/shared/packages/pyforge-warden/tests/unit/test_actuator.py`, `src/shared/packages/pyforge-warden/tests/unit/test_actuator_github_client.py`, `src/shared/packages/pyforge-warden/tests/unit/test_non_python_lockfiles.py`, `_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/contract.md`
+**Spec:** `planning-artifacts/specs/spec-29-1-an-unscannable-upload-fails-and-the-web-face-and-the-actuator-leave-nothing-behind.md`
+**Given** `DW-warden-review-2026-11-24-1` reports five defects: the upload admits any file with a listed suffix and the job discards the scan's exit code, with `sbom_json` always `{}` and returned with 200; an uploaded blob is never deleted; a failed fix-PR open leaves its branch, a missing base sha yields a parentless commit and the bearer follows a cross-host redirect; an approved proposal stays `APPROVED` if the worker dies; and a whole-run actuator failure loses its cause
+**When** each defect is first reproduced by a failing test, and then the upload and the job admit only the manifest names warden's discovery reads under the current flags (`pyforge.warden.discovery.discovered_manifest_names()`, so a native non-Python lockfile name is admitted only while `pyforge.warden.non_python_ecosystems` is on), a scan that read no manifest fails the job, the SBOM is the engine's own or `?kind=sbom` answers 404, the blob is removed when the job ends, a pull-request POST that raised deletes the ref it created and an accepted open with no url keeps its branch, a missing base sha fails the open before any commit, the token is sent to no host but the configured API host, an approved proposal older than the approval expiry can be dismissed and is never approved again, the proposals page lists such a proposal with a Dismiss form only, and a whole-run failure records its exception type and message in `actuation` and on the fleet proposal's error
+**Then** the warden suite and the platform suite exit 0 with a test per defect that fails on the tree before the fix
+**And** a defect the tree does not reproduce is recorded in the story spec as not a defect, with the command that was run, and no code moves for it
+**And** the retry the row asks for a stale approval is not built: the open task refuses any approval of a proposal queued longer than the approval expiry, so a second approve could not open a pull request
+**Status:** review
+
 ## Currency validation — 2026-08-26
 
 Validated against the architecture's 2026-08-26 reconciliation pass (chain-currency

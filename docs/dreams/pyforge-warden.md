@@ -292,6 +292,23 @@ One-chain fold: satellite Dreams archived in place with `Consolidated into [[pyf
   behind a switch is a silent open door) and no model or migration moves. What the same review found below high
   severity in this face (a job that reads succeeded on an unscannable manifest, the empty SBOM, blob cleanup, a
   proposal stuck at approved) is not in this change.
+- **2026-11-25 (the web face and the actuator fail honestly and leave nothing behind) — Found:** the code review of
+  main `7da08791f3` reported five defects below high severity in the compliance web face and the fix-PR actuator, and
+  doctor Story 61.1 wrote them as one open row, `DW-warden-review-2026-11-24-1`. (1) The upload's suffix allowlist is
+  wider than the manifest names warden's discovery reads and the job discards the scan's exit code, so a file the scan
+  cannot read ends `SUCCEEDED`; the stored SBOM is always `{}` and `?kind=sbom` returns it with 200. (2) An uploaded
+  blob is never deleted. (3) A fix-PR open that fails after its branch is created leaves the branch, and later runs
+  skip the finding; a missing base sha yields a commit with no parent; the bearer token follows a redirect to another
+  host. (4) An approved fleet proposal stays `APPROVED` forever if the worker dies before it opens. (5) A whole-run
+  actuator failure loses its cause. **Ruled** (operator ruling of 2026-11-25: "can we close and complete these too - * DW-doctor-61-1-1: four governance Specs need a re-derive on your render route. * The lower-severity code defects from the review, as open deferred-work rows on eight stations' ledgers."). **For warden:** this entry
+  binds `spec-pyforge-warden` CAP-12 (realized, no text change), CAP-16 (realized, no text change), CAP-17 (realized,
+  no text change), CAP-24 (realized, no text change) and CAP-29 (realized, no text change), and decomposes as Epic 29,
+  one story: an upload with no manifest the scan reads fails as a job, the SBOM is the engine's own or the view
+  answers 404, the blob is gone when the job ends, an open whose pull-request POST failed leaves no branch, no open
+  posts a parentless commit or sends the token to another host, a stale approved proposal can be dismissed (never
+  approved again), and a whole-run failure keeps its cause. Every defect is reproduced by a failing test before it is fixed, and one the tree does not show is
+  closed as not a defect, with what was run recorded in the story spec. **Constraints:** no flag is added (a fix), no
+  model or migration moves, and a job status never becomes a verdict.
 
 ## 2026-10-26 — A web face for the compliance factory — upload a manifest, watch warden and atlas analyze it (folded from compliance-factory-web-face)
 
