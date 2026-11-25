@@ -6,7 +6,7 @@ sources:
   - src/shared/packages/pyforge-steward/pyproject.toml
   - src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py
   - archive/_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-jira-github-projects-sync-2026-08-09/ARCHITECTURE-SPINE.md
-verified: 2026-11-18
+verified: 2026-11-24
 ---
 
 # Steward `sync` — GitHub Projects V2 ↔ Jira Cloud workflow templates
@@ -27,8 +27,8 @@ station spine's.
 
 | File | Direction | Trigger(s) |
 |---|---|---|
-| `github-to-jira.yml.template` | GitHub Projects V2 item changed → propagate to Jira | `schedule` (default) + opt-in `repository_dispatch` |
-| `jira-to-github.yml.template` | Jira issue changed → propagate to GitHub | `repository_dispatch` only |
+| `github-to-jira.yml.template` | GitHub Projects V2 item changed → propagate to Jira | `schedule` (default) + opt-in `repository_dispatch` + manual `workflow_dispatch` |
+| `jira-to-github.yml.template` | Jira issue changed → propagate to GitHub | `repository_dispatch` + manual `workflow_dispatch` (takes a `jira_issue` key) |
 
 Both call the same underlying command, `steward sync reconcile`, which
 **re-reads both linked items' current state** before deciding anything — the

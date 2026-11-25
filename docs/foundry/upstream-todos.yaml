@@ -5,9 +5,9 @@ items:
     source: sbom-gaps:feature:conda-smithy
     evidence:
       - docs/foundry/sbom-gaps.md:11
-      - pixi.toml:121-122
-      - pixi.toml:1114-1119
-      - pixi.toml:2642
+      - pixi.toml:126-127
+      - pixi.toml:1233-1240
+      - pixi.toml:2828
     target:
       tracker: github
       repo: conda-forge/conda-smithy-feedstock
@@ -26,14 +26,14 @@ items:
     source: sbom-gaps:feature:crm
     evidence:
       - docs/foundry/sbom-gaps.md:12
-      - pixi.toml:1114-1119
+      - pixi.toml:1233-1240
       - https://github.com/conda-forge/conda-recipe-manager-feedstock/pull/44
       - https://github.com/conda-forge/conda-recipe-manager-feedstock/pull/46
       - conda-forge/conda-recipe-manager-feedstock recipe/meta.yaml:29
       - conda-forge/click-feedstock recipe/recipe.yaml (click 8.5.0)
       - pixi.lock (click 8.4.1 in grayskull/local-recipes; 8.5.0 elsewhere)
-      - pixi.toml:102
-      - pixi.toml:2120-2446
+      - pixi.toml:105-106
+      - pixi.toml:2305-2631
     target:
       tracker: github
       repo: conda-forge/conda-recipe-manager-feedstock
@@ -89,7 +89,7 @@ items:
     title: crm 0.10.6 SentinelType repr leaked as YAML key (G121)
     source: finding:cfe-G121
     evidence:
-      - .claude/skills/conda-forge-expert/SKILL.md:4384
+      - .claude/skills/conda-forge-expert/SKILL.md:4482
       - .claude/skills/conda-forge-expert/CHANGELOG.md
     target:
       tracker: github
@@ -108,7 +108,7 @@ items:
     title: crm 0.10.6 parse crash on indented comments (G93 addendum)
     source: finding:cfe-G93-addendum
     evidence:
-      - .claude/skills/conda-forge-expert/SKILL.md:3871-3881
+      - .claude/skills/conda-forge-expert/SKILL.md:3930-3940
       - .claude/skills/conda-forge-expert/CHANGELOG.md
       - recipes/mem0ai/recipe.yaml
     target:

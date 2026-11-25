@@ -270,7 +270,7 @@ sections:
   num: '00'
   title: The shared spine
   kind: section
-  measured: '2026-10-14'
+  measured: '2026-11-24'
   blocks:
   - type: lede
     md: 'Every station sits on one package that depends on none of them: `pyforge-core`, a deliberately
@@ -371,7 +371,7 @@ sections:
     text: And a client layer the original framing didn't cover
   - type: prose
     body:
-    - '`pyforge-core` has grown from 9 modules to 13, and the three additions are not more consolidations
+    - '`pyforge-core` has grown from 9 modules to 17, and three of the additions are not more consolidations
       — they are a new *kind* of thing. `client.py` is a stdlib-only (`urllib`) HTTP client for host-relative
       `/stations/<name>/api/v<N>/` routes, with an injectable transport so a caller wanting `httpx` supplies
       its own and the leaf stays dependency-free. `station_port.py` is the in-process alternative: a co-located
@@ -389,7 +389,7 @@ sections:
   accent: --st-atlas
   title: Atlas
   role: The intelligence layer — data, not verdicts
-  measured: '2026-10-14'
+  measured: '2026-11-24'
   blocks:
   - type: quote
     md: '"Atlas provides data… Warden uses that data… the only code edge between them points the other
@@ -461,9 +461,6 @@ sections:
       `artifactory_downloads` pipeline exist on disk but aren't in the registry yet.
   - type: h3
     num: A.2
-    text: Relationships
-  - type: h3
-    num: A.3
     text: Four subsystems that arrived since the last pass
   - type: prose
     body:
@@ -476,6 +473,9 @@ sections:
       claim a prior audit found to be false; `live_attach.py` federates a live Postgres read-only through
       DuckDB''s `ATTACH`; and `artifactory/` is a JFrog AQL adapter backing the still-unregistered `artifactory_downloads`
       pipeline.'
+  - type: h3
+    num: A.3
+    text: Relationships
   - type: relations
     items:
     - glyph: →
@@ -489,7 +489,7 @@ sections:
         module hands the analytical layer''s alerts/insights to the recipe-authoring agent.'
     - glyph: →
       md: '**pyforge-core** — heavy, load-bearing: errors, atomic writes, and the shared hook registry
-        all confirmed in use across 15 distinct import sites.'
+        all confirmed in use, with 45 modules importing it.'
   - type: verify
     md: 'Not verified: the dashboard''s launch mechanism (pixi task name); whether its BMAD-status reads
       share a source with Marshal''s/Steward''s own status reads; roughly a third of Atlas''s own tagged
@@ -500,7 +500,7 @@ sections:
   accent: --st-doctor
   title: Doctor
   role: Advisory diagnostics — and the one station that judges Marshal
-  measured: '2026-10-14'
+  measured: '2026-11-24'
   blocks:
   - type: quote
     md: '"Charter §6, ratified 2026-07-28: the Doctor holds the verdict on the Marshal''s own conformance
@@ -539,7 +539,7 @@ sections:
     - 'Six of Doctor''s own modules exist specifically to judge Marshal''s output — dashboard truthfulness,
       the Dream-to-Code chain, forward-dependency blindness in the story picker, project-doc currency,
       the tracked sprint ledger''s regression-freedom, and Marshal''s own durability record. The largest
-      of these, `sources/chain.py`, is 4,964 lines on its own — the single biggest module in the package.
+      of these, `sources/chain.py`, is 6,503 lines on its own — the single biggest module in the package.
       Every one of them was placed in Doctor *on purpose*, and verified structurally, not just by docstring
       claim: the module that judges Marshal''s durability doesn''t import `pyforge.marshal` at all — it
       reads only git history and journal files. Marshal has no code-level lever over its own verdict.'
@@ -548,7 +548,7 @@ sections:
     text: What it actually watches
   - type: prose
     body:
-    - 34 distinct finding sources are registered, each tagged with a *subject* station (whose artifact
+    - 46 distinct finding sources are registered, each tagged with a *subject* station (whose artifact
       is being judged) and an *owning* station (whose code does the judging) — the mechanism that makes
       the Marshal-oversight rule machine-checked rather than aspirational. `--bmad-core` and `--sibling-dreams`
       are the two categories requiring a genuine live network call (npm registry, GitHub Contents API)
@@ -567,10 +567,11 @@ sections:
     - glyph: →
       md: '**Atlas** — a read-only external signal source for fleet-watch axes.'
   - type: verify
-    md: 'The README undercounts badly, and by more than the last pass found: it still states "all 28 stories
-      shipped (6 epics) … dispatches the 10 detector sources" while the code cites Story 48.5 and Epic
-      22, and the live registry holds 34 sources. Not verified: the exact bodies of `checks/registry.py`,
-      `hygiene_definitions.py`, and `checks/env_hygiene.py` beyond their consumers'' docstrings.'
+    md: 'The README undercount the earlier passes found ("all 28 stories shipped (6 epics) … dispatches the
+      10 detector sources") is corrected: it now names the five verbs and leaves the sources, flags and
+      exit codes to the Spec''s public contract, and the live registry holds 46 sources. Not verified: the
+      exact bodies of `checks/registry.py`, `hygiene_definitions.py`, and `checks/env_hygiene.py` beyond
+      their consumers'' docstrings.'
 - id: herald
   kind: station
   mark: H
@@ -665,7 +666,7 @@ sections:
   accent: --st-marshal
   title: Marshal
   role: Deterministic BMAD-loop supervisor
-  measured: '2026-10-14'
+  measured: '2026-11-24'
   blocks:
   - type: quote
     md: '"Deterministic BMAD-loop supervisor: wraps bmad-loop with gates-as-objects, run supervision,
@@ -751,8 +752,8 @@ sections:
   - type: prose
     body:
     - 'A four-layer policy fold (code default → repo defaults → project layer → invocation flags, last
-      wins, malformed layers skipped in place) governs what the code itself now labels "the closed 33-key
-      vocabulary" — four keys wider than the last pass recorded, each carrying its own story provenance.
+      wins, malformed layers skipped in place) governs what the code itself now labels "the closed 36-key
+      vocabulary" — wider at every pass, each key carrying its own story provenance.
       Landing rules are drawn straight from this very repo''s own `CLAUDE.md` PR gates, in deliberately
       opposite directions: a `maintenance-label` rule excludes anything outside `recipes/**`, an `environment-yaml-sync`
       rule includes — ungated — any `pixi.toml` change.'
@@ -762,7 +763,7 @@ sections:
   - type: prose
     body:
     - '`marshal seed` is the installer, not the runtime — it delivers this repository''s own operating
-      model into another repo (seven verbs now: init/adopt/check/**kit**/update/explain/version, where
+      model into another repo (eight verbs now: init/adopt/check/**kit**/update/accept/explain/version, where
       `kit` provisions the per-loop-home token-economy kit), and every managed file carries one of five
       ownership classes so a repo owner always knows whether touching it is safe.'
   - type: h3
@@ -770,9 +771,9 @@ sections:
     text: What arrived since the last pass
   - type: prose
     body:
-    - Marshal is now the largest station in the fleet by a wide margin — 109,570 lines across 204 files,
-      roughly 3.3× Atlas and about 42% of all station source. A prior scale table that put Atlas at the
-      top is simply inverted now.
+    - Marshal is now the largest station in the fleet by a wide margin — 115,025 lines across 214 files,
+      roughly 2.7× Steward, the next largest, and about 40% of all station source. A prior scale table
+      that put Atlas at the top is simply inverted now.
     - 'The growth is concentrated in an entire **token-economy subsystem** the earlier pass never mentions:
       `marshal context refresh` over a derived-context and planning-graph pair, wire compression wrapping
       the dispatch harness, `marshal seed kit`, and `marshal benchmark` for wrapped-versus-unwrapped cost
@@ -794,12 +795,12 @@ sections:
       cross-fleet finding recorded below: MCP hosting is no longer "Atlas, and only Atlas." Two of eight
       stations now host a real, confirmed MCP server in their own source.'
   - type: h3
-    num: M.3
+    num: M.4
     text: Relationships
   - type: relations
     items:
     - glyph: →
-      md: '**bmad-loop** — the one real BMAD dependency in `pyproject.toml` (`>=0.11.0,<0.12`); no `bmad-method`
+      md: '**bmad-loop** — the one real BMAD dependency in `pyproject.toml` (`>=0.11.0,<0.13`); no `bmad-method`
         dependency exists anywhere.'
     - glyph: ←
       md: '**Doctor** — judged, structurally, per Doctor''s own §D above.'
@@ -807,8 +808,9 @@ sections:
       md: '**Steward** — Steward reads Marshal''s tracked sprint ledgers as they stand (`ledger-query`, which
         also feeds the Pages fleet board) and never derives a story status of its own.'
   - type: verify
-    md: The installed skill file documents 4 subcommands out of 21 top-level groups and 55 total parser
-      registrations. 61 distinct `AD-N` identifiers appear in source, reaching AD-72, though the registry
+    md: The parser holds 57 commands under 22 top-level names, in 10 groups (67 registrations in all), and
+      the installed skill file, which documented 4 subcommands at the last pass, now names all 22 in its CLI
+      section. 64 distinct `AD-N` identifiers appear in source, reaching AD-81, though the registry
       is not contiguous — the previously stated "64+" is the right order of magnitude but was not independently
       confirmable from this package alone. Full depth lives in the standalone Marshal Dossier; this section
       is the fleet-comparable summary.
@@ -818,7 +820,7 @@ sections:
   accent: --st-mason
   title: Mason
   role: The Artisan Builder — a CLI front door onto conda-forge-expert
-  measured: '2026-10-14'
+  measured: '2026-11-24'
   blocks:
   - type: quote
     md: '"…wrap the conda-forge-expert craft by subprocess rather than reimplement it — the skill stays
@@ -839,8 +841,9 @@ sections:
       check: python_floor
   - type: prose
     body:
-    - 'Mason has no dedicated content skill the way its seven siblings do — and that''s a deliberate rule,
-      not a gap: its own persona skill explicitly forbids creating one, since a second compiled skill
+    - 'Mason has a station skill like its seven siblings, `pyforge-mason`, but it covers only the CLI
+      grammar and the MCP face. Recipe knowledge stays in `conda-forge-expert` — a deliberate rule,
+      not a gap: Mason''s persona skill forbids writing a skill that replaces it, since a second copy
       would either duplicate conda-forge-expert''s craft or risk drifting from it. `mason recipe`''s eight
       verbs (new/validate/build/diagnose/optimize/scan/submit/update) are 1:1 thin subprocess wrappers
       over ten named CFE script adapters — literally the same MCP surface the `conda-forge-expert` skill
@@ -881,7 +884,7 @@ sections:
   accent: --st-scribe
   title: Scribe
   role: The append-only write path for checked-in team memory
-  measured: '2026-10-14'
+  measured: '2026-11-24'
   blocks:
   - type: quote
     md: '"Direct-capture CLI for checked-in team memory (.claude/memory/) — the append-only write path
@@ -930,17 +933,17 @@ sections:
       into the same DuckDB file Atlas''s Kedro pipelines and dashboard already own.'
   - type: h3
     num: S.1
-    text: A README that contradicts itself
+    text: A README that contradicted itself
   - type: prose
     body:
-    - The README's own status line says all 9 stories across 2 epics are shipped and `compile`/`recall`
-      are fully implemented. The paragraph directly beneath it still says those same two commands "parse
-      their arguments, print a 'not yet implemented' notice, and exit 0" — a leftover pre-Epic-2 fragment
-      never removed. The source code (extensively built, with story citations well past that point) confirms
-      the header is right and the body paragraph is what's stale.
+    - The earlier passes found the README's status line saying all 9 stories across 2 epics were shipped
+      and `compile`/`recall` fully implemented, directly above a paragraph saying those same two commands
+      "parse their arguments, print a 'not yet implemented' notice, and exit 0" — a leftover pre-Epic-2
+      fragment. That is corrected. The README now states that capture, `graph compile`, `recall`, `index`
+      and `catalog bmad-estate` are implemented, and points to the sprint ledger for each story's state.
   - type: prose
     body:
-    - 'The station is no longer the fleet''s smallest by as clear a margin — 3,279 lines have become 5,893.
+    - 'The station is no longer the fleet''s smallest by as clear a margin — 3,279 lines have become 5,983.
       The additions are a `promote` path, transcript ingestion, an `index` group (`build` / `report` /
       `move-list` / `refresh`), the three-backend storage registry, and the semantic-recall mode. The
       three-layer discipline survived all of it: capture is still the only writer, compile still rebuilds
@@ -955,15 +958,15 @@ sections:
     - glyph: →
       md: '**Atlas** — the target of the DuckDB "query plane" backend.'
     - glyph: —
-      md: A sibling `django-scribe` package provides the station's portal chrome shell — not investigated
-        in depth here.
+      md: A sibling `django-scribe` package provides the station's portal chrome shell and its MCP face
+        (`POST /stations/scribe/mcp`, `start_recall` and `get_recall`) — not investigated in depth here.
 - id: steward
   kind: station
   mark: St
   accent: --st-steward
   title: Steward
   role: The Provisioner — credentials, deployment, and the platform layer
-  measured: '2026-10-14'
+  measured: '2026-11-24'
   blocks:
   - type: quote
     md: '"A result is evidence, not a scratchpad." — `DutyResult`''s own docstring'
@@ -983,7 +986,7 @@ sections:
       check: python_floor
   - type: prose
     body:
-    - 'A flat list of "duties" (15 on 2026-10-14; `pyforge steward --help` lists today''s), each a structural
+    - 'A flat list of "duties" (31 on 2026-11-24, 15 on 2026-10-14; `pyforge steward --help` lists today''s), each a structural
       (Protocol-conforming, not inherited) unit of platform work — on 2026-10-14 two more than the pass
       before found, with `restore` and `revoke` added: `keys` (credential lifecycle),
       `deploy` (perimeter/static; the Pages build, deploy and status moved to a `pages` duty in Story
@@ -991,7 +994,7 @@ sections:
       — deliberately no nested verbs, routed to a documented playbook spec rather than inline logic),
       `budget`, `sync` (bidirectional GitHub Projects ↔ Jira reconciliation), `workspace`, `upgrade` (a
       five-stage BMAD-core upgrade pipeline — pre-flight, deliberate apply, clobber detection, pin-fan-out,
-      prove-landed — still the package''s largest module by a distance, and now 4,294 lines, up from 2,639),
+      prove-landed — still the package''s largest module by a distance, and now 4,007 lines, up from 2,639),
       `suite` (a 13-package pipeline-truth-and-advance chain that opens a reviewable PR and never auto-merges),
       plus a five-command machine-bootstrap group.'
     - Every duty's result is a frozen dataclass — "evidence, not a scratchpad" — and no duty may ever
@@ -1031,7 +1034,7 @@ sections:
   accent: --st-warden
   title: Warden
   role: The compliance gate — dependency hygiene, licenses, and CVEs
-  measured: '2026-10-14'
+  measured: '2026-11-24'
   blocks:
   - type: quote
     md: '"Unified dependency-hygiene + vulnerability scanner… emitting one schema-validated ComplianceReport
@@ -1052,7 +1055,7 @@ sections:
       check: python_floor
   - type: prose
     body:
-    - 'Unlike every other station, Warden''s CLI is essentially one subcommand — `scan`, governed by twenty-four
+    - 'Unlike every other station, Warden''s CLI is essentially one subcommand — `scan`, governed by twenty-two
       flags — plus `--doctor` as a flag, not a subcommand, that only ever checks local operability, never
       touches the network, and can never exit `1`: it "reports operability, not policy," the same phrase
       Doctor''s own gotcha uses independently. Its `Status` lattice has seven ranked rungs (`CLEAN`, `NOT_APPLICABLE`,
@@ -1130,10 +1133,10 @@ sections:
     md: Warden tags its own decisions differently from the rest of the fleet — Story numbers, FR/NFR codes,
       and single-letter design codes (D2, D8, D12), never `AD-N`. See the synthesis below.
 - id: synthesis
-  num: 09
+  num: '09'
   title: Cross-fleet synthesis
   kind: section
-  measured: '2026-10-14'
+  measured: '2026-11-24'
   blocks:
   - type: lede
     md: Investigating all eight stations in one pass surfaces things no single-station read would — patterns
@@ -1197,13 +1200,15 @@ sections:
     tone: red
     label: Every station's own docs undercount its own surface
     body:
-    - Marshal's installed skill documents 4 subcommands against 21 top-level groups and 55 parser registrations.
-      Doctor's README still claims "all 28 stories shipped … dispatches the 10 detector sources" while
-      its code cites Story 48.5 and its registry holds 34. Steward's README documented 6 duties when the CLI
-      registered 15 (2026-10-14; `pyforge steward --help` lists today's). Scribe's README *contradicts itself
-      in adjacent paragraphs* — a shipped-header sitting
-      directly above a stale "not yet implemented" body, still uncorrected.
-    - 'This pass is the second data point, and it settles the question: the drift is not a backlog of
+    - The earlier passes found Marshal's installed skill documenting 4 subcommands against 21 top-level
+      groups, Doctor's README claiming "all 28 stories shipped … dispatches the 10 detector sources" against
+      a registry of 34, Steward's README documenting 6 duties when the CLI registered 15, and Scribe's README
+      *contradicting itself in adjacent paragraphs* — a shipped-header sitting directly above a stale "not
+      yet implemented" body.
+    - 'All four are corrected as of 2026-11-24: Marshal''s skill names all 22 top-level commands, Doctor''s
+      README leaves its sources to the Spec''s public contract (the registry holds 46), Steward''s README
+      states the 31 duties the CLI registers, and Scribe''s stale paragraph is gone.'
+    - 'The second pass settled the question: the drift is not a backlog of
       four typos, it is a rate. Every figure above moved further from the truth in the weeks between passes,
       in the same direction, at every station that ships fast. The README is written once near a milestone
       and never revisited while the surface keeps growing underneath it. The one countermeasure this repository
@@ -1227,7 +1232,7 @@ sections:
     rows:
     - cells:
       - Decision tags
-      - '`AD-N` (Marshal 61 distinct, reaching AD-72, Atlas 23, Mason 16, Steward some, Scribe 8 — five
+      - '`AD-N` (Marshal 64 distinct, reaching AD-81, Atlas 22, Mason 17, Steward 16, Scribe 8 — five
         independent registries, zero shared numbering) vs. Story-N.M / FR-N / NFR-N / single-letter D-codes
         (Warden, parts of Steward). An `AD-8` in one station is unrelated to an `AD-8` in another.'
       - '"Why was this built this way" has no single vocabulary to search for across the fleet.'
@@ -1249,8 +1254,8 @@ sections:
       - false
     - cells:
       - CLI shape
-      - Noun-verb trees (Marshal ~40 commands/12 groups, Mason 4 nouns), a flat duty list (Steward),
-        four flat subcommands (Doctor), one subcommand behind ~20 flags (Warden), and no custom CLI at
+      - Noun-verb trees (Marshal 57 commands/10 groups, Mason 4 nouns), a flat duty list (Steward),
+        five flat subcommands (Doctor), one subcommand behind 23 flags (Warden), and no custom CLI at
         all — Kedro's own routing (Atlas).
       - Learning one station's command grammar transfers to roughly half the fleet.
       mono:
@@ -1271,12 +1276,14 @@ sections:
       - false
     - cells:
       - MCP hosting
-      - '**Two** stations now host a real, confirmed MCP server in their own source: Atlas, and Marshal
-        (`mcp/server.py` plus a `marshal-mcp` console script). Herald and Scribe still host none — grepped
-        again this pass, zero server code in either — yet both still have a documented `/stations/*/mcp`
-        route whose existence is only ever asserted in *other* stations'' test files.'
-      - 'Improved but not resolved: the answer to "does this station host an MCP server" now differs per
-        station with no rule predicting which, and the phantom routes are unchanged.'
+      - '**Two** stations host a real, confirmed MCP server in their own source: Atlas, and Marshal
+        (`mcp/server.py` plus a `marshal-mcp` console script). Herald and Scribe hold no server code in
+        their base packages, but their `/stations/*/mcp` routes are no longer phantom: every station''s
+        `django-<station>` portal ships an `mcp_asgi.py` face, and the host mounts each at
+        `POST /stations/<station>/mcp` (`django_pyforge/mcp_http.py`).'
+      - 'Improved but not resolved: every station now has a mounted face, but whether the server code
+        lives in the base package or only in the portal still differs per station, with no rule
+        predicting which.'
       mono:
       - true
       - false
@@ -1351,7 +1358,7 @@ sections:
       MCP server lives and where fleet status is read from. That''s the shape of the Dream this section
       is written to feed.'
   - type: h3
-    num: '09.6'
+    num: '09.5'
     text: Scale, side by side
   - type: table
     check: src_lines
@@ -1461,7 +1468,7 @@ sections:
       - true
       - false
   - type: h3
-    num: '09.7'
+    num: '09.6'
     text: What the second pass changed
   - type: prose
     body:

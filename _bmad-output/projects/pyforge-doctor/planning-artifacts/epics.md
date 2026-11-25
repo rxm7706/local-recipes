@@ -4093,6 +4093,31 @@ So that `DW-doctor-59-4-1`'s incident-log half and Story 59.8 closes in this cha
 **And** `DW-doctor-59-4-1`'s incident-log half and Story 59.8 reads resolved in its ledger with the commit that closed it
 **Status:** done
 
+## Epic 61: The documentation says what the tree does (spec-pyforge-doctor CAP-84)
+
+Minted 2026-11-24 from the station Dream's entry of the same date on the operator rulings of 2026-11-24: "documentation update and verification - we want to ensure all documents are up to date accurate and verfied to be current", "do a deep code, .md, github pages content review across the entire repo", and, on the review's findings, "Docs and high code". Every documentation detector and generator reads green at main `7da08791f3`; a read of each page against the tree found about 48 pages and files that state something the tree contradicts.
+**HARD boundaries:**
+- Documentation only: no detector, generator, station code or CLI changes in this epic.
+- A finding is re-verified against the tree before its page moves; a finding the tree does not support leaves the page alone.
+- A `SPEC.md` moves only by its memlog and re-derive, a generated page by its generator, a `bmad:context` block by its skill.
+
+### Story 61.1: The shelf, the front doors and the dossier say what the tree does
+
+As a reader who follows a page as written,
+I want every command, environment, path, count and measurement the review found wrong corrected against the tree,
+So that a page that reads current to the detectors is also true.
+
+**Type:** fix • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-doctor CAP-84 (realized, no text change); FR-17 ← CAP-84; no AD moves
+**Flag:** `flag-exempt: docs-only` (documentation and planning text; no code path to gate (roster list))
+**Surface:** `docs/tutorials/**`, `docs/how-to/**`, `docs/reference/**`, `docs/explanation/**`, `docs/_STYLE_GUIDE.md`, `docs/dreams/README.md`, `docs/governance/**`, `docs/foundry/**`, `docs-site/src/content/dossier/dossier.yml`, `AGENTS.md`, `CHANGELOG.md`, `.github/pull_request_template.md`, `.claude/memory/README.md`, `.claude/skills/bmad-agent-*/SKILL.md`, `src/platform/**/README.md`, `src/shared/packages/*/README.md`, `src/shared/packages/pyforge-atlas/**/*.md`, `src/shared/packages/pyforge-herald/web/README.md`, `src/shared/packages/pyforge-marshal/tests/integration/README.md`
+**Spec:** `planning-artifacts/specs/spec-61-1-the-shelf-the-front-doors-and-the-dossier-say-what-the-tree-does.md`
+**Given** pages that give a command that fails or does nothing as written, describe an environment as carrying what it does not, cite a path that is gone, or publish a measurement the tree no longer supports, while every documentation detector reads green
+**When** each finding of the 2026-11-24 review is re-verified against the tree and its page corrected, with the page's `verified:` date moved
+**Then** `docs-currency-check`, `docs-map-hygiene-check`, `governance-currency`, `dreams-hygiene-check` and the seven generators' `--check` exit 0, and the Pages site's `pages-check` exits 0 with the dossier's section numbers intact
+**And** each of the four governance Specs with stale present-tense text carries a memlog entry naming the correction its next re-derive makes
+**Status:** review
+
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

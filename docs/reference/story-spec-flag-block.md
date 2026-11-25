@@ -4,7 +4,8 @@ sources:
   - scripts/flag_rule.py
   - scripts/flag_gate_check.py
   - docs/governance/flag-rule-baseline.json
-verified: 2026-11-17
+  - src/shared/packages/pyforge-core/tests/unit/test_flags.py
+verified: 2026-11-24
 ---
 
 # The story-spec flag block
@@ -47,7 +48,8 @@ When a story ships a new flag, register it in all four places before verificatio
 2. **`src/platform/config/flag-overlays.json`** — set per-environment variant values; they must follow the
    story spec's `flag.default` mapping (`production`, `staging`, `dev`).
 3. **`src/shared/packages/pyforge-core/tests/unit/test_flags.py`** — add the key to `_SHIPPED_CLOCKS` and to one
-   of `expected` / `per_environment`, so core's flag contract covers the new key.
+   of `expected` / `per_environment`, so core's flag contract covers the new key. A kill switch also joins
+   `_LATER_KILL_SWITCHES` with its cleanup date.
 4. **`src/platform/tests/test_openfeature_file_flags.py`** — extend `_SHIPPED_BOOLEANS` so the platform file
    provider contract covers the new key.
 

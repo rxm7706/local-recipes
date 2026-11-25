@@ -13,7 +13,7 @@ B1→B3 and consumed at the attended B4 event** (AD-11 / AD-19).
   captured input frame + the captured legacy OUTPUT snapshot per node, in the tracked
   test tree (`fixtures/{core,vcs_health}/*.json`). The gate **never reads
   `.claude/data/`**.
-- The `parity-diff` pixi task runs `pytest tests/parity`.
+- The `parity-diff` pixi task runs `pytest src/shared/packages/pyforge-atlas/tests/unit/parity`.
 
 ## Fixture provenance (IMPORTANT — B1 vs B4)
 
@@ -55,7 +55,7 @@ harness under-check (column-set-from-expected-only + `check_dtype=False`, DW-B1-
 
 The high-stakes CONTRACTS these nodes preserve (Phase H serial gate, Phase P two-layer cost
 gate, EPSS 0-100 normalization, KEV overlay + CVSS coercion, single-write-path, notes-survive)
-are proven directly in `tests/pipelines/**` + `tests/datasets/**` against fixtures — the
+are proven directly in `tests/unit/pipelines/**` + `tests/unit/datasets/**` against fixtures — the
 parity seeds are the schema-shape layer, not the contract layer.
 
 ## B4 contribution — the tightened diff + the credentialed-run mechanism (this story)

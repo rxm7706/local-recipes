@@ -3,7 +3,9 @@ sources:
   - src/platform/Containerfile
   - src/platform/compose/compose.yml
   - src/platform/compose/dbgpt/Containerfile
-verified: 2026-11-17
+  - pixi.toml
+  - pixi.lock
+verified: 2026-11-24
 ---
 
 # AI Engine Operations
@@ -13,8 +15,9 @@ The PyForge Estate supports multiple agentic engines integrated directly with th
 ## Spinning up the Local Environment
 
 Install the laptop SBOM first (`pixi install -e pyforge-foundry-full`). On linux-64,
-`pyforge-foundry-full-stack` composes `platform-dev` and is the one-shot platform laptop
-env; otherwise add `platform-dev` explicitly.
+`pyforge-foundry-full-stack` adds the local servers (PostgreSQL 17, redis-server, object
+storage) to it, but carries neither Wagtail nor Langflow: the platform itself runs in
+`platform-dev`, so install that env too.
 
 To run the full stack locally without Docker (PostgreSQL + pgvector, Redis, and the Silo S3-compatible object store all ship as per-user server processes), use the `platform-dev` environment, which composes `python-agent-platform` with those local services.
 

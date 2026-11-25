@@ -1,7 +1,7 @@
 # OCP overlay (Story 12.1)
 
 **Prerequisite:** a Running OpenShift Local cluster and a platform image in the
-internal registry — see `cluster-bringup.md` in this directory (Story 12.4).
+internal registry — see `docs/how-to/ocp-cluster-bringup.md` (Story 12.4).
 
 The thin OpenShift face of the platform core chart (AD-11), in two halves:
 
@@ -36,6 +36,7 @@ TLS defaults to edge termination with an HTTP→HTTPS redirect; the app
 still enforces https itself via `SECURE_PROXY_SSL_HEADER` trusting the
 router's `X-Forwarded-Proto`.
 
-See `../README.md` for the Secret contract and honest limitations. Attended
-OCP verification (Route/SCC/PVC/data-service UIDs) is Story 12.7; bring-up is
-`cluster-bringup.md`.
+See `docs/explanation/platform-deployment-architecture.md` for the Secret
+contract and honest limitations. Attended OCP verification
+(Route/SCC/PVC/data-service UIDs) is Story 12.7; bring-up is
+`docs/how-to/ocp-cluster-bringup.md`.

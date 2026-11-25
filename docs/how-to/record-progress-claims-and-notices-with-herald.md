@@ -5,7 +5,7 @@ sources:
   - src/shared/packages/pyforge-herald/src/pyforge/herald/scheduler.py
   - src/shared/packages/pyforge-herald/scripts
   - src/shared/packages/pyforge-herald/web/package.json
-verified: 2026-11-18
+verified: 2026-11-24
 ---
 
 # How to record progress, claims and notices with Herald
@@ -35,7 +35,7 @@ Every write subcommand (`progress <station> --update`, `success publish`, `notic
 1. **`HERALD_TOKEN` env var**, format `<role>:<opaque-token>` (a single `:` splits the two), e.g. `export HERALD_TOKEN=operator:x`. Any non-empty opaque token works today: this is a role-presence stub, not real credential verification (see the `auth.py` module docstring). A value with no `:` is ignored.
 2. **`~/.herald/config`** — a JSON file `{"role": "operator"}`.
 
-Every write subcommand also prompts `Continue? [Y/n]` before writing. Answering anything but blank/`y`/`yes` aborts with no write and exit 0 (e.g. `aborted: publish not confirmed`).
+`success publish` and `notice author`/`publish`/`close` also prompt `Continue? [Y/n]` before writing, and `notice archive` asks you to confirm the redirect (`Redirect 'OLD' -> 'NEW'? [Y/n]`). Answering anything but blank/`y`/`yes` aborts with no write and exit 0 (e.g. `aborted: publish not confirmed`). `progress <station> --update` has no confirmation prompt; it asks only for the unblock narrative, and only when `--unblock-narrative` is omitted.
 
 ### 2. Record progress
 

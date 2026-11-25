@@ -131,11 +131,14 @@ chain with Story 21.6 (CAP-3): `build_identity_packages_primary` reads its
 functionally inert on a default run — zero live JFrog calls, zero new
 credentials. `tools/bootstrap.py` runs first: it creates the `stores/vdb` /
 `stores/osv` directories up front, and seeds an EMPTY
-`conf/local/credentials.yml` stub (`github_token` / `bigquery_adc`) only
-when one is not already there — Kedro resolves every catalog entry's
-`credentials:` key eagerly regardless of `--pipeline`, so a totally absent
-file would `KeyError` before a single node runs; both referencing datasets
-already degrade to an offline no-op by default, so the stub only matters
+`conf/local/credentials.yml` stub (every key in its `CREDENTIAL_KEYS`:
+`github_token`, `bigquery_adc`, and the `gitlab_token`, `codeberg_token`,
+`npm_token`, `crates_token`, `rubygems_token` and `nuget_token` the VCS-host
+and registry entries reference) only when one is not already there — Kedro
+resolves every catalog entry's `credentials:` key eagerly regardless of
+`--pipeline`, so a totally absent file would `KeyError` before a single node
+runs; every referencing dataset already degrades to an offline no-op or an
+anonymous call by default, so the stub only matters
 for getting PAST catalog construction, never for a real fetch. A real
 operator's own `credentials.yml` (with real tokens) is left untouched.
 
@@ -166,7 +169,7 @@ every variable touched by the full bootstrap + `--live-catalog` chain,
 | `PYFORGE_ATLAS_BASILISK_TOKEN` | No (unset: the Basilisk advisory stores send nothing) | Story 36.1 (CAP-66): the Basilisk token, read at the fetch (not a catalog credential: Kedro resolves those eagerly). With `pyforge.atlas.basilisk_population` on and `PYFORGE_ATLAS_CREDENTIALED=1`, `vulnerability_basilisk_raw` and `vulnerability_basilisk_detail_raw` send `Authorization: Bearer <token>` over https to `api.basilisk.prefix.dev` only. The package listing (`discovery_basilisk_packages_raw`) needs no token. |
 | `PYFORGE_ATLAS_CREDENTIALED` | No (unset: no credentialed request is sent) | Story 35.1 (CAP-65): the one opt-in for a credentialed run. Only the exact value `1` turns it on; it is read when a dataset would fetch, never at import. With `pyforge.atlas.live_vcs_universe` on (dev), `vcs_github_api_raw` sends its GraphQL POST with `Authorization: Bearer <github_token>` to `api.github.com` only when this is `1`; otherwise it sends nothing and keeps last-good under a `stale` marker that names the switch. The bootstrap's `conf/local/credentials.yml` is a placeholder: for a credentialed run put a real token there, for example `github_token: {token: ${oc.env:GITHUB_TOKEN}}`. Unit tests and CI never set it. |
 | `GITHUB_TOKEN` / `GH_TOKEN` (via `credentials.yml`'s `github_token`) | No | Reused by every GitHub-authenticated entry (Story 21.6 CAP-3): the default `vcs_health` run's refresh-trigger node hands `GitHubRequestDataset` an empty repo-identifier batch, so `save()` makes zero network calls without it (Story 21.2); `openteams_project_1_board_raw` and `discovery_staged_recipes_prs_raw` (the identity join's board + staged-PR overlays) share the same credential and likewise degrade to empty/last-good rather than raising |
-| `GOOGLE_APPLICATION_CREDENTIALS` (via `credentials.yml`'s `bigquery_adc`) | No | Only consulted when `PHASE_P_ENABLED=1`; the default `pypi_intelligence` run returns an empty BigQuery-downloads frame without it |
+| `GOOGLE_APPLICATION_CREDENTIALS` (via `credentials.yml`'s `bigquery_adc`) | No | Only an attended BigQuery run needs it (`PHASE_P_ENABLED=1` with `PHASE_P_SOURCE=bigquery`, through `BigQueryDownloadsDataset.run_gated()`); the catalog load never reads it. The default `pypi_intelligence` run returns an empty BigQuery-downloads frame, and so does `PHASE_P_ENABLED=1` alone (the ClickHouse rows stand); with both set the catalog load raises and names the attended run |
 | `--live-catalog PATH` (CLI flag, not an env var) | N/A | Passed to `scripts/conda-forge-packaging-inventory-operations_metrics.py` (Story 21.3) — point it at the SAME `PYFORGE_ATLAS_DATA_ROOT` a bootstrap run populated to read Tier 0–2 verification fields from Parquet instead of live HTTP/the legacy workbook; add `--live-catalog-only` to fail loudly (non-zero exit) instead of degrading when a required dataset is missing/stale |
 | `identity_complete_export.parquet` (derived output path) | No (materialized by bootstrap) | Story 23.5 canonical 63-column complete export — lands at `${PYFORGE_ATLAS_DATA_ROOT}/derived/identity_complete_export/identity_complete_export.parquet` after the `derived_artifacts` pipeline runs; supersedes the quartet's gist-time four-way merge |
 | `OPENTEAMS_IDENTITY_GIST_ID` | No (only for `--gist-only` publish) | Secret gist id for `scripts/conda-forge-packaging-inventory-operations_openteams_identity.py --gist-only`; also readable from `.env.local` at the repo root. Never commit the id. |
@@ -255,8 +258,14 @@ exactly the dataset(s) whose host needs it:
 
 | Key | Attached to | Environment source |
 |---|---|---|
-| `github_token` | `vcs_github_api_raw` only | `GITHUB_TOKEN` / `GH_TOKEN` |
+| `github_token` | `vcs_github_api_raw`, `openteams_project_1_board_raw` and `discovery_staged_recipes_prs_raw` (all on the GitHub API host) | `GITHUB_TOKEN` / `GH_TOKEN` |
 | `bigquery_adc` | `pypi_bigquery_downloads_raw` only (admin/attended-only, NFR-2) | `GOOGLE_APPLICATION_CREDENTIALS` (ADC) |
+| `gitlab_token` | `vcs_gitlab_api_raw` only | none read; set the value in `credentials.yml` |
+| `codeberg_token` | `vcs_codeberg_api_raw` only | none read; set the value in `credentials.yml` |
+| `npm_token` | `vcs_registry_npm_raw` only | none read; set the value in `credentials.yml` |
+| `crates_token` | `vcs_registry_crates_raw` only | none read; set the value in `credentials.yml` |
+| `rubygems_token` | `vcs_registry_rubygems_raw` only | none read; set the value in `credentials.yml` |
+| `nuget_token` | `vcs_registry_nuget_raw` only | none read; set the value in `credentials.yml` |
 | `jfrog` | no shipped entry (see below) | `JFROG_API_KEY` or `JFROG_USERNAME`+`JFROG_PASSWORD` |
 
 Credential references are **static, per-entry catalog config**: an entry

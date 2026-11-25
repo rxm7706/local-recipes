@@ -87,8 +87,9 @@ network call: strips first-person "I prefer"/"I want" framing, drops "(the)
 user prefers" framing, drops parenthetical asides containing a bare
 git-short-hash), and prints the full proposal (target path, rewritten
 content, `MEMORY.md` line). Nothing is written until you confirm — decline
-and it exits cleanly with zero files changed. The source user-local file is
-left byte-for-byte untouched; rewriting it to a pointer stub is Story 1.4.
+and it exits cleanly with zero files changed, the source user-local file
+left byte-for-byte untouched. On confirmation each promoted entry's source
+file is rewritten to a pointer stub (next section).
 
 ## Pointer stubs (Story 1.4)
 

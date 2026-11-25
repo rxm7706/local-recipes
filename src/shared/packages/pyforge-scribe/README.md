@@ -22,7 +22,8 @@ Run from the repository root (the parent pixi workspace):
 pixi run -e pyforge-guild scribe capture --type project --text "..."
 pixi run -e pyforge-guild scribe recall "why did we pin typer"
 pixi run -e pyforge-scribe scribe graph compile
-pixi run -e pyforge-scribe pyforge-scribe-test  # run the test suite
+pixi run -e pyforge-scribe pyforge-scribe-test  # the package half of the test suite
+pixi run -e pyforge-scribe pyforge-scribe-live-test  # the live-tree half
 ```
 
 `scribe capture` and `scribe recall` run from the session default

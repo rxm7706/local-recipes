@@ -1,5 +1,9 @@
 # Changelog
 
+> **Frozen as of 2026-05-03.** Nothing below is maintained after that date. History now lives in
+> the merge log (`git log --merges`), in each station Dream's Realization log under `docs/dreams/`,
+> and, for the conda-forge-expert skill, in `.claude/skills/conda-forge-expert/CHANGELOG.md`.
+
 All notable changes to this repository are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this repository adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) where versioned releases apply.
 
 Subsystems with their own internal versioning (individual conda recipes, the FastMCP server, BMAD installation, etc.) are noted with a parenthetical scope tag at the start of each entry.

@@ -8,7 +8,7 @@ When converting v0 `meta.yaml` to v1 `recipe.yaml`, conda-recipe-manager **0.10.
 
 ## Reproduce or evidence
 
-- `.claude/skills/conda-forge-expert/SKILL.md:4384` — G121
+- `.claude/skills/conda-forge-expert/SKILL.md:4482` — G121
 - `.claude/skills/conda-forge-expert/CHANGELOG.md` v8.98.0
 - mason Stories 22.1 and 22.3 — twelve `recipe.yaml` files carried SentinelType keys; crm 0.10.6 exits 100
 

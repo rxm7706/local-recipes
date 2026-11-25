@@ -10,7 +10,7 @@ sources:
   - src/shared/packages/django-pyforge/src/django_pyforge/events/constants.py
   - src/shared/packages/django-pyforge/src/django_pyforge/queues.py
   - .github/workflows/platform-deploy.yml
-verified: 2026-11-22
+verified: 2026-11-24
 ---
 
 # Deploying the platform (Story 12.1)
@@ -241,9 +241,10 @@ capability-naming reason where helm/PyYAML are absent.
   `networkPolicy.webIngressFrom`); exec into web and worker pods and curl
   postgres/redis Services; confirm dbgpt and mcp-host are reachable from
   web only on :5670/:8090. Trim `webIngressFrom` if your ingress controller
-  lives in a different namespace. `worker-builds` may set
-  `networkPolicy.workerBuilds.allowExternalEgress=true` for Mason builds
-  that reach external registries.
+  lives in a different namespace. `worker-builds` egress to external
+  registries is open by default for Mason builds
+  (`networkPolicy.workerBuilds.allowExternalEgress: true`); set it to
+  `false` to close it.
 - **Event delivery (Story 42.3).** `events.consumers` renders one
   `consume-events-<station>` Deployment per station
   (`manage.py consume_events --station <name>`; consumer group = station).

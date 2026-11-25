@@ -3,7 +3,7 @@
 **Prerequisite:** an Enterprise Managed Redis (or equivalent) endpoint reachable
 from the platform namespace, plus a pre-created `existingSecret` carrying
 `REDIS_PASSWORD` (same contract as the self-hosted default — see
-`../README.md`).
+`docs/explanation/platform-deployment-architecture.md`).
 
 Additive values overlay for the **core** chart when Redis is consumed, not
 self-hosted (AD-1 datastores exception, CAP-3). With `redis.external.enabled:
@@ -14,7 +14,8 @@ from the overlay's URL fields instead of in-cluster Service DNS.
 
 ```sh
 # Core chart with external Redis (release name "platform" matches the
-# documented vanilla-K8s install in ../README.md):
+# documented vanilla-K8s install in
+# docs/explanation/platform-deployment-architecture.md):
 pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform \
     -f src/platform/deploy/overlays/external-redis/values.yaml \
     --set-file flags.tree=src/platform/config/flags.json \
@@ -31,5 +32,5 @@ With the overlay **not** applied, or with `redis.external.enabled: false`,
 the self-hosted Redis default is unchanged (byte-identical `helm template`
 output).
 
-See `../README.md` for the Secret contract and `test_chart_invariants.py`
-for automated proofs.
+See `docs/explanation/platform-deployment-architecture.md` for the Secret
+contract and `test_chart_invariants.py` for automated proofs.

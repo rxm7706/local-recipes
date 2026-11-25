@@ -5,7 +5,7 @@ sources:
   - src/shared/packages/pyforge-marshal/tests/meta/test_ad65_no_network_stack_imports.py
   - src/shared/packages/pyforge-marshal/tests/meta/test_ad65_default_template_never_remote.py
   - .github/workflows/substrate-nightly.yml
-verified: 2026-11-18
+verified: 2026-11-24
 ---
 
 # How to use Marshal's seed and substrate bootstrap in an air-gapped site
@@ -74,7 +74,7 @@ gh release download substrate-nightly --repo <owner>/<repo> \
 marshal context bootstrap --from substrate-pack
 ```
 
-Prefer the published pair. Its CI runner has no session transcripts, so its `graph.json` carries none.
+Prefer the published pair. It carries no `graph.json` at all: its CI runner never builds the planning graph, so no session transcript or home-directory path leaves a host with it, and `bootstrap` rebuilds that member locally (see the last paragraph of the next section).
 
 :::caution
 `marshal context pack --out substrate-pack` on a working checkout ships `graph.json` exactly as that host compiled it. That includes session-transcript nodes and absolute home-directory paths. Use `pack` only when no published pair exists, and review what it carries before it leaves the host.

@@ -1,10 +1,11 @@
 ---
 sources:
   - .github/workflows/pages.yml
+  - pixi.toml
   - docs/foundry/marketplace/README.md
   - src/shared/packages/pyforge-steward/src/pyforge/steward/catalog.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py
-verified: 2026-11-22
+verified: 2026-11-24
 ---
 
 # Deploy the docs site to GitHub Enterprise Pages
@@ -15,7 +16,8 @@ Use this procedure on the **enterprise copy** of this repository (`ghe.example` 
 
 - An enterprise GitHub host (for example `https://ghe.example`) with a mirror or fork of `rxm7706/local-recipes` that you keep current with `main` on the public upstream.
 - GitHub Actions enabled for that repository, with a runner that can execute `pages.yml` (Ubuntu, `pixi`, the GitHub CLI `gh`, and network access to your internal conda channel — not the public internet). `gh` downloads the Kedro-Viz and Vizro export artifacts before the build (steward Story 102.4). A token alone does not tell `gh` which host to talk to, and a runner has no `gh` configuration, so each download step names the host and repository the workflow runs on (`GH_HOST` from `GITHUB_SERVER_URL`, and `GH_REPO`) and hands `gh` the job's token as both `GH_TOKEN` and `GH_ENTERPRISE_TOKEN`; that is what makes it authenticate against your enterprise host. A runner without `gh` fails that step naming the command.
-- The internal conda mirror and channel configuration from [`air-gapped-mirror-setup.md`](air-gapped-mirror-setup.md) (follow that guide; do not duplicate its steps here).
+- The internal conda mirror and channel configuration from [`air-gapped-mirror-setup.md`](air-gapped-mirror-setup.md) (follow that guide; do not duplicate its steps here). The mirror must serve two pixi environments: `site`, and `pyforge-guild`, which the `build` job's flag, artifact-download, fleet-board, changes-page and stamp steps run in.
+- An internal npm registry mirror the runner can reach. The site build installs `docs-site/` with `npm ci` from `docs-site/package-lock.json`; the conda mirror guide does not cover npm.
 
 ## 1. Keep the enterprise repository aligned with `main`
 
@@ -45,12 +47,13 @@ In the enterprise repository on `ghe.example`:
 
 ## 3. Point CI runners at the internal conda mirror
 
-The `build` job in `.github/workflows/pages.yml` runs `pixi run --frozen -e site pages-check`, which resolves packages from the channels configured for this repo. On enterprise runners that cannot reach `conda.anaconda.org` or the public internet, configure the mirror and channel URLs using [`air-gapped-mirror-setup.md`](air-gapped-mirror-setup.md) before the first Pages build.
+The `build` job in `.github/workflows/pages.yml` runs `pixi run --frozen -e site pages-check`, which resolves packages from the channels configured for this repo, and its other steps run `pixi run --frozen -e pyforge-guild …`, so the runner installs both environments. On enterprise runners that cannot reach `conda.anaconda.org` or the public internet, configure the mirror and channel URLs using [`air-gapped-mirror-setup.md`](air-gapped-mirror-setup.md) before the first Pages build.
 
 Typical enterprise patterns (choose what your platform supports):
 
 - Pre-configure `~/.condarc` / `/etc/conda/.condarc` on the runner image to list only internal mirror URLs.
 - Set runner environment variables or org-level secrets your mirror setup documents, so `setup-pixi` and `mamba`/`conda` never need outbound access to the public internet.
+- Point npm at the internal registry mirror (a runner-level `.npmrc` `registry=` line or `NPM_CONFIG_REGISTRY`), so the build's `npm ci` in `docs-site/` resolves there.
 
 Confirm a dry run succeeds on a runner:
 

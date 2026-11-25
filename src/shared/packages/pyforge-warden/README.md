@@ -22,7 +22,8 @@ Run from the repository root (the parent pixi workspace):
 
 ```bash
 pixi run -e pyforge-warden warden-scan          # run the scanner
-pixi run -e pyforge-warden pyforge-warden-test  # run the test suite
+pixi run -e pyforge-warden pyforge-warden-test  # the package half of the test suite
+pixi run -e pyforge-warden pyforge-warden-live-test  # the live-tree half
 ```
 
 The `pyforge-warden` environment is lean by design (`no-default-feature`): it
@@ -100,8 +101,11 @@ factories from in-tree plugins and still runs them on the existing thread
 pool (including the hygiene filter that skips `DeptryEngine` when there is
 no adjacent Python source).
 
-**Optional scanners** (`checkmarx`, `sonar`, `blackduck`, `ghas`,
-`profile-local`) are stubs. A default run does not require them. Enable
+**Optional scanners** are the seven ids in `OPTIONAL_SCANNER_IDS`
+(`scanner_plugins.py`): `checkmarx`, `sonar`, `blackduck`, `ghas` and
+`profile-local` are stubs; `opengrep` (SAST) and `tea-test-review` are
+advisory lenses that add `advisory_notes`, never `plugin_findings`. A
+default run does not require them. Enable
 with `WARDEN_OPTIONAL_SCANNERS` (comma-separated ids). Enabling an optional
 scanner may add `plugin_findings`; it cannot replace the Warden verdict
 (only `publish_pr_gate_verdict`, owner `"warden"`, publishes the PR-gate).

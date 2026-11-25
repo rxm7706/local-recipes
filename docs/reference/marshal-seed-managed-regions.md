@@ -7,7 +7,7 @@ sources:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/findings.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/optout.py
   - src/shared/packages/pyforge-marshal/tests/unit/test_seed_verbs_region_opt_out.py
-verified: 2026-11-18
+verified: 2026-11-24
 ---
 
 # Marshal seed managed regions
@@ -35,7 +35,7 @@ Region names match `[a-z0-9][a-z0-9-]*` (e.g. `tiers`, `dream-first-workflow`). 
 
 `marshal seed check` hashes **region body content only** (never the marker line itself) and compares against the hash recorded in `.marshal/seed-state.yml`. A hand-edit inside the markers emits `managed-region-modified` (**HARD**). Content outside the markers is ignored for conformance.
 
-If markers are **absent** but the region was never opted out, `managed-region-missing` (**DRIFT**) is reported — run `marshal seed update` to re-insert at the manifest's declared anchor.
+If markers are **absent** but the region was never opted out, `managed-region-missing` (**DRIFT**) is reported — run `marshal seed update --run` to re-insert at the manifest's declared anchor (without `--run` it is a dry run that only writes `.marshal/plan.json`).
 
 ## Sanctioned opt-out
 

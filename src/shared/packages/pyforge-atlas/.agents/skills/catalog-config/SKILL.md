@@ -203,8 +203,8 @@ Values can be injected at runtime: `${globals:key}` (from `conf/base/globals.yml
 
 ## Atlas overrides
 
-This project's catalog conventions are enforced by `tests/catalog/*`
-(`pixi run kedro-catalog-check`, 47 tests, live-verified 2026-08-09) — audited
+This project's catalog conventions are enforced by `tests/unit/catalog/*`
+(`pixi run -e pyforge-atlas kedro-catalog-check`) — audited
 against the guidance above in
 `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption/kedro-skills-audit-report.md`.
 Two confirmed corrections; everything else above passes as written.
@@ -222,7 +222,7 @@ Two confirmed corrections; everything else above passes as written.
    ```
 
    Enforced by `test_every_entry_carries_a_layer_tag`
-   (`tests/catalog/test_conventions.py:30-36`); a nested
+   (`tests/unit/catalog/test_conventions.py`); a nested
    `metadata.kedro-viz.layer` value is invisible to that check and fails the
    gate (`layer not in LAYERS`).
 
@@ -232,6 +232,6 @@ Two confirmed corrections; everything else above passes as written.
    `model_input`, `models`, `model_output`, or `reporting` layers, and no
    `NN_` numeric directory prefix. Enforced by
    `test_output_filepaths_follow_data_layer_name_convention`
-   (`tests/catalog/test_conventions.py:39-58`) against
+   (`tests/unit/catalog/test_conventions.py`) against
    `LAYERS = {"raw", "intermediate", "primary", "derived"}`
-   (`tests/catalog/conftest.py:58`).
+   (`tests/unit/catalog/conftest.py`).

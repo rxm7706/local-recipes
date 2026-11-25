@@ -41,8 +41,8 @@ conda-forge + SelfExplainML.
 > Version-floor re-sync: run `python scripts/llms_full_check.py --fix-floors` (deterministic; 2026-10-13). Prose stays hand-written; undocumenteds and ghosts still require a human.
 **Staleness detector:** `pixi run -e pyforge-guild llms-full-check` (script:
 `scripts/llms_full_check.py`) exits non-zero when this catalog drifts from `pixi.toml` —
-undocumented deps, ghost entries, or version-floor drift. Detector finds; the regeneration
-prompt above reconciles.
+undocumented deps, ghost entries, or version-floor drift. Detector finds; `--fix-floors` above
+reconciles the floors, and a human reconciles undocumented deps and ghost entries.
 
 ---
 
@@ -57,7 +57,7 @@ Everything runs through pixi environments. Nothing here is installed globally.
     pixi run -e pyforge-guild <task> -- <args>  # detectors, ledger sync, fleet-picture, …
     pixi shell -e local-recipes                 # enter the full factory env when installed
     pixi run -e local-recipes python script.py  # one-shot with the widest library closure
-    pixi run -e local-recipes <task> -- <args>  # recipe-build, atlas bootstrap, ~325 tasks
+    pixi run -e local-recipes <task> -- <args>  # recipe-build, atlas bootstrap, … (docs/how-to/pixi-tasks.md)
     pixi run -e vuln-db vdb-refresh             # tasks scoped to other envs
 
 - **Laptop install: `pyforge-foundry-full`.** Unless an entry names another env,

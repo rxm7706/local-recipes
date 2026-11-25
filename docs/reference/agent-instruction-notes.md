@@ -5,7 +5,9 @@ sources:
   - _bmad-output/PROJECTS.md
   - .claude/skills/conda-forge-expert/tests/meta/test_all_scripts_runnable.py
   - archive/docs/specs
-verified: 2026-11-17
+  - docs/reference/library-llms-full.md
+  - scripts/llms_full_check.py
+verified: 2026-11-24
 ---
 
 # Agent instruction notes
@@ -14,8 +16,9 @@ Detail that `AGENTS.md` and `CLAUDE.md` stopped carrying on 2026-09-26 (scribe S
 `spec-python-foundry-cutover` fnd:CAP-15): the incident behind a rule, and the reference
 material that lived in `CLAUDE.md`. The rules themselves stay in `AGENTS.md`; read this file on
 the triggers in `AGENTS.md` § *Read on trigger*. The text below is moved verbatim, headings
-demoted one level, with one exception: two citations of one operator's home-directory
-auto-memory were removed and are marked where they stood, because repo documents never cite a
+demoted one level, with two exceptions, both marked in square brackets where they stand: three
+dated notes on pointers that no longer resolve, and two citations of one operator's
+home-directory auto-memory, which were removed because repo documents never cite a
 home-directory file. Where the text says "this file", it means the file it came from, as that
 file stood before the move; its pointers into those files may name sections that have since
 moved (§ *Moved from CLAUDE.md* opens with the map). Counts, versions and statuses in the moved
@@ -144,7 +147,7 @@ export/copy a Design file. Dream: `docs/dreams/pyforge-herald.md` (absorbed `des
 **`docs/reference/library-llms-full.md`** is the llms-full-style catalog of every library, CLI, and
 framework available in this repo's pixi environments — per-library capabilities, version pins,
 import-name gotchas, environment membership, and what is deliberately NOT installed. It is
-derived from `pixi.toml` (the source of truth; regeneration prompt in its header). Consult it
+derived from `pixi.toml` (the source of truth; regeneration prompt in its header [the header carries no regeneration prompt as of 2026-11-24: floors re-sync with `python scripts/llms_full_check.py --fix-floors`, the rest is reconciled by hand]). Consult it
 before importing a library or proposing a new dependency, and run all work through pixi:
 `pixi run -e pyforge-guild …` for planning-chain work (the session default for every harness —
 detectors, ledger sync, surface stamps, marshal dispatch/spin, the token-economy kit, and since
@@ -410,7 +413,7 @@ For extended architectural context, please reference the centralized `docs/` fol
 - **`docs/explanation/enterprise-deployment.md`** — Air-gapped environments and JFrog Artifactory integration.
 - **`docs/reference/developer-guide.md`** — Local testing and general recipe development guidelines.
 - **`docs/dreams/pyforge-herald.md`** + **`docs/how-to/presentation-deck.md`** § *The MCP bridge* — decks/prototypes round-trip between Claude Design and the repo via the `claude-design` MCP tools (seed → design visually → pull → extract/build/`deck-export`); no manual downloads. Piloted 2026-07-23 (Marshal deck). Same spec, § *Artifact dependency tree & editing surfaces* — **read before editing any deck artifact**: per-deck branch heads (deck prototype / infographic trio head / exec summary / marp exports), what derives from what, and the two propagation paths.
-- **`docs/reference/library-llms-full.md`** — LLM/agent-facing catalog of every library and CLI in the pixi environments: capabilities, version pins, import-name gotchas, env membership, and what is deliberately NOT installed. Derived from `pixi.toml` (regeneration prompt in its header) — consult before importing a library or proposing a new dependency. Drift detector: `pixi run -e pyforge-guild llms-full-check` (exits non-zero when the catalog is stale; reconcile by regenerating).
+- **`docs/reference/library-llms-full.md`** — LLM/agent-facing catalog of every library and CLI in the pixi environments: capabilities, version pins, import-name gotchas, env membership, and what is deliberately NOT installed. Derived from `pixi.toml` (regeneration prompt in its header [the header carries no regeneration prompt as of 2026-11-24: floors re-sync with `python scripts/llms_full_check.py --fix-floors`, the rest is reconciled by hand]) — consult before importing a library or proposing a new dependency. Drift detector: `pixi run -e pyforge-guild llms-full-check` (exits non-zero when the catalog is stale; reconcile by regenerating).
 
 <!-- governance-currency:ignore-start (the legacy intake tier, quoted as it stood; emptied 2026-10-10, its files now under archive/docs/specs/) -->
 #### Intake specs (`docs/specs/` — LEGACY Tier 1, being phased out)
@@ -460,7 +463,7 @@ their corrected entries.
 | Spec | What it is |
 |---|---|
 | `archive/docs/specs/bmad-loop-adoption.md` | BMAD 6.6.0→6.10.0 upgrade + bmad-loop adoption — SHIPPED, closed out 2026-08-21 (Rule-2 CFE retro = skill v8.83.0). The fleet has since moved on: core 6.11.0 / bmad-loop 0.11.0, and repeatability is now owned by `spec-bmad-method-core-upgrade` (steward Epic 14) + `spec-bmad-method-version-drift` CAP-4 (doctor Epic 14). |
-| `archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md` | cf_atlas orchestrator migrated to a Kedro/Dagster/DuckDB stack — Waves 0 + A–H (22 FRs incl. FR-19 Basilisk / FR-20 release velocity / FR-21 readiness / FR-22 factory layer) executed via bmad-loop under BMAD project `pyforge-atlas`; **PRs #58–#105 MERGED; the original 32 stories all done, epics 0–9 done** — SHIPPED 2026-07-18 (CFE v8.79.0). Impl-artifact truncation incident reconciled 2026-07-23 (`_bmad-output/projects/pyforge-atlas/_root-fallback-fork-2026-07-19/README.md`); trust only canonical hyphenated files there. **`pyforge-atlas` has since grown well past this original migration** (epics 10–16: dashboard provenance, run-admission hardening, kedro-skills adoption, the real DAG publish, and — absorbing `archive/docs/specs/trendshift-conda-forge.md`, below — the trending-candidates discovery engine); track ongoing atlas work via `pixi run -e pyforge-guild fleet-picture`, not this spec. |
+| `archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md` | cf_atlas orchestrator migrated to a Kedro/Dagster/DuckDB stack — Waves 0 + A–H (22 FRs incl. FR-19 Basilisk / FR-20 release velocity / FR-21 readiness / FR-22 factory layer) executed via bmad-loop under BMAD project `pyforge-atlas`; **PRs #58–#105 MERGED; the original 32 stories all done, epics 0–9 done** — SHIPPED 2026-07-18 (CFE v8.79.0). Impl-artifact truncation incident reconciled 2026-07-23 (`_bmad-output/projects/pyforge-atlas/_root-fallback-fork-2026-07-19/README.md` [that directory is no longer in the tree as of 2026-11-24]); trust only canonical hyphenated files there. **`pyforge-atlas` has since grown well past this original migration** (epics 10–16: dashboard provenance, run-admission hardening, kedro-skills adoption, the real DAG publish, and — absorbing `archive/docs/specs/trendshift-conda-forge.md`, below — the trending-candidates discovery engine); track ongoing atlas work via `pixi run -e pyforge-guild fleet-picture`, not this spec. |
 | `archive/docs/specs/trendshift-conda-forge.md` | Two-track upstream-sweep packaging. **Track A superseded 2026-07-25** by the spec's own `superseded_by` pointer to `spec-upstream-discovery` (archived 2026-10-27 to `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-upstream-discovery/`) — Phase T was reframed as Kedro-pipeline work and became atlas Epic 13 (`spec-13-1-trending-ingest` through `spec-13-5-downstream-handoff-to-mason`), **now fully shipped** as part of atlas's own story count. Track B (absorbed `microsoft-conda-forge.md`, the `github.com/microsoft/*` org audit) status not re-verified in this pass — check `archive/docs/specs/trendshift-conda-forge.md` § Track B directly before assuming it's also absorbed. Do not run BMAD against Track A via this file; it's a historical record now. |
 | `archive/docs/specs/pyforge-warden.md` | **Warden** — pluggable multi-axis Python dependency compliance gate (hygiene `deptry`, security `osv-scanner`+CISA-KEV+EPSS gates, license + currency, baseline & grandfathering, opt-in fix-PR actuator) over Python/Conda/Pixi manifests. This legacy intake spec's own frontmatter still reads `status: in-progress` (stale — not corrected in this pass, since story specs are the source of truth per this file's own Tier convention) but the work it specced **shipped in full as the `pyforge-warden` BMAD project**: all 6 epics / 31 stories done (verified 2026-08-15, `pixi run -e pyforge-guild fleet-picture` reports it `complete`), including a dedicated fleet-wide code-verification campaign (PRs #145–147, 2026-07-30) re-confirming every tracked deferred-work finding against live code. Do not run BMAD against this legacy file; the BMAD project's own `planning-artifacts/` is authoritative. |
 | `archive/docs/specs/lts-registry-gap.md` | `lts-registry-gap` CLI — read-only suggester diffing endoflife.date's product list against `v_actionable_packages` to propose lts-registry.yaml entries (exact/likely tiers; the registry stays hand-curated, git review decides) — SHIPPED 2026-07-06 (CFE v8.74.0). |

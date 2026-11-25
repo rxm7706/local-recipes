@@ -2,8 +2,9 @@
 
 **Prerequisite:** an operator-managed PostgreSQL instance reachable from the
 cluster and a pre-created Secret holding `DATABASE_URL` and
-`MIGRATION_DATABASE_URL` for that endpoint — see `../../README.md` §
-Prerequisites for the full key contract. That instance must provide the
+`MIGRATION_DATABASE_URL` for that endpoint — see
+`docs/explanation/platform-deployment-architecture.md` § Prerequisites for the
+full key contract. That instance must provide the
 pgvector `vector` extension: the Liquibase hook applies `pyforge-scribe:1`
 (`CREATE EXTENSION IF NOT EXISTS vector`, a superuser or trusted-extension
 step — see `../../../db/README.md`) on every install and upgrade, and fails
@@ -29,6 +30,7 @@ With `postgres.external.enabled: false` (the chart default), applying this
 file's other keys alone does not change behavior — the toggle gates the
 self-hosted templates, not the overlay's mere presence.
 
-See `../README.md` for the Secret contract and honest limitations.
+See `docs/explanation/platform-deployment-architecture.md` for the Secret
+contract and honest limitations.
 Consumption by a specific enterprise deployment profile is separate future
 work; this overlay exists and is proven by chart invariant tests.

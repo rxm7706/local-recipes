@@ -23,7 +23,7 @@ Note that the `.po` files are NOT used by the application directly, so if the `.
 
 ## Production
 
-The production image runs `compilemessages` automatically at build time, so as long as your translated source files (PO) are up-to-date, you're good to go.
+The production image build (`src/platform/Containerfile`) does not run `compilemessages`, and `.mo` files are gitignored, so translations appear in production only once a build step compiles them.
 
 ## Add a new language
 

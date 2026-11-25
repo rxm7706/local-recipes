@@ -9,11 +9,11 @@ conda-recipe-manager **0.10.6** (seen in this estate's lock) caps `click` at `<=
 ## Reproduce or evidence
 
 - `docs/foundry/sbom-gaps.md:12` — `feature:crm` upstream
-- `pixi.toml:1114-1119` — SBOM gap comment (crm click vs mcp)
+- `pixi.toml:1233-1240` — SBOM gap comment (crm click vs mcp)
 - Feedstock: `conda-forge/conda-recipe-manager-feedstock` PR #44 closed unmerged; PR #46 merged with `click <=8.4.1`
 - Latest click: `conda-forge/click-feedstock` `recipe/recipe.yaml` — 8.5.0
 - `pixi.lock` — click 8.4.1 in `grayskull` / `local-recipes` (crm 0.10.6); 8.5.0 elsewhere
-- Stale in-repo comments at `pixi.toml:102`, `:2120`, `:2152`, `:2203`, `:2220-2223`, `:2446` still cite `click==8.2.1` and #44 as "the unpin PR"
+- In-repo comments at `pixi.toml:105-106`, `:2305`, `:2388`, `:2408`, `:2631` record the cap (`click >=8.2.1,<=8.4.1` on crm 0.10.6) and #44 closed unmerged; `:2337` records the cap
 
 ## Local workaround
 

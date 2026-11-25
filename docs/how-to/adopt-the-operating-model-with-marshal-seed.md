@@ -2,12 +2,14 @@
 sources:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/accept.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/adopt.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/update.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/kit.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/templates/manifest.yaml
   - src/shared/packages/pyforge-marshal/tests/meta/test_seed_accept_remedy_surfaces.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/findings.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/referenced_deps.py
-verified: 2026-11-18
+verified: 2026-11-24
 ---
 
 # How to adopt the operating model in another repository with `marshal seed`
@@ -52,7 +54,7 @@ marshal seed explain <artifact-id>
 
 ### 1. Dry-run and review the plan
 
-Default for `adopt` is dry-run (no writes):
+Default for `adopt` is dry-run. It writes only `.marshal/plan.json` and prints the plan:
 
 ```bash
 marshal seed adopt --repo-root . --agents claude,cursor
@@ -83,7 +85,7 @@ Use `--skip <glob>` to exclude specific manifest paths. The pattern is recorded 
 When a newer Genesis release ships a higher `model_version`:
 
 ```bash
-marshal seed update --repo-root .                # dry-run plan
+marshal seed update --repo-root .                # dry-run: writes only .marshal/plan.json
 marshal seed update --repo-root . --run --yes    # apply it
 ```
 

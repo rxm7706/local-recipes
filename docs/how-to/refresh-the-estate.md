@@ -9,8 +9,9 @@ sources:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/estate_realize.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/estate_verify.py
   - scripts/pin_policy_check.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/release-cadence.md
-verified: 2026-11-23
+verified: 2026-11-24
 ---
 
 # How to refresh the estate
@@ -198,7 +199,7 @@ Shows the latest journal, fan-out verdict, and per-platform verify summaries whe
 ## Landing the PR
 
 Any change outside `recipes/` needs the **`maintenance`** label. Merge with a subject Marshal can
-read for landing evidence, for example `Merge dispatch/pyforge-steward/100.6 into main`.
+read for landing evidence, for example `Merge pyforge-steward/100-6 into main`.
 
 Before push on a branch that touches shared pins:
 
