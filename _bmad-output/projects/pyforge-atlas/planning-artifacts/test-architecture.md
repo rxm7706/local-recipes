@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: 846a4728401bdc5f
-story_count: 172
+source_fingerprint: e63a626b30e245b8
+story_count: 175
 test_file_count: 189
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 172
-- **Epics parsed:** 51
+- **Stories parsed:** 175
+- **Epics parsed:** 52
 - **Test files inventoried:** 189 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `846a4728401bdc5f`
+- **Source fingerprint:** `e63a626b30e245b8`
 
 ## Risk Assessment
 
@@ -83,6 +83,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 50: A host that keeps failing costs a run a bounded time (spec-pyforge-atlas CAP-64, CAP-65; AD-13)
 - Epic 51: A stopped refresh starts where the last one ended (spec-pyforge-atlas CAP-64, CAP-65; AD-13)
 - Epic 52: The review's atlas defects are reproduced, then fixed (spec-pyforge-atlas CAP-13, CAP-55, CAP-65, CAP-66, CAP-73)
+- Epic 53: Atlas's rows a lapsed blocker held close (spec-pyforge-atlas CAP-43, CAP-54, CAP-55, CAP-73)
 
 ### Low-risk epics
 
@@ -458,6 +459,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 50.1 | A host that keeps failing costs a run a bounded time | none observed |
 | 51.1 | A stopped refresh starts where the last one ended | none observed |
 | 52.1 | The SBOM intake keeps every dependency and an empty intake does not pass the ... | none observed |
+| 53.1 | The two live companions sit in the station Spec folder | none observed |
+| 53.2 | The lineage producer is a layout-free identifier | none observed |
+| 53.3 | Atlas's comments cite the test layout and the specs that exist | none observed |
 
 ## Quality Gates
 

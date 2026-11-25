@@ -8,6 +8,7 @@ The script is standard library only and drives pytest in a child process, so thi
 from __future__ import annotations
 
 import importlib.util
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -56,11 +57,22 @@ def planted(tmp_path: Path) -> Path:
     return path
 
 
+def _child_env(**extra: str) -> dict[str, str]:
+    """This process's environment without the pytest options of the run that holds this test: the
+    preflight hands its lanes a ``--basetemp`` through ``PYTEST_ADDOPTS``, and the child pytest runs
+    inside that directory, which pytest refuses."""
+    env = {
+        name: value for name, value in os.environ.items() if name != "PYTEST_ADDOPTS"
+    }
+    return {**env, **extra}
+
+
 def _run(planted: Path, *tests: str) -> subprocess.CompletedProcess[str]:
     node_ids = [f"{planted}::{test}" for test in tests]
     return subprocess.run(
         [sys.executable, str(SCRIPT), *node_ids],
         cwd=planted.parent,
+        env=_child_env(),
         capture_output=True,
         text=True,
         check=False,
@@ -149,10 +161,7 @@ def test_a_deselected_test_is_not_hidden_by_a_parametrized_sibling(
         capture_output=True,
         text=True,
         check=False,
-        env={
-            **__import__("os").environ,
-            "PYTEST_ADDOPTS": "--deselect test_planted.py::test_other",
-        },
+        env=_child_env(PYTEST_ADDOPTS="--deselect test_planted.py::test_other"),
     )
     assert done.returncode == 1, done.stdout + done.stderr
     assert "named and did not run" in done.stderr and "test_other" in done.stderr
