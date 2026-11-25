@@ -4457,7 +4457,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_lane_identity.py": "ce49d67e7e1bb1e8597aaf59e5b2aef947301881",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_scope.py": "a9512ffa69f30c5f2e57571e0b7457d30ae54898",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py": "df44e08e4e18e2dd5f91dcc2ae8c4c6b99b91afa",
-   "src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py": "b12d8f96d36fc78afd3dcdd60b9fe90eaa14e1a6",
+   "src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py": "ac13045f49badf9809779d3ec0071189f7e2dc24",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_stranded_lane.py": "c8d0a6eadd39600822e665d11b06ed2392fd10a1",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_suite_reduction.py": "e7619cfcccb343b603df8cfb40c57de277d747e1",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_verify_deferred.py": "5418037ca21b8c029ae515f6f0c1ad74f9810f05",
@@ -4516,7 +4516,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "8f6d703d5b40d93c4349c684e7f7a4c787b583ff"
+  "memlog": "c62fc32ef0919ac3bc12ae10a0fa21d48bbd7639"
  },
  "pyforge-steward/spec-pyforge-unifying-strategy": {
   "files": {
