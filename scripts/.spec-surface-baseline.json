@@ -2636,7 +2636,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/guards.py": "22d31b6cff28d09c06a63e2c6e9eb53866fd7fdf",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/interfaces.py": "885fe0a72e7fd2bdf18215a1780b09327ff0bcca",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py": "f211ef81fbb3fcfb52c7954939883ecc305d10f1",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/machine.py": "a54d917a29b9c2a457c63ddcbe2da4598a7c30bd",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/machine.py": "107bbda85b5bc74bc4cb9327b4d63b8e825894d2",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py": "60f1ced28be80ec481a3f7f8a84fe850aa9e823e",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/measures.py": "872e2dda98929c9401b2160d8a4f23a53ccd98ff",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py": "ed0aa191a3089c710b4de22710493ebf016f8fd7",
@@ -2711,7 +2711,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "33169055ff4d7bf4b5d0ab4a44e6ed02f389a812"
+  "memlog": "6bffc9946dd4c4de25f46ae233a0cfcd2198fb05"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -4298,7 +4298,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/guards.py": "22d31b6cff28d09c06a63e2c6e9eb53866fd7fdf",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/interfaces.py": "885fe0a72e7fd2bdf18215a1780b09327ff0bcca",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py": "f211ef81fbb3fcfb52c7954939883ecc305d10f1",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/machine.py": "a54d917a29b9c2a457c63ddcbe2da4598a7c30bd",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/machine.py": "107bbda85b5bc74bc4cb9327b4d63b8e825894d2",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py": "60f1ced28be80ec481a3f7f8a84fe850aa9e823e",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/measures.py": "872e2dda98929c9401b2160d8a4f23a53ccd98ff",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py": "ed0aa191a3089c710b4de22710493ebf016f8fd7",
@@ -4365,7 +4365,7 @@
    "src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py": "122bb0dfe334fac10aff358f3a520a35d33f2762",
    "src/shared/packages/pyforge-steward/tests/meta/test_skf_steward_skill.py": "59b81655874ec6092a48ffba2a36782ebcefb3e3",
    "src/shared/packages/pyforge-steward/tests/meta/test_station_persona.py": "3abb292663e1fd54c3ab908d447e5028abee0da0",
-   "src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py": "cc010f8fad11e67418cbcdb43f242e6bfd3d45a4",
+   "src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py": "051d35431eb7d0909554c5a74877d83e31e9ea51",
    "src/shared/packages/pyforge-steward/tests/meta/test_stations_index_boundaries.py": "e8a07719b7390dc55507eadc5b93c9da4745dbd0",
    "src/shared/packages/pyforge-steward/tests/meta/test_steward_persona.py": "7ba6807ef0d4d471f4bf033b7e49f7ebfc1cdc6c",
    "src/shared/packages/pyforge-steward/tests/meta/test_steward_single_flag_tree.py": "5d8d08af8b2208cfa79006a39233a49a91a090f6",
@@ -4425,7 +4425,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_keys_rotate.py": "fe213b45e8e4e12422e4ad07c44b17bea5b4785b",
    "src/shared/packages/pyforge-steward/tests/unit/test_lint_types_mypy_cache.py": "289934673ea010c050d3c845aa02c4258caa884c",
    "src/shared/packages/pyforge-steward/tests/unit/test_lint_types_not_yet_clean.py": "28691500c306a5f506b81d5131e9e990e6086956",
-   "src/shared/packages/pyforge-steward/tests/unit/test_machine.py": "74f2b3dbbc1bcc26207a8cc5af0b3882d5077ff9",
+   "src/shared/packages/pyforge-steward/tests/unit/test_machine.py": "a3dce96e57c85bfa60e5aef4003a33d1970b3db0",
    "src/shared/packages/pyforge-steward/tests/unit/test_marketplace_flag_env.py": "8a3394d7aef727121fea23dd4937b78685bcf182",
    "src/shared/packages/pyforge-steward/tests/unit/test_marketplace_listing.py": "c046b5762efd83dd5be9d33e1583edc1315306c0",
    "src/shared/packages/pyforge-steward/tests/unit/test_marketplace_manifests.py": "6be421b7dafc3e5ec115e54a39eef95bebd823ef",
@@ -4515,7 +4515,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "548a64fa5e12f8509a40087ac89625456e80a5c2"
+  "memlog": "0cbfaf2742be9100e32301ab17f90134392ce1ff"
  },
  "pyforge-steward/spec-pyforge-unifying-strategy": {
   "files": {
@@ -5792,7 +5792,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "f31e7c7680740d281f4eaef7cb524bba6d12a0ed"
+  "memlog": "1808a554dc06c15ec216ed4e8a447a2492e36b0e"
  },
  "pyforge-steward/spec-python-foundry-cutover": {
   "files": {},
