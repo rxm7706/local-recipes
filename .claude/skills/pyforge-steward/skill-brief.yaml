@@ -30,6 +30,8 @@ scope:
     - src/pyforge/steward/preflight_verify.py
     - src/pyforge/steward/pages_duty.py
     - src/pyforge/steward/cutover.py
+    - src/pyforge/steward/bootstrap.py
+    - src/pyforge/steward/machine.py
     - README.md
   exclude:
     - tests/**
@@ -51,6 +53,12 @@ scope:
     copy verb retired; what the station MCP runner runs (the three read-only
     targets) and does not run. STW-R-F2 and STW-R-F3 (the deploy nic --yes
     gate) stay out until Story 118.3 recompiles them.
+    Scope widened 2026-11-25 (steward Epic 135, CAP-183): bootstrap.py and
+    machine.py are the modules cli.py resolves for init, initrepo and
+    validate-fast; init reads docs/governance/machine-readiness.yaml
+    (profiles desktop, container, pod, ocp, nkp; --profile, --class, --deep,
+    --list, --repo; exits 0/1/2/3), and validate-fast and initrepo no longer
+    require podman.
   rationale:
     recommended: specific-modules
     chosen: specific-modules

@@ -184,6 +184,7 @@ marketplace mounted from `docs/foundry/marketplace/`) only with `pyforge.steward
 | [`tutorials/README.md`](tutorials/README.md) | fleet | pointer |
 | [`tutorials/getting-started.md`](tutorials/getting-started.md) | fleet | authored |
 | [`tutorials/local-platform-development.md`](tutorials/local-platform-development.md) | fleet | authored |
+| [`tutorials/onboard-a-machine.md`](tutorials/onboard-a-machine.md) | steward | authored |
 
 ### How-to
 

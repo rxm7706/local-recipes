@@ -1721,6 +1721,73 @@ def test_helm_template_fails_without_platform_image_digest_or_tag() -> None:
 
 
 @requires_helm
+@pytest.mark.parametrize("prefix", _CORE_IMAGE_PIN_PREFIXES)
+@pytest.mark.parametrize(
+    "not_a_digest",
+    [
+        "1" * 64,  # the bare-hex image ID `podman inspect --format '{{.Id}}'` prints
+        "sha256:" + "1" * 12,  # a truncated image ID
+        "sha256:" + "A" * 64,  # not lowercase hex
+        "v1.2.3",  # a tag
+    ],
+)
+def test_helm_template_refuses_a_digest_that_is_not_a_manifest_digest(
+    prefix: str, not_a_digest: str
+) -> None:
+    """Story 134.1: only `sha256:` and 64 hex characters is rendered after `@`.
+
+    A docker image ID has that same form, so the chart cannot tell it from a
+    digest; the promotion artifact keeps them under separate keys and
+    platform-deploy renders only from `images.*.digest`
+    (`tests/scripts/test_platform_promotion_digest.py`).
+    """
+    argv = ["helm", "template", "test-release", str(_CORE_CHART), *_FLAGS_RENDER_ARGS]
+    for other in _CORE_IMAGE_PIN_PREFIXES:
+        value = not_a_digest if other == prefix else _TEST_IMAGE_DIGEST
+        argv.extend(["--set-string", f"{other}.digest={value}"])
+    result = subprocess.run(  # noqa: S603 -- fixed argv, no shell, no untrusted input
+        argv,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=180,
+    )
+    assert result.returncode != 0, (
+        f"rendered {prefix}.digest={not_a_digest!r} after `@`"
+    )
+    combined = result.stderr + result.stdout
+    assert f"{prefix}.digest=" in combined
+    assert "is refused" in combined
+
+
+@requires_helm
+def test_helm_template_renders_each_image_by_its_manifest_digest() -> None:
+    """Story 134.1: the rendered image line of each of the three images is `repository@sha256:<64 hex>`."""
+    digests = {
+        "image": "sha256:" + "a" * 64,
+        "sidecar.image": "sha256:" + "b" * 64,
+        "mcpHost.image": "sha256:" + "c" * 64,
+    }
+    stdout = _helm(
+        "template",
+        "test-release",
+        str(_CORE_CHART),
+        *(
+            arg
+            for prefix, digest in digests.items()
+            for arg in ("--set", f"{prefix}.digest={digest}")
+        ),
+    )
+    image_lines = re.findall(r"(?m)^\s*image:\s*\"?([^\"\s]+)\"?\s*$", stdout)
+    assert image_lines, "the render carries no image line"
+    for digest in digests.values():
+        assert any(line.endswith(f"@{digest}") for line in image_lines), digest
+    for line in image_lines:
+        if "@" in line:
+            assert re.fullmatch(r"[^@]+@sha256:[0-9a-f]{64}", line), line
+
+
+@requires_helm
 def test_helm_template_refuses_latest_platform_image_tag() -> None:
     """Story 43.4: `latest` is refused for platform images."""
     result = subprocess.run(  # noqa: S603

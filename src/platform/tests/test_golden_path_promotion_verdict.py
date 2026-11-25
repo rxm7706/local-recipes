@@ -274,9 +274,11 @@ def test_promotion_record_copies_warden_status(tmp_path: Path) -> None:
             "PLATFORM_REF": "platform:tag",
             "SIDECAR_REF": "sidecar:tag",
             "MCP_HOST_REF": "mcp:tag",
-            "PLATFORM_DIGEST": "sha256:platform",
-            "SIDECAR_DIGEST": "sha256:sidecar",
-            "MCP_HOST_DIGEST": "sha256:mcp",
+            # Story 134.1: nothing pushed, so no *_DIGEST: the record carries
+            # the image IDs under `image_id` and an empty `digest`.
+            "PLATFORM_IMAGE_ID": "sha256:platform",
+            "SIDECAR_IMAGE_ID": "sha256:sidecar",
+            "MCP_HOST_IMAGE_ID": "sha256:mcp",
             "WARDEN_EXIT": "1",
         }
     )
@@ -300,6 +302,35 @@ def test_promotion_record_copies_warden_status(tmp_path: Path) -> None:
     assert payload["warden_status"] == "indeterminate"
     assert payload["warden_exit_code"] == 1
     assert payload["warden"]["status"]["value"] == "indeterminate"
+    assert payload["images"] == {
+        "platform": {
+            "ref": "platform:tag",
+            "pushed_ref": "",
+            "digest": "",
+            "image_id": "sha256:platform",
+        },
+        "sidecar": {
+            "ref": "sidecar:tag",
+            "pushed_ref": "",
+            "digest": "",
+            "image_id": "sha256:sidecar",
+        },
+        "mcpHost": {
+            "ref": "mcp:tag",
+            "pushed_ref": "",
+            "digest": "",
+            "image_id": "sha256:mcp",
+        },
+    }
+
+
+def test_promotion_payload_snippet_is_the_script_s_own() -> None:
+    """Story 134.1: the heredoc below is the script's own images block."""
+    script_text = _PROMOTION_SCRIPT.read_text(encoding="utf-8")
+    images_block = _PROMOTION_PAYLOAD_SNIPPET.split('"images": {', 1)[1].split(
+        '"warden":', 1
+    )[0]
+    assert images_block in script_text
 
 
 _PROMOTION_PAYLOAD_SNIPPET = """\
@@ -320,15 +351,21 @@ payload = {
     "images": {
         "platform": {
             "ref": os.environ["PLATFORM_REF"],
-            "digest": os.environ["PLATFORM_DIGEST"],
+            "pushed_ref": os.environ.get("PLATFORM_PUSHED_REF", ""),
+            "digest": os.environ.get("PLATFORM_DIGEST", ""),
+            "image_id": os.environ["PLATFORM_IMAGE_ID"],
         },
         "sidecar": {
             "ref": os.environ["SIDECAR_REF"],
-            "digest": os.environ["SIDECAR_DIGEST"],
+            "pushed_ref": os.environ.get("SIDECAR_PUSHED_REF", ""),
+            "digest": os.environ.get("SIDECAR_DIGEST", ""),
+            "image_id": os.environ["SIDECAR_IMAGE_ID"],
         },
         "mcpHost": {
             "ref": os.environ["MCP_HOST_REF"],
-            "digest": os.environ["MCP_HOST_DIGEST"],
+            "pushed_ref": os.environ.get("MCP_HOST_PUSHED_REF", ""),
+            "digest": os.environ.get("MCP_HOST_DIGEST", ""),
+            "image_id": os.environ["MCP_HOST_IMAGE_ID"],
         },
     },
     "warden": json.load(open(warden_path, encoding="utf-8")),

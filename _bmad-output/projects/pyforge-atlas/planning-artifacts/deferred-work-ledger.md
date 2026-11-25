@@ -5471,4 +5471,5 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-11-24 — doctor Story 61.1 (the documentation review, branch `docs-verify-2026-11-24`)
   reason: named blocker: a `bmad:context` block is written only by its skill.
-  status: open
+  resolved: 2026-11-25 (steward Story 134.4, branch `open-rows-and-onboarding-2026-11-25`: the bmad:context block of src/shared/packages/pyforge-atlas/AGENTS.md was refreshed by bmad-project-context and names kedro-test as the whole suite, pyforge-atlas-test the package half and pyforge-atlas-live-test the live-tree half)
+  status: closed

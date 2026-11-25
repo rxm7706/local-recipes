@@ -859,6 +859,29 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   projecting a failed wrapped tool to exit 1 would change the contract the MCP face reads by `data.returncode`, and
   that is an operator decision with its own entry here.
 
+- **2026-11-25 (a failed wrapped tool makes mason exit 1) — Found:** Story 41.1 closed the review's second finding as
+  not a defect, because `contract.md` § *Exit codes* stated it, and left the decision as the open row
+  `DW-mason-41-1-1`: `recipe build`, `scan`, `optimize`, `update` and `submit` exit 0 when the tool they wrap failed,
+  with the failure only in the payload (`data.returncode`, or the ship state), while `package ship` with a `failed`
+  target exits 1. A script or a CI step that reads Mason's exit code therefore reads a failed build as a pass.
+  `recipe diagnose` and `package build` carry the same `data.returncode` and exit 0 the same way. One reader outside
+  Mason depends on the old exit: the `start_build` row of django-pyforge's verb table accepts exit 0 alone and judges
+  by `data.returncode`. **Ruled** (operator ruling of 2026-11-25, in session: "fix all these issues / left open items", and on this row: "Exit 1 on failure"). **For mason:** this entry is a contract change, by
+  that ruling, and binds `spec-pyforge-mason` (the recipe lifecycle, CAP-2, amended 2026-11-25; the CLI shell and
+  output contract, CAP-5, amended 2026-11-25) with AD-4 as amended 2026-11-25, and reads
+  `spec-pyforge-unifying-strategy:CAP-20` (the start tools' closed table; no text change). It decomposes as Epic 42,
+  one story: every verb that wraps a tool exits 1 when that tool's return code is non-zero, and `recipe submit` exits
+  1 when its ship state is `failed`; the result is still rendered whole, under an envelope whose `status` stays `ok`
+  and whose `data` still carries the return code or the state. Mason does not interpret the code: a wrapped script
+  that exits non-zero for findings (the vulnerability scanner, the optimizer) makes Mason exit 1, as a failing
+  validator already does. `contract.md`, the compiled station skill, the Spec's two capabilities, AD-4 and the test
+  Story 41.1 pinned the old exit with all move in the same change, and the `start_build` row accepts exit 1 with a
+  report and still judges by `data.returncode`. **Constraints:** no exit code is added (0, 1, 2, 3 and 130 stay the
+  domain, owned by `exit_codes.py`); `not_attempted`, `pending` and `terminal` still exit 0, so exit 0 still does not
+  mean shipped; `doctor` still always exits 0; a non-zero return code stays data on the result and is never raised;
+  and no flag is added: the ruling changes the contract for every caller at once, and a flag would leave two
+  contracts to read.
+
 ## One-chain fold — 2026-09-17
 
 Station Dream status is `specified` (Spec `spec-pyforge-mason` is `ready`). Mason-owned satellite Dreams archive in place with Consolidated-into banners. Practice Dream `packaging-factory` is archived into this station Dream (CHAIN-STANDARD precedence; no new station Dream minted). Recipe work stays `conda-forge-expert`; this fold is planning-chain only.

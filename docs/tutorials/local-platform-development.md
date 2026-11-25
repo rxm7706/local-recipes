@@ -22,6 +22,7 @@ This tutorial guides Platform Builders and New Developers through standing up th
 
 ## Prerequisites
 - A working `pixi` installation and the laptop SBOM (`pixi install -e pyforge-foundry-full`). Platform work adds `platform-dev` — not `-e local-recipes`. `pyforge-foundry-full-stack` (linux-64) carries the local servers but neither Wagtail nor Langflow, so it does not replace `platform-dev`.
+- To check the machine first, run `pixi run -e pyforge-guild pyforge steward init` for desktop work and add `--profile container` or `--profile pod` for the image, compose and chart steps; [Onboard a machine](onboard-a-machine.md) walks through the report.
 - Ensure you have read the [PyForge Ecosystem Architecture](../explanation/pyforge-ecosystem-architecture.md) to understand the relationship between the platform and the CLI stations.
 
 ## Step 1: Provision the Development Environment

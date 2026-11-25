@@ -1199,24 +1199,23 @@ durable scratchpad.
 
 ---
 
-## AI Provenance Tracking (FX.8) — implemented but NOT wired
+## AI Provenance Tracking (FX.8) — retired 2026-11-25
 
-`.claude/hooks/post-tool-call.py` exists (3.4 KB, stdlib-only). It builds a JSON provenance payload
-for a tool call and POSTs it over `HTTPConnection` to `localhost` at `/api/provenance/call`,
-discovering the port from a `*-provenance-port.txt` file.
+`.claude/hooks/post-tool-call.py` was retired with its test on 2026-11-25 (steward Story 134.2). It
+was a stdlib-only script that posted `{"file_path", "timestamp"}` for each edited file over
+`HTTPConnection` to `localhost` at `/api/provenance/call`, reading the port from a
+`<md5 of CLAUDE_PROJECT_DIR>-provenance-port.txt` file in the temporary directory.
 
-**It does not run.** `.claude/settings.json` registers hooks on exactly four events — `SessionStart`,
-`Stop`, `SessionEnd`, `PreCompact` — and all four point at `.bmad-loop/bmad_loop_hook.py`. There is
-**no `PostToolUse` entry** in `.claude/settings.json`, in `.claude/settings.local.json`, or in the
-user-scope `~/.claude/settings.json`.
+**It never ran, and could not have.** No harness registered it: `.claude/settings.json` had no
+`PostToolUse` entry and `.cursor/hooks.json` did not name it. No file in the tree wrote the port
+file or served the endpoint, so a registered hook would have exited 1 with "Could not determine API
+port" after every edit. Today `.claude/settings.json` registers `PreToolUse` (three matchers, all
+`.claude/hooks/pre-shell.py`), `SessionStart` (`.claude/hooks/session-start.sh` and the bmad-loop
+relay) and `Stop`, `SessionEnd` and `PreCompact` (the bmad-loop relay, `.bmad-loop/bmad_loop_hook.py`).
 
-> **Correction.** The previous revision of this doc stated that "the repository implements strict AI
-> provenance tracking… This guarantees an auditable trail of all agentic interactions." The script is
-> real; the guarantee is not. FX.8 is **implemented but unwired**, and no provenance trail is being
-> produced today. Epic 3 story S9 in `epics.md` is satisfied as to the script's existence and
-> unsatisfied as to its effect. Wiring it is a one-line `PostToolUse` addition to
-> `.claude/settings.json` — deliberately left to a decision about whether the local receiver should
-> be a hard dependency of every session.
+> **History.** A revision of this doc before 2026-09-06 said the repository "implements strict AI
+> provenance tracking" with "an auditable trail of all agentic interactions". The script existed; the
+> trail did not. Epic 3 story S9 in `epics-regenerable-factory.md` produced the script and no effect.
 
 The bmad-loop relay is the provenance surface that *is* live, and only for loop-spawned sessions: it
 records SessionStart / Stop / SessionEnd / PreCompact with `session_id`, `transcript_path` and `cwd`

@@ -828,7 +828,7 @@ jobs:
       - name: Verify src/platform exists on this ref
         run: test -d src/platform || { echo "::error::src/platform does not exist on this ref"; exit 1; }
 
-      - name: Build platform + sidecar images (docker; digest source)
+      - name: Build platform + sidecar images (docker; image ID source)
         run: |
           docker build -f src/platform/Containerfile -t "${{ env.PLATFORM_CI_IMAGE_REF }}" .
           docker build -f src/platform/compose/dbgpt/Containerfile -t "${{ env.PLATFORM_CI_SIDECAR_REF }}" .
@@ -870,18 +870,13 @@ jobs:
           path: osv-offline-db
           key: osv-offline-db-${{ steps.osv-db-date.outputs.utc_date }}
 
-      - name: Record digests + Warden verdict (golden-path promotion)
-        env:
-          PLATFORM_REF: ${{ env.PLATFORM_CI_IMAGE_REF }}
-          SIDECAR_REF: ${{ env.PLATFORM_CI_SIDECAR_REF }}
-          MCP_HOST_REF: ${{ env.PLATFORM_CI_MCP_HOST_REF }}
-          PIXI_ENVIRONMENT: python-agent-platform
-          PIXI_PLATFORM: linux-64
-          OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY: ${{ github.workspace }}/osv-offline-db
-          OUT: golden-path-promotion.json
-        run: bash scripts/platform-golden-path-promotion.sh
-
+      # Story 134.1: the optional push stands BEFORE the record step. A registry
+      # manifest digest exists only once the registry has the image, so the
+      # record step is handed the pushed references and reads each digest from
+      # the engine; with the push off these outputs are empty and the artifact
+      # records image IDs with an empty `digest`.
       - name: Push images by digest (optional; CAP-6 registry via vars)
+        id: push
         if: vars.PLATFORM_CI_PUSH_REGISTRY == 'true'
         env:
           REGISTRY: ${{ vars.PLATFORM_CI_REGISTRY }}
@@ -890,18 +885,35 @@ jobs:
             echo "::error::PLATFORM_CI_PUSH_REGISTRY=true but PLATFORM_CI_REGISTRY is unset"
             exit 1
           fi
-          platform_digest="$(docker inspect --format='{{.Id}}' "${{ env.PLATFORM_CI_IMAGE_REF }}")"
-          sidecar_digest="$(docker inspect --format='{{.Id}}' "${{ env.PLATFORM_CI_SIDECAR_REF }}")"
-          mcp_host_digest="$(docker inspect --format='{{.Id}}' "${{ env.PLATFORM_CI_MCP_HOST_REF }}")"
-          docker tag "${{ env.PLATFORM_CI_IMAGE_REF }}" "${REGISTRY}/platform:${{ github.sha }}"
-          docker tag "${{ env.PLATFORM_CI_SIDECAR_REF }}" "${REGISTRY}/platform-dbgpt-sidecar:${{ github.sha }}"
-          docker tag "${{ env.PLATFORM_CI_MCP_HOST_REF }}" "${REGISTRY}/platform-mcp-host:${{ github.sha }}"
-          docker push "${REGISTRY}/platform:${{ github.sha }}"
-          docker push "${REGISTRY}/platform-dbgpt-sidecar:${{ github.sha }}"
-          docker push "${REGISTRY}/platform-mcp-host:${{ github.sha }}"
-          echo "platform digest (local id): ${platform_digest}"
-          echo "sidecar digest (local id): ${sidecar_digest}"
-          echo "mcp-host digest (local id): ${mcp_host_digest}"
+          platform_pushed_ref="${REGISTRY}/platform:${{ github.sha }}"
+          sidecar_pushed_ref="${REGISTRY}/platform-dbgpt-sidecar:${{ github.sha }}"
+          mcp_host_pushed_ref="${REGISTRY}/platform-mcp-host:${{ github.sha }}"
+          docker tag "${{ env.PLATFORM_CI_IMAGE_REF }}" "${platform_pushed_ref}"
+          docker tag "${{ env.PLATFORM_CI_SIDECAR_REF }}" "${sidecar_pushed_ref}"
+          docker tag "${{ env.PLATFORM_CI_MCP_HOST_REF }}" "${mcp_host_pushed_ref}"
+          docker push "${platform_pushed_ref}"
+          docker push "${sidecar_pushed_ref}"
+          docker push "${mcp_host_pushed_ref}"
+          {
+            echo "platform_pushed_ref=${platform_pushed_ref}"
+            echo "sidecar_pushed_ref=${sidecar_pushed_ref}"
+            echo "mcp_host_pushed_ref=${mcp_host_pushed_ref}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Record digests + Warden verdict (golden-path promotion)
+        env:
+          PLATFORM_REF: ${{ env.PLATFORM_CI_IMAGE_REF }}
+          SIDECAR_REF: ${{ env.PLATFORM_CI_SIDECAR_REF }}
+          MCP_HOST_REF: ${{ env.PLATFORM_CI_MCP_HOST_REF }}
+          # Empty when the push step did not run: the script then records no digest.
+          PLATFORM_PUSHED_REF: ${{ steps.push.outputs.platform_pushed_ref }}
+          SIDECAR_PUSHED_REF: ${{ steps.push.outputs.sidecar_pushed_ref }}
+          MCP_HOST_PUSHED_REF: ${{ steps.push.outputs.mcp_host_pushed_ref }}
+          PIXI_ENVIRONMENT: python-agent-platform
+          PIXI_PLATFORM: linux-64
+          OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY: ${{ github.workspace }}/osv-offline-db
+          OUT: golden-path-promotion.json
+        run: bash scripts/platform-golden-path-promotion.sh
 
       - uses: actions/upload-artifact@v7
         with:

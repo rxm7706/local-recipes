@@ -418,7 +418,7 @@ jobs:
             .claude/skills/bmad-agent-scribe
             .claude/skills/conda-forge-expert/SKILL.md
             .claude/skills/pyforge-marshal/0.1.1/pyforge-marshal/SKILL.md
-            .claude/skills/pyforge-scribe/0.1.0/pyforge-scribe/SKILL.md
+            .claude/skills/pyforge-scribe/0.1.1/pyforge-scribe/SKILL.md
             .claude/skills/pyforge-scribe/skill-brief.yaml
             '.cursor/rules/*.mdc'
             .cursor/rules/scribe-recall.mdc
@@ -494,6 +494,8 @@ jobs:
             docs/governance
             docs/index.md
             docs/map.yaml
+            docs/how-to/host-nebari.md
+            docs/how-to/ocp-cluster-bringup.md
             docs/how-to/pixi-tasks.md
             docs/reference/bmad-estate-llms-full.md
             docs/reference/environments.md

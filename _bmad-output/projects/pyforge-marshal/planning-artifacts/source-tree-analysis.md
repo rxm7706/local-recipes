@@ -107,7 +107,7 @@ local-recipes/                               # pixi monorepo root, default-env=l
 │   ├── mcp_call.py                          # MCP helper utilities (used by scripts that bridge to MCP runtime)
 │   └── __pycache__/                         # (runtime artifact)
 │
-├── hooks/                                   # post-tool-call.py — the single repo-level Claude Code hook script
+├── hooks/                                   # pre-shell.py (session guardrails) + session-start.sh; post-tool-call.py retired 2026-11-25
 │
 ├── memory/                                  # checked-in team-memory layer (5 tracked files)
 │   ├── MEMORY.md / README.md                # index + contributor guide
@@ -761,7 +761,7 @@ Every row below was re-measured against the live checkout on 2026-07-25 — none
 | BMAD multi-projects | **14** (deckcraft, local-recipes, presenton-pixi-image, unity-data-stack, wasm-analytics-stack + 9 `pyforge-*`) |
 | `planning-artifacts/` (local-recipes) | 55 tracked files; `specs/` 8 Spec dirs, `research/` 4, `change-history/` 9 |
 | `.claude/memory/` | 5 tracked (MEMORY.md, README.md + 3 `.gitkeep` buckets) |
-| `.claude/hooks/` | 1 (`post-tool-call.py`); `settings.json` wires SessionStart / Stop / SessionEnd / PreCompact |
+| `.claude/hooks/` | 2 (`pre-shell.py`, `session-start.sh`; `post-tool-call.py` retired 2026-11-25, steward Story 134.2); `settings.json` wires PreToolUse / SessionStart / Stop / SessionEnd / PreCompact |
 
 **Part 5 — `src/` (`pyforge` family)** — new this revision
 

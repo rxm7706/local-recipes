@@ -123,6 +123,12 @@ ONE dispatch branch in this whole file whose exit code is not uniformly
 never-reads-cfe-flags precedent, `ship` DOES read `--cfe-root`/
 `--cfe-python`/`--cfe-timeout` through to `package.ship`, since its own
 `conda-forge` target needs them.
+
+Story 42.1 (operator ruling 2026-11-25, "Exit 1 on failure") supersedes
+every "exits `EXIT_OK` whatever the wrapped tool did" statement above: a
+verb that wraps a tool exits `EXIT_FAILED` when that tool's return code is
+non-zero, and `recipe submit` when its ship state is `failed`. The
+envelope is unchanged. `-k failed_wrapped_tool` holds the rule.
 """
 
 from __future__ import annotations
@@ -1034,6 +1040,9 @@ def test_recipe_diagnose_against_fake_cfe_root_end_to_end(fake_cfe_root, monkeyp
 
 # --- Story 2.8: `mason recipe optimize <recipe_path>` -----------------------
 
+# CFE's optimizer exits 1 when it has a suggestion. Mason projects that code and
+# does not interpret it (Story 42.1), so every test below that returns this
+# result expects EXIT_FAILED under an envelope whose status is `ok`.
 _FIXED_OPTIMIZE_RESULT = CfeResult(
     returncode=1,
     stdout='{"success": true, "suggestions_found": 1, "suggestions": '
@@ -1081,7 +1090,7 @@ def test_recipe_optimize_text_mode_renders_the_cfe_result_fields(capsys):
         "pyforge.mason.cli.recipe.optimize",
         return_value=_FIXED_OPTIMIZE_RESULT,
     ) as mock_optimize:
-        assert main(["recipe", "optimize", "recipes/foo"]) == EXIT_OK
+        assert main(["recipe", "optimize", "recipes/foo"]) == EXIT_FAILED
 
     mock_optimize.assert_called_once()
     out = capsys.readouterr()
@@ -1093,7 +1102,7 @@ def test_recipe_optimize_text_mode_renders_the_cfe_result_fields(capsys):
 
 def test_recipe_optimize_json_mode_data_matches_dataclasses_asdict_of_the_result(capsys):
     with patch("pyforge.mason.cli.recipe.optimize", return_value=_FIXED_OPTIMIZE_RESULT):
-        assert main(["recipe", "optimize", "recipes/foo", "--format", "json"]) == EXIT_OK
+        assert main(["recipe", "optimize", "recipes/foo", "--format", "json"]) == EXIT_FAILED
     doc = json.loads(capsys.readouterr().out)
     assert set(doc) == {"schema_version", "command", "status", "data", "errors"}
     assert doc["command"] == "recipe optimize"
@@ -1124,7 +1133,7 @@ def test_recipe_optimize_passes_recipe_path_and_resolved_flags_through(monkeypat
                     "/explicit/python",
                 ]
             )
-            == EXIT_OK
+            == EXIT_FAILED
         )
 
     mock_optimize.assert_called_once()
@@ -1151,7 +1160,7 @@ def test_recipe_optimize_resolves_cfe_timeout_flag_via_the_shared_resolver():
                     "30",
                 ]
             )
-            == EXIT_OK
+            == EXIT_FAILED
         )
 
     assert mock_optimize.call_args.kwargs["cfe_timeout_arg"] == 30.0
@@ -1163,7 +1172,7 @@ def test_recipe_optimize_cfe_timeout_env_var_applies_without_the_flag(monkeypatc
         "pyforge.mason.cli.recipe.optimize",
         return_value=_FIXED_OPTIMIZE_RESULT,
     ) as mock_optimize:
-        assert main(["recipe", "optimize", "recipes/foo"]) == EXIT_OK
+        assert main(["recipe", "optimize", "recipes/foo"]) == EXIT_FAILED
 
     assert mock_optimize.call_args.kwargs["cfe_timeout_arg"] == 45.0
 
@@ -1174,7 +1183,7 @@ def test_recipe_optimize_cfe_timeout_defaults_to_none_when_unset(monkeypatch):
         "pyforge.mason.cli.recipe.optimize",
         return_value=_FIXED_OPTIMIZE_RESULT,
     ) as mock_optimize:
-        assert main(["recipe", "optimize", "recipes/foo"]) == EXIT_OK
+        assert main(["recipe", "optimize", "recipes/foo"]) == EXIT_FAILED
 
     assert mock_optimize.call_args.kwargs["cfe_timeout_arg"] is None
 
@@ -1250,7 +1259,7 @@ def test_recipe_optimize_against_fake_cfe_root_end_to_end(fake_cfe_root, monkeyp
         ]
     )
 
-    assert rc == EXIT_OK
+    assert rc == EXIT_FAILED
     doc = json.loads(capsys.readouterr().out)
     assert doc["command"] == "recipe optimize"
     assert doc["status"] == "ok"
@@ -2839,8 +2848,8 @@ def test_recipe_build_docker_with_a_blank_config_is_treated_as_missing(capsys):
 
 def test_recipe_build_failed_child_still_renders_ok(capsys):
     """A non-zero delegated build returncode is DATA, never raised (AD-4) --
-    `recipe build` itself still reports EXIT_OK, mirroring `doctor`'s
-    established "the gap is data" precedent."""
+    the render still says `ok` and carries it, while `recipe build` exits
+    EXIT_FAILED (Story 42.1)."""
     failed_result = BuildResult(
         mode="native",
         config="linux64",
@@ -2849,7 +2858,7 @@ def test_recipe_build_failed_child_still_renders_ok(capsys):
         artifact_dir="build_artifacts/linux64",
     )
     with patch("pyforge.mason.cli.recipe.build", return_value=failed_result):
-        assert main(["recipe", "build", "recipes/foo"]) == EXIT_OK
+        assert main(["recipe", "build", "recipes/foo"]) == EXIT_FAILED
 
     out = capsys.readouterr()
     assert out.err == ""
@@ -2994,8 +3003,8 @@ def test_package_build_invalid_target_is_a_usage_error(capsys):
 
 def test_package_build_failed_child_still_renders_ok(capsys):
     """A non-zero delegated engine returncode is DATA, never raised (AD-4)
-    -- mirrors `recipe build`'s own established "the gap is data"
-    precedent."""
+    -- the render still says `ok` and carries it, while `package build`
+    exits EXIT_FAILED (Story 42.1)."""
     failed_result = PackageBuildResult(
         target="library",
         project_path="/proj",
@@ -3010,7 +3019,7 @@ def test_package_build_failed_child_still_renders_ok(capsys):
         pixi_stdout="Building pkg\n",
     )
     with patch("pyforge.mason.cli.package.build", return_value=failed_result):
-        assert main(["package", "build", "myproj"]) == EXIT_OK
+        assert main(["package", "build", "myproj"]) == EXIT_FAILED
 
     out = capsys.readouterr()
     assert out.err == ""
@@ -4470,8 +4479,8 @@ _FAILED_SHIP_TARGET = ShipTargetResult(
 @pytest.mark.parametrize(
     ("patched", "wrapped_result", "argv", "expected_exit"),
     [
-        # contract.md, `EXIT_OK`: "The command ran. For most verbs this says
-        # nothing about the delegated tool: read `data.returncode`".
+        # contract.md, `EXIT_FAILED`: "a verb whose wrapped tool returned
+        # non-zero" (Story 42.1; these five rows read `EXIT_OK` until then).
         (
             "pyforge.mason.cli.recipe.build",
             BuildResult(
@@ -4482,13 +4491,19 @@ _FAILED_SHIP_TARGET = ShipTargetResult(
                 artifact_dir="build_artifacts/linux64",
             ),
             ["recipe", "build", "recipes/foo"],
-            EXIT_OK,
+            EXIT_FAILED,
         ),
-        ("pyforge.mason.cli.recipe.scan", _FAILED_CFE_RESULT, ["recipe", "scan", "recipes/foo"], EXIT_OK),
-        ("pyforge.mason.cli.recipe.optimize", _FAILED_CFE_RESULT, ["recipe", "optimize", "recipes/foo"], EXIT_OK),
-        ("pyforge.mason.cli.recipe.update", _FAILED_CFE_RESULT, ["recipe", "update", "recipes/foo"], EXIT_OK),
-        # contract.md, *Ship states*: "`recipe submit` exits 0 in every state".
-        ("pyforge.mason.cli.recipe.submit", _FAILED_SHIP_TARGET, ["recipe", "submit", "recipes/foo", "--yes"], EXIT_OK),
+        ("pyforge.mason.cli.recipe.scan", _FAILED_CFE_RESULT, ["recipe", "scan", "recipes/foo"], EXIT_FAILED),
+        ("pyforge.mason.cli.recipe.optimize", _FAILED_CFE_RESULT, ["recipe", "optimize", "recipes/foo"], EXIT_FAILED),
+        ("pyforge.mason.cli.recipe.update", _FAILED_CFE_RESULT, ["recipe", "update", "recipes/foo"], EXIT_FAILED),
+        # contract.md, *Ship states*: `recipe submit` exits 1 when its state
+        # is `failed`, as `package ship` does.
+        (
+            "pyforge.mason.cli.recipe.submit",
+            _FAILED_SHIP_TARGET,
+            ["recipe", "submit", "recipes/foo", "--yes"],
+            EXIT_FAILED,
+        ),
         # contract.md, `EXIT_FAILED`: the outcome projected by "`package
         # ship` (a target is `failed`)".
         (
@@ -4501,10 +4516,9 @@ _FAILED_SHIP_TARGET = ShipTargetResult(
     ids=["recipe-build", "recipe-scan", "recipe-optimize", "recipe-update", "recipe-submit", "package-ship"],
 )
 def test_wrapped_tool_exit_is_the_one_the_contract_table_states(patched, wrapped_result, argv, expected_exit, capsys):
-    """The wrapped tool ran and failed. `contract.md` § *Exit codes* names
-    the four projecting verbs (`recipe validate`, `environment lock`,
-    `environment check`, `package ship`); every other verb exits 0 and
-    carries the failure as data, under an envelope whose status is `ok`."""
+    """The wrapped tool ran and failed. `contract.md` § *Exit codes* states
+    one rule since Story 42.1: the verb exits 1 and carries the failure as
+    data, under an envelope whose status is `ok`."""
     with patch(patched, return_value=wrapped_result) as mock_tool:
         rc = main([*argv, "--format", "json"])
 
@@ -4520,3 +4534,185 @@ def test_wrapped_tool_exit_is_the_one_the_contract_table_states(patched, wrapped
         assert data["state"] == "failed"
     else:
         assert data["returncode"] == 1
+
+
+# --- Story 42.1: a failed wrapped tool makes mason exit 1 -------------------
+
+_PASSED_CFE_RESULT = CfeResult(returncode=0, stdout="tool passed", stderr="", json_body=None)
+
+
+def _build_result(returncode: int) -> BuildResult:
+    return BuildResult(
+        mode="native",
+        config="linux64",
+        returncode=returncode,
+        stdout="build output",
+        artifact_dir="build_artifacts/linux64",
+    )
+
+
+def _package_build_result(*, pep517: int, pixi: int) -> PackageBuildResult:
+    return PackageBuildResult(
+        target="library",
+        project_path="/proj",
+        wheel_path=None,
+        sdist_path=None,
+        conda_path=None,
+        wheel_version=None,
+        conda_version=None,
+        pep517_returncode=pep517,
+        pixi_returncode=pixi,
+        pep517_stdout="",
+        pixi_stdout="",
+    )
+
+
+def _submit_result(state: ShipState) -> ShipTargetResult:
+    return ShipTargetResult(target="conda-forge", state=state, reference=None, message=state.value)
+
+
+def _assert_wrapped_envelope(capsys, expected_data: dict) -> None:
+    """The envelope is the same whatever the exit: status `ok`, no errors,
+    and the wrapped tool's own return code or ship state in `data`."""
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["status"] == "ok"
+    assert doc["errors"] == []
+    for key, value in expected_data.items():
+        assert doc["data"][key] == value
+
+
+@pytest.mark.parametrize(
+    ("patched", "wrapped_result", "argv", "expected_data"),
+    [
+        ("pyforge.mason.cli.recipe.build", _build_result(1), ["recipe", "build", "recipes/foo"], {"returncode": 1}),
+        (
+            "pyforge.mason.cli.recipe.diagnose",
+            _FAILED_CFE_RESULT,
+            ["recipe", "diagnose", "build.log"],
+            {"returncode": 1},
+        ),
+        (
+            "pyforge.mason.cli.recipe.optimize",
+            _FAILED_CFE_RESULT,
+            ["recipe", "optimize", "recipes/foo"],
+            {"returncode": 1},
+        ),
+        ("pyforge.mason.cli.recipe.scan", _FAILED_CFE_RESULT, ["recipe", "scan", "recipes/foo"], {"returncode": 1}),
+        (
+            "pyforge.mason.cli.recipe.update",
+            _FAILED_CFE_RESULT,
+            ["recipe", "update", "recipes/foo"],
+            {"returncode": 1},
+        ),
+        (
+            "pyforge.mason.cli.recipe.submit",
+            _submit_result(ShipState.FAILED),
+            ["recipe", "submit", "recipes/foo", "--yes"],
+            {"state": "failed"},
+        ),
+        (
+            "pyforge.mason.cli.package.build",
+            _package_build_result(pep517=1, pixi=0),
+            ["package", "build", "myproj"],
+            {"pep517_returncode": 1, "pixi_returncode": 0},
+        ),
+        (
+            "pyforge.mason.cli.package.build",
+            _package_build_result(pep517=0, pixi=2),
+            ["package", "build", "myproj"],
+            {"pep517_returncode": 0, "pixi_returncode": 2},
+        ),
+    ],
+    ids=[
+        "recipe-build",
+        "recipe-diagnose",
+        "recipe-optimize",
+        "recipe-scan",
+        "recipe-update",
+        "recipe-submit",
+        "package-build-pep517",
+        "package-build-pixi",
+    ],
+)
+def test_failed_wrapped_tool_makes_mason_exit_failed(patched, wrapped_result, argv, expected_data, capsys):
+    """Operator ruling 2026-11-25, "Exit 1 on failure": a verb whose wrapped
+    tool returned non-zero, or whose ship state is `failed`, exits
+    `EXIT_FAILED`. Nothing is raised and the envelope does not change."""
+    with patch(patched, return_value=wrapped_result) as mock_tool:
+        rc = main([*argv, "--format", "json"])
+
+    mock_tool.assert_called_once()
+    assert rc == EXIT_FAILED
+    _assert_wrapped_envelope(capsys, expected_data)
+
+
+@pytest.mark.parametrize(
+    ("patched", "wrapped_result", "argv", "expected_data"),
+    [
+        ("pyforge.mason.cli.recipe.build", _build_result(0), ["recipe", "build", "recipes/foo"], {"returncode": 0}),
+        (
+            "pyforge.mason.cli.recipe.diagnose",
+            _PASSED_CFE_RESULT,
+            ["recipe", "diagnose", "build.log"],
+            {"returncode": 0},
+        ),
+        (
+            "pyforge.mason.cli.recipe.optimize",
+            _PASSED_CFE_RESULT,
+            ["recipe", "optimize", "recipes/foo"],
+            {"returncode": 0},
+        ),
+        ("pyforge.mason.cli.recipe.scan", _PASSED_CFE_RESULT, ["recipe", "scan", "recipes/foo"], {"returncode": 0}),
+        (
+            "pyforge.mason.cli.recipe.update",
+            _PASSED_CFE_RESULT,
+            ["recipe", "update", "recipes/foo"],
+            {"returncode": 0},
+        ),
+        (
+            "pyforge.mason.cli.package.build",
+            _package_build_result(pep517=0, pixi=0),
+            ["package", "build", "myproj"],
+            {"pep517_returncode": 0, "pixi_returncode": 0},
+        ),
+        # A dry run (no --yes) is `not_attempted`: exit 0, as before.
+        (
+            "pyforge.mason.cli.recipe.submit",
+            _submit_result(ShipState.NOT_ATTEMPTED),
+            ["recipe", "submit", "recipes/foo"],
+            {"state": "not_attempted"},
+        ),
+        (
+            "pyforge.mason.cli.recipe.submit",
+            _submit_result(ShipState.PENDING),
+            ["recipe", "submit", "recipes/foo", "--yes", "--prepare-only"],
+            {"state": "pending"},
+        ),
+        (
+            "pyforge.mason.cli.recipe.submit",
+            _submit_result(ShipState.TERMINAL),
+            ["recipe", "submit", "recipes/foo", "--yes"],
+            {"state": "terminal"},
+        ),
+    ],
+    ids=[
+        "recipe-build",
+        "recipe-diagnose",
+        "recipe-optimize",
+        "recipe-scan",
+        "recipe-update",
+        "package-build",
+        "recipe-submit-not-attempted",
+        "recipe-submit-pending",
+        "recipe-submit-terminal",
+    ],
+)
+def test_failed_wrapped_tool_sibling_a_tool_that_passed_exits_ok(patched, wrapped_result, argv, expected_data, capsys):
+    """The other half of the rule: a return code of 0, and the ship states
+    `not_attempted`, `pending` and `terminal`, exit `EXIT_OK`."""
+    with patch(patched, return_value=wrapped_result) as mock_tool:
+        rc = main([*argv, "--format", "json"])
+
+    mock_tool.assert_called_once()
+    assert rc == EXIT_OK
+    _assert_wrapped_envelope(capsys, expected_data)

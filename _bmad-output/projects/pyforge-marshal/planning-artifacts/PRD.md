@@ -310,7 +310,7 @@ Features are organized by Part. Each feature has an ID, priority (P0 = must-ship
 | FX.5 | `docs/pixi-config-jfrog.example.toml` starter | P1 | Drop-in `.pixi/config.toml` template for JFrog deployments |
 | FX.6 | Permission gate config (`.claude/settings.json`) | P0 | Sensible default allow-list; per-namespace MCP tool permissions; `--force` push denied |
 | FX.7 | `build-locally.py` Docker wrapper | P0 | Linux builds run in Docker; osx/win run on host; cross-compile via SDKs/ |
-| FX.8 | AI Provenance Tracking Hook | P1 | `.claude/hooks/post-tool-call.py` tracks file writes and edits from Claude Code, sending real-time provenance payloads over HTTP to a webserver |
+| FX.8 | AI Provenance Tracking Hook | P1 | **Retired 2026-11-25** (steward Story 134.2). `.claude/hooks/post-tool-call.py` posted each edited file's path to a local provenance server; no harness registered it and no file in the tree served its endpoint, so it never ran. The file and its test are removed |
 
 ### Part 5: pyforge-packages (5 features)
 
@@ -774,7 +774,7 @@ stories to the five product projects and adds no appendix rows of its own.)*
 | FX.5 (`docs/pixi-config-jfrog.example.toml`) | JTBD-2.1 | — | Copy-pasteable starter for JFrog deployments |
 | FX.6 (`.claude/settings.json` permission gates) | JTBD-1.1 | JTBD-2.2 | Defaults safe; `--force` push denied |
 | FX.7 (`build-locally.py` Docker wrapper) | JTBD-1.1 | — | Linux builds don't pollute host env |
-| FX.8 (AI Provenance Tracking Hook) | JTBD-5.1 | — | Real-time audit of AI agent actions |
+| FX.8 (AI Provenance Tracking Hook; retired 2026-11-25) | JTBD-5.1 | — | Real-time audit of AI agent actions (no longer provided: the hook never ran and is removed) |
 
 ### JTBD coverage check
 

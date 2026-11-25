@@ -1,0 +1,373 @@
+{
+  "provenance_version": "2.0",
+  "skill_name": "pyforge-mason",
+  "skill_type": "single",
+  "source_repo": "src/shared/packages/pyforge-mason",
+  "source_commit": "21087f55c97147b8ff6cb9e15f2ae41b8d076913",
+  "source_ref": "local",
+  "generated_at": "2026-11-12T00:00:00Z",
+  "grounding": {
+    "date": "2026-11-25",
+    "commit_short": "21087f55c9",
+    "station": "mason",
+    "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-42-1-a-failed-wrapped-tool-makes-mason-exit-1.md",
+    "path_base": "repository root; the tool's own map (gitignored forge data) is relative to source_repo, and this tracked copy is that map with source_repo prefixed to each source_file"
+  },
+  "entries": [
+    {
+      "export_name": "build_parser",
+      "export_type": "function",
+      "source_library": "pyforge-mason",
+      "params": [],
+      "return_type": "argparse.ArgumentParser",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py",
+      "source_line": 562,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "source_library": "pyforge-mason",
+      "params": [
+        "argv: Sequence[str] | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py",
+      "source_line": 1138,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "__version__",
+      "export_type": "constant",
+      "source_library": "pyforge-mason",
+      "params": [],
+      "return_type": "str",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/__init__.py",
+      "source_line": 25,
+      "confidence": "T1-low",
+      "extraction_method": "source-read",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "BuildResult",
+      "export_type": "class",
+      "source_library": "pyforge-mason",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/models.py",
+      "source_line": 166,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "CfeResult",
+      "export_type": "class",
+      "source_library": "pyforge-mason",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/models.py",
+      "source_line": 119,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "CheckResult",
+      "export_type": "class",
+      "source_library": "pyforge-mason",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/models.py",
+      "source_line": 417,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "DoctorReport",
+      "export_type": "class",
+      "source_library": "pyforge-mason",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/models.py",
+      "source_line": 142,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "LockResult",
+      "export_type": "class",
+      "source_library": "pyforge-mason",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/models.py",
+      "source_line": 383,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "PackageBuildResult",
+      "export_type": "class",
+      "source_library": "pyforge-mason",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/models.py",
+      "source_line": 302,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "ShipReceipt",
+      "export_type": "class",
+      "source_library": "pyforge-mason",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/models.py",
+      "source_line": 347,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "ShipState",
+      "export_type": "class",
+      "source_library": "pyforge-mason",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/models.py",
+      "source_line": 194,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "ShipTarget",
+      "export_type": "class",
+      "source_library": "pyforge-mason",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/models.py",
+      "source_line": 284,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "ShipTargetKind",
+      "export_type": "class",
+      "source_library": "pyforge-mason",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/models.py",
+      "source_line": 258,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "ShipTargetResult",
+      "export_type": "class",
+      "source_library": "pyforge-mason",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/models.py",
+      "source_line": 226,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "render_json",
+      "export_type": "function",
+      "source_library": "pyforge-mason",
+      "params": [
+        "command: str",
+        "status: str",
+        "data: Mapping[str, Any]",
+        "errors: Sequence[Mapping[str, Any]]"
+      ],
+      "return_type": "str",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/render.py",
+      "source_line": 39,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "render_text",
+      "export_type": "function",
+      "source_library": "pyforge-mason",
+      "params": [
+        "command: str",
+        "status: str",
+        "data: Mapping[str, Any]",
+        "errors: Sequence[Mapping[str, Any]]"
+      ],
+      "return_type": "str",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/render.py",
+      "source_line": 68,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "write",
+      "export_type": "function",
+      "source_library": "pyforge-mason",
+      "params": [
+        "fmt: str",
+        "stream: TextIO",
+        "command: str",
+        "status: str",
+        "data: Mapping[str, Any]",
+        "errors: Sequence[Mapping[str, Any]]"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/render.py",
+      "source_line": 91,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "ResolvedCfeInterpreter",
+      "export_type": "class",
+      "source_library": "pyforge-mason",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/resolve.py",
+      "source_line": 148,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "ResolvedCfeRoot",
+      "export_type": "class",
+      "source_library": "pyforge-mason",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/resolve.py",
+      "source_line": 78,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "ResolvedFactoryIsland",
+      "export_type": "class",
+      "source_library": "pyforge-mason",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/resolve.py",
+      "source_line": 249,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "detect_native_build_config",
+      "export_type": "function",
+      "source_library": "pyforge-mason",
+      "params": [],
+      "return_type": "str | None",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/resolve.py",
+      "source_line": 198,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "is_factory_recipe_path",
+      "export_type": "function",
+      "source_library": "pyforge-mason",
+      "params": [
+        "recipe_path: str"
+      ],
+      "return_type": "bool",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/resolve.py",
+      "source_line": 260,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "resolve_cfe_interpreter",
+      "export_type": "function",
+      "source_library": "pyforge-mason",
+      "params": [
+        "explicit: str | None",
+        "environ: Mapping[str, str]"
+      ],
+      "return_type": "ResolvedCfeInterpreter",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/resolve.py",
+      "source_line": 167,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "resolve_cfe_root",
+      "export_type": "function",
+      "source_library": "pyforge-mason",
+      "params": [
+        "explicit: str | None",
+        "environ: Mapping[str, str]",
+        "start_directory: Path"
+      ],
+      "return_type": "ResolvedCfeRoot",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/resolve.py",
+      "source_line": 105,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "resolve_factory_island",
+      "export_type": "function",
+      "source_library": "pyforge-mason",
+      "params": [
+        "recipe_path: str",
+        "foundry_root_arg: str | None",
+        "environ: Mapping[str, str]",
+        "start_directory: Path"
+      ],
+      "return_type": "ResolvedFactoryIsland | None",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/resolve.py",
+      "source_line": 302,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "resolve_foundry_root",
+      "export_type": "function",
+      "source_library": "pyforge-mason",
+      "params": [
+        "explicit: str | None",
+        "environ: Mapping[str, str]",
+        "start_directory: Path"
+      ],
+      "return_type": "Path | None",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/resolve.py",
+      "source_line": 271,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    }
+  ],
+  "file_entries": [],
+  "last_update": "2026-11-25T15:24:26Z",
+  "update_type": "incremental",
+  "test_report_run_id": null,
+  "files_changed": 7,
+  "exports_affected": 2,
+  "confidence_tier": "Forge",
+  "manual_sections_preserved": 2
+}

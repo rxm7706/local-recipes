@@ -12,7 +12,8 @@
 #               migrate, start, /ht/, /admin/login/, /, every static asset the
 #               home page references, /api/health, /health, manage.py check in
 #               the container, the non-root UID
-#   promotion   the `golden-path-promotion` job: digests + Warden verdict, then
+#   promotion   the `golden-path-promotion` job: image IDs + Warden verdict (no push,
+#               so no registry digest), then
 #               the deploy-side verifier (informational — it refuses anything
 #               but a `clean` verdict, which is the deploy gate's job)
 #
@@ -506,21 +507,23 @@ run_platform_ci_local() {
   }
 
   stage_promotion() {
-    local out="$WORK/golden-path-promotion.json" d1 d2 d3
+    local out="$WORK/golden-path-promotion.json" i1 i2 i3
     export PATH="$WRD:$PATH"
     PLATFORM_REF="platform:$TAG" SIDECAR_REF="platform-dbgpt-sidecar:$TAG" MCP_HOST_REF="platform-mcp-host:$TAG" OUT="$out" \
-      step promotion "Record digests + Warden verdict (golden-path promotion)" bash scripts/platform-golden-path-promotion.sh || return 1
+      step promotion "Record image IDs + Warden verdict (golden-path promotion; nothing is pushed here)" bash scripts/platform-golden-path-promotion.sh || return 1
     "$CIT/python" - "$out" <<'PY'
 import json, sys
 p = json.load(open(sys.argv[1], encoding="utf-8"))
 print(f"warden_status={p['warden_status']} warden_exit_code={p['warden_exit_code']} inventory={p['warden'].get('inventory_count')}")
 PY
-    d1="$("$ENGINE" inspect --format='{{.Id}}' "platform:$TAG")"; d2="$("$ENGINE" inspect --format='{{.Id}}' "platform-dbgpt-sidecar:$TAG")"; d3="$("$ENGINE" inspect --format='{{.Id}}' "platform-mcp-host:$TAG")"
+    # This stage pushes nothing, so the artifact records no registry digest: the verifier is handed
+    # the image IDs, as image IDs (Story 134.1).
+    i1="$("$ENGINE" inspect --format='{{.Id}}' "platform:$TAG")"; i2="$("$ENGINE" inspect --format='{{.Id}}' "platform-dbgpt-sidecar:$TAG")"; i3="$("$ENGINE" inspect --format='{{.Id}}' "platform-mcp-host:$TAG")"
     echo; echo "== [promotion] deploy-side verifier (informational: platform-deploy's gate, refuses any verdict but clean)"
-    if PROMOTION_JSON="$out" PLATFORM_DIGEST="$d1" SIDECAR_DIGEST="$d2" MCP_HOST_DIGEST="$d3" "$CIT/python" scripts/platform-deploy-verify-promotion.py; then
-      printf 'INFO\tpromotion\tdeploy verifier: clean, would promote\n' >>"$RESULTS"
+    if PROMOTION_JSON="$out" PLATFORM_IMAGE_ID="$i1" SIDECAR_IMAGE_ID="$i2" MCP_HOST_IMAGE_ID="$i3" "$CIT/python" scripts/platform-deploy-verify-promotion.py; then
+      printf 'INFO\tpromotion\tdeploy verifier: clean, image IDs match (a registry deploy also needs a pushed digest)\n' >>"$RESULTS"
     else
-      printf 'INFO\tpromotion\tdeploy verifier: refused (verdict not clean) — deploy promotes clean only (Story 12.1)\n' >>"$RESULTS"
+      printf 'INFO\tpromotion\tdeploy verifier: refused (see its error above) — deploy promotes clean only (Story 12.1)\n' >>"$RESULTS"
     fi
   }
 

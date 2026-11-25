@@ -69,9 +69,10 @@ mirroring `scan()`'s own `--json` forcing below, not `diagnose()`'s bare
 `[log_path]` -- without it the wrapped validator prints human text, leaving
 `CfeResult.json_body` empty. `validate()` returns the raw `CfeResult`
 verbatim (spec Never boundary), like every sibling verb -- it never raises
-for a validation failure. Only `cli.py`'s own `recipe validate` dispatch
-branch projects `CfeResult.returncode` onto the process exit code (spec
-Always boundary) -- the one verb where that projection happens; this
+for a validation failure. Only `cli.py`'s own dispatch branches project
+`CfeResult.returncode` onto the process exit code (spec Always boundary;
+`recipe validate` first; since Story 42.1 also `build`, `diagnose`,
+`optimize`, `scan` and `update`, and `submit` by its ship state); this
 module's own contract (a non-zero return code is data, never an exception,
 AD-4) is unchanged.
 
@@ -356,11 +357,12 @@ def validate(
     default (`_VALIDATE_RECIPE_TIMEOUT_SECONDS`) applies only when this
     resolves to `None`.
 
-    Unlike every sibling verb, this operation's pass/fail outcome also
-    projects onto the process exit code -- but only `cli.py`'s own `recipe
-    validate` dispatch branch makes that projection (spec Always boundary):
-    this function itself never raises for a validation failure, identical
-    to every other verb here and to AD-4's rule.
+    This operation's pass/fail outcome also projects onto the process exit
+    code, as `build`'s, `scan`'s and the other wrapping verbs' do (Story 42.1,
+    contract.md's `EXIT_FAILED` row names them) -- but only `cli.py`'s
+    own dispatch branch makes that projection (spec Always boundary): this
+    function itself never raises for a validation failure, identical to
+    every other verb here and to AD-4's rule.
     """
     resolved_root = resolve_cfe_root(cfe_root_arg, environ, start_directory)
     cfe.ensure_cfe_root(resolved_root)

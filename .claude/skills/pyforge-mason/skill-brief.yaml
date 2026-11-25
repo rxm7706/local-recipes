@@ -1,5 +1,5 @@
 name: pyforge-mason
-version: 0.1.0
+version: 0.1.1
 target_version: 0.1.0
 source_type: source
 source_repo: src/shared/packages/pyforge-mason
@@ -16,6 +16,10 @@ doc_urls:
 forge_tier: Quick
 created: '2026-10-05'
 created_by: skf-create-skill
+# Station source is not a bundled skill script or asset: agents use the CLI (operator session 2026-11-18,
+# steward Story 126.5). Without these the detector copies source into the skill.
+scripts_intent: none
+assets_intent: none
 scope:
   type: specific-modules
   include:

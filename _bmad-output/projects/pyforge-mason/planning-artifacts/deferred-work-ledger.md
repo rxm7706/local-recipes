@@ -2278,4 +2278,5 @@ status: open
   severity: low
   promoted: 2026-11-25 — Story 41.1 (mason's station closer), branch `review-defects-2026-11-25`
   reason: an operator decision: no code changes until it is made.
-  status: open
+  resolution: 2026-11-25, mason Story 42.1 (branch `open-rows-and-onboarding-2026-11-25`; operator ruling 2026-11-25, "Exit 1 on failure") - decided and built: recipe validate, build, diagnose, optimize, scan and update, package build and environment lock exit 1 when the wrapped tool's return code is non-zero, and recipe submit and package ship exit 1 on a failed ship state, with the result rendered whole; the django-pyforge start_build row accepts exit 1; spec-pyforge-mason CAP-2 and CAP-5 and the spine's AD-4 are amended by memlog correction and render; contract.md and the compiled skill (0.1.1) follow.
+  status: closed

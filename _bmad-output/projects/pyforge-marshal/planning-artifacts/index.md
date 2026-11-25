@@ -274,7 +274,7 @@ Not staleness — statements that were false when written or falsified by an eve
 - **`SDKs/` described as a committed binary** — nothing under it is tracked.
 - **`bmad-distillator` and `bmad-create-ux-design`** were catalogued as installed skills; neither exists.
 - **`_bmad/bmm/{1-analysis,2-plan-workflows,3-solutioning,4-implementation}/`** was described as a real tree a rebuild must recreate; `_bmad/bmm/` holds exactly two files.
-- **"Strict AI provenance tracking (FX.8) guarantees an auditable trail"** — `.claude/hooks/post-tool-call.py` exists but **no `PostToolUse` hook is registered anywhere**. It is dead code.
+- **"Strict AI provenance tracking (FX.8) guarantees an auditable trail"** — `.claude/hooks/post-tool-call.py` existed but **no `PostToolUse` hook was registered anywhere**. It was dead code, and was retired with its test on 2026-11-25 (steward Story 134.2).
 - **Internal contradictions**: `~440 recipes` vs `1,602` in one document; a `v8.41.0` source pin in a body table vs `v8.79.0` in its own frontmatter; and a counts table in `source-tree-analysis.md` that understated the atlas schema by one version, the MCP tool count by four, and overstated the reference-doc count by two — each of the three contradicting the prose block directly above it in the same file.
 - **`_http.py`'s own module docstring** contradicts its implementation on auth ordering, and the GitHub scheme is `Bearer`, not `token`.
 - **A prior pass mass-clobbered historical schema labels** in `architecture-cf-atlas.md`, rewriting per-release migration headings (`v20→v21`, `v23→v24→v25`) to read "schema v29".
@@ -306,7 +306,7 @@ This index and its 11 companion documents were reconciled against:
 - **`_http.py` cross-host credential leak** — unresolved. `pyforge-atlas`'s Kedro catalog states the same leak is "FIXED, not ported" (per-dataset credentials); that is the target design for the eventual fix.
 - **`SKILL.md` / `MANIFEST.yaml` still stamp `version: 7.0.0`** and no meta-test catches it.
 - **`bmad-preflight` is broken** — references a script that does not exist.
-- **AI provenance hook is unwired** — one line in `.claude/settings.json` would activate it.
+- **AI provenance hook: retired 2026-11-25** (steward Story 134.2) — it was never wired, and nothing in the tree served the endpoint it posted to.
 - **`src/sentinel/knowledge/` is largely inert** — `pixi.toml` wires 14 `wiki-*` tasks against 9 crew modules but only `compilation_crew.py` exists, `crews/` has no `__init__.py`, and that module has no `__main__` guard.
 - **Plan pair (`PRD.md` / `epics.md`) has not absorbed Part 5.**
 

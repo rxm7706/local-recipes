@@ -90,11 +90,11 @@ root. `main()` is the sole owner of the exit code (canopy:AD-8): a duty returns 
 | `steward upgrade verify` | `--repo-root`, `--loops-home`, `--no-init`, `--json` | — | CAP-13 | An alias of `steward upgrade prove-landed`. |
 | `steward suite pipeline-truth` | `--repo-root`, `--baseline`, `--json` | — | CAP-21 | Upstream, recipe, channel, installed and wired state for the 13 bmad-suite packages, drift named per stage. |
 | `steward suite advance` | `--package`, `--repo-root`, `--baseline`, `--dry-run`, `--json` | — | CAP-22 | Advances one stale suite package end to end to a reviewable pull request, never auto-merged. |
-| `steward init` | `--json` | — | CAP-48 | Reports the pixi, git, gh and podman prerequisites with named remedies. |
+| `steward init` | `--json`, `--profile`, `--class`, `--deep`, `--list`, `--repo` | — | CAP-48, CAP-183 | Reports whether this machine is ready for a kind of work, one verdict per chosen profile (`desktop`, `container`, `pod`, `ocp`, `nkp`, each with the profiles it requires; `all`; a bare `steward init` is `desktop`). The checks are rows of `docs/governance/machine-readiness.yaml`; each one that is not ok prints `remedy (agent or operator): <command>`. Read-only: an in-environment probe runs `pixi run --as-is`, and a check marked deep (a cluster, one throwaway linux/amd64 container that pulls one small image) runs only with `--deep`. `--class` narrows the run to checks of a class (`software`, `configuration`, `environment`, `usable`) and what they need; `--list` prints the profiles and checks and probes nothing; `--repo` names the checkout to judge. The report goes to stdout whatever the verdict; its `--json` form is under *The `init` report* below. |
 | `steward shell-init` | `--json` | — | CAP-48 | Emits an idempotent PATH, completions and environment snippet for `eval`. |
 | `steward setup` | `--json`, `--url`, `--dest`, `--env` | — | CAP-48, CAP-154 | Clones when `--dest` is missing, runs `pixi install`, installs the pre-commit hooks (behind `pyforge.steward.setup_hooks`). |
 | `steward initrepo` | `--json`, `--repo`, `--env` | — | CAP-48 | Scaffolds `pyforge.toml` when absent, materializes the environment, runs `steward validate-fast`. |
-| `steward validate-fast` | `--json`, `--repo`, `--env` | — | CAP-48 | The fast green gate: prerequisites, `environment.yaml` sync, a `steward --version` smoke. |
+| `steward validate-fast` | `--json`, `--repo`, `--env` | — | CAP-48, CAP-183 | The fast green gate: prerequisites (the `desktop` profile's software checks: pixi at its floor, git, gh; never a container engine), `environment.yaml` sync, a `steward --version` smoke. |
 | `steward restore` | `--drill`, `--backup-path` | — | CAP-180 | Restores a custom-format dump into a scratch database and asserts the manifest's row counts through the host's `src/platform/db/postgres_backup.py`. |
 | `steward revoke` | `--sub`, `--python` | — | CAP-180 | Runs the host's `manage.py revoke_subject --sub <id> --json` and reports what it said. |
 | `steward track assemble` | `--run-dir`, `--out` | — | CAP-54 | Writes one tracked `track.json` from a run directory's journal, gate record and state; not a detector. |
@@ -246,6 +246,8 @@ sets nothing itself: it prints `PYFORGE_REPO_ROOT` and `PATH` for the caller's s
 | `REDIS_BROKER_URL` | `dashboard/consumers.py` | The broker the `/ws/events/` consumer streams from, when the Django setting is absent. | spec-pyforge-unifying-strategy:CAP-8 |
 | `STEWARD_EXPORT_WEBHOOK_SECRET` | `dashboard/export.py` | The HMAC secret of a refused-export webhook, read fresh on every refusal, never defaulted. | CAP-113 |
 | `GITHUB_BASE_REF` | `preflight_ci.py` (*not derived*: read from the environment mapping the CI-rule evaluator is handed) | The base ref a workflow step sees; `main` when unset. | CAP-159 |
+| `LC_ALL`, `LC_CTYPE`, `LANG` | `machine.py` (*not derived*: read from the environment mapping a probe is handed) | `steward init`'s `locale-utf8` check: whether the shell's locale names UTF-8, by POSIX precedence; an `LC_CTYPE` of `C.UTF-8`, `C.utf8` or `UTF-8` is what CPython sets for itself under a C locale and is not counted. | CAP-183 |
+| `LANGFLOW_SUPERUSER_PASSWORD` | `machine.py` (*not derived*: the name is the `var` of an `env-or-file` row of `docs/governance/machine-readiness.yaml`, so a new row adds a name with no code change) | `steward init --profile container`: present in the environment, or a key of `src/platform/compose/.env`. Read by presence; the value is never printed. | CAP-183 |
 | `PYFORGE_FLAGS_PATH` | inherited through `pyforge.core.cutover_root` (*not derived*) | The flag tree every key above is read from. | spec-pyforge-core:CAP-13 |
 | `PYFORGE_ENVIRONMENT` | inherited through `pyforge.core.flags` (*not derived*) | The overlay the tree is read under (`dev` when unset). | spec-feature-flag-governance:CAP-5 |
 
@@ -262,6 +264,8 @@ sets nothing itself: it prints `PYFORGE_REPO_ROOT` and `PATH` for the caller's s
 | `1` | `ci.EXIT_CI_GH_FAILED` | `steward` | `steward ci pause` or `steward ci resume` with `--yes`: `gh variable set` or `delete` failed. | CAP-166 |
 | `1` | `estate_reconcile.EXIT_RECONCILE_CHECKS` | `steward` | `steward estate reconcile`: a gating check failed. | CAP-167 |
 | `2` | `cli.EXIT_USAGE` | `steward` | Usage: an argparse error or a retired verb; a kill switch or a flag-gated verb whose flag is off; a bad `PYFORGE_ENVIRONMENT` or overlay; the usage refusals of `steward deploy nic`, `steward cutover plan`, `steward workspace clean` and `steward keys exec`. | CAP-179 (canopy:AD-8), spec-feature-flag-governance:CAP-7 |
+| `2` | `machine.EXIT_UNKNOWN_PROFILE` | `steward` | `steward init --profile` with a profile `docs/governance/machine-readiness.yaml` does not define, also when `all` is given beside it (steward's usage code, no new one). | CAP-183 |
+| `3` | `machine.EXIT_CANNOT_JUDGE` | `steward` | `steward init`: `docs/governance/machine-readiness.yaml` is missing, is not YAML or breaks `machine-readiness.schema.json`, so the verb cannot judge. | CAP-183 |
 | `3` | `cli.EXIT_BUDGET_NOT_CONFIGURED` | `steward` | `steward budget check`: no metered spend source is configured (the only answer v1 gives). | CAP-4 |
 | `3` | `ci.EXIT_CI_REFUSAL` | `steward` | `steward ci`: `pyforge.steward.ci_pause_control` is off, or gh cannot read. | CAP-166 |
 | `3` | `pages_duty.EXIT_PAGES_REFUSAL` | `steward` | `steward pages`: `pyforge.steward.pages_duty` is off; refused before any subprocess. | CAP-168 |
@@ -279,6 +283,34 @@ sets nothing itself: it prints `PYFORGE_REPO_ROOT` and `PATH` for the caller's s
 | `0` | `frames.EXIT_OK` | `python -m pyforge.steward.frames` | Every Frame passes the four-field preflight. | CAP-53 |
 | `1` | `frames.EXIT_FAIL` | `python -m pyforge.steward.frames` | A Frame fails it. | CAP-53 |
 | `2` | `frames.EXIT_COULD_NOT_RUN`, `frames.EXIT_USAGE` | `python -m pyforge.steward.frames` | Could not run; `--upstream-check` with `pyforge.steward.frame_upstream_check` off (steward's usage code, no new one). | CAP-53, CAP-6 |
+
+## The `init` report
+
+`steward init --json` prints one document (CAP-183); its keys are stable, and a new key is an addition, never a
+rename. Not a table the guard reads.
+
+- `ok`: every chosen profile is ready. `platform`: this machine as a pixi platform name. `root`: the checkout judged.
+  `data`: `docs/governance/machine-readiness.yaml`.
+- `profiles[]`, one entry per chosen profile and per profile it requires, a required profile first: `id`, `chosen`,
+  `ready` (every required check of it and of the profiles it requires is ok, skipped or not applicable, and the
+  profile is supported here), `supported` (false when the profile's `platforms`, or a required profile's, exclude this
+  machine), `requires`, `reason` (why it is not ready, or how many deep checks were skipped) and `counts` (`ok`,
+  `fail`, `blocked`, `skipped`, `advisory`, `na` over the profile's own checks; `advisory` counts advisory checks that
+  are not ok) and `classes` (the check classes the verdict covers: all four, or those `--class` narrowed the run to,
+  when the verdict is not the profile's).
+- `checks[]`, one entry per check run, in file order: `id`, `profile`, `class`, `severity`, `cost`, `status` (`ok`,
+  `fail`, `blocked`, `skipped`, `na`), `what`, `found`, `required`, `detail`, `composes` (the duty whose verdict the
+  check reads, or null), `declared_in`, and `remedy` with `command`, `commands` (the command as exact lines, one per
+  missing environment; for a check that never measured one, such as a check blocked behind `pixi`, one per
+  environment its own probes name), `who` (`agent` or `operator`), `where` (`any` or `primary-checkout`), `note` and `doc`.
+- `prereqs[]`: the `desktop` software tools in the shape `init --json` had before the profiles (`name`, `ok`,
+  `found`, `required`, `remedy`), kept for its earlier readers.
+
+A refusal (exit 2 or 3) prints `{"ok": false, "error": "..."}` with `--json`. `steward init --list --json` prints
+`data`, `profiles[]` (`id`, `title`, `requires`, `platforms`) and `checks[]` (each row's fields and its probe kinds).
+The text report is one block per profile, a line per check (`ok`, `FAIL`, `WARN` for an advisory check that is not
+ok, `BLOCKED`, `skip`, `n/a`), each `FAIL`, `WARN` and `BLOCKED` followed by its remedy lines, then `steward init:
+<profile> READY` or `NOT READY` for each chosen profile; after `--class` it reads `READY (<classes> checks only)`.
 
 ## Entry points
 
@@ -336,6 +368,8 @@ relative to the repository root, which `repo_root()` finds by walking up to the 
 | No other station is imported: a verdict another station owns is read from that station's command by exit code (`session.py`'s former `pyforge.doctor` import left with Story 123.3, so no exception and no deferred-work id remains) | `tests/meta/test_portability.py` holds it | CAP-182 |
 | `bmad_loop`, an optional import: `upgrade.py` reads the shipped `bmad_loop_hook.py` from the installed package when it is importable, else from its own catalog | `steward upgrade prove-landed` (the loop-home relay refresh) | CAP-13 |
 | The `[dashboard]` extra (Django, Channels, daphne): only `pyforge.steward.dashboard` imports it, and the base package runs its CLI without it | the host and django-atlas | CAP-109, CAP-115 |
+| `docs/governance/machine-readiness.yaml` and its schema `docs/governance/machine-readiness.schema.json` (`$id: urn:local-recipes:governance:machine-readiness`): the profiles and checks; a requirement is a row, and only a new kind of probe is code. `tests/meta/test_machine_readiness_data.py` holds the file to the schema, to `pixi.toml`'s environments, to the realization register and to the files its floors are declared in. Also read: `pixi.lock` (which platforms carry an environment) and `.pixi/envs/<name>/conda-meta/pixi` (whether it is materialized) | `steward init`; `steward validate-fast` and `steward initrepo` take their prerequisites from its `desktop` software rows | CAP-183 |
+| What `steward init` shells, all read-only: each tool row's version command (`pixi --version`, `git --version`, `gh --version`, `kind version`, …); `git config --get` and `git rev-parse --git-common-dir`; `gh auth status` and `gh api rate_limit`, `bmad-drift-check` and `marshal seed check --json` through `session.py`, the last two with `pixi run --as-is`; the realization register's probes through `estate_realize.run_probe` (`pixi run --as-is -x`); `pixi project export conda-environment -e build` through `provision.py`; each `command` row as `pixi run --as-is -x -e <env> …` (the station CLIs, `warden scan --doctor`, `pyforge mason --format json doctor`, `pyforge steward estate status`, `python scripts/scribe_pg.py status`, `kubectl`, `helm template`, `pyforge steward deploy nic validate`); and with `--deep` only, `<engine> run --rm --platform linux/amd64 busybox true`, `kubectl cluster-info`, `crc status` and `oc whoami` | `steward init` | CAP-183, CAP-162, CAP-167, CAP-3 |
 | Tracked files it reads: `pixi.toml`, `environment.yaml`, `docs/governance/ci-surfaces.yaml`, `docs/governance/pin-policy.yaml`, `docs/governance/realization-register.yaml`, `docs/governance/preflight-budgets.toml`, `docs/foundry/capability-ledger.yaml`, `docs/foundry/frames/`, `docs/foundry/marketplace/`, `.github/workflows/*.yml`, `_bmad/_config/manifest.yaml`, every station's `planning-artifacts/sprint-status-ledger.yaml` and `epics.md`, `.steward/keys-inventory.yaml`, and this Spec's `install-class-playbook.md` and `install-matrix.md` | the duties that name them | CAP-166, CAP-167, CAP-175, spec-python-foundry-cutover:CAP-9, CAP-123, CAP-169, CAP-159, CAP-10, CAP-146, CAP-1, CAP-27 |
 | Local state under `.steward/` (gitignored, all but the tracked `keys-inventory.yaml`): the preflight journals `preflight-runs.jsonl` and `preflight-skips.log`, `estate-refresh/` journals, `ci-vars.json`, `ci-status.json`, the workspace bookkeeping, `deck-integrity-baseline.json`, `keys-exec.log` | the duties that write them | CAP-159, CAP-156, CAP-167, CAP-166, CAP-104, CAP-135, CAP-164 |
 

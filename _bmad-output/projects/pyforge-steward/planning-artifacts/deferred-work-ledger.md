@@ -7421,7 +7421,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-11-24 — doctor Story 61.1 (the documentation review, branch `docs-verify-2026-11-24`)
   reason: a code, tooling or Spec change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
-  status: open
+  resolution: 2026-11-25, steward Story 134.2 (branch `open-rows-and-onboarding-2026-11-25`; operator ruling 2026-11-25 "fix all these issues / left open items", tightening only) - reproduced and fixed: each subcommand is normalised (assignments and wrappers such as env, command, time, nohup, sudo and a subshell taken off; executable basenamed; git -c/-C read), so every rule the row names reads past a prefix; gh api reads its method and field flags wherever they stand and a write method beats an explicit GET; --method=DELETE, fetch -p -P, branch -Df, update-ref --no-deref -d and push +:<ref> are denied; a commit message in the command text is read for attribution; a NUL path no longer crashes the hook and the here-document scan is linear. .claude/hooks/post-tool-call.py is retired with its test (conda-forge-expert 8.106.1): it posted every edited path to a localhost service nothing in the tree runs. The two false denials this row named are not loosened in that story and move to DW-steward-134-2-1. session_denials is unchanged.
+  status: resolved
 
 ### DW-steward-review-2026-11-24-5: Kernel and portal defects: the `pyforge` front door buffers its child, the diff guards use a two-dot diff, two portals misread identity
 
@@ -7450,4 +7451,33 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-11-25 — steward Story 133.2 (the review's lower-severity defects, branch `review-defects-2026-11-25`)
   reason: an operator decision outside the surface of the story that met it; it needs its own Story under the owning Spec once the decision is made.
+  resolution: 2026-11-25, steward Story 134.1 (branch `open-rows-and-onboarding-2026-11-25`; operator ruling 2026-11-25, "Registry digest") - reproduced and fixed: the promotion artifact records images.*.image_id always and images.*.digest only from a pushed reference's registry manifest digest (the pushed reference must be the same image as the local one); the deploy verifier compares whichever is present and refuses a malformed artifact with its own error; platform-deploy.yml renders the chart only from a recorded digest. Not run against a real engine or registry (none on the host); tests stub the engine.
+  status: resolved
+
+### DW-steward-134-2-1: The session hook denies two harmless forms
+
+- source_spec: `planning-artifacts/specs/spec-134-2-the-session-hook-reads-every-form-of-a-command-its-rules-name.md`
+  summary: two false denials of `.claude/hooks/pre-shell.py` stay: a shell redirection after `git push` (for example `git push -h 2>&1`) is read as the remote, and any token ending `submit_pr.sh` is denied even when the command only reads the file. Fixing either LOOSENS the safety hook that governs agent sessions, so no agent story carries it.
+  evidence: `.claude/hooks/pre-shell.py` `_parse_git_push_repository` and `_cfe_submit_denied`; carried from DW-steward-review-2026-11-24-4.
+  location: .claude/hooks/pre-shell.py
+  origin: steward Story 134.2 (branch `open-rows-and-onboarding-2026-11-25`)
+  fix: skip redirections when reading the push remote; deny `submit_pr.sh` only where it is executed, not read; a governance act, made or approved by the operator.
+  owner: governance
+  severity: low
+  promoted: 2026-11-25 - steward Story 134.2
+  reason: named blocker: loosening the session hook is the operator's, never an agent's.
+  status: open
+
+### DW-steward-135-3-1: The compiled steward skill does not describe the onboarding check
+
+- source_spec: `planning-artifacts/specs/spec-135-3-one-onboarding-tutorial-takes-a-bare-machine-to-a-ready-verdict-per-profile.md`
+  summary: `.claude/skills/pyforge-steward/active/pyforge-steward/SKILL.md` (0.1.1) still describes `steward init` as the four-tool check with podman and lacks `--profile`, `--class`, `--deep`, `--list`, `--repo` and exit 3. The skill-forge update stopped when the session's permission classifier refused its own `metadata.json` write; it rolled back, leaving 0.1.1 in place. The skill brief is already widened to the onboarding modules.
+  evidence: steward Story 135.3's Spec Change Log; `pixi run -e pyforge-guild pyforge steward init --help` against the skill's duty table and CLI block.
+  location: .claude/skills/pyforge-steward/active/pyforge-steward/SKILL.md
+  origin: steward Story 135.3 (branch `open-rows-and-onboarding-2026-11-25`)
+  fix: one operator-attended `skf-update-skill pyforge-steward` run (allowing its metadata.json write), then `skf-export-skill`.
+  owner: steward
+  severity: low
+  promoted: 2026-11-25 - steward Story 135.3
+  reason: named blocker: the regeneration's metadata write needs the operator's permission.
   status: open

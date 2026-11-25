@@ -95,7 +95,7 @@ PINNED: dict[tuple[str, str], tuple[Any, ...]] = {
         MASON,
         "demo",
         ("recipe", "build", "recipes/demo", "--format", "json"),
-        {0},
+        {0, 1},
         False,
         None,
     ),
@@ -493,12 +493,28 @@ def _build_report(returncode: int) -> str:
     return f"echo '{json.dumps(report)}'"
 
 
-def test_a_failed_build_fails_the_run_though_mason_exits_0(root: Path) -> None:
-    _fake(root, MASON, f"{_build_report(1)}\necho 'Script failed' >&2")
+def test_a_failed_build_fails_the_run_by_the_build_own_code(root: Path) -> None:
+    # Mason exits 1 on a failed build (ruling 2026-11-25) and still prints its report.
+    _fake(root, MASON, f"{_build_report(1)}\necho 'Script failed' >&2\nexit 1")
     with pytest.raises(
         StationVerbFailedError, match="the build exited 1: Script failed"
     ):
         _runner("mason", "run_build")({"target": "demo"})
+
+
+def test_a_failed_build_with_no_report_fails_the_verb(root: Path) -> None:
+    _fake(root, MASON, "echo 'traceback' >&2\nexit 1")
+    with pytest.raises(
+        StationVerbFailedError, match="exited 1 with no report: traceback"
+    ):
+        _runner("mason", "run_build")({"target": "demo"})
+
+
+def test_a_passing_build_is_a_result(root: Path) -> None:
+    _fake(root, MASON, _build_report(0))
+    result = _runner("mason", "run_build")({"target": "demo"})
+    assert result["exit_code"] == 0
+    assert result["report"]["data"]["returncode"] == 0
 
 
 def test_a_build_with_no_result_fails_the_run(root: Path) -> None:

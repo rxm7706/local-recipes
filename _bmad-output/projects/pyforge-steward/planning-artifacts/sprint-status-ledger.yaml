@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 759
+# stories: 770
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -166,6 +166,13 @@ development_status:
   133-2-the-workflows-and-scripts-steward-runs-do-what-they-name: done
   133-3-the-platform-suite-s-test-stage-runs-without-a-container-engine-on-a-utf-8-database: done
   133-4-the-front-door-streams-its-child-the-diff-guards-read-the-merge-base-and-the-portals-read-the-caller-s-identity: done
+  134-1-the-promotion-records-the-registry-digest-after-a-push-and-the-image-id-when-nothing-is-pushed: done
+  134-2-the-session-hook-reads-every-form-of-a-command-its-rules-name: done
+  134-3-the-doctor-herald-and-scribe-station-skills-describe-the-code-as-it-is: done
+  134-4-the-atlas-package-s-agent-instructions-name-kedro-test-as-the-whole-suite: done
+  135-1-steward-init-reads-its-checks-from-a-tracked-file-and-reports-the-desktop-profile: done
+  135-2-the-container-pod-ocp-and-nkp-profiles-say-what-each-needs: done
+  135-3-one-onboarding-tutorial-takes-a-bare-machine-to-a-ready-verdict-per-profile: done
   14-1-the-pre-flight-diff-retrodicts-a-real-upgrade: done
   14-10-the-next-rehearsal-exercises-cap-6s-fallback-and-cap-8s-conflict-path-report-only: done
   14-2-apply-is-deliberate-branched-and-never-clobbers-custom: done
@@ -585,6 +592,10 @@ development_status:
   epic-132-retrospective: optional
   epic-133: done
   epic-133-retrospective: optional
+  epic-134: done
+  epic-134-retrospective: optional
+  epic-135: done
+  epic-135-retrospective: optional
   epic-14: done
   epic-14-retrospective: optional
   epic-15: done
