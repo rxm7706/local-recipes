@@ -41,8 +41,10 @@ same noun, right after ``new`` above (hand-landed 2026-08-13 after this
 story's own dev pass deferred on a spec-surface gate, not a code defect --
 see ``recipe.py``'s own module docstring and this Spec's memlog for the
 same reconciliation applied there). ``main()``'s dispatch adds a second
-guarded branch, ``ns.verb == "validate"`` -- the one verb whose own
-pass/fail outcome also projects onto the process exit code (FR-8).
+guarded branch, ``ns.verb == "validate"`` -- the first verb whose own
+pass/fail outcome also projects onto the process exit code (FR-8); since
+Story 42.1 so does each verb contract.md's ``EXIT_FAILED`` row names (a
+non-zero return code, or ``recipe submit``'s ``failed`` ship state).
 
 Story 2.6 is the next to use that seam, registering ``recipe build`` on
 ``_noun_verbs["recipe"]``. Story 2.7 registers ``recipe diagnose`` on the
@@ -1064,13 +1066,12 @@ def _dispatch_package_ship(ns: argparse.Namespace, *, raw_targets: str) -> int:
     mode too (`r.state.value` is already the exact string `json.dumps`
     would have produced from the bare member).
 
-    The aggregate exit code is the ONE genuinely data-dependent exit code
-    in this whole file (spec Design Notes, AD-9): `EXIT_FAILED` if ANY
-    returned `ShipTargetResult.state == ShipState.FAILED`, else `EXIT_OK`
-    -- unlike every other dispatch branch above, which always reports
-    `EXIT_OK` for a Mason-successful invocation regardless of a delegated
-    tool's own failure (AD-4), because a multi-target command has no
-    single delegated-tool returncode to defer to. This also means
+    The aggregate exit code is data-dependent (spec Design Notes, AD-9):
+    `EXIT_FAILED` if ANY returned `ShipTargetResult.state ==
+    ShipState.FAILED`, else `EXIT_OK` -- the ship-state form of Story 42.1's
+    rule (a wrapped tool's non-zero return code, or `recipe submit`'s
+    `failed` state, exits `EXIT_FAILED`), since a multi-target
+    command has no single delegated-tool returncode to defer to. This also means
     `EXIT_CFE_UNAVAILABLE` never reaches this function's return value, even
     for a lone `--to conda-forge` with an unresolved CFE root:
     `package.ship()`'s own per-target `MasonError` catch (see that
@@ -1280,14 +1281,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             # per-operation default applies only when that resolves to
             # `None`.
             #
-            # Unlike every sibling verb, this branch alone projects the
-            # wrapped validator's own pass/fail outcome onto the process
-            # exit code (spec Intent/FR-8): `EXIT_OK` when `result.
-            # returncode == 0`, else `EXIT_FAILED`. This is `cli.py`'s own
-            # dispatch-time decision (AD-7's exit-code ownership) -- the
-            # JSON envelope's `status` field stays "ok" regardless (spec I/O
-            # matrix), and `recipe.validate` itself still never raises for a
-            # validation failure (AD-4), identical to every other verb here.
+            # This branch projects the wrapped validator's own pass/fail
+            # outcome onto the process exit code (spec Intent/FR-8):
+            # `EXIT_OK` when `result.returncode == 0`, else `EXIT_FAILED`,
+            # as `build`, `diagnose`, `optimize`, `scan` and `update` do (42.1). This is
+            # `cli.py`'s own dispatch-time decision (AD-7's exit-code
+            # ownership) -- the JSON envelope's `status` field stays "ok"
+            # regardless (spec I/O matrix), and `recipe.validate` itself
+            # still never raises for a validation failure (AD-4).
             fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
             result = recipe.validate(
                 ns.recipe_path,
@@ -1346,12 +1347,12 @@ def main(argv: Sequence[str] | None = None) -> int:
                 start_directory=Path.cwd(),
             )
             # A non-zero delegated build returncode is DATA on `result`,
-            # never raised (AD-4) — this branch always reports "ok"/
-            # EXIT_OK for a Mason-successful invocation, mirroring
-            # `doctor`'s "the gap is data" precedent above; `data.
-            # returncode` is the signal, not this command's own status.
+            # never raised (AD-4): the envelope's `status` stays "ok" and
+            # carries the returncode, while the exit code projects it --
+            # EXIT_FAILED when the build failed (Story 42.1, operator
+            # ruling 2026-11-25: a failed wrapped tool makes mason exit 1).
             render.write(fmt, sys.stdout, "recipe build", "ok", dataclasses.asdict(result), [])
-            return EXIT_OK
+            return EXIT_OK if result.returncode == 0 else EXIT_FAILED
 
         if ns.noun == "recipe" and ns.verb == "diagnose":
             # FR-10: delegates to CFE's failure analyzer via recipe.py.
@@ -1396,7 +1397,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                 dataclasses.asdict(result),
                 [],
             )
-            return EXIT_OK
+            # The wrapped tool's own return code is projected, never
+            # interpreted (Story 42.1): non-zero exits EXIT_FAILED under
+            # an envelope whose `status` stays "ok".
+            return EXIT_OK if result.returncode == 0 else EXIT_FAILED
 
         if ns.noun == "recipe" and ns.verb == "optimize":
             # FR-11: delegates to CFE's recipe optimizer via recipe.py.
@@ -1422,7 +1426,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                 dataclasses.asdict(result),
                 [],
             )
-            return EXIT_OK
+            # The wrapped tool's own return code is projected, never
+            # interpreted (Story 42.1): non-zero exits EXIT_FAILED under
+            # an envelope whose `status` stays "ok".
+            return EXIT_OK if result.returncode == 0 else EXIT_FAILED
 
         if ns.noun == "recipe" and ns.verb == "scan":
             # FR-12: delegates to CFE's vulnerability scanner via recipe.py.
@@ -1445,7 +1452,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                 dataclasses.asdict(result),
                 [],
             )
-            return EXIT_OK
+            # The wrapped tool's own return code is projected, never
+            # interpreted (Story 42.1): non-zero exits EXIT_FAILED under
+            # an envelope whose `status` stays "ok".
+            return EXIT_OK if result.returncode == 0 else EXIT_FAILED
 
         if ns.noun == "recipe" and ns.verb == "submit":
             # FR-13: delegates to CFE's two-phase submission flow via
@@ -1477,7 +1487,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                 dataclasses.asdict(result),
                 [],
             )
-            return EXIT_OK
+            # The ship state is projected as `package ship` projects it
+            # (Story 42.1): `failed` exits EXIT_FAILED; `not_attempted`
+            # (a dry run), `pending` and `terminal` exit EXIT_OK.
+            return EXIT_FAILED if result.state == ShipState.FAILED else EXIT_OK
 
         if ns.noun == "recipe" and ns.verb == "update":
             # FR-14: delegates to CFE's autotick scripts via recipe.py.
@@ -1521,7 +1534,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                 dataclasses.asdict(result),
                 [],
             )
-            return EXIT_OK
+            # The wrapped tool's own return code is projected, never
+            # interpreted (Story 42.1): non-zero exits EXIT_FAILED under
+            # an envelope whose `status` stays "ok".
+            return EXIT_OK if result.returncode == 0 else EXIT_FAILED
 
         if ns.noun == "package" and ns.verb == "build":
             # FR-15/FR-21/FR-22: drives Story 3.1's engine protocol through
@@ -1532,14 +1548,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
             result = package.build(ns.project_path, target=ns.target)
             # A non-zero delegated engine returncode is DATA on `result`,
-            # never raised (AD-4) -- this branch always reports "ok"/
-            # EXIT_OK for a Mason-successful invocation, mirroring `recipe
-            # build`'s established "the gap is data" precedent above;
+            # never raised (AD-4): the envelope's `status` stays "ok" and
+            # carries both returncodes, while the exit code projects them
+            # -- EXIT_FAILED when either engine failed (Story 42.1).
             # `PackageVersionMismatchError` is the one exception `package.
             # build()` can still raise, propagating to main()'s existing
             # `except MasonError` handler below.
             render.write(fmt, sys.stdout, "package build", "ok", dataclasses.asdict(result), [])
-            return EXIT_OK
+            return EXIT_OK if result.pep517_returncode == 0 and result.pixi_returncode == 0 else EXIT_FAILED
 
         if ns.noun == "package" and ns.verb == "ship":
             # FR-16/FR-24/FR-50/D-12: the canonical shipping verb --

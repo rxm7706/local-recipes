@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: 1269326efd72e7d4
-story_count: 140
+source_fingerprint: 5569198c32bb5268
+story_count: 141
 test_file_count: 47
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 140
-- **Epics parsed:** 41
+- **Stories parsed:** 141
+- **Epics parsed:** 42
 - **Test files inventoried:** 47 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `1269326efd72e7d4`
+- **Source fingerprint:** `5569198c32bb5268`
 
 ## Risk Assessment
 
@@ -73,6 +73,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 39: Mason's cutover seam: the native factory-island build is a capability, and conda-forge-expert waits for its own Spec (spec-pyforge-mason CAP-36)
 - Epic 40: The conda-forge-expert scripts read the pixi configuration pixi reads (spec-pyforge-mason CAP-1)
 - Epic 41: The pypi-test rehearsal asks the index it uploads to (spec-pyforge-mason CAP-3, CAP-5)
+- Epic 42: A failed wrapped tool makes mason exit 1 (spec-pyforge-mason CAP-2, CAP-5)
 
 ### Low-risk epics
 
@@ -274,6 +275,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 39.2 | conda-forge-expert gets its own Spec after the root of record flips | none observed |
 | 40.1 | The CFE scripts merge the pixi config layers, and the MCP reference names the... | none observed |
 | 41.1 | The pypi-test rehearsal asks the index it uploads to, and a wrapped tool's fa... | none observed |
+| 42.1 | A failed wrapped tool makes mason exit 1 | none observed |
 
 ## Quality Gates
 

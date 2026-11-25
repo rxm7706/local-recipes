@@ -140,8 +140,8 @@ environment and nothing else.
 
 | Name | Value | When |
 |---|---|---|
-| `EXIT_OK` | 0 | The command ran. For most verbs this says nothing about the delegated tool: read `data.returncode`, or each ship target's `state` (see *Not judged by the test*). |
-| `EXIT_FAILED` | 1 | A `MasonError` other than `cfe:unresolved`, or an unanticipated exception (traceback on stderr); or the outcome projected by `recipe validate` (validator failed), `environment lock` (conda-lock failed), `environment check` (stale or failed) and `package ship` (a target is `failed`). |
+| `EXIT_OK` | 0 | The command ran, and the tool it wraps, if any, returned 0. For a ship verb no target is `failed`, which does not mean shipped: read each target's `state` (see *Ship states*). |
+| `EXIT_FAILED` | 1 | A `MasonError` other than `cfe:unresolved`, or an unanticipated exception (traceback on stderr); or a verb whose wrapped tool returned non-zero: `recipe validate`, `build`, `diagnose`, `optimize`, `scan` and `update`, `package build` (either engine) and `environment lock`; `environment check` (stale or failed); or a ship state of `failed` (`recipe submit`, or any target of `package ship`). Mason does not interpret the code: a CFE script that exits non-zero to report a finding (a vulnerability, an optimizer suggestion) exits 1 here too. The envelope's `status` stays `ok`. |
 | `EXIT_USAGE` | 2 | A usage error: a bare noun with no verb, an argparse-rejected invocation, or a `SystemExit` with a non-integer payload. |
 | `EXIT_CFE_UNAVAILABLE` | 3 | The CFE root could not be resolved for a CFE-dependent command (`cfe:unresolved`). |
 | `EXIT_INTERRUPTED` | 130 | A keyboard interrupt (128 + SIGINT). |
@@ -216,8 +216,9 @@ document has exactly five keys (`render.py`, rendered with sorted keys):
   failure comes before the arguments are parsed.
 - `status`: `"ok"` when the command ran, whatever the delegated tool did; `"error"` when a `MasonError` was raised.
 - `data`: the command's result object. A delegated tool's return code is data, never an error: it is
-  `data.returncode` (`recipe build`, `package build`, `environment lock`, `environment check`, and each verb that
-  wraps a CFE script). `package ship` puts its results in `data.targets[]`, each `{target, state, reference,
+  `data.returncode` (`recipe build`, `environment lock`, `environment check`, and each verb that wraps a CFE
+  script; `package build` carries `data.pep517_returncode` and `data.pixi_returncode`). A non-zero one leaves
+  `status` `ok` and `errors` `[]`, and makes the process exit 1 (see *Exit codes*). `package ship` puts its results in `data.targets[]`, each `{target, state, reference,
   message}`; `recipe submit` returns one such result as `data` (its `reference` is the pull-request URL, else the
   pushed branch). An error envelope has `data` `{}`.
 - `errors`: `[]`, or `[{"identifier": ..., "message": ...}]` for the `MasonError` raised.
@@ -235,8 +236,8 @@ Every ship target result is in one of four states:
 - `terminal`: the target reached its end state (uploaded, or the version was already there).
 - `failed`: a confirmed attempt did not succeed, or a precondition refused it.
 
-`package ship` exits 1 only when a target is `failed`; `not_attempted`, `pending` and `terminal` all exit 0, and
-`recipe submit` exits 0 in every state. **exit 0 does not mean shipped**: read `data.targets[].state` (or
+`package ship` exits 1 only when a target is `failed`, and `recipe submit` exits 1 only when its one result is
+`failed`; `not_attempted`, `pending` and `terminal` all exit 0. **exit 0 does not mean shipped**: read `data.targets[].state` (or
 `data.state` for `recipe submit`). `pending` is never rendered as success.
 
 ### The doctor report
@@ -277,7 +278,7 @@ Mason assumes this layout and creates none of it:
 The face is a supervisor face: `start_build` returns a handle and `get_build` the run's record. Its runner
 `run_build` runs one row of django-pyforge's closed verb table (`django_pyforge.station_cli.STATION_VERBS`):
 `pyforge mason recipe build recipes/<slug> --format json` in the `pyforge-mason` environment, for a recipe tracked in
-git, never started again on a redelivery, and judged by `data.returncode` (Mason exits 0 whatever the build did). It refuses while the kill switch
+git, never started again on a redelivery, and judged by `data.returncode` (Mason itself exits 1 when the build failed, under the same report). It refuses while the kill switch
 `pyforge.steward.start_tool_cli` is off; django-pyforge reads that key, Mason does not. No other Mason verb is
 reachable through the face. That code is django-mason's and django-pyforge's, governed by
 `spec-pyforge-unifying-strategy`.
