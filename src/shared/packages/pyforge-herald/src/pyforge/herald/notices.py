@@ -98,7 +98,7 @@ import json
 import re
 import sqlite3
 from dataclasses import dataclass, replace
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 from . import db, errors
@@ -181,6 +181,20 @@ def _validate_type(notice_type: object) -> str:
     if notice_type not in NOTICE_TYPES:
         raise errors.HeraldError(f"invalid notice type {notice_type!r}; expected one of {', '.join(NOTICE_TYPES)}")
     return notice_type  # type: ignore[return-value]
+
+
+def _validate_deadline(deadline: str | None) -> None:
+    """Story 54.1: a deadline, when given, is ``YYYY-MM-DD`` exactly, as
+    ``herald notice author --deadline`` documents. Round-tripped, not merely
+    parsed: ``date.fromisoformat`` also accepts ``20260901`` and week dates."""
+    if deadline is None:
+        return
+    try:
+        well_formed = isinstance(deadline, str) and date.fromisoformat(deadline).isoformat() == deadline
+    except ValueError:
+        well_formed = False
+    if not well_formed:
+        raise errors.HeraldError(f"invalid deadline {deadline!r}: must be an ISO 8601 date (YYYY-MM-DD)")
 
 
 # --- legacy JSON index reading (one-time migration import only) -----------
@@ -528,6 +542,7 @@ def author_notice(
     lock."""
     _validate_type(notice_type)
     _validate_component(component)
+    _validate_deadline(deadline)
     index_path = index_path if index_path is not None else repo_root / DEFAULT_INDEX_PATH
     notices_dir = notices_dir if notices_dir is not None else repo_root / DEFAULT_NOTICES_DIR
     stale_markdown: Path | None = None

@@ -867,6 +867,27 @@ Herald rebases to one Dream, one Spec, one PRD, one spine, one epic chain. Folde
   page mounted under `dashboard/`, since steward's `deploy static` boards had none. **For herald:** this entry amends
   `spec-pyforge-herald` CAP-63 and decomposes as Story 53.3, behind Story 53.1's flag. Upstream's first-run popup still
   shows inside the frame. Owner `spec-pyforge-herald`.
+- **2026-11-25 (pull --commit commits, and three CLI defects close) — Found:** the code review of main `7da08791f3`
+  (2026-11-24) left herald one open row below high, `DW-herald-review-2026-11-24-1`. The session lead confirmed one
+  defect: `herald deck pull --commit` hands the committer the deck directory and `.herald/bridge-state.json`, and
+  `.gitignore` excludes `/.herald/`, so `git add` refuses the path and the commit fails after the pull has already
+  recorded the new etag. Three more are reviewer-reported and were not re-traced: the on-ship delivery sends only a
+  station and a narrative, and the handler's upsert replaces the day's record, so compute and token figures entered
+  earlier that day read zero; `success create --shipped-date` and `notice author --deadline` store a date unchecked
+  and a malformed one crashes a later listing; `progress --update` with no positional station writes nothing and
+  exits 0, and `deck exports` on an unknown slug exits 1 where the review read the documented code as 2.
+  **Ruled** (operator ruling of 2026-11-25: "can we close and complete these too - * DW-doctor-61-1-1: four governance Specs need a re-derive on your render route. * The lower-severity code defects from the review, as open deferred-work rows on eight stations' ledgers."). **For herald:** this entry binds `spec-pyforge-herald`
+  (a Dream becomes a deck, CAP-1 (realized, no text change); the Design-Code-Bridge Framework, CAP-4 (realized, no
+  text change); the progress surface, CAP-11 (realized, no text change); the success surface, CAP-12 (realized, no
+  text change); the operations surface, CAP-13 (realized, no text change); the webhook endpoint, CAP-38 (realized,
+  no text change); each current export in object storage, CAP-54 (realized, no text change)) and decomposes as
+  Epic 54, one story: the pull commits the deck and never the ignored state file, and records the etag only after the
+  commit; a ship keeps the figures the day already holds; a malformed date is refused when it is entered; and the two
+  flag misuses exit as the contract companion says. Every defect is reproduced before it is fixed, by a test that
+  fails on the tree as it stands, and one the tree does not show is closed as not a defect, with its reason in the
+  story spec. `webhook.py` documents the same-day replace as specified, so the ship defect is judged against that
+  text first. **Constraints:** no flag is added (a fix; flagging it keeps the bug reachable), no capability text
+  moves, and no model, migration or stored row is rewritten. Owner `spec-pyforge-herald`.
 
 ## 2026-10-26 — The deck family stays current — infographics re-derived from the ledgers, not remembered (folded from deck-family-currency)
 

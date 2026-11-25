@@ -2576,6 +2576,31 @@ So that I can get back to the site without the browser's back button.
 **And** with the flag off, or with no export, no framed page is built and the menu is as before; herald's live-tree half passes
 **Status:** done
 
+## Epic 54: deck pull --commit commits, and three CLI defects close (spec-pyforge-herald CAP-1, CAP-4, CAP-11, CAP-12, CAP-13, CAP-38, CAP-54)
+
+Minted 2026-11-25 from the station Dream's entry of the same date on the operator ruling of 2026-11-25: "can we close and complete these too - * DW-doctor-61-1-1: four governance Specs need a re-derive on your render route. * The lower-severity code defects from the review, as open deferred-work rows on eight stations' ledgers." The code review of main `7da08791f3` left herald one open row below high, `DW-herald-review-2026-11-24-1`: one defect the session lead confirmed and three a reviewer reported.
+**HARD boundaries:**
+- Every defect is reproduced first, by a test that fails on the tree as it stands; one the tree does not show is closed as not a defect, with its reason in the story spec, and no code moves for it.
+- No flag, and no capability text moves; `contract.md`'s exit-code table is the judge of an exit code.
+- No model, migration or stored row is rewritten, and `.gitignore` keeps `/.herald/` ignored.
+- The SKF-compiled station skill under `.claude/skills/pyforge-herald/` is not edited.
+
+### Story 54.1: herald deck pull --commit commits, and three CLI defects are closed
+
+As the operator who pulls a designed deck back and records what shipped,
+I want `deck pull --commit` to commit, a ship from the checkout that holds the day's record to keep the day's figures, a malformed date refused when I enter it, and a misused flag to exit as a usage error,
+So that no herald command fails after it has recorded its state, loses what I entered, or reports success for nothing.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-herald CAP-1, CAP-4, CAP-11, CAP-12, CAP-13, CAP-38 and CAP-54 (each realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: `deck pull --commit` commits what it pulled, a ship sends the day's recorded figures, a date is checked when it is entered, and a flag misuse exits with the documented code)
+**Surface:** `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/local_ship.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/webhook.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/claims.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/notices.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py`, `src/shared/packages/pyforge-herald/tests/unit/test_deck_pipeline.py`, `src/shared/packages/pyforge-herald/tests/unit/test_cli_pull.py`, `src/shared/packages/pyforge-herald/tests/unit/test_local_ship.py`, `src/shared/packages/pyforge-herald/tests/unit/test_webhook.py`, `src/shared/packages/pyforge-herald/tests/unit/test_claims.py`, `src/shared/packages/pyforge-herald/tests/unit/test_notices.py`, `src/shared/packages/pyforge-herald/tests/unit/test_cli_success.py`, `src/shared/packages/pyforge-herald/tests/unit/test_cli_notice_epic10.py`, `src/shared/packages/pyforge-herald/tests/unit/test_cli_progress.py`, `src/shared/packages/pyforge-herald/tests/unit/test_deck_exports_handlers.py`
+**Spec:** `planning-artifacts/specs/spec-54-1-herald-deck-pull-commit-commits-and-three-cli-defects-are-closed.md`
+**Given** `deck pull --commit` passes `.herald/bridge-state.json`, which `.gitignore` excludes, to `git add` after the etag is recorded; the on-ship body carries a station and a narrative and the handler upserts the day's record with every omitted field defaulted; `success create --shipped-date` and `notice author --deadline` store the string as given; `progress --update` with no positional station lists and exits 0; and `deck exports` on an unknown slug exits 1 (`DW-herald-review-2026-11-24-1`)
+**When** each of the five is reproduced by a failing test, and each one reproduced is fixed: the commit set is the deck directory alone, the etag is recorded after the commit, and a pull that stages nothing makes no commit; `herald-ship-local` sends the day's recorded compute, token and wall-clock figures and shipped capabilities in its on-ship body, read from the progress store under `--repo-root`, and the handler's specified same-day replace (`webhook.py`) is unchanged; a date that is not `YYYY-MM-DD` is refused at entry and a stored malformed `shipped_date` is left out of a ranged listing; `progress --update` with no station is a usage error; and `deck exports` on an unknown slug exits with the code `contract.md` documents
+**Then** `deck pull --commit` commits the deck, a commit that fails leaves the etag unrecorded, a deck that already matches HEAD is reported as not committed (`(nothing to commit)`, exit 0) with its etag recorded, a same-day ship from the checkout that holds the day's record keeps the figures already recorded, a malformed `--shipped-date` or `--deadline` exits 1 and stores nothing, `progress --update` with no station exits 2 and writes nothing, `deck exports` on an unknown slug exits 2 as `contract.md` documents for `DeckUsageError`, and herald's package half passes
+**And** all five were reproduced and none is closed as not a defect; a ship from a checkout other than the one that holds the day's record still resets the day's figures, and the compiled station skill's stale `--commit` sentence is not edited here (`DW-herald-54-1-1`)
+**Status:** review
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

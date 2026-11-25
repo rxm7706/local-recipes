@@ -324,3 +324,16 @@ def test_author_prompts_for_missing_fields(monkeypatch, tmp_path, capsys):
     out = capsys.readouterr().out
     assert "authored" in out
     assert "prompted-component" in out
+
+
+# --- Story 54.1: --deadline is YYYY-MM-DD at entry ----------------------------
+
+
+def test_author_with_a_malformed_deadline_exits_1_and_stores_nothing(capsys, monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    args = [*AUTHOR_ARGS[:-1], "end of september"]
+    assert cli.main(args) == 1
+    assert "YYYY-MM-DD" in capsys.readouterr().err
+    assert not (tmp_path / "notices").exists()
+    assert cli.main(["notice", "list", "--json"]) == 0
+    assert "auth-api-v1" not in capsys.readouterr().out

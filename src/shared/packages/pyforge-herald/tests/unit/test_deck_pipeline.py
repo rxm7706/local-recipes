@@ -535,14 +535,16 @@ class FakeExporter:
 
 
 class FakeCommitter:
-    def __init__(self, *, fails: HeraldError | None = None):
+    def __init__(self, *, fails: HeraldError | None = None, nothing_to_commit: bool = False):
         self.calls: list[dict] = []
         self._fails = fails
+        self._nothing_to_commit = nothing_to_commit
 
-    def commit(self, *, repo_root: Path, paths: list[Path], message: str) -> None:
+    def commit(self, *, repo_root: Path, paths: list[Path], message: str) -> bool:
         self.calls.append({"repo_root": repo_root, "paths": list(paths), "message": message})
         if self._fails is not None:
             raise self._fails
+        return not self._nothing_to_commit
 
 
 _FIXED_NOW = datetime(2026, 8, 7, 12, 0, 0, tzinfo=timezone.utc)
@@ -786,8 +788,10 @@ def test_pull_prototype_commit_true_stages_and_commits_after_a_real_change(
     assert len(committer.calls) == 1
     call = committer.calls[0]
     assert call["repo_root"] == tmp_path
-    assert tmp_path / "presentations" / "pyforge-warden" in call["paths"]
-    assert tmp_path / state.DEFAULT_STATE_PATH in call["paths"]
+    # Story 54.1: the deck directory alone. The bridge-state file lives under
+    # `/.herald/`, which the repository ignores, so naming it made `git add`
+    # refuse the whole commit.
+    assert call["paths"] == [tmp_path / "presentations" / "pyforge-warden"]
     assert "pyforge-warden" in call["message"]
 
 
@@ -825,10 +829,135 @@ def test_pull_prototype_propagates_a_commit_failure(tmp_path: Path):
             committer=committer,
             now=lambda: _FIXED_NOW,
         )
-    # The write and state update already landed before the commit failed --
-    # not rolled back (see the story spec's Design Notes).
+    # The write already landed before the commit failed -- not rolled back
+    # (see the story spec's Design Notes).
     local_path = tmp_path / "presentations" / "pyforge-warden" / "project" / "PyForge Warden.dc.html"
     assert local_path.read_text(encoding="utf-8") == "<html>x</html>"
+    # Story 54.1: the etag is recorded only after the commit succeeds, so a
+    # rerun pulls and commits again instead of answering "unchanged".
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert PROTOTYPE_ARTIFACT_KEY not in recorded.etags
+
+
+def test_pull_prototype_commit_true_commits_in_a_repo_that_ignores_the_state_dir(tmp_path: Path):
+    """Story 54.1 (DW-herald-review-2026-11-24-1): the real committer, in a
+    scratch repository that ignores `/.herald/` as this one does. The pull
+    used to name the bridge-state file in the commit set, and `git add`
+    refuses an ignored path."""
+    _init_git_repo(tmp_path)
+    (tmp_path / ".gitignore").write_text("/.herald/\n", encoding="utf-8")
+    subprocess.run(["git", "add", ".gitignore"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "ignore"], cwd=tmp_path, check=True)
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(answers=FileRead(path="x", etag="E10", body="<html>x</html>", unchanged=False))
+
+    result = pull_prototype(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        commit=True,
+        prover=FakeProver(),
+        exporter=FakeExporter(),
+        now=lambda: _FIXED_NOW,
+    )
+
+    assert result.committed is True
+    log = subprocess.run(
+        ["git", "log", "-1", "--name-only", "--format="],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert "presentations/pyforge-warden/project/PyForge Warden.dc.html" in log.stdout
+    assert ".herald" not in log.stdout
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert recorded.etags[PROTOTYPE_ARTIFACT_KEY] == "E10"
+
+
+def _head_sha(work: Path) -> str:
+    return subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=work, capture_output=True, text=True, check=True
+    ).stdout.strip()
+
+
+def test_pull_prototype_commit_true_with_a_deck_identical_to_head_records_the_etag_uncommitted(tmp_path: Path):
+    """Story 54.1: the deck is pulled under a new etag but its bytes already
+    match HEAD (a first commit failed and the operator committed the deck by
+    hand, then reran). With the deck directory alone in the commit set there
+    is nothing to commit; the pull must not fail, must say it did not
+    commit, and must still record the etag so the next run reads
+    "unchanged"."""
+    _init_git_repo(tmp_path)
+    (tmp_path / ".gitignore").write_text("/.herald/\n", encoding="utf-8")
+    local = tmp_path / "presentations" / "pyforge-warden" / "project" / "PyForge Warden.dc.html"
+    local.parent.mkdir(parents=True)
+    local.write_text("<html>x</html>", encoding="utf-8")
+    subprocess.run(["git", "add", "-A"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "deck by hand"], cwd=tmp_path, check=True)
+    head_before = _head_sha(tmp_path)
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E10"})
+    transport = FakePullTransport(answers=FileRead(path="x", etag="E11", body="<html>x</html>", unchanged=False))
+
+    result = pull_prototype(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        commit=True,
+        prover=FakeProver(),
+        exporter=FakeExporter(),
+        now=lambda: _FIXED_NOW,
+    )
+
+    assert result.unchanged is False
+    assert result.committed is False
+    assert result.etag == "E11"
+    assert _head_sha(tmp_path) == head_before
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert recorded.etags[PROTOTYPE_ARTIFACT_KEY] == "E11"
+
+
+def test_pull_marp_source_reports_uncommitted_and_records_the_etag_when_nothing_is_staged(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden", etags={"marp:deck": "M1"})
+    transport = FakePullTransport(answers=FileRead(path="x", etag="M2", body="# Deck", unchanged=False))
+    committer = FakeCommitter(nothing_to_commit=True)
+
+    result = pull_marp_source(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        kind="deck",
+        commit=True,
+        exporter=FakeExporter(),
+        committer=committer,
+        now=lambda: _FIXED_NOW,
+    )
+
+    assert len(committer.calls) == 1
+    assert result.committed is False
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert recorded.etags["marp:deck"] == "M2"
+
+
+def test_pull_standalone_bundle_reports_uncommitted_and_records_the_etag_when_nothing_is_staged(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden", etags={STANDALONE_BUNDLE_ARTIFACT_KEY: "S1"})
+    transport = FakePullTransport(answers=FileRead(path="x", etag="S2", body="<html>bundle</html>", unchanged=False))
+    committer = FakeCommitter(nothing_to_commit=True)
+
+    result = pull_standalone_bundle(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        commit=True,
+        exporter=FakeExporter(),
+        committer=committer,
+        now=lambda: _FIXED_NOW,
+    )
+
+    assert len(committer.calls) == 1
+    assert result.committed is False
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert recorded.etags[STANDALONE_BUNDLE_ARTIFACT_KEY] == "S2"
 
 
 # --- CAP-2: pull_marp_source (Story 2.3) -------------------------------------
@@ -962,6 +1091,25 @@ def test_pull_marp_source_commit_true_stages_after_a_real_change(tmp_path: Path)
     assert result.committed is True
     assert len(committer.calls) == 1
     assert "marp:deck" in committer.calls[0]["message"]
+    assert committer.calls[0]["paths"] == [tmp_path / "presentations" / "pyforge-warden"]
+
+
+def test_pull_marp_source_commit_failure_leaves_the_etag_unrecorded(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(answers=FileRead(path="x", etag="M9", body="# Deck", unchanged=False))
+    with pytest.raises(HeraldError, match="git commit failed"):
+        pull_marp_source(
+            transport,
+            slug="pyforge-warden",
+            repo_root=tmp_path,
+            kind="deck",
+            commit=True,
+            exporter=FakeExporter(),
+            committer=FakeCommitter(fails=HeraldError("git commit failed: refused")),
+            now=lambda: _FIXED_NOW,
+        )
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert recorded.etags == {}
 
 
 def test_pull_marp_source_commit_true_never_commits_an_unchanged_pull(tmp_path: Path):
@@ -1113,6 +1261,24 @@ def test_pull_standalone_bundle_commit_true_stages_after_a_real_change(
     assert result.committed is True
     assert len(committer.calls) == 1
     assert STANDALONE_BUNDLE_ARTIFACT_KEY in committer.calls[0]["message"]
+    assert committer.calls[0]["paths"] == [tmp_path / "presentations" / "pyforge-warden"]
+
+
+def test_pull_standalone_bundle_commit_failure_leaves_the_etag_unrecorded(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(answers=FileRead(path="x", etag="S9", body="<html>bundle</html>", unchanged=False))
+    with pytest.raises(HeraldError, match="git commit failed"):
+        pull_standalone_bundle(
+            transport,
+            slug="pyforge-warden",
+            repo_root=tmp_path,
+            commit=True,
+            exporter=FakeExporter(),
+            committer=FakeCommitter(fails=HeraldError("git commit failed: refused")),
+            now=lambda: _FIXED_NOW,
+        )
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert recorded.etags == {}
 
 
 def test_pull_standalone_bundle_commit_true_never_commits_an_unchanged_pull(
@@ -1197,6 +1363,46 @@ def test_subprocess_git_committer_commits_with_a_relative_repo_root(tmp_path: Pa
         check=True,
     )
     assert "presentations/warden/file.txt" in log.stdout
+
+
+def test_subprocess_git_committer_answers_true_when_it_commits_and_false_when_nothing_is_staged(tmp_path: Path):
+    """Story 54.1: `git commit -- <paths>` exits 1 on "nothing to commit";
+    the committer answers False for that case and makes no commit, and
+    answers True when it made one."""
+    work = tmp_path / "repo"
+    work.mkdir()
+    _init_git_repo(work)
+    target = work / "presentations" / "warden"
+    target.mkdir(parents=True)
+    (target / "file.txt").write_text("content\n", encoding="utf-8")
+
+    first = SubprocessGitCommitter().commit(repo_root=work, paths=[target], message="herald: pull warden (prototype)")
+    head_after_first = _head_sha(work)
+    second = SubprocessGitCommitter().commit(repo_root=work, paths=[target], message="herald: pull warden (prototype)")
+
+    assert first is True
+    assert second is False
+    assert _head_sha(work) == head_after_first
+
+
+def test_subprocess_git_committer_ignores_a_change_staged_outside_its_paths(tmp_path: Path):
+    """Story 54.1: the nothing-staged check is scoped to the deck paths, so
+    an unrelated staged file neither forces a commit nor rides one."""
+    work = tmp_path / "repo"
+    work.mkdir()
+    _init_git_repo(work)
+    target = work / "presentations" / "warden"
+    target.mkdir(parents=True)
+    (target / "file.txt").write_text("content\n", encoding="utf-8")
+    SubprocessGitCommitter().commit(repo_root=work, paths=[target], message="herald: pull warden (prototype)")
+    head = _head_sha(work)
+    (work / "other.txt").write_text("staged elsewhere\n", encoding="utf-8")
+    subprocess.run(["git", "add", "other.txt"], cwd=work, check=True)
+
+    answer = SubprocessGitCommitter().commit(repo_root=work, paths=[target], message="herald: pull warden (prototype)")
+
+    assert answer is False
+    assert _head_sha(work) == head
 
 
 # --- CAP-5: push_exports (Story 5.1/5.2) -------------------------------------

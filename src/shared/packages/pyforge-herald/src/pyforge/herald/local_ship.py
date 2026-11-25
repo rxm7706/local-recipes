@@ -14,6 +14,12 @@ spec-pyforge-herald CAP-38): ``roots.this`` of the nearest
 the root of record: herald's landing record follows the checkout it ships
 from, never the ``pyforge.cutover_root`` flag. A missing roster or
 ``roots.this`` is a :class:`ForgeSlugError`, never a fallback slug.
+
+The on-ship body carries the figures the day already recorded (Story 54.1):
+``webhook.handle_on_ship`` replaces the day's record by specification, so the
+payload is the whole truth for the day. The figures are read from the progress
+store under ``--repo-root``, the checkout the loopback host writes under; a
+store that cannot be read refuses the ship before any POST.
 """
 
 from __future__ import annotations
@@ -28,6 +34,7 @@ import subprocess
 import sys
 import time
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
@@ -35,6 +42,8 @@ from urllib.request import Request, urlopen
 
 from pyforge.core import cutover_root, landing_evidence, roster
 from pyforge.core.errors import PyforgeError
+
+from pyforge.herald import errors, progress
 
 _MERGE_SUBJECT_TEMPLATE = "Merge {slug}/{key} into main"
 ROSTER_RELATIVE = Path("docs/governance/guild-roster.json")
@@ -152,8 +161,29 @@ def resolve_landing_commit(repo_root: Path, commit: str | None) -> LandingCommit
     return LandingCommit(sha=sha, subject=subject, station=station, story_key=key.hyphen_form())
 
 
-def build_on_ship_body(landing: LandingCommit) -> bytes:
-    payload = {"station": landing.station, "unblock_narrative": landing.subject}
+def recorded_figures(progress_path: Path, station: str) -> dict[str, object]:
+    """What ``progress_path`` holds for ``station`` today (the UTC date the
+    on-ship handler keys on), as on-ship payload fields; ``{}`` when the day has
+    no record. Raises ``errors.HeraldError`` when the store cannot be read."""
+    on_date = datetime.now(UTC).date().isoformat()
+    for record in progress.read_all(progress_path):
+        if record.station == station and record.date == on_date:
+            return {
+                "shipped_capabilities": list(record.shipped_capabilities),
+                "compute_hours": record.compute_hours,
+                "token_spend": record.token_spend,
+                "wall_clock_hours": record.wall_clock_hours,
+            }
+    return {}
+
+
+def build_on_ship_body(landing: LandingCommit, *, progress_path: Path | None = None) -> bytes:
+    """The on-ship body. With ``progress_path`` it also carries the figures the
+    day already recorded for the station, which the handler's replace would
+    otherwise reset to their defaults; the narrative is always the landing's."""
+    payload: dict[str, object] = {"station": landing.station, "unblock_narrative": landing.subject}
+    if progress_path is not None:
+        payload.update(recorded_figures(progress_path, landing.station))
     return json.dumps(payload, separators=(",", ":")).encode("utf-8")
 
 
@@ -217,12 +247,14 @@ def deliver_landing(
     landing: LandingCommit,
     *,
     repo: str | None = None,
+    progress_path: Path | None = None,
 ) -> dict[str, object]:
     base = base_url.rstrip("/")
     on_ship_url = f"{base}/stations/herald/api/v1/webhooks/on-ship"
     on_close_url = f"{base}/stations/herald/api/v1/webhooks/on-pr-close"
-    # Both bodies are built before either POST, so a ForgeSlugError refuses before anything is sent.
-    ship_body = build_on_ship_body(landing)
+    # Both bodies are built before either POST, so a ForgeSlugError, or an
+    # unreadable progress store, refuses before anything is sent.
+    ship_body = build_on_ship_body(landing, progress_path=progress_path)
     close_body = build_on_pr_close_body(landing, repo=repo)
     on_ship_status, on_ship_body = post_signed(on_ship_url, secret, ship_body)
     on_close_status, on_close_body = post_signed(on_close_url, secret, close_body)
@@ -279,7 +311,13 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     landing = resolve_landing_commit(repo_root, args.commit)
-    result = deliver_landing(args.url, secret, landing, repo=repo)
+    try:
+        result = deliver_landing(
+            args.url, secret, landing, repo=repo, progress_path=repo_root / progress.DEFAULT_PROGRESS_PATH
+        )
+    except errors.HeraldError as exc:
+        print(f"refusing to ship: {exc}", file=sys.stderr)
+        return 1
     print(json.dumps(result, indent=2, sort_keys=True))
 
     on_ship = result["on_ship"]

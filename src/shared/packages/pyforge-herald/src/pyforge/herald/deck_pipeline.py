@@ -342,7 +342,8 @@ class PullResult:
     """What a ``pull_*`` function returns: which artifact, whether the pull
     was a no-op (etag short-circuit), where it landed locally when it
     wasn't, the etag now on record, and whether ``--commit`` (Story 2.2)
-    actually committed it."""
+    actually committed it (``False`` under ``--commit`` too, when the deck
+    already matched HEAD and there was nothing to commit -- Story 54.1)."""
 
     slug: str
     artifact: str
@@ -443,9 +444,10 @@ def _record_pull_etag(
     """Record ``artifact_key``'s new etag -- called ONLY after prove/export
     for this pull has genuinely succeeded (review finding: see
     ``_pull_and_land``'s own docstring for why recording it any earlier
-    makes a failed re-derivation unrecoverable via retry). Must run before
-    ``--commit`` stages this state file, so its own new etag is included in
-    the commit."""
+    makes a failed re-derivation unrecoverable via retry). With ``--commit``
+    it runs after the commit succeeds (Story 54.1): the state file is
+    ignored and never part of the commit, and a failed commit must leave the
+    rerun a changed pull to commit."""
     new_etags = dict(existing.etags)
     new_etags[artifact_key] = etag
     state.write(
@@ -642,25 +644,31 @@ class GitCommitter(Protocol):
     ``DeckExporter``'s pattern: a real implementation shells two bounded
     subprocess calls; every test injects a hand-written fake."""
 
-    def commit(self, *, repo_root: Path, paths: list[Path], message: str) -> None:
-        """Raise ``errors.HeraldError`` naming what failed; return normally
-        on success (including when there was nothing new to stage under
-        ``paths`` -- callers only invoke this when a real change is known to
-        exist)."""
+    def commit(self, *, repo_root: Path, paths: list[Path], message: str) -> bool:
+        """Raise ``errors.HeraldError`` naming what failed. Return ``True``
+        when a commit was made and ``False`` when staging ``paths`` left
+        nothing to commit (Story 54.1: a pull under a new etag whose files
+        already match HEAD) -- no commit is made then, and it is not an
+        error."""
         ...
 
 
 class SubprocessGitCommitter:
-    """The real ``GitCommitter``: ``git add -- <paths>`` then ``git commit
-    -m <message> -- <paths>`` in ``repo_root``, using the operator's own git
-    identity/signing config -- this commit is meant to survive, unlike
-    ``pyforge-marshal``'s throwaway ``commit-tree`` comparisons. Never
-    invoked by this package's own tests (every pull test injects a fake)."""
+    """The real ``GitCommitter``: ``git add -- <paths>``, then ``git diff
+    --cached --quiet -- <paths>`` to learn whether anything is staged under
+    them, then ``git commit -m <message> -- <paths>`` in ``repo_root`` when
+    something is, using the operator's own git identity/signing config --
+    this commit is meant to survive, unlike ``pyforge-marshal``'s throwaway
+    ``commit-tree`` comparisons. With nothing staged it makes no commit and
+    answers ``False`` (Story 54.1): ``git commit`` exits 1 on "nothing to
+    commit", which would fail a pull whose deck already matches HEAD on
+    every rerun. Most pull tests inject a fake; a few drive this class in a
+    scratch repository."""
 
     def __init__(self, *, timeout: float = _DEFAULT_GIT_TIMEOUT) -> None:
         self._timeout = timeout
 
-    def commit(self, *, repo_root: Path, paths: list[Path], message: str) -> None:
+    def commit(self, *, repo_root: Path, paths: list[Path], message: str) -> bool:
         # Review finding: `p.is_absolute()` was the wrong branch condition
         # -- every `paths` entry this module's own callers pass IS already
         # prefixed with `repo_root` (e.g. `repo_root / "presentations" /
@@ -674,9 +682,15 @@ class SubprocessGitCommitter:
         resolved_root = repo_root.resolve()
         rel_paths = [str(p.resolve().relative_to(resolved_root)) for p in paths]
         self._run(repo_root, ["git", "add", "--", *rel_paths])
+        # `git diff --cached --quiet` exits 0 with nothing staged under the
+        # paths and 1 with a staged change; any other status is a failure.
+        staged = self._run(repo_root, ["git", "diff", "--cached", "--quiet", "--", *rel_paths], ok=(0, 1))
+        if staged == 0:
+            return False
         self._run(repo_root, ["git", "commit", "-m", message, "--", *rel_paths])
+        return True
 
-    def _run(self, repo_root: Path, args: list[str]) -> None:
+    def _run(self, repo_root: Path, args: list[str], *, ok: tuple[int, ...] = (0,)) -> int:
         try:
             completed = subprocess.run(
                 args,
@@ -694,11 +708,12 @@ class SubprocessGitCommitter:
             raise errors.HeraldError(
                 f"git commit failed: could not run {' '.join(args)!r} in {repo_root} ({exc})"
             ) from exc
-        if completed.returncode != 0:
+        if completed.returncode not in ok:
             tail = (completed.stderr or completed.stdout or "").strip()[-2000:]
             raise errors.HeraldError(
                 f"git commit failed: {' '.join(args)!r} in {repo_root} exited {completed.returncode}: {tail}"
             )
+        return completed.returncode
 
 
 def pull_prototype(
@@ -724,9 +739,13 @@ def pull_prototype(
     new etag, then re-derives via ``prover`` (default ``NpmLocalProver``,
     reused from Story 1.6) and ``exporter`` (default ``PixiDeckExporter``).
     When ``commit=True`` and the pull was a real change, stages and commits
-    the whole ``presentations/<slug>/`` directory plus the bridge-state file
-    via ``committer`` (default ``SubprocessGitCommitter``, Story 2.2) --
-    commit is opt-in, never implicit."""
+    the whole ``presentations/<slug>/`` directory via ``committer`` (default
+    ``SubprocessGitCommitter``, Story 2.2) -- commit is opt-in, never
+    implicit. The bridge-state file is never committed (it is ignored), and
+    the etag is recorded only after the commit succeeds (Story 54.1). When
+    the pulled and re-derived deck already matches HEAD there is nothing to
+    commit: no commit is made, the result reads ``committed=False``, and the
+    etag is still recorded, so a rerun answers "unchanged"."""
     resolved_now = now or _default_now
     resolved_state_path = repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
     existing = _require_seeded_state(resolved_state_path, slug)
@@ -758,6 +777,19 @@ def pull_prototype(
     # Review finding: the etag is now recorded only after prove+export both
     # succeed -- see `_pull_and_land`'s docstring for why recording it any
     # earlier makes a failed re-derivation unrecoverable via retry.
+    # Story 54.1: commit first, the deck directory alone. The bridge-state
+    # file is under `/.herald/`, which the repository ignores (`git add`
+    # refuses it), and an etag recorded before a commit that then fails
+    # makes the rerun answer "unchanged" with the pull never committed.
+    # A committer that finds nothing staged under the deck answers False:
+    # that is not a failure, and the etag is recorded all the same.
+    committed = False
+    if commit:
+        committed = (committer or SubprocessGitCommitter()).commit(
+            repo_root=repo_root,
+            paths=[deck_dir],
+            message=f"herald: pull {slug} ({PROTOTYPE_ARTIFACT_KEY})",
+        )
     _record_pull_etag(
         resolved_state_path,
         slug,
@@ -766,15 +798,6 @@ def pull_prototype(
         etag=file_read.etag,
         now=resolved_now,
     )
-
-    committed = False
-    if commit:
-        (committer or SubprocessGitCommitter()).commit(
-            repo_root=repo_root,
-            paths=[deck_dir, resolved_state_path],
-            message=f"herald: pull {slug} ({PROTOTYPE_ARTIFACT_KEY})",
-        )
-        committed = True
 
     return PullResult(
         slug=slug,
@@ -865,6 +888,14 @@ def pull_marp_source(
     (exporter or select_exporter(slug=slug, repo_root=repo_root)).export(slug=slug, repo_root=repo_root)
     # Review finding: see `pull_prototype`'s own note -- record only after
     # export succeeds.
+    # Story 54.1: commit first, the deck directory alone (same note).
+    committed = False
+    if commit:
+        committed = (committer or SubprocessGitCommitter()).commit(
+            repo_root=repo_root,
+            paths=[deck_dir],
+            message=f"herald: pull {slug} ({artifact_key})",
+        )
     _record_pull_etag(
         resolved_state_path,
         slug,
@@ -873,15 +904,6 @@ def pull_marp_source(
         etag=file_read.etag,
         now=resolved_now,
     )
-
-    committed = False
-    if commit:
-        (committer or SubprocessGitCommitter()).commit(
-            repo_root=repo_root,
-            paths=[deck_dir, resolved_state_path],
-            message=f"herald: pull {slug} ({artifact_key})",
-        )
-        committed = True
 
     return PullResult(
         slug=slug,
@@ -962,6 +984,14 @@ def pull_standalone_bundle(
     (exporter or select_exporter(slug=slug, repo_root=repo_root)).export(slug=slug, repo_root=repo_root)
     # Review finding: see `pull_prototype`'s own note -- record only after
     # export succeeds.
+    # Story 54.1: commit first, the deck directory alone (same note).
+    committed = False
+    if commit:
+        committed = (committer or SubprocessGitCommitter()).commit(
+            repo_root=repo_root,
+            paths=[deck_dir],
+            message=f"herald: pull {slug} ({STANDALONE_BUNDLE_ARTIFACT_KEY})",
+        )
     _record_pull_etag(
         resolved_state_path,
         slug,
@@ -970,15 +1000,6 @@ def pull_standalone_bundle(
         etag=file_read.etag,
         now=resolved_now,
     )
-
-    committed = False
-    if commit:
-        (committer or SubprocessGitCommitter()).commit(
-            repo_root=repo_root,
-            paths=[deck_dir, resolved_state_path],
-            message=f"herald: pull {slug} ({STANDALONE_BUNDLE_ARTIFACT_KEY})",
-        )
-        committed = True
 
     return PullResult(
         slug=slug,
