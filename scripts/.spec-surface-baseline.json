@@ -541,7 +541,7 @@
    "docs/how-to/manticore-studio.md": "5cde3a3eb807fcda7dd35e86eb193b4546867a79",
    "docs/how-to/monitor-the-fleet.md": "b386a8c7997c9c96b3cba3c11f77a3c3fee3e14e",
    "docs/how-to/move-vendor-extracts-through-the-corridor.md": "e45df07c278a80a971bad20a101a96391d87265d",
-   "docs/how-to/ocp-cluster-bringup.md": "3976682bafe52c1ff88b864c8c41a05580ec4adf",
+   "docs/how-to/ocp-cluster-bringup.md": "7872c5794d39fc49c00e1ec5c3d018ce271542b9",
    "docs/how-to/one-chain-station-ops.md": "7d8846d2a87da34b304e41e990bd16055793725d",
    "docs/how-to/pause-ci.md": "6ce61cf6171b4bb9634da6c8ef3e0ecd5d05c7f6",
    "docs/how-to/pixi-tasks.md": "10848e64463fac01b5e80f7e9352cb3ba9a9dd37",
@@ -824,7 +824,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "2380504c68db88fb8c995d10155afc01e36f04f8"
+  "memlog": "feb8d88ee201e104c9e14a92fe3812ecc2f954c1"
  },
  "pyforge-herald/spec-pyforge-herald": {
   "files": {
