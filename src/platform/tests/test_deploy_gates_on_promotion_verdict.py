@@ -34,6 +34,9 @@ _CLEAN_PROJECT = (
     _REPO_ROOT / "src/shared/packages/pyforge-warden/tests/fixtures/projects/clean"
 )
 _DIGEST = "sha256:" + ("b" * 64)
+# Story 134.1: the record carries the registry digest (a pushed run) and the
+# image ID under two keys; the deploy verifier compares the digest.
+_IMAGE_ID = "sha256:" + ("2" * 64)
 _DRIVER_ID = "warn:vuln:CVE-2024-9999:pkg"
 
 
@@ -98,6 +101,9 @@ def _assemble_promotion_record(
             "PLATFORM_DIGEST": _DIGEST,
             "SIDECAR_DIGEST": _DIGEST,
             "MCP_HOST_DIGEST": _DIGEST,
+            "PLATFORM_IMAGE_ID": _IMAGE_ID,
+            "SIDECAR_IMAGE_ID": _IMAGE_ID,
+            "MCP_HOST_IMAGE_ID": _IMAGE_ID,
             "WARDEN_EXIT": str(warden_exit),
         }
     )

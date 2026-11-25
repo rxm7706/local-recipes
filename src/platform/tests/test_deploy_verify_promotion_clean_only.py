@@ -21,6 +21,9 @@ import pytest
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _VERIFY_SCRIPT = _REPO_ROOT / "scripts" / "platform-deploy-verify-promotion.py"
 _DIGEST = "sha256:" + ("a" * 64)
+# Story 134.1: the artifact records the registry digest and the image ID under
+# two keys; this suite's records are of a pushed run, compared by digest.
+_IMAGE_ID = "sha256:" + ("1" * 64)
 _DRIVER_ID = "warden:vulnerability:CVE-2024-0001"
 
 
@@ -34,9 +37,9 @@ def _promotion_payload(
 ) -> dict[str, Any]:
     payload: dict[str, Any] = {
         "images": {
-            "platform": {"digest": _DIGEST},
-            "sidecar": {"digest": _DIGEST},
-            "mcpHost": {"digest": _DIGEST},
+            "platform": {"digest": _DIGEST, "image_id": _IMAGE_ID},
+            "sidecar": {"digest": _DIGEST, "image_id": _IMAGE_ID},
+            "mcpHost": {"digest": _DIGEST, "image_id": _IMAGE_ID},
         },
     }
     if warden_status is not None:

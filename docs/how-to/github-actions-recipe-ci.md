@@ -28,7 +28,7 @@ Manual recipe CI to preserve quota — dispatch with `gh workflow run`:
 | Test macOS | `gh workflow run test-macos.yml -f recipes="NAME"` | Native macOS builds |
 | Test Windows | `gh workflow run test-windows.yml -f recipes="NAME"` | Native Windows builds |
 | Sync PyPI mappings | `gh workflow run sync-pypi-mappings.yml` | Refresh conda-forge-expert PyPI mappings |
-| Platform deploy | `gh workflow run platform-deploy.yml -f ci_run_id=ID -f platform_digest=SHA -f sidecar_digest=SHA -f mcp_host_digest=SHA` | Deploy platform from a CI promotion artifact. All four inputs are required. |
+| Platform deploy | `gh workflow run platform-deploy.yml -f ci_run_id=ID -f platform_digest=SHA -f sidecar_digest=SHA -f mcp_host_digest=SHA` | Deploy platform from a CI promotion artifact. Only `ci_run_id` is required. For a run that pushed its images, give the three `*_digest` inputs (registry manifest digests). For a run that pushed nothing, give `platform_image_id`, `sidecar_image_id` and `mcp_host_image_id` instead: the Warden verdict and the image IDs are verified, then the render step fails, since an image ID names nothing a registry serves. See [platform deployment architecture](../explanation/platform-deployment-architecture.md). |
 
 `test-{linux,macos,windows}.yml` are also reusable `workflow_call` targets: `test-all.yml` calls them, and each can be dispatched alone.
 

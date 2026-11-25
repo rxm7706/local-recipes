@@ -180,12 +180,22 @@ Image reference from (dict "image" <{registry, repository, tag, digest}>
 prefix is prepended only when set. Story 43.4: deploy by digest OR a
 pinned non-latest tag; `latest` is refused; bare renders fail naming the
 values path instead of shipping a mutable default.
+Story 134.1: what follows `@` must be a registry manifest digest,
+`sha256:` and 64 hex characters; anything else fails the render naming the
+values path. That refuses a tag, a truncated value and the bare-hex image
+ID podman prints. It cannot refuse a docker image ID, which has the same
+form as a digest: the promotion artifact keeps the two under separate keys
+(`images.*.digest`, `images.*.image_id`) and platform-deploy renders only
+from the first.
 */}}
 {{- define "platform.imageRef" -}}
 {{- $image := .image }}
 {{- $path := .path }}
 {{- $digest := trim (toString (default "" $image.digest)) -}}
 {{- if $digest -}}
+{{- if not (regexMatch "^sha256:[0-9a-f]{64}$" $digest) -}}
+{{- fail (printf "%s.digest=%q is refused (a registry manifest digest is sha256: and 64 hex characters; an image ID or a tag is not one)" $path $digest) -}}
+{{- end -}}
 {{- if $image.registry -}}
 {{- printf "%s/%s@%s" $image.registry $image.repository $digest -}}
 {{- else -}}

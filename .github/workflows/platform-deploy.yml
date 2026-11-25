@@ -8,6 +8,13 @@ name: Platform Deploy
 # honest non-clean records from golden-path-promotion (Stories 12.3–12.5) do
 # not promote — waivers compose upstream inside Warden, never at deploy.
 
+# Story 134.1: the artifact records a registry manifest digest only when Platform
+# CI pushed the image (`images.*.digest`), and the local image ID always
+# (`images.*.image_id`). Give the digests for a pushed run and the chart is
+# rendered from the digests the verifier read back out of the artifact. Give
+# the image IDs for a run that pushed nothing and the Warden verdict is still
+# verified, but nothing is rendered: an image ID names nothing a registry serves.
+
 on:
   workflow_dispatch:
     inputs:
@@ -16,16 +23,34 @@ on:
         required: true
         type: string
       platform_digest:
-        description: 'Platform image digest (sha256:...) from the promotion artifact'
-        required: true
+        description: 'Platform registry manifest digest (sha256:...), images.platform.digest of the artifact; leave empty when nothing was pushed'
+        required: false
+        default: ''
         type: string
       sidecar_digest:
-        description: 'DB-GPT sidecar digest (sha256:...) from the promotion artifact'
-        required: true
+        description: 'DB-GPT sidecar registry manifest digest (sha256:...), images.sidecar.digest; leave empty when nothing was pushed'
+        required: false
+        default: ''
         type: string
       mcp_host_digest:
-        description: 'MCP-host sidecar digest (sha256:...) from the promotion artifact'
-        required: true
+        description: 'MCP-host sidecar registry manifest digest (sha256:...), images.mcpHost.digest; leave empty when nothing was pushed'
+        required: false
+        default: ''
+        type: string
+      platform_image_id:
+        description: 'Platform image ID, images.platform.image_id; needed only when the artifact records no digest'
+        required: false
+        default: ''
+        type: string
+      sidecar_image_id:
+        description: 'DB-GPT sidecar image ID, images.sidecar.image_id; needed only when the artifact records no digest'
+        required: false
+        default: ''
+        type: string
+      mcp_host_image_id:
+        description: 'MCP-host sidecar image ID, images.mcpHost.image_id; needed only when the artifact records no digest'
+        required: false
+        default: ''
         type: string
 
 permissions:
@@ -49,10 +74,14 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Refuse digest without a clean Warden verdict in the promotion artifact
+        id: verify
         env:
           PLATFORM_DIGEST: ${{ inputs.platform_digest }}
           SIDECAR_DIGEST: ${{ inputs.sidecar_digest }}
           MCP_HOST_DIGEST: ${{ inputs.mcp_host_digest }}
+          PLATFORM_IMAGE_ID: ${{ inputs.platform_image_id }}
+          SIDECAR_IMAGE_ID: ${{ inputs.sidecar_image_id }}
+          MCP_HOST_IMAGE_ID: ${{ inputs.mcp_host_image_id }}
         run: python scripts/platform-deploy-verify-promotion.py
 
       - uses: prefix-dev/setup-pixi@v0.11.2
@@ -62,19 +91,31 @@ jobs:
           locked: true
           cache: true
 
+      # The digests come from the verify step, which read them out of the
+      # artifact: a value is rendered after `@` only when the artifact records
+      # it as a registry digest. An image ID is never rendered.
       - name: helm template with digest only (no mutable tags)
+        env:
+          BY_DIGEST: ${{ steps.verify.outputs.by_digest }}
+          PLATFORM_DIGEST: ${{ steps.verify.outputs.platform_digest }}
+          SIDECAR_DIGEST: ${{ steps.verify.outputs.sidecar_digest }}
+          MCP_HOST_DIGEST: ${{ steps.verify.outputs.mcp_host_digest }}
         run: |
+          if [ "${BY_DIGEST}" != "true" ]; then
+            echo "::error::the promotion artifact records an image ID and no registry digest for at least one image; a registry deploy needs a pushed digest (run Platform CI with PLATFORM_CI_PUSH_REGISTRY=true). The Warden verdict and the image IDs were verified; nothing is rendered."
+            exit 1
+          fi
           helm template platform src/platform/deploy/charts/platform \
-            --set image.digest="${{ inputs.platform_digest }}" \
-            --set sidecar.image.digest="${{ inputs.sidecar_digest }}" \
-            --set mcpHost.image.digest="${{ inputs.mcp_host_digest }}" \
+            --set image.digest="${PLATFORM_DIGEST}" \
+            --set sidecar.image.digest="${SIDECAR_DIGEST}" \
+            --set mcpHost.image.digest="${MCP_HOST_DIGEST}" \
             --set-file flags.tree=src/platform/config/flags.json \
             --set-file flags.overlays=src/platform/config/flag-overlays.json \
             --set flags.environment=production \
             > platform-deploy-render.yaml
-          grep -q "@${{ inputs.platform_digest }}" platform-deploy-render.yaml
-          grep -q "@${{ inputs.sidecar_digest }}" platform-deploy-render.yaml
-          grep -q "@${{ inputs.mcp_host_digest }}" platform-deploy-render.yaml
+          grep -q "@${PLATFORM_DIGEST}" platform-deploy-render.yaml
+          grep -q "@${SIDECAR_DIGEST}" platform-deploy-render.yaml
+          grep -q "@${MCP_HOST_DIGEST}" platform-deploy-render.yaml
           if grep -E ':latest\b' platform-deploy-render.yaml; then
             echo "::error::render contains a :latest image reference"
             exit 1
