@@ -122,6 +122,13 @@ class CaptureRecord(BaseModel):
 #: plus Story 6.1's optional graphify `compile_surface` extra).
 GraphNodeKind = Literal["memory", "memlog", "commit", "doc", "transcript", "code"]
 
+#: The id of the one reserved row a relational store (PostgreSQL, plane) keeps its compile time in (Story 35.1,
+#: CAP-26): a row of the node relation the store already has, never a column, a second relation or a node. The
+#: store writes it on `commit()` with the stamp in `valid_from`, reads it back into `compiled_at` on load, and
+#: refuses a `GraphNode` under this id, so it never reaches `iter_nodes()`, a query or a count. The flat-file
+#: store keeps the same stamp as the `compiled_at` key of its JSON document.
+COMPILED_AT_ROW_ID = "scribe:compiled_at"
+
 
 class GraphNode(BaseModel):
     """One compiled knowledge-graph fact (Story 2.1/2.2, AD-1/AD-5).
@@ -152,8 +159,9 @@ class GraphNode(BaseModel):
     unresolvable citation -- excluded from candidacy, so a consumer never
     sees it served as if it were current -- and at recall time it also
     withholds a current node whose source has a commit authored after the
-    store's `compiled_at`, where the store keeps one (the flat-file store
-    does; CAP-26), so a commit landed between nightlies is never served
+    store's `compiled_at`. Every shipped store keeps one (flat file,
+    PostgreSQL, plane; CAP-26, Story 35.1); a store with none degrades to
+    this bit alone. So a commit landed between nightlies is never served
     before the next compile flags it.
     """
 

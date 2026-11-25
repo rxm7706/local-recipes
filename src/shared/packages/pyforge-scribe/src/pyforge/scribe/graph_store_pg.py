@@ -15,6 +15,13 @@ DDL. The pgvector extension, ``scribe_schema`` and ``graph_nodes`` are
 Liquibase changesets ``pyforge-scribe:1``–``:4``, applied by the migration
 role. The runtime role holds DML only, so construction *asserts* the
 relation is present and raises :class:`GraphSchemaMissing` when it is not.
+
+Compile time (Story 35.1, CAP-26): ``compiled_at`` is kept as one reserved
+row of ``graph_nodes`` (id ``models.COMPILED_AT_ROW_ID``, the stamp in
+``valid_from``), written and read with the DML the role already holds. No
+column and no second relation. The row is never a node: ``_load`` lifts it
+out, it has no embedding, an ended validity and ``stale`` set, so a reader
+of the bare relation (or a driver from before this story) never serves it.
 """
 
 from __future__ import annotations
@@ -29,7 +36,7 @@ from pyforge.core.hooks import PluginError
 
 from pyforge.scribe.embeddings import embed_text, vector_literal
 from pyforge.scribe.graph_store import GRAPHSTORE_HOOK_SPEC, PG_GRAPHSTORE_OWNER
-from pyforge.scribe.models import GraphNode
+from pyforge.scribe.models import COMPILED_AT_ROW_ID, GraphNode
 
 SCRIBE_SCHEMA = "scribe_schema"
 GRAPH_TABLE = "graph_nodes"
@@ -60,7 +67,8 @@ def _import_psycopg():
 
 
 def _normalize_dsn(dsn: str) -> str:
-    return dsn.split("?", 1)[0]
+    """The DSN as given, its query string kept: ``sslmode`` and the other libpq parameters ride there."""
+    return dsn.strip()
 
 
 def resolve_graph_dsn(context: MutableMapping[str, Any] | None = None) -> str | None:
@@ -97,6 +105,7 @@ class PostgresGraphStore:
         self.dsn = _normalize_dsn(dsn)
         self.schema = schema
         self._nodes: dict[str, GraphNode] = {}
+        self.compiled_at: datetime | None = None
         self._assert_provisioned()
         self._load()
 
@@ -158,6 +167,7 @@ class PostgresGraphStore:
                     """
                 ).format(self._table())
             ).fetchall()
+        self.compiled_at = next((row[5] for row in rows if row[0] == COMPILED_AT_ROW_ID), None)
         self._nodes = {
             row[0]: GraphNode(
                 id=row[0],
@@ -171,12 +181,16 @@ class PostgresGraphStore:
                 stale=row[8],
             )
             for row in rows
+            if row[0] != COMPILED_AT_ROW_ID
         }
 
     def reset(self) -> None:
         self._nodes = {}
+        self.compiled_at = None
 
     def upsert_node(self, node: GraphNode) -> None:
+        if node.id == COMPILED_AT_ROW_ID:
+            raise ValueError(f"node id {node.id!r} is reserved for the store's compile time")
         self._nodes[node.id] = node
 
     def invalidate_edge(self, node_id: str, *, ended_at: datetime, superseded_by: str) -> None:
@@ -207,11 +221,12 @@ class PostgresGraphStore:
                     WHERE embedding IS NOT NULL
                       AND valid_until IS NULL
                       AND stale = false
+                      AND id <> %s
                     ORDER BY embedding <=> %s::vector
                     LIMIT %s
                     """
                 ).format(self._table()),
-                (literal, limit),
+                (COMPILED_AT_ROW_ID, literal, limit),
             ).fetchall()
         return [
             GraphNode(
@@ -259,6 +274,19 @@ class PostgresGraphStore:
                             embedding_literal,
                             node.stale,
                         ),
+                    )
+                if self.compiled_at is not None:
+                    # The stamp row: no embedding, validity ended at the stamp, stale -- never a servable node.
+                    conn.execute(
+                        sql.SQL(
+                            """
+                            INSERT INTO {} (
+                                id, kind, title, text, citation,
+                                valid_from, valid_until, superseded_by, embedding, stale
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s::vector, %s)
+                            """
+                        ).format(self._table()),
+                        (COMPILED_AT_ROW_ID, "doc", "", "", "", self.compiled_at, self.compiled_at, None, None, True),
                     )
 
 

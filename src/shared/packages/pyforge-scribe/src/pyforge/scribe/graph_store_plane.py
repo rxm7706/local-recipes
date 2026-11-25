@@ -3,6 +3,12 @@
 Embeddings and nearest-neighbor live in ``atlas.duckdb``. DuckDB is imported
 lazily so declaring the CAP-18 entry point does not require duckdb until
 ``around`` constructs a store.
+
+Compile time (Story 35.1, CAP-26): ``compiled_at`` is kept as one reserved row
+of ``scribe_nodes`` (id ``models.COMPILED_AT_ROW_ID``, the stamp in
+``valid_from``); no column and no further relation. The row is never a node:
+``_load`` lifts it out, and it has no ``scribe_embeddings`` row, an ended
+validity and ``stale`` set.
 """
 
 from __future__ import annotations
@@ -16,6 +22,7 @@ from pyforge.core.hooks import PluginError
 
 from pyforge.scribe.embeddings import EMBEDDING_DIM, embed_text
 from pyforge.scribe.graph_store import GRAPHSTORE_HOOK_SPEC
+from pyforge.scribe.models import COMPILED_AT_ROW_ID
 from pyforge.scribe.models import GraphNode as GraphNodeModel
 
 PLANE_GRAPHSTORE_OWNER = "atlas"
@@ -48,6 +55,7 @@ class PlaneGraphStore:
         self.plane_path = path
         self.store_path = Path(store_path)
         self._nodes: dict[str, GraphNodeModel] = {}
+        self.compiled_at: datetime | None = None
         self._write = write
         self._con = self._open_plane(path, write=write)
         if write:
@@ -88,7 +96,11 @@ class PlaneGraphStore:
             "SELECT id, kind, title, text, citation, valid_from, valid_until, superseded_by, stale FROM scribe_nodes"
         ).fetchall()
         loaded: dict[str, GraphNodeModel] = {}
+        self.compiled_at = None
         for row in rows:
+            if row[0] == COMPILED_AT_ROW_ID:
+                self.compiled_at = datetime.fromisoformat(row[5])
+                continue
             until = datetime.fromisoformat(row[6]) if row[6] else None
             loaded[row[0]] = GraphNodeModel(
                 id=row[0],
@@ -105,8 +117,11 @@ class PlaneGraphStore:
 
     def reset(self) -> None:
         self._nodes = {}
+        self.compiled_at = None
 
     def upsert_node(self, node: GraphNodeModel) -> None:
+        if node.id == COMPILED_AT_ROW_ID:
+            raise ValueError(f"node id {node.id!r} is reserved for the store's compile time")
         self._nodes[node.id] = node
 
     def invalidate_edge(self, node_id: str, *, ended_at: datetime, superseded_by: str) -> None:
@@ -164,6 +179,13 @@ class PlaneGraphStore:
             self._con.execute(
                 f"INSERT INTO scribe_embeddings VALUES (?, CAST(? AS FLOAT[{EMBEDDING_DIM}]))",
                 [node.id, list(embedding)],
+            )
+        if self.compiled_at is not None:
+            # The stamp row: no embedding, validity ended at the stamp, stale -- never a servable node.
+            stamp = self.compiled_at.isoformat()
+            self._con.execute(
+                "INSERT INTO scribe_nodes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [COMPILED_AT_ROW_ID, "doc", "", "", "", stamp, stamp, None, True],
             )
 
     def close(self) -> None:

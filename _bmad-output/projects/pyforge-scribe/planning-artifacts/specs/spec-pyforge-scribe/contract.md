@@ -83,7 +83,7 @@ Click's own usage error is 2. A script's `argparse` usage error is also 2; the t
 |---|---|---|
 | `scribe` | `0` | Success; `--version`; a promotion or transcript scan with nothing to write, or declined; `graph compile` skipped because a run is in progress; `catalog bmad-estate --check` current. |
 | `scribe` | `1` | `catalog bmad-estate --check` found drift; each drifted section is named. |
-| `scribe` | `2` | Usage (Click's, mutually exclusive flags, a missing `--type`/`--text`, an unknown `--mode`) or could-not-run (a missing extra, an unreadable source, transcript or manifest, the kill switch off). |
+| `scribe` | `2` | Usage (Click's, mutually exclusive flags, a missing `--type`/`--text`, an unknown `--mode`) or could-not-run (a missing extra, an unreadable source, transcript or manifest, a capture or graph-store lock that timed out, a graph-store owner with no registered plugin, the kill switch off). |
 | `scripts/scribe_pg.py` | `0` | `up` ready (idempotent, an existing server reused); `down` stopped or nothing to stop; `status`, always. |
 | `scripts/scribe_pg.py` | `1` | A binary is missing, the server would not start or become ready, the socket path is unusable, or database or extension setup failed. |
 | `scripts/scribe_pg.py` | `2` | Usage: the verb is not `up`, `down` or `status`. |

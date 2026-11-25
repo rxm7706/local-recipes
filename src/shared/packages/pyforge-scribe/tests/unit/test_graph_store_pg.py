@@ -18,11 +18,13 @@ import threading
 from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
+from types import SimpleNamespace
 from urllib.parse import urlparse, urlunparse
 
 import pytest
 from pyforge.core.hooks import PluginError, PluginRegistry
 
+from pyforge.scribe import graph_store_pg as pg_module
 from pyforge.scribe.graph_store import (
     GRAPHSTORE_HOOK_SPEC,
     PG_GRAPHSTORE_OWNER,
@@ -36,6 +38,7 @@ from pyforge.scribe.graph_store_pg import (
     GraphSchemaMissing,
     PostgresGraphStore,
     PostgresGraphStorePlugin,
+    resolve_graph_dsn,
 )
 from pyforge.scribe.graph_store_plugins import open_graph_store
 from pyforge.scribe.models import GraphNode
@@ -375,3 +378,134 @@ def test_hook_constants_still_name_steward_owner() -> None:
     plugin = PostgresGraphStorePlugin()
     assert plugin.owner == PG_GRAPHSTORE_OWNER == "steward"
     assert plugin.hook_spec == GRAPHSTORE_HOOK_SPEC.name
+
+
+# --- Story 35.1: the DSN keeps its query string ---
+
+
+class _RecordingConnection:
+    def __enter__(self) -> _RecordingConnection:
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        return None
+
+    def execute(self, *_args: object, **_kwargs: object) -> _RecordingConnection:
+        return self
+
+    def fetchone(self) -> tuple[str]:
+        return ("scribe_schema.graph_nodes",)
+
+    def fetchall(self) -> list[tuple[object, ...]]:
+        return []
+
+
+def test_postgres_dsn_keeps_query_string(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Defect 3: `?sslmode=require` reaches `psycopg.connect`, from the context and from the environment."""
+    import psycopg
+    from psycopg import sql
+
+    dsn = "postgres://scribe:secret@db.example:5432/scribe_graph?sslmode=require&connect_timeout=5"
+    seen: list[str] = []
+
+    def _connect(conninfo: str) -> _RecordingConnection:
+        seen.append(conninfo)
+        return _RecordingConnection()
+
+    fake = SimpleNamespace(connect=_connect, errors=psycopg.errors)
+    monkeypatch.setattr(pg_module, "_import_psycopg", lambda: (fake, sql))
+
+    store = PostgresGraphStore(dsn, tmp_path / "ignored")
+    assert store.dsn == dsn
+    assert seen and set(seen) == {dsn}
+
+    assert resolve_graph_dsn({"dsn": dsn}) == dsn
+    monkeypatch.setenv("SCRIBE_GRAPH_DSN", f"  {dsn}  ")
+    assert resolve_graph_dsn() == dsn
+    monkeypatch.delenv("SCRIBE_GRAPH_DSN")
+    monkeypatch.setenv("DATABASE_URL", dsn)
+    assert resolve_graph_dsn() == dsn
+
+
+@pytest.mark.parametrize("env_name", ["SCRIBE_GRAPH_DSN", "DATABASE_URL"])
+def test_open_graph_store_passes_the_dsn_query_string_to_the_driver(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, env_name: str
+) -> None:
+    """Defect 3 on the CLI path: `open_graph_store` hands the environment's DSN to the plugin whole."""
+    import psycopg
+    from psycopg import sql
+
+    dsn = "postgres://scribe:secret@db.example:5432/scribe_graph?sslmode=require&connect_timeout=5"
+    seen: list[str] = []
+
+    def _connect(conninfo: str) -> _RecordingConnection:
+        seen.append(conninfo)
+        return _RecordingConnection()
+
+    fake = SimpleNamespace(connect=_connect, errors=psycopg.errors)
+    monkeypatch.setattr(pg_module, "_import_psycopg", lambda: (fake, sql))
+    monkeypatch.delenv("SCRIBE_GRAPH_DSN", raising=False)
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.setenv(env_name, dsn)
+    registry = PluginRegistry()
+    registry.register(PostgresGraphStorePlugin())
+
+    store = open_graph_store(tmp_path / "graph.json", registry=registry, owner=PG_GRAPHSTORE_OWNER)
+
+    assert isinstance(store, PostgresGraphStore)
+    assert store.dsn == dsn
+    assert seen and set(seen) == {dsn}
+
+
+# --- Story 35.1, defect 1: the compile time is one reserved row of graph_nodes, never a column ---
+
+
+@pytest.mark.postgres
+def test_postgres_store_keeps_compiled_at_across_commit_and_reload(tmp_path: Path, pg_dsn: str) -> None:
+    import psycopg
+
+    from pyforge.scribe.models import COMPILED_AT_ROW_ID
+
+    def _columns() -> list[str]:
+        with psycopg.connect(pg_dsn) as conn:
+            return [
+                row[0]
+                for row in conn.execute(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_schema = %s AND table_name = 'graph_nodes' ORDER BY ordinal_position",
+                    (SCRIBE_SCHEMA,),
+                ).fetchall()
+            ]
+
+    columns_before = _columns()
+    stamp = datetime(2026, 1, 2, 3, 4, 5, 678901, tzinfo=timezone.utc)
+    store = PostgresGraphStore(pg_dsn, tmp_path / "ignored")
+    store.reset()
+    assert store.compiled_at is None
+    store.compiled_at = stamp
+    store.upsert_node(_node("memory:feedback/stamped", text="compiled_at scribe stamp"))
+    store.commit()
+
+    reloaded = PostgresGraphStore(pg_dsn, tmp_path / "ignored")
+    assert reloaded.compiled_at == stamp
+    assert [n.id for n in reloaded.iter_nodes()] == ["memory:feedback/stamped"]
+    assert reloaded.query_by_citation("") == []
+    assert [n.id for n in reloaded.query_similar("compiled_at scribe stamp", limit=64)] == ["memory:feedback/stamped"]
+    with pytest.raises(ValueError, match="reserved"):
+        reloaded.upsert_node(_node(COMPILED_AT_ROW_ID))
+
+    # The stamp is a row of the relation changeset :2 made: no column was added, and the row can never be served.
+    assert _columns() == columns_before
+    with psycopg.connect(pg_dsn) as conn:
+        rows = conn.execute(
+            f"SELECT id, valid_from, valid_until IS NOT NULL, embedding IS NULL, stale "
+            f"FROM {SCRIBE_SCHEMA}.graph_nodes WHERE id LIKE 'scribe:%'"
+        ).fetchall()
+    assert rows == [(COMPILED_AT_ROW_ID, stamp, True, True, True)]
+
+    # A commit with no stamp leaves none behind.
+    reloaded.reset()
+    reloaded.commit()
+    assert PostgresGraphStore(pg_dsn, tmp_path / "ignored").compiled_at is None
+    with psycopg.connect(pg_dsn) as conn:
+        assert conn.execute(f"SELECT count(*) FROM {SCRIBE_SCHEMA}.graph_nodes").fetchone() == (0,)
