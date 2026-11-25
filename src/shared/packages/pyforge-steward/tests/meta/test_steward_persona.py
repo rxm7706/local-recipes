@@ -77,10 +77,10 @@ def validate_transcript(events: list[dict]) -> None:
 
 
 def assert_skill_forbids_freelance(text: str) -> None:
-    allowed = _section(text, "Allowed actions (CAP-16)")
+    allowed = _section(text, "Allowed actions (spec-pyforge-unifying-strategy:CAP-16)")
     forbidden = _section(text, "Forbidden actions")
     if not allowed.strip():
-        raise PersonaContractError("persona skill missing Allowed actions (CAP-16)")
+        raise PersonaContractError("persona skill missing Allowed actions (spec-pyforge-unifying-strategy:CAP-16)")
     if not forbidden.strip():
         raise PersonaContractError("persona skill missing Forbidden actions")
     if re.search(r"(?i)\b(read|write|delete|strreplace)\b tool", allowed):
@@ -191,10 +191,13 @@ def test_live_persona_skill_forbids_filesystem_and_adhoc_http():
 
 def test_permissive_skill_text_fails_contract():
     live = (_persona_dir(_repo_root()) / "SKILL.md").read_text(encoding="utf-8")
-    allowed = "## Allowed actions (CAP-16)\n\n- You may use the Read tool and curl https://example.com\n"
+    allowed = (
+        "## Allowed actions (spec-pyforge-unifying-strategy:CAP-16)\n\n"
+        "- You may use the Read tool and curl https://example.com\n"
+    )
     forbidden = "## Forbidden actions\n\nNothing.\n"
     permissive = re.sub(
-        r"(?ms)^## Allowed actions \(CAP-16\).*?(?=^## Forbidden actions)",
+        r"(?ms)^## Allowed actions \(spec-pyforge-unifying-strategy:CAP-16\).*?(?=^## Forbidden actions)",
         allowed,
         live,
     )
@@ -239,6 +242,69 @@ def test_conda_forge_expert_not_replaced():
     assert (cfe / "SKILL.md").is_file()
     assert not (cfe / "metadata.json").exists()
     assert not (cfe / "active").exists()
+
+
+STATION_PERSONAS = tuple(
+    f"bmad-agent-{name}" for name in ("atlas", "doctor", "herald", "marshal", "mason", "scribe", "steward", "warden")
+)
+# Story 136.4: a station's own PRD and Spec number their own requirements and capabilities, so a persona cites the host's
+# requirements as canopy:FR-n and the strategy's capabilities as spec-pyforge-unifying-strategy:CAP-n.
+QUALIFIED_IDS = {
+    "FR-11": "canopy:",
+    "FR-13": "canopy:",
+    "CAP-15": "spec-pyforge-unifying-strategy:",
+    "CAP-16": "spec-pyforge-unifying-strategy:",
+}
+_CITED_ID = re.compile(r"(?<![A-Za-z0-9-])((?:[a-z][a-z0-9-]*:)?)((?:FR|CAP)-\d+)(?!\d)")
+
+
+def bare_persona_citations(text: str) -> list[str]:
+    """Each citation of one of the four ids that does not carry its qualifier, as written."""
+    return [
+        match.group(0)
+        for match in _CITED_ID.finditer(text)
+        if match.group(2) in QUALIFIED_IDS and match.group(1) != QUALIFIED_IDS[match.group(2)]
+    ]
+
+
+def test_every_station_persona_cites_the_four_ids_in_qualified_form():
+    root = _repo_root()
+    offenders: list[str] = []
+    for persona in STATION_PERSONAS:
+        cited_qualified = False
+        for name in ("SKILL.md", "customize.toml"):
+            path = root / ".claude" / "skills" / persona / name
+            assert path.is_file(), f"missing persona file {path}"
+            text = path.read_text(encoding="utf-8")
+            cited_qualified = cited_qualified or any(
+                f"{prefix}{ident}" in text for ident, prefix in QUALIFIED_IDS.items()
+            )
+            offenders += [f"{persona}/{name}: {cited}" for cited in bare_persona_citations(text)]
+        assert cited_qualified, f"{persona} cites none of the four ids, so the check would pass on an empty read"
+    assert not offenders, f"persona cites an id without its qualifier: {offenders}"
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "Act only through FR-13 grammar.",
+        "POST /stations/steward/mcp (FR-11).",
+        "Consult the CAP-15 content skill.",
+        "## Allowed actions (CAP-16)",
+        "the wrong prefix: pap:FR-13",
+        "the wrong Spec: spec-pyforge-steward:CAP-16",
+    ],
+)
+def test_a_bare_or_wrongly_qualified_id_is_caught(line):
+    assert bare_persona_citations(line)
+
+
+def test_qualified_and_unrelated_ids_are_not_caught():
+    text = (
+        "canopy:FR-13 grammar and canopy:FR-11 MCP; spec-pyforge-unifying-strategy:CAP-15 and "
+        "spec-pyforge-unifying-strategy:CAP-16's set; FR-130, FR-1, CAP-150 and CAP-1 are other ids."
+    )
+    assert bare_persona_citations(text) == []
 
 
 def test_story_does_not_add_pyforge_under_src_platform():

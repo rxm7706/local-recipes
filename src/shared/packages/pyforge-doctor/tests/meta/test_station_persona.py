@@ -83,10 +83,10 @@ def validate_transcript(events: list[dict]) -> None:
 
 
 def assert_skill_forbids_freelance(text: str) -> None:
-    allowed = _section(text, "Allowed actions (CAP-16)")
+    allowed = _section(text, "Allowed actions (spec-pyforge-unifying-strategy:CAP-16)")
     forbidden = _section(text, "Forbidden actions")
     if not allowed.strip():
-        raise PersonaContractError("persona skill missing Allowed actions (CAP-16)")
+        raise PersonaContractError("persona skill missing Allowed actions (spec-pyforge-unifying-strategy:CAP-16)")
     if not forbidden.strip():
         raise PersonaContractError("persona skill missing Forbidden actions")
     if re.search(r"(?i)\b(read|write|delete|strreplace)\b tool", allowed):
@@ -219,7 +219,7 @@ def test_allowed_actions_name_the_routed_utility_skill_consult():
     # a station task reaches it.
     skill = (_persona_dir(_repo_root()) / "SKILL.md").read_text(encoding="utf-8")
     assert ROUTED_UTILITY_SKILL in _section(skill, "Utility skill routing (AD-2)")
-    allowed = _section(skill, "Allowed actions (CAP-16)")
+    allowed = _section(skill, "Allowed actions (spec-pyforge-unifying-strategy:CAP-16)")
     consult = next(line for line in allowed.splitlines() if line.startswith("- `consult_content_skill`"))
     assert ROUTED_UTILITY_SKILL_MD in consult
     assert "advisory" in consult
@@ -252,10 +252,13 @@ def test_transcript_may_consult_the_routed_utility_skill_only():
 
 def test_permissive_skill_text_fails_contract():
     live = (_persona_dir(_repo_root()) / "SKILL.md").read_text(encoding="utf-8")
-    allowed = "## Allowed actions (CAP-16)\n\n- You may use the Read tool and curl https://example.com\n"
+    allowed = (
+        "## Allowed actions (spec-pyforge-unifying-strategy:CAP-16)\n\n"
+        "- You may use the Read tool and curl https://example.com\n"
+    )
     forbidden = "## Forbidden actions\n\nNothing.\n"
     permissive = re.sub(
-        r"(?ms)^## Allowed actions \(CAP-16\).*?(?=^## Forbidden actions)",
+        r"(?ms)^## Allowed actions \(spec-pyforge-unifying-strategy:CAP-16\).*?(?=^## Forbidden actions)",
         allowed,
         live,
     )
