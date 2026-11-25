@@ -4126,7 +4126,7 @@
    "evals/review-catches-planted-defect/scoring-policy.json": "18b8ff32419ccef507e68c659ed789fca0461102",
    "evals/review-catches-planted-defect/test_driver.py": "385da3656b300393ec549ff40377bb1df25540b0",
    "pixi.lock": "7c8d5f9bc9dd6bf7a4b3f3cb2cc3761548a490b1",
-   "pixi.toml": "b3b8ce831d35e1a1ed7cdde45a3d0a66f6582660",
+   "pixi.toml": "1a2d766074f760cb8983893377831a46a0a88bb9",
    "recipes/bmad-eval-quality/LICENSE": "55625f964b7ddb4580e8e3612d553a6cada606f7",
    "recipes/bmad-eval-quality/build.bat": "79dcc2ecf4d78df61c2799cc5fb9be9fb988eae8",
    "recipes/bmad-eval-quality/build.sh": "aa8925aaf5b98492d41cf6a5389f9ee150dce298",
@@ -4516,7 +4516,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "092a8976cd8ce85557d9590d8621eee88f66902a"
+  "memlog": "8f6d703d5b40d93c4349c684e7f7a4c787b583ff"
  },
  "pyforge-steward/spec-pyforge-unifying-strategy": {
   "files": {
