@@ -1,4 +1,4 @@
-# Estate BMAD catalog — the declaration (Story 60.1, spec-self-hosted-bmad-marketplace CAP-1).
+# Estate BMAD catalog — the declaration (Story 60.1, spec-pyforge-steward:CAP-117).
 #
 # Git is the edit store: this directory, tracked in rxm7706/local-recipes, is
 # where listings are edited. Backends and sources are DECLARED here and BOUND
@@ -66,6 +66,6 @@ sources:
     path: docs/foundry/frames    # REPO-ROOT-relative: the Frames live outside this edit store
   claude-skill-registry:
     # The companion table's v1 default is "empty slot": `skillsctl` (SKU B,
-    # spec CAP-5 / CAP-121) is the later binding; nothing operates it in v1.
+    # spec-pyforge-steward:CAP-121) is the later binding; nothing operates it in v1.
     plugin: null
     state: "off"

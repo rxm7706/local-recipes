@@ -2,7 +2,7 @@
 title: '136.1: Steward''s last two modules derive the station-packages directory from the root layout'
 type: 'fix'
 created: '2026-11-25'
-status: 'ready-for-dev'
+status: 'in-review'
 story: 136-1-steward-s-last-two-modules-derive-the-station-packages-directory-from-the-root-layout
 spec: spec-pyforge-steward
 difficulty: 'easy'
@@ -89,3 +89,8 @@ Ledger key: `136-1-steward-s-last-two-modules-derive-the-station-packages-direct
 ## Spec Change Log
 
 - 2026-11-25: minted from the station Dream's 2026-11-25 entry (the rows a lapsed blocker held close) and the operator's ruling of the same date. Not implemented.
+- 2026-11-25: reproduced `DW-steward-123-2-2` on the unchanged tree: AC1's grep exited 0, naming `five_tier.py:70` (`return repo_root / "src" / "shared" / "packages"`) and `preflight_suite_reduction.py:194` (`pkg = repo_root / "src" / "shared" / "packages" / f"pyforge-{station}"`), and `test_portability.py` held both in `LAYOUT_EXCEPTIONS` under that id.
+- 2026-11-25: implemented: both modules import `STATION_PACKAGES_DIR` from `.root_layout` and join `repo_root / STATION_PACKAGES_DIR` (the same path as before; no returned path changes); `LAYOUT_EXCEPTIONS` in `tests/meta/test_portability.py` is `{}` and its comment says why. No flag, capability or AD added.
+- 2026-11-25: AC1 exit 1 (no line matches). AC2 exit 0 (37 passed). `lint-types`: ruff, ruff-format and mypy `ok` for pyforge-steward; the task as a whole exits 1 on `pyforge-atlas` mypy (`src/pyforge/atlas/observability.py:419`, a file another story is editing in this worktree). Touched modules (`test_preflight_suite_reduction.py`, `test_five_tier_check.py`, `test_preflight_concurrency.py`, `test_preflight_inherited_pytest_addopts.py`) pass; `test_preflight_concurrency.py`'s two-second timing test failed once under load (5.3 s) and passed on the re-run. `pyforge-steward-test` exit 0 (2161 passed, 14 skipped; 33 passed).
+- 2026-11-25: left for the session lead: the `spec-pyforge-steward` SPEC marker and memlog line for CAP-182, the `DW-steward-123-2-2` row, the capability ledger and the scoped stamps. Noticed and not changed (outside this story's surface): `root_layout.py`'s module docstring, lines 6 to 8, still says the two modules spell the directory out segment by segment under `DW-steward-123-2-2`; that sentence is now stale.
+- 2026-11-25: session lead: `root_layout.py`'s module docstring, which still said the two modules spell the path out under `DW-steward-123-2-2`, now says the test excepts no module (a stale line in the file the story's capability names; `test_portability.py` exit 0).

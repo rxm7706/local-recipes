@@ -1,4 +1,4 @@
-# Build League measure catalog config (Story 62.2, spec-build-league-scorecard CAP-2).
+# Build League measure catalog config (Story 62.2, spec-pyforge-steward:CAP-45).
 # Git is the edit store — flip state here; companion prose lives in measure-catalog.md.
 
 catalog:

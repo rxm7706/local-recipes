@@ -39,14 +39,11 @@ STEWARD_PACKAGE: tuple[str, ...] = ("pyforge", "steward")
 #: 2026-11-10), so the exception the first plan named no longer exists.
 CROSS_STATION_EXCEPTIONS: Mapping[str, str] = {}
 #: Steward modules that still spell the station-packages directory out segment by segment, each with
-#: the deferred-work id that tracks deriving it from ``root_layout.STATION_PACKAGES_DIR``. Neither file
-#: was in Story 123.2's files_owned in the cutover-readiness build (round-1 review), so the build could
-#: not move them; an entry admits segment runs only, never a whole-string literal, and the test fails
-#: when an entry no longer applies.
-LAYOUT_EXCEPTIONS: Mapping[str, str] = {
-    "five_tier.py": "DW-steward-123-2-2",
-    "preflight_suite_reduction.py": "DW-steward-123-2-2",
-}
+#: the deferred-work id that tracks deriving it from ``root_layout.STATION_PACKAGES_DIR``. Empty:
+#: Story 136.1 moved ``five_tier.py`` and ``preflight_suite_reduction.py``, the two Story 123.2 left.
+#: An entry admits segment runs only, never a whole-string literal, and the test fails when an entry
+#: no longer applies.
+LAYOUT_EXCEPTIONS: Mapping[str, str] = {}
 
 _DEFERRED_WORK_ID = re.compile(r"^DW-[A-Za-z0-9.-]+$")
 _IMPORT_CALLS = frozenset({"import_module", "__import__"})

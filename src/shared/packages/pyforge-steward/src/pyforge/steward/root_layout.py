@@ -3,9 +3,8 @@
 The one steward module that states where station packages live in this checkout and which
 repository this estate is. Every other steward module derives from it, and
 ``tests/meta/test_portability.py`` reds a second module that names either one, so someone
-moving steward to another tree changes this file alone. Two modules, ``five_tier.py`` and
-``preflight_suite_reduction.py``, still spell the station-packages directory out segment by
-segment; the test names them under DW-steward-123-2-2 and reds once either no longer does.
+moving steward to another tree changes this file alone (Story 136.1 moved the last two,
+``five_tier.py`` and ``preflight_suite_reduction.py``; the test excepts no module).
 
 The four identity constants are estate-bound: they name this checkout, not the root of record,
 and none of them follows a flip of ``pyforge.cutover_root`` (operator ruling 2026-11-10 on
