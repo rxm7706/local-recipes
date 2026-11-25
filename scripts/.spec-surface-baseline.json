@@ -569,7 +569,7 @@
    "docs/how-to/upgrade-bmad-core.md": "0e9fb43b356fe55ae43691aabca612110a621abb",
    "docs/how-to/use-marshal-in-an-air-gapped-site.md": "8be1fbe8ad58d3a7bd73726039f552b1eca06020",
    "docs/how-to/use-steward-duties-that-need-operator-consent.md": "ec0eb4e3d42e7196a78fc116b9b9d43e87ff6177",
-   "docs/map.yaml": "2c1cdaa3926cc92da1cb5f1fccaa310ad38706d0",
+   "docs/map.yaml": "1279c507f91962a9b05ee00f4abde7cd11765159",
    "docs/tutorials/README.md": "86e06be35f14e42696e998bb9cc113b5a4da47fb",
    "docs/tutorials/getting-started.md": "f629febe3d429fab8d8d14e9abbfd35f411b2815",
    "docs/tutorials/local-platform-development.md": "ea8352fd1cd6b82ee8e74f47ccfdef3f052dbe96",
@@ -824,7 +824,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "feb8d88ee201e104c9e14a92fe3812ecc2f954c1"
+  "memlog": "0ba31d9fd2e8234a8b52d5e9f96bbba5387f5e3b"
  },
  "pyforge-herald/spec-pyforge-herald": {
   "files": {
@@ -2005,7 +2005,7 @@
  },
  "pyforge-marshal/spec-pyforge-core": {
   "files": {
-   "pixi.toml": "b3b8ce831d35e1a1ed7cdde45a3d0a66f6582660",
+   "pixi.toml": "1a2d766074f760cb8983893377831a46a0a88bb9",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__init__.py": "f634eebb7d280de9667527361cb160b786242fd0",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__main__.py": "66be577717f43a35185857ca7a964300c68f431e",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/a2a/__init__.py": "dd387bcc5aaee5fffc97b0aae8c59fae9a18b0da",
@@ -2711,7 +2711,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "f8a9217315a9bfa65f53f343546adc30dd9be2f4"
+  "memlog": "ad2c379b3e3f6515904608583136a3bb3f154c40"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -3971,7 +3971,7 @@
    ".gemini/settings.json": "0e37d00cae3c091c91cd7a53792762eb300fa527",
    ".github/copilot-instructions.md": "9b6735392a0561c1b34d4c8c025998ff179bb71f",
    ".vscode/settings.json": "b489a6993f70a8edcb16b3f664602c758f96e357",
-   "AGENTS.md": "2a084670ef5970b6ecb30a08debaf40dafaca104",
+   "AGENTS.md": "0ad34c96c3ce383da9b1a27455b25305f46ab909",
    "CLAUDE.md": "b33a436429dd7ee6fed499526ac99a5e677cc02d",
    "GEMINI.md": "c4766a51e9cadecf25618732601e4374c27bf1b3",
    "docs/reference/agent-instruction-notes.md": "2d4bd247248bb6d2b008c488f496cb1c579ab33e",
@@ -4013,7 +4013,7 @@
    "src/shared/packages/pyforge-scribe/tests/meta/test_cutover_wording.py": "7286b1b03b6c549a5e067eccba2634fcd6d9c84b",
    "src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py": "7e75170c3b51e6d432a3beba07b3de48ed5b7410",
    "src/shared/packages/pyforge-scribe/tests/meta/test_guild_env_membership.py": "fca1e21af1032f7a7ef6123b7fefe88c14757921",
-   "src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py": "611dd3d90e83ff25a7bd4d8ccfa6ad2bcf710392",
+   "src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py": "24f678f3262b46518cad5197dc9fcaee0cdd73d4",
    "src/shared/packages/pyforge-scribe/tests/meta/test_live_tree_split.py": "85745be5b517b618baab52e6cc9424ae800f5207",
    "src/shared/packages/pyforge-scribe/tests/meta/test_package_metadata_matches_estate.py": "99d5831522a1787e96d4b02bab69523da59f0ce7",
    "src/shared/packages/pyforge-scribe/tests/meta/test_public_contract.py": "3e6cc74968479ebbdd0fd51c17fca2db7538d0c2",
@@ -4043,7 +4043,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "bea1af084921168b856b138ac64c5affe18c616d"
+  "memlog": "e28dde7335ec923f00306fccf9fd37db6339a6c5"
  },
  "pyforge-steward/spec-foundry-capability-ledger": {
   "files": {},
@@ -4549,7 +4549,11 @@
    ".claude/skills/pyforge-atlas/0.1.0/pyforge-atlas/context-snippet.md": "4dbc60ee019f66ad29ff2e1bcca077d9878019c8",
    ".claude/skills/pyforge-atlas/0.1.0/pyforge-atlas/metadata.json": "5a71f02b4bb2fcf897100ad86dd478edddd44d4c",
    ".claude/skills/pyforge-atlas/0.1.0/pyforge-atlas/provenance-map.json": "c2aa1546aecb09106e14a6dc42768581e0112b82",
-   ".claude/skills/pyforge-atlas/skill-brief.yaml": "0a628ce3a2ad1b24909914d3fbf3ac33e2b9ebef",
+   ".claude/skills/pyforge-atlas/0.1.1/pyforge-atlas/SKILL.md": "2c37c26c4d136c8a80997e9d794be367a3cdcbae",
+   ".claude/skills/pyforge-atlas/0.1.1/pyforge-atlas/context-snippet.md": "ef2a801521c5545edbc2cc885e93773c64e29a0f",
+   ".claude/skills/pyforge-atlas/0.1.1/pyforge-atlas/metadata.json": "1b203fdb1e04383388cbaf924b12dd4bf9bca3cd",
+   ".claude/skills/pyforge-atlas/0.1.1/pyforge-atlas/provenance-map.json": "f8d13cd69b5c2f8afe015fc0ce4341d642b3ed03",
+   ".claude/skills/pyforge-atlas/skill-brief.yaml": "4d4dbf64a4a41ec225cd15078766c3bf5b960e3a",
    ".claude/skills/pyforge-doctor/0.1.0/pyforge-doctor/SKILL.md": "b4adb06ac39d8609fb765903cd559d37bdae3778",
    ".claude/skills/pyforge-doctor/0.1.0/pyforge-doctor/context-snippet.md": "fcc0ed81a6e53f0524c165653454dba4be84c694",
    ".claude/skills/pyforge-doctor/0.1.0/pyforge-doctor/metadata.json": "3abc7d5fc03eb023a49482f99e0751c0e8e0be6a",
@@ -4562,7 +4566,11 @@
    ".claude/skills/pyforge-doctor/0.1.2/pyforge-doctor/context-snippet.md": "eec8632b23d741c02186df365b23405d55c687c3",
    ".claude/skills/pyforge-doctor/0.1.2/pyforge-doctor/metadata.json": "89548d7433bbe1b2a466daa2e6b5e47a0f45323e",
    ".claude/skills/pyforge-doctor/0.1.2/pyforge-doctor/provenance-map.json": "8cf3fcc9e53f53a15e32d578fbefe906f51d9a2c",
-   ".claude/skills/pyforge-doctor/skill-brief.yaml": "9a1daba6d8b4ccd3b56269faa4d124777a75acf7",
+   ".claude/skills/pyforge-doctor/0.1.3/pyforge-doctor/SKILL.md": "6e14f8e27332b0f0aefcdca34617481bcb9ef808",
+   ".claude/skills/pyforge-doctor/0.1.3/pyforge-doctor/context-snippet.md": "893d056cf4d3c193490b520a1344681cebaa2df9",
+   ".claude/skills/pyforge-doctor/0.1.3/pyforge-doctor/metadata.json": "ebfd33ad21e923a494afaab82fbd0b89f2df7ef4",
+   ".claude/skills/pyforge-doctor/0.1.3/pyforge-doctor/provenance-map.json": "947fe06ba53192eb277f46b205eb216c92a3dc37",
+   ".claude/skills/pyforge-doctor/skill-brief.yaml": "f804508d4458ea3f0636ecd94b8b2aee5e5c5922",
    ".claude/skills/pyforge-herald/0.1.0/pyforge-herald/SKILL.md": "3a3bb8d8924cb48139a627f70564161ea2da17aa",
    ".claude/skills/pyforge-herald/0.1.0/pyforge-herald/context-snippet.md": "a25457b53d2b04886fbd6d9be3862a8fd602e633",
    ".claude/skills/pyforge-herald/0.1.0/pyforge-herald/metadata.json": "a8e2c46a2ecbdb80bffa24096b243b9fbb2d100d",
@@ -4575,7 +4583,11 @@
    ".claude/skills/pyforge-herald/0.1.2/pyforge-herald/context-snippet.md": "3940af0969b0667dcb7f6404b428add7ba8ff551",
    ".claude/skills/pyforge-herald/0.1.2/pyforge-herald/metadata.json": "ca878c5ee86245119cd0417aaaa5faf307b76c1b",
    ".claude/skills/pyforge-herald/0.1.2/pyforge-herald/provenance-map.json": "c18a5a952a9a06c4ed76cbee31834bb4f669671b",
-   ".claude/skills/pyforge-herald/skill-brief.yaml": "9553d9e36aa73917134d4a864996522c9ad78ce1",
+   ".claude/skills/pyforge-herald/0.1.3/pyforge-herald/SKILL.md": "f30d9daf122fa6c199033992dee1078153d24555",
+   ".claude/skills/pyforge-herald/0.1.3/pyforge-herald/context-snippet.md": "347c56eacdb3240e8af0a73e602ae395db9d3187",
+   ".claude/skills/pyforge-herald/0.1.3/pyforge-herald/metadata.json": "8d48fb6998fa75a3e315deaea19c9dfe9c0711d2",
+   ".claude/skills/pyforge-herald/0.1.3/pyforge-herald/provenance-map.json": "d0d085defa17d31999f9e8e95d64c9e5d2ba5a66",
+   ".claude/skills/pyforge-herald/skill-brief.yaml": "83c8e3d9bc63d5f2b97995d7cc17ee59939714ac",
    ".claude/skills/pyforge-marshal/0.1.0/pyforge-marshal/SKILL.md": "c4f6eb927576f80f67a0abbb90c2fcbfd114197b",
    ".claude/skills/pyforge-marshal/0.1.0/pyforge-marshal/context-snippet.md": "55aaecc12cd88805cdb88aab0162a4df61197467",
    ".claude/skills/pyforge-marshal/0.1.0/pyforge-marshal/metadata.json": "240934c31b707ba3f356fdceb37bd00ebf4bff4e",
@@ -4584,7 +4596,11 @@
    ".claude/skills/pyforge-marshal/0.1.1/pyforge-marshal/context-snippet.md": "dc494a6eaafbb429351b3da6ce867f23274806ad",
    ".claude/skills/pyforge-marshal/0.1.1/pyforge-marshal/metadata.json": "ae752d3b1bb9f18c24d6f32b98c3f267020ddffe",
    ".claude/skills/pyforge-marshal/0.1.1/pyforge-marshal/provenance-map.json": "2690b916fa32061c6ff252e45b32cd2e893cea77",
-   ".claude/skills/pyforge-marshal/skill-brief.yaml": "e19591de1fe639aacfd7653d8ec9e8d15cbeda0c",
+   ".claude/skills/pyforge-marshal/0.1.2/pyforge-marshal/SKILL.md": "d4a81c64fc2b6109c064c6e0fc4cfdd22cc77e82",
+   ".claude/skills/pyforge-marshal/0.1.2/pyforge-marshal/context-snippet.md": "654822686f8ffe0cebc2ea4156d8bf350af376a0",
+   ".claude/skills/pyforge-marshal/0.1.2/pyforge-marshal/metadata.json": "3489e12bde799aa36a6c87f452569c2e0427466c",
+   ".claude/skills/pyforge-marshal/0.1.2/pyforge-marshal/provenance-map.json": "bce07335e484844455ebe9f059827d7d0b65c580",
+   ".claude/skills/pyforge-marshal/skill-brief.yaml": "3c152b04c963d73c840f108319b0287314693dc7",
    ".claude/skills/pyforge-mason/0.1.0/pyforge-mason/SKILL.md": "a0602c6316d06b7de67cfee1b0735816aa197f09",
    ".claude/skills/pyforge-mason/0.1.0/pyforge-mason/context-snippet.md": "30247afe4ef812d5ed225d361b6b470fd2404de8",
    ".claude/skills/pyforge-mason/0.1.0/pyforge-mason/metadata.json": "5e4544e5e132a1f8d27695bdf6303120e87082fc",
@@ -4602,7 +4618,11 @@
    ".claude/skills/pyforge-scribe/0.1.1/pyforge-scribe/context-snippet.md": "ea40e4546232cadc09a3ecacd39c5cc28af37f5f",
    ".claude/skills/pyforge-scribe/0.1.1/pyforge-scribe/metadata.json": "82b9ea4ad29b5473669e999a1109f52d7aa836b3",
    ".claude/skills/pyforge-scribe/0.1.1/pyforge-scribe/provenance-map.json": "e7e2be92b535159ee223f1343e06b24d3f268b21",
-   ".claude/skills/pyforge-scribe/skill-brief.yaml": "0c8acd1bc6fcbd4fdf01938d7730d144a629c07b",
+   ".claude/skills/pyforge-scribe/0.1.2/pyforge-scribe/SKILL.md": "7a9176e537e2e60099c1fd9e351f5213ad150422",
+   ".claude/skills/pyforge-scribe/0.1.2/pyforge-scribe/context-snippet.md": "836b2b9ab714a742108c8669b4035c8df6388370",
+   ".claude/skills/pyforge-scribe/0.1.2/pyforge-scribe/metadata.json": "4a73bf43b592f793bee2534d8fa538029993a9d7",
+   ".claude/skills/pyforge-scribe/0.1.2/pyforge-scribe/provenance-map.json": "ecfb65e58c04fe4ee55e3eaa68547bfaa94bffbd",
+   ".claude/skills/pyforge-scribe/skill-brief.yaml": "9bdfa6033e2fbcbe67138c89032391c1e3a07ead",
    ".claude/skills/pyforge-steward/0.1.0/pyforge-steward/SKILL.md": "817d848a74bec89679e91244373686ea36b17f0c",
    ".claude/skills/pyforge-steward/0.1.0/pyforge-steward/context-snippet.md": "3140f36ec113839cc3d1c005bbe2923adce04370",
    ".claude/skills/pyforge-steward/0.1.0/pyforge-steward/metadata.json": "de4d3755ed5b0ada201de7f9a471cc154bfda251",
@@ -4620,9 +4640,13 @@
    ".claude/skills/pyforge-warden/0.1.0/pyforge-warden/context-snippet.md": "7da85b7ca6f0bf137eae30ae9013a61968d24dfc",
    ".claude/skills/pyforge-warden/0.1.0/pyforge-warden/metadata.json": "e9f23ef24899ce43fd2f2ec25d05a7b2376c4589",
    ".claude/skills/pyforge-warden/0.1.0/pyforge-warden/provenance-map.json": "a7ede7244e70c3922bf9c5bc90bfd5bed8d6c0f2",
-   ".claude/skills/pyforge-warden/skill-brief.yaml": "501bf0da6d474de985f8907e31191d45bdf3ca46",
+   ".claude/skills/pyforge-warden/0.1.1/pyforge-warden/SKILL.md": "a9e8b5dd57ae78eeaeb4abbb3620eddefdbd9f8b",
+   ".claude/skills/pyforge-warden/0.1.1/pyforge-warden/context-snippet.md": "1cf8d16bb9d59191674cea79e9dd775d5f63843c",
+   ".claude/skills/pyforge-warden/0.1.1/pyforge-warden/metadata.json": "95196f9934fec0fc66fc5a611571aa8a7b0bfaf2",
+   ".claude/skills/pyforge-warden/0.1.1/pyforge-warden/provenance-map.json": "583918363ff2723d63d19882d093c691509b7680",
+   ".claude/skills/pyforge-warden/skill-brief.yaml": "8e54ad4d8565f1e5bc2ab3b558c15f36dbd4201d",
    "environment.yaml": "f99dc805fb754121638f8352c7061e0ef49a7dfb",
-   "pixi.toml": "b3b8ce831d35e1a1ed7cdde45a3d0a66f6582660",
+   "pixi.toml": "1a2d766074f760cb8983893377831a46a0a88bb9",
    "recipes/liquibase/build.sh": "30c0bd688cabffd2b362cb67afaeeb9095e706be",
    "recipes/liquibase/conda-forge.yml": "7f3b86d5026062d0aa432ea9bd0a87747015c57d",
    "recipes/liquibase/liquibase": "525ed696037f8cd6cfdaf9df3bd465c9746ba916",
@@ -5767,7 +5791,7 @@
    "src/shared/packages/pyforge-scribe/tests/meta/test_cutover_wording.py": "7286b1b03b6c549a5e067eccba2634fcd6d9c84b",
    "src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py": "7e75170c3b51e6d432a3beba07b3de48ed5b7410",
    "src/shared/packages/pyforge-scribe/tests/meta/test_guild_env_membership.py": "fca1e21af1032f7a7ef6123b7fefe88c14757921",
-   "src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py": "611dd3d90e83ff25a7bd4d8ccfa6ad2bcf710392",
+   "src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py": "24f678f3262b46518cad5197dc9fcaee0cdd73d4",
    "src/shared/packages/pyforge-scribe/tests/meta/test_live_tree_split.py": "85745be5b517b618baab52e6cc9424ae800f5207",
    "src/shared/packages/pyforge-scribe/tests/meta/test_package_metadata_matches_estate.py": "99d5831522a1787e96d4b02bab69523da59f0ce7",
    "src/shared/packages/pyforge-scribe/tests/meta/test_public_contract.py": "3e6cc74968479ebbdd0fd51c17fca2db7538d0c2",
@@ -5797,7 +5821,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "f18735bf45f9f2c8821531702a83a62a0bcf8994"
+  "memlog": "249eb14fcc96f927de3ec36300bb2f085761b30f"
  },
  "pyforge-steward/spec-python-foundry-cutover": {
   "files": {},
