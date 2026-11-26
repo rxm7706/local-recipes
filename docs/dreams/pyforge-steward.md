@@ -8430,3 +8430,16 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   line, whose module entry points keep `--json` alone) are not aligned and the test names them with the reason; a twin is
   matched only when spelled in full, so no abbreviation that resolved before turns ambiguous; the compiled station skills are not edited. No flag:
   an added spelling of an option the verb already has. Owner `spec-pyforge-steward`.
+- **2026-11-26 (the preflight runs a suite whole when its gate only judges) — Found and ruled:** the full preflight of
+  the JSON-output change went red twice on mason's coverage gate: `pyforge.mason.cli` read 34.3% where the suite, run
+  whole, gives 99.2%. Since the gates took `--report` they judge the union of the reports the station's own test
+  lanes wrote and run no test themselves; the preflight's suite reduction still assumed the gate runs the unit
+  tests, reduced mason's package half to the complement of that run, which selects nothing, and the empty lane wrote
+  the report the gate then judged. It bites when a touched module's coverage comes from the package half (a module
+  the live half covers well passes by accident). **Ruled** (operator ruling of 2026-11-26, "go with your
+  recommendations, start in the suggested order": the change it blocks is that work, and a broken window in the
+  tooling it runs through is fixed now, as its own Story). **For steward:** this entry binds `spec-pyforge-steward`
+  (the pr-preflight, CAP-159, realized with no text change) and decomposes as Epic 145, one story: a suite lane is
+  not reduced when its gate's command carries `--report`; the journal says why. Every station's gate carries it
+  today, and a test says so, so the reduction applies again to a gate that stops. **Constraints:** no flag (a fix);
+  the reduction code stays for a gate that runs its own tests. Owner `spec-pyforge-steward`.

@@ -401,6 +401,19 @@ def derive_suite_lane_override(
     )
 
 
+def gate_judges_reports(gate_cmd: str) -> bool:
+    """Whether a coverage-gate command carries ``--report`` (Story 145.1).
+
+    With ``--report`` the gate judges the union of the reports the station's own test lanes wrote and never runs a
+    test itself (Stories 117.2 and 117.4). The suite lane must then run whole: a reduced lane selects nothing the gate
+    was assumed to cover, still writes the report file, and the gate judges an empty report."""
+    try:
+        tokens = shlex.split(gate_cmd)
+    except ValueError:
+        return False
+    return any(token == "--report" or token.startswith("--report=") for token in tokens)
+
+
 def reduction_skip_journal(reason: str, **extra: Any) -> dict[str, Any]:
     return {
         "suite_reduction": False,
@@ -433,6 +446,9 @@ def build_suite_lane_overrides(
         gate_cmd = _task_cmd(pixi_data, gate_task)
         if not gate_cmd:
             overrides[task] = reduction_skip_journal("missing coverage gate task cmd")
+            continue
+        if gate_judges_reports(gate_cmd):
+            overrides[task] = reduction_skip_journal("coverage gate judges the suite's own reports (--report)")
             continue
         if "&&" in (_task_cmd(pixi_data, task) or ""):
             overrides[task] = reduction_skip_journal("station test task is not a single pytest invocation")

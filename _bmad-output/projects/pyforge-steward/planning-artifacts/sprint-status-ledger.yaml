@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 808
+# stories: 811
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -203,6 +203,7 @@ development_status:
   143-1-steward-s-source-cites-other-spines-decisions-qualified: done
   143-2-where-a-station-s-mcp-code-lives-is-one-rule-and-where-each-station-keeps-state-is-one-page: done
   144-1-every-station-verb-that-prints-json-accepts-both-spellings: done
+  145-1-the-preflight-runs-a-suite-whole-when-its-coverage-gate-only-judges-reports: done
   15-1-one-command-reports-the-whole-pipelines-truth: done
   15-2-one-command-advances-a-stale-package-end-to-end: done
   15-3-five-modules-wire-through-the-provisioning-verb: done
@@ -636,6 +637,8 @@ development_status:
   epic-143-retrospective: optional
   epic-144: done
   epic-144-retrospective: optional
+  epic-145: done
+  epic-145-retrospective: optional
   epic-15: done
   epic-15-retrospective: optional
   epic-16: done

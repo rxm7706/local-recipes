@@ -9736,6 +9736,29 @@ So that I do not have to know which spelling a station chose.
 **And** every invocation that parsed before parses the same way, and steward's `contract.md` lists the added spelling on each verb
 **Status:** done
 
+## Epic 145: The preflight runs a suite whole when its coverage gate only judges reports (spec-pyforge-steward CAP-159)
+
+Minted 2026-11-26 from the station Dream's entry of the same date. Since Stories 117.2 and 117.4 a coverage gate with `--report` judges the reports the station's test lanes wrote and runs no test; the suite reduction of Story 71.4 still assumed the gate runs the unit tests, so a reduced lane selected nothing and wrote the empty report the gate judged.
+**HARD boundaries:**
+- A fix: no flag, and no capability text moves.
+- The reduction stays for a gate that runs its own tests.
+
+### Story 145.1: The preflight runs a suite whole when its coverage gate only judges reports
+
+As someone running `pr-preflight` on a change that touches a station module,
+I want the station's suite lane to run whole when its coverage gate only judges reports,
+So that the gate judges the coverage the suite really gives, not an empty report.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-159 (the pr-preflight; realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: flagging it keeps the false red reachable)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_suite_reduction.py`, `src/shared/packages/pyforge-steward/tests/unit/test_preflight_suite_reduction.py`
+**Spec:** `planning-artifacts/specs/spec-145-1-the-preflight-runs-a-suite-whole-when-its-coverage-gate-only-judges-reports.md`
+**Given** every station's coverage gate carries `--report` and judges the suite's own reports, while the preflight reduces the suite lane as if the gate ran the unit tests
+**When** `build_suite_lane_overrides` meets a gate whose command carries `--report`
+**Then** the suite lane is not reduced and its journal names the reason, before any gate plan is asked for; a gate without `--report` is reduced as before; and a test fails when a station gate in `pixi.toml` stops carrying `--report`
+**And** mason's coverage gate reads `pyforge.mason.cli` from the whole suite in a full preflight of a change that touches it
+**Status:** done
+
 ## Currency reconciliation — 2026-11-26 (CAP-184 amended)
 
 *Chain-currency cascade (arch -> epics), CAP-184 amended.* 2026-11-26: Epic 142 and Story 142.1 are minted under `spec-pyforge-steward` CAP-184 as amended (FR-58); no AD moves. The keys `142-1`, `epic-142` and `epic-142-retrospective` go through the Tier-3 feed and `sprint-ledger-sync`. **Content changed:** Epic 142, this section and `updated:`.
