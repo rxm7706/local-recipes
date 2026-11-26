@@ -5,7 +5,7 @@ sources:
   - docs/explanation/enterprise-deployment.md
   - docs/reference/pixi-config-jfrog.example.toml
   - .scripts/build_steps.sh
-verified: 2026-11-25
+verified: 2026-11-26
 ---
 
 # Air-gapped mirror setup
