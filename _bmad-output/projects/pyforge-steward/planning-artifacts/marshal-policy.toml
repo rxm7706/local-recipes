@@ -1901,6 +1901,15 @@ verify_commands = [
   "docs/dreams/pyforge-steward.md",
   "scripts/.spec-surface-baseline.json",
 ]
+"139" = [  # The session hook reads the commands inside a substitution (spec-pyforge-steward CAP-5), added 2026-11-25
+  ".claude/hooks/pre-shell.py",
+  "_bmad-output/projects/pyforge-*/planning-artifacts/specs/spec-pyforge-*/.memlog.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml",
+  "docs/dreams/pyforge-steward.md",
+  "scripts/.spec-surface-baseline.json",
+  "tests/scripts/test_pre_shell_hook.py",
+]
 
 # dispatch (Story 85.1 / CAP-286 knobs), added 2026-10-13: steward's verify-fix turn gets 45 minutes, not the
 # 15-minute default. pyforge-steward-test alone runs ~4 minutes (2482 tests), so a fix turn that must re-run it two or

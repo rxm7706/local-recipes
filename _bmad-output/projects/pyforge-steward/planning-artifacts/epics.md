@@ -9574,3 +9574,27 @@ So that no Story line in steward's `epics.md` cites a capability that no live Sp
 **Then** Story 59.2 cites spec-pyforge-steward CAP-132, Story 111.1 cites `spec-foundry-regenerate-not-fold CAP-5` (B's starting five-fields; the memlog's `CAP-7` entries are spec-one-chain-per-station CAP-7's, which the line already cites), and Story 41.4 cites spec-pyforge-unifying-strategy's 2026-09-02 red-team Constraint that names it (`rediss://` verifies the chain) beside pap:CAP-6, with no bare id left on the three lines
 **And** CAP-132's heading and id do not change, the capability ledger's row still matches it, and the row reads resolved
 **Status:** done
+
+## Epic 139: The session hook reads the commands inside a substitution (spec-pyforge-steward CAP-5)
+
+Minted 2026-11-25 from the station Dream's entry of the same date (the session hook reads the commands inside a substitution) on the operator rulings of 2026-11-25: "Fix it as a Story" (asked whether the hook's gap inside command substitution should be fixed) and "do the hook-gap tightening story". The analysis of `DW-steward-134-2-1`'s hook patch found, on `main` and apart from that patch, that the hook never reads inside a command substitution.
+**HARD boundaries:**
+- The change only tightens: no form the hook denies today is allowed after it, and `session_denials` does not change.
+- A here-document body is text, not a command line, and is not read for substitutions.
+- No flag: a gated safety hook is a silent pass.
+
+### Story 139.1: The session hook reads the commands inside a substitution
+
+As an operator who relies on the session hook,
+I want a command written inside `$(...)`, backticks or a process substitution refused as if it were written plainly,
+So that wrapping a denied command in a substitution does not get it past the hook.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-5 (the closed `session_denials` list: each denial refuses every form of the command its reason names; realized, no text change) and CAP-165 (the protected refs; realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: the denials refuse a form they missed, and a gated safety hook is a silent pass)
+**Surface:** `.claude/hooks/pre-shell.py`, `tests/scripts/test_pre_shell_hook.py`
+**Spec:** `planning-artifacts/specs/spec-139-1-the-session-hook-reads-the-commands-inside-a-substitution.md`
+**Given** the session hook splits a command line on `&&`, `||`, `;`, `|` and newlines and reads a `bash -c` payload, but never the command inside `$(...)`, backticks, `<(...)` or `>(...)`, so `cat $(bash scripts/submit_pr.sh)`, its backtick form and `x=$(pixi add numpy)` pass a hook that denies the same command written plainly
+**When** the hook also reads the body of every command substitution and process substitution outside single quotes and outside here-document bodies, and gives each body the rules a plain command gets
+**Then** each such form is denied with the reason its plain form gets, a nested substitution is read at every level, and a substitution in single quotes, an escaped `\$(`, an arithmetic `$((...))` or a here-document body (a commit message or PR body that only mentions a command) is still allowed
+**And** every existing case of `tests/scripts/test_pre_shell_hook.py` keeps its result and `session_denials` is unchanged: the change only adds denials
+**Status:** done

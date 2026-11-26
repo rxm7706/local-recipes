@@ -431,12 +431,28 @@ def normalised_subcommands(command: str, _depth: int = 0) -> list[list[str]]:
             if not normal:
                 continue
             add(normal)
-            if _depth >= 8 or _shell_c_payload(tokens) is not None:
-                continue  # `split_subcommands` already read this payload
-            inner = _shell_c_payload(_command_tokens(normal))
+            if _depth >= 8:
+                continue
+            # A `bash -c` payload is read whole again, so its own substitutions and normal
+            # forms are read too (Story 139.1); `split_subcommands` already added its plain
+            # token lists, and `add` keeps each list once.
+            inner = _shell_c_payload(tokens)
+            if inner is None:
+                inner = _shell_c_payload(_command_tokens(normal))
             if inner is not None:
-                for sub in normalised_subcommands(inner, _depth + 1):
-                    add(sub)
+                # `shlex` keeps `\$` and `` \` `` inside double quotes, where bash removes the
+                # backslash, so `bash -c "echo \$(cmd)"` runs `cmd`: read that form as well.
+                unescaped = inner.replace("\\$", "$").replace("\\`", "`")
+                for payload in dict.fromkeys((inner, unescaped)):
+                    for sub in normalised_subcommands(payload, _depth + 1):
+                        add(sub)
+    # Steward Story 139.1: the commands inside a `$(...)`, a backtick pair or a process
+    # substitution run too, so every rule reads them beside the outer command. Added,
+    # never in place of a token list: tightening only.
+    if _depth < 8:
+        for body in _substitution_bodies(command):
+            for sub in normalised_subcommands(body, _depth + 1):
+                add(sub)
     return result
 
 
@@ -639,8 +655,10 @@ def _commit_reads_stdin(tokens: list[str]) -> bool:
     return False
 
 
-def _heredoc_bodies(text: str) -> list[str]:
-    """The body of every here-document in `text`, in one linear pass (Story 134.2).
+def _heredoc_body_spans(text: str) -> list[tuple[int, int, bool]]:
+    """`(start, end, quoted)` of every here-document body in `text`, in one linear pass
+    (Story 134.2; spans, Story 139.1). `quoted` is whether the opener's tag is quoted
+    (`<<'EOF'`, `<<"EOF"`): bash expands nothing in such a body.
 
     A body runs from the line after its `<<TAG` opener to the first later line that is
     TAG alone (blanks and tabs aside). An opener with no terminator runs to the end of
@@ -657,7 +675,7 @@ def _heredoc_bodies(text: str) -> list[str]:
         word = line.strip(" \t")
         if word:
             terminators.setdefault(word, []).append(index)
-    bodies: list[str] = []
+    spans: list[tuple[int, int, bool]] = []
     pos = 0
     while True:
         opener = _HEREDOC_OPEN_RE.search(text, pos)
@@ -671,12 +689,123 @@ def _heredoc_bodies(text: str) -> list[str]:
         candidates = terminators.get(opener.group("tag"), [])
         found = bisect.bisect_left(candidates, body_line)
         body_start = line_starts[body_line]
+        quoted = bool(opener.group("quote"))
         if found == len(candidates):
-            bodies.append(text[body_start:])
+            spans.append((body_start, len(text), quoted))
             break
         end_line = candidates[found]
-        bodies.append(text[body_start : line_starts[end_line]])
+        spans.append((body_start, line_starts[end_line], quoted))
         pos = line_starts[end_line] + len(lines[end_line])
+    return spans
+
+
+def _heredoc_bodies(text: str) -> list[str]:
+    """The body of every here-document in `text` (Story 134.2)."""
+    return [text[start:end] for start, end, _quoted in _heredoc_body_spans(text)]
+
+
+def _without_heredoc_bodies(text: str) -> tuple[str, list[str]]:
+    """`text` with every here-document body cut out at its own position, and the bodies
+    bash expands (an unquoted tag). A body is text, not a command line: a commit message or
+    PR body that only mentions a command is not read as one (Story 139.1)."""
+    spans = _heredoc_body_spans(text)
+    expanded = [text[start:end] for start, end, quoted in spans if not quoted]
+    for start, end, _quoted in reversed(spans):
+        text = text[:start] + text[end:]
+    return text, expanded
+
+
+_COMMENT_AFTER = frozenset(" \t\n;|&()")
+
+
+def _scan_substitutions(text: str, *, shell_quotes: bool) -> list[str]:
+    """The body of each outermost `$(...)`, backtick pair and (outside double quotes)
+    `<(...)` / `>(...)` in `text` (Story 139.1). With `shell_quotes`, the text is a
+    command line: single-quoted and `$'...'` text expands nothing, a `#` that starts a word
+    comments out the rest of its line, and `<(`/`>(` inside double quotes are literal.
+    Without it, the text is an unquoted here-document body, where quotes and `#` are
+    literal and only `$(...)` and backticks expand."""
+    bodies: list[str] = []
+    n = len(text)
+    i = 0
+    in_double = False
+    while i < n:
+        ch = text[i]
+        if ch == "\\":
+            i += 2
+            continue
+        if shell_quotes and not in_double:
+            if ch == "#" and (i == 0 or text[i - 1] in _COMMENT_AFTER):
+                newline = text.find("\n", i)
+                i = n if newline == -1 else newline + 1
+                continue
+            if text.startswith("$'", i):
+                j = i + 2
+                while j < n and text[j] != "'":
+                    j += 2 if text[j] == "\\" else 1
+                i = j + 1
+                continue
+            if ch == "'":
+                close = text.find("'", i + 1)
+                i = n if close == -1 else close + 1
+                continue
+        if shell_quotes and ch == '"':
+            in_double = not in_double
+            i += 1
+            continue
+        if ch == "`":
+            j = i + 1
+            while j < n and text[j] != "`":
+                j += 2 if text[j] == "\\" else 1
+            body = text[i + 1 : min(j, n)]
+            bodies.append(body.replace("\\`", "`").replace("\\$", "$").replace("\\\\", "\\"))
+            i = j + 1
+            continue
+        if text.startswith("$((", i):
+            i += 3
+            continue
+        if text.startswith("$(", i) or (
+            shell_quotes and not in_double and text.startswith(("<(", ">("), i)
+        ):
+            depth = 1
+            j = i + 2
+            quote = ""
+            while j < n and depth:
+                c = text[j]
+                if quote:
+                    if c == "\\" and quote == '"':
+                        j += 1
+                    elif c == quote:
+                        quote = ""
+                elif c == "\\":
+                    j += 1
+                elif c in ("'", '"'):
+                    quote = c
+                elif c == "(":
+                    depth += 1
+                elif c == ")":
+                    depth -= 1
+                j += 1
+            end = j - 1 if depth == 0 else n
+            bodies.append(text[i + 2 : end])
+            i = j
+            continue
+        i += 1
+    return [body for body in bodies if body.strip()]
+
+
+def _substitution_bodies(command: str) -> list[str]:
+    """The body of each outermost command substitution (`$(...)`, backticks) and process
+    substitution (`<(...)`, `>(...)`) in `command`, in order (steward Story 139.1): those
+    of the command line with every here-document body cut out, then those of each body
+    bash expands (an unquoted tag). Parentheses nest and a quote inside a `$(...)` body is
+    respected, so `$(echo ')')` closes where bash closes it; an opener with no close takes
+    the rest of the text. A nested substitution is the caller's to find, by reading the
+    body again. Not read: a `case` pattern's `)` inside a `$(...)` closes it early."""
+    line, expanded = _without_heredoc_bodies(command)
+    bodies = _scan_substitutions(line, shell_quotes=True)
+    for body in expanded:
+        bodies.extend(_scan_substitutions(body, shell_quotes=False))
     return bodies
 
 
