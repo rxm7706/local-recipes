@@ -1920,6 +1920,26 @@ verify_commands = [
   "scripts/.spec-surface-baseline.json",
   "tests/scripts/test_pre_shell_hook.py",
 ]
+"141" = [  # Broker TLS is a capability (spec-pyforge-unifying-strategy CAP-21), added 2026-11-25
+  "_bmad-output/projects/pyforge-*/planning-artifacts/specs/spec-pyforge-*/.memlog.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-steward-2026-07-25/prd.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-41-4-broker-tls-is-verified.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/.memlog.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml",
+  "docs/dreams/pyforge-unifying-strategy.md",
+  "docs/foundry/capability-ledger.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "src/platform/config/broker_tls.py",
+  "src/platform/config/settings/base.py",
+  "src/platform/config/startup/__init__.py",
+  "src/platform/config/startup/stage_one.py",
+  "src/platform/tests/test_broker_tls_verified.py",
+]
 
 # dispatch (Story 85.1 / CAP-286 knobs), added 2026-10-13: steward's verify-fix turn gets 45 minutes, not the
 # 15-minute default. pyforge-steward-test alone runs ~4 minutes (2482 tests), so a fix turn that must re-run it two or

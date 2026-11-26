@@ -1,4 +1,5 @@
-"""Story 41.4 / CAP-12: a ``rediss://`` broker is verified, not just encrypted.
+"""Story 41.4 / unifying-strategy CAP-21: a ``rediss://`` broker is verified, not
+just encrypted.
 
 Red-team X-2 → directive R-14. Three acceptance criteria, each covered twice —
 once against ``config.broker_tls`` directly (the composition unit) and once

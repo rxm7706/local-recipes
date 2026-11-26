@@ -480,8 +480,9 @@ if USE_TZ:
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-broker_url
 CELERY_BROKER_URL = REDIS_BROKER_URL
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#redis-backend-use-ssl
-# Story 41.4 / CAP-12 (red-team X-2 → R-14): a rediss:// broker is VERIFIED
-# against the corporate CA bundle. CERT_NONE is laptop-only and refused at
+# Story 41.4 / unifying-strategy CAP-21 (red-team X-2 → R-14): a rediss://
+# broker is VERIFIED against the corporate CA bundle. CERT_NONE is laptop-only
+# and refused at
 # stage 1 when deployed -- see config/broker_tls.py for the whole posture.
 CELERY_BROKER_USE_SSL = broker_use_ssl(REDIS_BROKER_URL)
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-result_backend

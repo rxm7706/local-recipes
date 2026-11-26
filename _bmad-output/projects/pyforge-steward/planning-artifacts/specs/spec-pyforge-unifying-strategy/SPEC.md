@@ -4,7 +4,7 @@ spec: pyforge-unifying-strategy
 status: ready
 chain: pyforge-unifying-strategy
 created: "2026-08-24"
-updated: "2026-11-13"   # AMENDED 2026-11-13 (steward Story 122.5): the companion stack.md's python-duckdb row qualifies atlas's decision as pyforge-atlas:AD-13 (the memlog's 2026-11-13 correction); no capability, Constraint or surface moves. Prior "2026-11-11"
+updated: "2026-11-25"   # AMENDED 2026-11-25 (CAP-21 minted, its verified: line corrected on review, from the memlog entries of that date: a broker link is authenticated, not only encrypted, on the operator ruling "Yes, mint it"; steward Story 141.1; nothing else re-derived). Prior "2026-11-13"   # AMENDED 2026-11-13 (steward Story 122.5): the companion stack.md's python-duckdb row qualifies atlas's decision as pyforge-atlas:AD-13 (the memlog's 2026-11-13 correction); no capability, Constraint or surface moves. Prior "2026-11-11"
 companions:
   - convergence.md
   - resilience-invariants.md
@@ -580,6 +580,22 @@ they are why this is not merely a UI project.
   - *(Minted 2026-11-06 on the operator's rulings: "honest runner first then wire to cli", "All
     seven", laptop stack first, dispatch gated, verb list accepted. The worker image that would run
     these verbs in a cluster is a deferred row, not this capability.)*
+
+- **CAP-21 — A broker link is authenticated, not only encrypted.**
+  - **intent:** A component that reaches its task broker or result backend over `rediss://`
+    verifies the broker's certificate against the configured trust (the operating system's trust
+    store first, then an explicit bundle), so an encrypted-looking link is also an authenticated
+    one. Verification is switched off only on a laptop that asks for it by name, never in a
+    deployed component, and the trust resolves with no network call (pap:CAP-6).
+  - **success:** Production settings with a `rediss://` broker compose `CERT_REQUIRED` and the
+    resolved trust paths. A deployed component that asks for a weaker policy, names an
+    unrecognised one, or has no trust for a TLS broker is refused at startup, by name, before it
+    serves. A plain `redis://` broker and a laptop's explicit `CERT_NONE` still boot.
+  - **verified:** `src/platform/tests/test_broker_tls_verified.py` (composition, the trust tiers,
+    the stage-1 refusals, every entrypoint, the result backend beside the broker), in Platform CI's
+    `test` job.
+  - *(Minted 2026-11-25 on the operator's ruling "Yes, mint it", already met by Story 41.4: it
+    names the 2026-09-02 red-team Constraint "`rediss://` verifies the chain", which stays.)*
 
 ## Constraints
 

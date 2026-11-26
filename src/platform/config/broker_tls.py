@@ -1,4 +1,5 @@
-"""Verified broker TLS (CAP-12 / steward 41.4; red-team X-2 → directive R-14).
+"""Verified broker TLS (spec-pyforge-unifying-strategy CAP-21 / steward 41.4;
+red-team X-2 → directive R-14).
 
 ``rediss://`` used to mean *encrypted but unauthenticated*: base settings pinned
 ``ssl_cert_reqs`` to ``ssl.CERT_NONE`` for every TLS broker URL, so anything able

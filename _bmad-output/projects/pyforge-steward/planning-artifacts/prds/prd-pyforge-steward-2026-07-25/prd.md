@@ -2,7 +2,7 @@
 fr-derivation-from: "2026-09-17"
 title: Steward (pyforge-steward)
 created: 2026-07-25
-updated: "2026-11-25"   # AMENDED 2026-11-25 (steward CAP-184 minted from the station Dream entry of that date: FR-58 registered, traced from CAP-184; no FR renumbered or removed). Earlier the same day: AMENDED 2026-11-25 (steward CAP-183 minted from the station Dream entry of that date: FR-57 registered, traced from CAP-183; no FR renumbered or removed). Prior "2026-11-22"  # AMENDED 2026-11-22 (the changes input and the marketplace's theme): chain-currency cascade (spec -> PRD) for CAP-168 and CAP-171 (amended); FR-8 and FR-44 amended in place.
+updated: "2026-11-25"   # AMENDED 2026-11-25 (spec-pyforge-unifying-strategy CAP-21 minted: canopy:FR-52 registered, traced from CAP-21; no FR renumbered or removed). Earlier the same day: AMENDED 2026-11-25 (steward CAP-184 minted from the station Dream entry of that date: FR-58 registered, traced from CAP-184; no FR renumbered or removed). Earlier the same day: AMENDED 2026-11-25 (steward CAP-183 minted from the station Dream entry of that date: FR-57 registered, traced from CAP-183; no FR renumbered or removed). Prior "2026-11-22"  # AMENDED 2026-11-22 (the changes input and the marketplace's theme): chain-currency cascade (spec -> PRD) for CAP-168 and CAP-171 (amended); FR-8 and FR-44 amended in place.
 # 2026-11-13  # RE-STAMPED 2026-11-13 (steward Story 122.5, the chain close): chain-currency cascade (spec -> PRD) for the re-derive of spec-pyforge-steward that flips the markers of CAP-153, CAP-166, CAP-179, CAP-181 and CAP-182 to shipped; no FR registered, renumbered, removed or amended. See § Currency reconciliation — 2026-11-13 (Story 122.5). Prior "2026-11-11"   # RE-STAMPED 2026-11-11 (steward Story 122.1): chain-currency cascade (spec -> PRD) for this PR's one re-derive of spec-pyforge-steward and the 2026-11-11 re-derives of spec-python-foundry-cutover, spec-foundry-regenerate-not-fold and spec-foundry-capability-ledger; FR delta FR-53..FR-56 (registered at mint); pointers on the UJ-2, FR-8..FR-11, In Scope, SM-2, D6 and 2026-08-26 lines; FR-49's driver line corrected; no FR registered, renumbered or removed. See § Currency reconciliation — 2026-11-11 (Story 122.1). Prior "2026-11-11"   # AMENDED 2026-11-11 (fix pass of the cutover-readiness mint): FR-54's Consequence follows CAP-180's corrected success (exit 1, never 70, the host command's own error; no message names --python); no FR registered, renumbered or removed. Prior "2026-11-10"   # AMENDED 2026-11-10 (cutover-readiness mint, steward-station unit): FR-53 <- CAP-179, FR-54 <- CAP-180, FR-55 <- CAP-181 and FR-56 <- CAP-182 registered, each traced from its capability; no FR renumbered or removed. See § Currency reconciliation — 2026-11-10 (CAP-179..CAP-182). Story 122.1 writes the rest of the cascade (pointers, the driver line). Prior "2026-11-06"   # RE-STAMPED 2026-11-06 (CAP-20, Epic 119): chain-currency cascade (spec -> PRD); canopy:FR-51 registered, no other FR moves.
 # 2026-11-05  # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief -> PRD and spec -> PRD); no CAP, FR or AD is minted. Prior "2026-11-04"   # RE-STAMPED 2026-11-04: chain-currency cascade (spec -> PRD) (the Surface reconcile of Stories 118.7 and 118.8 on spec-pyforge-steward and spec-pyforge-unifying-strategy); no CAP, FR, AD, epic or story moved. See § Currency reconciliation — 2026-11-04.
 # 2026-11-01  # RE-STAMPED 2026-11-01 (steward Stories 118.7 and 118.8): chain-currency cascade (spec -> PRD) for spec-pyforge-steward's amendments of CAP-176, CAP-177 and CAP-178; FR-50, FR-51 and FR-52 amended in place; no FR registered, renumbered or removed. See § Currency reconciliation — 2026-11-01 (Stories 118.7 and 118.8). Prior "2026-11-01"
@@ -1448,6 +1448,19 @@ table. **CAP-20.**
   `pyforge.steward.start_loop_dispatch` on.
 - A verb that spends, or that collides with itself, never starts twice for one run.
 
+##### canopy:FR-52: A broker link is authenticated, not only encrypted
+
+A component that reaches its task broker or result backend over `rediss://` verifies the broker's
+certificate against the configured trust; only a laptop that asks by name may skip it.
+**spec-pyforge-unifying-strategy:CAP-21.**
+
+**Consequences (testable):**
+- Production settings with a `rediss://` broker compose `CERT_REQUIRED` and the resolved trust paths.
+- A deployed component that asks for a weaker policy, names an unrecognised one, or has no trust for
+  a TLS broker is refused at startup, by name, before it serves.
+- The trust resolves from the operating system's store first, then an explicit bundle.
+- A plain `redis://` broker and a laptop's explicit `CERT_NONE` still boot.
+
 ---
 
 ### 5. Non-Goals (Explicit)
@@ -1693,6 +1706,7 @@ Every capability has at least one FR; every FR names a capability.
 | CAP-8 | canopy:FR-17..canopy:FR-20, canopy:FR-29 | CAP-17 | canopy:FR-40, canopy:FR-41, canopy:FR-42 |
 | CAP-9 | canopy:FR-21, canopy:FR-21a, canopy:FR-22..canopy:FR-25 | CAP-18 | canopy:FR-43, canopy:FR-44, canopy:FR-45 |
 | CAP-19 | canopy:FR-46, canopy:FR-47, canopy:FR-48, canopy:FR-49, canopy:FR-50 | CAP-20 | canopy:FR-51 |
+| CAP-21 | canopy:FR-52 | | |
 
 ### 13. Assumptions Index
 
@@ -3286,3 +3300,11 @@ A developer or an agent on a machine that has never built this repository can ru
 A reader who meets an exit code from a doctor source, a warden scan, a marshal verb, marshal's `seed` verb or the detectors aggregator can look its meaning up, by member name and number, in one machine-readable declaration (`docs/governance/guild-roster.json`'s `exit_code_domains`), which also says that doctor's domain narrows warden's and that the aggregator's `2` means could-not-run where a doctor source's `2` means FAIL. In-process code reads the same table from `pyforge.core.exit_domains`, and each of those surfaces takes its numbers from it. Consequence: no exit number changes; a test exits 1 when the Python table and the JSON key differ, when a module's lattice domain differs from its declared domain, when doctor's domain stops narrowing warden's, or when `docs/reference/judgement-vocabulary.md`'s domains differ from the declaration.
 
 **Content changed:** this section added; FR-58 registered, derived from its CAP; no FR renumbered or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-11-25 (unifying-strategy CAP-21)
+
+*Chain-currency cascade (spec -> PRD).*
+
+`spec-pyforge-unifying-strategy` CAP-21 (a broker link is authenticated, not only encrypted) adds canopy:FR-52, traced
+from that capability's intent and success. No other FR moves. It states as a capability what Story 41.4 shipped and the
+2026-09-02 red-team Constraint held without a stable id, on the operator's ruling of 2026-11-25, "Yes, mint it".
