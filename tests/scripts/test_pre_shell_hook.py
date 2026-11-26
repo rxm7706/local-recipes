@@ -2215,6 +2215,20 @@ def test_dw_134_2_1_a_redirection_is_not_the_push_remote(fake_worktree: Path, co
         "git push 2>&1 https://github.com/someone/else.git main",
         "git push > push.log https://github.com/someone/else.git main",
         "git push 2> err.log git@github.com:someone/else.git",
+        # Story 140.1's review: an operator written bare takes the next word as its target,
+        "git push >& origin https://github.com/someone/else.git main",
+        "git push <> origin https://github.com/someone/else.git main",
+        "git push <<< origin https://github.com/someone/else.git main",
+        "git push <& origin https://github.com/someone/else.git main",
+        # a `>|` splits the line, so the redirection has no target and the push is not read as `origin`,
+        "git push >| log https://github.com/someone/else.git main",
+        "git push 2>| log https://github.com/someone/else.git main",
+        # and a quoted word is a remote name, never a redirection.
+        "git -c 'remote.>x.url=https://github.com/someone/else.git' push '>x' main",
+        'git push ">x" main',
+        # An option that takes a value is not followed by the remote.
+        "git push -o origin https://github.com/someone/else.git main",
+        "git push --push-option ci.skip https://github.com/someone/else.git main",
     ],
 )
 def test_dw_134_2_1_a_foreign_push_is_denied_beside_a_redirection(fake_worktree: Path, command: str) -> None:
