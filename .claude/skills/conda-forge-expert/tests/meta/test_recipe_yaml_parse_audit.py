@@ -35,6 +35,8 @@ from pathlib import Path
 
 import yaml
 
+from _recipe_trees import SAFE_LOADER, recipe_tree
+
 REPO_ROOT = Path(__file__).resolve().parents[5]
 RECIPES_DIR = REPO_ROOT / "recipes"
 
@@ -50,20 +52,33 @@ def test_recipes_dir_is_populated() -> None:
 
 
 def test_all_recipe_yaml_parse() -> None:
+    """Every recipe parses with ``yaml.safe_load``, and the shared parse the other audits read
+    (``_recipe_trees.recipe_tree``, the C safe loader) agrees with it: the same document for a
+    file that parses, an error for a file that does not (mason Story 48.1)."""
     failures = []
+    drift = []
     for p in _recipe_files():
+        shared, shared_error = recipe_tree(p)
         try:
-            yaml.safe_load(p.read_text(encoding="utf-8"))
+            tree = yaml.safe_load(p.read_text(encoding="utf-8"))
         except Exception as exc:  # noqa: BLE001 — collect every parse error
             failures.append(f"{p.relative_to(REPO_ROOT)}: {str(exc).splitlines()[0]}")
+            if shared_error is None:
+                drift.append(f"{p.relative_to(REPO_ROOT)}: yaml.safe_load refuses it, the shared parse reads it")
+            continue
+        if shared_error is not None:
+            drift.append(f"{p.relative_to(REPO_ROOT)}: yaml.safe_load reads it, the shared parse refuses it")
+        elif shared != tree:
+            drift.append(f"{p.relative_to(REPO_ROOT)}: the two loaders read different documents")
     assert not failures, "unparseable recipe.yaml (G92/G98/G20 class):\n" + "\n".join(failures)
+    assert not drift, "the shared recipe parse disagrees with yaml.safe_load:\n" + "\n".join(drift)
 
 
 class _DuplicateKey(Exception):
     pass
 
 
-class _StrictLoader(yaml.SafeLoader):
+class _StrictLoader(SAFE_LOADER):
     """PyYAML's SafeLoader silently keeps the LAST value of a duplicated mapping
     key, which is exactly how 31 half-migrated v0->v1 recipes (a v1 `skip:`
     expression followed by its v0 `skip: true  # [sel]` twin; an output whose
@@ -212,9 +227,8 @@ def _sentinel_findings(tree: object, where: str = "") -> list[tuple[str, str]]:
 def _scan_for_sentinels(paths: list[Path], root: Path) -> dict[str, list[tuple[str, str]]]:
     hits: dict[str, list[tuple[str, str]]] = {}
     for p in paths:
-        try:
-            tree = yaml.safe_load(p.read_text(encoding="utf-8"))
-        except Exception:  # noqa: BLE001 -- parse failures belong to test_all_recipe_yaml_parse
+        tree, error = recipe_tree(p)
+        if error is not None:  # parse failures belong to test_all_recipe_yaml_parse
             continue
         found = _sentinel_findings(tree)
         if found:
@@ -336,3 +350,18 @@ def test_sentinel_allowlist_is_per_location() -> None:
     assert len(unexpected) == 1
     # an entry whose leak is gone is stale
     assert _triage({}, allow) == ([], ["recipes/x/recipe.yaml @ outputs[6].tests[0]"])
+
+
+def test_the_shared_parse_reads_a_changed_file_again(tmp_path: Path) -> None:
+    """mason Story 48.1: one parse per file state, never a stale tree after an edit, and an
+    unparseable file is an error beside no tree, not an exception at the caller."""
+    recipe = tmp_path / "recipe.yaml"
+    recipe.write_text("package:\n  name: demo\n", encoding="utf-8")
+    first, error = recipe_tree(recipe)
+    assert error is None and first == {"package": {"name": "demo"}}
+    assert recipe_tree(recipe)[0] is first
+    recipe.write_text("package:\n  name: demo-two\n  version: '1'\n", encoding="utf-8")
+    assert recipe_tree(recipe) == ({"package": {"name": "demo-two", "version": "1"}}, None)
+    recipe.write_text("package: [unclosed\n", encoding="utf-8")
+    tree, error = recipe_tree(recipe)
+    assert tree is None and isinstance(error, yaml.YAMLError)

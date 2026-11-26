@@ -913,6 +913,17 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   hid, most of them optional values the type did not prove present. This closes DW-mason-46-1-1, DW-mason-46-1-2 and
   DW-mason-37-2. **Constraints:** exit codes and report fields do not move; a hidden None becomes a refusal by an
   existing error, never a silent default; no flag. Owner `spec-pyforge-mason`.
+- **2026-11-26 (the recipe audits read each recipe once, and the meta suite runs under xdist) — Found and ruled:**
+  the PR lane of the CFE regression net, `test-ci-meta`, is one pytest process: 80 s alone, 209 to 291 s inside a
+  full preflight, 155 s as the `cfe-meta` job. Four of its tests each parse all 7,566 `recipe.yaml` files with
+  PyYAML's pure-Python loader, about 13 s a pass, where the C loader parses them in 1.4 s. **Ruled** (operator, 2026-11-26: "Approve plan", on the ranked report and plan steward's Dream entry of the same date records). **For
+  mason:** this entry binds `spec-pyforge-steward:CAP-175` (every pytest lane goes under xdist where its tests
+  allow; realized here, no text change in this station's Spec) and decomposes as Epic 48, one story: the audits that
+  need every recipe's parsed document share one parse per file, by the C safe loader where libyaml is built in, and
+  `test-ci-meta` passes `-n auto --dist loadgroup`. **Constraints:** every audit judges the same files and the same
+  findings; the parse audit itself still reads every recipe with `yaml.safe_load` and fails when the shared parse
+  disagrees with it; the full net (`test-ci`) is not moved; the `conda-forge-expert` skill's retro and CHANGELOG entry close the
+  story. No flag (a chore). Owner `spec-pyforge-mason`.
 
 ## One-chain fold — 2026-09-17
 

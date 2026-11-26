@@ -100,8 +100,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-11-25T18:31:31-06:00'
-      tree: 5251032edf6d5741b61e473ccfe567c8d8759b9c-dirty
+      derived_at: '2026-11-26T14:44:08-06:00'
+      tree: 5ad82666711e8471eff6c237aa223a39efe1d9ae-dirty
   - path: how-to/pause-ci.md
     quadrant: how-to
     owner: pyforge-steward
@@ -269,8 +269,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-11-23T19:09:22-06:00'
-      tree: 79c533ac9f92b00236fc9d5daf8ace5246c8dae2
+      derived_at: '2026-11-26T14:44:08-06:00'
+      tree: 5ad82666711e8471eff6c237aa223a39efe1d9ae
   - path: reference/github-workflows.md
     quadrant: reference
     owner: fleet

@@ -57,7 +57,9 @@ from pyforge.steward import preflight_ci
 # runs in steward's live-tree half (pyforge-steward-live-test), whose job fires on what it reads: a station PR that adds
 # an outside read to its package half runs this guard in that PR. A live_tree module derives no repository path at
 # import time, so the root and the files under it are functions.
-pytestmark = pytest.mark.live_tree
+# Story 117.14: one xdist group, so every test of this module runs in one worker and ``real_derivation()``'s cache,
+# which is per process, is filled once in a run instead of once per worker (fifteen workers computed it, 1,324 s summed).
+pytestmark = [pytest.mark.live_tree, pytest.mark.xdist_group("station-tests-trigger-map")]
 
 WORKFLOW_REL = ".github/workflows/pyforge-station-tests.yml"
 PACKAGES = "src/shared/packages"
@@ -1781,6 +1783,11 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
             ("scripts/pages_changes.py",),
             "Story 130.1 (spec-pyforge-steward CAP-168): the tests run scripts/pages_changes.py, found from the "
             "repo root, over temporary repositories of their own",
+        ),
+        "src/shared/packages/pyforge-steward/tests/unit/test_preflight.py": (
+            ("docs/governance/preflight-budgets.toml",),
+            "Story 117.15 (spec-pyforge-steward CAP-175): budget_seed_seconds reads the tracked lane budgets from "
+            "the root it is handed, and the test holds every row to a lane the journal names",
         ),
         "src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py": _H["PIXI_AND_WORKFLOWS"],
         "src/shared/packages/pyforge-steward/tests/unit/test_preflight_suite_reduction.py": _H["PIXI_AND_WORKFLOWS"],

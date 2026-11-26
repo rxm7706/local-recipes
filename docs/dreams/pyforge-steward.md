@@ -8447,3 +8447,52 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   reads (shipped 2026-11-25), Epic 135 having landed through 6db8d6e60f, and CAP-185 (shipped 2026-11-26), Story 144.1
   and its five relays having landed through 3556bd1f2e; a memlog decision and a render, markers only. **Constraints:**
   no intent or success moves; no flag. Owner `spec-pyforge-steward`.
+- **2026-11-26 (the full preflight is ten minutes again, and a PR's CI waits on one serial job) — Found and ruled:**
+  measured on `d039bc7de3`, on the laptop every preflight runs on (8 cores, 16 threads): a full preflight of a
+  shared-surface diff, 50 lanes, takes 606 s in a fresh worktree and 652 s warm, where Wave 3 left it at 303 s on
+  2026-10-27; the environment install is 15 s of that cold and 3 s warm. The machine is at 96% for the first 300 s
+  and at 22 to 52% for the last 290 s. Eight merged PR heads of this day: CI wall 242 / 340 / 480 s (least, median,
+  most), with `herald-live-test` (263 to 425 s, one serial pytest step) the critical path of seven. Causes, each read
+  from a profile or the code: (1) `test_station_tests_trigger_map.py` caches its derivation per process, so every
+  xdist worker computes it again (1,324 s summed over the module; `pyforge-steward-live-test` is 2,521 of about
+  7,100 CPU-seconds); (2) `estate_realize._locked_version` parses the 3.95 MB `pixi.lock` with PyYAML's pure-Python
+  loader on every call, eight times in one test (45.35 of 45.76 s; the C loader reads the same file in 0.54 s
+  against 2.9 s, to an equal document); (3) the admission of Story 117.3 reads medians from green runs of the
+  worktree's own journal alone, so a fresh worktree, which is every effort's first run, admits in declared order and
+  gives each xdist lane `free_cores // pending_xdist` = 2 workers (`pyforge-marshal-test`: 95 s alone, 370 to 417 s
+  in the run; the steward halves start at 132 to 254 s); (4) `scripts-lib-test`, `test-ci-meta` and herald's live half
+  run without xdist; (5) a push runs the preflight again on a tree a green run already judged; (6) the Actions
+  cache holds 41.7 GB against a 40 GB limit, 14.9 GB of it written from PR refs no later run can read; (7) the eight
+  coverage-gate jobs each restore a station environment of 321 to 961 MB to run a script that takes a second.
+  **Ruled** (operator, 2026-11-26: "Approve plan", on the ranked report and the fifteen-item plan of that day, its
+  three defaults taken: a push reuses a green verdict of the same tree; the container work is the layer order and
+  the ignore file only, no layer cache while the cache is over its limit; the gates keep their eight jobs and run
+  in a small environment). **For steward:** this entry binds `spec-pyforge-steward` CAP-175 (the preflight and a
+  PR's CI answer within a measured budget; realized toward its own success line, no text change) and CAP-154 (the
+  pre-push hook; realized, no text change) and decomposes as Stories 117.14 to 117.18 on Epic 117: the derivation
+  is computed once and the lockfile read by the C loader (117.14); a fresh worktree admits longest-first from the
+  tracked budgets and an xdist lane's workers follow its expected work (117.15); the scripts-lib lane runs under
+  xdist and builds its flag reports once (117.16); a push reuses the green verdict its tree already has (117.17);
+  the PR workflows write caches from `main` only, and the `changes` job fetches no file contents (117.18). Three
+  parts of the plan were measured and not built, each recorded in the 117.18 story spec: the gates in a small
+  environment (the local preflight matches a gate lane to its CI step by environment; about 10 s of critical path),
+  a shallower fetch for the detectors (they read commit dates and merge subjects), and the image layer order (no
+  layer cache exists to reuse a layer, and the image builds do not run on a pull request). Doctor
+  (the detector run measures its sources beside the script detectors; its slowest live tests), herald (its live half
+  under xdist) and mason (the CFE meta suite) relay under their own Dream entries of this date. **Constraints:** no
+  coverage floor, mypy setting, ruff rule or detector is weakened, removed or skipped; the station-tests path arrays
+  are not narrowed (ruling D4, Story 98.1); no test is deleted or re-marked to gain time; a parallel run still exits
+  non-zero when any lane fails and names the lane; every number in the PR is measured with the harness that
+  measured the baseline. The verdict reuse carries no flag (`detector-or-gate`: a gated gate is a silent green) and
+  an opt-out, `PYFORGE_PREFLIGHT_REUSE=0`. Owner `spec-pyforge-steward`.
+  **Realization (2026-11-26, same change):** four measured full runs and an independent review sent Stories
+  117.15 and 117.17 back once, and each story spec records what it found. The scheduler now sizes a lane by
+  the CPU seconds its processes used (journaled as `cpu_seconds`; seconds times workers grew with every worker
+  a lane could not use), starts the docs-site chain first and keeps its slot, and gives a heavy lane more than
+  the minimum when a full run crowds the cores; the selection splits each workflow step's command once, where
+  it split some 220,000 a run. `docs/governance/preflight-budgets.toml` is re-measured and gains a `[work]`
+  table (a governance act, made here on the operator's "Approve plan"). The reused verdict is tied to the
+  commit, the local day and half an hour, and a later red run of the same state takes it back: lanes also read
+  state no hash covers, so a green run stands only for the push that follows it. What the measurements did not
+  give: a full run of all fifty lanes stays bound by the machine (about 6,500 CPU-seconds on sixteen threads),
+  so its gain is the smaller one; the larger ones are each lane alone, CI's jobs, and the push after a green run.

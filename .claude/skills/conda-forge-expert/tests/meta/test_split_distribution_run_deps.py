@@ -19,6 +19,8 @@ from pathlib import Path
 
 import yaml
 
+from _recipe_trees import recipe_tree
+
 _SKILL_DIR = Path(__file__).resolve().parents[2]
 _REPO_ROOT = _SKILL_DIR.parents[2]
 _CUSTOM = _SKILL_DIR / "pypi_conda_mappings" / "custom.yaml"
@@ -84,10 +86,11 @@ def test_no_noarch_python_recipe_depends_on_the_wrong_half() -> None:
     pairs = _split_pairs()
     offenders: list[str] = []
     for path in sorted(_RECIPES.glob("**/recipe.yaml")):
-        try:
-            recipe = yaml.safe_load(path.read_text(encoding="utf-8"))
-        except yaml.YAMLError:
+        recipe, error = recipe_tree(path)
+        if isinstance(error, yaml.YAMLError):
             continue  # the parse audit owns unparseable recipes
+        if error is not None:
+            raise error  # anything else (an unreadable file, bad bytes) is this audit's to report, as before
         if not isinstance(recipe, dict):
             continue
         for package, names in _noarch_python_run_lists(recipe, path.parent.name):

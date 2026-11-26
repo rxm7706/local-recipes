@@ -498,3 +498,20 @@ def test_the_red_main_banner_never_changes_the_run(
     assert ("main CI state unknown" in err) is (flag_on and snapshot is not None)
     if not flag_on:
         assert "main is red" not in err and "main CI state" not in err
+
+
+def test_the_tracked_budgets_seed_real_lanes() -> None:
+    """Story 117.15: the live budgets file names lanes the way the journal does (``task@environment``), every row
+    seeds one lane, and the longest lanes of a full run are among them, so a fresh worktree can rank them."""
+    seeds = preflight.budget_seed_seconds(REPO_ROOT)
+    raw = tomllib.loads((REPO_ROOT / preflight.BUDGETS_RELATIVE).read_text(encoding="utf-8"))["lanes"]
+    assert len(seeds) == len(raw)
+    # Every row names a task pixi.toml defines, in an environment it declares: a renamed lane cannot keep a dead row.
+    pixi = tomllib.loads((REPO_ROOT / "pixi.toml").read_text(encoding="utf-8"))
+    tasks = {name for feature in pixi["feature"].values() for name in feature.get("tasks", {})}
+    assert sorted(key for key in seeds if key[0] not in tasks or key[1] not in pixi["environments"]) == []
+    # The work table sizes lanes the seconds table ranks: no work row without its seconds row.
+    work = preflight.budget_seed_work(REPO_ROOT)
+    assert work and set(work) <= set(seeds)
+    assert ("pyforge-steward-live-test", "pyforge-steward") in seeds
+    assert ("pyforge-herald-live-test", "pyforge-herald") in seeds

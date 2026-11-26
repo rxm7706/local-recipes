@@ -93,6 +93,14 @@ The run prints its scope, what chose it, and one line for each deferred lane. Op
 | `--keep-going` | Run every selected lane even when one fails. |
 | `--ignore-ci-pauses` | Run lanes that are paused in CI anyway. |
 
+A run on a commit that is already green runs nothing. When the checkout is clean (no changed tracked file, no untracked file that is not ignored), the run looks in its journal for a green run of the same state that ended no more than half an hour ago. The state is the commit and its tree, `origin/main`, the local day, the `PYFORGE_`, `HERALD_` and `CI` variables, `PYTEST_ADDOPTS`, and whether a GitHub token is set. If that run passed every lane this run selects, the run prints the earlier run's id, journals a `reuse` record and exits `0`. A green full run covers a `touched` run of the same commit, because `detectors-ci` runs each of the five detectors a `touched` run keeps. The pre-push hook gets the same answer, so a push straight after a green run does not run the lanes a second time.
+
+Anything else runs the lanes again: a dirty tree, a new or reworded commit, a moved `origin/main`, another day, a lane the earlier run did not pass, or a later run of the same state that was red. The half hour is there because some lanes read more than the tree: loop homes under your home directory, refs, what GitHub answers. Within it, that state is taken as it was when the lanes ran. To run the lanes again on a green commit:
+
+```bash
+PYFORGE_PREFLIGHT_REUSE=0 PYFORGE_PREFLIGHT_SCOPE=full pixi run -e pyforge-guild pr-preflight
+```
+
 ### 3. Read the verdict
 
 | Exit | Meaning |
@@ -141,7 +149,7 @@ Run this before a landing when any push since the last full run used the `touche
 
 | File | Content |
 | --- | --- |
-| `.steward/preflight-runs.jsonl` | One JSON line per lane and run: wall time, exit code, and the deferred lanes of a `touched` run. |
+| `.steward/preflight-runs.jsonl` | One JSON line per lane and run: wall time, exit code, the workers an xdist lane ran on, the tree the run judged, and the deferred lanes of a `touched` run. A run that reused a green verdict writes one `reuse` line that names the run it reused. |
 | `.steward/preflight-skips.log` | One line per skipped push: time, refs, commits, reason. |
 
 Both are gitignored and local to the checkout.
@@ -150,6 +158,7 @@ Both are gitignored and local to the checkout.
 
 - `pr-preflight` does not cover the container lanes, atlas's browser gate, herald's browser check or scribe's Postgres bring-up. Run those by hand when your diff touches them.
 - When a scribe lane is red while another preflight is running, rerun it alone before you treat it as a real failure: `pixi run -e pyforge-scribe pyforge-scribe-live-test`, the half that holds the Postgres tests, after `pixi run -e pyforge-scribe-pg scribe-pg-up`.
+- The run starts the longest lanes first and gives an xdist lane workers in proportion to its expected work. It reads each lane's time from the journal; in a worktree with no journal yet it reads `docs/governance/preflight-budgets.toml`, so the first run in a fresh worktree is ordered like the later ones.
 - `pixi run -e pyforge-guild preflight-budget` reads the journal and reports lanes whose median time is over 1.5 times their budget in `docs/governance/preflight-budgets.toml`. It is a warning, never the preflight's verdict.
 - `steward preflight verify-deferred` was not executed for this page, because it runs the full preflight; its behaviour is taken from `--help`, the module and the station contract.
 - CI's own detectors check is advisory, so a green CI tick is not evidence that the full preflight would pass. The local full run is.

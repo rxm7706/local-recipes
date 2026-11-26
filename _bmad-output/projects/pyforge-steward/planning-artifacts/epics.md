@@ -7865,6 +7865,87 @@ So that a new runner image cannot red every Astro build with `EXDEV`.
 **And** `herald-test` passes on PR #2360 on the new image, and no test or task changes
 **Status:** done
 
+### Story 117.14: The trigger map is derived once and the lockfile is read by the C loader
+
+As the operator whose full preflight waits longest on steward's live-tree half,
+I want the trigger-map derivation computed once in a run and `pixi.lock` parsed by PyYAML's C loader, once per file state,
+So that the half stops spending two thirds of its CPU on work it has already done.
+
+**Type:** fix • **Effort:** S • **Deps:** 117.4 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: the same reads, computed once)
+**Surface:** `src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/estate_realize.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/machine.py`, `src/shared/packages/pyforge-steward/tests/unit/test_estate_realize.py`
+**Spec:** `planning-artifacts/specs/spec-117-14-the-trigger-map-is-derived-once-and-the-lockfile-is-read-by-the-c-loader.md`
+**Given** `d039bc7de3`, where `pyforge-steward-live-test` alone takes 194 s and 2,521 CPU-seconds on 16 workers: `test_station_tests_trigger_map.py` holds `real_derivation()` in a per-process cache, so each xdist worker that receives one of its tests computes the derivation again (1,324 s summed over the module), and `estate_realize._locked_version` parses the 3.95 MB `pixi.lock` with the pure-Python loader on every call (45.35 of 45.76 s in `test_operator_gate_skipped_without_yes`)
+**When** the module's tests share one xdist group, and the lockfile is read by `yaml.CSafeLoader` (the pure-Python loader where libyaml is absent) and kept per path, size and modification time
+**Then** the module computes its derivation once in a run, `test_estate_realize.py` takes under 10 s summed, and the half runs the same tests it ran before, by count
+**And** a test holds that the two loaders read `pixi.lock` to equal documents, and that an edited lockfile is read again
+**Status:** done
+
+### Story 117.15: A fresh worktree admits lanes longest-first and an xdist lane's workers follow its expected work
+
+As the operator whose every effort starts in a new worktree,
+I want the preflight to rank lanes from the tracked budgets when its journal has no green run, and to size an xdist lane's workers by the work it is expected to do,
+So that the first run of an effort is not the slowest one and the last minutes of a run do not leave cores idle.
+
+**Type:** fix • **Effort:** M • **Deps:** 117.3, 117.5 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (the wall is the longest lane and never a queue; realized, no text change); no AD moves
+**Flag:** none of its own (a fix); it runs under Story 117.3's kill switch `pyforge.steward.preflight_critical_path`, and with the switch off the declared order and the static share return unchanged
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_xdist.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_budget.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_ci.py`, `src/shared/packages/pyforge-steward/tests/unit/test_preflight_critical_path.py`, `docs/governance/preflight-budgets.toml`
+**Spec:** `planning-artifacts/specs/spec-117-15-a-fresh-worktree-admits-lanes-longest-first-and-an-xdist-lane-s-workers-follow-its-expected-work.md`
+**Given** `lane_medians` counts green runs of the worktree's own journal only, so a fresh worktree weighs every lane 30 s and admits in declared order, and `xdist_share_at_admission` splits the free cores evenly among the xdist lanes still to start, which is 2 workers for each while sixteen are pending: `pyforge-marshal-test` takes 95 s alone and 370 to 417 s in a full run, the steward halves start 132 to 254 s in, and the last 290 s of a 641 s run use 22 to 52% of the machine
+**When** a lane with no journal median takes its expected seconds from `docs/governance/preflight-budgets.toml`, and an xdist lane's share at admission is its part of the free cores in proportion to its expected seconds among the xdist lanes still to start
+**Then** on a fresh worktree the three longest lanes start in the first admission round, no xdist lane starts on fewer than `MIN_XDIST_WORKERS`, the workers of the lanes in flight never sum above the logical cores, and a full run journals each lane's workers
+**And** with the kill switch off the order and the shares are those of Story 71.6, and the red-lane stop, `--keep-going`, the mutexes and the exit codes are unchanged, each held by the tests that hold them today
+**And** (review round, measured on four full runs) a lane's work is the CPU seconds its processes used, read as the lane is reaped and journaled as `cpu_seconds`, with seconds times workers only where no CPU was measured: seconds times workers grows with every worker a lane cannot use and would hand herald's built-site tests more workers on each run; the tracked budgets gain a `[work]` table beside `[lanes]`, both re-measured; when more xdist lanes are pending than the free cores hold at the minimum, a lane takes at least the workers that end its work in half the run's ideal length; the docs-site lanes compete by the seconds their whole chain still needs, their slot holds the cores its widest lane needs, and its turn is never given away, because the first measured run left herald's suite waiting 78 s for a second core on the chain that ended the run; an xdist lane starts on the minimum when nothing is in flight to free a core; and the selection splits each workflow step's command once per run, not once per lane (some 220,000 splits a run before, 33 s to 7 s on the herald test that runs it four times)
+**Status:** done
+
+### Story 117.16: The scripts-lib lane runs under xdist and builds its flag reports once
+
+As the operator waiting on the second-longest job of a PR,
+I want `scripts-lib-test` to run under xdist and the flag-inventory tests to build the live reports once,
+So that the Detectors `scripts-suite` job and the local lane stop running 1,074 tests on one core.
+
+**Type:** chore • **Effort:** S • **Deps:** 103.3 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (every pytest lane goes under xdist where its tests allow; realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `pixi.toml` (the `scripts-lib-test` task), `environment.yaml` if the export moves, `tests/scripts/test_flag_inventory.py`
+**Spec:** `planning-artifacts/specs/spec-117-16-the-scripts-lib-lane-runs-under-xdist-and-builds-its-flag-reports-once.md`
+**Given** `scripts-lib-test` runs `python -m pytest @tests/scripts/scripts-lib-test.txt -q` on one process (108 s alone, 286 to 362 s inside a full preflight, 90 to 157 s of the Detectors `scripts-suite` job, whose median is 234 s), and three tests of `test_flag_inventory.py` each build the same eight live reports (45 s summed)
+**When** the task passes `-n auto --dist loadgroup`, the tests that cannot share a process with others carry an `xdist_group`, and the live reports are built by one module-scoped fixture
+**Then** the lane passes with the same passed and skipped counts as before, and takes under 40 s alone on 16 threads
+**And** CI runs the same task line (the `scripts-suite` step and the preflight lane call it verbatim), and `test_pyforge_ci_is_stdlib_only.py` still holds the list
+**Status:** done
+
+### Story 117.17: A push reuses the green verdict its tree already has
+
+As the operator who runs the full preflight and then pushes,
+I want the pre-push preflight to pass at once when its journal holds a green run of the same tree at the same or a wider scope,
+So that one tree is judged once.
+
+**Type:** feature • **Effort:** M • **Deps:** 66.2, 71.3 • **FR/AD:** spec-pyforge-steward CAP-154 (un-preflighted pushes are refused; realized, no text change: a tree with a journaled green run is preflighted), CAP-175 / FR-49; no AD moves
+**Flag:** exempt, `detector-or-gate` (the preflight is a check that judges; a gated gate is a silent green). Opt-out: `PYFORGE_PREFLIGHT_REUSE=0` runs the lanes again
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_verify.py`, `src/shared/packages/pyforge-steward/tests/unit/test_preflight_verdict_reuse.py` (new), `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/contract.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/oracle-map.md`, `docs/how-to/` page naming the preflight, if one states that every push runs every lane
+**Spec:** `planning-artifacts/specs/spec-117-17-a-push-reuses-the-green-verdict-its-tree-already-has.md`
+**Given** AGENTS.md has the operator run the full preflight before any push, and the pre-push hook then runs `pr-preflight` again on the same tree: a second run of 98 s at touched scope or about ten minutes at full, judging nothing new
+**When** `pr-preflight` starts on a clean working tree whose commit, tree hash, base commit, local day and gate variables (`PYFORGE_*`, `HERALD_*`, `CI*`, `PYTEST_ADDOPTS`, and whether `GH_TOKEN` and `GITHUB_TOKEN` are set) equal those a journaled run recorded with verdict `ok` no more than half an hour ago, and every lane this run selects passed in that run, a touched run's fast-core detectors counting as passed where `detectors-ci`, which runs each of them, passed (so a full run covers the touched run of the same commit, never the reverse)
+**Then** it prints the run it reuses, journals a `reuse` record naming that run, and exits 0 without starting a lane
+**And** any difference (a dirty or untracked file, another tree hash, which a changed lane graph or `pixi.lock` gives, another base, another value of a gate variable, a lane the earlier run deferred, cut or failed, a red or interrupted run, a later run of the same state that was not green, a reworded or squashed commit of the same tree, another day, a green run older than half an hour, `PYFORGE_PREFLIGHT_REUSE=0`) runs the lanes as before; a reuse record is never itself the proof of another reuse, and it lists what its run leaves to CI, which `steward preflight verify-deferred` reads
+**Status:** done
+
+### Story 117.18: The PR workflows write caches from main only, and the changes job fetches no file contents
+
+As the operator landing a PR,
+I want the PR workflows to stop writing caches no later run can read, and the `changes` job to stop fetching file contents it never reads,
+So that the cache stays under its limit and every station job starts sooner.
+
+**Type:** chore • **Effort:** S • **Deps:** 117.10, 117.11 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); spec-pyforge-steward CAP-166 (the CI surfaces registry: no surface is added or removed); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `.github/workflows/pyforge-station-tests.yml`, `.github/workflows/detectors.yml`, `.github/workflows/lint-types.yml`, `.github/workflows/cfe-regression-net.yml`, `.github/workflows/pages.yml`, `.github/workflows/marshal-local-recipes-seed-oracle.yml`, `.github/workflows/copilot-setup-steps.yml`, `.github/workflows/platform-ci.yml`, `tests/durations/pyforge-steward-live.json`
+**Spec:** `planning-artifacts/specs/spec-117-18-the-pr-workflows-write-caches-from-main-only-and-the-changes-job-fetches-no-file-contents.md`
+**Given** eight PR heads of 2026-11-26: the Actions cache at 41.7 GB against a 40 GB limit with 14.9 GB written from PR refs (37 `setup-pixi` uses in seven workflows a pull request runs, and four more in Platform CI's cluster jobs, set no `cache-write`, and `lint-types` saves a new mypy cache entry for every source change), and the `changes` job taking 15 to 21 s ahead of every station job, 11 to 16 s of it a two-commit fetch of every file's contents for a job that only compares trees
+**When** each of those `setup-pixi` uses writes its cache on a push to `main` alone, the mypy cache is restored on every run and saved from `main` alone, and the `changes` job fetches with `filter: blob:none` and checks out `.github/` only
+**Then** a PR head writes no `pixi-` or `mypy-` cache entry, and `changes` computes the same outputs as before for the same diff
+**And** no job, trigger path or CI surface is added or removed, the workflow meta-tests (trigger map, duplicate keys, the CI surfaces registry) pass, and the steward live half's shard durations are re-measured after Story 117.14
+**Status:** done
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

@@ -465,7 +465,7 @@ Station APIs live at ``/stations/<name>/api/v<N>/`` (not bare ``/api/v1``). Exam
 
 ## Pixi environment matrix (measured)
 
-<!-- pixi-env-matrix:begin lock-sha256=4d119ec6d0a1c414 -->
+<!-- pixi-env-matrix:begin lock-sha256=749d3519cf35dc0c -->
 
 Measured from ``pixi.lock`` (not a cross-minor solver benchmark). Regenerate with ``python scripts/pixi_env_matrix.py --update --dream docs/dreams/pyforge-unifying-strategy.md`` after lock changes.
 
@@ -476,7 +476,7 @@ Measured from ``pixi.lock`` (not a cross-minor solver benchmark). Regenerate wit
 | ``build`` | ``3.14.*`` | 252 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``conda-smithy`` | ``3.14.*`` | 242 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``dbgpt-sidecar`` | ``3.14.*`` | 405 | ``linux-64`` |
-| ``default`` | ``3.14.*`` | 294 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``default`` | ``3.14.*`` | 296 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``detectors`` | ``3.14.*`` | 90 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``gcloud`` | ``3.14.*`` | 167 | ``linux-64``, ``osx-arm64-min`` |
 | ``grayskull`` | ``3.14.*`` | 256 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
@@ -494,8 +494,8 @@ Measured from ``pixi.lock`` (not a cross-minor solver benchmark). Regenerate wit
 | ``pyforge-doctor`` | ``3.14.*`` | 116 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-foundry-full`` | ``3.14.*`` | 731 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-foundry-full-stack`` | ``3.14.*`` | 739 | ``linux-64`` |
-| ``pyforge-guild`` | ``3.14.*`` | 305 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-herald`` | ``3.14.*`` | 208 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-guild`` | ``3.14.*`` | 307 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-herald`` | ``3.14.*`` | 210 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-marshal`` | ``3.15.*`` | 152 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-mason`` | ``3.14.*`` | 152 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-scribe`` | ``3.14.*`` | 128 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |

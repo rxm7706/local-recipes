@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.106.1
+version: 8.106.2
 allowed-tools: [conda_forge_server]
 ---
 
@@ -4732,6 +4732,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.106.2** (Nov 26, 2026) — **mason Story 48.1 retro: the recipe audits read each recipe once through `tests/_recipe_trees.py`, and `test-ci-meta` runs under xdist: 80 s to 22 s (PATCH; tests only, no new gotcha).** See `CHANGELOG.md`.
 - **v8.106.1** (Nov 25, 2026) — **steward Story 134.2 retro: the provenance hook no harness registered, and its unit test, retire (PATCH; no script change, no new gotcha).** See `CHANGELOG.md`.
 - **v8.106.0** (Nov 21, 2026) — **steward Story 131.1 retro: the five `playwright-*` browser recipes build for linux-64, osx-arm64 and win-64 at the playwright 1.64 driver's revisions; G131 (cross-host copy script, a measured glibc floor, locking a private channel through a mirror) (MINOR).** See `CHANGELOG.md`.
 - **v8.105.2** (Nov 18, 2026) — **mason Story 40.1 Rule-2 retro: `_http.read_pixi_config` merges the system, user and project pixi config files the way pixi does, where it used to return the first file found (PATCH; script fix, no new gotcha).** See `CHANGELOG.md`.

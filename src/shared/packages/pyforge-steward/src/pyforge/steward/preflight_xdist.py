@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 from typing import Any
 
@@ -70,18 +71,45 @@ def lane_xdist_worker_map(
 MIN_XDIST_WORKERS = 2
 
 
-def xdist_share_at_admission(*, free_cores: int, pending_xdist: int, logical_cores: int) -> int:
+def xdist_share_at_admission(
+    *,
+    free_cores: int,
+    pending_xdist: int,
+    logical_cores: int,
+    weight: float | None = None,
+    pending_weight: float | None = None,
+    target_seconds: float | None = None,
+) -> int:
     """The workers an xdist lane admitted now gets (Story 117.3), or ``0`` when it cannot start yet.
 
     The free cores are split among the xdist lanes still to start, this one included, so the longest lane -- admitted
     first by the scheduler -- takes the largest share while cores are plentiful and later lanes take what frees up.
     Never below :data:`MIN_XDIST_WORKERS` (an xdist run on one worker is a serial run that paid for the workers) and
     never above ``logical_cores``; with fewer than :data:`MIN_XDIST_WORKERS` free cores the lane waits.
+
+    With ``weight`` and ``pending_weight`` (Story 117.15: this lane's expected work and the summed expected work of
+    the xdist lanes still to start, this one included) the split follows the work: the lane takes the free cores in
+    the proportion its work has among them, so a thirteen-thousand-test suite no longer starts on the two workers a
+    ten-second suite starts on. Without them, or when the pending work sums to nothing, the split is even.
+
+    With ``target_seconds`` as well (the time a lane should take: a fraction of the run's ideal length), and more
+    xdist lanes pending than the free cores hold at the minimum, the lane takes at least the workers that finish its
+    work in that time. The proportional split alone hands every lane of a full run about the minimum, because a
+    dozen lanes are pending at once: each then runs for the length of the whole run on two workers, the lanes behind
+    them start late on two more, and the run ends with idle cores. Sized by the target, the heavy lanes take several
+    workers, end early, and hand their cores on. While the pending lanes all fit side by side the proportional split
+    stands: running them together costs less than running them in turn, each lane's serial part being paid once.
     """
     if free_cores < MIN_XDIST_WORKERS:
         return 0
-    share = free_cores // max(1, pending_xdist)
-    return max(MIN_XDIST_WORKERS, min(share, logical_cores))
+    if weight is not None and pending_weight is not None and pending_weight > 0:
+        share = round(free_cores * min(weight, pending_weight) / pending_weight)
+        crowded = free_cores < MIN_XDIST_WORKERS * pending_xdist
+        if crowded and target_seconds is not None and target_seconds > 0 and math.isfinite(weight):
+            share = max(share, math.ceil(weight / target_seconds))
+    else:
+        share = free_cores // max(1, pending_xdist)
+    return max(MIN_XDIST_WORKERS, min(share, free_cores, logical_cores))
 
 
 def pytest_xdist_argv_from_cmd(cmd: str) -> list[str]:

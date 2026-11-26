@@ -1,21 +1,20 @@
-# Per-lane preflight budgets (spec-pyforge-steward CAP-175 / Story 117.5).
-# Values are journal-derived medians from green runs measured 2026-10-27
-# (132 runs across worktrees; see spec-pyforge-steward .memlog.md CAP-175).
-# preflight-budget warns when a lane's median of the last five green runs
-# exceeds 1.5× its budget. Missing lanes inherit [defaults] by run mode.
+# Per-lane preflight budgets (spec-pyforge-steward CAP-175 / Stories 117.5 and 117.15).
 #
-# Story 124.2 (spec-pyforge-steward:CAP-175) added the lanes its split made:
-# the live-tree halves of atlas, herald, marshal, mason, scribe and warden, and
-# pyforge-core's and the testing kit's two halves, which replace their
-# whole-suite lanes (`pyforge-core-test` and `pyforge-testing-kit-test` are
-# cmd-less aggregates since steward Story 124.1, so the preflight runs their
-# halves). Their values are the first measured medians: three standalone runs
-# of `pixi run --frozen -e <env> <task>` each on 2026-11-12 (16 cores, one lane
-# at a time; herald's with TMPDIR off tmpfs, as the preflight's lane scratch
-# sets it), rounded to the second. Scribe's live half had one red test in each
-# run (test_spec_not_behind_memlog, behind until steward Story 122.5 re-derives
-# spec-pyforge-steward); its time stands. The preflight runs lanes side by
-# side, so its journal medians run higher; the next re-measure reads the journal.
+# [lanes] is each lane's wall seconds inside a full preflight. preflight-budget warns
+# when a lane's median of the last five green runs exceeds 1.5× its budget; a lane
+# with no row inherits [defaults] by run mode.
+#
+# [work] is each lane's CPU seconds: what its processes used, measured as the lane is
+# reaped and journaled as `cpu_seconds`. The run reads both tables to order and size
+# the lanes its own journal has no green run of (a fresh worktree): seconds rank a
+# lane, work sizes an xdist lane's share of the cores. Neither table moves a verdict.
+#
+# Re-measured 2026-11-26 (steward Story 117.15) from full preflights of all fifty
+# lanes on one machine (8 cores, 16 threads; TMPDIR off tmpfs), each lane's median.
+# The values before it were medians of 2026-10-27 and 2026-11-12, taken before
+# Stories 117.14 to 117.16, mason 48.1, doctor 66.1 and herald 58.1 moved the lanes
+# they name. `test-ci@local-recipes` and `lint-types@pyforge-guild` are not preflight
+# lanes of a full run and keep their earlier values.
 #
 # CHANGING THIS FILE IS A GOVERNANCE ACT — same convention as
 # coverage-thresholds.toml beside it.
@@ -26,52 +25,106 @@ full = 240
 
 [lanes]
 "test-ci@local-recipes" = 986
-"pyforge-steward-test@pyforge-steward" = 698
-"pyforge-steward-live-test@pyforge-steward" = 245
-"pyforge-doctor-test@pyforge-doctor" = 487
-"pyforge-doctor-live-test@pyforge-doctor" = 108
-"detectors-ci@pyforge-guild" = 481
+"pyforge-steward-test@pyforge-steward" = 179
+"pyforge-steward-live-test@pyforge-steward" = 247
+"pyforge-doctor-test@pyforge-doctor" = 62
+"pyforge-doctor-live-test@pyforge-doctor" = 219
+"detectors-ci@pyforge-guild" = 130
 "lint-types@pyforge-guild" = 87
-"ruff@pyforge-guild" = 12
-"ruff-format@pyforge-guild" = 8
-"mypy@pyforge-guild" = 45
-"mypy@pyforge-foundry-full" = 52
-"target-version-check@pyforge-guild" = 5
-"precommit-config-check@pyforge-guild" = 4
-"test-ci-meta@pyforge-guild" = 120
-"pyforge-core-package-test@pyforge-core" = 5
-"pyforge-core-live-test@pyforge-core" = 16
-"pyforge-testing-kit-package-test@pyforge-testing-kit" = 1
-"pyforge-testing-kit-live-test@pyforge-testing-kit" = 1
-"pyforge-atlas-test@pyforge-atlas" = 257
-"pyforge-atlas-live-test@pyforge-atlas" = 45
-"pyforge-herald-test@pyforge-herald" = 341
-"pyforge-herald-live-test@pyforge-herald" = 166
-"pyforge-marshal-test@pyforge-marshal" = 276
-"pyforge-marshal-live-test@pyforge-marshal" = 46
-"pyforge-mason-test@pyforge-mason" = 579
-"pyforge-mason-live-test@pyforge-mason" = 5
-"pyforge-scribe-test@pyforge-scribe" = 180
-"pyforge-scribe-live-test@pyforge-scribe" = 4
-"pyforge-warden-test@pyforge-warden" = 120
-"pyforge-warden-live-test@pyforge-warden" = 11
-"pyforge-atlas-coverage-gate@pyforge-atlas" = 15
-"pyforge-doctor-coverage-gate@pyforge-doctor" = 15
-"pyforge-herald-coverage-gate@pyforge-herald" = 15
-"pyforge-marshal-coverage-gate@pyforge-marshal" = 15
-"pyforge-mason-coverage-gate@pyforge-mason" = 15
-"pyforge-scribe-coverage-gate@pyforge-scribe" = 15
-"pyforge-steward-coverage-gate@pyforge-steward" = 15
-"pyforge-warden-coverage-gate@pyforge-warden" = 15
-"docs-site-install@site" = 45
-"pages-build@site" = 30
-"pages-check@site" = 20
-"docs-site-validate-links@site" = 25
-"docs-site-validate-sidebar-order@site" = 8
-"docs-site-validate-sidebar@site" = 8
-"docs-map-render-test@pyforge-guild" = 15
-"docs-gen-test@pyforge-guild" = 20
-"scripts-lib-test@pyforge-guild" = 25
-"pyforge-doctor-scripts-test@pyforge-ci" = 40
-"pyforge-doctor-aggregate-scripts-test@pyforge-doctor" = 35
-"pyforge-deps-test@pyforge-ci" = 30
+"ruff@pyforge-guild" = 2
+"ruff-format@pyforge-guild" = 2
+"mypy@pyforge-guild" = 98
+"mypy@pyforge-foundry-full" = 149
+"target-version-check@pyforge-guild" = 1
+"precommit-config-check@pyforge-guild" = 1
+"test-ci-meta@pyforge-guild" = 101
+"pyforge-core-package-test@pyforge-core" = 19
+"pyforge-core-live-test@pyforge-core" = 73
+"pyforge-testing-kit-package-test@pyforge-testing-kit" = 7
+"pyforge-testing-kit-live-test@pyforge-testing-kit" = 4
+"pyforge-atlas-test@pyforge-atlas" = 231
+"pyforge-atlas-live-test@pyforge-atlas" = 213
+"pyforge-herald-test@pyforge-herald" = 55
+"pyforge-herald-live-test@pyforge-herald" = 467
+"pyforge-marshal-test@pyforge-marshal" = 269
+"pyforge-marshal-live-test@pyforge-marshal" = 207
+"pyforge-mason-test@pyforge-mason" = 31
+"pyforge-mason-live-test@pyforge-mason" = 21
+"pyforge-scribe-test@pyforge-scribe" = 15
+"pyforge-scribe-live-test@pyforge-scribe" = 13
+"pyforge-warden-test@pyforge-warden" = 172
+"pyforge-warden-live-test@pyforge-warden" = 34
+"pyforge-atlas-coverage-gate@pyforge-atlas" = 1
+"pyforge-doctor-coverage-gate@pyforge-doctor" = 1
+"pyforge-herald-coverage-gate@pyforge-herald" = 1
+"pyforge-marshal-coverage-gate@pyforge-marshal" = 2
+"pyforge-mason-coverage-gate@pyforge-mason" = 2
+"pyforge-scribe-coverage-gate@pyforge-scribe" = 2
+"pyforge-steward-coverage-gate@pyforge-steward" = 2
+"pyforge-warden-coverage-gate@pyforge-warden" = 1
+"docs-site-install@site" = 16
+"pages-build@site" = 8
+"pages-check@site" = 2
+"docs-site-validate-links@site" = 1
+"docs-site-validate-sidebar-order@site" = 1
+"docs-site-validate-sidebar@site" = 1
+"docs-map-render-test@pyforge-guild" = 3
+"docs-gen-test@pyforge-guild" = 5
+"scripts-lib-test@pyforge-guild" = 163
+"pyforge-doctor-scripts-test@pyforge-ci" = 182
+"pyforge-doctor-aggregate-scripts-test@pyforge-doctor" = 21
+"pyforge-deps-test@pyforge-ci" = 17
+"steward-share-tree-test@pyforge-guild" = 3
+"scribe-plane-and-portal-test@pyforge-foundry-full" = 10
+
+[work]
+"detectors-ci@pyforge-guild" = 166
+"test-ci-meta@pyforge-guild" = 193
+"ruff@pyforge-guild" = 3
+"ruff-format@pyforge-guild" = 2
+"mypy@pyforge-guild" = 98
+"target-version-check@pyforge-guild" = 1
+"precommit-config-check@pyforge-guild" = 1
+"mypy@pyforge-foundry-full" = 149
+"steward-share-tree-test@pyforge-guild" = 3
+"scribe-plane-and-portal-test@pyforge-foundry-full" = 11
+"pyforge-doctor-scripts-test@pyforge-ci" = 298
+"pyforge-doctor-aggregate-scripts-test@pyforge-doctor" = 18
+"docs-map-render-test@pyforge-guild" = 3
+"docs-gen-test@pyforge-guild" = 5
+"scripts-lib-test@pyforge-guild" = 309
+"pyforge-deps-test@pyforge-ci" = 17
+"docs-site-install@site" = 14
+"pyforge-core-package-test@pyforge-core" = 17
+"pyforge-core-live-test@pyforge-core" = 71
+"pyforge-testing-kit-package-test@pyforge-testing-kit" = 6
+"pyforge-testing-kit-live-test@pyforge-testing-kit" = 4
+"pyforge-atlas-test@pyforge-atlas" = 403
+"pyforge-atlas-live-test@pyforge-atlas" = 360
+"pyforge-doctor-test@pyforge-doctor" = 117
+"pyforge-doctor-live-test@pyforge-doctor" = 455
+"pyforge-herald-test@pyforge-herald" = 69
+"pyforge-herald-live-test@pyforge-herald" = 757
+"pyforge-marshal-test@pyforge-marshal" = 1024
+"pyforge-marshal-live-test@pyforge-marshal" = 340
+"pyforge-mason-test@pyforge-mason" = 23
+"pyforge-mason-live-test@pyforge-mason" = 20
+"pyforge-scribe-test@pyforge-scribe" = 14
+"pyforge-scribe-live-test@pyforge-scribe" = 12
+"pyforge-steward-test@pyforge-steward" = 276
+"pyforge-steward-live-test@pyforge-steward" = 817
+"pyforge-warden-test@pyforge-warden" = 346
+"pyforge-warden-live-test@pyforge-warden" = 57
+"pyforge-atlas-coverage-gate@pyforge-atlas" = 1
+"pyforge-doctor-coverage-gate@pyforge-doctor" = 1
+"pyforge-herald-coverage-gate@pyforge-herald" = 1
+"pyforge-marshal-coverage-gate@pyforge-marshal" = 2
+"pyforge-mason-coverage-gate@pyforge-mason" = 2
+"pyforge-scribe-coverage-gate@pyforge-scribe" = 2
+"pyforge-steward-coverage-gate@pyforge-steward" = 2
+"pyforge-warden-coverage-gate@pyforge-warden" = 1
+"pages-build@site" = 12
+"pages-check@site" = 2
+"docs-site-validate-links@site" = 1
+"docs-site-validate-sidebar-order@site" = 1
+"docs-site-validate-sidebar@site" = 1

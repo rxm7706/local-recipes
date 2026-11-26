@@ -17,12 +17,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from pyforge.steward.preflight import JOURNAL_RELATIVE, lane_label, lane_medians
+from pyforge.steward.preflight import BUDGETS_RELATIVE, JOURNAL_RELATIVE, lane_label, lane_medians
 
 CAP_CITATION = "CAP-175 (FR-49)"
 LEGACY_CAP_CITATION = "CAP-159 (FR-32)"
 OVER_BUDGET_RATIO = 1.5
-BUDGETS_RELATIVE = Path("docs/governance/preflight-budgets.toml")
 
 STATION_TOKENS: tuple[str, ...] = (
     "atlas",

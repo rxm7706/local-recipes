@@ -846,6 +846,18 @@ Folded Dreams: [[bmad-drift-new-artifact-shape]], [[bmad-method-version-drift]],
   `pyforge.core.cli_output.align_json_options`, so each also takes `--format {text,json}`, writing to the same destination, and
   `contract.md` lists the added spelling. **Constraints:** nothing is renamed or removed; no flag; the compiled
   station skill is not edited. Owner `spec-pyforge-doctor`.
+- **2026-11-26 (the detector run measures the doctor sources beside the script detectors) — Found and ruled:**
+  `scripts/detectors.py` starts the script detectors in a pool and, when the pool has drained, runs the ported doctor
+  sources one after another in its own process. Measured on `d039bc7de3`: the run takes 84 s alone where its longest
+  member, `chain_currency_sweep_check`, takes 42 s (the sources that follow it, `capability-effect` 15.8 s and
+  `docs-currency` 9.5 s the longest, add about 40 s in a row); 230 to 304 s inside a full preflight; 108 s of the
+  Detectors job on a PR. **Ruled** (operator, 2026-11-26: "Approve plan", on the ranked report and plan steward's Dream entry of the same date records). **For doctor:** this entry binds `spec-pyforge-steward:CAP-175` (the
+  preflight and a PR's CI answer within a measured budget; realized here, no text change in this station's Spec) and
+  decomposes as Epic 66, one story: under `--jobs` above one, each source is gathered in a worker process while the
+  script detectors run, inside the one job limit. **Constraints:** the rows, their order, their statuses and the exit
+  code do not move; `--jobs 1` runs every detector and source one at a time, as before; a source that raises reads
+  `unknown` for its own row and the others still run; an unimportable `pyforge.doctor` still yields every row as
+  `unknown`. No flag (a chore: the same measurements, side by side). Owner `spec-pyforge-doctor`.
 
 ## 2026-10-26 — A spike report is not a corrupt file, and the classifier can't yet tell the difference (folded from bmad-drift-new-artifact-shape)
 

@@ -33,7 +33,9 @@ never unpatches:
 
 from __future__ import annotations
 
+import functools
 import json
+import re
 import socket
 from collections.abc import Mapping
 from pathlib import Path
@@ -217,3 +219,40 @@ def credentials_file(tmp_path: Path):
         return path
 
     return _write
+
+
+# ---------------------------------------------------------------------------
+# Story 58.1: under pytest-xdist, every module that builds the site shares one worker
+# ---------------------------------------------------------------------------
+
+#: The xdist group of the modules that build the site or read a build. An Astro build runs with ``docs-site/`` as its
+#: working directory and rewrites ``docs-site/.astro`` and ``docs-site/public`` from scratch, so two builds at once
+#: would see each other's files. One group is one worker: these modules run in turn, as they did on one process,
+#: while every other test runs on the other workers.
+DOCS_SITE_XDIST_GROUP = "docs-site"
+
+#: What marks a test module as one that builds: it names the build helper, ``tests/meta/pages_astro.py``, the one
+#: module that runs Astro. A module that only reads ``docs-site/``'s tracked sources, or only names its pixi tasks,
+#: builds nothing and stays out. ``tests/meta/test_site_builders_share_a_worker.py`` holds the rule.
+DOCS_SITE_BUILDER_RE = re.compile(r"\bpages_astro\b")
+
+
+@functools.cache
+def module_builds_the_site(path: str) -> bool:
+    """Does the test module at ``path`` name the build helper?"""
+    try:
+        return bool(DOCS_SITE_BUILDER_RE.search(Path(path).read_text(encoding="utf-8")))
+    except OSError:
+        return False
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    """Put every test of a site-building module in :data:`DOCS_SITE_XDIST_GROUP` (``--dist loadgroup`` reads the mark).
+
+    ``tryfirst``: xdist appends the group to each node id in its own collection hook, so the mark must be there first.
+    Decided from the module's text, not a hand-kept list, so a new built-site test joins the group by being written.
+    """
+    for item in items:
+        if module_builds_the_site(str(item.path)):
+            item.add_marker(pytest.mark.xdist_group(DOCS_SITE_XDIST_GROUP))

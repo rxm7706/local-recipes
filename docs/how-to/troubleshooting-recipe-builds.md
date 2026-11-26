@@ -5,7 +5,7 @@ sources:
   - .github/workflows/test-all.yml
   - pixi.toml
   - pixi.lock
-verified: 2026-11-25
+verified: 2026-11-26
 ---
 
 # Troubleshooting recipe builds

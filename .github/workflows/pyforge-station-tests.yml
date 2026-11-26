@@ -199,6 +199,13 @@ jobs:
           # merge commit and its first parent is the base tip, so the three-dot diff below has its merge base; on a
           # push HEAD~1 is the previous tip. A full clone of this repository cost ~20 s per job.
           fetch-depth: 2
+          # Story 117.18 (spec-pyforge-steward CAP-175): this job only compares trees (`git diff --quiet` between
+          # two commits), so it fetches no file contents and checks out nothing but .github/. The two-commit fetch
+          # with every blob took 11 to 16 s of this job's 15 to 21 s, and every station job waits on it.
+          filter: blob:none
+          sparse-checkout: |
+            .github
+          sparse-checkout-cone-mode: true
 
       - name: Compute per-station changed paths
         id: filter
@@ -651,11 +658,14 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
+      # Story 117.18 (spec-pyforge-steward CAP-175): a pull request restores the cache main wrote and writes none. A cache
+      # written from a PR ref can be read by that PR alone, and 14.9 GB of them had filled the repository's 40 GB limit.
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           pixi-version: v0.80.0
           environments: pyforge-core
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       - run: pixi run --frozen -e pyforge-core pyforge-core-package-test
 
   # Story 124.2: pyforge-core's live-tree half keeps the `core` gate (shared surface OR any station OR core_paths).
@@ -673,6 +683,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-core
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       - run: pixi run --frozen -e pyforge-core pyforge-core-live-test
 
   testing-kit-test:
@@ -701,6 +712,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-testing-kit
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       - run: pixi run --frozen -e pyforge-testing-kit pyforge-testing-kit-package-test
 
   # Story 124.2 (spec-pyforge-steward:CAP-175): the live-tree half of the kit's suite -- the modules marked
@@ -719,6 +731,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-testing-kit
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       - run: pixi run --frozen -e pyforge-testing-kit pyforge-testing-kit-live-test
 
   atlas-test:
@@ -750,6 +763,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-atlas
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       # Three of atlas's gates fail loud (never silently skip) when their
       # prerequisite isn't provisioned: the dashboard E2E suite AND the WASM
       # smoke test both need a real Chromium (unconditionally -- both launch
@@ -823,6 +837,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-atlas
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       - run: pixi run --frozen -e pyforge-atlas pyforge-atlas-live-test
       # The live-tree half's report, merged with the package half's by the gate job.
       - uses: actions/upload-artifact@v7
@@ -851,6 +866,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-atlas
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       - uses: actions/download-artifact@v8
         with:
           pattern: coverage-atlas-*
@@ -891,6 +907,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-doctor
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       - run: pixi run --frozen -e pyforge-doctor pyforge-doctor-test
       # Story 117.4: the package half's report, merged with the live-tree half's by the doctor-gate job.
       - uses: actions/upload-artifact@v7
@@ -928,6 +945,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-doctor
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       # Story 57.3: the live writer-lock proof reads `git merge-base refs/remotes/origin/main HEAD`
       # (spec-pyforge-doctor CAP-100). A pull request's two-commit checkout has no remote ref, so the merge commit's
       # first parent (the base tip, the base Story 117.11's gates take) is named as it; a push checkout already has it.
@@ -967,6 +985,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-doctor
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       - uses: actions/download-artifact@v8
         with:
           pattern: coverage-doctor-*
@@ -1018,6 +1037,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-herald
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       # DW-14-2-1: the render gate's real-browser tests need Chromium. Steward Story 112.1 / CAP-174's shape
       # (the Platform CI test job, the atlas job): install Playwright's own chromium, launch it once, and pull its
       # system packages through apt only when that launch fails. `which google-chrome` alone proved nothing:
@@ -1070,6 +1090,15 @@ jobs:
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Herald Story 58.1 (spec-pyforge-steward:CAP-175): 2 shards, as the package half has. Every Astro build runs in
+    # the one docs-site tree, so within a shard the builds run in turn (one xdist group); two shards put half of them
+    # on each runner. Each shard uploads its own coverage report and the gate merges them.
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [1, 2]
+    env:
+      PYTEST_ADDOPTS: --splits 2 --group ${{ matrix.group }} --durations-path tests/durations/pyforge-herald.json
     steps:
       - uses: actions/checkout@v7
         with:
@@ -1079,6 +1108,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-herald site
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       # test_skf_validators_pass invokes `uv run` directly (not a pixi
       # dependency -- this station's own skf-frontmatter validator script
       # is meant to be runnable standalone via uv).
@@ -1090,11 +1120,13 @@ jobs:
           # Story 117.13: Astro renames docs-site/.astro/ into pytest's temp dir, which fails with EXDEV when /tmp is
           # another filesystem, as on runner image 20261101.64.1. runner.temp sits beside the checkout.
           TMPDIR: ${{ runner.temp }}
-      # The live-tree half's report, merged with the package half's by the gate job.
+      # This shard's report of the live-tree half; the gate job merges every shard's with the package half's.
+      - name: Name this shard's coverage report
+        run: mv .steward/coverage/herald-live.json .steward/coverage/herald-live-${{ matrix.group }}.json
       - uses: actions/upload-artifact@v7
         with:
-          name: coverage-herald-live
-          path: .steward/coverage/herald-live.json
+          name: coverage-herald-live-${{ matrix.group }}
+          path: .steward/coverage/herald-live-${{ matrix.group }}.json
           if-no-files-found: error
           retention-days: 3
 
@@ -1117,6 +1149,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-herald
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       - uses: actions/download-artifact@v8
         with:
           pattern: coverage-herald-*
@@ -1166,6 +1199,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-marshal
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       # Seed verbs + integration harnesses create real commits; GHA runners
       # have no git identity by default (same precedent as coverage-gates.yml).
       - run: |
@@ -1201,6 +1235,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-marshal
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       # Seed verbs + integration harnesses create real commits; GHA runners
       # have no git identity by default (same precedent as coverage-gates.yml).
       - run: |
@@ -1234,6 +1269,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-marshal
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       - uses: actions/download-artifact@v8
         with:
           pattern: coverage-marshal-*
@@ -1274,6 +1310,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-mason
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       - run: pixi run --frozen -e pyforge-mason pyforge-mason-test
       # Story 124.2: the package half's report, merged with the live-tree half's by the mason-gate job (Story
       # 117.2's gate, which read this job's report in place, moved there with the split).
@@ -1303,6 +1340,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-mason
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       - run: pixi run --frozen -e pyforge-mason pyforge-mason-live-test
       # The live-tree half's report, merged with the package half's by the gate job.
       - uses: actions/upload-artifact@v7
@@ -1339,6 +1377,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-mason
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       - uses: actions/download-artifact@v8
         with:
           pattern: coverage-mason-*
@@ -1379,6 +1418,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-scribe
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       - run: pixi run --frozen -e pyforge-scribe pyforge-scribe-test
       # Story 124.2: the package half's report, merged with the live-tree half's by the scribe-gate job (Story
       # 117.2's gate, which read this job's report in place, moved there with the split).
@@ -1429,6 +1469,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-scribe
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       - name: Enable pgvector extension
         env:
           PGPASSWORD: scribe
@@ -1460,6 +1501,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-scribe
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       - uses: actions/download-artifact@v8
         with:
           pattern: coverage-scribe-*
@@ -1509,6 +1551,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-steward
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       - run: pixi run --frozen -e pyforge-steward pyforge-steward-test
       # Story 117.4: the package half's report, merged with the live-tree half's by the steward-gate job.
       - name: Name this shard's coverage report
@@ -1548,6 +1591,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-steward
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       - run: pixi run --frozen -e pyforge-steward pyforge-steward-live-test
       # Story 117.4: the live-tree half's report, merged with the package half's by the steward-gate job.
       - name: Name this shard's coverage report
@@ -1577,6 +1621,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-steward
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       - uses: actions/download-artifact@v8
         with:
           pattern: coverage-steward-*
@@ -1617,6 +1662,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-warden
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       - run: pixi run --frozen -e pyforge-warden pyforge-warden-test
       # Story 124.2: the package half's report, merged with the live-tree half's by the warden-gate job (Story
       # 117.2's gate, which read this job's report in place, moved there with the split).
@@ -1648,6 +1694,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-warden
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       - run: pixi run --frozen -e pyforge-warden pyforge-warden-live-test
       # The live-tree half's report, merged with the package half's by the gate job.
       - uses: actions/upload-artifact@v7
@@ -1675,6 +1722,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-warden
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       - uses: actions/download-artifact@v8
         with:
           pattern: coverage-warden-*
@@ -1742,6 +1790,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-steward
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
 
       - name: Build root Containerfile and run container gates (${{ matrix.engine }})
         run: pixi run --frozen -e pyforge-steward pyforge-steward-guild-image-build -- ${{ matrix.engine }}

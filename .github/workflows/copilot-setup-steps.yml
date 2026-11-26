@@ -25,11 +25,14 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
+      # Story 117.18 (spec-pyforge-steward CAP-175): a pull request restores the cache main wrote and writes none. A cache
+      # written from a PR ref can be read by that PR alone, and 14.9 GB of them had filled the repository's 40 GB limit.
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           pixi-version: v0.80.0
           environments: pyforge-guild
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
           frozen: true
       - name: Prove the Guild env
         run: pixi run --frozen -e pyforge-guild python -c "import pyforge.doctor, pyforge.marshal, pyforge.steward; print('pyforge-guild ready')"

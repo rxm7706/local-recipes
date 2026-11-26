@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: 618942e0d0a561be
-story_count: 148
+source_fingerprint: 78ab17d962175bdd
+story_count: 149
 test_file_count: 48
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 148
-- **Epics parsed:** 47
+- **Stories parsed:** 149
+- **Epics parsed:** 48
 - **Test files inventoried:** 48 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `618942e0d0a561be`
+- **Source fingerprint:** `78ab17d962175bdd`
 
 ## Risk Assessment
 
@@ -78,6 +78,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 44: Mason's verbs take both spellings for JSON (spec-pyforge-steward:CAP-185)
 - Epic 45: Mason's build-engine plugins are registered under mason's name (spec-pyforge-unifying-strategy:CAP-18)
 - Epic 47: Mason's types are checked whole (spec-pyforge-mason CAP-5)
+- Epic 48: The recipe audits read each recipe once, and the meta suite runs under xdist (spec-pyforge-steward:CAP-175)
 
 ### Low-risk epics
 
@@ -289,6 +290,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 46.2 | Mason's doctor is gone, and self-check is the one name | none observed |
 | 46.3 | The mason station skill documents mason self-check | none observed |
 | 47.1 | Mason's types are checked whole | none observed |
+| 48.1 | The recipe audits read each recipe once, and the meta suite runs under xdist | none observed |
 
 ## Quality Gates
 

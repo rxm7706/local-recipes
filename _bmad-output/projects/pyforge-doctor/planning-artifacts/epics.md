@@ -4332,6 +4332,29 @@ So that the same spelling works on every station.
 **And** every invocation that parsed before parses the same way, and doctor's contract test passes
 **Status:** done
 
+## Epic 66: The detector run measures the doctor sources beside the script detectors (spec-pyforge-steward:CAP-175)
+
+Minted 2026-11-26 from the station Dream's entry of the same date on the operator ruling of that day ("Approve plan", on the ranked preflight and CI report steward's Dream entry records). `scripts/detectors.py` runs the script detectors in a pool and then the ported doctor sources one after another, so the run takes its longest script detector plus every source in a row.
+**HARD boundaries:**
+- The rows, their order, their statuses and the exit code do not move; `--jobs 1` runs one thing at a time, as before.
+- No flag, and no capability text of `spec-pyforge-doctor` moves.
+
+### Story 66.1: The detector run measures the doctor sources beside the script detectors
+
+As the operator waiting on `detectors-ci`,
+I want the doctor sources gathered in worker processes while the script detectors run,
+So that the run takes as long as its longest member, not that member plus every source in a row.
+
+**Type:** chore • **Effort:** S • **Deps:** 55.3 • **FR/AD:** spec-pyforge-steward:CAP-175 (realized here; no text change in this station's Spec); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `scripts/detectors.py`, `tests/scripts/test_detectors_jobs.py`
+**Spec:** `planning-artifacts/specs/spec-66-1-the-detector-run-measures-the-doctor-sources-beside-the-script-detectors.md`
+**Given** `d039bc7de3`, where `python scripts/detectors.py --scope repo --jobs auto` takes 84 s alone: the script pool ends with `chain_currency_sweep_check` at 42 s, and `_run_doctor_sources` then gathers each source in turn in the same process (`capability-effect` 15.8 s, `docs-currency` 9.5 s and the rest, about 40 s)
+**When** `--jobs` is above one and each source is gathered in a worker process while the script detectors run, the two kinds sharing the one job limit
+**Then** the run prints the same rows in the same order with the same statuses and exits with the same code as `--jobs 1`, and takes under 55 s alone on 16 threads
+**And** a source that raises reads `unknown` for its own row while the others run, and an unimportable `pyforge.doctor` still yields every source row as `unknown`
+**Status:** done
+
 ## Currency reconciliation — 2026-11-26 (the tag rule reaches station source)
 
 *Chain-currency cascade (arch -> epics).* 2026-11-26: Epic 64 / Story 64.1 minted under `spec-one-chain-per-station` (its capability 9, realized with no text change); no AD moves. The keys go through the Tier-3 feed and `sprint-ledger-sync`. **Content changed:** the Epic, this section and `updated:`.

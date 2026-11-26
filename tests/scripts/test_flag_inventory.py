@@ -1326,11 +1326,20 @@ def test_the_live_tree_builds_eight_reports_and_exits_0(tmp_path: Path):
     assert sorted(p.name for p in out.iterdir()) == sorted(f"pyforge-{s}.md" for s in stations)
 
 
-@pytest.mark.skipif(git is None, reason="git is not installed")
-def test_the_live_reports_agree_with_the_gate_on_the_warned_specs_of_every_station(tmp_path: Path, capsys):
-    out = tmp_path / "out"
+@pytest.fixture(scope="module")
+def live_reports(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """The eight reports of the live tree, built once for the tests that only read them (steward Story 117.16: two
+    tests each built them, 15 s a time). Those tests share an xdist group, so one worker builds them; the CLI test
+    above builds its own, since the run itself is its subject."""
+    out = tmp_path_factory.mktemp("live-flag-inventory") / "out"
     assert flag_inventory.main(["--out-dir", str(out)]) == 0
-    capsys.readouterr()
+    return out
+
+
+@pytest.mark.skipif(git is None, reason="git is not installed")
+@pytest.mark.xdist_group("flag-inventory-live-reports")
+def test_the_live_reports_agree_with_the_gate_on_the_warned_specs_of_every_station(live_reports: Path):
+    out = live_reports
     inputs = flag_gate_check.load_inputs(REPO_ROOT)
     _judged, findings = flag_gate_check.judge_tree(REPO_ROOT, inputs)
 
@@ -1362,12 +1371,9 @@ def test_the_checked_in_reports_exist_for_every_roster_station():
 
 
 @pytest.mark.skipif(git is None, reason="git is not installed")
-def test_no_table_cell_of_a_live_or_checked_in_report_has_an_odd_number_of_backticks(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-):
-    out = tmp_path / "out"
-    assert flag_inventory.main(["--out-dir", str(out)]) == 0
-    capsys.readouterr()
+@pytest.mark.xdist_group("flag-inventory-live-reports")
+def test_no_table_cell_of_a_live_or_checked_in_report_has_an_odd_number_of_backticks(live_reports: Path):
+    out = live_reports
     reports = sorted(out.glob("pyforge-*.md")) + sorted((REPO_ROOT / "docs/governance/flag-inventory").glob("*.md"))
 
     assert len(reports) == 16

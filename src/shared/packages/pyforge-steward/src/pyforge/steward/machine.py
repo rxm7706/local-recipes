@@ -603,7 +603,9 @@ class _Run:
 
 def _read_lock(root: Path) -> _Lock | None:
     try:
-        doc = yaml.safe_load((root / "pixi.lock").read_text(encoding="utf-8"))
+        # The C safe loader where libyaml is built in: the same document, about five times faster (Story 117.14).
+        loader = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+        doc = yaml.load((root / "pixi.lock").read_text(encoding="utf-8"), Loader=loader)  # noqa: S506 -- a safe loader
     except OSError, yaml.YAMLError:
         return None
     if not isinstance(doc, dict) or not isinstance(doc.get("environments"), dict):

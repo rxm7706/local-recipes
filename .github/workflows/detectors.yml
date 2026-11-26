@@ -91,11 +91,14 @@ jobs:
           # shallow clone the PR's synthetic merge commit has no parents, reads
           # as a root commit that 'touches' the whole tree, and both suites go red.
           fetch-depth: 0
+      # Story 117.18 (spec-pyforge-steward CAP-175): a pull request restores the cache main wrote and writes none. A cache
+      # written from a PR ref can be read by that PR alone, and 14.9 GB of them had filled the repository's 40 GB limit.
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           pixi-version: v0.80.0
           environments: pyforge-ci pyforge-doctor pyforge-guild
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       - name: tests/scripts (pyforge-doctor-scripts-test)
         run: pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test
       # The detector-aggregate tests that load Doctor's dispatch table, and the
@@ -165,6 +168,7 @@ jobs:
           environments: detectors
           locked: true
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
 
       - name: Choose the interpreter (pixi, else pip)
         id: py

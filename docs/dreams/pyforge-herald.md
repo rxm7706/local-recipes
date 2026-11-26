@@ -923,6 +923,18 @@ Herald rebases to one Dream, one Spec, one PRD, one spine, one epic chain. Folde
   `pyforge.core.cli_output.align_json_options`, so each also takes `--format {text,json}`, writing to the same destination, and
   `contract.md` lists the added spelling. **Constraints:** nothing is renamed or removed; no flag; the compiled
   station skill is not edited. Owner `spec-pyforge-herald`.
+- **2026-11-26 (herald's suite runs under xdist, its site builds in one worker) — Found and ruled:** herald's live
+  half is one pytest process. Measured on `d039bc7de3`: `pyforge-herald-live-test` takes 234 s alone and 441 to
+  471 s inside a full preflight, and its CI job 263 to 425 s, the critical path of seven of eight PR heads of this
+  day. About 160 s of the 234 s are the tests that build the site with Astro in the one `docs-site/` tree, which
+  cannot run two at a time; the other 650 tests wait behind them on the same core. **Ruled** (operator, 2026-11-26: "Approve plan", on the ranked report and plan steward's Dream entry of the same date records). **For herald:**
+  this entry binds `spec-pyforge-steward:CAP-175` (every pytest lane goes under xdist where its tests allow; realized
+  here, no text change in this station's Spec) and decomposes as Epic 58, one story: `pytest-xdist` joins herald's
+  environment, both halves pass `-n auto --dist loadgroup`, every module that names the build helper (the one
+  module that runs Astro) shares one xdist group, and the CI job of the live half runs as two shards whose coverage the gate merges, as the
+  package half's does. **Constraints:** no two builds run at once in one tree, in a run or across the preflight's
+  docs-site lanes (the mutex of steward Story 105.1 is unchanged); no test is deleted, skipped or re-marked; the
+  coverage reports and the floors are the same. No flag (a chore). Owner `spec-pyforge-herald`.
 
 ## 2026-10-26 — The deck family stays current — infographics re-derived from the ledgers, not remembered (folded from deck-family-currency)
 

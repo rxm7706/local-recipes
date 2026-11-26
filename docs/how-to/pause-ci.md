@@ -6,7 +6,7 @@ sources:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/ci.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_ci.py
   - .github/workflows/ci-canary.yml
-verified: 2026-11-25
+verified: 2026-11-26
 ---
 
 # How to pause and resume CI surfaces

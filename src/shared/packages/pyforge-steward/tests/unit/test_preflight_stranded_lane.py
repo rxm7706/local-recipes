@@ -345,6 +345,8 @@ NOTHING_STRANDED_RECORD = {
         ],
         "skipped": [{"environment": INV, "lane": "lint", "rule": "paths", "workflow": "w.yml"}],
     },
+    # Story 117.17: each run journals the tree state its verdict is tied to; this fixture is no git checkout, so None.
+    "tree": None,
     "verdict": "ok",
 }
 NOTHING_STRANDED_INSTALL = {"environments": [INV], "phase": "install", "verdict": "ok"}
