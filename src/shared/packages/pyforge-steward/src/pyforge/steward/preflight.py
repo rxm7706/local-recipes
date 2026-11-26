@@ -24,6 +24,7 @@ Not a steward CLI duty — ``main()`` owns the exit code (AD-8).
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import shlex
@@ -278,6 +279,110 @@ def budget_seed_seconds(repo_root: Path) -> dict[LaneKey, float]:
         if sep and task and environment and isinstance(seconds, int | float) and not isinstance(seconds, bool):
             seeds[(task, environment)] = float(seconds)
     return seeds
+
+
+#: Story 117.17: ``PYFORGE_PREFLIGHT_REUSE=0`` runs the lanes even when the journal holds a green run of this tree.
+REUSE_ENV = "PYFORGE_PREFLIGHT_REUSE"
+#: The variables a lane's verdict can depend on besides the tree; a run and the run it reuses must agree on them.
+_REUSE_ENV_PREFIXES = ("PYFORGE_", "HERALD_", "CI")
+_REUSE_ENV_IGNORED = frozenset({REUSE_ENV, SCOPE_ENV, "PYFORGE_PREFLIGHT_SKIP", "PYFORGE_PREFLIGHT_SKIP_REASON"})
+
+
+def reuse_enabled() -> bool:
+    """Whether a run may reuse a green verdict (Story 117.17): on unless :data:`REUSE_ENV` is ``0``."""
+    return os.environ.get(REUSE_ENV, "1").strip() != "0"
+
+
+@dataclass(frozen=True)
+class TreeState:
+    """What a verdict was reached on (Story 117.17): the tree, the base its diff was read against, and the
+    environment variables a lane can read. ``clean`` is false when a tracked file differs from ``HEAD`` or an
+    untracked, unignored file exists: such a tree has no hash to compare, so its verdict is never reused."""
+
+    tree_sha: str
+    base_sha: str
+    env_digest: str
+    clean: bool
+
+    def to_journal(self) -> dict[str, Any]:
+        return {
+            "tree_sha": self.tree_sha,
+            "base_sha": self.base_sha,
+            "env_digest": self.env_digest,
+            "clean": self.clean,
+        }
+
+
+def _reuse_env_digest() -> str:
+    relevant = sorted(
+        (name, value)
+        for name, value in os.environ.items()
+        if name.startswith(_REUSE_ENV_PREFIXES) and name not in _REUSE_ENV_IGNORED
+    )
+    return hashlib.sha256(json.dumps(relevant).encode("utf-8")).hexdigest()[:16]
+
+
+def tree_state(repo_root: Path) -> TreeState | None:
+    """The state a verdict is tied to, or ``None`` when git cannot say (not a checkout, no base ref)."""
+
+    def git(*args: str) -> str | None:
+        try:
+            done = subprocess.run(["git", *args], cwd=repo_root, check=False, capture_output=True, text=True)  # noqa: S603, S607
+        except OSError:
+            return None
+        return done.stdout if done.returncode == 0 else None
+
+    tree = git("rev-parse", "--verify", "--quiet", "HEAD^{tree}")
+    base = git("rev-parse", "--verify", "--quiet", preflight_ci.BASE_REF)
+    status = git("status", "--porcelain", "--untracked-files=normal")
+    if not tree or not base or status is None:
+        return None
+    return TreeState(tree.strip(), base.strip(), _reuse_env_digest(), clean=not status.strip())
+
+
+def _tree_for_journal(repo_root: Path, at_start: TreeState | None) -> dict[str, Any] | None:
+    """The state to journal with a finished run: the one read at its start, when the tree still reads the same.
+
+    A tree that moved while the lanes ran (an edit, a commit, a fetch that moved the base) has no single state the
+    verdict belongs to, and a dirty tree has no hash to compare: both journal ``None``, which nothing reuses.
+    """
+    if at_start is None or not at_start.clean:
+        return None
+    return at_start.to_journal() if tree_state(repo_root) == at_start else None
+
+
+def reusable_run(journal_path: Path, state: TreeState | None, lanes: Sequence[Lane]) -> dict[str, Any] | None:
+    """The newest journaled green run that already judged every lane of this run on this tree (Story 117.17).
+
+    A run qualifies when its verdict is ``ok``, it recorded the same clean :class:`TreeState`, and every lane this
+    run selects ran there with status ``ok``. That makes a wider scope cover a narrower one (a full run covers the
+    touched run of the same tree) and never the reverse, and a lane that was paused, deferred or cut then is not
+    covered now. A ``reuse`` record carries no lanes, so a reused verdict is never the proof of another reuse.
+    """
+    if state is None or not state.clean or not journal_path.is_file():
+        return None
+    wanted = {_lane_key(lane) for lane in lanes}
+    found: dict[str, Any] | None = None
+    for line in journal_path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        try:
+            record = json.loads(stripped)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(record, dict) or record.get("verdict") != "ok" or "lanes" not in record:
+            continue
+        if record.get("tree") != state.to_journal():
+            continue
+        green = {
+            (str(lane.get("task")), str(lane.get("environment")))
+            for lane in record.get("lanes") or []
+            if isinstance(lane, dict) and lane.get("status") == "ok"
+        }
+        if wanted <= green:
+            found = record
+    return found
 
 
 def _critical_path_flag_on() -> bool:
@@ -1248,8 +1353,14 @@ def run_preflight(
     critical_path: bool | None = None,
     logical_cores: int | None = None,
     expected_seconds: Mapping[LaneKey, float] | None = None,
+    reuse: bool = False,
 ) -> int:
     """Run CI-selected lanes; return exit code 0 / 1 / 2 / 130.
+
+    ``reuse`` (Story 117.17): when true, a run whose every selected lane already passed on this same clean tree,
+    base and environment (:func:`reusable_run`) starts no lane: it names the run it reuses, journals a ``reuse``
+    record and returns 0. ``main`` passes :func:`reuse_enabled`; a caller that injects its own lane runner leaves it
+    off, since an injected runner's verdict proves nothing about the tree.
 
     ``critical_path`` (Story 117.3): ``None`` reads the flag :data:`CRITICAL_PATH_FLAG_KEY`; ``True`` admits ready
     lanes longest-expected first and by the cores they will use, ``False`` keeps declaration order and the static
@@ -1371,6 +1482,36 @@ def run_preflight(
                 print(f"preflight: {line}", file=sys.stderr)
         print("preflight: refusing the run before any install or lane starts", file=sys.stderr)
         return EXIT_CONFIG
+
+    # Story 117.17: the state this run's verdict will be tied to, read before any lane can touch the tree.
+    state_at_start = tree_state(repo_root)
+    if reuse and lanes:
+        earlier = reusable_run(repo_root / JOURNAL_RELATIVE, state_at_start, lanes)
+        if earlier is not None and state_at_start is not None:
+            head_sha, branch = _git_head(repo_root)
+            print(
+                f"preflight: this tree ({state_at_start.tree_sha[:12]}, base {state_at_start.base_sha[:12]}) is "
+                f"already green: run {earlier.get('run_id')} of {earlier.get('started_at')} "
+                f"(scope {earlier.get('mode')}) passed all {len(lanes)} lane(s) this run selects. "
+                f"Nothing to run; {REUSE_ENV}=0 runs them again.",
+                file=sys.stderr,
+            )
+            _append_journal(
+                repo_root,
+                {
+                    "phase": "reuse",
+                    "run_id": str(uuid.uuid4()),
+                    "reused_run_id": earlier.get("run_id"),
+                    "started_at": datetime.now(tz=UTC).isoformat(),
+                    "head_sha": head_sha,
+                    "branch": branch,
+                    "mode": scope,
+                    "tree": state_at_start.to_journal(),
+                    "lanes_covered": sorted(lane_label(lane.task, lane.environment) for lane in lanes),
+                    "verdict": "ok",
+                },
+            )
+            return EXIT_OK
 
     cores = logical_cores if logical_cores is not None else _logical_core_count()
     worker_count = jobs if jobs is not None else cores
@@ -1654,6 +1795,7 @@ def run_preflight(
                 "run_id": run_id,
                 "started_at": started.isoformat(),
                 "head_sha": head_sha,
+                "tree": _tree_for_journal(repo_root, state_at_start),
                 "branch": branch,
                 "logical_cores": cores,
                 "jobs": worker_count,
@@ -1706,6 +1848,7 @@ def run_preflight(
             "run_id": run_id,
             "started_at": started.isoformat(),
             "head_sha": head_sha,
+            "tree": _tree_for_journal(repo_root, state_at_start),
             "branch": branch,
             "logical_cores": cores,
             "jobs": worker_count,
@@ -1788,6 +1931,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         ignore_ci_pauses=args.ignore_ci_pauses,
         scope=choice.scope,
         scope_source=choice.source,
+        reuse=reuse_enabled(),
     )
 
 

@@ -498,3 +498,13 @@ def test_the_red_main_banner_never_changes_the_run(
     assert ("main CI state unknown" in err) is (flag_on and snapshot is not None)
     if not flag_on:
         assert "main is red" not in err and "main CI state" not in err
+
+
+def test_the_tracked_budgets_seed_real_lanes() -> None:
+    """Story 117.15: the live budgets file names lanes the way the journal does (``task@environment``), every row
+    seeds one lane, and the longest lanes of a full run are among them, so a fresh worktree can rank them."""
+    seeds = preflight.budget_seed_seconds(REPO_ROOT)
+    raw = tomllib.loads((REPO_ROOT / preflight.BUDGETS_RELATIVE).read_text(encoding="utf-8"))["lanes"]
+    assert len(seeds) == len(raw)
+    assert ("pyforge-steward-live-test", "pyforge-steward") in seeds
+    assert ("pyforge-herald-live-test", "pyforge-herald") in seeds

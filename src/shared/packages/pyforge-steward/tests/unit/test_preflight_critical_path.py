@@ -305,16 +305,6 @@ def test_a_missing_or_unreadable_budgets_file_seeds_nothing(tmp_path: Path) -> N
     assert preflight.budget_seed_seconds(tmp_path) == {("task", "env"): 7.0}
 
 
-def test_the_tracked_budgets_name_lanes_the_way_the_journal_does() -> None:
-    """The live file seeds real lanes: every label is ``task@environment`` and the longest lanes are among them."""
-    repo_root = Path(__file__).resolve().parents[6]
-    seeds = preflight.budget_seed_seconds(repo_root)
-    raw = tomllib.loads((repo_root / preflight.BUDGETS_RELATIVE).read_text(encoding="utf-8"))["lanes"]
-    assert len(seeds) == len(raw)
-    assert ("pyforge-steward-live-test", "pyforge-steward") in seeds
-    assert ("pyforge-herald-live-test", "pyforge-herald") in seeds
-
-
 def test_xdist_share_follows_the_expected_work() -> None:
     share = preflight_xdist.xdist_share_at_admission
     assert share(free_cores=16, pending_xdist=4, logical_cores=16, weight=600.0, pending_weight=800.0) == 12
