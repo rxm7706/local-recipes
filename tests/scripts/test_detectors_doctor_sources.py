@@ -611,3 +611,87 @@ def test_discover_skips_detector_none_files_without_a_registry_finding(monkeypat
 
     assert found == []
     assert registry_findings == []
+
+
+# --- Story 66.1: under --jobs above one, each source is gathered in a worker process ---------
+
+
+def _repo_scope_source_names() -> list[str]:
+    sources = pytest.importorskip("pyforge.doctor.sources")
+    models = pytest.importorskip("pyforge.doctor.models")
+    return [
+        name for name, _task in detectors._DOCTOR_SOURCE_TASKS if sources.scope_for(models.Source(name)) == "repo"
+    ]
+
+
+def test_sources_gathered_by_workers_keep_every_row_in_order_and_a_failed_worker_reads_unknown():
+    """The caller's pool gathers each source; whatever a worker does, its source keeps its row and its place."""
+    from concurrent.futures import Future
+
+    names = _repo_scope_source_names()
+    assert len(names) >= 3
+    submitted: list[str] = []
+
+    def submit(fn, name, task, source_scope):
+        assert fn is detectors._doctor_source_row
+        submitted.append(name)
+        future: Future = Future()
+        if name == names[1]:
+            future.set_exception(RuntimeError("worker died"))
+        else:
+            future.set_result(
+                {
+                    "path": f"pyforge.doctor.sources:{name}",
+                    "name": name,
+                    "scope": source_scope,
+                    "task": task,
+                    "rc": detectors.EXIT_PASS,
+                    "status": "pass",
+                    "secs": 0.0,
+                    "summary": "no findings",
+                    "output": "",
+                }
+            )
+        return future
+
+    rows = detectors._run_doctor_sources("repo", jobs=4, submit=submit)
+
+    assert [row["name"] for row in rows] == names == submitted
+    failed = rows[1]
+    assert failed["status"] == "unknown"
+    assert failed["rc"] == detectors.EXIT_COULD_NOT_RUN
+    assert "worker died" in failed["summary"]
+    assert [row["status"] for index, row in enumerate(rows) if index != 1] == ["pass"] * (len(names) - 1)
+
+
+def test_jobs_one_gathers_in_this_process_and_asks_no_pool(monkeypatch):
+    names = _repo_scope_source_names()
+    gathered: list[str] = []
+
+    def row(name, task, source_scope):
+        gathered.append(name)
+        return {"name": name, "task": task, "scope": source_scope, "rc": 0, "status": "pass", "secs": 0.0}
+
+    monkeypatch.setattr(detectors, "_doctor_source_row", row)
+
+    def no_pool(*_args):
+        raise AssertionError("--jobs 1 must not submit to a pool")
+
+    rows = detectors._run_doctor_sources("repo", jobs=1, submit=no_pool)
+
+    assert [r["name"] for r in rows] == names == gathered
+
+
+def test_a_source_row_gathered_in_a_worker_process_equals_the_row_gathered_here():
+    """The row function is what a worker runs: it must cross a process boundary and return the same verdict."""
+    from concurrent.futures import ProcessPoolExecutor
+
+    names = _repo_scope_source_names()
+    name = "check-layout" if "check-layout" in names else names[0]
+    task = dict(detectors._DOCTOR_SOURCE_TASKS)[name]
+    here = detectors._doctor_source_row(name, task, "repo")
+    with ProcessPoolExecutor(max_workers=1) as pool:
+        there = pool.submit(detectors._doctor_source_row, name, task, "repo").result()
+
+    assert {k: v for k, v in there.items() if k != "secs"} == {k: v for k, v in here.items() if k != "secs"}
+    assert here["status"] in {"pass", "FINDINGS", "unmeasured"}

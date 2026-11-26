@@ -82,7 +82,7 @@ import re
 import subprocess
 import sys
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
@@ -369,7 +369,7 @@ _DOCTOR_SOURCE_TASKS: tuple[tuple[str, str], ...] = (
 )
 
 
-def _run_doctor_sources(scope: str) -> list[dict]:
+def _run_doctor_sources(scope: str, *, jobs: int = 1, submit=None) -> list[dict]:
     """Run the ten ported Doctor sources for real -- the counterpart to
     `run_one` above, but in-process (a library `gather(target)` call, never
     a subprocess: there is no script left to shell out to) rather than
@@ -414,39 +414,68 @@ def _run_doctor_sources(scope: str) -> list[dict]:
             for name, task in _DOCTOR_SOURCE_TASKS
         ]
 
+    selected = [
+        (name, task, scope_for(Source(name)))
+        for name, task in _DOCTOR_SOURCE_TASKS
+        if scope in ("all", scope_for(Source(name)))
+    ]
+    if jobs <= 1 or len(selected) <= 1:
+        return [_doctor_source_row(name, task, source_scope) for name, task, source_scope in selected]
+    # Story 66.1: each source is gathered in a worker process while the script detectors run (a gather is CPU-bound
+    # Python, so a thread would wait on the interpreter lock). ``submit`` comes from the caller's pool, which holds
+    # the one job limit; a worker that dies leaves its row ``unknown``, never missing and never a pass.
+    assert submit is not None  # noqa: S101 -- main() passes it whenever jobs > 1
+    futures = [(name, task, source_scope, submit(_doctor_source_row, name, task, source_scope))
+               for name, task, source_scope in selected]
     rows: list[dict] = []
-    for name, task in _DOCTOR_SOURCE_TASKS:
-        source_scope = scope_for(Source(name))
-        if scope not in ("all", source_scope):
-            continue
-        started = time.monotonic()
+    for name, task, source_scope, future in futures:
         try:
-            findings = DISPATCH[name](ROOT)
-            rc = EXIT_FINDINGS if exit_code_for(findings) != DOCTOR_EXIT_OK else EXIT_PASS
-            lines = [f"[{f.source.value}] {f.check}: {f.status.value} -- {f.message}"
-                     for f in findings]
-            if rc != EXIT_PASS:
-                status = "FINDINGS"
-            elif findings and all(is_gather_failure(f) for f in findings):
-                status = "unmeasured"
-            else:
-                status = "pass"
-            summary = lines[-1][:200] if lines else "no findings"
-            output = "\n".join(lines)
-        except Exception as exc:  # noqa: BLE001 -- a defect in the source
-            # itself (escaping its own degrade_on_exception net) must not
-            # take the other nine sources down with it, and must not read
-            # as a silent pass -- unknown, same as the import-failure path.
-            rc, status = EXIT_COULD_NOT_RUN, "unknown"
-            summary = f"{name} raised {exc.__class__.__name__}: {exc}"
-            output = summary
-        rows.append({
-            "path": f"pyforge.doctor.sources:{name}", "name": name,
-            "scope": source_scope, "task": task, "rc": rc, "status": status,
-            "secs": round(time.monotonic() - started, 1),
-            "summary": summary, "output": output,
-        })
+            rows.append(future.result())
+        except Exception as exc:  # noqa: BLE001 -- a broken worker is that source's row, not the run's crash
+            summary = f"{name}: its worker process failed -- {exc.__class__.__name__}: {exc}"
+            rows.append({
+                "path": f"pyforge.doctor.sources:{name}", "name": name,
+                "scope": source_scope, "task": task, "rc": EXIT_COULD_NOT_RUN, "status": "unknown",
+                "secs": 0.0, "summary": summary, "output": summary,
+            })
     return rows
+
+
+def _doctor_source_row(name: str, task: str, source_scope: str) -> dict:
+    """Gather one ported Doctor source and return its row (Story 66.1: a top-level function, so a worker process can
+    run it). The verdict rules are those `_run_doctor_sources` documents; the caller has already proved
+    `pyforge.doctor` importable."""
+    from pyforge.doctor.sources.__main__ import DISPATCH
+    from pyforge.doctor.models import is_gather_failure
+    from pyforge.doctor.verdict import exit_code_for
+
+    started = time.monotonic()
+    try:
+        findings = DISPATCH[name](ROOT)
+        rc = EXIT_FINDINGS if exit_code_for(findings) != DOCTOR_EXIT_OK else EXIT_PASS
+        lines = [f"[{f.source.value}] {f.check}: {f.status.value} -- {f.message}"
+                 for f in findings]
+        if rc != EXIT_PASS:
+            status = "FINDINGS"
+        elif findings and all(is_gather_failure(f) for f in findings):
+            status = "unmeasured"
+        else:
+            status = "pass"
+        summary = lines[-1][:200] if lines else "no findings"
+        output = "\n".join(lines)
+    except Exception as exc:  # noqa: BLE001 -- a defect in the source
+        # itself (escaping its own degrade_on_exception net) must not
+        # take the other nine sources down with it, and must not read
+        # as a silent pass -- unknown, same as the import-failure path.
+        rc, status = EXIT_COULD_NOT_RUN, "unknown"
+        summary = f"{name} raised {exc.__class__.__name__}: {exc}"
+        output = summary
+    return {
+        "path": f"pyforge.doctor.sources:{name}", "name": name,
+        "scope": source_scope, "task": task, "rc": rc, "status": status,
+        "secs": round(time.monotonic() - started, 1),
+        "summary": summary, "output": output,
+    }
 
 
 def _structured_findings_from_output(name: str, out: str) -> list[dict]:
@@ -515,6 +544,30 @@ def _run_script_detectors(selected: list[dict], timeout: int, jobs: int) -> list
         for fut in futures:
             results[futures[fut]] = fut.result()
     return results  # type: ignore[list-item]
+
+
+def _run_detectors_and_sources(selected: list[dict], timeout: int, jobs: int, scope: str) -> list[dict]:
+    """The script detectors' rows, then the doctor sources' rows, each list in its selection order.
+
+    With ``jobs`` at one, each runs in turn, as before Story 66.1. Above one they run side by side under the one
+    limit: a script detector is a subprocess a pool thread waits on, and a doctor source is a gather in a worker
+    process a pool thread waits on, so the thread pool's ``jobs`` workers bound both kinds together. Before that
+    story the sources were gathered one after another once the script pool had drained, and the run took its
+    longest script detector plus every source in a row (84 s where the longest member takes 42 s).
+    """
+    if jobs <= 1:
+        return _run_script_detectors(selected, timeout, jobs) + _run_doctor_sources(scope)
+    script_results: list[dict | None] = [None] * len(selected)
+    with ProcessPoolExecutor(max_workers=jobs) as workers, ThreadPoolExecutor(max_workers=jobs) as pool:
+
+        def submit(fn, *args):
+            return pool.submit(lambda: workers.submit(fn, *args).result())
+
+        script_futures = {pool.submit(run_one, det, timeout): idx for idx, det in enumerate(selected)}
+        source_rows = _run_doctor_sources(scope, jobs=jobs, submit=submit)
+        for fut, idx in script_futures.items():
+            script_results[idx] = fut.result()
+    return script_results + source_rows  # type: ignore[operator]
 
 
 def run_one(det: dict, timeout: int) -> dict:
@@ -593,9 +646,7 @@ def main() -> int:
     # origins are gone once retired; nothing left on disk to AST-scan), so
     # without this the registry would silently discover fewer detectors
     # rather than reporting the ten as unknown.
-    results = _run_script_detectors(selected, args.timeout, args.jobs) + _run_doctor_sources(
-        args.scope
-    )
+    results = _run_detectors_and_sources(selected, args.timeout, args.jobs, args.scope)
 
     if args.json:
         for r in results:
