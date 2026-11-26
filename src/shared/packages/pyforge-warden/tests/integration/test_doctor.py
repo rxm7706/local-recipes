@@ -1,6 +1,6 @@
 """Conformance — ``warden scan --doctor`` end-to-end (Story 5.1, D8).
 
-Real ``cli.main(["scan", ..., "--doctor"])`` invocations against the
+Real ``cli.main(["scan", ..., "--self-check"])`` invocations against the
 provisioned pyforge-warden environment (real deptry/osv-scanner binaries,
 the real ambient offline OSV DB + KEV/endoflife feed caches
 ``tests/conftest.py`` provisions once per session) — both ``--format``
@@ -26,7 +26,7 @@ def test_doctor_real_environment_is_healthy_end_to_end(capsys, tmp_path):
     would raise otherwise; the ``--version`` child processes run outside
     its reach and are trusted local-only — review finding 2026-07-24: the
     harness cannot vouch for subprocesses)."""
-    rc = main(["scan", str(tmp_path), "--doctor"])
+    rc = main(["scan", str(tmp_path), "--self-check"])
     captured = capsys.readouterr()
     assert rc == 0
     lines = captured.out.splitlines()
@@ -38,7 +38,7 @@ def test_doctor_real_environment_is_healthy_end_to_end(capsys, tmp_path):
 
 
 def test_doctor_real_environment_format_json(capsys, tmp_path):
-    rc = main(["scan", str(tmp_path), "--doctor", "--format", "json"])
+    rc = main(["scan", str(tmp_path), "--self-check", "--format", "json"])
     captured = capsys.readouterr()
     assert rc == 0
     document = json.loads(captured.out)
@@ -59,7 +59,7 @@ def test_doctor_performs_no_discovery_extraction_or_policy_work(capsys, tmp_path
         '[project]\nname = "demo"\nversion = "0.0.1"\ndependencies = ["totally-absent-pkg-xyz"]\n',
         encoding="utf-8",
     )
-    rc = main(["scan", str(tmp_path), "--doctor"])
+    rc = main(["scan", str(tmp_path), "--self-check"])
     captured = capsys.readouterr()
     assert rc == 0
     assert "totally-absent-pkg-xyz" not in captured.out
@@ -78,6 +78,6 @@ def test_doctor_never_calls_the_discovery_seam(monkeypatch, capsys, tmp_path):
         raise AssertionError("--doctor must never call discover()")
 
     monkeypatch.setattr(cli_module, "discover", _boom)
-    rc = main(["scan", str(tmp_path), "--doctor"])
+    rc = main(["scan", str(tmp_path), "--self-check"])
     capsys.readouterr()
     assert rc == 0  # _boom never fired

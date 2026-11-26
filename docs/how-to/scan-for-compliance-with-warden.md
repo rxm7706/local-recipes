@@ -34,10 +34,10 @@ The CLI is the only publisher of the verdict. Relay its status and exit code as 
 ### 1. Check the scanner's environment first
 
 ```bash
-pixi run -e pyforge-warden pyforge warden scan --doctor
+pixi run -e pyforge-warden pyforge warden scan --self-check
 ```
 
-`--doctor` is a flag on `scan`, not a separate command. It checks the engines, the offline OSV database and the feed caches, scans no project and uses no network:
+`--self-check` is a flag on `scan`, not a separate command (`--doctor` is its old spelling, accepted for one release with a notice). It checks the engines, the offline OSV database and the feed caches, scans no project and uses no network:
 
 ```text
 warden: doctor status=problem checks=7
@@ -51,14 +51,14 @@ It exits `0` when every check is healthy and `2` otherwise. It never exits `1`, 
 
 Run it before any scan. A scan can only assess what the environment can assess: with no OSV database the vulnerability axis is not assessed at all.
 
-### 2. Provision what `--doctor` says is missing
+### 2. Provision what `--self-check` says is missing
 
 | Missing | How it is provided |
 | --- | --- |
 | The offline OSV database | Set `OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY` to its root. `scripts/platform-provision-osv-offline-db.sh` provisions one. |
 | The KEV, EPSS or end-of-life feed | Set `PYFORGE_WARDEN_FEED_CACHE_DIR` to the cache root. The refresh scripts under `src/shared/packages/pyforge-warden/scripts/` (`refresh_kev_feed.py`, `refresh_epss_feed.py`, `refresh_endoflife_feed.py`) fill it. |
 
-An absent feed is reported as "operating air-gapped" and does not fail `--doctor`. An absent KEV feed still matters: the `fail-on-kev` gate is on by default, so a default scan composes `indeterminate` on the vulnerability axis until the feed is there.
+An absent feed is reported as "operating air-gapped" and does not fail `--self-check`. An absent KEV feed still matters: the `fail-on-kev` gate is on by default, so a default scan composes `indeterminate` on the vulnerability axis until the feed is there.
 
 The provisioning scripts fetch from the network and write caches. They are not run by a scan and were not run for this page.
 
@@ -124,9 +124,9 @@ Warden composes one status from seven, strongest first. The strongest status any
 
 | Exit | Meaning |
 | --- | --- |
-| `0` | `clean`, `warn`, `bypassed` or `not-applicable`; a healthy `--doctor`. |
+| `0` | `clean`, `warn`, `bypassed` or `not-applicable`; a healthy `--self-check`. |
 | `1` | `policy-violation` or `indeterminate`; a `warn` under `--warn-as-error`. |
-| `2` | `error`, a usage error, or an unhealthy `--doctor`. |
+| `2` | `error`, a usage error, or an unhealthy `--self-check`. |
 | `130` | Interrupted. |
 
 Read the exit code directly (`echo $?`), never through a pipe. `indeterminate` exits `1` on purpose: "could not check" is never reported as a pass.

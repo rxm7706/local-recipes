@@ -1610,7 +1610,7 @@ sections:
     - 'One command: `warden scan [path]`. Its options shape the gate — what severity fails (`--fail-on`), which
       licenses are allowed or denied, how old a dependency may be (`--max-lag`, `--fail-on-eol`), whether a warning
       fails (`--warn-as-error`), a baseline of accepted findings, and a recorded bypass that needs `--reason`. `scan
-      --doctor` is a self-check of Warden''s own tools and data: it touches no network, judges no policy, and exits
+      --self-check` is a self-check of Warden''s own tools and data: it touches no network, judges no policy, and exits
       0 or 2. It is unrelated to the Doctor station.'
     - 'The axes are hygiene (deptry: unused, missing and misplaced dependencies), vulnerabilities (osv-scanner,
       gated on severity, on the CISA known-exploited list, and on exploit probability when `--min-epss` is set),
@@ -1665,7 +1665,7 @@ sections:
   - type: prose
     body:
     - 'In `django-warden`, at `POST /stations/warden/mcp`: `start_audit` and `get_audit`. They run one command,
-      `warden scan <target> --format json`. The MCP face cannot run `--doctor`, a bypass or the fix-PR options.
+      `warden scan <target> --format json`. The MCP face cannot run `--self-check`, a bypass or the fix-PR options.
       The base package holds no MCP server.'
   - type: h3
     num: W.3
@@ -1707,7 +1707,7 @@ sections:
     label: Worth knowing before you rely on it
     body:
     - Failing on a known-exploited vulnerability is on by default. With no known-exploited feed provisioned, a default
-      scan is therefore `INDETERMINATE` on the vulnerability axis and exits 1. Run `scan --doctor` first.
+      scan is therefore `INDETERMINATE` on the vulnerability axis and exits 1. Run `scan --self-check` first.
     - '`--warn-only` can hide an unprovisioned vulnerability database: the axis goes unassessed and the run exits
       0.'
     - '`--open-fix-prs` is opt-in and runs only after the verdict is final, so it cannot change it. It turns a vulnerability

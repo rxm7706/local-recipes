@@ -11,7 +11,7 @@
   },
   {
     "kind": "grammar",
-    "argv": ["pyforge", "mason", "doctor"]
+    "argv": ["pyforge", "mason", "self-check"]
   },
   {
     "kind": "mcp",

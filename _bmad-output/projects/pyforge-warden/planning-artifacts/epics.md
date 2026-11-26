@@ -1837,6 +1837,30 @@ So that the same spelling works on every station.
 **And** every invocation that parsed before parses the same way, and warden's contract test passes
 **Status:** done
 
+## Epic 33: Warden's self-check is not called doctor (spec-pyforge-warden CAP-8)
+
+Minted 2026-11-26 from the station Dream's entry of the same date on the operator ruling of 2026-11-26 on the open convention items: "go with your recommendations, start in the suggested order" (the recommendation: the two self-diagnosis spellings that reuse the doctor station's name are renamed, warden's `scan --doctor` to `--self-check` and `mason doctor` to `mason self-check`, and the old spelling is accepted for one release with a notice).
+**HARD boundaries:**
+- `--doctor` keeps working for one release: the same self-check and exit code, plus one line on stderr.
+- The exit codes, the JSON document and the MCP face do not move; no capability text moves.
+- The compiled station skill is not hand-edited; its regeneration is a deferred row. No flag.
+
+### Story 33.1: Warden's self-check is --self-check, and --doctor is its old spelling
+
+As a reader of a warden command line,
+I want the self-check called `--self-check`,
+So that it is not mistaken for the fleet's doctor station.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-warden CAP-8 (no text change); FR-29 names the new spelling; no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1: a renamed spelling with the old one kept for a release)
+**Surface:** `src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py`, `src/shared/packages/pyforge-warden/tests/unit/test_cli_doctor.py`, `src/shared/packages/pyforge-warden/tests/integration/test_doctor.py`, `_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/contract.md`, `docs/how-to/scan-for-compliance-with-warden.md`, `docs-site/src/content/dossier/dossier.yml`, `.claude/skills/bmad-agent-warden/customize.toml`, `docs/governance/machine-readiness.yaml`, `docs/tutorials/onboard-a-machine.md`, `docs/foundry/marketplace/skills/warden/scan/SKILL.md`, `docs/foundry/marketplace/skills/warden/scan/steps.md`, `docs/foundry/marketplace/site/skills/warden/scan.html`, `docs/foundry/frames/stations/warden.frame.md`, `_bmad-output/projects/pyforge-warden/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-33-1-warden-s-self-check-is-self-check-and-doctor-is-its-old-spelling.md`
+**Given** warden's self-check is `scan --doctor`, the doctor station's name
+**When** the flag is `--self-check` and `--doctor` is kept as its old spelling
+**Then** both run the same self-check with the same exit code and stdout, and only `--doctor` prints one line on stderr saying it is renamed
+**And** the contract, the how-to, the dossier and the persona prompt use `--self-check`, and two deferred rows hold the removal of `--doctor` and the skill's regeneration
+**Status:** done
+
 ## Currency reconciliation — 2026-11-26 (the tag rule reaches station source)
 
 *Chain-currency cascade (arch -> epics).* 2026-11-26: Epic 31 / Story 31.1 minted under `spec-one-chain-per-station` (its capability 9, realized with no text change); no AD moves. The keys go through the Tier-3 feed and `sprint-ledger-sync`. **Content changed:** the Epic, this section and `updated:`.

@@ -116,6 +116,27 @@ _NOUNS = {
     "environment": "resolve conflicting worlds into one lockfile",
 }
 _DOCTOR_HELP = "diagnose the installed Mason: version, CFE resolution, engine presence"
+# Story 46.1: the self-diagnosis command is `self-check`; `doctor`, the fleet doctor station's name, stays an alias
+# for one release and says on stderr that it is renamed.
+SELF_CHECK_NOUN = "self-check"
+OLD_SELF_CHECK_NOUN = "doctor"
+OLD_SELF_CHECK_NOTICE = (
+    f"mason: {OLD_SELF_CHECK_NOUN} is renamed {SELF_CHECK_NOUN}; the old spelling is accepted for one release"
+)
+
+
+def _notice(message: str) -> None:
+    """One line on stderr that never reaches stdout and never raises: with fd 2 closed at start-up ``sys.stderr`` is
+    ``None``, and ``print(file=None)`` would write to stdout, breaking the one-JSON-document rule (CAP-5)."""
+    stream = sys.stderr
+    if stream is None:
+        return
+    try:
+        print(message, file=stream)
+    except OSError, ValueError:
+        pass
+
+
 _RECIPE_NEW_HELP = "generate a recipe from PyPI/GitHub/CRAN/npm via conda-forge-expert"
 _RECIPE_VALIDATE_HELP = (
     "validate a recipe against conda-forge policy via CFE's validator (process exit code "
@@ -575,7 +596,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--version", action="version", version=f"mason {__version__}")
 
-    noun_names = (*_NOUNS, "doctor")
+    noun_names = (*_NOUNS, SELF_CHECK_NOUN)
     nouns = parser.add_subparsers(dest="noun", metavar="{" + ",".join(noun_names) + "}")
 
     # Each noun's own verb-subparsers object, keyed by noun name — captured
@@ -607,7 +628,8 @@ def build_parser() -> argparse.ArgumentParser:
         noun_parser.set_defaults(_noun_parser=noun_parser)
 
     doctor_parser = nouns.add_parser(
-        "doctor",
+        SELF_CHECK_NOUN,
+        aliases=[OLD_SELF_CHECK_NOUN],
         help=_DOCTOR_HELP,
         description=_DOCTOR_HELP,
         parents=[global_flags],
@@ -1164,7 +1186,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             parser.print_help()
             return EXIT_OK
 
-        if ns.noun == "doctor":
+        if ns.noun in (SELF_CHECK_NOUN, OLD_SELF_CHECK_NOUN):
+            if ns.noun == OLD_SELF_CHECK_NOUN:
+                _notice(OLD_SELF_CHECK_NOTICE)
             # This branch must stay ahead of the verb check: `doctor` has no
             # verb level, so its namespace carries no `verb` attribute at
             # all, and a verb-less `doctor` is a complete command (EXIT_OK),
@@ -1183,7 +1207,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 os.environ,
                 Path.cwd(),
             )
-            render.write(fmt, sys.stdout, "doctor", "ok", dataclasses.asdict(report), [])
+            # The envelope names the command as it was called, so a reader of `"doctor"` keeps working.
+            render.write(fmt, sys.stdout, ns.noun, "ok", dataclasses.asdict(report), [])
             return EXIT_OK
 
         if ns.noun == "package" and getattr(ns, "ship", None) is not None and getattr(ns, "verb", None):

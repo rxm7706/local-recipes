@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: warden
-source_fingerprint: 4f3ff242d0305457
-story_count: 89
-test_file_count: 90
+source_fingerprint: e6ad5841a1003804
+story_count: 90
+test_file_count: 91
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-warden`
-- **Stories parsed:** 89
-- **Epics parsed:** 31
-- **Test files inventoried:** 90 under `src/shared/packages/pyforge-warden/tests/`
+- **Stories parsed:** 90
+- **Epics parsed:** 32
+- **Test files inventoried:** 91 under `src/shared/packages/pyforge-warden/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `4f3ff242d0305457`
+- **Source fingerprint:** `e6ad5841a1003804`
 
 ## Risk Assessment
 
@@ -67,7 +67,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 
 ### Low-risk epics
 
-- none observed
+- Epic 33: Warden's self-check is not called doctor (spec-pyforge-warden CAP-8)
 
 ## Test Inventory
 
@@ -98,6 +98,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-warden/tests/meta/test_contract_surface.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_engine_version_range_sync.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_extract_no_execution.py` | meta | none observed |
+| `src/shared/packages/pyforge-warden/tests/meta/test_json_output_spellings.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_live_tree_marker.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_pixi_range_floor_matches_workspace.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_portal_audit_start_get.py` | meta | none observed |
@@ -257,6 +258,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 30.1 | Warden's verdict takes its exit codes from the declaration | none observed |
 | 31.1 | Warden's source cites the suite spine's decisions qualified | none observed |
 | 32.1 | Warden's verbs take both spellings for JSON | none observed |
+| 33.1 | Warden's self-check is --self-check, and --doctor is its old spelling | none observed |
 
 ## Quality Gates
 

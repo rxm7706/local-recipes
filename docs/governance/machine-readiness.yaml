@@ -193,7 +193,7 @@ checks:
       - {kind: command, env: pyforge-guild, argv: [scribe, --version]}
       - {kind: command, env: pyforge-guild, argv: [herald, --version]}
       - {kind: command, env: pyforge-guild, argv: [pyforge, doctor, --version]}
-      - {kind: command, env: pyforge-guild, argv: [pyforge, mason, doctor]}
+      - {kind: command, env: pyforge-guild, argv: [pyforge, mason, self-check]}
     remedy:
       command: pixi install --frozen -e pyforge-guild
       who: agent
@@ -220,10 +220,10 @@ checks:
     probe:
       kind: command
       env: pyforge-warden
-      argv: [warden, scan, --doctor]
+      argv: [warden, scan, --self-check]
       timeout_s: 120
       exit_notes:
-        "2": "warden's doctor reports a problem; `pixi run -e pyforge-warden warden scan --doctor` prints each one"
+        "2": "warden's self-check reports a problem; `pixi run -e pyforge-warden warden scan --self-check` prints each one"
     remedy:
       command: OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY="<a cache directory>" bash scripts/platform-provision-osv-offline-db.sh
       who: operator
@@ -235,13 +235,13 @@ checks:
     class: usable
     severity: advisory
     needs: [env-guild]
-    what: mason's recipe verb is available in pyforge-guild (mason's own doctor finds conda-forge-expert's import floor complete there).
+    what: mason's recipe verb is available in pyforge-guild (mason's own self-check finds conda-forge-expert's import floor complete there).
     probe:
       kind: command
       env: pyforge-guild
-      argv: [pyforge, mason, --format, json, doctor]
+      argv: [pyforge, mason, --format, json, self-check]
       stdout_match: '"cfe_import_floor_satisfied": true'
-      miss_note: "mason's doctor finds the CFE import floor incomplete in pyforge-guild, so its recipe verb is unavailable there (`pixi run -e pyforge-guild pyforge mason doctor` names the missing package)"
+      miss_note: "mason's self-check finds the CFE import floor incomplete in pyforge-guild, so its recipe verb is unavailable there (`pixi run -e pyforge-guild pyforge mason self-check` names the missing package)"
     remedy:
       command: pixi install --frozen -e pyforge-mason
       who: agent

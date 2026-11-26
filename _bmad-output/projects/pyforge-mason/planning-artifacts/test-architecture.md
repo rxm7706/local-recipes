@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: 7d3656891f0f285b
-story_count: 144
+source_fingerprint: f08a2fa752fb773c
+story_count: 145
 test_file_count: 48
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 144
-- **Epics parsed:** 45
+- **Stories parsed:** 145
+- **Epics parsed:** 46
 - **Test files inventoried:** 48 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `7d3656891f0f285b`
+- **Source fingerprint:** `f08a2fa752fb773c`
 
 ## Risk Assessment
 
@@ -81,6 +81,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ### Low-risk epics
 
 - Epic 37: The mason Spec, PRD and package say what is built (spec-pyforge-mason CAP-2, spec-pyforge-mason:CAP-8..CAP-35, CAP-37)
+- Epic 46: Mason's self-diagnosis is not called doctor (spec-pyforge-mason CAP-5, CAP-29)
 
 ## Test Inventory
 
@@ -283,6 +284,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 43.1 | Mason's exit codes are held to their declared domain | none observed |
 | 44.1 | Mason's verbs take both spellings for JSON | none observed |
 | 45.1 | Mason's build-engine plugins are registered under mason's name | none observed |
+| 46.1 | Mason's self-diagnosis is mason self-check, and mason doctor is its old name | none observed |
 
 ## Quality Gates
 

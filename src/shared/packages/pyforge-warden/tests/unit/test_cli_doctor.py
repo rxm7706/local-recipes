@@ -75,7 +75,7 @@ def _healthy_engines_by_default(monkeypatch):
 
 
 def test_doctor_healthy_environment_exits_0_and_reports_every_check_ok(capsys, tmp_path):
-    rc = main(["scan", str(tmp_path), "--doctor"])
+    rc = main(["scan", str(tmp_path), "--self-check"])
     captured = capsys.readouterr()
     assert rc == 0
     lines = captured.out.splitlines()
@@ -87,7 +87,7 @@ def test_doctor_healthy_environment_exits_0_and_reports_every_check_ok(capsys, t
 
 
 def test_doctor_healthy_environment_format_json_is_a_small_ad_hoc_document(capsys, tmp_path):
-    rc = main(["scan", str(tmp_path), "--doctor", "--format", "json"])
+    rc = main(["scan", str(tmp_path), "--self-check", "--format", "json"])
     captured = capsys.readouterr()
     assert rc == 0
     document = json.loads(captured.out)
@@ -109,7 +109,7 @@ def test_doctor_healthy_environment_format_json_is_a_small_ad_hoc_document(capsy
 
 def test_doctor_missing_engine_exits_2_never_1_and_names_the_engine(monkeypatch, capsys, tmp_path):
     monkeypatch.setattr(subprocess, "run", _fake_version_run(missing="osv-scanner"))
-    rc = main(["scan", str(tmp_path), "--doctor"])
+    rc = main(["scan", str(tmp_path), "--self-check"])
     captured = capsys.readouterr()
     assert rc == 2
     assert rc != 1
@@ -120,7 +120,7 @@ def test_doctor_missing_engine_exits_2_never_1_and_names_the_engine(monkeypatch,
 
 def test_doctor_out_of_range_engine_exits_2_never_1(monkeypatch, capsys, tmp_path):
     monkeypatch.setattr(subprocess, "run", _fake_version_run(out_of_range="deptry"))
-    rc = main(["scan", str(tmp_path), "--doctor"])
+    rc = main(["scan", str(tmp_path), "--self-check"])
     captured = capsys.readouterr()
     assert rc == 2
     assert rc != 1
@@ -135,7 +135,7 @@ def test_doctor_unconfigured_osv_db_env_exits_2_naming_the_problem(monkeypatch, 
     exercises the env-unset branch of ``_doctor_check_osv_db``, not the
     present-but-unusable one — that branch has its own test below."""
     monkeypatch.delenv("OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY", raising=False)
-    rc = main(["scan", str(tmp_path), "--doctor"])
+    rc = main(["scan", str(tmp_path), "--self-check"])
     captured = capsys.readouterr()
     assert rc == 2
     assert rc != 1
@@ -151,7 +151,7 @@ def test_doctor_absent_osv_db_under_configured_dir_exits_2(monkeypatch, capsys, 
     empty_cache = tmp_path / "empty-osv-cache"
     empty_cache.mkdir()
     monkeypatch.setenv(OSV_DB_CACHE_ENV_VAR, str(empty_cache))
-    rc = main(["scan", str(tmp_path), "--doctor"])
+    rc = main(["scan", str(tmp_path), "--self-check"])
     captured = capsys.readouterr()
     assert rc == 2
     assert rc != 1
@@ -175,7 +175,7 @@ def test_doctor_stale_osv_db_exits_2_naming_the_problem(monkeypatch, capsys, tmp
     os.utime(zip_path, (stale_mtime, stale_mtime))
     monkeypatch.setenv(OSV_DB_CACHE_ENV_VAR, str(cache_root))
 
-    rc = main(["scan", str(tmp_path), "--doctor"])
+    rc = main(["scan", str(tmp_path), "--self-check"])
 
     captured = capsys.readouterr()
     assert rc == 2
@@ -193,7 +193,7 @@ def test_doctor_kev_and_epss_feed_absent_is_still_exit_0(monkeypatch, capsys, tm
     scan compose indeterminate, so "offline default assumed" was actively
     misleading for KEV (while EPSS genuinely has no default gate)."""
     monkeypatch.delenv(feeds.FEED_CACHE_DIR_ENV_VAR, raising=False)
-    rc = main(["scan", str(tmp_path), "--doctor"])
+    rc = main(["scan", str(tmp_path), "--self-check"])
     captured = capsys.readouterr()
     assert rc == 0
     assert "operating air-gapped: kev feed not present" in captured.out
@@ -222,7 +222,7 @@ def test_doctor_stale_kev_feed_exits_2_naming_the_consequence(monkeypatch, capsy
     stale_mtime = time.time() - (feeds.DEFAULT_FEED_MAX_AGE_DAYS + 1) * 86400
     os.utime(kev_path, (stale_mtime, stale_mtime))
     monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(cache_dir))
-    rc = main(["scan", str(tmp_path), "--doctor"])
+    rc = main(["scan", str(tmp_path), "--self-check"])
     captured = capsys.readouterr()
     assert rc == 2
     assert rc != 1
@@ -245,7 +245,7 @@ def test_doctor_stale_epss_feed_stays_exit_0_with_informational_line(monkeypatch
     stale_mtime = time.time() - (feeds.DEFAULT_FEED_MAX_AGE_DAYS + 1) * 86400
     os.utime(epss_path, (stale_mtime, stale_mtime))
     monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(cache_dir))
-    rc = main(["scan", str(tmp_path), "--doctor"])
+    rc = main(["scan", str(tmp_path), "--self-check"])
     captured = capsys.readouterr()
     assert rc == 0
     epss_line = next(line for line in captured.out.splitlines() if "epss-feed" in line)
@@ -262,7 +262,7 @@ def test_doctor_directory_at_feed_path_exits_2_never_air_gapped(monkeypatch, cap
     cache_dir = tmp_path / "feed-cache"
     feeds.kev_cache_path(cache_dir).mkdir(parents=True)
     monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(cache_dir))
-    rc = main(["scan", str(tmp_path), "--doctor"])
+    rc = main(["scan", str(tmp_path), "--self-check"])
     captured = capsys.readouterr()
     assert rc == 2
     kev_line = next(line for line in captured.out.splitlines() if "kev-feed" in line)
@@ -282,7 +282,7 @@ def test_doctor_problem_state_format_json_shape(monkeypatch, capsys, tmp_path):
     stale_mtime = time.time() - (feeds.DEFAULT_FEED_MAX_AGE_DAYS + 1) * 86400
     os.utime(kev_path, (stale_mtime, stale_mtime))
     monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(cache_dir))
-    rc = main(["scan", str(tmp_path), "--doctor", "--format", "json"])
+    rc = main(["scan", str(tmp_path), "--self-check", "--format", "json"])
     captured = capsys.readouterr()
     assert rc == 2
     document = json.loads(captured.out)
@@ -306,7 +306,7 @@ def test_doctor_present_but_corrupt_kev_feed_exits_2_naming_the_file(monkeypatch
     kev_path.parent.mkdir(parents=True)
     kev_path.write_text("{ truncated-not-json", encoding="utf-8")
     monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(cache_dir))
-    rc = main(["scan", str(tmp_path), "--doctor"])
+    rc = main(["scan", str(tmp_path), "--self-check"])
     captured = capsys.readouterr()
     assert rc == 2
     assert rc != 1
@@ -328,7 +328,7 @@ def test_doctor_names_ignored_scan_flags_on_stderr(capsys, tmp_path):
         [
             "scan",
             str(tmp_path),
-            "--doctor",
+            "--self-check",
             "--warn-only",
             "--baseline",
             "nonexistent-baseline.yaml",
@@ -342,6 +342,7 @@ def test_doctor_names_ignored_scan_flags_on_stderr(capsys, tmp_path):
     assert "--baseline" in flags_list
     assert "--format" not in flags_list
     assert "--doctor" not in flags_list
+    assert "--self-check" not in flags_list
     assert "--path" not in flags_list
 
 
@@ -352,7 +353,7 @@ def test_doctor_ignored_flags_trace_survives_an_invalid_target(capsys, tmp_path)
     reintroducing exactly the silent swallowing the trace exists to
     prevent."""
     missing = tmp_path / "does-not-exist"
-    rc = main(["scan", str(missing), "--doctor", "--warn-only"])
+    rc = main(["scan", str(missing), "--self-check", "--warn-only"])
     captured = capsys.readouterr()
     assert rc == 2
     assert "ignoring scan/policy flags" in captured.err
@@ -376,7 +377,7 @@ def test_doctor_check_messages_are_neutralized_to_one_line(monkeypatch, capsys, 
         ),
     )
     monkeypatch.setattr(cli_module, "run_doctor_checks", lambda target: crafted)
-    rc = main(["scan", str(tmp_path), "--doctor"])
+    rc = main(["scan", str(tmp_path), "--self-check"])
     captured = capsys.readouterr()
     assert rc == 2
     lines = captured.out.splitlines()
@@ -390,7 +391,7 @@ def test_doctor_never_reads_the_scan_targets_pyproject_toml(capsys, tmp_path):
     malformed ``pyproject.toml`` (which a REAL scan would surface as a
     ``config-parse``/``unparsable-manifest`` error) is never even opened."""
     (tmp_path / "pyproject.toml").write_text("[project\nname = 'broken", encoding="utf-8")
-    rc = main(["scan", str(tmp_path), "--doctor"])
+    rc = main(["scan", str(tmp_path), "--self-check"])
     captured = capsys.readouterr()
     assert rc == 0
     assert "config-parse" not in captured.out
@@ -398,7 +399,7 @@ def test_doctor_never_reads_the_scan_targets_pyproject_toml(capsys, tmp_path):
 
 
 def test_doctor_empty_path_is_early_fatal_exit_2(capsys):
-    rc = main(["scan", " ", "--doctor"])
+    rc = main(["scan", " ", "--self-check"])
     captured = capsys.readouterr()
     assert rc == 2
     assert captured.out == ""
@@ -407,7 +408,7 @@ def test_doctor_empty_path_is_early_fatal_exit_2(capsys):
 
 def test_doctor_nonexistent_target_is_exit_2(capsys, tmp_path):
     missing = tmp_path / "does-not-exist"
-    rc = main(["scan", str(missing), "--doctor"])
+    rc = main(["scan", str(missing), "--self-check"])
     captured = capsys.readouterr()
     assert rc == 2
     assert captured.out == ""
@@ -425,7 +426,7 @@ def test_doctor_never_exits_1_across_every_scenario(monkeypatch, capsys, tmp_pat
     ]
     for fake_run in scenarios:
         monkeypatch.setattr(subprocess, "run", fake_run)
-        rc = main(["scan", str(tmp_path), "--doctor"])
+        rc = main(["scan", str(tmp_path), "--self-check"])
         capsys.readouterr()
         assert rc != 1
         assert rc in (0, 2)
@@ -436,7 +437,7 @@ def test_doctor_bypass_without_reason_is_still_a_usage_error(capsys, tmp_path):
     path (SIGINT/parse-error paths unaffected) — ``--bypass`` without
     ``--reason`` is still the one usage error ``cli.py`` itself adds,
     never even reaching ``_run_doctor``."""
-    rc = main(["scan", str(tmp_path), "--doctor", "--bypass"])
+    rc = main(["scan", str(tmp_path), "--self-check", "--bypass"])
     captured = capsys.readouterr()
     assert rc == 2
     assert captured.out == ""
@@ -459,7 +460,7 @@ def test_doctor_tea_advisory_check_is_present_and_always_ok(monkeypatch, capsys,
     from pyforge.warden import engines as engines_module
 
     monkeypatch.setattr(engines_module.shutil, "which", lambda name: None)
-    rc = main(["scan", str(tmp_path), "--doctor"])
+    rc = main(["scan", str(tmp_path), "--self-check"])
     captured = capsys.readouterr()
     assert rc == 0
     tea_line = next(line for line in captured.out.splitlines() if line.startswith("  [doctor] tea "))
@@ -480,7 +481,7 @@ def test_doctor_tea_advisory_check_names_a_present_roster_entry(monkeypatch, cap
     bmad_custom.mkdir(parents=True)
     (bmad_custom / "config.toml").write_text('[modules.tea]\nprovisioned_by = "steward"\n', encoding="utf-8")
     monkeypatch.setattr(engines_module.shutil, "which", lambda name: None)
-    rc = main(["scan", str(tmp_path), "--doctor"])
+    rc = main(["scan", str(tmp_path), "--self-check"])
     captured = capsys.readouterr()
     assert rc == 0
     tea_line = next(line for line in captured.out.splitlines() if line.startswith("  [doctor] tea "))
@@ -498,7 +499,7 @@ def test_doctor_tea_advisory_check_names_both_roster_and_binary_present(monkeypa
     bmad_custom.mkdir(parents=True)
     (bmad_custom / "config.toml").write_text('[modules.tea]\nprovisioned_by = "steward"\n', encoding="utf-8")
     monkeypatch.setattr(engines_module.shutil, "which", lambda name: "/usr/bin/tea-test-review")
-    rc = main(["scan", str(tmp_path), "--doctor"])
+    rc = main(["scan", str(tmp_path), "--self-check"])
     captured = capsys.readouterr()
     assert rc == 0
     tea_line = next(line for line in captured.out.splitlines() if line.startswith("  [doctor] tea "))
@@ -514,10 +515,24 @@ def test_doctor_tea_advisory_check_names_a_present_binary_without_roster(monkeyp
     from pyforge.warden import engines as engines_module
 
     monkeypatch.setattr(engines_module.shutil, "which", lambda name: "/usr/bin/tea-test-review")
-    rc = main(["scan", str(tmp_path), "--doctor"])
+    rc = main(["scan", str(tmp_path), "--self-check"])
     captured = capsys.readouterr()
     assert rc == 0
     tea_line = next(line for line in captured.out.splitlines() if line.startswith("  [doctor] tea "))
     assert " ok -- " in tea_line
     assert "binary on PATH but no [modules.tea] roster entry" in tea_line
     assert "steward provision --module tea has not run here" in tea_line
+
+
+def test_the_old_spelling_runs_the_same_self_check_and_says_it_is_renamed(tmp_path, capsys):
+    """Warden Story 33.1: ``--doctor`` (the fleet doctor station's name) is the old spelling of ``--self-check``,
+    accepted for one release. It runs the same self-check, with the same exit code and stdout, and says on stderr that
+    it is renamed; the new spelling says nothing."""
+    new_rc = main(["scan", str(tmp_path), "--self-check", "--format", "json"])
+    new = capsys.readouterr()
+    old_rc = main(["scan", str(tmp_path), "--doctor", "--format", "json"])
+    old = capsys.readouterr()
+    assert old_rc == new_rc
+    assert json.loads(old.out) == json.loads(new.out)
+    assert "renamed --self-check" not in new.err
+    assert "warden: --doctor is renamed --self-check; the old spelling is accepted for one release" in old.err

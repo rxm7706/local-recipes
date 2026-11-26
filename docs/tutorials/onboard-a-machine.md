@@ -131,13 +131,13 @@ desktop - a clone, the environments, the station CLIs, the tests and the full pr
           see: docs/how-to/run-and-read-pr-preflight.md
   ok      env-yaml-sync: environment.yaml matches pixi.toml
   ok      bmad-method: no HARD/FAIL integrity findings (via `pixi run -e pyforge-guild bmad-drift-check`)
-  ok      station-clis: `pixi run --as-is -e pyforge-guild steward --version` exit 0; `pixi run --as-is -e pyforge-guild marshal --version` exit 0; `pixi run --as-is -e pyforge-guild scribe --version` exit 0; `pixi run --as-is -e pyforge-guild herald --version` exit 0; `pixi run --as-is -e pyforge-guild pyforge doctor --version` exit 0; `pixi run --as-is -e pyforge-guild pyforge mason doctor` exit 0
+  ok      station-clis: `pixi run --as-is -e pyforge-guild steward --version` exit 0; `pixi run --as-is -e pyforge-guild marshal --version` exit 0; `pixi run --as-is -e pyforge-guild scribe --version` exit 0; `pixi run --as-is -e pyforge-guild herald --version` exit 0; `pixi run --as-is -e pyforge-guild pyforge doctor --version` exit 0; `pixi run --as-is -e pyforge-guild pyforge mason self-check` exit 0
   ok      station-clis-own-env: `pixi run --as-is -e pyforge-atlas pyforge atlas --version` exit 0; `pixi run --as-is -e pyforge-warden warden --version` exit 0
-  WARN    warden-doctor: `pixi run --as-is -e pyforge-warden warden scan --doctor` exited 2: warden's doctor reports a problem; `pixi run -e pyforge-warden warden scan --doctor` prints each one
+  WARN    warden-doctor: `pixi run --as-is -e pyforge-warden warden scan --self-check` exited 2: warden's self-check reports a problem; `pixi run -e pyforge-warden warden scan --self-check` prints each one
           remedy (operator): OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY="<a cache directory>" bash scripts/platform-provision-osv-offline-db.sh
           note: that provisions the offline OSV database, the usual problem on a new machine (it downloads; a scan itself stays offline); export the variable in the shell profile afterwards
           see: docs/how-to/scan-for-compliance-with-warden.md
-  WARN    mason-recipe: `pixi run --as-is -e pyforge-guild pyforge mason --format json doctor` printed no line matching /"cfe_import_floor_satisfied": true/: mason's doctor finds the CFE import floor incomplete in pyforge-guild, so its recipe verb is unavailable there (`pixi run -e pyforge-guild pyforge mason doctor` names the missing package)
+  WARN    mason-recipe: `pixi run --as-is -e pyforge-guild pyforge mason --format json self-check` printed no line matching /"cfe_import_floor_satisfied": true/: mason's self-check finds the CFE import floor incomplete in pyforge-guild, so its recipe verb is unavailable there (`pixi run -e pyforge-guild pyforge mason self-check` names the missing package)
           remedy (agent): pixi install --frozen -e pyforge-mason
           note: pyforge-mason carries the whole floor, so `pixi run -e pyforge-mason pyforge mason recipe ...` works; this row stays WARN until pyforge-guild carries it too, a pixi.toml change that is the operator's
   WARN    token-kit: caveman-skill: instrument-unavailable; codegraph-index: instrument-unavailable
