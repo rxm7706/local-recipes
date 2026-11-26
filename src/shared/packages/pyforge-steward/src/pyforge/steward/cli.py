@@ -1065,8 +1065,8 @@ def _add_guards_subparsers(guards_parser: argparse.ArgumentParser) -> None:
 def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
     """Add the `perimeter` and `static` verbs. `perimeter` (Story 9.5, CAP-114)
     validates and renders the `pyforge.steward.dashboard` Django app's
-    deployment perimeter (AD-5 shareability + daphne/nginx manifests).
-    `static` (Story 9.7, CAP-116/AD-10) writes a board as a self-contained
+    deployment perimeter (sld:AD-5 shareability + daphne/nginx manifests).
+    `static` (Story 9.7, CAP-116/sld:AD-10) writes a board as a self-contained
     static export to `docs/dashboard/<board>/index.html`, which lands
     through a pull request like any tracked file. Story 102.3 retired
     `dashboard` and `status` (the Pages artifact is `steward pages`); a call
@@ -1087,7 +1087,7 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
         type=int,
         default=1,
         metavar="N",
-        help="daphne worker count (default: 1 — a single worker may use in-process backends, AD-5)",
+        help="daphne worker count (default: 1 — a single worker may use in-process backends, sld:AD-5)",
     )
     perimeter.add_argument(
         "--cache-backend",
@@ -1176,7 +1176,7 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
         default=None,
         metavar="NAME",
         help=(
-            "the board's declared access column, if any — refuses (AD-10) rather than "
+            "the board's declared access column, if any — refuses (sld:AD-10) rather than "
             "publishing, since static export cannot honor row-level access"
         ),
     )

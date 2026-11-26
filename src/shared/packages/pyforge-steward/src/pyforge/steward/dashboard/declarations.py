@@ -1,10 +1,10 @@
-"""Story 9.1/9.3 — the "declared, not implemented" half of CAP-110, AD-4, and AD-7.
+"""Story 9.1/9.3 — the "declared, not implemented" half of CAP-110, sld:AD-4, and sld:AD-7.
 
 Three frozen dataclasses an adopter fills in instead of hand-writing
 filtering, hand-wiring a trust boundary, or hand-picking an audit retention
 policy. None of them performs any filtering, request handling, ingress
-checking, or purging itself — that is `middleware.py` (AD-4) and `audit.py`
-(AD-7)'s job. This module's only job is the declaration schema plus
+checking, or purging itself — that is `middleware.py` (sld:AD-4) and `audit.py`
+(sld:AD-7)'s job. This module's only job is the declaration schema plus
 construction-time validation, so a misconfigured adopter fails loudly at
 config time rather than serving unfiltered rows, trusting an undeclared
 network path, or running an unbounded audit trail.
@@ -51,7 +51,7 @@ DEFAULT_AUDIT_READ_LIMIT = 10_000
 # RFC 9110 §5.1 `token`: the grammar a header *name* must satisfy to exist on
 # the wire at all. Validated because a name that is merely latin-1-encodable
 # but not a token (a trailing space from a config file, an embedded ":" or
-# newline) silently matches NO header -- which switches AD-4's refusal off
+# newline) silently matches NO header -- which switches sld:AD-4's refusal off
 # rather than failing, since the middleware only checks the ingress for a
 # header it actually found (review pass 3).
 #
@@ -142,7 +142,7 @@ class AccessDeclaration:
 
 @dataclass(frozen=True)
 class TrustedIngress:
-    """AD-4: the trusted ingress and the identity/role header names.
+    """sld:AD-4: the trusted ingress and the identity/role header names.
 
     ``addresses`` is the declared set of IP networks (CIDR or bare host —
     each parsed with ``ipaddress.ip_network`` at construction; hostnames are
@@ -169,12 +169,12 @@ class TrustedIngress:
                 f"TrustedIngress.addresses must be a tuple of addresses, "
                 f"got {type(self.addresses).__name__} — a bare string would "
                 f"silently turn the middleware's membership check into a "
-                f"substring match, weakening AD-4's trust boundary"
+                f"substring match, weakening sld:AD-4's trust boundary"
             )
         if not self.addresses:
             raise ValueError(
                 "TrustedIngress.addresses must not be empty — an undeclared "
-                "trusted ingress leaves AD-4's refusal with nothing to "
+                "trusted ingress leaves sld:AD-4's refusal with nothing to "
                 "check against"
             )
         # Element types (review pass 2): `addresses=(b"10.0.0.1",)` passed
@@ -255,7 +255,7 @@ class TrustedIngress:
         # with a trailing space out of a config file or env var, or one
         # carrying a ":" or newline -- constructed cleanly and then matched no
         # header at all. That does not degrade to "no identity": it switches
-        # AD-4's refusal OFF, because the middleware only checks the ingress
+        # sld:AD-4's refusal OFF, because the middleware only checks the ingress
         # for a header it actually found, so an identity header from an
         # UNTRUSTED peer stops being refused. A name that cannot exist on the
         # wire must fail here, loudly, not silently disarm the trust boundary.
@@ -269,7 +269,7 @@ class TrustedIngress:
                     f"HTTP header name (RFC 9110 token: letters, digits and "
                     f"!#$%&'*+-.^_`|~ only — no spaces, colons, newlines or "
                     f"non-ASCII) — such a name matches no header on the wire, "
-                    f"which would silently disable AD-4's ingress refusal "
+                    f"which would silently disable sld:AD-4's ingress refusal "
                     f"instead of failing here"
                 )
 
@@ -295,7 +295,7 @@ class TrustedIngress:
 
 @dataclass(frozen=True)
 class AuditRetention:
-    """AD-7: the adopter-declared audit retention period; the pattern refuses a default.
+    """sld:AD-7: the adopter-declared audit retention period; the pattern refuses a default.
 
     ``days`` is how many days an ``AuditEntry`` row is retained before
     `audit.py`'s `purge_expired_entries` deletes it. There is deliberately no
@@ -303,7 +303,7 @@ class AuditRetention:
     anywhere in this package — `purge_expired_entries` takes a required
     `AuditRetention` argument, so a deployment that has not made this
     declaration cannot purge at all, rather than purging on an assumed
-    policy nobody actually chose (AD-7: "refused rather than run
+    policy nobody actually chose (sld:AD-7: "refused rather than run
     unbounded").
     """
 

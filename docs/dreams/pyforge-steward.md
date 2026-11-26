@@ -8398,3 +8398,21 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   literals, so each keeps spelling its own numbers and a test holds them to the declaration; none is rewritten to
   read it. No flag. The same story corrects one stale docstring it passes, `interfaces.py`'s list of duties.
   Owner `spec-pyforge-steward`.
+- **2026-11-26 (a tag of another spine is written qualified) — Found and ruled:** steward's own spine defines `AD-1` to `AD-9`, and its source cites other spines' decisions bare: the jira spine's baseline and transport rules in `sync.py` (`AD-10`, and `AD-2` and `AD-5`, numbers steward's own spine also defines), the platform-library spine's static-export, reusable-app and storage rules in `deploy.py`, `cli.py` and `dashboard/`, the canopy's interpreter rule, and marshal's loop-home and seam decisions. **Ruled** (operator ruling of 2026-11-26 on the four open convention items: "go with your recommendations, start in the suggested order").
+  Marshal's Dream entry of the same date extends `ad-citation-check` to station source. **For steward:** this entry
+  binds the chain standard of `docs/governance/spec-one-chain-per-station` (its capability 9, the one page that holds the id grammar; realized with no text change)
+  and decomposes as Epic 143, one story: each such tag is written with the prefix of the spine it means (`jira:`, `sld:`, `canopy:` and `pyforge-marshal:`).
+  **Constraints:** comments, docstrings and message text only; no behaviour, exit code or flag moves; a bare tag that
+  does mean this station's own spine stays bare. Owner `spec-pyforge-steward`.
+- **2026-11-26 (MCP placement is one rule, and station state is one page) — Found and ruled:** every station's portal
+  ships the mounted MCP face (`mcp_asgi.py`, `POST /stations/<name>/mcp`), as canopy:AD-5 says, and two base packages
+  also hold MCP server code (atlas, whose tools the portal's face builds its server from; marshal, a stdio server for
+  a local agent). No rule said which case is which, so the next station could not tell where its server belongs.
+  Where each station keeps state was written nowhere in one place. **Ruled** (operator ruling of 2026-11-26 on the four open convention items: "go with your recommendations, start in the suggested order": write down what is already
+  true for MCP placement and add a test; close state storage as answered, with a short reference page; no store is
+  unified). **For steward:** this entry binds `spec-pyforge-unifying-strategy` (its capability 4, the service faces,
+  realized with no text change), amends canopy:AD-5 with a placement clause, and decomposes as Story 143.2 in Epic
+  143: a live-tree test holds one portal face per station, MCP server code in the two declared base packages only,
+  and no portal face but atlas's importing its station; `docs/reference/station-state.md` says where each station
+  keeps state, whether it is a record or derived, and what to back up. **Constraints:** no code moves and no flag.
+  Owner `spec-pyforge-steward`.

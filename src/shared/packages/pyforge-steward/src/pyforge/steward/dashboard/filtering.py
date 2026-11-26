@@ -1,4 +1,4 @@
-"""Story 9.2 — CAP-110's filtering half, and AD-6's filter-then-search shape.
+"""Story 9.2 — CAP-110's filtering half, and sld:AD-6's filter-then-search shape.
 
 `filter_by_role` is the only entry point from Story 9.1's `get_master_dataset()`
 return value into a role-scoped view: it consumes the master (unfiltered)
@@ -9,7 +9,7 @@ a shared key, served to a west-role caller).
 
 `search` is the *only* way to query a `RoleFilteredRows`, and its sole
 row-shaped parameter is runtime-checked against that type before any row is
-touched. This is AD-6's "enforced by signature, not by discipline": there is
+touched. This is sld:AD-6's "enforced by signature, not by discipline": there is
 no function in this module — or anywhere in this package — that can search
 `get_master_dataset()`'s raw return value, so the filter-then-search order is
 a property of the API shape rather than of caller care.
@@ -30,11 +30,11 @@ from .declarations import AccessDeclaration
 
 @dataclass(frozen=True)
 class RoleFilteredRows:
-    """AD-6: the ONLY row-shaped type `search()` accepts.
+    """sld:AD-6: the ONLY row-shaped type `search()` accepts.
 
     A distinct type rather than a plain tuple or list, so a caller cannot
     pass `get_master_dataset()`'s raw return value — or any other row-shaped
-    object — to `search()` and have it work: the type itself is what AD-6
+    object — to `search()` and have it work: the type itself is what sld:AD-6
     means by "enforced by signature".
     """
 
@@ -138,7 +138,7 @@ def filter_by_role(
 
 
 def search(frame: RoleFilteredRows, predicate: Callable[[Mapping[str, Any]], bool]) -> tuple[Mapping[str, Any], ...]:
-    """AD-6: search a `RoleFilteredRows` — and nothing else — by `predicate`.
+    """sld:AD-6: search a `RoleFilteredRows` — and nothing else — by `predicate`.
 
     The `isinstance` check runs before any row is inspected, so a caller
     passing the raw master dataset (or any other type) is refused by the
@@ -147,7 +147,7 @@ def search(frame: RoleFilteredRows, predicate: Callable[[Mapping[str, Any]], boo
     if not isinstance(frame, RoleFilteredRows):
         raise TypeError(
             f"search() requires a RoleFilteredRows, got "
-            f"{type(frame).__name__} — AD-6: the library exposes no entry "
+            f"{type(frame).__name__} — sld:AD-6: the library exposes no entry "
             f"point that can search the unfiltered master set, so this is "
             f"refused before any row is inspected"
         )

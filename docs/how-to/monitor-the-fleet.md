@@ -8,7 +8,7 @@ sources:
   - .claude/memory/reference/fleet-landing-pass-liveness.md
   - src/shared/packages/pyforge-steward/src/pyforge/steward/sprint_ledger_query.py
   - .claude/skills/bmad-sprint-ledger-query/SKILL.md
-verified: 2026-11-25
+verified: 2026-11-26
 ---
 
 # How to Monitor the Fleet

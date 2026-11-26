@@ -75,7 +75,7 @@ INSTALL_CLASS_VSCODE_EXTENSION = "vscode-extension"
 INSTALL_CLASS_SCAFFOLD_NA = "scaffold-n/a"
 # Story 45.1 — a bare CLI with nothing to wire into _bmad (eval-quality).
 INSTALL_CLASS_CLI = "cli"
-# Story 46.9 — manticore's own class (AD-3): a module installed OUTSIDE this
+# Story 46.9 — manticore's own class (suite:AD-3): a module installed OUTSIDE this
 # repo, into a dedicated studio root, never the generic "module" fallback.
 INSTALL_CLASS_STUDIO_MODULE = "studio-module"
 
@@ -85,7 +85,7 @@ INSTALL_CLASS_STUDIO_MODULE = "studio-module"
 # manifest is absent (I/O Matrix).
 _BMAD_CORE_MANIFEST_RELATIVE_PATH = Path("_bmad/_config/manifest.yaml")
 
-# Story 46.9: manticore's studio root (AD-3) — declared once per machine,
+# Story 46.9: manticore's studio root (suite:AD-3) — declared once per machine,
 # outside this repo, never provisioned into `.claude/skills/` here.
 _PYFORGE_STUDIO_ROOT_ENV = "PYFORGE_STUDIO_ROOT"
 _PYFORGE_STUDIO_ROOT_DEFAULT = "~/pyforge-studio"
@@ -128,7 +128,7 @@ class SuitePackageDef:
     install_class: str = INSTALL_CLASS_MODULE
     wire_pixi_task: str | None = None  # vscode-extension class: pixi task name
     cli_bin: str | None = None  # cli class: executable expected on PATH (default: name)
-    # Story 46.9: the provision.py `_SUPPORTED_MODULES` key (AD-9 roster read).
+    # Story 46.9: the provision.py `_SUPPORTED_MODULES` key (suite:AD-9 roster read).
     module_code: str | None = None
 
 
@@ -642,7 +642,7 @@ def probe_wired(repo: Path, pkg: SuitePackageDef) -> StageProbe:
                 detail="plugin path not documented in playbook/matrix",
             )
         if pkg.install_class == INSTALL_CLASS_STUDIO_MODULE:
-            # Story 46.9 (AD-3): manticore is installed OUTSIDE this repo,
+            # Story 46.9 (suite:AD-3): manticore is installed OUTSIDE this repo,
             # into a dedicated studio root — never the in-repo mc-* census
             # the old generic fallback branch used to consult.
             #

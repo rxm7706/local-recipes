@@ -262,7 +262,7 @@ def _keys_from_merge_subjects(
     rendered from the textually identical default template still refuses.
 
     Story 27.5 (CAP-80 amended): once every scoped shape above misses, the
-    AD-24 bare legacy form (``Merge {key} into main``) is tried once more --
+    pyforge-marshal:AD-24 bare legacy form (``Merge {key} into main``) is tried once more --
     attributed to ``project_slug`` only when ``sha``'s first-parent diff
     touches this station's own paths AND this station's own tracked ledger
     already knows the extracted key (``bare_merge.attribute_bare_merge``,

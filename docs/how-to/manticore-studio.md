@@ -4,7 +4,7 @@ sources:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-46-6-heralds-manticore-studio-has-a-root-and-a-proven-native-path.md
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-18-1-the-first-station-video-renders-from-heralds-studio.md
   - presentations/pyforge-warden/src/marp/warden-deck-narration-2026-07-31.md
-verified: 2026-11-18
+verified: 2026-11-26
 ---
 
 # Herald's manticore studio

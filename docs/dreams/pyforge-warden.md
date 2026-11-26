@@ -314,6 +314,12 @@ One-chain fold: satellite Dreams archived in place with `Consolidated into [[pyf
   declared once in `docs/governance/guild-roster.json` and mirrored for in-process code in `pyforge.core.exit_domains`.
   Warden's `verdict.py` spells its seven rungs' codes, the warn-as-error `1`, the allow-empty `0` and `130`; it takes them from the `warden` domain, and a meta-test holds its lattice to the declared domain. This entry binds `spec-pyforge-steward:CAP-184` and mints no capability; it decomposes as Epic 30, one story.
   **Constraints:** no exit code the station returns changes, the projection stays in its sole-owner module, no flag.
+- **2026-11-26 (a tag of another spine is written qualified) — Found and ruled:** warden's spine defines no `AD-n` at all, and its source cites `AD-4`, `AD-9` and `AD-10` bare in five modules. All three are decisions of the suite spine (advisory lenses never gate; one module roster; cross-station prerequisites are checks), which the TEA advisory realizes. **Ruled** (operator ruling of 2026-11-26 on the four open convention items: "go with your recommendations, start in the suggested order").
+  Marshal's Dream entry of the same date extends `ad-citation-check` to station source. **For warden:** this entry
+  binds the chain standard of `docs/governance/spec-one-chain-per-station` (its capability 9, the one page that holds the id grammar; realized with no text change)
+  and decomposes as Epic 31, one story: each such tag is written with the prefix of the spine it means (`suite:AD-4`, `suite:AD-9`, `suite:AD-10`).
+  **Constraints:** comments, docstrings and message text only; no behaviour, exit code or flag moves; a bare tag that
+  does mean this station's own spine stays bare. Owner `spec-pyforge-warden`.
 
 ## 2026-10-26 — A web face for the compliance factory — upload a manifest, watch warden and atlas analyze it (folded from compliance-factory-web-face)
 

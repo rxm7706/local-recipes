@@ -266,6 +266,7 @@ marketplace mounted from `docs/foundry/marketplace/`) only with `pyforge.steward
 | [`reference/mcp-server-architecture.md`](reference/mcp-server-architecture.md) | fleet | pointer |
 | [`reference/skills-catalog.md`](reference/skills-catalog.md) | steward | generated |
 | [`reference/station-cheat-sheet.md`](reference/station-cheat-sheet.md) | fleet | generated |
+| [`reference/station-state.md`](reference/station-state.md) | steward | authored |
 | [`reference/station-verify-commands.md`](reference/station-verify-commands.md) | fleet | generated |
 | [`reference/story-spec-flag-block.md`](reference/story-spec-flag-block.md) | doctor | authored |
 | [`reference/sync-jira-github-workflow-templates/README.md`](reference/sync-jira-github-workflow-templates/README.md) | fleet | authored |

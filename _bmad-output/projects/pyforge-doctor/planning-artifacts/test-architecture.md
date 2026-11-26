@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: 2936b4e01d95a0c8
-story_count: 199
+source_fingerprint: 1b391282ced156c9
+story_count: 200
 test_file_count: 132
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 199
-- **Epics parsed:** 62
+- **Stories parsed:** 200
+- **Epics parsed:** 63
 - **Test files inventoried:** 132 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `2936b4e01d95a0c8`
+- **Source fingerprint:** `1b391282ced156c9`
 
 ## Risk Assessment
 
@@ -98,6 +98,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 61: The documentation says what the tree does (spec-pyforge-doctor CAP-84)
 - Epic 62: The kill switch writes the flag tree whole and reports its reason (spec-pyforge-doctor CAP-96)
 - Epic 63: Doctor's verdict takes its exit codes from the declaration (spec-pyforge-steward:CAP-184)
+- Epic 64: A tag of another spine is written qualified (spec-one-chain-per-station:CAP-3)
 
 ## Test Inventory
 
@@ -439,6 +440,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 61.1 | The shelf, the front doors and the dossier say what the tree does | none observed |
 | 62.1 | The kill switch writes the flag tree whole and reports its reason | none observed |
 | 63.1 | Doctor's verdict takes its exit codes from the declaration | none observed |
+| 64.1 | Doctor's source cites marshal's and the cutover's decisions qualified | none observed |
 
 ## Quality Gates
 

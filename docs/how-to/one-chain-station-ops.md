@@ -3,7 +3,7 @@ sources:
   - docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md
   - scripts/promote_sprint_status.py
   - scripts/deferred_work_intake.py
-verified: 2026-11-17
+verified: 2026-11-26
 ---
 
 # Keep one chain on a PyForge station

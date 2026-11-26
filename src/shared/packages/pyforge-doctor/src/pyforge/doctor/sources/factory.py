@@ -1468,10 +1468,10 @@ def classify(path: Path, target: Path) -> str:
         # document that tracks stories, not the skill surface.
         return "tracked:deferred"
     if rel == "planning-artifacts/marshal-policy.toml":
-        # Marshal's PROJECT-POLICY layer -- the middle tier of AD-16's
+        # Marshal's PROJECT-POLICY layer -- the middle tier of pyforge-marshal:AD-16's
         # defaults -> project -> flags chain, added 2026-07-30. Tracked on
         # purpose: it is the governed SOURCE the gitignored, derived
-        # `.bmad-loop/policy.toml` is rendered from (AD-12/AD-35), so a fresh
+        # `.bmad-loop/policy.toml` is rendered from (pyforge-marshal:AD-12/pyforge-marshal:AD-35), so a fresh
         # clone or a newly provisioned loop home can reproduce its harness
         # policy. Hand-authored and not pin-gated -- it carries a station's
         # verify command and gate posture, which track that project's own

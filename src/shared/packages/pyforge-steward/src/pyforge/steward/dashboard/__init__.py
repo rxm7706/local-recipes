@@ -29,7 +29,7 @@ does the same, reached by `glass.compute_glass_reading` — and since Story 61.5
 `middleware.py`, — since Story 9.4 — `export.py` (`ExportPolicy` +
 `authorize_export`/`maybe_encrypt_export`), and — since Story 9.2 —
 `navigation.py`/`filtering.py` are plain Python (the ASGI3 callable shape
-is protocol, not framework, per AD-8) and import cleanly with or without
+is protocol, not framework, per sld:AD-8) and import cleanly with or without
 the extra. Story 9.3's review pass 3 restated this split: it had been
 written as "only `apps.py` and `cache.py`", which that story's three new
 django-importing modules made false, and this docstring is the package's

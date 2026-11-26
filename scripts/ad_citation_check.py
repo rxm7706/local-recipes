@@ -158,6 +158,55 @@ _SPINE_GLOBS = (
 )
 
 
+#: Station SOURCE is held to the same rule as planning prose (marshal Story 123.1,
+#: operator ruling 2026-11-26): a bare `AD-n` in `src/shared/packages/pyforge-<x>/src`
+#: means a decision of that package's HOME project, and a decision of any other
+#: spine is written qualified. A package's home is the project of its own name;
+#: the two kernel packages have no project, and their Specs (`spec-pyforge-core`,
+#: `spec-pyforge-testing-charter`) live in marshal's.
+_SOURCE_HOME = {"pyforge-core": "pyforge-marshal", "pyforge-testing-kit": "pyforge-marshal"}
+
+#: The one prefix a citation may be qualified by with a SPACE (`canopy AD-14`), the
+#: form AGENTS.md allows beside the colon form, and the only one the tree uses. A
+#: closed list of one: a word that merely precedes `AD-n` in a sentence ("the test
+#: suite AD-9 ...") must not read as a qualifier.
+_SPACE_QUALIFIER = "canopy"
+_SPACE_QUALIFIED = re.compile(r"\b" + _SPACE_QUALIFIER + r" $")
+
+#: A QUALIFIED citation: `suite:AD-9`, `pyforge-marshal:AD-24`.
+_AD_QUALIFIED_CITE = re.compile(r"(?<![\w:-])([a-z][a-z0-9-]*):AD-(\d+)")
+
+
+def _bare_source_citations(text: str) -> list[int]:
+    """Every bare `AD-n` in a source file: not `spine:AD-n`, and not `canopy AD-n`."""
+    return [
+        int(m.group(1)) for m in _AD_CITE.finditer(text) if not _SPACE_QUALIFIED.search(text[max(0, m.start() - 8) : m.start()])
+    ]
+
+
+def _qualified_source_citations(text: str) -> list[tuple[str, int]]:
+    """Every qualified citation in a source file, as (prefix, id): the colon form and `canopy AD-n`."""
+    found = [(m.group(1), int(m.group(2))) for m in _AD_QUALIFIED_CITE.finditer(text)]
+    found += [
+        (_SPACE_QUALIFIER, int(m.group(1)))
+        for m in _AD_CITE.finditer(text)
+        if _SPACE_QUALIFIED.search(text[max(0, m.start() - 8) : m.start()])
+    ]
+    return found
+
+
+def _qualified_ads(projects: list[pathlib.Path]) -> dict[str, set[int]]:
+    """Every QUALIFIED definition in the fleet's spines: prefix -> ids (`#### suite:AD-9 — ...`)."""
+    out: dict[str, set[int]] = collections.defaultdict(set)
+    for proj in projects:
+        for sp in _spines(proj):
+            for m in _AD_DEF.finditer(_read(sp)):
+                prefix = m.group("hp") or m.group("bp")
+                if prefix:
+                    out[prefix.rstrip(":")].add(int(m.group("h") or m.group("b")))
+    return out
+
+
 def _read(path: pathlib.Path) -> str:
     return path.read_text(encoding="utf-8", errors="replace")
 
@@ -253,6 +302,7 @@ def main() -> int:
     misnamed: list[str] = []
     external = 0
     malformed: list[str] = []
+    source_findings: list[str] = []
 
     # --- FAIL: a spine folder that does not name its own project ------------
     #
@@ -321,6 +371,59 @@ def main() -> int:
                     f"{slug}: {path.relative_to(ROOT)} cites bare AD-{n}, which this "
                     f"project does not define -- qualify it (`<spine>:AD-{n}`) or fix the id"
                 )
+
+    # --- FAIL: a citation in station SOURCE that does not resolve -----------
+    #
+    # Measured 2026-11-26, before the rule: of the ten packages, five resolved
+    # every bare citation in their own spine (atlas, herald, marshal, mason,
+    # scribe -- 2,767 citations), three did not (doctor 9, steward 37 of which
+    # four were space-qualified, warden 32), core's seven resolved in marshal's
+    # and the testing kit cites none. Those are the same defect the prose rule
+    # above names: a number that happens to exist in another spine.
+    #
+    # WHAT THIS CANNOT SEE: a bare number BOTH spines define. Steward's own spine
+    # holds AD-1..9, so a bare `AD-4` in `sync.py` that means the jira spine's
+    # fourth decision resolves, wrongly, to steward's. That class is found by
+    # reading, not by this check (about 80 were, in the same change).
+    #
+    # Source findings are kept OUT of the baseline: they fail on every run until
+    # fixed, so `--write-baseline` can never absolve one. A qualified citation is
+    # resolved too -- `suit:AD-9` and `suite:AD-99` are as wrong as a bare miss.
+    # Tests are not scanned (a fixture may quote any id); `django-*` portals and
+    # non-Python files are not scanned either.
+    qualified = _qualified_ads(projects)
+    packages = ROOT / "src" / "shared" / "packages"
+    for pkg in sorted(packages.glob("pyforge-*")) if packages.is_dir() else []:
+        home = _SOURCE_HOME.get(pkg.name, pkg.name)
+        if home not in defined:
+            source_findings.append(
+                f"{pkg.name}: no project `{home}` under {PROJECTS.relative_to(ROOT)} to resolve its "
+                f"citations in -- name its home in `_SOURCE_HOME`"
+            )
+            continue
+        for path in sorted((pkg / "src").rglob("*.py")):
+            text = _read(path)
+            rel = path.relative_to(ROOT)
+            for n in _bare_source_citations(text):
+                if n not in defined[home]:
+                    source_findings.append(
+                        f"{home}: {rel} cites bare AD-{n}, which {home} does not define -- "
+                        f"qualify it (`<spine>:AD-{n}`) or fix the id"
+                    )
+            for prefix, n in _qualified_source_citations(text):
+                # a spine prefix, a project (`pyforge-marshal:`), or a station Spec (`spec-pyforge-doctor:`)
+                known = next(
+                    (
+                        ids
+                        for ids in (qualified.get(prefix), defined.get(prefix), defined.get(prefix.removeprefix("spec-")))
+                        if ids is not None
+                    ),
+                    None,
+                )
+                if known is None:
+                    source_findings.append(f"{home}: {rel} cites {prefix}:AD-{n}, and no spine is named `{prefix}`")
+                elif n not in known:
+                    source_findings.append(f"{home}: {rel} cites {prefix}:AD-{n}, which `{prefix}` does not define")
 
     # --- FAIL: a bare CAP citation that does not resolve IN ITS OWN PROJECT -
     for proj in projects:
@@ -451,6 +554,13 @@ def main() -> int:
             + (f", {len(cap_healed)} since fixed" if cap_healed else "")
         )
     exit_code = 0
+    # Station source is never baselined: every finding is printed and fails.
+    source_set = sorted(set(source_findings))
+    if source_set:
+        print(f"[ad-citation] {len(source_set)} unresolved citation(s) in station source (never baselined):")
+        for line in source_set:
+            print(f"[ad-citation]   SOURCE: {line}")
+        exit_code = 1
     # Every NEW row is printed -- the NEW set IS the actionable set, and a
     # detector that exits 1 must show what it exits on. Until 2026-09-14 both
     # loops sliced `[:10]` beneath a headline carrying the full count, so a red

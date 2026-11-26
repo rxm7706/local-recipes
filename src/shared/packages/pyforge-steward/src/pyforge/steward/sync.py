@@ -15,30 +15,30 @@ schedule tick is only ever a wake-up, never a value source. Every call
 re-reads both linked items' current state and asks, per side, whether its
 current tracked-field value differs from the **baseline** value that side was
 last synced to — a per-field map of last-synced values, never a timestamp
-(AD-5 amended, AD-10). Neither side differs from its own baseline → no-op.
+(jira:AD-5 amended, jira:AD-10). Neither side differs from its own baseline → no-op.
 Exactly one differs → propagate it. Both differ → a genuine conflict, and
-GitHub wins unless `field_overrides` says otherwise (AD-4). Control-plane
+GitHub wins unless `field_overrides` says otherwise (jira:AD-4). Control-plane
 state — the entity link and the per-field baseline map — lives only as
 configured fields on the items themselves; there is no sidecar store of any
-kind (AD-2).
+kind (jira:AD-2).
 
 Every outbound request's auth goes through `keys.HostScopedCredential`/
-`resolve_headers` → `_http.py`'s `auth_headers_for` (AD-8) — this module
+`resolve_headers` → `_http.py`'s `auth_headers_for` (jira:AD-8) — this module
 never builds its own credential/header logic. `SyncDuty` is the
 `Duty`-conforming adapter `cli.py`'s `resolve_duty("sync")` now returns,
 wiring `steward sync reconcile (--github-item ID | --jira-issue KEY |
 --schedule) [--config PATH] [--dry-run]` -- `--schedule` (Story 8.4)
 bulk-enumerates every linked item on the board and dispatches each through
-the same single-pair `reconcile` in one run (AD-1's default `trigger=
+the same single-pair `reconcile` in one run (jira:AD-1's default `trigger=
 schedule` operating mode).
 
-See ARCHITECTURE-SPINE.md's AD-5 (amended) and AD-10, and this story's own
+See ARCHITECTURE-SPINE.md's jira:AD-5 (amended) and jira:AD-10, and this story's own
 spec Design Notes ("Reconcile algorithm"), for the baseline-value mechanism
 `reconcile` implements verbatim: an absent baseline key means "never synced"
 (a first link, not a loop candidate); a present key holding `None` means "was
 synced, and was an explicit clear" — the two must never be collapsed. A
 serialized baseline map that would exceed the configured field's size ceiling
-is a named failure pointing at Mode B (AD-2/AD-10's documented escape hatch),
+is a named failure pointing at Mode B (jira:AD-2/jira:AD-10's documented escape hatch),
 never a sidecar store.
 """
 
@@ -87,7 +87,7 @@ _REQUIRED_JIRA_FIELDS: tuple[str, ...] = (
     "baseline_field_id",
 )
 
-# The only field_overrides value this story recognizes -- overriding AD-4's
+# The only field_overrides value this story recognizes -- overriding jira:AD-4's
 # default GitHub-wins authority for one field. "github" is deliberately not
 # accepted: it is already the default, and accepting it as a no-op value
 # would let a typo (any string that isn't "jira") silently pass validation
@@ -99,7 +99,7 @@ _VALID_OVERRIDE_AUTHORITY = "jira"
 # it loads successfully and is silently ignored, which is exactly the
 # "typo must fail loud" property this module already enforces for the
 # authority value but not, before this check, for the key. Story 8.7 adds
-# "assignee" -- it follows status's exact decision shape (AD-4 conflict
+# "assignee" -- it follows status's exact decision shape (jira:AD-4 conflict
 # authority), so it is a valid override target too.
 _VALID_OVERRIDE_FIELDS: tuple[str, ...] = ("status", "assignee")
 
@@ -122,7 +122,7 @@ class GitHubOnlyMarker:
 
 @dataclass(frozen=True)
 class SyncConfig:
-    """The operator-declared, non-secret control-plane mapping (AD-2/AD-3).
+    """The operator-declared, non-secret control-plane mapping (jira:AD-2/jira:AD-3).
 
     Every field here names an ID/URL that already exists on the external
     GitHub Projects V2 board / Jira Cloud project -- this story never
@@ -409,7 +409,7 @@ class SyncMultipleAssigneesError(SyncError):
 
 class SyncBaselineTooLargeError(SyncError):
     """A serialized baseline map would not fit the configured field's
-    size ceiling (AD-2/AD-10's documented escape hatch to Mode B) --
+    size ceiling (jira:AD-2/jira:AD-10's documented escape hatch to Mode B) --
     never a licence to fall back to a sidecar store."""
 
 
@@ -533,7 +533,7 @@ def _send(transport: TransportFn, request: urllib.request.Request) -> TransportR
     return transport(request)
 
 
-# ── Baseline handling (AD-5 amended / AD-10's loop guard compares these) ───
+# ── Baseline handling (jira:AD-5 amended / jira:AD-10's loop guard compares these) ───
 
 # GitHub Projects V2 text fields have no publicly documented character ceiling (verified by
 # web search against GitHub's own GraphQL reference and community discussions, 2026-08-10:
@@ -549,7 +549,7 @@ _JIRA_BASELINE_FIELD_CEILING = 255
 
 def _parse_baseline(raw: object, *, side: str, identifier: str) -> dict[str, object]:
     """Parse a side's baseline field into its per-field last-synced-value
-    map (AD-10). `None` or an empty string (the field has never been
+    map (jira:AD-10). `None` or an empty string (the field has never been
     written) means "never synced" for every field: returns `{}`, never
     raises.
 
@@ -577,7 +577,7 @@ def _parse_baseline(raw: object, *, side: str, identifier: str) -> dict[str, obj
 def _serialize_baseline(baseline: dict[str, object], *, side: str, ceiling: int) -> str:
     """Serialize a baseline map deterministically (`sort_keys` -- stable
     across writes/tests) and enforce the vendor's field-size ceiling before
-    either baseline field write is attempted (AD-2/AD-10's documented escape
+    either baseline field write is attempted (jira:AD-2/jira:AD-10's documented escape
     hatch to Mode B). Note this only gates the two baseline writes -- by the
     time this runs, the cross-system tracked-value write (the Jira
     transition or GitHub field update) has, in the general case, already
@@ -587,7 +587,7 @@ def _serialize_baseline(baseline: dict[str, object], *, side: str, ceiling: int)
     if len(text) > ceiling:
         raise SyncBaselineTooLargeError(
             f"{side} baseline ({len(text)} chars) exceeds the {ceiling}-char field ceiling -- "
-            "see AD-2/AD-10: the documented escape hatch is Mode B, never a sidecar store"
+            "see jira:AD-2/jira:AD-10: the documented escape hatch is Mode B, never a sidecar store"
         )
     return text
 
@@ -644,7 +644,7 @@ mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: ProjectV2FieldVal
 }
 """
 
-# Story 8.4: `trigger=schedule` (AD-1, the architecture's default operating
+# Story 8.4: `trigger=schedule` (jira:AD-1, the architecture's default operating
 # mode) candidate-enumeration query -- ONE paginated GraphQL query over the
 # whole board, never one call per item. `ProjectV2.items(first, after)` is
 # GitHub's standard Relay-style connection; the caller follows
@@ -675,7 +675,7 @@ def github_graphql_request(
 ) -> dict[str, object]:
     """POST `query`/`variables` to `https://api.github.com/graphql`.
 
-    Auth via `keys.resolve_headers` (AD-8) -- never a new header/auth path.
+    Auth via `keys.resolve_headers` (jira:AD-8) -- never a new header/auth path.
     Raises `SyncAPIError` for a non-2xx status, malformed JSON, or a
     populated top-level `"errors"` array (GraphQL's own error-reporting
     shape, distinct from a transport-level HTTP failure) -- propagated, not
@@ -707,7 +707,7 @@ def github_graphql_request(
 class GitHubItemState:
     """One GitHub Projects V2 item's current state, as read fresh (the
     reconcile-not-propagate paradigm — a webhook payload is never trusted as
-    this state; AD-9).
+    this state; jira:AD-9).
 
     `assignee` (Story 8.7) is the FIRST `content.assignees` login, or `None`
     if the content has no assignee, is a `DraftIssue`, or is absent --
@@ -909,7 +909,7 @@ def get_project_item(
 def list_linked_github_items(
     *, config: SyncConfig, credential: HostScopedCredential, transport: TransportFn
 ) -> list[dict[str, object]]:
-    """Bulk, paginated candidate discovery for `trigger=schedule` (AD-1) --
+    """Bulk, paginated candidate discovery for `trigger=schedule` (jira:AD-1) --
     enumerates EVERY item on the configured GitHub Projects V2 board, via
     ONE new paginated GraphQL query (`_LIST_PROJECT_ITEMS_QUERY`), never one
     call per item. Follows `pageInfo.hasNextPage`/`endCursor` until
@@ -923,12 +923,12 @@ def list_linked_github_items(
     item fresh and raises `SyncUnlinkedError` (Story 8.5, CAP-60 "fail loud,
     fail alone") the moment it finds no link, which `reconcile_schedule_batch`
     folds into that candidate's own failed entry without aborting the rest
-    of the batch. Candidacy is likewise never gated on the baseline (AD-10
+    of the batch. Candidacy is likewise never gated on the baseline (jira:AD-10
     rule 1: an absent baseline is a first link, not a loop candidate, and is
     still reconciled) -- the baseline is never even read here. `updated_at`
     is fetched and returned per candidate for observability only --
     deliberately never used to filter candidacy: a Jira-only-originated
-    change never touches GitHub's `updatedAt`, and AD-5 treats a false
+    change never touches GitHub's `updatedAt`, and jira:AD-5 treats a false
     negative ("silently drops a change") as strictly worse than a false
     positive ("one wasted read, converges to no_op"). See this story's
     Design Notes for the full rationale.
@@ -1243,7 +1243,7 @@ def transition_jira_issue(
 
 # This story's tracked fields (matches field_overrides's own
 # _VALID_OVERRIDE_FIELDS). _MISSING is a sentinel distinct from `None` -- see
-# `reconcile`'s own comment for why the distinction matters (AD-10 rule 2).
+# `reconcile`'s own comment for why the distinction matters (jira:AD-10 rule 2).
 _TRACKED_FIELD = "status"
 _ASSIGNEE_FIELD = "assignee"
 _MISSING = object()
@@ -1390,14 +1390,14 @@ def reconcile(
     except SyncError as exc:
         return DutyResult(ok=False, summary=f"sync reconcile: {exc}")
 
-    # AD-5 (amended) / AD-10: a side has changed when its current
+    # jira:AD-5 (amended) / jira:AD-10: a side has changed when its current
     # tracked-field value differs from the value its OWN baseline map
     # records for that field. `_MISSING` is a sentinel distinct from `None`
-    # -- an absent key means "never synced" (AD-10 rule 1: not a loop
+    # -- an absent key means "never synced" (jira:AD-10 rule 1: not a loop
     # candidate, reconcile as a first link); a present key holding `None`
-    # means "synced, and was an explicit clear" (AD-10 rule 2). Collapsing
+    # means "synced, and was an explicit clear" (jira:AD-10 rule 2). Collapsing
     # those two would make a deliberate clear indistinguishable from a field
-    # the engine has never seen -- exactly the trap AD-10 exists to name.
+    # the engine has never seen -- exactly the trap jira:AD-10 exists to name.
     gh_base = gh.baseline.get(_TRACKED_FIELD, _MISSING)
     jira_base = jira.baseline.get(_TRACKED_FIELD, _MISSING)
     gh_changed = gh_base is _MISSING or gh.status != gh_base
@@ -1408,7 +1408,7 @@ def reconcile(
     # A missing `"assignee"` baseline key on EITHER side -- whether that
     # side's whole baseline map is empty (a genuinely new pair) or merely
     # missing this one key (an established pair predating this story) -- is
-    # read as a real first-sync AD-4 decision for the assignee field alone,
+    # read as a real first-sync jira:AD-4 decision for the assignee field alone,
     # exactly parallel to `status` above (`_MISSING` stays `_MISSING`, never
     # silently adopted). The prior design instead adopted a missing-key
     # side's OWN current value as its baseline without ever comparing it to
@@ -1421,7 +1421,7 @@ def reconcile(
     # convergence. Deriving each field's own `_changed` flag strictly from
     # that field's own persisted baseline key (never from the pair's overall
     # baseline truthiness) closes both: a missing key always re-enters the
-    # AD-4 decision below, so an already-converged pair produces zero writes
+    # jira:AD-4 decision below, so an already-converged pair produces zero writes
     # (the convergence check downgrades it) while a genuinely diverged pair
     # gets a real, one-time write -- and a failed write, having never
     # persisted its own key, is re-attempted on the next tick instead of
@@ -1431,7 +1431,7 @@ def reconcile(
     gh_assignee_changed = gh_assignee_base is _MISSING or gh.assignee != gh_assignee_base
     jira_assignee_changed = jira_assignee_base is _MISSING or jira.assignee != jira_assignee_base
     # A missing key alone must not, by itself, trigger a baseline WRITE when
-    # both sides genuinely agree (the AD-4 comparison above still runs and
+    # both sides genuinely agree (the jira:AD-4 comparison above still runs and
     # correctly finds nothing to change) -- only a REAL push, or riding
     # along for free when status ALSO writes this round, should. Tracked
     # separately from `*_assignee_changed` (which must stay True to drive
@@ -1441,7 +1441,7 @@ def reconcile(
 
     # Identity-link repair need (Boundaries & Constraints): stateless and
     # independently derivable from the resolved pair alone, no extra read
-    # required. Never baselined, never routed through field_overrides/AD-4 --
+    # required. Never baselined, never routed through field_overrides/jira:AD-4 --
     # see the module Design Notes for why this can't share status/assignee's
     # "which side wins" decision shape.
     link_repair_github = gh.link != jira.issue_key
@@ -1487,7 +1487,7 @@ def reconcile(
     elif jira_changed and not gh_changed:
         decision, target_value = "push_to_github", jira.status
     else:
-        # Both changed -> AD-4 conflict authority. GitHub wins unless
+        # Both changed -> jira:AD-4 conflict authority. GitHub wins unless
         # field_overrides says otherwise; a pure function of
         # (github_value, jira_value, field_mapping), never wall-clock.
         if config.field_overrides.get(_TRACKED_FIELD) == "jira":
@@ -1664,7 +1664,7 @@ def reconcile(
         elif decision == "push_to_github":
             if target_value is None:
                 # An explicit clear is not a status word to translate
-                # (AD-10: an absent baseline key and an explicit null mean
+                # (jira:AD-10: an absent baseline key and an explicit null mean
                 # opposite things) -- bypasses the mapping lookup.
                 github_write_value = None
             else:
@@ -1794,7 +1794,7 @@ def reconcile(
     # that field's own write this round is safe to persist (`status_persist_
     # ok`/`assignee_persist_ok`), because every future reconcile of this
     # pair would otherwise see an unpersisted field as "changed" forever
-    # (AD-5's zero-loop property). Deliberately NOT gated on the
+    # (jira:AD-5's zero-loop property). Deliberately NOT gated on the
     # link-repair flags -- the identity link is never baselined (Boundaries
     # & Constraints), so a link-repair-only round makes exactly the link
     # write(s) above and nothing else.
@@ -1934,7 +1934,7 @@ def reconcile(
 def reconcile_schedule_batch(
     *, config: SyncConfig, dry_run: bool = False, transport: TransportFn | None = None
 ) -> DutyResult:
-    """`trigger=schedule` (AD-1, the architecture's default operating mode):
+    """`trigger=schedule` (jira:AD-1, the architecture's default operating mode):
     bulk-enumerate every linked item on the GitHub Projects V2 board via
     `list_linked_github_items`, then dispatch each candidate through the
     existing, UNCHANGED single-pair `reconcile()` one at a time, aggregating
@@ -1955,7 +1955,7 @@ def reconcile_schedule_batch(
     is unchanged.
 
     This story never builds Jira-side (JQL) candidate discovery (GitHub is
-    the authoritative board per AD-4, and `reconcile()` already re-reads
+    the authoritative board per jira:AD-4, and `reconcile()` already re-reads
     BOTH sides fresh regardless of entry identifier). The "named, greppable
     error for the broken item" refinement (FR-30 / Story 8.5, CAP-60 "fail
     loud, fail alone") is closed by `list_linked_github_items` making every
@@ -2042,7 +2042,7 @@ class SyncDuty:
     failures, never conflated with an internal crash (AD-8 -- that boundary
     is `cli.main()`'s alone).
 
-    `--schedule` (Story 8.4, `trigger=schedule`, AD-1's default operating
+    `--schedule` (Story 8.4, `trigger=schedule`, jira:AD-1's default operating
     mode) dispatches to `reconcile_schedule_batch` instead of the
     single-pair `reconcile` -- everything else about this method (verb
     dispatch, config load, the network-error catch) is shared verbatim.

@@ -13988,6 +13988,19 @@ row; the `steward setup` read rules) · [[pyforge-scribe]] (the
   declared once in `docs/governance/guild-roster.json` and mirrored for in-process code in `pyforge.core.exit_domains`.
   Marshal's `core/verdict.py` spells its six rungs' codes and its boundary constants, and `seed/errors.py` its six leaves' codes; they take them from the `marshal` and `marshal-seed` domains, and a meta-test holds `GUARDED_EXIT_CODES` and `SEED_EXIT_CODES` to the declaration. This entry binds `spec-pyforge-steward:CAP-184` and mints no capability; it decomposes as Epic 122, one story.
   **Constraints:** no exit code the station returns changes, the projection stays in its sole-owner module, no flag.
+- **2026-11-26 (the citation detector reads station source) — Found and ruled:** `ad-citation-check` holds planning
+  prose to one rule: a bare `AD-n` must resolve in its own project, and a decision of another spine is written
+  qualified. Station source was never read. Measured on 2026-11-26: five packages resolve every bare tag in their own
+  spine, and three do not (doctor, steward, warden), where a bare number means a decision of marshal's, the cutover's,
+  the suite's, the jira or the platform-library spine and happens to exist, or not, in the citing station's own.
+  **Ruled** (operator ruling of 2026-11-26 on the four open convention items: "go with your recommendations, start in the suggested order"; the recommendation was to change the rule's reach, not to sweep the source). **For marshal:**
+  this entry binds the chain standard of `docs/governance/spec-one-chain-per-station` (its capability 9, the one page that holds the id grammar; realized with no
+  text change) and decomposes as Epic 123, one story: the detector scans `src/shared/packages/pyforge-*/src` and
+  reports a bare tag the package's home project does not define, through the same ratchet as prose; `pyforge-core`
+  and `pyforge-testing-kit` are held to marshal's spine, where their Specs live; the space form (`canopy AD-14`)
+  counts as qualified for the fixed list of spine prefixes; tests are not scanned. Doctor, steward and warden qualify
+  their own tags under their own Dream entries of this date, so the detector lands green with no baseline entry for
+  source. **Constraints:** no baseline is added for source; no flag (a detector). Owner `spec-pyforge-marshal`.
 
 ## 2026-11-10 — The Spec says what marshal is, and its roots come from one place
 

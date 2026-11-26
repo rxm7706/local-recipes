@@ -2,7 +2,7 @@
 #
 # Story 9.3 — the initial migration for `AuditEntry` (CAP-112's durable store).
 # `id` resolves to `BigAutoField` because `apps.py`'s `DashboardConfig.
-# default_auto_field` is set (AD-13) -- without it this migration would have
+# default_auto_field` is set (sld:AD-13) -- without it this migration would have
 # taken whatever `DEFAULT_AUTO_FIELD` the adopter's own project happens to
 # set, and shifted if that setting ever changed.
 

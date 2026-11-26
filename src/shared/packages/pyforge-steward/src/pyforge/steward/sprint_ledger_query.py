@@ -688,7 +688,7 @@ class HeraldFactsFormatter(QueryFormatterPlugin):
 
 class AtlasDatasetFormatter(QueryFormatterPlugin):
     """A steward-shaped records payload for Atlas's Vizro connector. Steward exports,
-    Atlas renders (canopy:AD-13 / AD-23) -- so this names NO Atlas catalog dataset;
+    Atlas renders (canopy:AD-13 / canopy:AD-23) -- so this names NO Atlas catalog dataset;
     Atlas declares its own catalog entry over the payload."""
 
     @property
@@ -701,7 +701,7 @@ class AtlasDatasetFormatter(QueryFormatterPlugin):
             "shape": "steward.sprint-ledger-query.records",
             "note": (
                 "steward-shaped export; Atlas declares its own catalog dataset over "
-                "this payload (canopy:AD-13 / AD-23) -- no Atlas dataset name is claimed here"
+                "this payload (canopy:AD-13 / canopy:AD-23) -- no Atlas dataset name is claimed here"
             ),
             "generated_at": result.generated_at,
             "records": [

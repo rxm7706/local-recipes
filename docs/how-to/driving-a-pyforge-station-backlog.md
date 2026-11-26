@@ -4,7 +4,7 @@ sources:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py
   - scripts/promote_sprint_status.py
   - scripts/deck_facts.py
-verified: 2026-11-18
+verified: 2026-11-26
 ---
 
 # Driving a PyForge station backlog forward

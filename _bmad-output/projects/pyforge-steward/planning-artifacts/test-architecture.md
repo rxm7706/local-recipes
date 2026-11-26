@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 86a443ebb4e39ff4
-story_count: 517
-test_file_count: 170
+source_fingerprint: a819f35244dfb40b
+story_count: 519
+test_file_count: 171
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 517
-- **Epics parsed:** 142
-- **Test files inventoried:** 170 under `src/shared/packages/pyforge-steward/tests/`
+- **Stories parsed:** 519
+- **Epics parsed:** 143
+- **Test files inventoried:** 171 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `86a443ebb4e39ff4`
+- **Source fingerprint:** `a819f35244dfb40b`
 
 ## Risk Assessment
 
@@ -164,6 +164,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 140: A redirection after git push is not read as its remote (spec-pyforge-steward CAP-5)
 - Epic 141: Broker TLS is a capability (spec-pyforge-unifying-strategy CAP-21)
 - Epic 142: The declaration names five more exit-code domains (spec-pyforge-steward:CAP-184, amended)
+- Epic 143: A tag of another spine is written qualified (spec-one-chain-per-station:CAP-3)
 
 ### Low-risk epics
 
@@ -201,6 +202,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/meta/test_lint_types_mypy_cache_per_environment.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_machine_readiness_data.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_marp_in_guild_env_story_63_8.py` | meta | 63.8 |
+| `src/shared/packages/pyforge-steward/tests/meta/test_mcp_placement.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_no_station_assumes_local_recipes.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_object_store_seam_boundaries.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_oracle_map.py` | meta | none observed |
@@ -875,6 +877,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 140.1 | A redirection after git push is not read as its remote | none observed |
 | 141.1 | Broker TLS is a capability, and the Story and code that build it cite it | none observed |
 | 142.1 | The declaration names the exit-code domains of mason, herald, steward, scribe... | none observed |
+| 143.1 | Steward's source cites other spines' decisions qualified | none observed |
+| 143.2 | Where a station's MCP code lives is one rule, and where each station keeps st... | none observed |
 
 ## Quality Gates
 

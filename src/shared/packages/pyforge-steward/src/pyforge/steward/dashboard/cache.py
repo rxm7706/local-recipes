@@ -1,10 +1,10 @@
-"""Story 9.1 — `get_master_dataset()`: AD-5's cache invariant, single-flight.
+"""Story 9.1 — `get_master_dataset()`: sld:AD-5's cache invariant, single-flight.
 
 A thin wrapper over `django.core.cache`: fetches and caches the MASTER
 (unfiltered) dataset only. Role-filtering is entirely the caller's job,
 applied to what this function returns, after it leaves the cache — this
 module never accepts a role, never filters, and never derives a role-scoped
-key (CAP-110 / AD-5).
+key (CAP-110 / sld:AD-5).
 
 The other half of that invariant is a CALLER CONTRACT this module cannot
 enforce, stated plainly here in review pass 4 rather than claimed away: it
@@ -62,7 +62,7 @@ disproved the original claim by execution):
   and spun without ever returning.
 
 Choosing a backend that can actually carry the property — and refusing one
-that cannot when the deployment runs more than one worker, which is AD-5's
+that cannot when the deployment runs more than one worker, which is sld:AD-5's
 other half — is the deployment perimeter's job (Story 9.5), not this
 module's; see the deferred-work ledger (drafted run-local and promoted into
 ``_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md``

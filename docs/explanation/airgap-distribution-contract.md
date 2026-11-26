@@ -2,7 +2,7 @@
 sources:
   - src/shared/packages/pyforge-mason/src/pyforge/mason/airgap_contract.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py
-verified: 2026-11-18
+verified: 2026-11-26
 ---
 
 # Air-gap distribution contract (mason Story 9.2)

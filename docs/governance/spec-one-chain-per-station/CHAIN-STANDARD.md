@@ -219,7 +219,7 @@ only new ones.
 |---|---|---|---|
 | Spec capability | `CAP-n` | per station Spec, sequential from 1 | Spec CAP-3(b) |
 | Product requirement | `FR-n`, `NFR-n` — or a lettered NFR family `NFR-<L>n` where a PRD groups its NFRs (marshal `NFR-C2`, warden `NFR-S8`); the one grammar is `N?FR-[A-Z]?\d+(\.\d+)*`, always hyphenated; the letters are sections of the one lettered family (marshal's R, A, P, C, S, M, O), and what is forbidden is mixing `NFR-n` with `NFR-<L>n` in one PRD or spelling an id outside the grammar (`NFR-R3a`, `NFR-P-warm`) | per PRD; each `← CAP-m` naming the defined CAP(s) it realizes (FR) or bounds (NFR), and nothing else — never a Constraint, Charter clause, AD or decision id (§2, §12) | Spec CAP-5 (amended 2026-10-26) |
-| Architecture decision | `<spine>:AD-n` | per spine | steward spine |
+| Architecture decision | `<spine>:AD-n`; a bare `AD-n` stands only where it means the citing project's own spine, in its planning prose and in its package's source (the two kernel packages take marshal's) | per spine | steward spine; `ad-citation-check` holds prose and, since 2026-11-26, station source. It reports a bare number the home spine lacks and a qualified tag that does not resolve; a bare number two spines both define is caught only by reading |
 | Story | `E.S` | per station, sequential | vocabulary CAP-6 |
 | Deferred work | `DW-<STATION>-<n>` — **one** family, station token, sequential | per station | vocabulary CAP-6 Q14 said "new ids carry the token; no retro-rename of 1,338" — the rebase ends that carve-out: topic-word families (`DW-VOCAB-`, `DW-LEDGER-`, `DW-CANOPY-`, `DW-FU-`…) re-key through the fold map |
 | Open question | `OQ-n` | per Spec, closed in frontmatter with the ruling | live |

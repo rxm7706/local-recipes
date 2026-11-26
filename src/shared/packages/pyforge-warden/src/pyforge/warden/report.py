@@ -342,7 +342,7 @@ def assemble_report(
     ``tea_advisory.py``) collected in ``plugin_context["advisory_notes"]``,
     or ``None`` when no such scanner contributed one. Stored pass-through
     into ``ComplianceReport.advisory``; this module never reads it back --
-    AD-4's "advisory lenses never gate" holds simply because nothing in the
+    suite:AD-4's "advisory lenses never gate" holds simply because nothing in the
     rung/``compose()``/exit-code path above consults this parameter."""
     findings = list(findings)
     rungs = list(rungs)
@@ -812,7 +812,7 @@ def render_text(
     # optional advisory scanner actually ran (advisory is not None).
     # Mirrors the [actuation] block's shape/guard one section up; a note is
     # a plain dict, never a Finding, so it can never move a rung/the
-    # composed status/the exit code (AD-4).
+    # composed status/the exit code (suite:AD-4).
     if isinstance(advisory, list):
         for note in advisory:
             if not isinstance(note, dict):
