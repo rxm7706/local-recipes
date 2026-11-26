@@ -9597,4 +9597,4 @@ So that wrapping a denied command in a substitution does not get it past the hoo
 **When** the hook also reads the body of every command substitution and process substitution outside single quotes and outside here-document bodies, and gives each body the rules a plain command gets
 **Then** each such form is denied with the reason its plain form gets, a nested substitution is read at every level, and a substitution in single quotes, an escaped `\$(`, an arithmetic `$((...))` or a here-document body (a commit message or PR body that only mentions a command) is still allowed
 **And** every existing case of `tests/scripts/test_pre_shell_hook.py` keeps its result and `session_denials` is unchanged: the change only adds denials
-**Status:** ready-for-dev
+**Status:** done

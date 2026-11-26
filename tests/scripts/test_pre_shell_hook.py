@@ -2128,6 +2128,23 @@ def test_134_2_normal_forms_keep_the_original_tokens(hook_module) -> None:
         'echo "`pixi update`"',
         "ls $(  pixi add numpy  ) >/dev/null",
         "echo $(echo ')' ; pixi add numpy)",
+        # The review's probes: an apostrophe inside double quotes is not a quote,
+        "echo \"don't\" $(pixi add numpy)",
+        "git status -m \"don't $(pixi add numpy)\"",
+        # a `bash -c` payload's own substitutions are read,
+        "bash -c 'x=$(pixi add numpy)'",
+        'sh -c "echo `pixi add numpy`"',
+        'bash -c "echo \\$(pixi add numpy)"',
+        'sh -c "echo \\`pixi add numpy\\`"',
+        # a here-document body is cut out where it stands, not where its text first occurs,
+        "echo 'a'\necho $(pixi add numpy)\ncat <<'EOF'\n'\nEOF",
+        # `$'...'` is one quoted word,
+        "echo $'\\'' $(pixi add numpy)",
+        # an escaped backtick nests,
+        "echo `echo \\`pixi add numpy\\``",
+        # and bash expands an unquoted here-document's body.
+        "cat <<EOF\n$(pixi add numpy)\nEOF",
+        "cat <<EOF\nit's `pixi update`\nEOF",
     ],
 )
 def test_139_1_a_denied_command_inside_a_substitution_is_denied(fake_repo: Path, command: str) -> None:
@@ -2144,6 +2161,13 @@ def test_139_1_a_denied_command_inside_a_substitution_is_denied(fake_repo: Path,
         'git log -1 --format="$(echo %h)"',
         "ls $(git rev-parse --show-toplevel)",
         "git status -F - <<'EOF'\nmentions $(pixi add numpy) and `pixi update` in prose\nEOF",
+        # A comment is not run,
+        "x=1 # $(pixi add numpy)",
+        "echo hi # `pixi add numpy`",
+        # `<(` inside double quotes is literal,
+        'echo "a <(pixi add numpy) b"',
+        # and an unquoted here-document's quotes are literal text, not a quoted span.
+        "cat <<EOF\nit's fine, \"really\"\nEOF",
     ],
 )
 def test_139_1_a_substitution_that_runs_nothing_denied_is_allowed(fake_repo: Path, command: str) -> None:
@@ -2157,4 +2181,7 @@ def test_139_1_substitution_bodies_are_read_and_here_documents_are_not(hook_modu
     assert bodies("a $(b $(c) d)") == ["b $(c) d"]
     assert bodies("echo '$(x)' \\$(y) $((1+2))") == []
     assert bodies("cat <<'EOF'\n$(x) `y`\nEOF\n$(z)") == ["z"]
+    assert bodies("cat <<EOF\n$(x) `y`\nEOF\n$(z)") == ["z", "x", "y"]
+    assert bodies('echo "it\'s $(x)"') == ["x"]
+    assert bodies("echo `a \\`b\\``") == ["a `b`"]
     assert ["c"] in hook_module.normalised_subcommands("a $(b $(c) d)")
