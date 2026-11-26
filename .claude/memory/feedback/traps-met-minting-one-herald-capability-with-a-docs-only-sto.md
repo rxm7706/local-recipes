@@ -1,0 +1,8 @@
+---
+name: "traps-met-minting-one-herald-capability-with-a-docs-only-sto"
+description: "Traps met minting one herald capability with a docs-only story (2026-11-26, branch dossier-current-2026-11-26, PR #2395…"
+metadata:
+  type: feedback
+---
+
+Traps met minting one herald capability with a docs-only story (2026-11-26, branch dossier-current-2026-11-26, PR #2395, herald Story 55.1, CAP-64): (1) a full pr-preflight stops at the first failing lane, so each run shows one gap; run these before the first full run instead: 'pyforge steward cutover plan --append' (a new CAP needs its capability-ledger row, else doctor's test_live_cutover_ledger reds with 'unclassified CAP-N'), 'python _bmad/scripts/bmad_tea_playwright.py --project pyforge-<station>' (a new story must be in the station's generated test-architecture.md matrix, else tea-playwright-check reds), and scribe-pg-up (the scribe live lane needs Postgres on 5433). (2) The session hook reads the session's cwd, not the worktree: 'cd <worktree> && git commit' is refused as a commit on the primary checkout, and 'git -C <worktree> push' is refused as an unresolvable remote; use 'git -C <worktree> commit' and 'cd <worktree> && git push origin <branch>'. (3) In a fresh worktree the first 'pixi run -e pyforge-guild' builds every path package and can take over ten minutes; start it early and do not run a second pixi command in that env meanwhile. (4) Removing a dossier section or stat reds two built-site tests in herald's tests/meta/test_one_generator.py that read the live dossier (the search-fragment string and the per-station stat keys).

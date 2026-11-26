@@ -888,6 +888,31 @@ Herald rebases to one Dream, one Spec, one PRD, one spine, one epic chain. Folde
   story spec. `webhook.py` documents the same-day replace as specified, so the ship defect is judged against that
   text first. **Constraints:** no flag is added (a fix; flagging it keeps the bug reachable), no capability text
   moves, and no model, migration or stored row is rewritten. Owner `spec-pyforge-herald`.
+- **2026-11-26 (the dossier states the present) — Found:** a read of the live dossier against main `c5fbba0bb4`
+  found the figures current, since every stats band and the scale table are counted at build, and the prose not. About
+  sixty lines tell what earlier reads of the source found and what changed between them: whole subsections ("what
+  arrived since the last pass", "what the second pass changed", a README that has since been corrected). Counts typed
+  into sentences have drifted from the tree: the kernel's module count, warden's flag count stated two ways on one
+  page, a line count and a ratio for marshal, a story count for atlas. One note points at a standalone Marshal dossier
+  that does not exist, and "not verified" notes have stood open since September. The CI-surfaces snapshot is thirteen
+  days old (`DW-herald-egm-2026-11-01-1`). **Ruled** (operator, 2026-11-26: "can we clean up the content, remove old
+  historical items make it current only and do a full overhaul to ensure accuracy, readability and relevance", and
+  on the method, "Fresh source read"). The dossier says what the tree is on the day it was read. The history of
+  earlier reads stays where it already is, in git and in this Spec's memlog, and leaves the page. Each station
+  section is written again from a read of that station's source on one day, to one outline: what the station is, its
+  commands, its MCP face, where it keeps state, what it imports from other stations, and what its own tests hold it
+  to. A count in a sentence is either measured at build or not stated. Each station's stats band shows the stories
+  its ledger holds open and blocked, counted at build, in place of the Python floor, which is the same on all
+  eight. The page is also a newcomer's introduction to the fleet (operator, the same day: "the station sections need
+  more explanation, not less"), so each station section opens with a plain account of what the station is for. The
+  cross-fleet section leaves the page (operator: "leave the dossier as status plus per-station facts"); the
+  convention gaps it listed are re-derived and fixed in the stations, by their own chains, not restated here. The CI
+  block stays, with a fresh snapshot. **For herald:** this entry binds `spec-pyforge-herald` (a new capability: the dossier states the present;
+  and CAP-46, figures counted at build, amended to add the open-stories count) and decomposes as Epic 55, one story.
+  **Constraints:** the A→B section keeps its `asserts:` and its one date, and the tests that resolve them are not
+  loosened; no flag is added (documentation, and a count the measurer adds to a page that already shows counts); the
+  measurer keeps `python_floor` for a caller that still asks for it. **Non-goals:** a redesign of the page's
+  components or its look; a second page that keeps the removed history. Owner `spec-pyforge-herald`.
 
 ## 2026-10-26 — The deck family stays current — infographics re-derived from the ledgers, not remembered (folded from deck-family-currency)
 

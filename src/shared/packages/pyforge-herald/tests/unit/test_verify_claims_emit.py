@@ -197,6 +197,31 @@ def test_51_1_stories_epics_counts_done_stories_over_done_epics_and_nothing_else
     assert _emitted(root, content)["stories_epics"] == {"atlas": {"value": "3 / 1"}}
 
 
+def test_55_1_stories_open_counts_open_over_blocked_stories_and_nothing_else(tmp_path: Path) -> None:
+    """Story 55.1 (CAP-46 amended 2026-11-26): the fixture ledger holds one backlog and one blocked story beside three
+    done stories, an open epic and two retrospective keys. Only the two stories count, each under its own side."""
+    root, content = _counted(tmp_path, hero=[], atlas=["stories_open"])
+    assert _emitted(root, content)["stories_open"] == {"atlas": {"value": "1 / 1"}}
+
+
+def test_55_1_stories_open_files_every_status_but_done_and_blocked_under_open(tmp_path: Path) -> None:
+    root, content = _counted(tmp_path, hero=[], atlas=["stories_open"])
+    ledger = root / LEDGER_REL.format("atlas")
+    status = dict(LEDGER["development_status"])
+    status |= {"3-1-being-built": "in-progress", "3-2-in-review": "review", "3-3-second-held": "blocked"}
+    status |= {"epic-3": "backlog", "epic-3-retrospective": "blocked"}  # an epic and a retrospective never count
+    ledger.write_text(yaml.safe_dump({"development_status": status}, sort_keys=False), encoding="utf-8")
+    assert _emitted(root, content)["stories_open"] == {"atlas": {"value": "3 / 2"}}
+
+
+def test_55_1_stories_open_on_a_station_with_no_ledger_exits_2_naming_the_section(tmp_path: Path) -> None:
+    root, content = _counted(tmp_path, hero=[], atlas=["stories_open"])
+    (root / LEDGER_REL.format("atlas")).unlink()
+    done = _run("--emit", "-", "--root", str(root), "--content", str(content))
+    assert done.returncode == 2
+    assert "check 'stories_open' in section 'atlas': no sprint ledger" in done.stderr
+
+
 def test_51_1_a_station_with_no_ledger_exits_2_naming_the_section(tmp_path: Path) -> None:
     root, content = _counted(tmp_path, hero=[], atlas=["stories_epics"])
     (root / LEDGER_REL.format("atlas")).unlink()

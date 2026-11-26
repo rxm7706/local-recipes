@@ -195,7 +195,7 @@ typed value:
 ```yaml
 - value: "30,847"          # ignored on the page: the measured value shows
   label: Lines · 115 files # the file count is the measured one
-  check: src_lines         # src_lines | test_lines | python_floor | stories_epics (fleet_* for the hero's totals)
+  check: src_lines         # src_lines | test_lines | stories_epics | stories_open | python_floor (fleet_* for the hero's totals)
 ```
 
 Stats without a `check:` key show their typed value: inferring which stats were checkable from their labels was tried

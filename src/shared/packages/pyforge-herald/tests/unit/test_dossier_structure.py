@@ -6,6 +6,11 @@ prove, so every claim row carries a `source` that resolves to one of them:
 a `docs/foundry/capability-ledger.yaml` id, a case-list id, or a GitHub
 Actions run URL. The Estate section never calls `local-recipes` archived or
 read-only, and no claim reads the cutover as flipped or B as a mirror of A.
+
+Story 55.1 (spec-pyforge-herald CAP-64): the dossier states the present. Its sections are the A→B cutover, the
+shared spine, the eight stations and § 10, and nothing else; each station section follows one outline; no block's
+text tells of an earlier read of the source; no running text types a line-count-sized figure; and each station stats
+band shows the stories its ledger holds open and blocked.
 """
 
 from __future__ import annotations
@@ -160,3 +165,135 @@ def test_affirmative_archive_and_flip_claims_red() -> None:
     assert _affirmations(planted, r"\bflipped\b") == ["The cutover has flipped to B."]
     assert _affirmations(planted, r"\bmirror(s|ed|ing)?\b") == ["B mirrors A."]
     assert _affirmations(["It is never archived."], r"\b(archived|read-only)\b") == []
+
+
+# ------------------------------------------------------------------ Story 55.1 (CAP-64): the dossier states the present
+
+STATION_IDS = ["atlas", "doctor", "herald", "marshal", "mason", "scribe", "steward", "warden"]
+SECTION_IDS = ["estate", "foundation", *STATION_IDS, "verified"]
+OUTLINE = ["Commands", "MCP face", "State", "Relationships", "Held by tests"]
+#: the closed list of phrases that tell of an earlier read of the source (CAP-64 success)
+EARLIER_READ = re.compile(
+    r"\b(last pass|earlier pass(es)?|previous pass|prior pass|first pass|second pass|third pass|since the last|up from)\b",
+    re.IGNORECASE,
+)
+#: the block types that are running text, where a comma-grouped figure is a typed count
+RUNNING_TEXT = ("lede", "prose", "note", "finding", "callout", "quote", "relations", "verify", "engines")
+TYPED_FIGURE = re.compile(r"(?<![\w.])\d{1,3},\d{3}\b")
+
+
+def _section_id_problems(doc: dict[str, Any]) -> list[str]:
+    ids = [str(s.get("id")) for s in doc["sections"]]
+    return [] if ids == SECTION_IDS else [f"the dossier's sections are {ids}, not {SECTION_IDS}"]
+
+
+def _earlier_read_problems(doc: dict[str, Any]) -> list[str]:
+    problems = []
+    for section in doc["sections"]:
+        for block in section.get("blocks", []):
+            for text in _texts(block):
+                for match in EARLIER_READ.finditer(text):
+                    problems.append(f"section {section['id']!r}, a {block['type']} block: {match.group(0)!r}")
+    return problems
+
+
+def _typed_figure_problems(doc: dict[str, Any]) -> list[str]:
+    problems = []
+    for section in doc["sections"]:
+        for block in section.get("blocks", []):
+            if block.get("type") in RUNNING_TEXT:
+                for text in _texts(block):
+                    for match in TYPED_FIGURE.finditer(text):
+                        problems.append(f"section {section['id']!r}, a {block['type']} block types {match.group(0)!r}")
+    return problems
+
+
+def _outline_problems(doc: dict[str, Any]) -> list[str]:
+    problems = []
+    for section in doc["sections"]:
+        if section.get("kind") != "station":
+            continue
+        headings = [str(b.get("text")) for b in section.get("blocks", []) if b.get("type") == "h3"]
+        if headings != OUTLINE:
+            problems.append(f"station section {section['id']!r} has the headings {headings}, not {OUTLINE}")
+    return problems
+
+
+def _stories_open_problems(doc: dict[str, Any]) -> list[str]:
+    problems = []
+    for section in doc["sections"]:
+        if section.get("kind") != "station":
+            continue
+        checks = [s.get("check") for b in section.get("blocks", []) if b.get("type") == "stats" for s in b["stats"]]
+        if "stories_open" not in checks:
+            problems.append(f"station section {section['id']!r} has no stat with check: stories_open")
+    return problems
+
+
+def test_55_1_the_sections_are_the_cutover_the_spine_the_eight_stations_and_what_is_verified() -> None:
+    assert _section_id_problems(_dossier()) == []
+    assert [s["id"] for s in _dossier()["sections"] if s.get("kind") == "station"] == STATION_IDS
+
+
+def test_55_1_no_block_tells_of_an_earlier_read_of_the_source() -> None:
+    assert _earlier_read_problems(_dossier()) == []
+
+
+def test_55_1_no_running_text_types_a_comma_grouped_figure() -> None:
+    assert _typed_figure_problems(_dossier()) == []
+
+
+def test_55_1_every_station_section_follows_the_one_outline() -> None:
+    assert _outline_problems(_dossier()) == []
+
+
+def test_55_1_every_station_stats_band_shows_stories_open() -> None:
+    assert _stories_open_problems(_dossier()) == []
+
+
+def _planted(section_id: str, block: dict[str, Any]) -> dict[str, Any]:
+    doc = copy.deepcopy(_dossier())
+    _section(doc, section_id)["blocks"].append(block)
+    return doc
+
+
+def test_55_1_planted_a_cross_fleet_section_is_named() -> None:
+    doc = copy.deepcopy(_dossier())
+    doc["sections"].insert(-1, {"id": "synthesis", "kind": "section", "measured": "2026-11-26", "blocks": []})
+    assert len(_section_id_problems(doc)) == 1
+    assert "synthesis" in _section_id_problems(doc)[0]
+
+
+@pytest.mark.parametrize(
+    "phrase",
+    [
+        "What arrived since the last pass",
+        "The earlier passes found a README that contradicted itself.",
+        "the second pass settled it",
+        "twelve named surfaces, up from six",
+        "A previous pass described a bridge.",
+    ],
+)
+def test_55_1_planted_an_earlier_read_is_named(phrase: str) -> None:
+    problems = _earlier_read_problems(_planted("scribe", {"type": "prose", "body": [phrase]}))
+    assert len(problems) == 1 and "'scribe'" in problems[0], problems
+
+
+def test_55_1_planted_a_typed_figure_in_running_text_is_named_and_a_version_range_is_not() -> None:
+    planted = _planted("marshal", {"type": "prose", "body": ["Marshal is 115,025 lines across its files."]})
+    assert _typed_figure_problems(planted) == ["section 'marshal', a prose block types '115,025'"]
+    ranged = _planted("marshal", {"type": "relations", "items": [{"glyph": "→", "md": "declared `>=0.11.0,<0.13`"}]})
+    assert _typed_figure_problems(ranged) == []
+
+
+def test_55_1_planted_a_station_heading_outside_the_outline_is_named() -> None:
+    planted = _planted("atlas", {"type": "h3", "num": "A.6", "text": "What arrived"})
+    problems = _outline_problems(planted)
+    assert len(problems) == 1 and "'atlas'" in problems[0] and "What arrived" in problems[0], problems
+
+
+def test_55_1_planted_a_station_band_without_stories_open_is_named() -> None:
+    doc = copy.deepcopy(_dossier())
+    band = next(b for b in _section(doc, "warden")["blocks"] if b["type"] == "stats")
+    band["stats"] = [s for s in band["stats"] if s.get("check") != "stories_open"]
+    assert _stories_open_problems(doc) == ["station section 'warden' has no stat with check: stories_open"]
