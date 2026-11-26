@@ -1294,3 +1294,11 @@ Entries through 2026-08-31: [archive § Realization log (historical)](<https://g
   (DW-steward-cutover-2026-11-10-5, with the host contract Story 121.5, which stays `blocked`), and the flip of
   `pyforge.cutover_root` stays the operator's, by hand, once the Launch slice is proven (ruling 1 of the second
   addendum).
+- **2026-11-25 (broker TLS is a capability)** — Story 41.4 made a `rediss://` broker verified against the configured
+  trust, with a deployed component that is not refused at startup (`src/platform/config/broker_tls.py`,
+  `config/startup/stage_one.py`), and `src/platform/tests/test_broker_tls_verified.py` proves it, yet no capability of
+  this Spec states it: it is the 2026-09-02 red-team Constraint "`rediss://` verifies the chain", with no stable id,
+  and the code's comments cite CAP-12, which is identity roles and secret delivery (`DW-steward-138-1-1`, raised by
+  steward Story 138.1). Ruled (operator, 2026-11-25, in session: "Yes, mint it" (asked whether broker TLS should become a capability, on the recommendation that it should; the operator's own view: "i think it should be yes")): broker TLS becomes CAP-21, a broker link is
+  authenticated, not only encrypted, already met; canopy:FR-52 is traced from it; steward Epic 141, one story
+  (141.1), mints it and re-keys Story 41.4 and the six comments that cite CAP-12. No behaviour changes and no flag.

@@ -9622,3 +9622,27 @@ So that a redirection is not mistaken for a remote and a harmless push is not re
 **Then** a redirection after `git push` is no longer read as the remote, and a push to a foreign remote written beside a redirection (`git push 2>&1 https://github.com/someone/else.git main`, `git push > push.log <url> main`) is still denied
 **And** the other half of the row (reading `submit_pr.sh` is denied) is declined by the same ruling and stays denied, `session_denials` is unchanged, and the row reads resolved
 **Status:** done
+
+## Epic 141: Broker TLS is a capability (spec-pyforge-unifying-strategy CAP-21)
+
+Minted 2026-11-25 from the Dream entry of the same date on `docs/dreams/pyforge-unifying-strategy.md` (broker TLS is a capability) on the operator ruling of 2026-11-25: "Yes, mint it" (asked whether broker TLS should become a capability, on the recommendation that it should; the operator's own view: "i think it should be yes"). `DW-steward-138-1-1`, raised by Story 138.1, found that Story 41.4's guarantee had no capability to cite.
+**HARD boundaries:**
+- No behaviour changes: the code moves only in comments, and the broker's TLS posture is what Story 41.4 shipped.
+- `SPEC.md` moves only by a render from its memlog; no other capability's text moves.
+- No flag: the capability is already met.
+
+### Story 141.1: Broker TLS is a capability, and the Story and code that build it cite it
+
+As a reader who follows broker TLS from the code to its contract,
+I want broker TLS stated as a capability with its own id,
+So that Story 41.4 and the code that builds it cite something that names what they guarantee.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-unifying-strategy CAP-21 (a broker link is authenticated, not only encrypted; minted with this story, met by Story 41.4) and canopy:FR-52 traced from it; reads the 2026-09-02 red-team Constraint and pap:CAP-6 (no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a capability already met; comments only in code)
+**Surface:** `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/.memlog.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-steward-2026-07-25/prd.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-41-4-broker-tls-is-verified.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`, `docs/foundry/capability-ledger.yaml`, `src/platform/config/broker_tls.py`, `src/platform/config/startup/stage_one.py`, `src/platform/config/settings/base.py`, `src/platform/tests/test_broker_tls_verified.py`
+**Spec:** `planning-artifacts/specs/spec-141-1-broker-tls-is-a-capability-and-the-story-and-code-that-build-it-cite-it.md`
+**Given** `DW-steward-138-1-1` reports that broker TLS (Story 41.4) is a guarantee no capability states: `spec-pyforge-unifying-strategy` holds it only as a 2026-09-02 red-team Constraint with no stable id, and six comments in `src/platform` cite `CAP-12`, which is identity roles and secret delivery
+**When** CAP-21 is minted on `spec-pyforge-unifying-strategy` through its memlog and a render, with canopy:FR-52 traced from it, and Story 41.4, its story spec and the six comments cite CAP-21
+**Then** CAP-21 states that a `rediss://` broker is verified against the configured trust and a deployed component that is not is refused at startup, its `verified:` line names `src/platform/tests/test_broker_tls_verified.py`, and no comment in `src/platform` cites CAP-12 for broker TLS
+**And** no behaviour changes (comments only in `src/platform`), CAP-12's two genuine citations (`base.py`'s allauth setting and `production.py`'s IdP re-read) stay, and the row reads resolved
+**Status:** ready-for-dev
