@@ -9,6 +9,7 @@ difficulty: 'medium'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
+flag-exempt: detector-or-gate   # the exit-code declaration every verdict and the aggregator read; a gated declaration is a silent green (roster list)
 surface:
   - 'docs/governance/guild-roster.json'
   - 'src/shared/packages/pyforge-core/src/pyforge/core/exit_domains.py'

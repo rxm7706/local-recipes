@@ -6,7 +6,10 @@ sources:
   - scripts/detectors.py
   - tests/scripts/test_exit_code_domains_are_declared.py
   - scripts/governance_currency_check.py
-verified: 2026-11-24
+  - docs/governance/guild-roster.json
+  - src/shared/packages/pyforge-core/src/pyforge/core/exit_domains.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/errors.py
+verified: 2026-11-25
 ---
 
 # The judgement vocabulary — what each word means, positively
