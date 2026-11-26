@@ -323,7 +323,7 @@ ok, `BLOCKED`, `skip`, `n/a`), each `FAIL`, `WARN` and `BLOCKED` followed by its
 | `python -m pyforge.steward.frames` | module | The Frame four-field preflight (pixi task `frame-preflight`); `--upstream-check` (pixi task `frame-upstream-check`) checks against the pinned upstream validator. | CAP-53, CAP-6 |
 | `python -m pyforge.steward.marketplace_pages` | module | Renders the marketplace Pages index; `--flag-env` prints `PYFORGE_MARKETPLACE_PAGES=1` or `0` for `pages.yml`. | CAP-171 |
 | `python -m pyforge.steward.preflight_budget` | module | The budget report alone, the same as `--budget` above. | CAP-175 |
-| `pyforge.core.hooks` | entry-point group | Six default plugins of `deploy_profiles.py`: `harness`, `splunk`, `storagegrid`, `eplx-gha`, `tachyon`, `jira`. | spec-pyforge-unifying-strategy:CAP-18 |
+| `pyforge.core.hooks` | entry-point group | Six default plugins of `deploy_profiles.py`, registered as `steward-deploy-<id>` and selected by `plugin_id`: `harness`, `splunk`, `storagegrid`, `eplx-gha`, `tachyon`, `jira`. | spec-pyforge-unifying-strategy:CAP-18 |
 | `pyforge.steward.deploy_profile` | hook spec name | The hook spec those plugins register on (owner `steward`); a name of the flag-key shape that is not a flag key. | spec-pyforge-unifying-strategy:CAP-18 |
 
 ## Python names other packages import

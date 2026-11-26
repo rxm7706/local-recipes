@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: 32fdc014743519b0
-story_count: 143
+source_fingerprint: 7d3656891f0f285b
+story_count: 144
 test_file_count: 48
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 143
-- **Epics parsed:** 44
+- **Stories parsed:** 144
+- **Epics parsed:** 45
 - **Test files inventoried:** 48 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `32fdc014743519b0`
+- **Source fingerprint:** `7d3656891f0f285b`
 
 ## Risk Assessment
 
@@ -76,6 +76,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 42: A failed wrapped tool makes mason exit 1 (spec-pyforge-mason CAP-2, CAP-5)
 - Epic 43: Mason's exit codes are held to their declared domain (spec-pyforge-steward:CAP-184; spec-pyforge-mason CAP-5)
 - Epic 44: Mason's verbs take both spellings for JSON (spec-pyforge-steward:CAP-185)
+- Epic 45: Mason's build-engine plugins are registered under mason's name (spec-pyforge-unifying-strategy:CAP-18)
 
 ### Low-risk epics
 
@@ -281,6 +282,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 42.1 | A failed wrapped tool makes mason exit 1 | none observed |
 | 43.1 | Mason's exit codes are held to their declared domain | none observed |
 | 44.1 | Mason's verbs take both spellings for JSON | none observed |
+| 45.1 | Mason's build-engine plugins are registered under mason's name | none observed |
 
 ## Quality Gates
 

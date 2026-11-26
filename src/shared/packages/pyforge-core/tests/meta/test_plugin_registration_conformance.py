@@ -11,6 +11,15 @@ groups such as pytest/django plugin entry points.
 
 Non-vacuous proof: a synthetic ``pyforge.warden.hooks`` table IS flagged;
 ``pyforge.core.hooks`` and ``pytest11`` are not.
+
+Names (steward Story 146.1, spec-pyforge-unifying-strategy:CAP-18, amended 2026-11-26): every name a package
+registers on ``pyforge.core.hooks`` starts with its package token and a hyphen (``pyforge-mason`` registers
+``mason-...``; ``pyforge-core`` registers ``core-...``), and no name is registered twice across the packages. The
+registry never selects by this name (a station selects by an attribute such as ``plugin_id`` or ``engine_name``), so
+the name only has to say whose plugin it is and stay unique in the shared group. The token is the package's
+``[project].name`` without ``pyforge-``. The scan covers the ``pyforge-*`` packages under ``src/shared/packages/``
+(core's own included), the packages that register on the group; a ``django-*`` portal or ``src/platform``
+registers nothing there today and is outside it.
 """
 
 from __future__ import annotations
@@ -97,6 +106,41 @@ def _station_pyprojects() -> list[Path]:
     return [station / "pyproject.toml" for station in sibling_station_dirs() if (station / "pyproject.toml").is_file()]
 
 
+def registered_names_from_toml(text: str) -> list[str]:
+    """The names a ``pyproject.toml`` registers on the canonical group, in file order."""
+    return list(entry_point_groups_from_toml(text).get(_CANONICAL_GROUP, {}))
+
+
+def unprefixed_names(package_name: str, names: list[str]) -> list[str]:
+    """Names that do not start with the package token and a hyphen (``pyforge-mason`` -> ``mason-``)."""
+    prefix = package_name.removeprefix("pyforge-") + "-"
+    return [name for name in names if not name.startswith(prefix) or name == prefix]
+
+
+def repeated_names(registrations: dict[str, list[str]]) -> dict[str, list[str]]:
+    """Each name more than one package registers, with every package that registers it (TOML already refuses a
+    name repeated inside one table)."""
+    owners: dict[str, list[str]] = {}
+    for package, names in registrations.items():
+        for name in names:
+            owners.setdefault(name, []).append(package)
+    return {name: packages for name, packages in sorted(owners.items()) if len(packages) > 1}
+
+
+def _package_pyprojects() -> list[Path]:
+    """Every ``pyforge-*`` package's ``pyproject.toml``, ``pyforge-core``'s own included."""
+    return [PACKAGES_ROOT / "pyforge-core" / "pyproject.toml", *_station_pyprojects()]
+
+
+def _registrations() -> dict[str, list[str]]:
+    """Each package's ``[project].name`` with the names its ``pyproject.toml`` registers on the canonical group."""
+    registrations: dict[str, list[str]] = {}
+    for path in _package_pyprojects():
+        text = path.read_text(encoding="utf-8")
+        registrations[tomllib.loads(text)["project"]["name"]] = registered_names_from_toml(text)
+    return registrations
+
+
 def test_scan_surface_is_not_empty():
     assert sibling_station_dirs(), f"no sibling pyforge-* stations under {PACKAGES_ROOT}"
     assert _station_pyprojects(), "no sibling station pyproject.toml files to scan"
@@ -154,7 +198,7 @@ x = "herald.hooks:X"
 def test_detector_does_not_fire_on_the_canonical_group():
     allowed = """
 [project.entry-points."pyforge.core.hooks"]
-dummy = "pyforge.core.hooks:DummyPlugin"
+core-dummy = "pyforge.core.hooks:DummyPlugin"
 """
     assert parallel_loader_violations(allowed) == []
 
@@ -176,3 +220,37 @@ def test_pluggy_detector_fires_on_a_synthetic_import():
 
 def test_pluggy_detector_does_not_fire_on_unrelated_imports():
     assert not pluggy_import_violations("import importlib.metadata\n")
+
+
+def test_every_registered_name_starts_with_its_package_token():
+    registrations = _registrations()
+    assert sum(len(names) for names in registrations.values()) >= 2, f"no {_CANONICAL_GROUP!r} names found to check"
+    failures = {package: bad for package, names in registrations.items() if (bad := unprefixed_names(package, names))}
+    assert not failures, (
+        f"a name registered on {_CANONICAL_GROUP!r} must start with its package token and a hyphen "
+        f"(pyforge-mason registers mason-...): {failures}"
+    )
+
+
+def test_no_name_is_registered_twice_across_the_packages():
+    repeats = repeated_names(_registrations())
+    assert not repeats, f"a name is registered on {_CANONICAL_GROUP!r} by more than one package: {repeats}"
+
+
+def test_name_check_fires_on_a_bare_name_and_on_a_bare_prefix():
+    synthetic = """
+[project.entry-points."pyforge.core.hooks"]
+rattler-build = "pyforge.mason.engines.build_hooks:RattlerBuildPlugin"
+mason- = "pyforge.mason.engines.build_hooks:CondaBuildPlugin"
+mason-engine-conda-build = "pyforge.mason.engines.build_hooks:CondaBuildPlugin"
+"""
+    assert unprefixed_names("pyforge-mason", registered_names_from_toml(synthetic)) == ["rattler-build", "mason-"]
+
+
+def test_name_check_reads_a_hyphenated_package_token():
+    assert unprefixed_names("pyforge-testing-kit", ["testing-kit-fake", "testing-fake"]) == ["testing-fake"]
+
+
+def test_repeat_check_fires_on_a_name_two_packages_register():
+    repeats = repeated_names({"pyforge-mason": ["mason-a"], "pyforge-steward": ["mason-a", "steward-b"]})
+    assert repeats == {"mason-a": ["pyforge-mason", "pyforge-steward"]}

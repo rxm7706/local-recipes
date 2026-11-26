@@ -891,6 +891,12 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   `pyforge.core.cli_output.align_json_options`, so each also takes `--json`, writing to the same destination, and
   `contract.md` lists the added spelling. **Constraints:** nothing is renamed or removed; no flag; the compiled
   station skill is not edited. Owner `spec-pyforge-mason`.
+- **2026-11-26 (mason's build-engine plugins are registered under mason's name) — Ruled:** the Dream entry of the same date on
+  `docs/dreams/pyforge-unifying-strategy.md` adds a rule to spec-pyforge-unifying-strategy:CAP-18: every name registered on `pyforge.core.hooks` starts
+  with the registering package's token (operator ruling of 2026-11-26 on the open convention items: "go with your recommendations, start in the suggested order" (the recommendation: every plugin registration name carries its station, after checking that no operator types one; the values an operator does type stay)). **For mason:** this entry binds that rule and decomposes as Epic
+  45, one story: mason registers `rattler-build` and `conda-build` on the shared group; it registers `mason-engine-rattler-build` and `mason-engine-conda-build` instead, and `contract.md` says
+  so, as does CAP-37 of `spec-pyforge-mason`, which names the entry points. **Constraints:** mason still selects its plugin by `engine_name`, so no value an operator types changes; no flag.
+  Owner `spec-pyforge-mason`.
 
 ## One-chain fold — 2026-09-17
 

@@ -78,8 +78,8 @@ def test_pyproject_declares_both_plugins_on_the_canonical_hooks_group_only():
     groups = data["project"]["entry-points"]
     assert ENTRY_POINT_GROUP in groups
     names = groups[ENTRY_POINT_GROUP]
-    assert names["rattler-build"] == ("pyforge.mason.engines.build_hooks:RattlerBuildPlugin")
-    assert names["conda-build"] == ("pyforge.mason.engines.build_hooks:CondaBuildPlugin")
+    assert names["mason-engine-rattler-build"] == ("pyforge.mason.engines.build_hooks:RattlerBuildPlugin")
+    assert names["mason-engine-conda-build"] == ("pyforge.mason.engines.build_hooks:CondaBuildPlugin")
     assert "pyforge.mason.hooks" not in groups
     assert "pyforge.mason.plugins" not in groups
 

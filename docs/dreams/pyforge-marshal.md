@@ -14008,6 +14008,12 @@ row; the `steward setup` read rules) · [[pyforge-scribe]] (the
   `pyforge.core.cli_output.align_json_options`, so each also takes the other spelling, writing to the same destination, and
   `contract.md` lists the added spelling. **Constraints:** nothing is renamed or removed; no flag; the compiled
   station skill is not edited. Owner `spec-pyforge-marshal`.
+- **2026-11-26 (marshal's loop-runner plugin is registered under marshal's name) — Ruled:** the Dream entry of the same date on
+  `docs/dreams/pyforge-unifying-strategy.md` adds a rule to spec-pyforge-unifying-strategy:CAP-18: every name registered on `pyforge.core.hooks` starts
+  with the registering package's token (operator ruling of 2026-11-26 on the open convention items: "go with your recommendations, start in the suggested order" (the recommendation: every plugin registration name carries its station, after checking that no operator types one; the values an operator does type stay)). **For marshal:** this entry binds that rule and decomposes as Epic
+  125, one story: marshal registers `bmad-loop` on the shared group; it registers `marshal-runner-bmad-loop` instead, and `contract.md` says
+  so. **Constraints:** marshal still selects its plugin by `plugin_id`, so no value an operator types changes; no flag.
+  Owner `spec-pyforge-marshal`.
 
 ## 2026-11-10 — The Spec says what marshal is, and its roots come from one place
 

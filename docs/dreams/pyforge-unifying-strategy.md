@@ -1302,3 +1302,14 @@ Entries through 2026-08-31: [archive § Realization log (historical)](<https://g
   steward Story 138.1). Ruled (operator, 2026-11-25, in session: "Yes, mint it" (asked whether broker TLS should become a capability, on the recommendation that it should; the operator's own view: "i think it should be yes")): broker TLS becomes CAP-21, a broker link is
   authenticated, not only encrypted, already met; canopy:FR-52 is traced from it; steward Epic 141, one story
   (141.1), mints it and re-keys Story 41.4 and the seven comments that cite CAP-12. No behaviour changes and no flag.
+- **2026-11-26 (a plugin's registration name says whose it is)** — Most packages register their plugins on
+  `pyforge.core.hooks` under names that start with the package (`atlas-…`, `doctor-…`, `herald-…`, `scribe-…`,
+  `warden-…`), but nine do not: marshal's `bmad-loop`, mason's `rattler-build` and `conda-build`, and steward's
+  `harness`, `splunk`, `storagegrid`, `eplx-gha`, `tachyon` and `jira`, with core's own `dummy`. The group is shared, so
+  a bare name says nothing about whose plugin it is and a second package can take it. No operator types these names:
+  the registry never selects by an entry-point name, and each station picks its plugin by an attribute of its own
+  (marshal's and steward's `plugin_id`, mason's `engine_name`), which do not change. Ruled (operator ruling of 2026-11-26 on the open convention items: "go with your recommendations, start in the suggested order" (the recommendation: every plugin registration name carries its station, after checking that no operator types one; the values an operator does type stay)). CAP-18's success
+  gains the rule: every name registered on the group starts with the registering package's token and a hyphen, and no
+  name is registered twice; the conformance check reds a bare or repeated name. canopy:FR-43 gains the consequence.
+  Steward Epic 146, one story (146.1), adds the check and renames core's dummy and steward's six; marshal Epic 125 and
+  mason Epic 45 rename theirs. No behaviour changes and no flag.

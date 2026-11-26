@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 6aa37a02da24f0f4
-story_count: 521
+source_fingerprint: c58221b2980a0c3d
+story_count: 522
 test_file_count: 171
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 521
-- **Epics parsed:** 145
+- **Stories parsed:** 522
+- **Epics parsed:** 146
 - **Test files inventoried:** 171 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `6aa37a02da24f0f4`
+- **Source fingerprint:** `c58221b2980a0c3d`
 
 ## Risk Assessment
 
@@ -167,6 +167,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 143: A tag of another spine is written qualified, and MCP placement is one rule (spec-one-chain-per-station:CAP-9; spec-pyforge-unifying-strategy:CAP-4)
 - Epic 144: One way to ask any station for JSON (spec-pyforge-steward:CAP-185)
 - Epic 145: The preflight runs a suite whole when its coverage gate only judges reports (spec-pyforge-steward CAP-159)
+- Epic 146: A plugin's registration name says whose it is (spec-pyforge-unifying-strategy:CAP-18, amended)
 
 ### Low-risk epics
 
@@ -883,6 +884,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 143.2 | Where a station's MCP code lives is one rule, and where each station keeps st... | none observed |
 | 144.1 | Every station verb that prints JSON accepts both spellings | none observed |
 | 145.1 | The preflight runs a suite whole when its coverage gate only judges reports | none observed |
+| 146.1 | Every plugin registration name starts with its package's token | none observed |
 
 ## Quality Gates
 

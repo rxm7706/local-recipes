@@ -4,7 +4,7 @@ spec: pyforge-unifying-strategy
 status: ready
 chain: pyforge-unifying-strategy
 created: "2026-08-24"
-updated: "2026-11-25"   # AMENDED 2026-11-25 (CAP-21 minted, its verified: line corrected on review, from the memlog entries of that date: a broker link is authenticated, not only encrypted, on the operator ruling "Yes, mint it"; steward Story 141.1; nothing else re-derived). Prior "2026-11-13"   # AMENDED 2026-11-13 (steward Story 122.5): the companion stack.md's python-duckdb row qualifies atlas's decision as pyforge-atlas:AD-13 (the memlog's 2026-11-13 correction); no capability, Constraint or surface moves. Prior "2026-11-11"
+updated: "2026-11-26"   # AMENDED 2026-11-26 (CAP-18's success gains the registration-name rule and its verified: line the two name checks, from the memlog decision of that date: a plugin's registration name says whose it is; steward Story 146.1; nothing else re-derived). Prior "2026-11-25"   # AMENDED 2026-11-25 (CAP-21 minted, its verified: line corrected on review, from the memlog entries of that date: a broker link is authenticated, not only encrypted, on the operator ruling "Yes, mint it"; steward Story 141.1; nothing else re-derived). Prior "2026-11-13"   # AMENDED 2026-11-13 (steward Story 122.5): the companion stack.md's python-duckdb row qualifies atlas's decision as pyforge-atlas:AD-13 (the memlog's 2026-11-13 correction); no capability, Constraint or surface moves. Prior "2026-11-11"
 companions:
   - convergence.md
   - resilience-invariants.md
@@ -521,10 +521,12 @@ they are why this is not merely a UI project.
   - **success:** A dummy plugin loads through the shared registration API; a station
     package that ships a second registration mechanism fails the check; today's backend
     is the default plugin for that process; a default Warden run stays green with no
-    named commercial scanner plugin present.
+    named commercial scanner plugin present; every name a package registers on the shared
+    group starts with that package's token and a hyphen, and no name is registered twice,
+    or the check fails *(amended 2026-11-26)*.
   - **verified:** shared `pyforge.core.hooks` dummy + parallel-loader refusal + default Warden scan
     live in `src/shared/packages/pyforge-core/tests/unit/test_hooks.py:33-59`,
-    `src/shared/packages/pyforge-core/tests/meta/test_plugin_registration_conformance.py:107-128`,
+    `src/shared/packages/pyforge-core/tests/meta/test_plugin_registration_conformance.py:140-161` and `:216-247` (the name checks),
     `src/shared/packages/pyforge-warden/tests/unit/test_default_warden_without_checkmarx.py:1-42`;
     not all station hook books runtime-swapped.
   - *(Correct-course 2026-08-24, later the same day. Operator: this is the missing

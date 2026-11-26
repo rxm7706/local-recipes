@@ -9759,6 +9759,30 @@ So that the gate judges the coverage the suite really gives, not an empty report
 **And** mason's coverage gate reads `pyforge.mason.cli` from the whole suite in a full preflight of a change that touches it
 **Status:** done
 
+## Epic 146: A plugin's registration name says whose it is (spec-pyforge-unifying-strategy:CAP-18, amended)
+
+Minted 2026-11-26 from the Dream entry of the same date on `docs/dreams/pyforge-unifying-strategy.md` (a plugin's registration name says whose it is) on the operator ruling of 2026-11-26 on the open convention items: "go with your recommendations, start in the suggested order" (the recommendation: every plugin registration name carries its station, after checking that no operator types one; the values an operator does type stay). Nine names on the shared hook group carry no package; this Epic adds the rule to CAP-18 and its check, and renames core's and steward's; marshal and mason rename theirs under their own Epics 125 and 45.
+**HARD boundaries:**
+- No value an operator types changes: a plugin is still selected by its own attribute (`plugin_id`, `engine_name`).
+- `SPEC.md` moves only by a render from its memlog; no other capability's text moves.
+- No flag: the names are registration keys the registry never selects by.
+
+### Story 146.1: Every plugin registration name starts with its package's token
+
+As a maintainer reading the shared hook group,
+I want every registered name to start with the package that registers it, and no name registered twice,
+So that a name says whose plugin it is and a second package cannot take it.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-unifying-strategy:CAP-18 (success amended with this story); canopy:FR-43 gains the consequence; no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1: a conformance check and registration names the registry never selects by)
+**Surface:** `src/shared/packages/pyforge-core/tests/meta/test_plugin_registration_conformance.py`, `src/shared/packages/pyforge-core/pyproject.toml`, `src/shared/packages/pyforge-steward/pyproject.toml`, `src/shared/packages/pyforge-steward/tests/unit/test_deploy_profile_plugins.py`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/contract.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/contract.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/.memlog.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-steward-2026-07-25/prd.md`
+**Spec:** `planning-artifacts/specs/spec-146-1-every-plugin-registration-name-starts-with-its-package-s-token.md`
+**Given** nine names on `pyforge.core.hooks` carry no package (core's `dummy`, marshal's `bmad-loop`, mason's `rattler-build` and `conda-build`, steward's six deploy profiles), and nothing stops a second package registering a name already taken
+**When** CAP-18's success gains the rule through its memlog and a render, the conformance test checks every package's registrations, and core and steward rename theirs (`core-dummy`, `steward-deploy-<id>`)
+**Then** the test fails by package when a name does not start with the package token and a hyphen, and by name when a name is registered twice, with a synthetic case proving each fires
+**And** no value an operator types changes, steward's deploy profiles are still selected by `plugin_id`, and both contracts name the new registrations
+**Status:** done
+
 ## Currency reconciliation — 2026-11-26 (CAP-184 amended)
 
 *Chain-currency cascade (arch -> epics), CAP-184 amended.* 2026-11-26: Epic 142 and Story 142.1 are minted under `spec-pyforge-steward` CAP-184 as amended (FR-58); no AD moves. The keys `142-1`, `epic-142` and `epic-142-retrospective` go through the Tier-3 feed and `sprint-ledger-sync`. **Content changed:** Epic 142, this section and `updated:`.
@@ -9770,3 +9794,7 @@ So that the gate judges the coverage the suite really gives, not an empty report
 ## Currency reconciliation — 2026-11-26 (CAP-185)
 
 *Chain-currency cascade (arch -> epics), CAP-185 minted.* 2026-11-26: Epic 144 and Story 144.1 are minted under `spec-pyforge-steward` CAP-185 (FR-59); no AD moves. The keys go through the Tier-3 feed and `sprint-ledger-sync`. **Content changed:** Epic 144 and this section.
+
+## Currency reconciliation — 2026-11-26 (unifying CAP-18)
+
+*Chain-currency cascade (arch -> epics), CAP-18 of `spec-pyforge-unifying-strategy` amended.* 2026-11-26: Epic 146 and Story 146.1 are minted (canopy:FR-43); marshal Epic 125 and mason Epic 45 carry the other renames. No AD moves. The keys go through the Tier-3 feed and `sprint-ledger-sync`. **Content changed:** Epic 146 and this section.

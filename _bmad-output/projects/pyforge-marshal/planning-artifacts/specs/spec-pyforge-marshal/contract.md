@@ -183,7 +183,7 @@ core contract, not this table.
 | `pyforge.marshal.landing_memlog_union` | Kill switch: a landing unions append-only memlogs instead of refusing (Story 110.32). |
 | `pyforge.marshal.ledger_promotion_to_origin` | Kill switch: a landing's ledger promotion reaches `origin/main`, and a failed one is never silent (Story 110.27). |
 | `pyforge.marshal.loop_homes` | Kill switch: loop homes and isolation (Story 110.2). |
-| `pyforge.marshal.loop_runner` | Not a `flags.json` key: the name of the `pyforge.core.hooks` hook spec marshal's loop runner plugs into (Story 26.1; `bmad-loop` is the default plugin). The derivation admits it because it is shaped like one. |
+| `pyforge.marshal.loop_runner` | Not a `flags.json` key: the name of the `pyforge.core.hooks` hook spec marshal's loop runner plugs into (Story 26.1; `bmad-loop` is the default plugin's `plugin_id`, registered as `marshal-runner-bmad-loop`). The derivation admits it because it is shaped like one. |
 | `pyforge.marshal.managed_regions` | Kill switch: managed-region upgrades (Story 110.8). |
 | `pyforge.marshal.model_list_refresh` | Kill switch: an operator-run refresh reads every harness's live model list and reports drift (Story 110.33). |
 | `pyforge.marshal.one_in_flight_per_station` | Kill switch: one story in flight per station; cross-station dispatches run concurrently (Story 110.18). |

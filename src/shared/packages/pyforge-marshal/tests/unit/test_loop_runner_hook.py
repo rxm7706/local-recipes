@@ -110,7 +110,9 @@ def test_pyproject_declares_bmad_loop_only_on_core_hooks_group():
     data = tomllib.loads(_PYPROJECT.read_text(encoding="utf-8"))
     groups = data.get("project", {}).get("entry-points", {})
     assert ENTRY_POINT_GROUP in groups
-    assert groups[ENTRY_POINT_GROUP]["bmad-loop"] == ("pyforge.marshal.adapters.harness_bmadloop:BmadLoopHarness")
+    assert groups[ENTRY_POINT_GROUP]["marshal-runner-bmad-loop"] == (
+        "pyforge.marshal.adapters.harness_bmadloop:BmadLoopHarness"
+    )
     assert "pyforge.marshal.hooks" not in groups
 
 

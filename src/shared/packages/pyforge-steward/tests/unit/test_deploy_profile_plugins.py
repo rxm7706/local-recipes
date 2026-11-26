@@ -77,7 +77,8 @@ def test_pyproject_declares_six_plugins_on_canonical_group_only():
     assert "pyforge.steward.hooks" not in groups
     assert "pyforge.steward.plugins" not in groups
     declared = groups[ENTRY_POINT_GROUP]
-    assert set(declared) == set(DEFAULT_DEPLOY_PROFILE_IDS)
+    # Registered as steward-deploy-<id> (Story 146.1); a profile is still selected by its plugin_id.
+    assert set(declared) == {f"steward-deploy-{pid}" for pid in DEFAULT_DEPLOY_PROFILE_IDS}
 
 
 @pytest.mark.parametrize("plugin_id", DEFAULT_DEPLOY_PROFILE_IDS)
