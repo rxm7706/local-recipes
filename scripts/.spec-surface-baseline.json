@@ -4663,7 +4663,7 @@
    ".claude/skills/pyforge-warden/0.1.1/pyforge-warden/context-snippet.md": "1cf8d16bb9d59191674cea79e9dd775d5f63843c",
    ".claude/skills/pyforge-warden/0.1.1/pyforge-warden/metadata.json": "95196f9934fec0fc66fc5a611571aa8a7b0bfaf2",
    ".claude/skills/pyforge-warden/0.1.1/pyforge-warden/provenance-map.json": "583918363ff2723d63d19882d093c691509b7680",
-   ".claude/skills/pyforge-warden/0.1.2/pyforge-warden/SKILL.md": "def703a40dda2efa1448a003eef1b86bfb395e87",
+   ".claude/skills/pyforge-warden/0.1.2/pyforge-warden/SKILL.md": "8cd6957eb5c34e2a9d47f5a002abc54a4f8d96a6",
    ".claude/skills/pyforge-warden/0.1.2/pyforge-warden/context-snippet.md": "2c3057b9cb938386a22012650c1c0eb2f817a900",
    ".claude/skills/pyforge-warden/0.1.2/pyforge-warden/metadata.json": "aa6ae689a2bc33b216d0127d284becd79f3c0f19",
    ".claude/skills/pyforge-warden/0.1.2/pyforge-warden/provenance-map.json": "dd44f0c92ad230f2d55938d2ddbb461fc8e86de0",
@@ -5851,7 +5851,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "9aa051b356c94a7195a4f167a893f26c5aeb5419"
+  "memlog": "27df61ec2433cce989811a224459e428e658c6ad"
  },
  "pyforge-steward/spec-python-foundry-cutover": {
   "files": {},

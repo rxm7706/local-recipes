@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: warden
-# stories: 156
+# stories: 157
 development_status:
   1-1-frozen-contract-verdict-lattice-projection-safety: done
   1-2-interfaces-null-engine-regression-harness-socket-deny: done
@@ -85,6 +85,7 @@ development_status:
   33-1-warden-s-self-check-is-self-check-and-doctor-is-its-old-spelling: done
   33-2-warden-s-doctor-is-gone-and-self-check-is-the-one-spelling: done
   33-3-the-warden-station-skill-documents-self-check: done
+  33-4-the-warden-station-skill-cites-the-schema-s-urn-and-the-parser-s-prog: done
   4-1-cyclonedx-sbom-emission: done
   5-1-actionable-diagnostics-safe-by-default-posture: done
   5-2-fleet-scale-validation-corpus-oracle-maturation: done

@@ -196,11 +196,11 @@ projects exit codes.
 
 **`ComplianceReport`** — schema-validated stdout contract under `--format json`
 (schema `urn:local-recipes:pyforge-warden:report-schema`, frozen at 1.1.0)
-[SRC:src/pyforge/warden/cli.py:L31-L33] [SRC:src/pyforge/warden/report.py:L192].
+[SRC:src/pyforge/warden/cli.py:L31-L33] [SRC:src/pyforge/warden/report.py:L192] [SRC:src/pyforge/warden/data/report-schema.json:L3].
 
 ## Architecture at a Glance
 
-- **CLI** — sole public contract; `prog` is `warden` [SRC:src/pyforge/warden/report.py:L193].
+- **CLI** — sole public contract; `prog` is `warden` [SRC:src/pyforge/warden/report.py:L193] [SRC:src/pyforge/warden/cli.py:L446].
 - **Scan** — discovery → extract → engines → policy → report.
 - **Verdict** — sole owner of lattice + exit projection
   [SRC:src/pyforge/warden/verdict.py:L1-L21].

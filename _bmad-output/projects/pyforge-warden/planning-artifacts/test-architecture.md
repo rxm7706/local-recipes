@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: warden
-source_fingerprint: df86fe038c235a5c
-story_count: 92
+source_fingerprint: d9c2291d6c03e149
+story_count: 93
 test_file_count: 91
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-warden`
-- **Stories parsed:** 92
+- **Stories parsed:** 93
 - **Epics parsed:** 32
 - **Test files inventoried:** 91 under `src/shared/packages/pyforge-warden/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `df86fe038c235a5c`
+- **Source fingerprint:** `d9c2291d6c03e149`
 
 ## Risk Assessment
 
@@ -261,6 +261,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 33.1 | Warden's self-check is --self-check, and --doctor is its old spelling | none observed |
 | 33.2 | Warden's --doctor is gone, and --self-check is the one spelling | none observed |
 | 33.3 | The warden station skill documents --self-check | none observed |
+| 33.4 | The warden station skill cites the schema's urn and the parser's prog | none observed |
 
 ## Quality Gates
 
