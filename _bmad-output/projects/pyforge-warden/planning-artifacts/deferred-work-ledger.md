@@ -1334,3 +1334,29 @@ verified: 2026-11-11 — still-open — DW-FU-5-1: no review of 5-1-actionable-d
   reason: a code, tooling or Spec change outside a documentation story's surface; each needs its own Story under the owning Spec (operator ruling 2026-09-29).
   resolution: 2026-11-25 — warden Story 29.1 (`29-1-an-unscannable-upload-fails-and-the-web-face-and-the-actuator-leave-nothing-behind`), branch `review-defects-2026-11-25`; each defect was first shown by a failing test, recorded in the story spec's Change Log. (1) reproduced and fixed: the upload and the job admit only the names `pyforge.warden.discovery.discovered_manifest_names()` returns (a native non-Python lockfile name only while `pyforge.warden.non_python_ecosystems` is on), a scan that read no manifest fails the job, and `?kind=sbom` is the scan's own SBOM or 404 (`src/platform/tests/test_warden_portal_job_outcomes.py`). (2) reproduced and fixed: the job removes its blob directory when it ends, succeeded or failed (the same module). (3) reproduced and fixed: a pull-request POST that raised deletes the ref it created, an accepted open with no url keeps its branch, a missing base sha fails before any commit, and the token is not sent to another host on a redirect (`src/shared/packages/pyforge-warden/tests/unit/test_actuator_github_client.py`). (4) reproduced and fixed: a stale `APPROVED` proposal can be dismissed, and the proposals page lists it with a Dismiss form only (`src/platform/tests/test_warden_fleet_proposal_recovery.py`, `src/platform/tests/test_warden_fleet_proposal_stale_portal.py`); the re-approve this row's `fix:` names is not built and no row carries it, on the lead's ruling of 2026-11-25: the open task refuses any approval of a proposal queued longer than the approval expiry, so a second approve could not open a pull request, and a retry is a new decision for the operator. (5) reproduced and fixed: a whole-run failure records its exception type and message in `actuation` and on the fleet proposal's error (`src/shared/packages/pyforge-warden/tests/unit/test_actuator.py`, `src/platform/tests/test_warden_fleet_proposal_recovery.py`). No defect was closed as not a defect.
   status: done 2026-11-25
+
+### DW-warden-33-1-1: Remove the old spelling `scan --doctor` one release after Story 33.1
+
+- source_spec: `planning-artifacts/specs/spec-33-1-warden-s-self-check-is-self-check-and-doctor-is-its-old-spelling.md`
+  summary: Remove the old spelling `scan --doctor` one release after Story 33.1
+  evidence: `src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py` (`OLD_SELF_CHECK_FLAG`, `_SelfCheckAction`)
+  location: src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py
+  origin: written by Story 33.1 (the self-check rename, branch `self-check-2026-11-26`)
+  fix: after the next warden release, drop `--doctor` from the switch, its contract row and its test; `steward init` (`docs/governance/machine-readiness.yaml`) and the docs already use `--self-check` (Story 33.1)
+  owner: warden
+  severity: low
+  promoted: 2026-11-26 — Story 33.1
+  status: open
+
+### DW-warden-33-1-2: The compiled station skill pyforge-warden still documents `scan --doctor`
+
+- source_spec: `planning-artifacts/specs/spec-33-1-warden-s-self-check-is-self-check-and-doctor-is-its-old-spelling.md`
+  summary: The compiled station skill pyforge-warden still documents `scan --doctor`
+  evidence: `.claude/skills/pyforge-warden/active/pyforge-warden/SKILL.md`, `context-snippet.md`, `metadata.json`; `tests/meta/test_skf_domain_skill.py` pins the old string
+  location: .claude/skills/pyforge-warden/active/pyforge-warden/SKILL.md
+  origin: written by Story 33.1 (the self-check rename, branch `self-check-2026-11-26`)
+  fix: regenerate the skill with `skf-update-skill` from the renamed source and move the meta-test's pin to `scan --self-check`; then regenerate the mirrors that quote it (the SKF block of `AGENTS.md` through `skf-export-skill`, `docs/reference/skills-catalog.md`, `docs/reference/bmad-estate-llms-full.md` through `scribe catalog bmad-estate --write`); the `presentations/*/project/*.html` decks keep the spelling of the day they were cut
+  owner: warden
+  severity: low
+  promoted: 2026-11-26 — Story 33.1
+  status: open

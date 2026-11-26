@@ -4499,3 +4499,27 @@ So that the name says whose plugin it is.
 **Then** the conformance test's name check passes for mason, and `contract.md` and CAP-37 name the new registration, with the `engine_name` a caller selects by
 **And** mason still selects its plugin by `engine_name`, and its plugin tests pass
 **Status:** done
+
+## Epic 46: Mason's self-diagnosis is not called doctor (spec-pyforge-mason CAP-5, CAP-29)
+
+Minted 2026-11-26 from the station Dream's entry of the same date on the operator ruling of 2026-11-26 on the open convention items: "go with your recommendations, start in the suggested order" (the recommendation: the two self-diagnosis spellings that reuse the doctor station's name are renamed, warden's `scan --doctor` to `--self-check` and `mason doctor` to `mason self-check`, and the old spelling is accepted for one release with a notice).
+**HARD boundaries:**
+- `mason doctor` keeps working for one release: the same report and exit code, plus one line on stderr.
+- The exit code and the report's fields do not move; CAP-29's grammar list moves through its memlog and a render.
+- The compiled station skill is not hand-edited; its regeneration is a deferred row. No flag.
+
+### Story 46.1: Mason's self-diagnosis is mason self-check, and mason doctor is its old name
+
+As a reader of a mason command line,
+I want the self-diagnosis called `mason self-check`,
+So that it is not mistaken for the fleet's doctor station.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-5 (no text change) and CAP-29 (its grammar list amended); FR-34 renamed in place; no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1: a renamed command with the old name kept for a release)
+**Surface:** `src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py`, `src/shared/packages/pyforge-mason/tests/unit/test_cli.py`, `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/contract.md`, `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md`, `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/.memlog.md`, `.claude/skills/bmad-agent-mason/customize.toml`, `.claude/skills/bmad-agent-mason/SKILL.md`, `docs/governance/machine-readiness.yaml`, `docs/tutorials/onboard-a-machine.md`, `.claude/skills/bmad-agent-mason/transcripts/mason-doctor-e2e.json`, `_bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-46-1-mason-s-self-diagnosis-is-mason-self-check-and-mason-doctor-is-its-old-name.md`
+**Given** mason's self-diagnosis is `mason doctor`, the doctor station's name
+**When** the command is `mason self-check` and `doctor` is kept as its alias
+**Then** both report the same data with exit 0, the envelope names the command as it was called, and only `doctor` prints one line on stderr saying it is renamed
+**And** CAP-29, FR-34, the contract and the persona use `self-check`, and two deferred rows hold the removal of `doctor` and the skill's regeneration
+**Status:** done

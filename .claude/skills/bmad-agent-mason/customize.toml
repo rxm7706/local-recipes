@@ -34,8 +34,8 @@ principles = [
 
 [[agent.menu]]
 code = "DOCTOR"
-description = "Doctor via pyforge mason grammar"
-prompt = "Complete the station task by running `pyforge mason doctor` only. Do not read or write files. Do not call HTTP except POST /stations/mason/mcp."
+description = "Self-check via pyforge mason grammar"
+prompt = "Complete the station task by running `pyforge mason self-check` only. Do not read or write files. Do not call HTTP except POST /stations/mason/mcp."
 
 [[agent.menu]]
 code = "DIAGNOSE"

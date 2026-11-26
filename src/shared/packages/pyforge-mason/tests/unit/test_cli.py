@@ -232,7 +232,7 @@ def test_help_lists_the_whole_surface(capsys):
     with pytest.raises(SystemExit):
         build_parser().parse_args(["--help"])
     out = capsys.readouterr().out
-    for name in ("recipe", "package", "environment", "doctor"):
+    for name in ("recipe", "package", "environment", "self-check"):
         assert name in out
 
 
@@ -266,10 +266,10 @@ def test_doctor_text_mode_reports_real_report_fields(monkeypatch, capsys):
     # this test asserts the no-flag/no-env default, so it must be hermetic.
     monkeypatch.delenv("MASON_FORMAT", raising=False)
     with patch("pyforge.mason.cli.doctor.build_report", return_value=_FIXED_REPORT):
-        assert main(["doctor"]) == EXIT_OK
+        assert main(["self-check"]) == EXIT_OK
     out = capsys.readouterr()
     assert out.err == ""
-    assert "doctor: ok" in out.out
+    assert "self-check: ok" in out.out
     assert "mason_version: 1.2.3+test" in out.out
     assert "cfe_root_step: not-found" in out.out
     assert "unavailable_verbs: ('recipe',)" in out.out
@@ -289,12 +289,12 @@ def _json_roundtripped(report: DoctorReport) -> dict:
 
 def test_doctor_json_mode_data_matches_dataclasses_asdict_of_the_report(capsys):
     with patch("pyforge.mason.cli.doctor.build_report", return_value=_FIXED_REPORT):
-        assert main(["doctor", "--format", "json"]) == EXIT_OK
+        assert main(["self-check", "--format", "json"]) == EXIT_OK
     out = capsys.readouterr()
     assert out.err == ""
     doc = json.loads(out.out)
     assert set(doc) == {"schema_version", "command", "status", "data", "errors"}
-    assert doc["command"] == "doctor"
+    assert doc["command"] == "self-check"
     assert doc["status"] == "ok"
     assert doc["errors"] == []
     assert doc["data"] == _json_roundtripped(_FIXED_REPORT)
@@ -303,11 +303,11 @@ def test_doctor_json_mode_data_matches_dataclasses_asdict_of_the_report(capsys):
 def test_doctor_env_var_selects_json_format_without_the_flag(monkeypatch, capsys):
     monkeypatch.setenv("MASON_FORMAT", "json")
     with patch("pyforge.mason.cli.doctor.build_report", return_value=_FIXED_REPORT):
-        assert main(["doctor"]) == EXIT_OK
+        assert main(["self-check"]) == EXIT_OK
     out = capsys.readouterr()
     assert out.err == ""
     doc = json.loads(out.out)
-    assert doc["command"] == "doctor"
+    assert doc["command"] == "self-check"
     assert doc["data"] == _json_roundtripped(_FIXED_REPORT)
 
 
@@ -317,7 +317,7 @@ def test_doctor_status_stays_ok_and_errors_empty_regardless_of_cfe_or_engine_gap
     `status == "ok"`/`errors == []` and exit 0 (FR-34, AD-6): the gap is
     data in the report, never a failure of the `doctor` command itself."""
     with patch("pyforge.mason.cli.doctor.build_report", return_value=_FIXED_REPORT):
-        assert main(["doctor", "--format", "json"]) == EXIT_OK
+        assert main(["self-check", "--format", "json"]) == EXIT_OK
     doc = json.loads(capsys.readouterr().out)
     assert doc["status"] == "ok"
     assert doc["errors"] == []
@@ -330,11 +330,11 @@ def test_doctor_invalid_env_format_falls_back_to_text(monkeypatch, capsys):
     must fall back to the text default, not crash."""
     monkeypatch.setenv("MASON_FORMAT", "bogus")
     with patch("pyforge.mason.cli.doctor.build_report", return_value=_FIXED_REPORT):
-        assert main(["doctor"]) == EXIT_OK
+        assert main(["self-check"]) == EXIT_OK
     out = capsys.readouterr()
     assert out.err == ""
     assert not out.out.lstrip().startswith("{")
-    assert "doctor: ok" in out.out
+    assert "self-check: ok" in out.out
 
 
 def test_doctor_calls_build_report_with_flags_environ_and_cwd():
@@ -352,7 +352,7 @@ def test_doctor_calls_build_report_with_flags_environ_and_cwd():
         assert (
             main(
                 [
-                    "doctor",
+                    "self-check",
                     "--cfe-root",
                     "/explicit/root",
                     "--cfe-python",
@@ -375,7 +375,7 @@ def test_doctor_calls_build_report_with_cfe_python_unresolved_when_absent():
     never supplied, `cli.py` must pass `None` through -- `doctor.build_report`
     does its own flag -> environment -> running-interpreter resolution."""
     with patch("pyforge.mason.cli.doctor.build_report", return_value=_FIXED_REPORT) as mock_build_report:
-        assert main(["doctor", "--cfe-root", "/explicit/root"]) == EXIT_OK
+        assert main(["self-check", "--cfe-root", "/explicit/root"]) == EXIT_OK
 
     args = mock_build_report.call_args.args
     assert args[0] == "/explicit/root"
@@ -384,9 +384,9 @@ def test_doctor_calls_build_report_with_cfe_python_unresolved_when_absent():
 
 def test_doctor_help_works(capsys):
     with pytest.raises(SystemExit) as exc:
-        build_parser().parse_args(["doctor", "--help"])
+        build_parser().parse_args(["self-check", "--help"])
     assert exc.value.code == 0
-    assert "doctor" in capsys.readouterr().out
+    assert "self-check" in capsys.readouterr().out
 
 
 def test_recipe_help_works(capsys):
@@ -2642,7 +2642,7 @@ def test_quiet_env_var_beats_an_explicit_verbose_flag(monkeypatch):
     monkeypatch.setenv("MASON_QUIET", "1")
     monkeypatch.delenv("MASON_VERBOSE", raising=False)
     with patch("pyforge.mason.cli.doctor.build_report", return_value=_FIXED_REPORT):
-        assert main(["doctor", "--verbose"]) == EXIT_OK
+        assert main(["self-check", "--verbose"]) == EXIT_OK
     assert logging.getLogger().getEffectiveLevel() == logging.ERROR
 
 
@@ -2655,7 +2655,7 @@ def test_env_var_value_never_appears_in_captured_stderr_log_output(monkeypatch, 
     marker = "MASON-ENV-LEAK-MARKER-3f9a7c"
     monkeypatch.setenv("MASON_CFE_ROOT", marker)
     with patch("pyforge.mason.cli.doctor.build_report", return_value=_FIXED_REPORT):
-        assert main(["doctor", "--verbose"]) == EXIT_OK
+        assert main(["self-check", "--verbose"]) == EXIT_OK
     err = capsys.readouterr().err
     assert marker not in err
 
@@ -2722,7 +2722,7 @@ def test_jfrog_credential_sentinel_never_appears_in_doctor_output(monkeypatch, c
     sentinel = "JFROG-SENTINEL-9f3e7a1c"
     monkeypatch.setenv("JFROG_API_KEY", sentinel)
 
-    assert main(["doctor", *flags]) == EXIT_OK
+    assert main(["self-check", *flags]) == EXIT_OK
 
     out = capsys.readouterr()
     # Positive control first: `mason_version` is a `DoctorReport` field that
@@ -4716,3 +4716,29 @@ def test_failed_wrapped_tool_sibling_a_tool_that_passed_exits_ok(patched, wrappe
     mock_tool.assert_called_once()
     assert rc == EXIT_OK
     _assert_wrapped_envelope(capsys, expected_data)
+
+
+def test_the_old_doctor_name_runs_the_same_self_check_and_says_it_is_renamed(capsys):
+    """Story 46.1: `doctor` (the fleet doctor station's name) is the old name of `self-check`, accepted for one release.
+    It reports the same data, names the command as it was called, and says on stderr that it is renamed; the new name
+    says nothing."""
+    with patch("pyforge.mason.cli.doctor.build_report", return_value=_FIXED_REPORT):
+        assert main(["self-check", "--format", "json"]) == EXIT_OK
+        new = capsys.readouterr()
+        assert main(["doctor", "--format", "json"]) == EXIT_OK
+        old = capsys.readouterr()
+    new_doc, old_doc = json.loads(new.out), json.loads(old.out)
+    assert (new_doc["command"], old_doc["command"]) == ("self-check", "doctor")
+    assert old_doc["data"] == new_doc["data"]
+    assert new.err == ""
+    assert old.err == "mason: doctor is renamed self-check; the old spelling is accepted for one release\n"
+
+
+def test_the_renamed_notice_never_reaches_stdout_with_stderr_closed(capsys, monkeypatch):
+    """Story 46.1 review: with fd 2 closed at start-up `sys.stderr` is None; the notice is dropped, so stdout stays one
+    JSON document."""
+    with patch("pyforge.mason.cli.doctor.build_report", return_value=_FIXED_REPORT):
+        monkeypatch.setattr("sys.stderr", None)
+        assert main(["doctor", "--format", "json"]) == EXIT_OK
+    out = capsys.readouterr().out
+    assert json.loads(out)["command"] == "doctor"

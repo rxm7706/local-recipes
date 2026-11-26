@@ -438,6 +438,33 @@ def _min_epss_type(value: str) -> float:
     return numeric
 
 
+SELF_CHECK_FLAG = "--self-check"
+OLD_SELF_CHECK_FLAG = "--doctor"
+OLD_SELF_CHECK_NOTICE = (
+    f"{TOOL_NAME}: {OLD_SELF_CHECK_FLAG} is renamed {SELF_CHECK_FLAG}; the old spelling is accepted for one release"
+)
+
+
+class _SelfCheckAction(argparse.Action):
+    """``--self-check`` (warden Story 33.1): a switch, like the ``store_true`` it
+    replaces, that also takes the old spelling ``--doctor`` -- the name of the fleet's doctor station -- and says on
+    stderr that it is renamed. Both spellings write ``args.doctor``."""
+
+    def __init__(self, option_strings: list[str], dest: str, **kwargs: object) -> None:
+        super().__init__(option_strings, dest, nargs=0, default=False, **kwargs)
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: object,
+        option_string: str | None = None,
+    ) -> None:
+        if option_string == OLD_SELF_CHECK_FLAG:
+            _stderr(OLD_SELF_CHECK_NOTICE)
+        setattr(namespace, self.dest, True)
+
+
 def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
     parser = argparse.ArgumentParser(
         prog=TOOL_NAME,
@@ -656,14 +683,18 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
         ),
     )
     scan.add_argument(
-        "--doctor",
-        action="store_true",
+        SELF_CHECK_FLAG,
+        OLD_SELF_CHECK_FLAG,
+        dest="doctor",
+        action=_SelfCheckAction,
         help=(
             "run an environment self-check instead of a project scan (D8) "
             "-- engine/OSV-DB/KEV/EPSS-feed detection only, no discovery/"
             "extraction/policy/engine-scan and no network. Exits 0 when "
-            "every check is healthy, else 2 (never 1 -- doctor reports "
-            "operability, not policy); --format applies as usual"
+            "every check is healthy, else 2 (never 1 -- the self-check reports "
+            "operability, not policy); --format applies as usual. "
+            "--doctor is the old spelling, accepted for one release with a "
+            "notice on stderr"
         ),
     )
     scan.add_argument(
@@ -876,7 +907,9 @@ def _run_doctor(args: argparse.Namespace) -> int:
         )
         if ignored:
             flags = ", ".join("--" + dest.replace("_", "-") for dest in ignored)
-            _stderr(f"{TOOL_NAME}: --doctor runs an environment self-check only -- ignoring scan/policy flags: {flags}")
+            _stderr(
+                f"{TOOL_NAME}: --self-check runs an environment self-check only -- ignoring scan/policy flags: {flags}"
+            )
 
     target = _resolve_scan_target(args)
     if isinstance(target, int):

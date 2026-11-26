@@ -36,8 +36,8 @@ prompt = "Complete the station task by running `pyforge warden scan <path>` only
 
 [[agent.menu]]
 code = "DOCTOR"
-description = "Doctor via canopy:FR-13 grammar"
-prompt = "Complete the station task by running `pyforge warden scan --doctor` only. Do not treat doctor as a project PR-gate. Do not call HTTP except POST /stations/warden/mcp."
+description = "Self-check via canopy:FR-13 grammar"
+prompt = "Complete the station task by running `pyforge warden scan --self-check` only. Do not treat the self-check as a project PR-gate. Do not call HTTP except POST /stations/warden/mcp."
 
 [[agent.menu]]
 code = "MCP"

@@ -38,8 +38,8 @@ the backticked tokens of each row's first cell and of the cells its tables name 
 
 The program is `warden` (`[project.scripts] warden = "pyforge.warden.cli:main"`). Its one verb is `warden scan <path>`,
 which is the same verb as `pyforge warden scan <path>` through pyforge-core's `pyforge` dispatcher; run either from the
-repository root. `-h`/`--help` on both parsers is argparse's own and is not listed. `--doctor` is a flag on `scan`, not
-a second verb. A usage error, `--bypass` without `--reason` included, exits 2. A CLI flag overrides the
+repository root. `-h`/`--help` on both parsers is argparse's own and is not listed. `--self-check` is a flag on `scan`, not
+a second verb; `--doctor` is its old spelling, accepted for one release (Story 33.1). A usage error, `--bypass` without `--reason` included, exits 2. A CLI flag overrides the
 `[tool.pyforge-warden]` key of the same name (section 2). The rows are the verb, its positional, its options (`--json` is another spelling of `--format json`),
 then the top-level `--version`.
 
@@ -64,7 +64,8 @@ then the top-level `--version`.
 | `--bypass` | Switch; needs `--reason`. Every still-non-clean finding becomes `bypassed` and a `.warden-waivers.yaml` stanza is printed to stdout, never written. | CAP-6 |
 | `--reason` | Text: the waiver reason the `--bypass` stanza records. No prompts, ever. | CAP-6 |
 | `--warn-only` | Switch. Every still-blocking rung is downgraded to `warn` before the verdict composes. | CAP-9 |
-| `--doctor` | Switch. An environment self-check instead of a scan (engines, the offline OSV database, the KEV, EPSS and end-of-life feeds): exit 0 when healthy, else 2, never 1. | CAP-8 |
+| `--self-check` | Switch. An environment self-check instead of a scan (engines, the offline OSV database, the KEV, EPSS and end-of-life feeds): exit 0 when healthy, else 2, never 1. | CAP-8 |
+| `--doctor` | The old spelling of `--self-check` (it is the fleet doctor station's name), accepted for one release: the same self-check, plus one line on stderr saying it is renamed. | CAP-8 |
 | `--baseline` | `PATH` to a committed `.warden-baseline.yaml`; the findings it lists are suppressed. A missing or invalid file is a loud error. | CAP-9 |
 | `--baseline-emit` | Switch. Prints candidate baseline entries (stdout under `text`, stderr under `json`); never changes the status or the exit. | CAP-9 |
 | `--open-fix-prs` | Switch. The post-verdict fix-PR actuator; credentials and repo from the environment (section 5). | CAP-12, CAP-24 |
@@ -108,9 +109,9 @@ The set is frozen and closed: adding a code is a MAJOR change.
 
 | Exit | Means |
 |---|---|
-| `0` | `clean`, `warn`, `bypassed` or `not-applicable`; the sanctioned exit downgrades (`--allow-empty`, `--warn-only`); a healthy `--doctor`; `--version` and `--help`. |
+| `0` | `clean`, `warn`, `bypassed` or `not-applicable`; the sanctioned exit downgrades (`--allow-empty`, `--warn-only`); a healthy `--self-check`; `--version` and `--help`. |
 | `1` | `policy-violation` or `indeterminate`; a `warn` under `--warn-as-error`. |
-| `2` | `error`: an operational failure of one of the error kinds below, a usage error, or an unhealthy `--doctor`. |
+| `2` | `error`: an operational failure of one of the error kinds below, a usage error, or an unhealthy `--self-check`. |
 | `130` | Interrupted (SIGINT). |
 
 ### 3.2 Status rungs
@@ -340,7 +341,7 @@ keys (present only when set) and that its builder cell names a module that exist
 
 Each engine runs as a subprocess through the kernel's single subprocess helper in `engines.py` (CAP-10). A range is a
 tested range, not a pin (NFR-C1): an engine outside it is `engine-unavailable` (exit 2), never a silent pass, and
-`--doctor` reports it. The test derives the rows from every `*_VERSION_RANGE` constant of `engines.py` plus
+`--self-check` reports it. The test derives the rows from every `*_VERSION_RANGE` constant of `engines.py` plus
 `tea-test-review`, which has none, and reads each row's range.
 
 | Engine | Tested range | Where it comes from | CAP |

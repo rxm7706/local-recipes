@@ -2280,3 +2280,29 @@ status: open
   reason: an operator decision: no code changes until it is made.
   resolution: 2026-11-25, mason Story 42.1 (branch `open-rows-and-onboarding-2026-11-25`; operator ruling 2026-11-25, "Exit 1 on failure") - decided and built: recipe validate, build, diagnose, optimize, scan and update, package build and environment lock exit 1 when the wrapped tool's return code is non-zero, and recipe submit and package ship exit 1 on a failed ship state, with the result rendered whole; the django-pyforge start_build row accepts exit 1; spec-pyforge-mason CAP-2 and CAP-5 and the spine's AD-4 are amended by memlog correction and render; contract.md and the compiled skill (0.1.1) follow.
   status: closed
+
+### DW-mason-46-1-1: Remove the old name `mason doctor` one release after Story 46.1
+
+- source_spec: `planning-artifacts/specs/spec-46-1-mason-s-self-diagnosis-is-mason-self-check-and-mason-doctor-is-its-old-name.md`
+  summary: Remove the old name `mason doctor` one release after Story 46.1
+  evidence: `src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py` (`OLD_SELF_CHECK_NOUN`, the `aliases=` of the self-check parser)
+  location: src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py
+  origin: written by Story 46.1 (the self-check rename, branch `self-check-2026-11-26`)
+  fix: after the next mason release, drop the alias, its contract row and its test; `steward init` (`docs/governance/machine-readiness.yaml`) and the persona already use `self-check` (Story 46.1)
+  owner: mason
+  severity: low
+  promoted: 2026-11-26 — Story 46.1
+  status: open
+
+### DW-mason-46-1-2: The compiled station skill pyforge-mason still documents `mason doctor`
+
+- source_spec: `planning-artifacts/specs/spec-46-1-mason-s-self-diagnosis-is-mason-self-check-and-mason-doctor-is-its-old-name.md`
+  summary: The compiled station skill pyforge-mason still documents `mason doctor`
+  evidence: `.claude/skills/pyforge-mason/active/pyforge-mason/SKILL.md`; `tests/meta/test_skf_mason_skill.py` pins `pyforge mason doctor`
+  location: .claude/skills/pyforge-mason/active/pyforge-mason/SKILL.md
+  origin: written by Story 46.1 (the self-check rename, branch `self-check-2026-11-26`)
+  fix: regenerate the skill with `skf-update-skill` from the renamed source and move the meta-test's pin to `pyforge mason self-check`; then regenerate the mirrors that quote it (the SKF block of `AGENTS.md`, `docs/reference/skills-catalog.md`, `docs/reference/bmad-estate-llms-full.md`); the `presentations/*/project/*.html` decks keep the name of the day they were cut
+  owner: mason
+  severity: low
+  promoted: 2026-11-26 — Story 46.1
+  status: open

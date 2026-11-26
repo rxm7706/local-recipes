@@ -39,11 +39,11 @@ pyforge warden scan .
 Environment self-check, not a scan:
 
 ```bash
-warden scan --doctor
+warden scan --self-check
 ```
 
-`--doctor` exits 0 or 2, never 1. Verified: `warden scan --help` lists
-`--doctor` on `scan`.
+`--self-check` exits 0 or 2, never 1. Verified: `warden scan --help` lists
+`--self-check` on `scan` (`--doctor` is its old spelling, accepted for one release).
 
 ## 2. Probe the engines, and stop there
 

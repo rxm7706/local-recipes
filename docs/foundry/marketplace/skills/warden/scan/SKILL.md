@@ -30,11 +30,11 @@ are the probes that run today (`steps.md` step 2).
 ```bash
 warden scan .
 pyforge warden scan .
-warden scan --doctor
+warden scan --self-check
 ```
 
 `warden scan .` prints the compliance report. `--format json` prints one
-JSON report. `--warn-only` does not block. `--doctor` checks the scanner
+JSON report. `--warn-only` does not block. `--self-check` (old spelling `--doctor`, accepted for one release) checks the scanner
 environment (its exit codes are `steps.md` step 1) and is not a second
 subcommand.
 
