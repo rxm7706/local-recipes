@@ -6,7 +6,7 @@ and offline construction (mirrors the ``kedro-catalog-check`` resolution path).
 
 Fixture-based, offline, non-credentialed (NFR-1/AD-11): tmp_path Parquet only, no
 HTTP/DB. The class must not import any ``IO_DENYLIST`` client — asserted structurally
-by ``tests/catalog/test_no_inline_io.py``; this suite proves behavior.
+by ``tests/unit/catalog/test_no_inline_io.py``; this suite proves behavior.
 """
 
 from __future__ import annotations
@@ -196,7 +196,7 @@ def test_no_phase_state_or_checkpoint_cursor(tmp_path):
     for banned in ("phase_state", "_phase_state", "checkpoint", "_checkpoint", "cursor"):
         assert not hasattr(ds, banned)
     # the module imports no sqlite/DB client (structurally proven by
-    # tests/catalog/test_no_inline_io.py; asserted here at the module level too)
+    # tests/unit/catalog/test_no_inline_io.py; asserted here at the module level too)
     import pyforge.atlas.datasets.incremental_parquet as mod
 
     assert not hasattr(mod, "sqlite3")

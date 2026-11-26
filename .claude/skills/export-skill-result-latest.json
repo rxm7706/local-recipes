@@ -4,11 +4,7 @@
   "outputs": [
     {
       "type": "skill",
-      "path": ".claude/skills/pyforge-scribe/0.1.1/pyforge-scribe/context-snippet.md"
-    },
-    {
-      "type": "skill",
-      "path": ".claude/skills/pyforge-mason/0.1.1/pyforge-mason/context-snippet.md"
+      "path": ".claude/skills/pyforge-scribe/0.1.2/pyforge-scribe/context-snippet.md"
     },
     {
       "type": "config",
@@ -21,17 +17,15 @@
   ],
   "summary": {
     "skills": [
-      "pyforge-scribe",
-      "pyforge-mason"
+      "pyforge-scribe"
     ],
-    "always_on_tokens": 1613,
+    "always_on_tokens": 1637,
     "on_trigger_tokens": {
-      "pyforge-scribe": 8385,
-      "pyforge-mason": 6210
+      "pyforge-scribe": 8447
     }
   },
-  "timestamp": "2026-11-25T15:44:43Z",
-  "run_id": "EhcEWvBp",
+  "timestamp": "2026-11-25T22:33:29Z",
+  "run_id": "IOY55Rgx",
   "headless_decisions": [
     {
       "gate": "load-skill.confirmation",

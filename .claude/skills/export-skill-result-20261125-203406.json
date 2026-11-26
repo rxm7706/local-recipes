@@ -1,0 +1,44 @@
+{
+  "skill": "skf-export-skill",
+  "status": "success",
+  "outputs": [
+    {
+      "type": "skill",
+      "path": ".claude/skills/pyforge-steward/0.1.2/pyforge-steward/context-snippet.md"
+    },
+    {
+      "type": "config",
+      "path": "AGENTS.md"
+    },
+    {
+      "type": "manifest",
+      "path": ".claude/skills/.export-manifest.json"
+    }
+  ],
+  "summary": {
+    "skills": [
+      "pyforge-steward"
+    ],
+    "always_on_tokens": 1637,
+    "on_trigger_tokens": {
+      "pyforge-steward": 10342
+    }
+  },
+  "timestamp": "2026-11-25T20:34:06Z",
+  "run_id": "G1d0N6Rj",
+  "headless_decisions": [
+    {
+      "gate": "load-skill.confirmation",
+      "default_action": "C",
+      "taken_action": "C",
+      "reason": "headless: auto-continue past skill confirmation"
+    },
+    {
+      "gate": "update-context.write-confirmation",
+      "default_action": "C",
+      "taken_action": "C",
+      "reason": "headless: auto-approve context file update"
+    }
+  ],
+  "warnings": []
+}

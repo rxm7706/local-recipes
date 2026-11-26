@@ -3,10 +3,10 @@
 ``sys.modules["kedro_mcp"] = None`` makes any ``import kedro_mcp`` raise
 ``ImportError``; the surface is then freshly imported AND exercised (both
 the trigger and the read shapes), proving ``kedro-mcp`` is never
-load-bearing (spec § 4.5 / § 5.5, FR-7).
+load-bearing (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md § 4.5 / § 5.5, FR-7).
 
 The STRUCTURAL half of this proof is
-``tests/catalog/test_no_inline_io.py::test_ad1_import_direction`` — the
+``tests/unit/catalog/test_no_inline_io.py::test_ad1_import_direction`` — the
 whole-package AST scan forbidding any ``kedro_mcp`` (or ``dagster``)
 import anywhere in ``pyforge.atlas``.
 """

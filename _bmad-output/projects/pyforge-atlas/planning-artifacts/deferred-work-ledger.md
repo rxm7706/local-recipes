@@ -624,7 +624,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   summary: The custom `atlasNodeMetrics` run facet is emitted without an explicit `producer=PRODUCER`, so its `_producer` defaults to the OpenLineage library URI rather than the project PRODUCER every other emitted facet carries (Reviewer-A nice-to-have). Cosmetic — the metric VALUES (rows/latency_ms/cache_hits) are correct; only the facet's provenance-stamp URI differs. Left untouched to avoid perturbing the attrs RunFacet inheritance; revisit if lineage-provenance consistency is ever asserted.
   evidence: `AtlasNodeMetricsRunFacet` construction on the COMPLETE event does not pass producer; the standard rowCount + errorMessage facets do.
 
-  status: open
+  resolution: 2026-11-25, atlas Story 53.2 (branch `named-blocker-rows-2026-11-25`; operator ruling 2026-11-25 "All 22 rows") - AtlasNodeMetricsRunFacet sets the project producer in __attrs_post_init__, so the facet carries urn:local-recipes:pyforge-atlas like every other; a test serializes it.
+  status: resolved
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — measured: zero `producer=` arguments appear in the `AtlasNodeMetricsRunFacet` construction in `observability.py`, so its `_producer` still defaults to the OpenLineage library URI rather than the project PRODUCER. Cosmetic, as recorded — the metric values are unaffected.
 
@@ -5330,7 +5331,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-11-10 — cutover readiness landing (atlas Story 46.1)
   reason: deferred by a named blocker: the touched-module coverage floor turns a comment sweep into a coverage effort on about 60 modules.
-  status: open
+  resolution: 2026-11-25, atlas Story 53.3 (branch `named-blocker-rows-2026-11-25`; operator ruling 2026-11-25 "All 22 rows") - 135 citations in 71 files corrected, comments and docstrings alike: the coverage gate's fingerprint drops docstrings, so no module became touched and none was left. Every cited test path resolves. Three hits of the row's grep remain, each a string literal in code or a test, not a comment.
+  status: resolved
 
 ### DW-atlas-46-1-2: Most open rows of this ledger carry no `severity:` and none was re-checked against the tree for the cutover.
 
@@ -5372,7 +5374,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-11-10 — cutover readiness landing (atlas Story 46.1)
   reason: deferred by a named blocker: the file is steward's, and steward declined the move for the 2026-11-10 change (steward Story 124.1).
-  status: open
+  resolution: 2026-11-25, steward Story 136.8 (branch `named-blocker-rows-2026-11-25`; operator ruling 2026-11-25 "All 22 rows") - all seven tasks resolve in -e pyforge-atlas and moved to feature.pyforge-atlas unchanged but for one description; gate-contract.md, its meta-test and the callers name the new environment. No dependency moved and pixi.lock is unchanged.
+  status: resolved
 
 ### DW-atlas-46-1-5: The attended floors of CAP-64 and CAP-65 can only be measured where the legacy cf_atlas.db exists.
 
@@ -5400,7 +5403,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: medium
   promoted: 2026-11-10 — cutover readiness landing (atlas Story 46.1)
   reason: deferred by a named blocker: the 2026-11-10 change does not edit archive/.
-  status: open
+  resolution: 2026-11-25, atlas Story 53.1 (branch `named-blocker-rows-2026-11-25`; operator ruling 2026-11-25 "All 22 rows") - both files moved into specs/spec-pyforge-atlas/ by git mv, text unchanged; SPEC.md lists them in companions: and CAP-43, CAP-54 and CAP-55 cite them by name (rendered from the memlog).
+  status: resolved
 
 ### DW-atlas-46-1-7: The OpenLineage producer URI points at `…/tree/main/pyforge-atlas`, which does not exist.
 
@@ -5414,7 +5418,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-11-10 — cutover readiness landing (atlas Story 46.1)
   reason: deferred by a named blocker: no ruling on what the producer URI names once two roots exist.
-  status: open
+  resolution: 2026-11-25, atlas Story 53.2 (branch `named-blocker-rows-2026-11-25`; operator ruling 2026-11-25 "All 22 rows"; "Layout-free URN") - observability.PRODUCER is urn:local-recipes:pyforge-atlas; contract.md records it; a test builds and serializes an event with it.
+  status: resolved
 
 ### DW-atlas-46-1-8: Story 24.2's attended, credentialed run has not happened, so CAP-43 stays ready and CAP-52's live-execution half stays open.
 

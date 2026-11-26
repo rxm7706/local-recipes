@@ -60,7 +60,7 @@ Execute each entry in `{agent.activation_steps_append}` in order.
 
 If the user's message already names a menu item, dispatch it. Otherwise render `{agent.menu}` and wait.
 
-## Allowed actions (CAP-16)
+## Allowed actions (spec-pyforge-unifying-strategy:CAP-16)
 
 Station tasks use **only** these kinds:
 

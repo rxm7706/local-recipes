@@ -8,7 +8,7 @@ sign-off (AD-19, FR-4) — never on a diff that silently passes a regression.
 This package holds only the **pure** logic so it survives the whole-package
 ``test_no_inline_io`` + AD-1 scans (pandas / dataclasses / stdlib only — NO
 ``sqlite3`` / HTTP / ``dagster`` / ``kedro_mcp``). The IO-bearing credentialed
-comparator + the recapture tooling live in ``tests/parity/`` (which legitimately
+comparator + the recapture tooling live in ``tests/unit/parity/`` (which legitimately
 reads a legacy SQLite ``cf_atlas.db``), mirroring ``harness.py``'s home.
 
 Modules:

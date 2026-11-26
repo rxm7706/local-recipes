@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:local-recipes:pyforge-steward:sprint-ledger-query-schema",
   "title": "pyforge-steward sprint-ledger-query JSON payload",
-  "description": "The `json` formatter's output of pyforge.steward.sprint_ledger_query (Story 65.1, spec-sprint-ledger-query-module CAP-4). Consumed by bmad-dashboard and any machine reader of `steward ledger-query --format json`.",
+  "description": "The `json` formatter's output of pyforge.steward.sprint_ledger_query (Story 65.1, spec-pyforge-steward:CAP-148). Consumed by bmad-dashboard and any machine reader of `steward ledger-query --format json`.",
   "type": "object",
   "additionalProperties": false,
   "required": [

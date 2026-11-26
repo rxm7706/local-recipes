@@ -169,7 +169,7 @@ def test_github_fetch_repo_health_empty_batch_makes_zero_network_calls(tmp_path)
     """Review fix #2: an EMPTY repos batch must short-circuit before ANY network
     call — including the harmless rate-limit probe the old code issued via a bare
     ``fetcher=None`` default path. Blocks the socket layer (mirrors
-    ``tests/catalog/test_catalog_resolution.py``'s ``_network_blocked()``) so a
+    ``tests/unit/catalog/test_catalog_resolution.py``'s ``_network_blocked()``) so a
     regression here fails loudly instead of silently reaching a real endpoint."""
     import socket
     from contextlib import contextmanager

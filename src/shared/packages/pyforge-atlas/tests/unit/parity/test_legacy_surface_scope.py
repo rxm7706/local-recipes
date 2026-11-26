@@ -2,8 +2,8 @@
 
 B4 compares LEGACY-SURFACE outputs only; the B8/B9/B10 new-signal datasets
 (basilisk / release-velocity / migration-readiness) are NEVER parity-gated
-(ARCHITECTURE-SPINE AD-14; spec §9 preamble). These tests pin that the compared
-set is exactly the Q1 ``v_actionable_packages`` family and provably excludes the
+(ARCHITECTURE-SPINE AD-14; archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md §9 preamble). These tests pin
+that the compared set is exactly the Q1 ``v_actionable_packages`` family and provably excludes the
 new-signal datasets — so a future edit that drags a new-signal view into the
 parity set fails here.
 """
@@ -20,7 +20,7 @@ from pyforge.atlas.parity.legacy_surface import (
     parity_scoped_kedro_datasets,
 )
 
-# The Q1 legacy-surface family (spec §3.3 view discipline).
+# The Q1 legacy-surface family (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md §3.3 view discipline).
 _EXPECTED_VIEWS = {
     "v_actionable_packages",
     "v_pypi_candidates",

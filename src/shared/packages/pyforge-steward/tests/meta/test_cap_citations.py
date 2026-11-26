@@ -1,5 +1,5 @@
-"""Stories 122.3 and 122.4 (spec-pyforge-steward:CAP-179): steward's help, output, comments and docstrings cite
-today's capability ids.
+"""Stories 122.3, 122.4 and 136.2 (spec-pyforge-steward:CAP-179): steward's help, output, comments, docstrings and
+three package-data files cite today's capability ids.
 
 The Specs steward absorbed on 2026-09-17 kept their own numbering in steward's strings: `steward --help` named pin
 fan-out and prove-landed by the core-upgrade Spec's ids four and five, which ``SPEC.md`` now calls
@@ -33,7 +33,12 @@ capability: one ``SPEC.md`` defines and the module's allowed set holds (for a so
 modules, as above; for a test module the capabilities whose oracle-map row names it under *Tests*). A comment that
 cites another capability qualifies it, ``spec-pyforge-steward CAP-n``, which needs only to be defined; a range's end
 takes its start's qualifier (``spec-pyforge-steward CAP-9..CAP-13``). Qualified ids of other Specs and prefixes are
-held as in string constants. Package data comments are held by the story's grep, not here.
+held as in string constants.
+
+Story 136.2 adds three package-data files (``DATA_FILE_CAPABILITIES``): the ledger-query schema, the measure catalog
+config and the estate catalog declaration, which cited the absorbed Specs' ids. Each line of each file is read as
+text: a steward id must be one ``SPEC.md`` defines, another Spec's id must resolve as above (an absorbed Spec is not
+live, so citing one again is a finding), and the file must cite its own capability qualified with steward's Spec.
 
 The ``fires`` tests plant one fault each and prove the checker names it. The module reads ``SPEC.md``,
 ``contract.md``, ``oracle-map.md``, ``CHAIN-STANDARD.md`` and the live Specs, so it is a live-tree test; the repository
@@ -112,6 +117,9 @@ MODULE_FAMILIES: dict[str, tuple[str, ...]] = {
     "src/pyforge/steward/workspace.py": ("spec-scratch-worktree-lifecycle", "spec-multi-repo-workspaces"),
     "src/pyforge/steward/data/bmad_core_releases/*.yaml": ("spec-bmad-method-core-upgrade",),
     "src/pyforge/steward/data/track.schema.json": ("spec-intelligence-hub",),
+    "src/pyforge/steward/data/sprint-ledger-query.schema.json": ("spec-sprint-ledger-query-module",),
+    "measures/measures.yaml": ("spec-build-league-scorecard",),
+    "catalog/catalog.yaml": ("spec-self-hosted-bmad-marketplace",),
     "tests/unit/test_upgrade_*.py": ("spec-bmad-method-core-upgrade",),
     "tests/unit/test_upgrade_native_path_spot_checks.py": ("spec-bmad-suite-channel-product",),
     "tests/unit/test_fresh_clone_*.py": ("spec-bmad-suite-install-class-wiring",),
@@ -133,6 +141,14 @@ MODULE_FAMILIES: dict[str, tuple[str, ...]] = {
     "tests/unit/test_sprint_ledger_query.py": ("spec-sprint-ledger-query-module",),
     "tests/unit/test_sync_reconcile_propagation.py": ("spec-jira-github-projects-sync",),
     "tests/unit/test_workspace.py": ("spec-scratch-worktree-lifecycle",),
+}
+
+#: Package-data file (relative to the steward package root) -> the capability it realizes, which it cites qualified
+#: with steward's Spec (Story 136.2). Each cited an absorbed Spec's id until then.
+DATA_FILE_CAPABILITIES: dict[str, int] = {
+    "src/pyforge/steward/data/sprint-ledger-query.schema.json": 148,
+    "measures/measures.yaml": 45,
+    "catalog/catalog.yaml": 117,
 }
 
 #: One capability citation: ``CAP-n``, ``CAP-n/m/k``, ``spec-<x>:CAP-n``, ``spec-<x> CAP-n`` or ``<prefix>:CAP-n``.
@@ -473,6 +489,28 @@ def comment_findings(path: str, source: str, spec: Spec) -> list[str]:
     return findings
 
 
+def data_file_findings(path: str, text: str, spec: Spec, own: int) -> list[str]:
+    """Every fault of the ids a package-data file cites (``path`` relative to the steward package root), each line
+    read as text: a steward id must be defined, another Spec's id must resolve, and the file must cite ``own``, the
+    capability it realizes, qualified with steward's Spec."""
+    findings: list[str] = []
+    cites_own = False
+    for line, row in enumerate(text.splitlines(), start=1):
+        for citation in written_citations(row):
+            where = f"{path}:{line}: `{citation.text()}`"
+            if citation.steward:
+                if citation.number not in spec.defined:
+                    findings.append(f"{where} is not an id SPEC.md defines")
+                cites_own = cites_own or (citation.spec == STEWARD_SPEC and citation.number == own)
+            else:
+                finding = _qualifier_finding(where, citation, spec)
+                if finding:
+                    findings.append(finding)
+    if not cites_own:
+        findings.append(f"{path} does not cite its own capability as `{STEWARD_SPEC}:CAP-{own}`")
+    return findings
+
+
 def help_strings(cli_source: str) -> dict[str, str]:
     """The ``_HELP`` mapping of ``cli.py``: duty -> its help text (the constant parts of an f-string joined)."""
     for node in ast.parse(cli_source).body:
@@ -692,6 +730,16 @@ def test_comments_and_docstrings_cite_todays_ids() -> None:
     assert not findings, _report("steward comments and docstrings cite ids that are not today's", findings)
 
 
+def test_package_data_files_cite_todays_ids() -> None:
+    spec = live_spec()
+    findings = [
+        finding
+        for path, own in DATA_FILE_CAPABILITIES.items()
+        for finding in data_file_findings(path, _read(f"{STEWARD_PACKAGE}/{path}"), spec, own)
+    ]
+    assert not findings, _report("steward package-data files cite ids that are not today's", findings)
+
+
 def test_help_strings_cite_only_their_duty_capabilities() -> None:
     findings = help_findings(_read(f"{SOURCE_ROOT}/cli.py"), live_spec())
     assert not findings, _report("steward --help cites capabilities its duties do not carry", findings)
@@ -758,6 +806,22 @@ def test_fires_on_a_test_docstring_citing_a_capability_the_test_does_not_prove()
     assert comment_findings(path, '"""Range: spec-pyforge-steward CAP-9..CAP-13."""\n', spec) == []
     findings = comment_findings(path, '"""Story 14.4 — CAP-4: pin fan-out."""\n', spec)
     assert len(findings) == 1 and findings[0].startswith(f"{path}:1: `CAP-4` is not in {path}'s allowed set"), findings
+
+
+def test_fires_on_a_data_file_citing_an_absorbed_spec_an_undefined_id_or_not_its_own_capability() -> None:
+    spec = live_spec()
+    path = "measures/measures.yaml"
+    assert data_file_findings(path, "# Config (Story 62.2, spec-pyforge-steward:CAP-45).\n", spec, 45) == []
+    assert data_file_findings(path, "# Config (Story 62.2, spec-build-league-scorecard CAP-2).\n", spec, 45) == [
+        f"{path}:1: `spec-build-league-scorecard CAP-2` names no live Spec",
+        f"{path} does not cite its own capability as `spec-pyforge-steward:CAP-45`",
+    ]
+    assert data_file_findings(path, "# spec-pyforge-steward:CAP-45\nkey: 1  # CAP-9999\n", spec, 45) == [
+        f"{path}:2: `CAP-9999` is not an id SPEC.md defines"
+    ]
+    assert data_file_findings(path, "# Config (Story 62.2, CAP-45).\n", spec, 45) == [
+        f"{path} does not cite its own capability as `spec-pyforge-steward:CAP-45`"
+    ]
 
 
 def test_rekey_pairs_accept_a_qualification_and_a_collapsed_pair_but_not_a_wrong_one() -> None:

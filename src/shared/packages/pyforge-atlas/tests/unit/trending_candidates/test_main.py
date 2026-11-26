@@ -1,6 +1,6 @@
 """CLI wrapper tests (Story 13.3, CAP-3) — ``python -m pyforge.atlas.trending_candidates``.
 
-Exercises ``main(argv)`` directly (mirrors ``tests/test_main_version.py``'s
+Exercises ``main(argv)`` directly (mirrors ``tests/unit/test_main_version.py``'s
 ``from pyforge.atlas.__main__ import main`` pattern): a real ``DataCatalog`` +
 monkeypatched ``bootstrapped_session`` end-to-end for the ``--json`` happy path (its
 output must match ``query.query_trending_candidates``'s own return, since both the CLI

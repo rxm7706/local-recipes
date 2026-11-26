@@ -64,7 +64,7 @@ def test_cadence_keys_are_real_catalog_stores():
 
 def test_no_dagster_import_in_the_refresh_surface():
     """Dagster wiring is C1 (DW-B5-2): the B5 refresh surface must not import dagster.
-    (The whole-package guarantee is `tests/catalog/test_no_inline_io.py::test_ad1_import_direction`;
+    (The whole-package guarantee is `tests/unit/catalog/test_no_inline_io.py::test_ad1_import_direction`;
     this is a focused, self-documenting guard on the new files that names the C1 deferral.)"""
     b5_files = [
         _ATLAS_PKG / "datasets" / "refresh.py",

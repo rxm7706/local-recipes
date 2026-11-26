@@ -203,7 +203,8 @@ def stringify_export_cell(value: object) -> str:
     if value is None:
         return ""
     # A numpy array (what a Parquet round-trip yields for a list cell) is matched by shape, not by type:
-    # numpy is not a declared dependency of this package (tests/packaging/test_dependency_completeness.py).
+    # numpy is not a declared dependency of this package (test_dependency_completeness in the repository root's
+    # tests/packaging/).
     if not isinstance(value, (str, bytes)) and hasattr(value, "tolist") and getattr(value, "ndim", 0) >= 1:
         value = value.tolist()
     if isinstance(value, (list, tuple)):

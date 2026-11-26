@@ -14,6 +14,7 @@ import pytest
 from pyforge.core.process import PosixProcess, ProcessResult
 
 from pyforge.testing_kit import (
+    PLATFORM_PYFORGE_IMPORTERS,
     changed_paths_since,
     commit_files,
     commit_subject,
@@ -107,6 +108,45 @@ def test_pyforge_import_offenders_finds_top_level_imports(repo: Path):
     (repo / "dirty_from.py").write_text("from pyforge.core import x\n", encoding="utf-8")
     offenders = pyforge_import_offenders(["clean.py", "dirty_import.py", "dirty_from.py", "missing.py"], repo)
     assert offenders == ["dirty_import.py:1", "dirty_from.py:1"]
+
+
+def _write(repo: Path, rel: str, text: str) -> None:
+    path = repo / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+
+
+def test_the_platform_carve_out_is_exactly_the_four_ingest_files():
+    # Steward Story 136.3: the dated pap:AD-2 carve-out (DW-steward-74-1) only shrinks.
+    # The names are joined here, not written whole: this package half reads no file of the host,
+    # and steward's trigger-map scan takes a whole tracked path in a test for a read of it.
+    names = ("graphql", "pipeline", "source", "test_github_metrics_dlt")
+    assert PLATFORM_PYFORGE_IMPORTERS == {
+        "/".join(("src", "platform", "ingest", "github_projects", f"{name}.py")) for name in names
+    }
+
+
+@pytest.mark.parametrize("rel", sorted(PLATFORM_PYFORGE_IMPORTERS))
+def test_pyforge_import_offenders_admits_a_carved_out_file(repo: Path, rel: str):
+    _write(repo, rel, "from pyforge.steward.sync import default_transport\n")
+    assert pyforge_import_offenders([rel], repo) == []
+
+
+@pytest.mark.parametrize(
+    "rel",
+    [
+        "src/platform/config/settings.py",
+        "src/platform/ingest/github_projects/new_module.py",
+        "src/platform/ingest/github_projects/sub/pipeline.py",
+        "src/platform/ingest/pipeline.py",
+        "pipeline.py",
+    ],
+)
+def test_pyforge_import_offenders_still_reds_a_platform_file_outside_the_carve_out(repo: Path, rel: str):
+    carved = next(path for path in sorted(PLATFORM_PYFORGE_IMPORTERS) if path.endswith("/pipeline.py"))
+    _write(repo, carved, "from pyforge.steward.sync import default_transport\n")
+    _write(repo, rel, "import os\nfrom pyforge.steward.sync import default_transport\n")
+    assert pyforge_import_offenders([carved, rel], repo) == [f"{rel}:2"]
 
 
 def test_commits_since_and_commit_metadata(repo: Path):
@@ -383,3 +423,20 @@ def test_unsanctioned_commits_reads_a_path_with_a_space_whole(repo: Path) -> Non
     assert unsanctioned_commits(repo, pathspec=surface, changelog_path=changelog) == []
     (repo / changelog).write_text("v2\n", encoding="utf-8")
     assert unsanctioned_commits(repo, pathspec=surface, changelog_path=changelog) == [f"uncommitted: {changelog}"]
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "import pyforge.marshal",
+        "from pyforge.marshal.dispatch import run",
+        "from pyforge.steward import sync",
+        "from pyforge.steward.sync.inner import thing",
+        "import pyforge",
+    ],
+)
+def test_a_carved_out_file_is_admitted_only_for_the_modules_the_carve_out_names(repo: Path, line: str):
+    # Steward Story 136.3 (review): the carve-out dates two imports, not the four files' whole future.
+    rel = sorted(PLATFORM_PYFORGE_IMPORTERS)[0]
+    _write(repo, rel, f"from pyforge.steward.keys import HostScopedCredential\n{line}\n")
+    assert pyforge_import_offenders([rel], repo) == [f"{rel}:2"]

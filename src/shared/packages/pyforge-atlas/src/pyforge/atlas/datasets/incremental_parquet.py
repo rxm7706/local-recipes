@@ -1,7 +1,7 @@
 """``IncrementalParquetDataset`` — the ONE reusable TTL/checkpoint primitive.
 
-Story A3 (spec § 9; FR-3 per-dataset TTLs; FR-4 the dataset is the resumability
-primitive; AD-5 incremental state is a dataset concern). This class encapsulates
+Story A3 (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md § 9; FR-3 per-dataset TTLs; FR-4 the dataset is
+the resumability primitive; AD-5 incremental state is a dataset concern). This class encapsulates
 the legacy ``*_fetched_at`` row-level TTL gate (cf-atlas-legacy
 ``atlas_phase._TTL_GATED`` — ``F→downloads_fetched_at``, ``H→pypi_version_fetched_at``,
 ``K→github_version_fetched_at``, …; reset = timestamps NULLed, nothing deleted)

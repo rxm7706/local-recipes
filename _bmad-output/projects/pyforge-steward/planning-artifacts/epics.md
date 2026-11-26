@@ -599,7 +599,7 @@ remembered installer incantation. **Sequenced before Epic 7** — `provision --m
 inside an image build only exists if the backend exists first.
 
 ### Story 6.1: `provision --module <name>`
-**FR/AD:** FR-19; AD-1 (wrap, never reimplement) • **Effort:** S • **Surface:** `provision.py`, `cli.py`
+**FR/AD:** spec-pyforge-steward CAP-18 / FR-19; AD-1 (wrap, never reimplement) • **Effort:** S • **Surface:** `provision.py`, `cli.py`
 **Given** a supported module name **When** `provision --module <name>` runs **Then** the
 module's own installer is invoked as a subprocess and the result reported; **And** an
 unknown name lists the valid ones rather than surfacing a raw tool error; **And** no
@@ -607,14 +607,14 @@ module's install logic is reimplemented here.
 **Status:** done
 
 ### Story 6.2: `provision --list-modules`
-**FR/AD:** FR-20 • **Effort:** XS • **Surface:** `provision.py`
+**FR/AD:** spec-pyforge-steward CAP-19 / FR-20 • **Effort:** XS • **Surface:** `provision.py`
 **Given** any state **When** the operator lists modules **Then** each supported module is
 shown with its installed state, **derived from the filesystem** rather than a
 hand-maintained list (derive-don't-declare).
 **Status:** done
 
 ### Story 6.3: Partial install is a named failure
-**FR/AD:** FR-21; AD-7 • **Effort:** XS • **Surface:** `provision.py`, `tests/`
+**FR/AD:** spec-pyforge-steward CAP-20 / FR-21; AD-7 • **Effort:** XS • **Surface:** `provision.py`, `tests/`
 **Given** an installer that exits non-zero, or exits 0 leaving the module unimportable
 **Then** the result is a named failure — never counted as provisioned, never silent.
 **Status:** done
@@ -628,34 +628,34 @@ Marshal's unification research recommends two image tiers; this epic commits onl
 lean all-stations image, with the packaging tier explicitly out of scope.
 
 ### Story 7.1: One build, whole Guild
-**FR/AD:** FR-22 • **Effort:** M • **Surface:** `Containerfile`, `pixi.toml`
+**FR/AD:** spec-pyforge-steward CAP-127 / FR-22 • **Effort:** M • **Surface:** `Containerfile`, `pixi.toml`
 **Given** the Containerfile **When** the image builds **Then** all eight station CLIs are
 present and each answers `--version` inside the container.
 **Status:** done
 
 ### Story 7.2: The repo at a fixed short path
-**FR/AD:** FR-23 • **Effort:** S • **Surface:** `Containerfile`
+**FR/AD:** spec-pyforge-steward CAP-128 / FR-23 • **Effort:** S • **Surface:** `Containerfile`
 **Given** the image **Then** the checkout sits at a path short enough to avoid the
 documented `pixi-build-python` path-length panic, fixed and documented rather than
 derived from the build host.
 **Status:** done
 
 ### Story 7.3: Credentials never enter image layers
-**FR/AD:** FR-24; AD-2, AD-3 • **Effort:** S • **Surface:** `Containerfile`, `scripts/container-gates`
+**FR/AD:** spec-pyforge-steward CAP-129 / FR-24; AD-2, AD-3 • **Effort:** S • **Surface:** `Containerfile`, `scripts/container-gates`
 **Given** a built image **Then** a build-time scan finds no secret in any layer, and the
 build FAILS if one is present; **And** credentials arrive at run time only, through the
 existing `keys` surface.
 **Status:** done
 
 ### Story 7.4: State outlives the container
-**FR/AD:** FR-25 • **Effort:** M • **Surface:** `Containerfile`, `scripts/container-gates`
+**FR/AD:** spec-pyforge-steward CAP-130 / FR-25 • **Effort:** M • **Surface:** `Containerfile`, `scripts/container-gates`
 **Given** loop homes, the Tier-3 store and mutable caches **Then** each resolves to a
 mounted volume, and a restart loses no durable state — proven by a round-trip test, not
 by inspection.
 **Status:** done
 
 ### Story 7.5: The image proves itself at build time
-**FR/AD:** FR-26 • **Effort:** S • **Surface:** `scripts/container-gates`
+**FR/AD:** spec-pyforge-steward CAP-131 / FR-26 • **Effort:** S • **Surface:** `scripts/container-gates`
 **Given** the build **Then** a smoke gate fails the BUILD — not a later run — when any
 station CLI is missing, unimportable, or over its documented start-up budget.
 **Status:** done
@@ -704,7 +704,7 @@ explicitly *names* Story 8.5 (now 8.6) as the table's owner when it defers build
 there is no boundary to amend, and no architecture change was needed for either fix.
 
 ### Story 8.1: Bidirectional propagation
-**FR/AD:** FR-27 • **Effort:** L • **Deps:** the three open questions
+**FR/AD:** spec-pyforge-steward CAP-57 / FR-27 • **Effort:** L • **Deps:** the three open questions
 **Given** a status/assignee/link change on either board **Then** it reaches the other with
 no human action on the receiving side, demonstrated against a live pair.
 **Status:** done — *per its frozen spec's deliberately narrowed slice: status-field-only,
@@ -712,7 +712,7 @@ fake-transport-tested. Assignee and identity-link propagation shipped as Story 8
 (closes audit AF-5). The live-pair demonstration remains an open coverage-debt row.*
 
 ### Story 8.2: Zero-loop guarantee
-**FR/AD:** FR-28 (spec-jira-github-projects-sync CAP-2) • **Effort:** M • **Deps:** S-8.1
+**FR/AD:** FR-28 (spec-pyforge-steward CAP-58) • **Effort:** M • **Deps:** S-8.1
 **Given** one human change **Then** N round-trips produce exactly ONE propagation, not N —
 demonstrated by test, never asserted.
 **Status:** done — *corrected 2026-08-15 (fleet-wide decomposition audit): sprint-status-ledger.yaml
@@ -731,7 +731,7 @@ already carried this as `done`; this inline line was simply never updated.*
 > corrected AND a third test is added with its own fixture — a delivery carrying a superseded
 > value arrives after the pair converged on a newer one, and the engine must converge to the
 > CURRENT value, writing nothing. **Nothing in the suite proves AD-9 rule 2 today.**
-**FR/AD:** FR-29 (spec-jira-github-projects-sync CAP-3) • **Effort:** S • **Deps:** S-8.1
+**FR/AD:** FR-29 (spec-pyforge-steward CAP-59) • **Effort:** S • **Deps:** S-8.1
 **Given** an identical payload delivered twice **Then** both systems are byte-identical to
 a single delivery.
 **Status:** done — *corrected 2026-08-15 (fleet-wide decomposition audit): sprint-status-ledger.yaml
@@ -749,21 +749,21 @@ the existing single-pair `reconcile()` engine, in one run, with no `--github-ite
 already carried this as `done`; this inline line was simply never updated.*
 
 ### Story 8.5: Fail loud, fail alone
-**FR/AD:** FR-30 (spec-jira-github-projects-sync CAP-4) • **Effort:** XS • **Deps:** S-8.1, S-8.4
+**FR/AD:** FR-30 (spec-pyforge-steward CAP-60) • **Effort:** XS • **Deps:** S-8.1, S-8.4
 **Given** a batch containing one unlinked item **Then** every other item completes and the
 unlinked one emits a named, greppable error.
 **Status:** done — *corrected 2026-08-15 (fleet-wide decomposition audit): sprint-status-ledger.yaml
 already carried this as `done`; this inline line was simply never updated.*
 
 ### Story 8.6: Explicit status-vocabulary translation
-**FR/AD:** FR-31 (spec-jira-github-projects-sync CAP-5) • **Effort:** S • **Deps:** S-8.1
+**FR/AD:** FR-31 (spec-pyforge-steward CAP-61) • **Effort:** S • **Deps:** S-8.1
 **Given** any status crossing the boundary **Then** it passes through a reviewable mapping;
 an unmapped value is a hard logged failure, never a pass-through inventing a state.
 **Status:** done — *corrected 2026-08-15 (fleet-wide decomposition audit): sprint-status-ledger.yaml
 already carried this as `done`; this inline line was simply never updated.*
 
 ### Story 8.7: Assignee and identity-link propagation
-**FR/AD:** canopy:FR-140 (spec-jira-github-projects-sync, CAP-1 residual; found undecomposed,
+**FR/AD:** canopy:FR-140 (spec-pyforge-steward CAP-57 residual; found undecomposed,
 2026-08-15 fleet-wide decomposition audit) • **Effort:** M • **Deps:** S-8.1
 **Given** a status/assignee/link change on either board **Then** the assignee and identity
 link propagate to the other side too, no human action on the receiving side — the two-thirds
@@ -802,7 +802,7 @@ dev / Postgres deploy). Each is cited by the story that owns it — an earlier d
 only AD-1 and was refused on review.
 
 ### Story 9.1: Identity at the boundary, declared isolation, and the cache invariant
-**Type:** foundation • **Effort:** L • **Deps:** none • **FR/AD:** sld:CAP-1, sld:CAP-2; AD-4, AD-5, sld:AD-14
+**Type:** foundation • **Effort:** L • **Deps:** none • **FR/AD:** spec-pyforge-steward CAP-109, CAP-110; AD-4, AD-5, sld:AD-14
 **Surface:** ASGI middleware, adopter-declaration schema, cache layer
 **Given** a request **Then** identity and role arrive from the request at the ASGI boundary
 (the pattern authenticates no one) and the adopter DECLARES its access column and roles
@@ -813,14 +813,14 @@ frame is never written back to the shared cache** — asserted by test, not docu
 **sld:AD-14:** SQLite in dev, Postgres in deployment.
 
 ### Story 9.2: An unauthorized page is absent, not hidden
-**Type:** feature • **Effort:** M • **Deps:** S-9.1 • **FR/AD:** sld:CAP-3; AD-6
+**Type:** feature • **Effort:** M • **Deps:** S-9.1 • **FR/AD:** spec-pyforge-steward CAP-111; AD-6
 **Surface:** navigation builder, API surface
 **Given** a caller's role **Then** the navigation tree is constructed from it — a page the
 user cannot access does not exist in their tree — and the API shape enforces
 filter-then-search (AD-6), never search-then-filter.
 
 ### Story 9.3: The audit trail records what was seen
-**Type:** feature • **Effort:** M • **Deps:** S-9.1 • **FR/AD:** sld:CAP-4; AD-7, sld:AD-11, sld:AD-12
+**Type:** feature • **Effort:** M • **Deps:** S-9.1 • **FR/AD:** spec-pyforge-steward CAP-112; AD-7, sld:AD-11, sld:AD-12
 **Surface:** audit-trail store, retention config
 **Given** any data load, filter, navigation or export **Then** a durable role-isolated trail
 entry records what was actually seen, not merely that an event fired; **retention is declared
@@ -828,27 +828,27 @@ with no default and deployment is refused without it** (AD-7); per-message isola
 (sld:AD-11/12).
 
 ### Story 9.4: Export gated server-side
-**Type:** feature • **Effort:** M • **Deps:** S-9.1 • **FR/AD:** sld:CAP-5
+**Type:** feature • **Effort:** M • **Deps:** S-9.1 • **FR/AD:** spec-pyforge-steward CAP-113
 **Surface:** export endpoint
 **Given** an export request **Then** authorization is enforced server-side (no client-side
 gate is trusted) and the export may be encrypted.
 
 ### Story 9.5: The perimeter ships with the pattern
-**Type:** infra • **Effort:** M • **Deps:** S-9.1 • **FR/AD:** sld:CAP-6; AD-1
+**Type:** infra • **Effort:** M • **Deps:** S-9.1 • **FR/AD:** spec-pyforge-steward CAP-114; AD-1
 **Surface:** `pyforge-steward[dashboard]` extra, deployment manifests, edge config
 **Given** an adopter **Then** they receive a production-shaped runtime rather than assembling
 one: Django+Channels+Daphne via the optional extra **plus the edge that terminates TLS and
 enforces network policy** (sld:CAP-6's clause an earlier draft dropped).
 
 ### Story 9.6: Isolation proven by tests that cannot pass vacuously
-**Type:** test • **Effort:** L • **Deps:** S-9.2, S-9.3, S-9.4, S-9.5 • **FR/AD:** sld:CAP-7
+**Type:** test • **Effort:** L • **Deps:** S-9.2, S-9.3, S-9.4, S-9.5 • **FR/AD:** spec-pyforge-steward CAP-115
 **Surface:** proof suite
 **Given** the proof suite **Then** it impersonates distinct identities and **fails loudly if
 isolation is removed** — a suite that cannot fail is a failing suite; the cache invariant
 (9.1) and the retention refusal (9.3) each carry a mutation-proof case.
 
 ### Story 9.7: Hosted or static, no fork
-**Type:** feature • **Effort:** M • **Deps:** S-9.1 • **FR/AD:** sld:CAP-8
+**Type:** feature • **Effort:** M • **Deps:** S-9.1 • **FR/AD:** spec-pyforge-steward CAP-116
 **Surface:** static-export path
 **Given** a board needing no isolation **Then** the same definition publishes as a static
 GitHub-Pages site — mutually exclusive with role isolation, never a second codebase.
@@ -1025,7 +1025,7 @@ the stuck-baseline failure mode); decomposed at the run's stop. Quick-dev-sized 
 prefer `bmad-build` over a loop re-spin for these two stories if hand-picked.
 
 ### Story 13.1: Workspace verbs over git worktree
-**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** spec-scratch-worktree-lifecycle CAP-1, CAP-2, CAP-4, CAP-5
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** spec-pyforge-steward CAP-104, CAP-105, CAP-107, CAP-108
 **Surface:** `src/shared/packages/pyforge-steward/` (workspace duty), steward CLI
 **Given** `steward workspace start <slug> [--from <branch>]` (defaults `origin/main`, prints
 the path, records bookkeeping), `ls` (cheap enumeration, no per-worktree subprocess), and
@@ -1035,7 +1035,7 @@ loop-home worktrees (bookkeeping of what this tool created is the enforcement, b
 test that plants a foreign loop-home worktree and proves it invisible).
 
 ### Story 13.2: Status and the feed-mirror decision
-**Type:** feature • **Effort:** S • **Deps:** S-13.1 • **FR/AD:** spec-scratch-worktree-lifecycle CAP-3 (+ its two open questions)
+**Type:** feature • **Effort:** S • **Deps:** S-13.1 • **FR/AD:** spec-pyforge-steward CAP-106 (+ its two open questions)
 **Surface:** steward workspace duty
 **Given** `steward workspace status [<slug>]` **Then** it pays the per-worktree git-subprocess
 cost (dirty/clean, ahead/behind, merged?) that `ls` deliberately does not, and this story
@@ -1051,14 +1051,14 @@ extend-vs-new decision is recorded in that spec's memlog: extend, because 13.1/1
 this layer's substrate).
 
 ### Story 13.3: A repo set opens as one workspace
-**Type:** feature • **Effort:** M • **Deps:** S-13.1 • **FR/AD:** spec-multi-repo-workspaces CAP-1
+**Type:** feature • **Effort:** M • **Deps:** S-13.1 • **FR/AD:** spec-pyforge-steward CAP-76
 **Given** a declarative `[projects.<slug>]` repo set **Then** `steward workspace start
 <feature>` cuts one worktree per registered repo on branch `f-<feature>` and generates a
 `.code-workspace`; missing members are named, never guessed — and the registry-location
 open question resolves here with a dated entry.
 
 ### Story 13.4: The set reports and tears down safely
-**Type:** feature • **Effort:** S • **Deps:** S-13.3 • **FR/AD:** spec-multi-repo-workspaces CAP-2
+**Type:** feature • **Effort:** S • **Deps:** S-13.3 • **FR/AD:** spec-pyforge-steward CAP-77
 **Given** an open workspace **Then** one command reports dirty/unpushed across the set,
 removal refuses while any member is dirty (naming it), `--merged-only` honors the
 archive-not-delete discipline per member, and the own-worktrees-only HARD rule holds
@@ -1070,7 +1070,7 @@ As the operator who ruled on 2026-10-06 that an abandoned scratch workspace is d
 I want a non-interactive `steward workspace clean --delete` that deletes a workspace git proves landed and drops a record whose worktree is already gone, leaving no tarball, note or tag,
 So that the bookkeeping lists only open workspaces and no agent hand-edits it.
 
-**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-107, CAP-108 (← spec-scratch-worktree-lifecycle CAP-4, CAP-5; Story 13.1), CAP-155, CAP-157 and CAP-158 unchanged • reopens Epic 13 (doctor Story 41.5) • Dream 2026-10-07 (tooling gaps)
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-107, CAP-108 (← spec-scratch-worktree-lifecycle CAP-4, CAP-5; Story 13.1), spec-pyforge-steward CAP-155, CAP-157 and CAP-158 unchanged • reopens Epic 13 (doctor Story 41.5) • Dream 2026-10-07 (tooling gaps)
 **Flag:** none (a fix, spec-feature-flag-governance Q1)
 **Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py` (`clean_workspaces`, the removal half of `_archive_worktree`, `format_clean`, the clean branch of `WorkspaceDuty.run`), `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py` (the `clean` subparser gains `--delete`), `src/shared/packages/pyforge-steward/tests/unit/test_workspace_delete.py` (new), `docs/how-to/manage-worktrees-with-bmad.md` (its one sentence on steward's scratch worktrees; governed by `spec-pyforge-doctor`)
 **Spec:** `planning-artifacts/specs/spec-13-5-workspace-clean-delete-removes-a-gone-or-landed-workspace-without-a-prompt-or-an-archive.md`
@@ -1086,7 +1086,7 @@ As the operator cleaning up a stacked workspace after its PR merged,
 I want `steward workspace status` and `clean` to judge it landed when its branch is on `origin/main`, whatever branch it was started from,
 So that a landed workspace is removed by the tool, never by hand.
 
-**Type:** fix • **Effort:** S • **Deps:** S-13.5 • **FR/AD:** spec-pyforge-steward CAP-157 (amended 2026-10-23), CAP-107, CAP-106 and CAP-158 unchanged • reopens Epic 13 (doctor Story 41.5) • Dream 2026-10-23 (a stacked workspace never reads landed)
+**Type:** fix • **Effort:** S • **Deps:** S-13.5 • **FR/AD:** spec-pyforge-steward CAP-157 (amended 2026-10-23), spec-pyforge-steward CAP-107, CAP-106 and CAP-158 unchanged • reopens Epic 13 (doctor Story 41.5) • Dream 2026-10-23 (a stacked workspace never reads landed)
 **Flag:** none (a fix, spec-feature-flag-governance Q1)
 **Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py` (`status_of` `:687`, `_branch_merged_into_or_unlanded` `:735`,
 `_landed_note_body` `:989`-`:1023`, the archive's branch removal `:1123`-`:1132`, `_delete_eligibility` `:1168`, `:1179`, `_execute_delete` `:1198`,
@@ -1113,7 +1113,7 @@ As the operator cleaning up a workspace after its PR merged and `dispatch_land_f
 I want `steward workspace clean --delete` to drop a workspace `status` reads as merged when only Tier-3 files stand in the way, keeping those files in the main checkout's shared store, and to name the real reason whenever it refuses,
 So that a landed workspace is removed by the tool, never by hand, and a refusal never says `not-merged` about a merged branch.
 
-**Type:** fix • **Effort:** S • **Deps:** S-13.6 • **FR/AD:** spec-pyforge-steward CAP-107, CAP-157 (no CAP, no amendment); CAP-106, CAP-108, CAP-155 and CAP-158 unchanged • reopens Epic 13 (doctor Story 41.5) • Dream 2026-10-25 (a landed workspace that holds a run journal never deletes)
+**Type:** fix • **Effort:** S • **Deps:** S-13.6 • **FR/AD:** spec-pyforge-steward CAP-107, CAP-157 (no CAP, no amendment); spec-pyforge-steward CAP-106, CAP-108, CAP-155 and CAP-158 unchanged • reopens Epic 13 (doctor Story 41.5) • Dream 2026-10-25 (a landed workspace that holds a run journal never deletes)
 **Flag:** none (a fix, spec-feature-flag-governance Q1)
 **Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py` (`_landed_note_body` `:1257`-`:1325`, `_delete_eligibility` `:1446`-`:1475`, `_execute_delete` `:1478`-`:1496`, the deleted row in `clean_workspaces` and `format_clean`), `src/shared/packages/pyforge-steward/tests/unit/test_workspace_delete_tier3.py` (new)
 **Spec:** `planning-artifacts/specs/spec-13-7-a-landed-workspace-that-holds-tier-3-files-deletes-and-keeps-the-files.md`
@@ -1134,7 +1134,7 @@ the trap catalog every story's tests draw from. Report-only for foreign-station 
 steward reports, owners act.
 
 ### Story 14.1: The pre-flight diff retrodicts a real upgrade
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-bmad-method-core-upgrade CAP-1
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-9
 **Surface:** `src/shared/packages/pyforge-steward/` (new upgrade duty), steward CLI
 **Given** the installed `_bmad/_config/manifest.yaml` and a target bmad-method release
 **Then** a report-only command lists skill adds/removes/renames (shim disposition +
@@ -1144,7 +1144,7 @@ new hard prerequisites — and pointed at the 6.10.0→6.11.0 pair it retrodicts
 findings (failure-modes.md traps 1–4, 9, 11) as a fixture test.
 
 ### Story 14.2: Apply is deliberate, branched, and never clobbers custom
-**Type:** feature • **Effort:** M • **Deps:** S-14.1 • **FR/AD:** spec-bmad-method-core-upgrade CAP-2
+**Type:** feature • **Effort:** M • **Deps:** S-14.1 • **FR/AD:** spec-pyforge-steward CAP-10
 **Surface:** steward upgrade duty
 **Given** a clean tree and a CAP-1 report **Then** the wrapper snapshots/branches first, runs
 `bmad-method install --action update -y` non-interactively (the installer stays the only
@@ -1153,7 +1153,7 @@ files would halt the shims, and lands the installer diff for review — never ap
 `_bmad/custom/**` is byte-identical afterward or the run reports why not.
 
 ### Story 14.3: Clobbered custom surfaces are caught and re-applied
-**Type:** feature • **Effort:** S • **Deps:** S-14.2 • **FR/AD:** spec-bmad-method-core-upgrade CAP-3
+**Type:** feature • **Effort:** S • **Deps:** S-14.2 • **FR/AD:** spec-pyforge-steward CAP-11
 **Surface:** steward upgrade duty
 **Given** a completed apply **Then** clobbered repo-custom surfaces are detected —
 `resolve_config.py`'s multi-project layers 5/6 as the named regression case (clobbered in
@@ -1162,7 +1162,7 @@ BOTH manual upgrades) — and re-applied or flagged; success is `bmad-switch --c
 accounted for.
 
 ### Story 14.4: The pin fan-out is enumerated, not discovered by red tests
-**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-method-core-upgrade CAP-4
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-12
 **Surface:** steward upgrade duty (report-only)
 **Given** a version change in bmad-method or bmad-loop **Then** every known pin site is
 enumerated with moved/not-moved status — root `pixi.toml` floors, marshal's pyproject +
@@ -1171,7 +1171,7 @@ loop-home hook relays — exactly the sites the 2026-08-21 session had to touch 
 foreign-station sites are reported, never edited.
 
 ### Story 14.5: One command proves the upgrade landed
-**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-method-core-upgrade CAP-5
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-13
 **Surface:** steward upgrade duty
 **Given** any post-apply state **Then** one command runs the repo's own gates —
 bmad-drift-check integrity, CFE skill meta-tests, per-loop-home `bmad-loop init` relay
@@ -1179,7 +1179,7 @@ refresh + `validate` — and reports a single verdict; the 2026-08-21 checklist 
 validate clean, zero warnings) is the reproduced worked example.
 
 ### Story 14.6: The installer is driven on purpose, and a no-op apply is a refusal
-**Type:** feature • **Effort:** M • **Deps:** 14.2 • **FR/AD:** spec-bmad-method-core-upgrade CAP-6
+**Type:** feature • **Effort:** M • **Deps:** 14.2 • **FR/AD:** spec-pyforge-steward CAP-14
 **Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/upgrade.py` (apply path), release catalogs
 **Given** a clean tree and a target release **When** `steward upgrade bmad-core --apply`
 runs **Then** the installer is invoked with `--directory <repo>`, `--modules <every module
@@ -1190,7 +1190,7 @@ is reported `ok=False` with failure-modes.md trap 12 named (the 2026-09-06 first
 exactly that silent no-op), never a green.
 
 ### Story 14.7: Custom modules survive the core apply
-**Type:** feature • **Effort:** M • **Deps:** 14.6 • **FR/AD:** spec-bmad-method-core-upgrade CAP-7
+**Type:** feature • **Effort:** M • **Deps:** 14.6 • **FR/AD:** spec-pyforge-steward CAP-15
 **Surface:** `upgrade.py` (apply + reconcile), release-catalog schema (`custom_modules:`), steward CLI
 **Given** the installed manifest lists a `source: custom` module (skf) and the release
 catalog names its own installer, config files and optional pin **When** the apply runs
@@ -1204,7 +1204,7 @@ its config equal to the pre-apply bytes plus the installer's own appended keys
 (failure-modes.md traps 13–14).
 
 ### Story 14.8: Local edits to installer-owned files are found before and re-applied after
-**Type:** feature • **Effort:** L • **Deps:** 14.6 • **FR/AD:** spec-bmad-method-core-upgrade CAP-8
+**Type:** feature • **Effort:** L • **Deps:** 14.6 • **FR/AD:** spec-pyforge-steward CAP-16
 **Surface:** `upgrade.py` (pre-flight + reconcile), steward CLI (`--installed-package-root`)
 **Given** the cached package of the installed version (`~/.cache/rattler/cache/pkgs/bmad-method-<v>-*/lib/node_modules/bmad-method/src`, or `--installed-package-root`) **When** the
 pre-flight runs **Then** every installer-owned file (`.claude/skills/<manifest skill>/**`,
@@ -1217,7 +1217,7 @@ a bare `.bak` restore — **And** the fixture replaying 2026-09-06's seven files
 clean merges and one flagged conflict (step-01 `done` routing) (failure-modes.md trap 16).
 
 ### Story 14.9: The apply retires deprecation shims on purpose (`--no-shims`)
-**Type:** feature • **Effort:** S • **Deps:** S-14.6 • **FR/AD:** spec-bmad-method-core-upgrade CAP-9 • spec-bmad-suite-lifecycle CAP-10 • lifecycle spine AD-5, AD-7
+**Type:** feature • **Effort:** S • **Deps:** S-14.6 • **FR/AD:** spec-pyforge-steward CAP-17 • spec-pyforge-steward CAP-39 • lifecycle spine AD-5, AD-7
 **Surface:** `upgrade.py` (apply argv + pre-flight report), steward CLI (`--no-shims`), `tests/unit/test_upgrade_apply.py`, `tests/unit/test_upgrade_preflight.py`
 **Corrected 2026-09-06** (found during marshal Story 30.5; operator-directed spec correction, same session): the original **And** clause below naming a refusal keyed on "the marshal harness template or any rendered loop-home policy still emits the retired `bmad-dev-auto`" was FALSE — verified directly against the installed `bmad_loop` 0.11.1 package source. `DevPolicy.skill` is a PERMANENT internal adapter discriminator (`DEV_SKILLS = {"bmad-dev-auto"}`, hard-validated) that must read `"bmad-dev-auto"` forever, on every era; the skill actually invoked is resolved separately from disk at runtime, independent of this field. Every loop-home's `policy.toml` (and the harness template that renders it) will emit this literal forever by design — a refusal keyed on finding it would refuse `--no-shims` permanently, with no way to ever satisfy it. That refusal clause, its `_shim_retirement_blockers`/`refuse_shim_retirement_not_ready` implementation, and the `--loops-home` flag that only existed to parameterize it are REMOVED. The "prove-landed validates... whose policy already names `bmad-build-auto`" clause below is also corrected: no loop-home policy ever names `bmad-build-auto` — that field stays `bmad-dev-auto` forever. The `Deps` field's "after marshal 30.5" cross-station note is removed — no harness change precedes this story any more (era-alignment CAP-12 corrected to match).
 **Given** an installed core whose manifest reads `installShims: true` **When** `steward upgrade bmad-core --target <installed-or-newer> --apply --no-shims --branch <name>` runs **Then** the installer argv carries `--no-shims` after `--modules …`, the pre-flight report lists every shim the manifest names as "to retire" (21 at 6.12.0: the 20 `v6-shims` plus `bmad-generate-project-context`), and a same-version run is accepted as a retirement run — the removed dirs are a real diff, not a trap-12 zero-diff refusal
@@ -1232,7 +1232,7 @@ cleanly (no `.customization-conflict`), `_bmad/custom/**` byte-identical, `prove
 verdict PASS 8/8. `pyforge-steward-test`: 1104 passed.
 
 ### Story 14.10: The `@next` rehearsal exercises CAP-6's fallback and CAP-8's conflict path, report-only
-**Type:** chore • **Effort:** S • **Deps:** S-14.9 • **FR/AD:** spec-bmad-method-core-upgrade CAP-6, CAP-8 (+ answered Q2) • spec-bmad-suite-lifecycle CAP-8 • lifecycle spine AD-7
+**Type:** chore • **Effort:** S • **Deps:** S-14.9 • **FR/AD:** spec-pyforge-steward CAP-14, CAP-16 (+ answered Q2) • spec-pyforge-steward CAP-37 • lifecycle spine AD-7
 **Surface:** a throwaway worktree (never merged), the core-upgrade memlog (findings), `release-cadence.md` § The `@next` rehearsal (the recipe, verified verbatim by 46.10)
 **Given** npm's `next` dist-tag (`6.12.1-next.0` on 2026-09-06) **When** the rehearsal runs in a throwaway worktree with `--installer` pointed at `npx bmad-method@next`, `--package-root` at the unpacked next tarball, `--installed-package-root` at the cached 6.12.0, one planted conflicting local edit in an installer-owned skill file, and `PATH` without `node` **Then** the report shows CAP-6's pixi-bin fallback resolving `node`, CAP-8 flagging exactly one conflict with its `.customization-conflict` sibling, and CAP-7 restoring skf; findings are appended to the core-upgrade memlog and the worktree is deleted
 **And** the rehearsal never counts as the live proof that flips the Spec to `shipped` (a real future release through CAP-6..8 does)
@@ -1250,7 +1250,7 @@ an explicit skip); publish credential-gated, before floor bumps; autotick output
 reviewable PRs; dev recipes keep `X.Y.Z.dev0 @ sha` + G109 re-derivation.
 
 ### Story 15.1: One command reports the whole pipeline's truth
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-bmad-suite-channel-product CAP-1
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-21
 **Surface:** steward duty (new), consuming existing probes (npm/GitHub queries, recipe.yaml parse, api.anaconda.org listing, pixi list, .claude/skills census)
 **Given** the 13 suite packages **Then** one command reports upstream latest (npm AND
 GitHub per the package's class), recipe version, channel version, installed version, and
@@ -1258,7 +1258,7 @@ wired-or-not — drift named per stage, each probe fail-open — and run against
 2026-08-22 baseline it reproduces the research matrix.
 
 ### Story 15.2: One command advances a stale package end-to-end
-**Type:** feature • **Effort:** M • **Deps:** S-15.1 • **FR/AD:** spec-bmad-suite-channel-product CAP-2
+**Type:** feature • **Effort:** M • **Deps:** S-15.1 • **FR/AD:** spec-pyforge-steward CAP-22
 **Surface:** steward duty; autotick extension (CFE Rule 1: the github_updater HEAD-advance
 mode for commit-pinned dev recipes lands as CFE-skill work with its Rule-2 retro)
 **Given** a package the truth-report names stale **Then** one command chains autotick
@@ -1267,7 +1267,7 @@ verification, landing as a reviewable PR — the 2026-08-21 seven-stage hand rit
 zero improvised steps, never auto-merged.
 
 ### Story 15.3: Five modules wire through the provisioning verb
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-bmad-suite-channel-product CAP-3
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-23
 **Surface:** `src/pyforge/steward/provision.py` `_SUPPORTED_MODULES`
 **Given** `{bmb}` today **Then** tea, cis, utility-skills, and manticore join (their conda
 packages' installer entry points), each addition manifest-recorded, skill-name-collision-
@@ -1275,7 +1275,7 @@ checked, retired-ID guard + integrity meta tests green, reproducible on a fresh 
 and WDS is recorded as a skip-decision with the upstream-deprecation citation.
 
 ### Story 15.4: The upgrade gate spot-checks one native path per class
-**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-suite-channel-product CAP-4
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-24
 **Surface:** install-matrix.md (the tracked contract), steward Epic 14 CAP-5 gate orbit
 **Given** the seven native-method classes **Then** the verification gate exercises ≥1
 cited command per class (dashboards excluded by build cost, check-by-doc), failures
@@ -1295,7 +1295,7 @@ canonical image path. 12.2 (GKE) and 12.3 (air-gap) are unchanged; 12.3 gains si
 coverage for free once 12.5 lands.
 
 ### Story 12.4: The cluster bring-up is documented, reproducible, and key-disciplined
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-local-ocp-hybrid-environment CAP-1 (mints the OpenShift/registry-posture AD the steward spine anticipates)
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-62 (mints the OpenShift/registry-posture AD the steward spine anticipates)
 **Surface:** `src/platform/deploy/` docs, steward keys inventory, new bring-up doc
 **Given** a fresh workstation (CRC 2.63.0 / OpenShift 4.22.7 baseline; 4 cores/10.5 GB/35 GB;
 Linux needs `crc` on PATH — the repo's own `openshift-client`/`podman-desktop` recipes
@@ -1305,7 +1305,7 @@ kubeadmin credentials, and the PAT recorded as hand-authored keys-inventory entr
 zero improvised steps.
 
 ### Story 12.5: The DB-GPT sidecar joins the chart
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-local-ocp-hybrid-environment CAP-2 (closes the Epic-12-kickoff follow-up 12.1 bound out)
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-63 (closes the Epic-12-kickoff follow-up 12.1 bound out)
 **Surface:** `src/platform/deploy/charts/platform/`, `tests/test_chart_invariants.py`
 **Given** the platform's own sidecar image **Then** the chart renders a sidecar
 Deployment (replicas 1, Recreate) + dedicated SQLite PVC at the resolved metadata path +
@@ -1313,14 +1313,14 @@ internal-only Service consumed via `DBGPT_SIDECAR_BASE_URL`, all under restricte
 and 12.1's inventory-test sidecar REJECTION flips to expectation, suite green.
 
 ### Story 12.6: Redis is hardened, still ephemeral
-**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-local-ocp-hybrid-environment CAP-3 (closes 12.1's named unauthenticated-Redis follow-up)
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-64 (closes 12.1's named unauthenticated-Redis follow-up)
 **Surface:** chart templates + invariant tests
 **Given** the chart's emptyDir Redis **Then** AUTH arrives via an `existingSecret` key
 wired into `REDIS_URL`, and a NetworkPolicy restricts Redis to platform pods — both
 render-asserted; persistence deliberately unchanged (Celery re-queues).
 
 ### Story 12.7: The 12.1 Tier-3 items are verified on the live cluster
-**Type:** verification • **Effort:** M • **Deps:** S-12.4, S-12.5, S-12.6 • **FR/AD:** spec-local-ocp-hybrid-environment CAP-4
+**Type:** verification • **Effort:** M • **Deps:** S-12.4, S-12.5, S-12.6 • **FR/AD:** spec-pyforge-steward CAP-65
 **Surface:** attended run + a dated verification record in the 12.1 spec's orbit
 **Given** `helm install` of core + OCP overlay on the running cluster **Then** the four
 honestly-unverified items are proven — Route admission, SCC enforcement, PVC binding,
@@ -1330,7 +1330,7 @@ plus the fresh-install migration-window observation; failures land as findings, 
 silent notes.
 
 ### Story 12.8: GitHub Projects V2 lands in github_metrics via dlt
-**Type:** feature • **Effort:** M • **Deps:** S-12.4 • **FR/AD:** spec-local-ocp-hybrid-environment CAP-5
+**Type:** feature • **Effort:** M • **Deps:** S-12.4 • **FR/AD:** spec-pyforge-steward CAP-66
 **Surface:** new small dlt pipeline (pixi workspace), board + `gh project link`
 **Given** a classic PAT with `read:project` (fine-grained PATs cannot reach user-owned
 projects) **Then** a custom dlt GraphQL source (no verified source covers Projects V2;
@@ -1349,7 +1349,7 @@ the folder `spec-ocp-as-a-portability-profile/`, not a `spec-12-9-*` story-spec 
 Ledger previously marked 12.9 done with no `ocp-portability-smoke` job — flipped to backlog.
 
 ### Story 12.9: OCP as a portability profile
-**Type:** infra • **Effort:** M • **Deps:** S-12.1, S-12.2 (pattern) • **FR/AD:** spec-ocp-as-a-portability-profile CAP-1, CAP-2, CAP-3 (parent CAP-6 / pap:AD-11)
+**Type:** infra • **Effort:** M • **Deps:** S-12.1, S-12.2 (pattern) • **FR/AD:** spec-pyforge-steward CAP-78, CAP-79, CAP-80 (parent spec-pyforge-steward CAP-103 / pap:AD-11)
 **Surface:** platform CI (`.github/workflows/platform-ci.yml`), `deploy/README.md` honesty line
 **Given** the Story 12.1 OCP overlay and a real OpenShift API (CRC / OpenShift Local — not `kind`)
 **Then** an optional Platform CI job (`ocp-portability-smoke`, default off) pushes the shared
@@ -1366,31 +1366,31 @@ inventory). **HARD:** AD-4/pap:AD-17 topology and the 12.1 chart contract untouc
 land as seams, not rewrites.
 
 ### Story 16.1: Dependencies are pixi-sourced, single-authority
-**Type:** chore • **Effort:** M • **Deps:** — • **FR/AD:** spec-platform-fifteen-factors CAP-5
+**Type:** chore • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-90
 **Given** `src/platform/requirements/*.txt` **Then** pixi.toml (the existing platform
 features) becomes the sole dependency authority — CI lanes and both Containerfiles build
 from pixi alone, requirements files retired, docs updated; suites green.
 
 ### Story 16.2: Startup refuses misconfiguration, two-stage and named
-**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-platform-fifteen-factors CAP-3
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-88
 **Given** a missing/invalid required setting **Then** boot fails fast in a validation
 stage that names the setting and its remedy before any app import side effects —
 fixture-proven for each required key.
 
 ### Story 16.3: Every process speaks structlog + OTel
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-platform-fifteen-factors CAP-2
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-87
 **Given** a request that fans into Celery **Then** structured logs carry request_id/
 user_id/trace_id across web and worker, OTLP export activates only when the endpoint is
 configured, and one trace correlates the hop end-to-end — asserted in tests.
 
 ### Story 16.4: Policy is a test suite
-**Type:** feature • **Effort:** S • **Deps:** 16.1 • **FR/AD:** spec-platform-fifteen-factors CAP-4
+**Type:** feature • **Effort:** S • **Deps:** 16.1 • **FR/AD:** spec-pyforge-steward CAP-89
 **Given** the dependency/credential-surface/typing/coverage policies **Then** each is an
 executable test that reds on drift (the 15-factor repo's policy-suite pattern) — wired
 into the platform CI lanes.
 
 ### Story 16.5: Identity is OIDC-delegated, no local passwords
-**Type:** feature • **Effort:** L • **Deps:** 16.2 • **FR/AD:** spec-platform-fifteen-factors CAP-1
+**Type:** feature • **Effort:** L • **Deps:** 16.2 • **FR/AD:** spec-pyforge-steward CAP-86
 **Given** a Keycloak realm-as-code local substrate (devinfra pattern: aud+roles claims,
 reimport round-trip) **Then** identity keys on `idp_subject`, staff/superuser derive from
 IdP group claims per-authentication (unmatched groups ignored-and-logged), local
@@ -1406,13 +1406,13 @@ the sibling org's command surface as pattern only). Consumes provision --env/--r
 the 12.4 bring-up, and Epic 16's substrate — never duplicates them.
 
 ### Story 17.1: steward init/shell-init detect and prepare the machine
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-developer-machine-bootstrap CAP-1
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-48
 **Given** a machine with unknown tooling **Then** `steward init` reports each prereq
 (pixi/git/gh/podman + floors from the pixi version registry) with a named remedy, and
 `shell-init` emits PATH/completions/env — both idempotent, `--json` for automation.
 
 ### Story 17.2: steward setup/initrepo take the machine to green
-**Type:** feature • **Effort:** M • **Deps:** S-17.1 • **FR/AD:** spec-developer-machine-bootstrap CAP-1
+**Type:** feature • **Effort:** M • **Deps:** S-17.1 • **FR/AD:** spec-pyforge-steward CAP-48
 **Given** a passing `init` **Then** `setup` clones + pixi-installs + wires hooks and
 `initrepo` onboards a repo, ending at validate-fast passing — proven in a clean
 container, zero improvised steps.
@@ -1640,7 +1640,7 @@ As a portal author,
 I want one installable chrome package with an AppConfig registration protocol,
 So that adding a station does not edit the host URLconf or ship a second switcher.
 
-**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** canopy:FR-1, canopy:FR-2 • canopy:AD-1, canopy:AD-3
+**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-unifying-strategy CAP-1, CAP-3 / canopy:FR-1, canopy:FR-2 • canopy:AD-1, canopy:AD-3
 **Given** two portal apps in `INSTALLED_APPS` **When** they render a page **Then** chrome markup is byte-identical and sourced from `django-pyforge`
 **And** a test that enumerates portal template/static dirs **fails** if either ships a base layout, switcher, or theme copy
 **And** discovery is `apps.get_app_configs()`; host URLconf has no station roster except the later `/compliance/` redirect
@@ -1654,7 +1654,7 @@ As a signed-in operator,
 I want the app switcher to list only stations my IdP roles permit,
 So that I am not offered doors I cannot open.
 
-**Type:** feature • **Effort:** M • **Deps:** S-18.1 • **FR/AD:** canopy:FR-3 • canopy:AD-15
+**Type:** feature • **Effort:** M • **Deps:** S-18.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-1, CAP-12 / canopy:FR-3 • canopy:AD-15
 **Given** a user lacking a station role **When** they load chrome **Then** that station is absent from the switcher
 **And** requesting the hidden station URL directly is still refused by that station (switcher is not enforcement)
 **And** roles are re-read from the token on the request, not a durable local grant
@@ -1665,7 +1665,7 @@ As a station service,
 I want every portal and CLI call to carry the same audience-bound JWT,
 So that I can verify the end user without trusting a header.
 
-**Type:** feature • **Effort:** L • **Deps:** S-18.1 • **FR/AD:** canopy:FR-14, canopy:FR-15 • canopy:AD-7
+**Type:** feature • **Effort:** L • **Deps:** S-18.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-6 / canopy:FR-14, canopy:FR-15 • canopy:AD-7
 **Given** the golden vector in `django-pyforge` **When** both the portal client and `pyforge.core` client emit a token **Then** both pass the same RS256 verification (`sub`, `roles`, `aud=mcp:<station>`, `exp`≤5m from `iat`, `delegated_by=pyforge-host`)
 **And** a call with a bad signature, wrong audience, or expired `exp` is refused
 **And** a request with an identity header and no valid assertion is refused
@@ -1682,7 +1682,7 @@ As a compliance auditor,
 I want Warden at `/stations/warden/` with `/compliance/` still working,
 So that bookmarks survive the uniform prefix.
 
-**Type:** feature • **Effort:** L • **Deps:** S-18.1 • **FR/AD:** canopy:FR-9a, canopy:FR-9b • canopy:AD-2, canopy:AD-4
+**Type:** feature • **Effort:** L • **Deps:** S-18.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-3 / canopy:FR-9a, canopy:FR-9b • canopy:AD-2, canopy:AD-4
 **Given** the shipped `compliance_face` **When** this story merges **Then** distribution is `django-warden`, module `django_warden_fabric`, label `warden_fabric`
 **And** `/compliance/` is a permanent redirect to `/stations/warden/` preserving path and query
 **And** no identifier `compliance_face` remains under `src/`
@@ -1696,7 +1696,7 @@ As a platform operator,
 I want every station reachable at `/stations/<name>/` in one session,
 So that I do not re-authenticate to change tools.
 
-**Type:** feature • **Effort:** L • **Deps:** S-19.1, S-18.3 • **FR/AD:** canopy:FR-9, canopy:FR-10 • canopy:AD-2, canopy:AD-18
+**Type:** feature • **Effort:** L • **Deps:** S-19.1, S-18.3 • **FR/AD:** spec-pyforge-unifying-strategy CAP-3, CAP-6 / canopy:FR-9, canopy:FR-10 • canopy:AD-2, canopy:AD-18
 **Given** chrome and the assertion client **When** I request each of the eight portals in one session **Then** none re-authenticate and all are same-origin with Lane 1
 **And** each remaining station has `django-<station>/` with the naming triple; existing models do not move between apps
 **And** portals reach stations only through `django-pyforge`'s client; no portal imports station internals or builds raw HTTP to a service
@@ -1713,7 +1713,7 @@ As an editor,
 I want to change a page and have it live without a rollout,
 So that runbooks do not wait on a deploy.
 
-**Type:** feature • **Effort:** L • **Deps:** S-18.1 • **FR/AD:** canopy:FR-4, canopy:FR-5 • canopy:AD-13
+**Type:** feature • **Effort:** L • **Deps:** S-18.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-2, CAP-12 / canopy:FR-4, canopy:FR-5 • canopy:AD-13
 **Given** an authenticated editor with the Wagtail-admin IdP group **When** they publish a page **Then** an estate request sees it with no new image and no Deployment rollout
 **And** content survives pod restart and is identical from every replica
 **And** unauthenticated admin requests redirect to the IdP; no local password or email-management surface is reachable
@@ -1725,7 +1725,7 @@ As an operator,
 I want uploaded media on shared storage and a cache that cannot evict Celery,
 So that scaling Lane 1 does not lose files or drop builds.
 
-**Type:** feature • **Effort:** L • **Deps:** S-20.1 • **FR/AD:** canopy:FR-8, canopy:FR-30 • canopy:AD-13, canopy:AD-10 • NFR-C7
+**Type:** feature • **Effort:** L • **Deps:** S-20.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-2, CAP-11 / canopy:FR-8, canopy:FR-30 • canopy:AD-13, canopy:AD-10 • NFR-C7
 **Given** a ReadWriteMany PVC for Wagtail media and two Redis Deployments **When** replica A stores an upload **Then** replica B retrieves it
 **And** a rendition generated on A is served from redis-cache by B without regeneration
 **And** filling redis-cache to eviction loses no queued task on redis-broker
@@ -1744,7 +1744,7 @@ As an agent,
 I want handles and run rows in PostgreSQL owned by `django-pyforge`,
 So that any replica can answer `get` and the front door never reads a laptop disk.
 
-**Type:** feature • **Effort:** M • **Deps:** S-18.1 • **FR/AD:** canopy:FR-12, canopy:FR-40 • canopy:AD-6, canopy:AD-9, canopy:AD-12
+**Type:** feature • **Effort:** M • **Deps:** S-18.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-4, CAP-17 / canopy:FR-12, canopy:FR-40 • canopy:AD-6, canopy:AD-9, canopy:AD-12
 **Given** the platform database **When** this story lands **Then** `run_state` and `mcp_handles` exist as tables in `public`, not new schemas
 **And** DDL is authored as Django migrations owned by `django-pyforge` (Epic 27 will extract changesets)
 **And** no front-door or MCP path reads `~/.bmad-loops`, tmux, or journals
@@ -1755,7 +1755,7 @@ As an autonomous agent,
 I want atlas's service face on `POST /stations/atlas/mcp` using the official `mcp` SDK,
 So that handshake-era and modern clients both work.
 
-**Type:** feature • **Effort:** L • **Deps:** S-18.1, S-18.3 • **FR/AD:** canopy:FR-11 • canopy:AD-5
+**Type:** feature • **Effort:** L • **Deps:** S-18.1, S-18.3 • **FR/AD:** spec-pyforge-unifying-strategy CAP-4 / canopy:FR-11 • canopy:AD-5
 **Given** the host ASGI process **When** a client posts to `/stations/atlas/mcp` **Then** the face speaks MCP revisions `2025-03-26` through `2026-07-28`
 **And** handshake `initialize` echoes the client's requested revision; unsupported revisions return `-32022` with the supported list
 **And** no code path branches on client name or user-agent; deprecated dual-endpoint SSE is not served
@@ -1768,7 +1768,7 @@ As an autonomous agent,
 I want a multi-minute operation to return a handle immediately and be fetchable after a drop,
 So that a 30s idle timeout does not lose the work.
 
-**Type:** feature • **Effort:** L • **Deps:** S-21.1, S-21.2 • **FR/AD:** canopy:FR-12 • canopy:AD-6, canopy:AD-12
+**Type:** feature • **Effort:** L • **Deps:** S-21.1, S-21.2 • **FR/AD:** spec-pyforge-unifying-strategy CAP-4 / canopy:FR-12 • canopy:AD-6, canopy:AD-12
 **Given** a simulated ingress disconnect mid-operation **When** the client reconnects with the handle and a valid assertion **Then** it receives the same result without recomputation
 **And** `start_*` returns before the work finishes and publishes through the supervisor (no second ledger)
 **And** `get_*` succeeds on a different replica; possession of the handle without the assertion is refused
@@ -1780,7 +1780,7 @@ As an autonomous agent,
 I want every station on the same POST pattern,
 So that I do not learn eight transports.
 
-**Type:** feature • **Effort:** L • **Deps:** S-21.3 • **FR/AD:** canopy:FR-11 • canopy:AD-1, canopy:AD-5
+**Type:** feature • **Effort:** L • **Deps:** S-21.3 • **FR/AD:** spec-pyforge-unifying-strategy CAP-4 / canopy:FR-11 • canopy:AD-1, canopy:AD-5
 **Given** the atlas face **When** the remaining seven stations register MCP tokens **Then** `POST /stations/<name>/mcp` conforms to the same dual-era checks
 **And** host dispatch is a pattern, not a per-station list
 
@@ -1790,7 +1790,7 @@ As a platform operator,
 I want live runs and completed timing from the supervisor,
 So that the published board is not `unavailable` for lack of my home directory.
 
-**Type:** feature • **Effort:** M • **Deps:** S-21.1 • **FR/AD:** canopy:FR-40, canopy:FR-41, canopy:FR-42 • canopy:AD-12, canopy:AD-15
+**Type:** feature • **Effort:** M • **Deps:** S-21.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-17, CAP-10 / canopy:FR-40, canopy:FR-41, canopy:FR-42 • canopy:AD-12, canopy:AD-15
 **Given** a deployed egress-blocked namespace **When** the front door renders run state **Then** it uses the supervisor API only — no filesystem fallback
 **And** a run started on one machine is visible to a front door on another
 **And** timing is ingested at run completion, queryable across runs
@@ -1822,7 +1822,7 @@ As a packaging engineer,
 I want `pyforge <station> <noun> <verb>` to match each station binary,
 So that I do not memorize eight CLIs.
 
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** canopy:FR-13 • canopy:AD-14
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-unifying-strategy CAP-5 / canopy:FR-13 • canopy:AD-14
 **Given** the eight station console scripts **When** CI generates the parity matrix **Then** every verb is reachable through both paths
 **And** adding a station verb that the unified entry cannot reach fails the build
 **And** no station logic is copied into `pyforge-core`; dispatch only
@@ -1836,7 +1836,7 @@ As a compliance auditor,
 I want analytical boards behind the host to filter rows by my role,
 So that I never see another tenant's slice.
 
-**Type:** feature • **Effort:** L • **Deps:** S-18.2, S-19.2 • **FR/AD:** canopy:FR-16 • canopy:AD-20
+**Type:** feature • **Effort:** L • **Deps:** S-18.2, S-19.2 • **FR/AD:** spec-pyforge-unifying-strategy CAP-7 / canopy:FR-16 • canopy:AD-20
 **Given** two authenticated users with different roles **When** they request the same board URL **Then** returned rows differ as their roles dictate
 **And** isolation is `pyforge.steward.dashboard` filter-then-search (`filter_by_role` / `AccessDeclaration`), server-side
 **And** a second isolation stack (including Vizro that filters its own rows) is a review-blocking finding
@@ -1852,7 +1852,7 @@ As a station,
 I want durable events with a DLQ,
 So that a poison payload cannot stall the group.
 
-**Type:** feature • **Effort:** L • **Deps:** S-20.2 • **FR/AD:** canopy:FR-17, canopy:FR-18 • canopy:AD-8
+**Type:** feature • **Effort:** L • **Deps:** S-20.2 • **FR/AD:** spec-pyforge-unifying-strategy CAP-8, CAP-10 / canopy:FR-17, canopy:FR-18 • canopy:AD-8
 **Given** a consumer that is down **When** an event is `XADD`ed to `pyforge.events` **Then** it is delivered on return without double-apply
 **And** a malformed event lands in `pyforge.events.dlq` via `XAUTOCLAIM` and does not block the group
 **And** an operator can enumerate quarantined messages
@@ -1865,7 +1865,7 @@ As a platform operator,
 I want cyclic fan-out to stop at depth 8,
 So that a buggy producer cannot run away.
 
-**Type:** feature • **Effort:** M • **Deps:** S-24.1 • **FR/AD:** canopy:FR-19, canopy:FR-20 • canopy:AD-8
+**Type:** feature • **Effort:** M • **Deps:** S-24.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-8 / canopy:FR-19, canopy:FR-20 • canopy:AD-8
 **Given** a deliberate cycle **When** `pyforgeloopdepth` reaches 8 **Then** publish halts observably
 **And** event `type` is a dotted verb registered in `django-pyforge`
 **And** payload shape is rejected in the consuming domain adapter, not at the stream boundary
@@ -1880,7 +1880,7 @@ As an operator,
 I want a dead dependency to degrade the caller,
 So that one outage does not hang the estate.
 
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** canopy:FR-26 • canopy:AD-15
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-unifying-strategy CAP-10 / canopy:FR-26 • canopy:AD-15
 **Given** repeated outbound failures **When** the circuit opens **Then** the caller returns degraded within budget
 **And** a failing asyncio call registers as a failure (in-tree PyBreaker wrapper), not a success
 **And** `fail_max` is coarse, never exact-count
@@ -1892,7 +1892,7 @@ As an atlas consumer,
 I want a single writer on `atlas.duckdb`,
 So that concurrent connects cannot corrupt it.
 
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** canopy:FR-27 • resilience BS-5
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-unifying-strategy CAP-10 / canopy:FR-27 • resilience BS-5
 **Given** a live `atlas.duckdb` **When** a second writer appears **Then** it is refused or serialized
 **And** readers use `read_only=True`
 **And** the test fails if the boundary is removed
@@ -1903,7 +1903,7 @@ As an operator on an HTMX form,
 I want 422 arrays as Django `ValidationError`s,
 So that I see field errors in place.
 
-**Type:** feature • **Effort:** S • **Deps:** S-18.1 • **FR/AD:** canopy:FR-28 • resilience BS-7
+**Type:** feature • **Effort:** S • **Deps:** S-18.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-10 / canopy:FR-28 • resilience BS-7
 **Given** a rejected submission **When** the response renders **Then** errors appear inline on the originating surface
 **And** `PydanticFormErrorBridge` lives in `django-pyforge`
 **And** the test fails if the bridge is removed
@@ -1914,7 +1914,7 @@ As a mason operator,
 I want a killed boot to re-index without duplicating rows,
 So that restarts are safe.
 
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** canopy:FR-29 • resilience BS-8 • canopy:AD-13
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-unifying-strategy CAP-10 / canopy:FR-29 • resilience BS-8 • canopy:AD-13
 **Given** work interrupted mid-flight **When** the process restarts **Then** the effect applies once
 **And** reconcile is against PostgreSQL (and RWX files if any), **not** MinIO
 **And** the test fails if reconciliation is removed
@@ -1927,7 +1927,7 @@ As a security officer,
 I want an IdP role change to apply without a re-login wait,
 So that access is actually revocable.
 
-**Type:** feature • **Effort:** M • **Deps:** S-18.2 • **FR/AD:** canopy:FR-31 • canopy:AD-15
+**Type:** feature • **Effort:** M • **Deps:** S-18.2 • **FR/AD:** spec-pyforge-unifying-strategy CAP-12 / canopy:FR-31 • canopy:AD-15
 **Given** a user who can open a portal **When** the role is revoked at the IdP **Then** the next request is denied
 **And** local group tables are not the authority
 
@@ -1937,7 +1937,7 @@ As a platform operator,
 I want rendered Helm to contain `secretKeyRef`s and never secret values,
 So that a git-diff of the chart cannot leak credentials.
 
-**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** canopy:FR-32 • canopy:AD-19 • parent canopy:AD-12
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-unifying-strategy CAP-12 / canopy:FR-32 • canopy:AD-19 • parent canopy:AD-12
 **Given** `helm template` (or Kustomize) output **When** a secret check runs **Then** it fails if a secret *value* appears
 **And** pods consume env/file mounts; the app does not call a secrets HTTP API
 **And** Vault injector / CSI / extra secrets sidecar is out of this chain without a dated Dream entry
@@ -1948,7 +1948,7 @@ As a platform operator,
 I want flag libraries from conda-forge,
 So that CAP-13 can evaluate offline.
 
-**Type:** chore • **Effort:** — • **Deps:** — • **FR/AD:** canopy:FR-33 • canopy:AD-16
+**Type:** chore • **Effort:** — • **Deps:** — • **FR/AD:** spec-pyforge-unifying-strategy CAP-13 / canopy:FR-33 • canopy:AD-16
 **Blocked:** operator-owned packaging (`openfeature-sdk`, `openfeature-flagd-api`, `openfeature-flagd-core`, `openfeature-provider-flagd`, `cachebox` 5.x). This story does **not** author recipes.
 **Given** those packages on the platform channel **When** the env solves **Then** S-26.4 may start
 **And** until then S-26.4 stays blocked
@@ -1959,7 +1959,7 @@ As a platform operator,
 I want to change one JSON flag and see Django, MCP, and CLI obey,
 So that behaviour flips in an air gap without a rollout.
 
-**Type:** feature • **Effort:** L • **Deps:** S-26.3 • **FR/AD:** canopy:FR-34 • canopy:AD-11
+**Type:** feature • **Effort:** L • **Deps:** S-26.3 • **FR/AD:** spec-pyforge-unifying-strategy CAP-13 / canopy:FR-34 • canopy:AD-11
 **Given** one JSON tree (ConfigMap from `src/platform/config/flags.json`) **When** a flag value changes on disk **Then** all three surfaces observe it with no egress
 **And** the in-process FILE provider watches the mount — no Deployment rollout, no Reloader, no flagd sidecar
 **And** two trees is a review-blocking finding
@@ -1971,7 +1971,7 @@ As a platform operator,
 I want the OpenFeature flagd provider on the protobuf-7 build,
 So that the platform env solves with langflow 1.12.3.
 
-**Type:** chore • **Effort:** S • **Deps:** S-26.3 • **FR/AD:** canopy:FR-33 • canopy:AD-16
+**Type:** chore • **Effort:** S • **Deps:** S-26.3 • **FR/AD:** spec-pyforge-unifying-strategy CAP-13 / canopy:FR-33 • canopy:AD-16
 **Given** langflow >=1.12.3 on `[feature.python-agent-platform]`, whose closure (openlayer -> pyarrow -> libabseil 20260526) is protobuf-7-only **When** the env solves **Then** it selects `openfeature-provider-flagd` >=0.5.2 (the protobuf-7 build) and the 26.3 policy test asserts `>=0.5.2` instead of `>=0.5.0,<0.5.1`
 **And** the lock selecting the protobuf-6 0.5.0 build, or a spec admitting it, fails the policy test
 **And** `cachebox` stays `>=5.2.3,<6` and the four OpenFeature pins stay required (26.3 unchanged otherwise)
@@ -1986,7 +1986,7 @@ As a platform operator,
 I want Liquibase 5.0.4+ inside the platform image,
 So that production DDL has an auditable tool.
 
-**Type:** chore • **Effort:** — • **Deps:** — • **FR/AD:** canopy:FR-21 • canopy:AD-16
+**Type:** chore • **Effort:** — • **Deps:** — • **FR/AD:** spec-pyforge-unifying-strategy CAP-9 / canopy:FR-21 • canopy:AD-16
 **Blocked:** operator-owned packaging (`liquibase` ≥5.0.4, vendored PostgreSQL JDBC, no new image). This story does **not** author recipes.
 **Given** the package on the channel the platform env consumes **When** the env solves **Then** S-27.2 may start
 
@@ -1996,7 +1996,7 @@ As an auditor,
 I want schema change applied by a migration role before pods start,
 So that the application cannot ALTER itself.
 
-**Type:** feature • **Effort:** L • **Deps:** S-27.1, S-19.1 • **FR/AD:** canopy:FR-21a, canopy:FR-22, canopy:FR-24 • canopy:AD-9
+**Type:** feature • **Effort:** L • **Deps:** S-27.1, S-19.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-9 / canopy:FR-21a, canopy:FR-22, canopy:FR-24 • canopy:AD-9
 **Given** a chart upgrade **When** hooks run **Then** Job weight −1 runs `liquibase update` on the platform image, then the shipped Job runs `migrate --fake`
 **And** `preserveSchemaCase` is off; schema names lowercase; Job connects directly with `currentSchema`, not through a pooling proxy
 **And** schemas are exactly `public`, `langflow_schema`, `dbgpt_schema`, `liquibase`
@@ -2009,7 +2009,7 @@ As a developer,
 I want a model change without a changeset to break the build,
 So that production DDL cannot drift from what was reviewed.
 
-**Type:** feature • **Effort:** M • **Deps:** S-27.2 • **FR/AD:** canopy:FR-23 • canopy:AD-9
+**Type:** feature • **Effort:** M • **Deps:** S-27.2 • **FR/AD:** spec-pyforge-unifying-strategy CAP-9 / canopy:FR-23 • canopy:AD-9
 **Given** a model change with no matching Liquibase changeset **When** CI runs `sqlmigrate` extraction **Then** the check fails and names the missing changeset
 
 ### Story 27.4: Test databases still migrate
@@ -2018,7 +2018,7 @@ As a developer,
 I want `manage.py test` unchanged,
 So that governed production DDL does not capture ephemeral DBs.
 
-**Type:** chore • **Effort:** S • **Deps:** S-27.2 • **FR/AD:** canopy:FR-25
+**Type:** chore • **Effort:** S • **Deps:** S-27.2 • **FR/AD:** spec-pyforge-unifying-strategy CAP-9 / canopy:FR-25
 **Given** the test runner **When** it creates a test database **Then** it still runs Django `migrate`
 **And** no test-suite rewrite is required by this epic
 
@@ -2028,7 +2028,7 @@ As a platform operator,
 I want the PostgreSQL JDBC driver from `pgjdbc` and `liquibase-postgresql` from conda-forge,
 So that each package name means what conda-forge means by it.
 
-**Type:** chore • **Effort:** S • **Deps:** S-27.1 • **FR/AD:** canopy:FR-21 • canopy:AD-16
+**Type:** chore • **Effort:** S • **Deps:** S-27.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-9 / canopy:FR-21 • canopy:AD-16
 **Given** `[feature.python-agent-platform]` **When** the env solves **Then** it selects `pgjdbc` >=42.7.13 (`postgresql.jar` in `share/liquibase/lib`) and conda-forge's `liquibase-postgresql` dialect extension (`>=5.0.4,<42`), and the 27.1 policy test asserts both
 **And** a spec or lock selecting SelfExplainML's `liquibase-postgresql` 42.7.13 (the retired driver build under the colliding name) fails the policy test
 **And** `liquibase` stays `>=5.0.4`; `pgjdbc` comes from SelfExplainML until conda-forge publishes it (staged-recipes #34956), then from conda-forge on the next lock refresh
@@ -2039,7 +2039,7 @@ As a platform operator,
 I want the pre-upgrade Liquibase Job to succeed on a fresh install without contacting Liquibase,
 So that a new cluster migrates in an air gap and no usage data leaves any environment.
 
-**Type:** fix • **Effort:** S • **Deps:** S-27.2 • **FR/AD:** canopy:FR-21a, canopy:FR-24 • canopy:AD-9
+**Type:** fix • **Effort:** S • **Deps:** S-27.2 • **FR/AD:** spec-pyforge-unifying-strategy CAP-9 / canopy:FR-21a, canopy:FR-24 • canopy:AD-9
 **Given** an empty PostgreSQL database **When** the Job runs `liquibase update` **Then** every changeset applies: no include references a table that a later include creates (the `sites` includes run before `third-party-0001`), and a policy test fails on any such foreign key
 **And** `[feature.python-agent-platform.activation.env]` sets `LIQUIBASE_ANALYTICS_ENABLED = "false"`, so the image (which sources that env's shell-hook) and `platform-dev` never fetch `config.liquibase.com` or report usage; a policy test fails if the switch is dropped or flipped
 **And** databases that already migrated are unaffected (applied changesets are skipped by id)
@@ -2052,7 +2052,7 @@ As a steward operator,
 I want the graph store on PostgreSQL/pgvector with a local path remaining,
 So that the JSON file is not the production backend.
 
-**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** canopy:FR-35 • parent AD-1, parent AD-5
+**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-unifying-strategy CAP-14 / canopy:FR-35 • parent AD-1, parent AD-5
 **Given** the existing `GraphStore` port **When** the suite runs **Then** it passes against both the durable driver and the local path
 **And** callers do not branch on which driver is active
 **And** concurrent writers do not corrupt the durable store
@@ -2063,7 +2063,7 @@ As an agent,
 I want recall that matches meaning, not only tokens,
 So that I find nodes lexical overlap misses.
 
-**Type:** feature • **Effort:** M • **Deps:** S-28.1 • **FR/AD:** canopy:FR-36
+**Type:** feature • **Effort:** M • **Deps:** S-28.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-14 / canopy:FR-36
 **Given** a target with no lexical overlap **When** semantic recall runs **Then** it returns that target
 **And** the lexical path does not
 
@@ -2075,7 +2075,7 @@ As an autonomous agent,
 I want a version-pinned skill compiled from `pyforge-<station>/`,
 So that I follow how the station actually works.
 
-**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** canopy:FR-37 • canopy:AD-17
+**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-unifying-strategy CAP-15 / canopy:FR-37 • canopy:AD-17
 **Given** a station that has no skill today **When** SKF compiles from `src/shared/packages/pyforge-<station>/` **Then** an agent loads that skill and follows it on the station's core task
 **And** output is agentskills.io-compliant with provenance; `skf-export-skill` is the only write into `CLAUDE.md` / `AGENTS.md`
 **And** `conda-forge-expert` is not replaced
@@ -2086,7 +2086,7 @@ As an operator,
 I want each station addressable as a persona,
 So that an agent does not freelance against the filesystem.
 
-**Type:** feature • **Effort:** L • **Deps:** S-22.1, S-21.4, S-29.1 • **FR/AD:** canopy:FR-38 • canopy:AD-14, canopy:AD-17
+**Type:** feature • **Effort:** L • **Deps:** S-22.1, S-21.4, S-29.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-16 / canopy:FR-38 • canopy:AD-14, canopy:AD-17
 **Given** a station persona **When** it completes a station task **Then** the transcript shows only canopy:FR-13 grammar and canopy:FR-11 MCP — no direct filesystem and no ad-hoc HTTP
 **And** personas are BMAD launcher/agent skills that consult the CAP-15 content skill
 
@@ -2096,7 +2096,7 @@ As a platform operator,
 I want completeness to fail CI when a tier is missing,
 So that "done" cannot mean CLI-only.
 
-**Type:** chore • **Effort:** S • **Deps:** S-29.2 • **FR/AD:** canopy:FR-39 • canopy:AD-14
+**Type:** chore • **Effort:** S • **Deps:** S-29.2 • **FR/AD:** spec-pyforge-unifying-strategy CAP-15, CAP-16 / canopy:FR-39 • canopy:AD-14
 **Given** all eight **03** stations **When** the check runs **Then** it reports each of CLI, portal, service, skill, persona
 **And** declaring an **03** station complete with fewer than five fails the check
 **And** 01/02 fixtures (spec+script or spec+skill only) do not fail the check
@@ -2143,7 +2143,7 @@ As a platform operator,
 I want every runtime-reproducible console view to exist on Lane 1 or a portal,
 So that deletion does not drop a live surface.
 
-**Type:** feature • **Effort:** L • **Deps:** S-20.1, S-21.5 • **FR/AD:** canopy:FR-6, canopy:FR-7 • console-parity-inventory
+**Type:** feature • **Effort:** L • **Deps:** S-20.1, S-21.5 • **FR/AD:** spec-pyforge-unifying-strategy CAP-2 / canopy:FR-6, canopy:FR-7 • console-parity-inventory
 **Given** the 23-surface inventory **When** this story completes **Then** each runtime-reproducible and mixed surface has a named Canopy home
 **And** detector verdicts are a scheduled job, cached result, visible age
 **And** editorial content is CMS (Epic 20)
@@ -2155,7 +2155,7 @@ As a platform operator,
 I want the old build path gone, not unlinked,
 So that two consoles cannot become permanent.
 
-**Type:** chore • **Effort:** L • **Deps:** S-30.1 • **FR/AD:** canopy:FR-7
+**Type:** chore • **Effort:** L • **Deps:** S-30.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-2 / canopy:FR-7
 **Given** proven parity **When** this story merges **Then** the generator, its four pixi tasks, scheduled workflow trigger, and committed data blob are gone
 **And** inbound refs (docs, workflows, specs, presentations, scripts, tests — 100+ including the Charter gate) no longer 404 or point at the retired path
 **And** the Kedro-Viz tree and its workflow survive
@@ -2194,7 +2194,7 @@ steward story.
 loop = `--runner` only). Template is scaffold-only forever.
 
 ### Story 31.1: Class-keyed playbook is the operator path
-**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-suite-install-class-wiring CAP-1
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-27
 **Surface:** `steward provision --help` (or equivalent CLI pointer), playbook companion
 **Given** the six non-module suite pieces **Then** `steward provision --help` names the
 class-keyed playbook, and that playbook lists pixi path, cited native wire, and steward
@@ -2202,7 +2202,7 @@ verb/task for each class — no tribal knowledge, native commands cited from
 `install-matrix.md` never invented.
 
 ### Story 31.2: wired-or-not is class-correct
-**Type:** feature • **Effort:** M • **Deps:** S-15.1 • **FR/AD:** spec-bmad-suite-install-class-wiring CAP-2
+**Type:** feature • **Effort:** M • **Deps:** S-15.1 • **FR/AD:** spec-pyforge-steward CAP-28
 **Surface:** pipeline-truth report (parent CAP-1)
 **Given** the pipeline-truth `wired-or-not` column **Then** each of the six is judged by
 its class predicate (installer tree / runner home / plugin enabled / VS Code extension /
@@ -2210,7 +2210,7 @@ scaffold N/A), not a boolean only `--module` targets can satisfy — and templat
 never reports wired.
 
 ### Story 31.3: Fresh clone class-path is proven
-**Type:** feature • **Effort:** M • **Deps:** S-31.1 • **FR/AD:** spec-bmad-suite-install-class-wiring CAP-3
+**Type:** feature • **Effort:** M • **Deps:** S-31.1 • **FR/AD:** spec-pyforge-steward CAP-29
 **Surface:** documented/scripted fresh-clone path (CI or recorded run)
 **Given** a fresh clone **Then** method core is installed, loop is provisionable via
 `--runner`, skf skills are present via its own installer, labs plugin path is documented,
@@ -2232,7 +2232,7 @@ As a station author,
 I want one registration API and one hook-spec documentation shape,
 So that eight stations do not invent eight plugin APIs.
 
-**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** canopy:FR-43 • canopy:AD-21 • CAP-18
+**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** canopy:FR-43 • canopy:AD-21 • spec-pyforge-unifying-strategy CAP-18
 **Surface:** `pyforge-core` (shared floor; do not add a ninth package)
 **Given** a dummy plugin declared against the published API **When** the loader runs **Then** the plugin is invoked at a named before/after/around (or equivalent documented) point
 **And** a conformance check **fails** if a station package ships a parallel registration mechanism for the same class of extension
@@ -2245,7 +2245,7 @@ As a platform operator,
 I want Harness, Splunk, StorageGRID, EPLX GHA, Tachyon, and Jira as deploy-profile plugins,
 So that swapping a vendor does not fork the Golden Path.
 
-**Type:** feature • **Effort:** M • **Deps:** S-32.1 • **FR/AD:** canopy:FR-45 • canopy:AD-21
+**Type:** feature • **Effort:** M • **Deps:** S-32.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-18 / canopy:FR-45 • canopy:AD-21
 **Given** today's deploy/profile backends **When** they are extracted **Then** each registers as a default plugin on the canopy:FR-43 contract
 **And** disabling an optional vendor plugin does not fail the Golden Path Pixi task
 **And** Tachyon remains a production LLM **adapter** plugin — local/CI must not require it
@@ -2289,7 +2289,7 @@ As an autonomous agent,
 I want a steward SKF skill compiled from `pyforge-steward/` and a `bmad-agent-steward` persona,
 So that Path B uses this station's grammar and MCP instead of freelancing the filesystem.
 
-**Type:** feature • **Effort:** L • **Deps:** S-32.1, S-29.3 • **FR/AD:** canopy:FR-37, canopy:FR-38 • canopy:AD-17
+**Type:** feature • **Effort:** L • **Deps:** S-32.1, S-29.3 • **FR/AD:** spec-pyforge-unifying-strategy CAP-15, CAP-16 / canopy:FR-37, canopy:FR-38 • canopy:AD-17
 **Given** steward 29.1/29.2 proved the shape on one station **When** this story completes **Then** `.claude/skills/pyforge-steward/` exists (SKF from `src/shared/packages/pyforge-steward/`) with provenance
 **And** a BMAD persona consults that skill and uses only CAP-5 `pyforge steward …` and CAP-4 `POST /stations/steward/mcp`
 **And** `conda-forge-expert` is not replaced
@@ -2317,7 +2317,7 @@ As an operator,
 I want DuckDB to attach a fixture multi-schema Postgres read-only,
 So that Mode A answers without writing OLTP or installing `pgvector`.
 
-**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** canopy:FR-46 • canopy:AD-22
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** spec-pyforge-unifying-strategy CAP-19 / canopy:FR-46 • canopy:AD-22
 **Given** a fixture Postgres with two schemas and no `pgvector` **When** the plane attaches **Then** a federated read succeeds and a write is refused
 **And** the path is not pandas `SQLQueryDataSet`
 **And** consumer boot does not `INSTALL` extensions
@@ -2328,7 +2328,7 @@ As an operator,
 I want a named Kedro pipeline to extract heavy tables to compressed Parquet,
 So that dashboards and autonomous SQL hit the cache.
 
-**Type:** feature • **Effort:** M • **Deps:** S-34.1 • **FR/AD:** canopy:FR-47 • canopy:AD-22
+**Type:** feature • **Effort:** M • **Deps:** S-34.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-19 / canopy:FR-47 • canopy:AD-22
 **Given** the named pipeline **When** `kedro run` completes **Then** the Parquet cache exists
 **And** a scan of it does not use the OLTP writer role
 **And** refresh is not Airflow and not an `01_raw` folder tree
@@ -2339,7 +2339,7 @@ As an agent,
 I want HNSW ranking on the plane writer,
 So that RAG does not use a second `.duckdb` or an in-memory default.
 
-**Type:** feature • **Effort:** L • **Deps:** S-34.2 • **FR/AD:** canopy:FR-48, FR-27 • canopy:AD-22
+**Type:** feature • **Effort:** L • **Deps:** S-34.2 • **FR/AD:** spec-pyforge-unifying-strategy CAP-19 / canopy:FR-48, FR-27 • canopy:AD-22
 **Given** `REAL[]` (or equivalent) rows **When** the extract runs **Then** `FLOAT[N]` + `vss` nearest-neighbor returns the planted row
 **And** the writer is the CAP-19 plane (FR-27)
 **And** the consumer only `LOAD`s `vss`
@@ -2351,7 +2351,7 @@ As a platform operator,
 I want DB-GPT and Langflow estate reads pointed at the plane,
 So that hallucinated SQL cannot hit the system of record.
 
-**Type:** feature • **Effort:** M • **Deps:** S-34.2 • **FR/AD:** canopy:FR-49 • canopy:AD-22
+**Type:** feature • **Effort:** M • **Deps:** S-34.2 • **FR/AD:** spec-pyforge-unifying-strategy CAP-19 / canopy:FR-49 • canopy:AD-22
 **Given** platform Langflow / DB-GPT config **When** the gate runs **Then** the estate read DSN is the plane (cache / views / optional HTTP face)
 **And** an OLTP DSN for Text-to-SQL fails the test
 
@@ -2361,7 +2361,7 @@ As a teammate,
 I want `scribe recall --semantic` to rank on the plane behind the store port,
 So that canopy:FR-36 survives the rebuild.
 
-**Type:** feature • **Effort:** L • **Deps:** S-34.3 • **FR/AD:** canopy:FR-50, canopy:FR-36 • canopy:AD-22
+**Type:** feature • **Effort:** L • **Deps:** S-34.3 • **FR/AD:** spec-pyforge-unifying-strategy CAP-19 / canopy:FR-50, canopy:FR-36 • canopy:AD-22
 **Given** the durable driver **When** semantic recall runs **Then** a no-overlap query still hits
 **And** callers do not `isinstance` the driver
 **And** lexical recall is unchanged
@@ -2379,7 +2379,7 @@ As a platform operator,
 I want the Helm chart and production check to refuse a cluster without mcp-host,
 So that host MCP cannot silently degrade to the ImportError skip on CRC.
 
-**Type:** feature • **Effort:** S • **Deps:** none • **FR/AD:** spec-mcp-era-isolation CAP-4
+**Type:** feature • **Effort:** S • **Deps:** none • **FR/AD:** spec-pyforge-steward CAP-70
 **Given** `helm template` with an empty `mcpHost.image.repository` **When** it runs **Then** it fails
 **And** there is no `mcpHost.enabled` knob
 **And** production/cluster `manage.py check` errors if `MCP_HOST_SIDECAR_BASE_URL` is unset
@@ -2397,7 +2397,7 @@ As an operator,
 I want BSL to query the named estate Parquet cache,
 So that Lane 3 dashboards do not hit OLTP.
 
-**Type:** feature • **Effort:** S • **Deps:** S-34.2 • **FR/AD:** canopy:FR-47 • canopy:AD-22
+**Type:** feature • **Effort:** S • **Deps:** S-34.2 • **FR/AD:** spec-pyforge-unifying-strategy CAP-19 / canopy:FR-47 • canopy:AD-22
 **Given** the 34.2 Parquet cache **When** the BSL model queries it **Then** planted rows return
 **And** the loader does not use an OLTP writer role
 
@@ -2407,7 +2407,7 @@ As an operator,
 I want a Lane 3 page for the estate Parquet cache,
 So that the BSL loader is actually on a board.
 
-**Type:** feature • **Effort:** S • **Deps:** S-36.1 • **FR/AD:** canopy:FR-47 • canopy:AD-22
+**Type:** feature • **Effort:** S • **Deps:** S-36.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-19 / canopy:FR-47 • canopy:AD-22
 **Given** `build_dashboard` **When** it runs **Then** page `estate-cache` exists with a stable id and title
 **And** a planted cache query matches an independent BSL model
 **And** Django does not import Vizro
@@ -2423,7 +2423,7 @@ As a platform operator,
 I want the five-tier check to treat the roster as complete,
 So that a missing CLI, portal, service, skill, or persona fails CI.
 
-**Type:** chore • **Effort:** S • **Deps:** S-29.3 • **FR/AD:** canopy:FR-39 • canopy:AD-14
+**Type:** chore • **Effort:** S • **Deps:** S-29.3 • **FR/AD:** spec-pyforge-unifying-strategy CAP-15, CAP-16 / canopy:FR-39 • canopy:AD-14
 **Given** the eight roster stations **When** the check runs **Then** every cell is present
 **And** mason's skill cell is `conda-forge-expert` (no `pyforge-mason/` skill)
 **And** `DECLARED_COMPLETE` is the full roster
@@ -2443,7 +2443,7 @@ I want a stdio process that speaks MCP 1.x-legal traffic to a FastMCP 3 / mcp 1.
 So that a modern client (no handshake, `_meta` on every call) can call a factory tool
 without either SDK being loaded in the same interpreter.
 
-**Type:** feature • **Effort:** S • **Deps:** none • **FR/AD:** spec-mcp-factory-stdio-translator CAP-1, CAP-2
+**Type:** feature • **Effort:** S • **Deps:** none • **FR/AD:** spec-pyforge-steward CAP-71, CAP-72
 **Given** a modern client with no handshake **When** it calls a wrapped child **Then** the
 child sees a fabricated `initialize` handshake and every `_meta` key is stripped before
 the child sees the request
@@ -2472,7 +2472,7 @@ As a factory operator,
 I want a tracked ``recipes/bmad-suite/suite-members.yaml`` catalog,
 So that doctor, steward pipeline-truth, and the metapackage share one population.
 
-**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** suite:CAP-1
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-40
 **Status:** done — shipped 2026-09-01 (``e177de648e``)
 
 ### Story 39.2: Metapackage recipe
@@ -2481,7 +2481,7 @@ As a factory operator,
 I want a ``noarch: generic`` ``bmad-suite`` metapackage pinning every active member,
 So that one channel install pulls the whole suite.
 
-**Type:** feature • **Effort:** M • **Deps:** S-39.1 • **FR/AD:** suite:CAP-2
+**Type:** feature • **Effort:** M • **Deps:** S-39.1 • **FR/AD:** spec-pyforge-steward CAP-41
 **Status:** done — shipped 2026-09-01
 
 ### Story 39.3: Generator and batch build
@@ -2490,7 +2490,7 @@ As a factory operator,
 I want ``generate-bmad-suite`` / ``build-bmad-suite`` to refresh pins from registry class,
 So that metapackage bumps are mechanical after member upstream moves.
 
-**Type:** feature • **Effort:** M • **Deps:** S-39.2 • **FR/AD:** suite:CAP-3
+**Type:** feature • **Effort:** M • **Deps:** S-39.2 • **FR/AD:** spec-pyforge-steward CAP-42
 **Status:** done — shipped 2026-09-01
 
 ### Story 39.4: Optional pixi feature bundle (suite:CAP-4)
@@ -2499,7 +2499,7 @@ As a greenfield operator,
 I want ``feature.bmad-suite-full`` to depend on ``bmad-suite`` instead of 13 pins,
 So that pixi.toml stays thin for full-suite installs.
 
-**Type:** feature • **Effort:** S • **Deps:** S-39.3 • **FR/AD:** suite:CAP-4
+**Type:** feature • **Effort:** S • **Deps:** S-39.3 • **FR/AD:** spec-pyforge-steward CAP-43
 **Status:** done
 
 ## Epic 40: Red-team CRITICALs — verified mint, durable broker (spec-pyforge-unifying-strategy CAP-6 / CAP-11)
@@ -2517,7 +2517,7 @@ As a platform operator,
 I want `/assertion/mint/` to verify the presented IdP bearer (signature via the configured JWKS, `iss`, `aud`, `exp`) before signing a station assertion,
 So that nobody can mint a valid assertion for any subject and any roles by base64-encoding a JSON payload.
 
-**Type:** fix • **Effort:** M • **Deps:** none • **FR/AD:** CAP-6, CAP-12, canopy:FR-31 • canopy:AD-7, canopy:AD-15 • RFC-3 (revised) • red-team X-1 / R-1
+**Type:** fix • **Effort:** M • **Deps:** none • **FR/AD:** spec-pyforge-unifying-strategy CAP-6, CAP-12, canopy:FR-31 • canopy:AD-7, canopy:AD-15 • RFC-3 (revised) • red-team X-1 / R-1
 **Given** the existing fake-`.sig` bearer fixture **When** it is POSTed to `/assertion/mint/` **Then** the response is 401 and nothing is minted
 **And** wrong key / `alg=none` / HS256 / wrong `iss` / wrong `aud` / expired / missing claims are refused
 **And** an unknown `kid` refreshes the JWKS once, never twice in the cache window
@@ -2532,7 +2532,7 @@ As a platform operator,
 I want `redis-broker` on a PVC with AOF, a required `maxmemory` below a required memory limit, no stored Celery results, and TTL on applied-id keys,
 So that a broker restart loses no queued task, stream entry, pending entry, DLQ entry or idempotency key, and growth back-pressures instead of OOM-killing the pod.
 
-**Type:** fix • **Effort:** M • **Deps:** none • **FR/AD:** CAP-8, CAP-11, canopy:FR-30 • canopy:AD-8, canopy:AD-10, canopy:AD-12, canopy:AD-15 • RFC-2, RFC-4 • red-team S-1 / A-3 / R-2 • supersedes sibling `spec-local-ocp-hybrid-environment` CAP-3 for the broker role only
+**Type:** fix • **Effort:** M • **Deps:** none • **FR/AD:** spec-pyforge-unifying-strategy CAP-8, CAP-11, canopy:FR-30 • canopy:AD-8, canopy:AD-10, canopy:AD-12, canopy:AD-15 • RFC-2, RFC-4 • red-team S-1 / A-3 / R-2 • supersedes sibling `spec-pyforge-steward` CAP-64 for the broker role only
 **Given** `helm template` **When** rendered **Then** the broker mounts a PVC at `/data` with `--appendonly yes --appendfsync everysec --maxmemory <v> --maxmemory-policy noeviction`, and the cache is unchanged (`emptyDir`, `allkeys-lru`)
 **And** an empty `redis.broker.maxmemory`, an empty broker memory limit, or `maxmemory` ≥ the limit fails the render naming the values path
 **And** `CELERY_TASK_IGNORE_RESULT` is `True` and no `celery-task-meta-*` key exists after a supervised run completes
@@ -2552,7 +2552,7 @@ As a platform operator,
 I want a written DR contract and a scheduled PostgreSQL base backup with WAL archiving plus a restore drill,
 So that a lost volume is a recoverable incident with a known RPO/RTO, not the end of the estate.
 
-**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** CAP-10, canopy:FR-29 • canopy:AD-1 (parent), canopy:AD-12 • BS-8 • red-team B-2 / S-8 / R-3
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** spec-pyforge-unifying-strategy CAP-10, canopy:FR-29 • canopy:AD-1 (parent), canopy:AD-12 • BS-8 • red-team B-2 / S-8 / R-3
 **Given** the story spec `spec-41-1-dr-contract-and-postgresql-backup.md` **When** its acceptance criteria run **Then** they pass
 **And** Given `deploy/DR.md`, when read, then every store (PostgreSQL, redis-broker, redis-cache, media RWX, DB-GPT SQLite PVC, DuckDB cache) has RPO, RTO, mechanism, owner and drill cadence, and the BS-8 reconciliation order is written down.
 
@@ -2562,7 +2562,7 @@ As a platform operator,
 I want the `.duckdb` file confined to one process on RWO storage with Parquet as the shared artifact,
 So that multi-pod readers cannot corrupt or lock the query plane.
 
-**Type:** fix • **Effort:** M • **Deps:** none • **FR/AD:** CAP-19, CAP-10, canopy:FR-27, canopy:FR-47 • canopy:AD-22 • BS-5 • red-team S-3 / R-11
+**Type:** fix • **Effort:** M • **Deps:** none • **FR/AD:** spec-pyforge-unifying-strategy CAP-19, CAP-10, canopy:FR-27, canopy:FR-47 • canopy:AD-22 • BS-5 • red-team S-3 / R-11
 **Given** the story spec `spec-41-2-query-plane-process-boundary.md` **When** its acceptance criteria run **Then** they pass
 **And** Given the estate source, when the policy test runs, then every `duckdb.connect(` outside the single declared writer module passes `read_only=True` or `:memory:`; the writer module is named once in `pyforge.atlas` and the test fails if a second appears.
 
@@ -2572,7 +2572,7 @@ As a platform operator,
 I want Scribe's `CREATE EXTENSION` / schema / table DDL moved into a scribe-owned Liquibase changeset,
 So that the DML-only app role holds in production and the auditor control is not quietly widened.
 
-**Type:** fix • **Effort:** S • **Deps:** none • **FR/AD:** CAP-9, CAP-14, canopy:FR-22, canopy:FR-23 • canopy:AD-9 • red-team S-4 / B-1 / R-12
+**Type:** fix • **Effort:** S • **Deps:** none • **FR/AD:** spec-pyforge-unifying-strategy CAP-9, CAP-14, canopy:FR-22, canopy:FR-23 • canopy:AD-9 • red-team S-4 / B-1 / R-12
 **Given** the story spec `spec-41-3-scribe-ddl-moves-into-the-changelog.md` **When** its acceptance criteria run **Then** they pass
 **And** Given `platform_app`, when Scribe's PostgreSQL driver initialises, then it executes no DDL; a test with a DDL-revoked role passes and the relation-absent case raises a named error.
 
@@ -2598,7 +2598,7 @@ As a platform operator,
 I want the assertion verified on every MCP JSON-RPC method before routing, a streaming proxy, and `mcp-host` reachable only from web pods,
 So that no tool is reachable anonymously and long tool calls do not 502 at five seconds.
 
-**Type:** fix • **Effort:** M • **Deps:** S-40.1 • **FR/AD:** CAP-4, CAP-6 • canopy:AD-5, canopy:AD-7 • BS-2 (revised) • red-team T-4 / T-5 / X-5 / R-7
+**Type:** fix • **Effort:** M • **Deps:** S-40.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-4, CAP-6 • canopy:AD-5, canopy:AD-7 • BS-2 (revised) • red-team T-4 / T-5 / X-5 / R-7
 **Given** the story spec `spec-42-1-mcp-transport-authorization.md` **When** its acceptance criteria run **Then** they pass
 **And** Given `POST /stations/atlas/mcp` with no assertion, when any JSON-RPC method is sent, then 401; with a valid assertion for `mcp:warden`, then 403 on the atlas route.
 
@@ -2608,7 +2608,7 @@ As a platform operator,
 I want per-subject token buckets on the MCP route and `start`, queue and concurrent-run ceilings, and a revoke-by-subject duty,
 So that a looping agent is throttled to 429 instead of taking the platform down.
 
-**Type:** feature • **Effort:** M • **Deps:** S-40.2 • **FR/AD:** CAP-4, CAP-11, CAP-17 • canopy:AD-10, canopy:AD-12 • red-team A-6 / B-7 / R-8
+**Type:** feature • **Effort:** M • **Deps:** S-40.2 • **FR/AD:** spec-pyforge-unifying-strategy CAP-4, CAP-11, CAP-17 • canopy:AD-10, canopy:AD-12 • red-team A-6 / B-7 / R-8
 **Given** the story spec `spec-42-2-agent-rate-limits-and-run-bounds.md` **When** its acceptance criteria run **Then** they pass
 **And** Given one `sub` issuing more than the configured rate, when it calls the MCP route, then 429 with `Retry-After` and a structured log; other subjects are unaffected.
 
@@ -2618,7 +2618,7 @@ As a platform operator,
 I want attempt-counted retries with backoff, DLQ for well-formed failing events, a deployed consumer per station, and `traceparent` on the envelope,
 So that Warden → Doctor → Mason actually fires, poison events quarantine, and a chain is traceable end to end.
 
-**Type:** fix • **Effort:** M • **Deps:** S-40.2 • **FR/AD:** CAP-8, canopy:FR-20 • canopy:AD-8 • RFC-4 • red-team A-1 / A-2 / A-4 / A-5 / R-9
+**Type:** fix • **Effort:** M • **Deps:** S-40.2 • **FR/AD:** spec-pyforge-unifying-strategy CAP-8, canopy:FR-20 • canopy:AD-8 • RFC-4 • red-team A-1 / A-2 / A-4 / A-5 / R-9
 **Given** the story spec `spec-42-3-bus-delivery-semantics-and-a-deployed-consumer.md` **When** its acceptance criteria run **Then** they pass
 **And** Given a well-formed event whose handler raises N times, when consumed, then it is moved to the DLQ with the last error and ACKed; the CAP-8 success clause test (poison lands in DLQ instead of retrying forever) exists and fails without the change.
 
@@ -2628,7 +2628,7 @@ As a platform operator,
 I want `acks_late`, per-station queues, and a dedicated `builds` pool with an hours-scale limit,
 So that a killed worker re-runs its task and a rattler-build is not cut off at five minutes.
 
-**Type:** fix • **Effort:** M • **Deps:** S-40.2 • **FR/AD:** CAP-11, CAP-17 • canopy:AD-10, canopy:AD-12 • red-team S-2 / T-6 / R-10
+**Type:** fix • **Effort:** M • **Deps:** S-40.2 • **FR/AD:** spec-pyforge-unifying-strategy CAP-11, CAP-17 • canopy:AD-10, canopy:AD-12 • red-team S-2 / T-6 / R-10
 **Given** the story spec `spec-42-4-celery-hardening-and-the-builds-pool.md` **When** its acceptance criteria run **Then** they pass
 **And** Given a worker killed mid-task, when a replacement starts, then the task re-runs exactly once (acks_late + reject_on_worker_lost) and the supervisor row reaches a terminal state.
 
@@ -2638,7 +2638,7 @@ As a platform operator,
 I want prefixed capability, tenant and admin roles with bare station names refused, and `tenant` on runs and events,
 So that an IdP group that merely shares a station name cannot grant access.
 
-**Type:** fix • **Effort:** M • **Deps:** S-40.1 • **FR/AD:** CAP-7, CAP-12, canopy:FR-3, canopy:FR-31 • canopy:AD-15, canopy:AD-20 • red-team X-3 / B-6 / R-13
+**Type:** fix • **Effort:** M • **Deps:** S-40.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-7, CAP-12, canopy:FR-3, canopy:FR-31 • canopy:AD-15, canopy:AD-20 • red-team X-3 / B-6 / R-13
 **Given** the story spec `spec-42-5-role-namespaces-and-the-tenant-claim.md` **When** its acceptance criteria run **Then** they pass
 **And** Given a group `atlas` (bare), when reachability is computed, then it is refused unless `DJANGO_PYFORGE_LEGACY_BARE_ROLES=1`, which logs a deprecation.
 
@@ -2648,7 +2648,7 @@ As a platform developer,
 I want the real-Redis retry test to accept the backoff Redis actually enforces,
 So that a correct event fabric does not fail the suite under CPU load.
 
-**Type:** fix • **Effort:** S • **Deps:** S-42.3 • **FR/AD:** CAP-8, canopy:FR-20 • canopy:AD-8
+**Type:** fix • **Effort:** S • **Deps:** S-42.3 • **FR/AD:** spec-pyforge-unifying-strategy CAP-8, canopy:FR-20 • canopy:AD-8
 **Given** `test_real_redis_retry_backoff_dlq_and_harvest`, which measures handler-call gaps on the client's monotonic clock while the fabric waits on Redis's whole-millisecond `XPENDING` idle time **When** the suite runs under CPU contention **Then** a 100 ms / 200 ms backoff Redis correctly enforced passes (5 ms slack)
 **And** the assertions still distinguish the 100 ms and 200 ms steps, and the fabric's backoff code is unchanged
 
@@ -2674,7 +2674,7 @@ As a platform operator,
 I want `/stations/<name>/api/v<N>/` routes, OpenAPI per station, `pyforge.core.client`, and a kit contract test,
 So that portals, the CLI and agents share one versioned contract and `/api/v1` no longer lands on Langflow.
 
-**Type:** feature • **Effort:** L • **Deps:** none • **FR/AD:** CAP-6, CAP-10, canopy:FR-28 • canopy:AD-7 • BS-7 • red-team T-2 / B-3 / R-5
+**Type:** feature • **Effort:** L • **Deps:** none • **FR/AD:** spec-pyforge-unifying-strategy CAP-6, CAP-10, canopy:FR-28 • canopy:AD-7 • BS-7 • red-team T-2 / B-3 / R-5
 **Given** the story spec `spec-43-2-station-api-contract.md` **When** its acceptance criteria run **Then** they pass
 **And** Given `/api/v1/anything`, when requested, then it is no longer Langflow; `/langflow/api/v1/...` still is, with the same prefix-preserving redirect behaviour.
 
@@ -2684,7 +2684,7 @@ As a platform operator,
 I want co-located portals reaching station code in-process and over HTTP only when `STATION_REMOTE=1`,
 So that a portal view never awaits its own gunicorn pool while holding a transaction.
 
-**Type:** fix • **Effort:** M • **Deps:** S-43.2 • **FR/AD:** CAP-6, CAP-10, canopy:FR-26 • canopy:AD-7, canopy:AD-10 • red-team T-3 / R-6
+**Type:** fix • **Effort:** M • **Deps:** S-43.2 • **FR/AD:** spec-pyforge-unifying-strategy CAP-6, CAP-10, canopy:FR-26 • canopy:AD-7, canopy:AD-10 • red-team T-3 / R-6
 **Given** the story spec `spec-43-3-in-process-station-port-no-self-call.md` **When** its acceptance criteria run **Then** they pass
 **And** Given a portal view in the default profile, when it needs station data, then no HTTP request to the host's own address is made (test asserts zero loopback calls).
 
@@ -3009,7 +3009,7 @@ As a fleet operator,
 I want `bmad-eval-quality` packaged, enrolled and pinned like every other suite member,
 So that every consumer of the suite gets the 0.2.0-line binary that has `score`, and the fourteenth member costs one manifest line, not a parallel list.
 
-**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** spec-bmad-eval-quality CAP-1 • `packaging.md` • CFE Rule 1 + Rule 2 • overrides spec-bmad-suite-channel-product § Non-goals for this one member (operator 2026-09-05)
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** spec-pyforge-steward CAP-7 • `packaging.md` • CFE Rule 1 + Rule 2 • overrides spec-bmad-suite-channel-product § Non-goals for this one member (operator 2026-09-05)
 **Given** `recipes/bmad-eval-quality/recipe.yaml` commit-pinned `0.2.0.dev0 @ 3172162fbdc7c4bb70ed11c1367dc3e433797535` (sha256 `a8b1ddfb…`), built through `conda-forge-expert` in the `bmad-method` npm-CLI class **When** `recipe-build` runs **Then** it is green and `eval-quality --version` prints `0.2.0`, `--help` lists `score`, and `compile` on a shipped corpus contract exits 0
 **And** enrolment is ONE line in `recipes/bmad-suite/suite-members.yaml`; `generate-bmad-suite` regenerates the metapackage run deps and CalVer (the same pass retires `bmad-method-wds-expansion` — deprecated in the 6.12.0 core module registry, absorbed by `bmad-ux` — so the suite stays at 13 active members)
 **And** `pixi.toml` pins `bmad-eval-quality = ">=0.2.0.dev0"`, `environment.yaml` is regenerated, `tests/packaging/test_bmad_suite_full_feature.py`'s baseline set, steward's `suite.py` `SuitePackageDef` + pipeline-truth fixture, `install-matrix.md`, `install-class-playbook.md` and `library-llms-full.md` each carry the member; `llms-full-check` is green; the PR carries `maintenance`
@@ -3021,7 +3021,7 @@ As a fleet operator,
 I want one twin-run contract that runs the `edge-case-hunter` review layer against a clean diff and a diff with one planted boundary flip at `pkg/discount.py:17`,
 So that the last line of defence under `gate_mode = "none"` has a catch rate the fleet can read instead of a feeling.
 
-**Type:** feature • **Effort:** L • **Deps:** S-45.1 • **FR/AD:** spec-bmad-eval-quality CAP-2 • `pilot-contract.md` • operator flip required (`blocked`)
+**Type:** feature • **Effort:** L • **Deps:** S-45.1 • **FR/AD:** spec-pyforge-steward CAP-8 • `pilot-contract.md` • operator flip required (`blocked`)
 **Given** `evals/review-catches-planted-defect/` with the fixture package, `arms/clean.diff`, `arms/mutated.diff`, the contract (interface `review-api`, operation `review-diff`, kind `api`, 21 required fields modelled on `corpus/dev/contracts/satisfied-declarations.json`), probes, scoring policy, isolation manifest, evaluator configuration and a findings JSON schema **When** `eval-quality-smoke` runs **Then** the shipped corpus compiles and the pilot contract compiles
 **And** the ~150-line `subprocess`-only driver runs the layer headlessly (`claude -p --output-format json --json-schema … --max-budget-usd 2 --no-session-persistence`, model pinned to the station's `[adapter.review].model`), maps exit code + parsed findings to an observation and emits the sealed run record; the one strong oracle is `covers-by-key` over `referenceSets.planted-defects` (`["file","line"]`) — "the review ran" never passes alone
 **And** a one-trial `eval-quality-review-twin-run` preflights both arms; the mutated arm's review cites `pkg/discount.py:17` and the clean arm does not; `-- --trials 3` yields a policy-comparable strength vector with a catch rate; `eval-quality-review-replay` replays a sealed record
@@ -3043,48 +3043,48 @@ their own stories (marshal 31.x, doctor 20.x, warden 11.x, herald 18.x, scribe 7
 mason 14.1) and are named in each story's acceptance, never restated here.
 
 ### Story 46.1: The adoption register governs wiring
-**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-suite-lifecycle CAP-1 • AD-6 • PRD suite:FR-1
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-30 • AD-6 • PRD suite:FR-1
 **Surface:** `specs/spec-bmad-suite-lifecycle/adoption-register.md`, memlogs of `spec-bmad-suite-channel-product` / `spec-bmad-611-era-alignment`, `bmad-agent-steward` skill (routing-note home decision)
 **Given** the thirteen-row register **When** any member's verdict, wielder or provisioning path changes **Then** the row changes first and `steward suite pipeline-truth`'s `wired` column agrees with the register for 13/13 (disagreement is a finding on the register)
 **And** the channel-product "never wire-everything" constraint and the one-front-door row-6 triage are recorded as superseded/closed by memlog (landed 2026-09-06 in the planning PR); this story verifies — not decides — the spine's settled calls: routing home = the persona skill with one AGENTS pointer line (AD-2), studio root = `$PYFORGE_STUDIO_ROOT` defaulting to `~/pyforge-studio/` (AD-3), provisioned-module roster = `_bmad/custom/config.toml [modules.<code>]` (AD-9)
 **And** it ships the AD-2 meta-test: every register § 2 skill dir is named by exactly one `bmad-agent-<station>` persona skill and by CLAUDE.md never; the register's status cells hold story keys only (AD-6)
 
 ### Story 46.2: utility-skills is provisioned and its ten skills have wielders
-**Type:** feature • **Effort:** S • **Deps:** S-46.1 • **FR/AD:** suite:CAP-2, suite:CAP-3 • AD-1, AD-2 • PRD suite:FR-2/suite:FR-3
+**Type:** feature • **Effort:** S • **Deps:** S-46.1 • **FR/AD:** spec-pyforge-steward CAP-31, CAP-32 • AD-1, AD-2 • PRD suite:FR-2/suite:FR-3
 **Surface:** `steward provision --module utility-skills` (existing backend), `.claude/skills/bmad-os-*`, `_bmad/config.yaml` manifest section, `bmad-agent-steward` (routes `bmad-os-skill-to-bundle`)
 **Given** `bmad-utility-skills` 2.0.0 in the pixi env **When** `steward provision --module utility-skills --json` runs **Then** ten `bmad-os-*` dirs land, `--list-modules` reports the module installed, the retired-ID guard and integrity meta-tests stay green, and `DW-FU-15-3-4` (the `_CIS_SKILL_NAMES`-style allowlist unasserted) gains a live-tree assertion for this module
 **And** provision's roster writer moves from `_bmad/config.yaml` (a file 6.12 does not ship) to `_bmad/custom/config.toml [modules.utility-skills]` carrying `provisioned_by`, `installer`, `skills` and the module's `module.yaml` answers at the installer's key paths (AD-9); `--list-modules` reads that roster; the suite:CAP-8 pre-flight scan compares conda-module skills against `share/bmad-utility-skills/skills` (AD-9)
 **And** the register § 2 rows for the ten skills carry their story keys: herald 18.2 (`changelog`, `changelog-social`), doctor 20.4 (`root-cause-analysis`), warden 11.1 (`review-pr`, `findings-triage`), scribe 7.1 (`diataxis`, `audit-file-refs`, `editorial-review-translation`), marshal 31.6 (`gh-triage`), steward (`skill-to-bundle`, this story)
 
 ### Story 46.3: TEA is provisioned and `tea-test-review` is a pixi task
-**Type:** feature • **Effort:** S • **Deps:** S-46.1 • **FR/AD:** suite:CAP-2, suite:CAP-4 • AD-1, AD-4 • PRD suite:FR-4
+**Type:** feature • **Effort:** S • **Deps:** S-46.1 • **FR/AD:** spec-pyforge-steward CAP-31, CAP-33 • AD-1, AD-4 • PRD suite:FR-4
 **Surface:** `steward provision --module tea` (existing backend), `.claude/skills/bmad-testarch-*`, `pixi.toml` (one task `tea-test-review`, feature `local-recipes`), `environment.yaml`
 **Given** TEA 1.24.0 in the pixi env **When** `steward provision --module tea --json` runs **Then** the nine `bmad-testarch-*` workflows and the Murat agent land, the AD-9 roster gains `[modules.tea]` with TEA's `module.yaml` answers — `test_artifacts` (84 references) pointed at each station's `planning-artifacts/` per its `.bmad-config.toml` — so `render_skill.py` renders `bmad-testarch-test-design` on the first try (the acceptance test), `--list-modules` reports TEA installed, and a pixi task `tea-test-review` wraps `tea-test-review --base origin/main --min-score <N>` taking `N` as an argument (default 80; marshal 31.3 supplies the calibrated value — AD-4 argument/value split)
 **And** the task is NOT a member of `detectors` / `detectors-ci`; Warden's gate exit code is unchanged by it (AD-4); the six blanket-glob specs governing `pixi.toml` each get a memlog line and a scoped `spec_surface_check.py --write-baseline --spec`
 **And** the marshal-side migration (31.1–31.3) and the warden advisory (11.2) depend on this story, not the reverse
 
 ### Story 46.4: bmad-builder is provisioned beside skf, with the cleanup-legacy guard proven
-**Type:** feature • **Effort:** S • **Deps:** S-46.1 • **FR/AD:** suite:CAP-2 • AD-1 • PRD suite:FR-2 • addendum § Rejected alternatives
+**Type:** feature • **Effort:** S • **Deps:** S-46.1 • **FR/AD:** spec-pyforge-steward CAP-31 • AD-1 • PRD suite:FR-2 • addendum § Rejected alternatives
 **Surface:** `steward provision --module bmb` (existing `SetupSkillBackend`), `.claude/skills/bmad-bmb-setup` + the four builder skills, `provision.py`, `tests/unit/test_provision*.py`, `bmad-agent-steward` (routing)
 **Given** `bmad-builder` 2.2.2 in the pixi env and the existing `SetupSkillBackend` (which drives `bmad-bmb-setup`'s config merge but copies no skills — adversarial review F-5) **When** `steward provision --module bmb --json` runs with the backend extended to copy `share/bmad-builder/skills/*` **Then** `bmad-bmb-setup`, `bmad-agent-builder`, `bmad-workflow-builder`, `bmad-module-builder`, `bmad-eval-runner` land, the wire-time skill-name collision check passes against the sixteen `skf-*` dirs, and `_bmad/config.yaml` gains the `bmb` section
 **And** a unit test proves the backend never passes `--legacy-dir` and never invokes `cleanup-legacy.py` (it would `rmtree` this repo's `_bmad/core/config.yaml`), so the hazard is held by a test, not a comment
 **And** `bmad-agent-steward` routes persona/workflow authoring to the builder skills and domain-skill compilation to `skf-*` — two pipelines, one register row each
 
 ### Story 46.5: labs-skills arrive by name and by consent
-**Type:** feature • **Effort:** S • **Deps:** S-46.1 • **FR/AD:** suite:CAP-6 • AD-1, AD-6 • PRD suite:FR-6
+**Type:** feature • **Effort:** S • **Deps:** S-46.1 • **FR/AD:** spec-pyforge-steward CAP-35 • AD-1, AD-6 • PRD suite:FR-6
 **Surface:** `steward provision --plugin labs --skill <name>` (new: the one wrapped writer for the plugin-path class, AD-1 — copies the named skill from the conda member's share tree pinned to the recipe's commit, or calls `npx skills add` pinned to that commit; never both), `.claude/skills/{mcp-builder,slides-generator,multi-repo-git-ops,release-please}`, the AD-9 roster (`[modules.labs]` listing each installed skill), `adoption-register.md` § 2, `bmad-agent-steward` (routes `release-please`), one meta-test asserting no other labs skill is present
 **Given** the operator's consent list of 2026-09-06 (exactly four skills) **When** each is installed by name through the wrapper **Then** the four dirs exist, the register's provisioning-path cell equals the wrapper invocation, each has a register row naming its wielder (atlas 24.1, herald 18.3, marshal 31.6, steward), and a meta-test reds any additional `bmad-labs` skill dir
 **And** the install-class playbook row for `bmad-labs-skills` records the consent list and the by-name command as the documented native path
 
 ### Story 46.6: Herald's manticore studio has a root and a proven native path
-**Type:** feature • **Effort:** M • **Deps:** S-46.1 • **FR/AD:** suite:CAP-5 • AD-3 • PRD suite:FR-5 • Spec open question 1 (studio root)
+**Type:** feature • **Effort:** M • **Deps:** S-46.1 • **FR/AD:** spec-pyforge-steward CAP-34 • AD-3 • PRD suite:FR-5 • Spec open question 1 (studio root)
 **Surface:** `install-class-playbook.md` (manticore row → studio path), `.gitignore` (studio artifacts if in-repo), `adoption-register.md` row 9 (studio path cell), a steward doc `docs/reference/manticore-studio.md` (or the playbook section) with the exact `--custom-source` procedure
 **Given** the studio root declared once per machine by `PYFORGE_STUDIO_ROOT` (default `~/pyforge-studio/`, AD-3 — the register cell and herald's CLI cite it, never restate it) **When** the native path `npx bmad-method install --custom-source https://github.com/bmad-code-org/bmad-manticore` is run once in that root with `mc-setup` writing `[modules.manticore]` into the studio's own `_bmad/custom/config.toml` **Then** the fifteen `mc-*` skills exist in the studio, this repo's `_bmad/` and `_bmad-output/` are byte-identical before and after (a checksum recorded in the story), and the register row carries the root
 **And** the prerequisites (uv, ffmpeg, node, git) are asserted by a `steward provision --module manticore --dry-run`-style check or documented as the studio's own check; Herald's first render is herald 18.1, not this story
 **And** the stale `[modules.manticore]` block in the gitignored `_bmad/custom/config.user.toml` is removed; pipeline-truth's manticore probe reads the declaration and the studio's `mc-*` census (AD-6); a `--studio <dir>` flag on `steward provision --module manticore` is minted only if this native path proves clumsy (spine Deferred)
 
 ### Story 46.7: skf is pinned to `v2.1.0` and suite:CAP-7 is exercised live
-**Type:** chore • **Effort:** XS • **Deps:** — • **FR/AD:** spec-bmad-method-core-upgrade CAP-7 (+ answered Q3/Q5) • spec-bmad-suite-lifecycle CAP-2
+**Type:** chore • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-15 (+ answered Q3/Q5) • spec-pyforge-steward CAP-31
 **Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/data/bmad_core_releases/6.12.0.yaml` (`custom_modules[skf].pin`), `tests/unit/test_upgrade_apply.py` (pin argv), core-upgrade memlog
 **Given** the 2026-09-06 verification (npm 2.1.0 tarball `src/` == GitHub tag `v2.1.0`, 337 files, `diff -rq` empty) **When** the catalog's `custom_modules` entry for skf reads `pin: v2.1.0` **Then** the apply argv carries `--pin skf=v2.1.0`, the unit test asserts it, and the next live apply (Session 2 step 9, the `--no-shims` retirement) exercises suite:CAP-7's restore → own-installer → verify path against the pinned source
 **And** skf stays registered as a bmad-method custom module (`bmad-help` routing for fifteen skills); the install-class playbook row is unchanged (own-installer)
@@ -3095,7 +3095,7 @@ same day exercised suite:CAP-7 for real: skf own installer exit 0, 16/16 skill d
 restored.
 
 ### Story 46.8: CIS is re-provisioned to the packaged revision
-**Type:** chore • **Effort:** XS • **Deps:** — • **FR/AD:** suite:CAP-2 • AD-1 • customization-inventory C11
+**Type:** chore • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-31 • AD-1 • customization-inventory C11
 **Surface:** `.claude/skills/bmad-cis-*/SKILL.md` (10 files), `steward provision --module cis` (idempotent re-provision)
 **Given** the packaged `bmad-creative-intelligence-suite` 0.3.2 passes `--project-root {project-root}` on every `resolve_customization` call and the installed copies do not (15 lines across 10 files) **When** `PATH="$PWD/.pixi/envs/local-recipes/bin:$PATH" pixi run -e pyforge-steward steward provision --module cis --json` runs **Then** `git diff --stat -- '.claude/skills/bmad-cis-*'` shows exactly those 10 files / 15 lines, nothing else moves, and the retired-ID guard stays green
 **And** atlas `DW-FU-20-4-3` (the `{{project_name}}` placeholder in `bmad-cis-design-thinking/template.md`) is re-checked against the refreshed copy and closed or re-verified in the atlas ledger
@@ -3105,14 +3105,14 @@ stayed green. `DW-FU-20-4-3` re-verified still genuinely open (unrelated upstrea
 bug), recorded with dated evidence in the atlas ledger.
 
 ### Story 46.9: pipeline-truth's installed stage reads the applied core, and `wired` is a declared per-class predicate
-**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-suite-channel-product CAP-1 (relayed hole #1, 2026-09-05) • spec-bmad-suite-lifecycle CAP-8
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-21 (relayed hole #1, 2026-09-05) • spec-pyforge-steward CAP-37
 **Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/suite.py` (installer-tree class `installed` probe), `tests/unit/test_suite*.py`, `install-matrix.md` (installed-stage caveat retired)
 **Given** the installer-tree member `bmad-method` **When** pipeline-truth computes its `installed` value **Then** it reads `_bmad/_config/manifest.yaml` `installation.version` (the applied core), falls back to the pixi env's conda-meta only when the manifest is absent, and reports both when they differ (`applied 6.11.0 / env 6.12.0`) as a named drift
 **And** the fixture that replays 2026-09-05's false green (env 6.12.0 while `_bmad/` was 6.11.0) now fires the drift; doctor's core-drift check stays the loud signal and is not duplicated
 **And** each `SUITE_PACKAGES` row carries the expected `wired` probe value for verdict `wield` in its class, each class probe observes the provisioning path the register names (labs: the named skill dirs and no other; manticore: the AD-3 declaration + `mc-*` census; bmb: the five dirs; module class: the AD-9 roster), and the register's `Wired` column is regenerated from `pipeline-truth --json` (AD-6)
 
 ### Story 46.10: The release cadence is one verified runbook
-**Type:** chore • **Effort:** S • **Deps:** S-14.10 • **FR/AD:** suite:CAP-8 • AD-7 • PRD suite:FR-8
+**Type:** chore • **Effort:** S • **Deps:** S-14.10 • **FR/AD:** spec-pyforge-steward CAP-37 • AD-7 • PRD suite:FR-8
 **Surface:** `specs/spec-bmad-suite-lifecycle/release-cadence.md` (verified against the 14.9 apply and the 14.10 rehearsal)
 **Given** `release-cadence.md` and the two live passes core-upgrade owns (the `--no-shims` apply, 14.9; the `@next` rehearsal, 14.10) **When** each of the nine runbook steps is annotated with the command that actually ran, its exit, and its owner **Then** no step reads "improvised"; the `@next` rehearsal recipe in the runbook matches 14.10's recorded invocation verbatim; the runbook never claims the rehearsal as the live proof that flips `spec-bmad-method-core-upgrade` to `shipped` (AD-7: the mechanism and its findings live in core-upgrade's chain)
 
@@ -3127,29 +3127,29 @@ customizations, marshal 30.2/30.5 retire rulebooks and shims, doctor 20.2/20.3 b
 detectors) — this epic proves and relays (AD-7).
 
 ### Story 47.1: The readiness checklist is live and the pre-flight is its P7 signal
-**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** suite:CAP-9 • AD-8 • PRD FR-9
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-38 • AD-8 • PRD FR-9
 **Surface:** `specs/spec-bmad-suite-lifecycle/cutover-readiness.md` (state column), `steward upgrade bmad-core` pre-flight (report-only run, recorded), `docs/dreams/bmad-suite-lifecycle.md` § Realization log
 **Given** P1–P17 with owners **When** this story runs the report-only pre-flight (`--target 6.12.0 --package-root <cached 6.12.0> --installed-package-root <cached 6.12.0>`) **Then** the local-customization findings are the P7 evidence (seven files today), each is checked against a spec `surface:` (P13 — marshal 31.4 governs the five ungoverned ones), and the checklist's state column is refreshed with a dated pass
 **And** the checklist names the exact re-run command so every later pass is mechanical; a P line turning green is a memlog `(event)` on this Spec
 
 ### Story 47.2: `skf-export` is proven to accept the foundry skills root
-**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** suite:CAP-9 (G5, P10) • `fnd:AD-5`
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-38 (G5, P10) • `fnd:AD-5`
 **Surface:** `_bmad/skf/config.yaml` (`skills_output_folder`, `snippet_skill_root_override` — exercised in a scratch copy, never edited in place), a scratch worktree, `cutover-readiness.md` G5/P10
 **Given** the cutover spine's claim that SKF export writes to `skills/stations/<x>/` **When** `skf-export-skill` runs in a scratch worktree with `skills_output_folder: skills/stations` **Then** the export lands there with a working adapter under `.claude/skills/<x>` generated by the link step's shape, or the story records precisely which key/option skf lacks — a finding for `spec-python-foundry-cutover` by memlog, never a silent assumption
 **And** P10's "hand-set keys survive an apply" half is re-verified against suite:CAP-7's restore on the same run, and the story records the single declaring key (`_bmad/custom/config.toml [modules.skf].skills_output_folder`, fnd:AD-12) from which `_bmad/skf/config.yaml` is re-rendered — never restored from git
 
 ### Story 47.3: `_bmad/**` joins Epic 44's surface and `PROJECTS.md` carries the cutover layout
-**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** suite:CAP-9 (G1, G8) • `fnd:AD-12`
+**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-38 (G1, G8) • `fnd:AD-12`
 **Surface:** `_bmad-output/projects/pyforge-steward/planning-artifacts/marshal-policy.toml` (`[epic_surfaces] "44"`), `_bmad-output/PROJECTS.md` (§ config layers, § Adding a new project), cutover memlog
 **Given** fnd:AD-12 moves `_bmad/` in Story 44.5 but `[epic_surfaces] "44"` omits `_bmad/**` (MRS-GATE-007 would fire) **When** the glob is added and `PROJECTS.md` gains a "cutover target" subsection (marker + planning links generated per machine — symlink on POSIX, junction on Windows — never copied; `bmad-switch` semantics unchanged until the flip) **Then** `marshal factory drain` accepts a 44.5-shaped change and the two PROJECTS.md sections cited by `cutover-readiness.md` G8 no longer contradict `fnd:AD-12` / `fnd:AD-19`
 
 ### Story 47.4: The foundry stack carries a `bmad-*` floor row
-**Type:** docs • **Effort:** XS • **Deps:** — • **FR/AD:** suite:CAP-9 (G9) • AD-8
+**Type:** docs • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-38 (G9) • AD-8
 **Surface:** `_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md` § Stack (via `bmad-architecture` update from its memlog — the `(decision)` landed 2026-09-06), `cutover-readiness.md` G9
 **Given** the spine memlog decision of 2026-09-06 **When** `bmad-architecture` update re-distills the cutover spine **Then** § Stack gains one row: `bmad-method >=6.12.0, bmad-loop >=0.11.1, bmad-module-skill-forge >=2.1.0 (linux-64 only), bmad-creative-intelligence-suite, bmad-method-test-architecture-enterprise, bmad-eval-quality, bmad-utility-skills, bmad-builder` with the note that win-64 (44.11) excludes skf and eval-quality; AD ids unchanged
 
 ### Story 47.5: Epic 44 depends on the era tail, and 44.13's scope names the spines
-**Type:** docs • **Effort:** XS • **Deps:** S-14.9 (after marshal 30.5 and 30.2 — cross-station: ledger `blocked`, fnd:AD-10) • **FR/AD:** suite:CAP-9 (G2, G3, G6) • AD-7
+**Type:** docs • **Effort:** XS • **Deps:** S-14.9 (after marshal 30.5 and 30.2 — cross-station: ledger `blocked`, fnd:AD-10) • **FR/AD:** spec-pyforge-steward CAP-38 (G2, G3, G6) • AD-7
 **Surface:** `epics.md` Epic 44 stories 44.5 / 44.12 / 44.13 (`Deps:` lines only), cutover memlog, `sprint-status-ledger.yaml` (via generate + sync)
 **Given** the shim retirement (14.9, 30.5) and the rulebook retirement (30.2) are prerequisites the cutover text assumes **When** 44.5 gains `Deps: …, S-14.9` with the trailing prose "after marshal 30.5 and 30.2" plus a `blocked` ledger row and an in-story check (fnd:AD-10 — never a foreign-station token), and 44.13's acceptance gains "and every spine `.memlog.md` re-distills through `bmad-architecture` without loss" (recorded first as a cutover memlog `(note)`) **Then** `forward-dependency-check` reads the new edges, `cutover-readiness.md` G2/G3/G6 read relayed-and-landed, and no Epic 44 story text beyond `Deps:` and that one acceptance clause changes
 
@@ -3197,7 +3197,7 @@ this epic's keys is correct); 48.8 never renames `[feature.python-agent-platform
 **Given** no SLO is declared **When** the contract lands **Then** SLOs exist for `/ht/`, MCP p99, queue age and event lag, alert rules render from the chart, and Doctor's flag kill-switch has a metrics write path
 
 ### Story 48.6: R-22 live browser streaming, or the pillar deleted
-**Type:** decision+feat • **Effort:** M • **Deps:** — • **FR/AD:** `DW-RT-2026-09-02-6` • red-team T-8 • CAP-8
+**Type:** decision+feat • **Effort:** M • **Deps:** — • **FR/AD:** `DW-RT-2026-09-02-6` • red-team T-8 • spec-pyforge-unifying-strategy CAP-8
 **Surface:** `django_pyforge/events/`, a Channels consumer, or the Dream's pillar text
 **Given** `/ws/events/` is a Dream pillar with no implementation **When** this story runs **Then** either a Channels consumer over redis-broker Streams with per-`sub` filtering ships behind the `pyforge-steward[dashboard]` extra, or the pillar is deleted from the Dream with a dated operator ruling — one or the other, recorded in the same story
 
@@ -3215,14 +3215,14 @@ this epic's keys is correct); 48.8 never renames `[feature.python-agent-platform
 **And** the parent Dream's two knowingly-false lines are fixed **before or inside** this merge, never carried forward by it: `docs/dreams/python-agent-platform.md`'s "no `src/platform/` tree" claim (struck through and dated 2026-09-09) and its absolutely-stated `pyforge.*` import ban — a regeneration over dangling parents and false absolutes is the failure the drill exists to catch, and 48.8 explicitly precedes that drill
 
 ### Story 48.9: OIDC default profile — Keycloak in-cluster, BYO seam kept
-**Type:** decision+feat • **Effort:** M • **Deps:** S-48.4 • **FR/AD:** `spec-platform-fifteen-factors` CAP-1 (production half) • fleet readiness 2026-09-09, stB-B1 • co-decided with Story 49.6
+**Type:** decision+feat • **Effort:** M • **Deps:** S-48.4 • **FR/AD:** `spec-pyforge-steward` CAP-86 (production half) • fleet readiness 2026-09-09, stB-B1 • co-decided with Story 49.6
 **Surface:** `src/platform/deploy/charts/platform/templates/` (a Keycloak `Deployment` + `Service` + its chart values), `src/platform/config/settings/production.py`, `src/platform/config/settings/base.py:564-580` (`COMPONENT_OIDC_*`), `docs/reference/enterprise-deployment.md`
 **Given** the `COMPONENT_OIDC_ISSUER` / `_CLIENT_ID` / `_JWKS_URL` / `_AUDIENCE` seam exists and is entirely unpopulated — all four default to `""` at `base.py:564-580`, `production.py` overrides none of them, and `IDP_CLAIMS_SNAPSHOT` / `IDP_USERINFO` are `None` at `base.py:214-215` — while the local substrate is already realm-as-code (`src/platform/compose/keycloak/realms/platform-realm.json`) **When** Keycloak is promoted to an in-cluster deployment by the Foundry chart as the **default** OIDC profile **Then** a chart-rendered deployment authenticates through it end to end, and the `COMPONENT_OIDC_*` seam remains the **BYO-IdP escape hatch** with a documented profile for an external IdP
 **And** the story states explicitly that this is **not an infra-kinds breach**: Keycloak is a chart `Deployment` and stores its state in the **existing PostgreSQL**; the lock (PostgreSQL + Redis + Kubernetes) is on backing services, and no fourth kind is introduced
 **And** it is decided **together with Story 49.6** — one deployment decision, not two: 49.6 sets the claims source in the deployed default, and this story names the provider that source points at. An external SaaS IdP was rejected as the default because an air-gapped estate cannot reach one, which would force a second profile anyway (`pap:CAP-6` air-gap parity)
 
 ### Story 48.10: The one-container Guild proves itself at build time — CI builds the root Containerfile
-**Type:** feat • **Effort:** S • **Deps:** — • **FR/AD:** `spec-unified-container` CAP-5 • fleet readiness 2026-09-09, stB-B7 • **before Story 44.10**
+**Type:** feat • **Effort:** S • **Deps:** — • **FR/AD:** `spec-pyforge-steward` CAP-131 • fleet readiness 2026-09-09, stB-B7 • **before Story 44.10**
 **Surface:** `.github/workflows/pyforge-station-tests.yml` (a `container` job, or a pixi `guild-image-build` task the workflow invokes), `pixi.toml` (the build task beside `pyforge-steward-container-gates-test` at `:556` and `-container-volumes-test` at `:569`), `Containerfile` (root) if the build surfaces a defect
 **Given** the root `Containerfile` is 14 KB, current, and covers all eight stations — and is referenced by **no** workflow and **no** pixi task (`grep -rn "Containerfile" .github/workflows/*.yml` matches only `src/platform/Containerfile` and the two sidecar files; `pixi.toml` contains no `docker build` / `podman build`), while `pyforge-steward-container-gates-test` and `-container-volumes-test` appear in **zero** CI jobs **When** a job or pixi task invoked by `pyforge-station-tests.yml` builds the root `Containerfile` and runs `scripts/container-gates secrets-scan` + `container-volumes` against the result **Then** CAP-5 — "the image proves itself at build time" — has a build time, and a regression in the image fails CI instead of failing silently
 **And** it mirrors the existing docker/podman matrix shape at `platform-ci.yml:305-375` rather than inventing one; the cost is a job, not a design, because the gates already exist and are simply never invoked
@@ -3267,35 +3267,35 @@ index rows only — steward tracks, and never edits another station's surface**,
 **Outcome (2026-09-13):** doctor's Stories 21.9/21.10/21.11 shipped `sources/capability_effect.py` (`c27e8386d8`, `2bb7bc58f5`, `b2e5b9e948`); `docs/dreams/capability-effect-check.md` and its Spec are now `realized`/`shipped` with `verified:` lines on all three CAPs, including confirming the widened-beyond-this-Spec's-own-CAP-list clause against live code (`iterdir()` over every `_bmad-output/projects/*`, not a hardcoded list). Live run: 396 findings, exit 0. `pyforge-doctor-test -k capability_effect` 30/30 pass. Ledger was never flipped after the work landed; 49.8 was already closed separately (`96387a0730`).
 
 ### Story 49.3: CAP-4 in effect — start and get on all eight, with a real disconnect
-**Type:** feat • **Effort:** M • **Deps:** S-49.1 • **FR/AD:** CAP-4 (`SPEC.md` success) • Stories 21.3 / 21.4 shipped the mounts
+**Type:** feat • **Effort:** M • **Deps:** S-49.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-4 (`SPEC.md` success) • Stories 21.3 / 21.4 shipped the mounts
 **Surface:** the six station MCP faces without `start`/`get`, `django_pyforge/mcp_dual_era.py`, a transport-interrupting test
 **Given** `start`/`get` exists on atlas and warden only and the disconnect test never interrupts transport **When** the six other faces gain the pair over the same durable store and a test drops the connection mid-op across a multi-minute run **Then** the agent retrieves the result after reconnect on every station, and CAP-4's `verified:` line reads fully exercised
 
 ### Story 49.4: CAP-7 in effect — the real board, or the criterion says fixture
-**Type:** feat+decision • **Effort:** M • **Deps:** S-49.1 • **FR/AD:** CAP-7 (`SPEC.md` success) • Epic 23
+**Type:** feat+decision • **Effort:** M • **Deps:** S-49.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-7 (`SPEC.md` success) • Epic 23
 **Surface:** `django-atlas/src/django_atlas_portal/board.py`, `pyforge/atlas/dashboard/`, `test_host_board_row_isolation.py`, `src/platform/config/settings/base.py` (`INSTALLED_APPS`), `src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/**` (adopter wiring), `convergence.md:38,:129`
 **Given** the isolation test runs against a 5-row in-process fixture and asserts the real Vizro/BSL board is not mounted **When** this story runs **Then** either Atlas's real board is reachable through the host under the isolation pattern with the same two-users test passing against it, or CAP-7's success criterion is rewritten to name the fixture as the deliverable with a dated ruling — one or the other
 **And** the **`secure-live-dashboards` adoption decision rides with it, as one decision, not two** (fleet readiness 2026-09-09, stB-B6 / § 2.3 C15): if the real board is mounted, this story **installs `pyforge.steward.dashboard` in `INSTALLED_APPS`** and routes the board's loads through `audit` + `export` — today the app is in no `INSTALLED_APPS` (`base.py` has zero `dashboard` matches), so `AuditEntry` (`models.py:43`, `migrations/0001_initial.py`) has no table anywhere and six of nine modules (`middleware`, `audit`, `views`, `navigation`, `models`, `export`) have zero consumers; if instead the criterion is rewritten to name the fixture, then `spec-secure-live-dashboards`' **Django half is rewritten as deferred in the same act**
 **And** the accuracy correction lands with it: `convergence.md:38,:129`'s "never adopted" becomes **"adopted at fixture grade (`django-atlas/board.py:17-20`, a 5-row in-process fixture); the real Vizro board (`pyforge/atlas/dashboard/app.py`) imports zero steward modules"** — the old wording understates what exists and would send an implementer to build a seam that is already there
 
 ### Story 49.5: CAP-11 in effect — the eviction test
-**Type:** test • **Effort:** M • **Deps:** S-49.1 • **FR/AD:** CAP-11 (`SPEC.md` success) • Story 40.2
+**Type:** test • **Effort:** M • **Deps:** S-49.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-11 (`SPEC.md` success) • Story 40.2
 **Surface:** `src/platform/tests/` (a real-Redis test), chart `hpa.yaml` if 48.2 has not landed it
 **Given** the chart split is real and no test fills the cache **When** a test fills `redis-cache` to its `allkeys-lru` limit while tasks are queued on `redis-broker` **Then** no queued task, stream entry or PEL entry is lost, and the test fails without the split
 
 ### Story 49.6: CAP-12 in effect — revocation on the next request
-**Type:** feat • **Effort:** M • **Deps:** S-49.1 • **FR/AD:** CAP-12 (`SPEC.md` success) • Story 26.1 deferral
+**Type:** feat • **Effort:** M • **Deps:** S-49.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-12 (`SPEC.md` success) • Story 26.1 deferral
 **Surface:** `src/platform/config/settings/base.py:214-215`, `production.py`, `platformapp/users/current_claims.py`
 **Given** `IDP_CLAIMS_SNAPSHOT = None` / `IDP_USERINFO = None` in the deployed default so revocation lands on the next login **When** the claims source is set in the deployed default with a bounded cache **Then** revoking a role at the IdP removes portal access on the user's next request, proven by a test that fails on the login-time path
 **And** it is decided **together with Story 48.9** — one deployment decision, not two: 48.9 names the provider (Keycloak in-cluster as the default profile, `COMPONENT_OIDC_*` kept as the BYO seam) and this story sets the claims source that points at it. Neither story may name a provider the other contradicts (fleet readiness 2026-09-09, stB-B1)
 
 ### Story 49.7: CAP-14 in effect — real semantic recall, or the criterion says lexical
-**Type:** feat+decision • **Effort:** M • **Deps:** S-49.1 • **FR/AD:** CAP-14 (`SPEC.md` success) • Story 34.5 • `query-plane-scribe-cutover`
+**Type:** feat+decision • **Effort:** M • **Deps:** S-49.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-14 (`SPEC.md` success) • Story 34.5 • `query-plane-scribe-cutover`
 **Surface:** `pyforge-scribe/src/pyforge/scribe/embeddings.py`, `graph_store_plugins.py`, the plane `vss` index
 **Given** "semantic" recall is a 32-dim SHA-256 bag-of-concepts over a hardcoded 7-entry synonym map, off by default (`recall.py:94` `mode="lexical"`; `cli.py:316-320` opt-in `--semantic`), while CAP-14's *other* clause — "the same graph operations pass against both drivers" — is already satisfied and exercised in CI (`conftest.py:119-138` parametrized over both drivers; `pyforge-station-tests.yml:215-238` pgvector service) and single-plugin selection is the documented design (`graph_store_plugins.py:36-39`, AD-1), not a shortfall **When** this story runs **Then** either recall is backed by a real embedding model over the plane's `vss` index with a test that lexical overlap fails, or the criterion is rewritten honestly — and in either branch the story states which mode (`lexical` or `semantic`) the criterion is graded against, and records that the Spec's "dual-write" wording mis-described a correct design rather than naming a gap (scribe readiness pass 2026-09-09, E-1)
 
 ### Story 49.8: CAP-17 in effect — marshal publishes run state to the supervisor
-**Type:** feat • **Effort:** M • **Deps:** S-49.1; cross-station: marshal Epic 33's Track story (ledger `blocked` until it exists — never a foreign-station `Deps:` token) • **FR/AD:** CAP-17 (`SPEC.md` success) • `hub:CAP-3` (the Track, on `spec-intelligence-hub`) • token-economy CAP-7 (savings telemetry — whose five per-layer getters are stubs today, `harness_bmadloop.py:1875-1898`)
+**Type:** feat • **Effort:** M • **Deps:** S-49.1; cross-station: marshal Epic 33's Track story (ledger `blocked` until it exists — never a foreign-station `Deps:` token) • **FR/AD:** spec-pyforge-unifying-strategy CAP-17 (`SPEC.md` success) • `spec-pyforge-steward CAP-54` (the Track, on `spec-intelligence-hub`) • token-economy CAP-7 (savings telemetry — whose five per-layer getters are stubs today, `harness_bmadloop.py:1875-1898`)
 **Surface:** `pyforge-marshal` (a publisher toward `django_pyforge.supervisor` — the same seam as the Track and savings telemetry), `pyforge-doctor/sources/marshal.py:544`, `marshal/cli/init.py:331`
 **Given** the supervisor carries MCP-`start` runs only while marshal has zero imports of `django_pyforge` and reads `~/.bmad-loops` **When** marshal publishes bmad-loop run state through one publisher shared with Epic 33's Track **Then** the front door shows a live bmad-loop run in a deployed namespace with no operator-home access, a completed run's timing survives the workstation, and marshal and doctor no longer read `~/.bmad-loops`
 **And** it carries the one-line comment at `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py:223` noting that the `~/.bmad-loops` read retires under Unifying CAP-17 — **doctor minted no separate story for it**, so that comment plus the memlog line on `spec-pyforge-doctor` is doctor's whole action here (fleet readiness 2026-09-09, § 2.3 C8)
@@ -3342,7 +3342,7 @@ index rows only — steward tracks, and never edits another station's surface**,
 **Outcome (2026-10-10):** flipped by the operator's ruling of that date (spec memlog). Scribe Epic 8 ("Scribe in effect — the compile runs on a schedule the estate owns") is `done` with Stories 8.1–8.6 `done`: the schedule is the checked-in `src/shared/packages/pyforge-scribe/ops/systemd/pyforge-scribe-nightly-compile.timer` with `scripts/scribe_nightly_trigger.py`, and `scribe-graph-freshness-check` (`scripts/scribe_graph_freshness_check.py`) shows a run fired. The placement question stands as recorded: the unit is a workstation surface, and a compile that must survive the cutover belongs on the Foundry side.
 
 ### Story 49.14: CAP-10 in effect — the resilience primitives get a real caller, or the criterion says test-only
-**Type:** feat+decision • **Effort:** M • **Deps:** S-49.1 • **FR/AD:** CAP-10 (`SPEC.md` success) • `resilience-invariants.md` BS-4 / BS-8
+**Type:** feat+decision • **Effort:** M • **Deps:** S-49.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-10 (`SPEC.md` success) • `resilience-invariants.md` BS-4 / BS-8
 **Surface:** `src/platform/config/` (the inter-station HTTP client, the PyBreaker async wrapper's call site), `pyforge-mason/src/pyforge/mason/boot.py` (confirm the reconciliation path is live on the real boot sequence, not only its own test), `spec-pyforge-unifying-strategy/SPEC.md` (CAP-10's own success text, if tightened)
 **Given** the circuit breaker (`django_pyforge.circuits`, BS-4) and boot reconciliation (`reconcile_boot`, BS-8) each pass their own dedicated meta-test (`test_circuits_trip_on_async_too.py::test_removing_wrapper_makes_the_test_fail`, `test_restarts_reconcile.py::test_removing_reconciliation_makes_the_test_fail`) — satisfying CAP-10's own written bar, "an invariant with no test that fails in its absence is not implemented, however much code exists" — but `grep -rln "django_pyforge.circuits" src/` and a search for `reconcile_boot` callers both return zero hits outside their own test files, so neither mechanism protects anything in a real failure today, the identical shipped-but-inert shape CAP-4/7/11/12/14/17 were each given a story to close
 **When** this story runs **Then** either a real call site is wired to each (the inter-station HTTP client for the breaker; confirmed live on Mason's actual boot path for reconciliation, not only its test) and CAP-10's own success criterion is tightened to require a production caller, matching its five siblings, **or** the criterion is formally kept test-only with a dated, stated reason why CAP-10 is deliberately held to a different bar than the other six
@@ -3458,8 +3458,8 @@ capability in this epic.
 
 ### Story 50.1: The Silo conda-forge recipe exists and is pixi-installable
 
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-platform-object-storage-kind
-CAP-2 (`SPEC.md` success)
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward
+CAP-95 (`SPEC.md` success)
 **Note:** `pgsty/silo` has no conda-forge feedstock today (live-verified 2026-09-10). Recipe work
 under `recipes/` is governed by `.claude/skills/conda-forge-expert/` per this repo's Rule 1 —
 this story invokes that skill for the recipe lifecycle itself; this entry only tracks the story.
@@ -3482,7 +3482,7 @@ the normal follow-up, not a blocker for this story
 ### Story 50.2: Local-dev object storage — Silo default, Garage alternative, pixi-provisioned
 
 **Type:** feature • **Effort:** M • **Deps:** S-50.1 (Silo must be pixi-installable first) •
-**FR/AD:** spec-platform-object-storage-kind CAP-3 (`SPEC.md` success)
+**FR/AD:** spec-pyforge-steward CAP-96 (`SPEC.md` success)
 **Note:** Mirrors `scripts/scribe_pg.py`'s exact shape (Story 28.1's own local-database
 precedent): a real local server, never a mock, `up`/`down`/`status` pixi tasks, gitignored
 `var/`-scoped data dir, idempotent. A SEPARATE pixi feature (not folded into `platform-dev`),
@@ -3504,8 +3504,8 @@ on that platform, never a silent no-op)
 
 ### Story 50.3: A minimal S3-client seam proves the exception end-to-end
 
-**Type:** feature • **Effort:** S • **Deps:** S-50.2 • **FR/AD:** spec-platform-object-storage-kind
-CAP-4 (`SPEC.md` success)
+**Type:** feature • **Effort:** S • **Deps:** S-50.2 • **FR/AD:** spec-pyforge-steward
+CAP-97 (`SPEC.md` success)
 **Note:** Endpoint and credentials are configuration only, never hardcoded — the same client
 code points at the local Silo/Garage instance or real StorageGRID interchangeably, mirroring
 `canopy:AD-19`'s reference-not-embed pattern for the external IdP. Explicitly does **not**
@@ -3622,8 +3622,8 @@ the opt-in marshal VS Code surface. Does not flip any Epic 44 `blocked` key.
 
 ### Story 52.1: Module-template is authoring-only and mybmad is an isolated sidecar never the console
 
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-suite-scaffold-and-mybmad-sidecar
-CAP-1..3; spec-bmad-suite-lifecycle CAP-1 (register rows 11 and 13)
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward
+CAP-124..126; spec-pyforge-steward CAP-30 (register rows 11 and 13)
 **Note:** Wielded path is consume, not isolate. Same `DATABASE_URL` host as
 the platform (self-hosted or Epic 51 BYO), `?schema=mybmad`. Same
 `COMPONENT_OIDC_*` / Keycloak issuer. Forbidden: second cluster as the
@@ -3668,8 +3668,8 @@ Does not flip any Epic 44 `blocked` key. Does not implement Story 52.1.
 
 ### Story 53.1: The Charter carries the Hub vocabulary map
 
-**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** spec-intelligence-hub
-CAP-1; Charter CAP-4 (external terms never join the seven Lexicon words)
+**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward
+CAP-52; Charter CAP-4 (external terms never join the seven Lexicon words)
 **Note:** Recording document is `docs/dreams/pyforge-charter.md` § The Lexicon
 (guild-E3 closed the Unifying Strategy branch). Reverse walk: Lexicon nouns
 with no Hub counterpart plus the Cogs collision. Companion
@@ -3685,8 +3685,8 @@ do not become an eighth Lexicon word
 
 ### Story 53.2: Company and eight station Frames pass in-repo preflight
 
-**Type:** feature • **Effort:** M • **Deps:** 53.1 • **FR/AD:** spec-intelligence-hub
-CAP-2 (B9/B11; D4 later-caps)
+**Type:** feature • **Effort:** M • **Deps:** 53.1 • **FR/AD:** spec-pyforge-steward
+CAP-53 (B9/B11; D4 later-caps)
 **Note:** Relay — scribe owns Frame-store half as pointer, not as Lexicon owner.
 First nine artifacts only. Community Frame and registry stay later-caps.
 **Surface:** Company + eight station `.frame.md` (git store); in-repo four-field
@@ -3706,8 +3706,8 @@ never a Frame element in any version (the field is `maintainer`; see
 
 ### Story 53.3: One tracked track.json per run
 
-**Type:** feature • **Effort:** M • **Deps:** 53.1 • **FR/AD:** spec-intelligence-hub
-CAP-3 (B8)
+**Type:** feature • **Effort:** M • **Deps:** 53.1 • **FR/AD:** spec-pyforge-steward
+CAP-54 (B8)
 **Note:** Relay — marshal supplies Track field enumeration. Do not implement
 marshal code in this steward story unless a one-line pointer is required.
 **Surface:** one tracked `track.json` per bmad-loop / `marshal factory spin` run;
@@ -3720,8 +3720,8 @@ and the stated retention
 
 ### Story 53.4: Guards as a library without a second verdict
 
-**Type:** feature • **Effort:** M • **Deps:** 53.1 • **FR/AD:** spec-intelligence-hub
-CAP-4 (B7)
+**Type:** feature • **Effort:** M • **Deps:** 53.1 • **FR/AD:** spec-pyforge-steward
+CAP-55 (B7)
 **Given** Source-Grounding exists only at scribe recall AD-8 and Outcome is
 absent **When** this story lands **Then** a Spec can name which paper Guard
 categories it lacks
@@ -3737,8 +3737,8 @@ I want the nine git-store Frames and B's first Frame tree to follow the
 v0.3 working draft (Apache-2.0),
 So that foundry starts as a Hub participant, not a private v0.2 fork.
 
-**Type:** docs • **Effort:** S • **Deps:** S-53.2 • **FR/AD:** spec-intelligence-hub
-CAP-2
+**Type:** docs • **Effort:** S • **Deps:** S-53.2 • **FR/AD:** spec-pyforge-steward
+CAP-53
 **Surface:** `docs/foundry/frames/` on A and B; `type: frame [0.3]`;
 `license` Apache-2.0 IRI; `identifier` stated. Draft:
 openteams-ai/frame-spec#28. Do not open a second LICENSE PR.
@@ -3759,8 +3759,8 @@ key off `identifier`,
 So that a Hub reader resolves our Frames by the element that carries identity,
 and the estate stops using one string as both a Frame key and a dist name.
 
-**Type:** docs • **Effort:** S • **Deps:** S-53.5 • **FR/AD:** spec-intelligence-hub
-CAP-2
+**Type:** docs • **Effort:** S • **Deps:** S-53.5 • **FR/AD:** spec-pyforge-steward
+CAP-53
 **Surface:** `docs/foundry/frames/**` (9 files),
 `src/shared/packages/pyforge-steward/src/pyforge/steward/frames.py`,
 its unit test, `docs/foundry/frames/README.md`, the `frame-preflight` pixi
@@ -3949,8 +3949,8 @@ As a platform operator,
 I want `platform-dev` to load `config.settings.local`,
 So that mint and `manage.py` do not require a second pixi env.
 
-**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-platform-dev-boots-local
-CAP-1
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward
+CAP-85
 **Surface:** `pixi.toml` `[feature.platform-dev.dependencies]`;
 `pixi.lock`; `src/platform/tests/policy/test_platform_dev_local_leaf.py`.
 **Given** `platform-dev` python cannot import `debug_toolbar`
@@ -3983,7 +3983,7 @@ python-agent-platform` whose lock already carries the Django-host extras,
 So that a conda/pip overlap (the `mcp` package uninstall CRC hit 2026-08-25)
 fails at lock time, never as a silent Containerfile uninstall.
 
-**Type:** chore • **Effort:** M • **Deps:** — • **FR/AD:** spec-platform-image-one-pixi-env CAP-1
+**Type:** chore • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-91
 **Given** the extras lived in `[feature.platform-image-pip]` behind a `pip
 install --no-deps` Containerfile RUN
 **When** this story lands **Then** those extras (`django-structlog`,
@@ -4001,7 +4001,7 @@ I want `[feature.platform-image-pip]` and `scripts/platform_image_pip_layer.py`
 retired to a tombstone that fails loudly if resurrected,
 So that the runtime image never runs a second, overlap-blind installer.
 
-**Type:** chore • **Effort:** S • **Deps:** S-57.1 • **FR/AD:** spec-platform-image-one-pixi-env CAP-2
+**Type:** chore • **Effort:** S • **Deps:** S-57.1 • **FR/AD:** spec-pyforge-steward CAP-92
 **Given** the Containerfile ran `python3 -m pip install --no-deps` for host extras
 **When** this story lands **Then** `rg 'pip install --no-deps'
 src/platform/Containerfile` is empty and `platform_image_pip_layer.py` exits
@@ -4019,7 +4019,7 @@ contract now that it's on conda-forge,
 So that adopting a generated Containerfile is a measured choice, not a retry
 of the SIF-only rejection from 10.3.
 
-**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** spec-platform-image-one-pixi-env CAP-3
+**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-93
 **Given** `pixitainer-docker` 0.8.3 is now on conda-forge (missing as a Docker
 backend when Story 10.3 evaluated SIF-only `pixitainer`)
 **When** this story lands **Then** `pixitainer-eval.md` carries a dated Design
@@ -4049,7 +4049,7 @@ implementation, not the identity stub,
 So that a correctly-signed host assertion can publish a run against a deployed
 cluster instead of being answered with `Unknown tool`.
 
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-mcp-host-real-station-tools CAP-1
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-73
 **Surface:** `src/platform/mcp_host/app.py`; `src/platform/mcp_host/settings.py` (minimal
 Django settings — `django_pyforge` + `django_marshal_portal` only, no Langflow, no Redis);
 `src/shared/packages/django-marshal/src/django_marshal_portal/mcp_asgi.py`
@@ -4071,7 +4071,7 @@ I want every station without a real in-process MCP app to keep answering exactly
 slice 1 shipped it,
 So that adding real-tool hosting for one station cannot regress the other eight.
 
-**Type:** feature • **Effort:** S • **Deps:** S-58.1 • **FR/AD:** spec-mcp-host-real-station-tools CAP-2
+**Type:** feature • **Effort:** S • **Deps:** S-58.1 • **FR/AD:** spec-pyforge-steward CAP-74
 **Given** only marshal has a real app **When** this story lands **Then**
 `spec-mcp-era-isolation`'s CAP-1..3 acceptance (dual-era handshake, protocol-version
 negotiation, 405 on non-POST) still holds unchanged for every station without one
@@ -4087,7 +4087,7 @@ As a platform operator,
 I want `spec-run-state-one-publisher`'s last unproven verification row closed,
 So that "live run appears on `/runs/`, timing survives teardown" is evidence, not intent.
 
-**Type:** chore • **Effort:** S • **Deps:** S-58.1 • **FR/AD:** spec-mcp-host-real-station-tools CAP-3
+**Type:** chore • **Effort:** S • **Deps:** S-58.1 • **FR/AD:** spec-pyforge-steward CAP-75
 **Surface:** chart `mcp-host` Deployment gains the DB/secret env it needs plus postgres
 egress/ingress (previously DNS-only)
 **Given** that row read `NOT PROVEN` because the real tool was never registered on the
@@ -4107,7 +4107,7 @@ key. Do not retro-rename existing slugs or `DW-` ids.
 
 ### Story 59.1: The Spec ladder is declared and the Charter states the rule
 
-**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** spec-vocabulary-one-name-one-job CAP-1
+**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-132
 **Surface:** `docs/governance/`; `docs/dreams/pyforge-charter.md`;
 `docs/dreams/README.md` stays the Dream ladder only.
 **Given** eight Spec statuses are live and only `extension-point` is defined
@@ -4136,7 +4136,7 @@ open until next edited
 
 ### Story 59.3: The Charter carries the BMAD cross-walk and pitched stays optional
 
-**Type:** docs • **Effort:** S • **Deps:** S-59.1 • **FR/AD:** spec-vocabulary-one-name-one-job CAP-3
+**Type:** docs • **Effort:** S • **Deps:** S-59.1 • **FR/AD:** spec-pyforge-steward CAP-133
 **Surface:** `docs/dreams/pyforge-charter.md`; `docs/governance/guild-roster.json`.
 **Given** Hub has a Charter walk and BMAD's daily nouns do not
 **When** this story lands
@@ -4147,7 +4147,7 @@ join) and records Spec `shipped` ≠ story `done` ≠ Dream `realized`
 
 ### Story 59.4: Design teaching is named; the pull cannot silently rot
 
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-vocabulary-one-name-one-job CAP-5
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-135
 **Surface:** `presentations/agentic-sdlc/`; `DW-VOCAB-2026-09-14-3`.
 Herald executes the pull; steward wrote the ruling.
 **Given** the deck teaches four-phases / three-tracks and is 13.5 KB behind
@@ -4162,7 +4162,7 @@ percentage (operator 2026-09-16: teaching-only until the Guildhall exists)
 
 ### Story 59.5: One mint-time slugify and two DW families
 
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-vocabulary-one-name-one-job CAP-6
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-136
 **Surface:** `scripts/deferred_work_promote.py`
 **Given** one story is spelled three non-derivable ways and `DW-` has eleven grammars
 **When** this story lands
@@ -4175,7 +4175,7 @@ station token
 
 ### Story 59.6: Shape hygiene — roster, S-N.N, commits, status comments
 
-**Type:** feature • **Effort:** M • **Deps:** S-59.1 • **FR/AD:** spec-vocabulary-one-name-one-job CAP-7
+**Type:** feature • **Effort:** M • **Deps:** S-59.1 • **FR/AD:** spec-pyforge-steward CAP-137
 **Surface:** `docs/governance/guild-roster.json`; Dream files under `docs/dreams/`;
 commit-subject convention (hook or detector). `S-N.N` stays prose-only.
 **Given** four `STATIONS` lists disagree and 19 Dreams comment on `status:`
@@ -4189,7 +4189,7 @@ except `type(scope):` under `recipes/` and the CFE changelog
 
 ### Story 59.7: atlas check= is a finding code only
 
-**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-vocabulary-one-name-one-job CAP-8
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-138
 **Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/atlas.py`
 **Given** six sites put runtime data in the finding-code field
 **When** this story lands
@@ -4206,7 +4206,7 @@ GitHub catalog repo needs operator confirm at 60.1.
 
 ### Story 60.1: The catalog config names backends and sources
 
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-self-hosted-bmad-marketplace CAP-1
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-117
 **Surface:** `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-self-hosted-bmad-marketplace/backends-and-sources.md`;
 a config the installer and Claude/Codex `extraKnownMarketplaces` can point at.
 **Given** listings have no estate home and no named source
@@ -4217,7 +4217,7 @@ a config the installer and Claude/Codex `extraKnownMarketplaces` can point at.
 
 ### Story 60.2: Publish uses tools we wield; steward records the review
 
-**Type:** feature • **Effort:** M • **Deps:** S-60.1 • **FR/AD:** spec-self-hosted-bmad-marketplace CAP-2
+**Type:** feature • **Effort:** M • **Deps:** S-60.1 • **FR/AD:** spec-pyforge-steward CAP-118
 **Surface:** Builder / module-template / SKF publish path; the estate catalog
 registry YAML.
 **Given** a module can appear without a recorded review
@@ -4229,7 +4229,7 @@ in the wielded suite (Certified)
 
 ### Story 60.3: Ship backends — conda channel default
 
-**Type:** feature • **Effort:** M • **Deps:** S-60.1 • **FR/AD:** spec-self-hosted-bmad-marketplace CAP-3
+**Type:** feature • **Effort:** M • **Deps:** S-60.1 • **FR/AD:** spec-pyforge-steward CAP-119
 **Surface:** a noarch catalog-index recipe under `recipes/`; the existing
 SelfExplainML / Artifactory channel path.
 **Given** an air-gapped host cannot install without github.com
@@ -4240,7 +4240,7 @@ SelfExplainML / Artifactory channel path.
 
 ### Story 60.4: Frame index and a thin browse list
 
-**Type:** feature • **Effort:** M • **Deps:** S-60.1 • **FR/AD:** spec-self-hosted-bmad-marketplace CAP-4 CAP-7
+**Type:** feature • **Effort:** M • **Deps:** S-60.1 • **FR/AD:** spec-pyforge-steward CAP-120 CAP-123
 **Surface:** `docs/foundry/frames/`; a generated index or existing chrome page.
 **Given** operators read YAML by hand and Frames have no catalog row
 **When** this story lands
@@ -4259,7 +4259,7 @@ flip any Epic 44 `blocked` key. Do not PAT into the vendor private GitHub.
 
 ### Story 61.1: Corridor transports — upload default
 
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-work-passports-dated-extracts CAP-1
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-139
 **Surface:** `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-work-passports-dated-extracts/transports-and-vendors.md`;
 the existing Postgres app / a steward load duty.
 **Given** vendor and estate lists have no idempotent drop path
@@ -4270,7 +4270,7 @@ the existing Postgres app / a steward load duty.
 
 ### Story 61.2: Work passport and core schema
 
-**Type:** feature • **Effort:** M • **Deps:** S-61.1 • **FR/AD:** spec-work-passports-dated-extracts CAP-2
+**Type:** feature • **Effort:** M • **Deps:** S-61.1 • **FR/AD:** spec-pyforge-steward CAP-140
 **Surface:** the existing Postgres join store.
 **Given** Jira keys and GitHub numbers can collide across rooms
 **When** this story lands
@@ -4280,7 +4280,7 @@ the existing Postgres app / a steward load duty.
 
 ### Story 61.3: As-of glass and mailed query
 
-**Type:** feature • **Effort:** M • **Deps:** S-61.2 • **FR/AD:** spec-work-passports-dated-extracts CAP-3
+**Type:** feature • **Effort:** M • **Deps:** S-61.2 • **FR/AD:** spec-pyforge-steward CAP-141
 **Surface:** existing app views `standup` and `shipped`; optional CSV/markdown export.
 **Given** standup asks "any news from the vendor?"
 **When** this story lands
@@ -4290,7 +4290,7 @@ the existing Postgres app / a steward load duty.
 
 ### Story 61.4: Signed outbound slice
 
-**Type:** feature • **Effort:** M • **Deps:** S-61.2 • **FR/AD:** spec-work-passports-dated-extracts CAP-4
+**Type:** feature • **Effort:** M • **Deps:** S-61.2 • **FR/AD:** spec-pyforge-steward CAP-142
 **Surface:** outbound loader; named `outbound-signer` role on the existing app.
 **Given** a dump of Jira or factory BMAD can leave unsigned
 **When** this story lands
@@ -4300,7 +4300,7 @@ the existing Postgres app / a steward load duty.
 
 ### Story 61.5: Quarantine — mint then reject
 
-**Type:** feature • **Effort:** M • **Deps:** S-61.2 • **FR/AD:** spec-work-passports-dated-extracts CAP-5
+**Type:** feature • **Effort:** M • **Deps:** S-61.2 • **FR/AD:** spec-pyforge-steward CAP-143
 **Surface:** quarantine shelf on the existing app.
 **Given** inbound rows arrive without a passport
 **When** this story lands
@@ -4318,7 +4318,7 @@ empty later slot — no story. Do not invent weights. Do not flip any Epic 44
 
 ### Story 62.1: The catalog names eight measures and their states
 
-**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** spec-build-league-scorecard CAP-1
+**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-44
 **Surface:** `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-build-league-scorecard/measure-catalog.md`;
 `docs/dreams/pyforge-unifying-strategy.md` Q5 cite.
 **Given** Q5 named faces and no numbers
@@ -4329,7 +4329,7 @@ empty later slot — no story. Do not invent weights. Do not flip any Epic 44
 
 ### Story 62.2: Add, switch, and archive without a rewrite
 
-**Type:** feature • **Effort:** M • **Deps:** S-62.1 • **FR/AD:** spec-build-league-scorecard CAP-2
+**Type:** feature • **Effort:** M • **Deps:** S-62.1 • **FR/AD:** spec-pyforge-steward CAP-45
 **Surface:** a config the catalog and later consumers read.
 **Given** a new source or a dead source would fork the product
 **When** this story lands
@@ -4339,7 +4339,7 @@ empty later slot — no story. Do not invent weights. Do not flip any Epic 44
 
 ### Story 62.3: Consumers cite `on` rows only
 
-**Type:** feature • **Effort:** M • **Deps:** S-62.1 • **FR/AD:** spec-build-league-scorecard CAP-3
+**Type:** feature • **Effort:** M • **Deps:** S-62.1 • **FR/AD:** spec-pyforge-steward CAP-46
 **Surface:** a refuse path Herald / Atlas / Marshal / Doctor can call.
 **Given** a station can mint a stealth metric
 **When** this story lands
@@ -4768,7 +4768,7 @@ As the operator whose `.steward/workspace-archive/` filled with tarballs of work
 I want `workspace clean` to leave a short note instead of a tarball when git proves the worktree holds nothing unlanded,
 So that the archive folder only ever holds work that could otherwise be lost, and a dropped local file is still named.
 
-**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-157 (extends CAP-155 / CAP-107)
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-157 (extends spec-pyforge-steward CAP-155 / CAP-107)
 **Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py` (`_landed_note_text`, `_source_commit`, `_git_bytes`; `_archive_worktree`
 writes `<slug>-<stamp>.landed.txt` when proven and keeps an unmerged branch; `format_clean` reports it), tests: `src/shared/packages/pyforge-steward/tests/unit/test_workspace.py`,
 `src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set_status_teardown.py`.
@@ -4790,7 +4790,7 @@ As the operator whose worktrees `workspace clean` sweeps,
 I want every git read of a workspace's source and branch, the platform's diff guard and the `tea-test-review` task to name full refs,
 So that a stray local ref can never make an unmerged workspace look merged, lose its branch, or empty a guard.
 
-**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-158 (extends CAP-107 / CAP-155 / CAP-157)
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-158 (extends spec-pyforge-steward CAP-107 / CAP-155 / CAP-157)
 **Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py` (`_source_ref`, `_branch_ref`; `start_workspace`,
 `_ahead_behind`, `_branch_merged_into`, `_source_commit`, `_archive_worktree`), tests:
 `src/shared/packages/pyforge-steward/tests/unit/test_workspace_full_refs.py` (new); `src/platform/tests/test_warden_portal_audit_start_get.py`
@@ -5551,7 +5551,7 @@ As the operator running the platform,
 I want Langflow's mount to stop handing out superuser tokens and an IdP revocation to take effect on the next request,
 So that a deployed platform enforces the two auth controls it claims to.
 
-**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** CAP-99; `spec-pyforge-unifying-strategy` CAP-12 (Story 49.6); CAP-86; canopy:AD-19 • DW-FU-11-1, DW-FU-26-1, DW-FU-18-2
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** `spec-pyforge-steward` CAP-99; `spec-pyforge-unifying-strategy` CAP-12 (Story 49.6); `spec-pyforge-steward` CAP-86; canopy:AD-19 • DW-FU-11-1, DW-FU-26-1, DW-FU-18-2
 **Surface:**
 - `src/platform/config/settings/base.py`: export `LANGFLOW_AUTO_LOGIN=False` beside the other `LANGFLOW_*` values, with
   `LANGFLOW_SUPERUSER`/`LANGFLOW_SUPERUSER_PASSWORD` read from the environment; set `SOCIALACCOUNT_STORE_TOKENS = True`.
@@ -5583,7 +5583,7 @@ As the operator dispatching stories,
 I want the session-precondition warning on a dispatch to name what actually failed,
 So that a real precondition gap is visible and a parse error never reads as one.
 
-**Type:** fix • **Effort:** S • **Deps:** — (lands with S-73.1) • **FR/AD:** CAP-5 (Story 63.4); AD-8
+**Type:** fix • **Effort:** S • **Deps:** — (lands with S-73.1) • **FR/AD:** spec-pyforge-steward CAP-5 (Story 63.4); AD-8
 **Surface:**
 - `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py`: `_surface_session_precondition_findings`
   reads the report from stdout, else stderr: the first JSON object with `findings` that opens a line.
@@ -5639,7 +5639,7 @@ As the operator reading a dispatch's journal,
 I want `steward session check` to treat a `layer-off` kit item as marshal does, silent,
 So that MRS-DISP-049 fires only on a real kit failure.
 
-**Type:** fix • **Effort:** XS • **Deps:** — • **FR/AD:** CAP-162 (amended 2026-10-01), FR-35 • **Surface:**
+**Type:** fix • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-162 (amended 2026-10-01), FR-35 • **Surface:**
 `src/shared/packages/pyforge-steward/src/pyforge/steward/session.py` (`_seed_kit_findings`),
 `src/shared/packages/pyforge-steward/tests/unit/test_session.py`
 **Given** `marshal seed check --json` reports a kit item at `layer-off` (its silent outcome for a layer it reads as off:
@@ -5660,7 +5660,7 @@ As the operator following a session check's printed remedy,
 I want the `token-kit` and `codegraph-index` remedy to be the command that provisions the kit,
 So that running it clears the finding instead of printing a dry-run plan.
 
-**Type:** fix • **Effort:** XS • **Deps:** — • **FR/AD:** CAP-5 (Story 63.4), CAP-162 • **Surface:**
+**Type:** fix • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-5 (Story 63.4), CAP-162 • **Surface:**
 `src/shared/packages/pyforge-steward/src/pyforge/steward/session.py` (`_seed_kit_findings`),
 `src/shared/packages/pyforge-steward/tests/unit/test_session.py`
 **Given** a kit item at `missing` or `stale` (the states `marshal seed kit --apply` provisions; an
@@ -5682,7 +5682,7 @@ As the operator running `steward keys` or `steward sync`,
 I want the `_http.py` bridge resolved when a verb first needs it, and a missing `age` reported as a duty failure,
 So that importing either module never crashes, and a missing tool reads as a named `keys <verb>` failure, not exit 70.
 
-**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** CAP-1 (Epic 1, Stories 1.2–1.3); AD-8 • DW-1-3-14, DW-1-3-5
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-1 (Epic 1, Stories 1.2–1.3); AD-8 • DW-1-3-14, DW-1-3-5
 **Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py` (`locate_http_module`, the module-level
 bridge at :113-120, `KeysDuty.run`), `src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py` (its `_http`
 import at :58-61), `src/shared/packages/pyforge-steward/tests/unit/` (the `test_keys_*` and `test_sync_*` modules)
@@ -5706,7 +5706,7 @@ what failed,
 So that the documented local stack works past its health probe, and a partial sync failure is diagnosable from the CLI.
 
 **Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** pap:CAP-1 (Story 10.1's settings), pap:CAP-6 (Story 10.3's
-compose stack); CAP-57 (FR-27, Story 8.1's transport), CAP-60 (Story 8.4's batch) • DW-10-3-3, DW-FU-8-1-3, DW-8-4-1
+compose stack); spec-pyforge-steward CAP-57 (FR-27, Story 8.1's transport), CAP-60 (Story 8.4's batch) • DW-10-3-3, DW-FU-8-1-3, DW-8-4-1
 **Surface:** `src/platform/config/settings/production.py` (:47-55), `src/platform/compose/compose.yml` (the `platform` and
 `worker` environments), `src/platform/tests/`, `src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py` (the
 transport seam, :307-349, and `reconcile_schedule_batch`, :1699-1762), `src/shared/packages/pyforge-steward/tests/unit/test_sync_*.py`
@@ -6202,7 +6202,7 @@ As the operator running the platform host, with or without every station's packa
 I want `/stations/` to list each station portal I may reach, mounted with its link or absent with its reason,
 So that one page says what the host is running and why something is missing.
 
-**Type:** feature • **Effort:** S • **Deps:** — (cross-station gate: herald `37-1-the-herald-portal-loads-without-herald-and-says-why`; minted `blocked`, the operator flips it once 37.1 is `done` on `main`) • **FR/AD:** `spec-pyforge-unifying-strategy` CAP-3 (Eight portals, one session), with CAP-10, CAP-12 and CAP-13; pap:AD-2; canopy:AD-11 • Dream 2026-10-11 (stations index) • operator ruling 2026-10-11 "Keep 37.1; mint steward index (Recommended)" • landing held for an independent review (marshal Story 83.18: `landing_review: required` in the spec, dispatched with `--hold-landing`)
+**Type:** feature • **Effort:** S • **Deps:** — (cross-station gate: herald `37-1-the-herald-portal-loads-without-herald-and-says-why`; minted `blocked`, the operator flips it once 37.1 is `done` on `main`) • **FR/AD:** `spec-pyforge-unifying-strategy` CAP-3 (Eight portals, one session), with `spec-pyforge-unifying-strategy` CAP-10, CAP-12 and CAP-13; pap:AD-2; canopy:AD-11 • Dream 2026-10-11 (stations index) • operator ruling 2026-10-11 "Keep 37.1; mint steward index (Recommended)" • landing held for an independent review (marshal Story 83.18: `landing_review: required` in the spec, dispatched with `--hold-landing`)
 **Flag:** `pyforge.steward.stations_index` (openfeature-file, global; production off, staging off, dev on; fallback: `/stations/` falls through to the Lane 1 catch-all as today; cleanup 90 days after ON everywhere)
 **Surface:** `src/platform/config/stations_index.py` (new), `src/platform/config/urls.py` (one `path` just before the `stations/` include at `:40`), `src/platform/platformapp/templates/stations/index.html` (new), `src/platform/config/flags.json` and `flag-overlays.json`, `src/platform/tests/test_stations_index.py` (new), `src/platform/tests/test_openfeature_file_flags.py` (`_SHIPPED_BOOLEANS`), `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/shared/packages/pyforge-steward/tests/meta/test_stations_index_boundaries.py` (new), `docs/tutorials/local-platform-development.md` (`:59`), `docs/governance/flag-inventory/` (through its tool)
 **Spec:** `planning-artifacts/specs/spec-91-1-the-stations-index-lists-each-station-portal-as-mounted-or-absent-and-why.md`
@@ -6812,7 +6812,7 @@ I want a `pages` duty that builds the artifact by the build task, triggers the o
 the last run and the registry verdict, with the old verbs and their git plumbing deleted,
 So that the duct is driven and read through one CLI and nothing steward runs commits to `main`.
 
-**Type:** feature • **Effort:** M • **Deps:** S-102.2 (ordering noted, not a gate: atlas Story 30.1 stops `kedro-viz-publish.yml` calling the retired verb) • **FR/AD:** spec-pyforge-steward CAP-168 (FR-41), extending CAP-2 and CAP-166; AD-1, AD-4 (amended 2026-10-14), AD-5 (the 2026-08-09 rule: delete, not deprecate), AD-7, AD-8 • Dream 2026-10-13 (the Pages duct)
+**Type:** feature • **Effort:** M • **Deps:** S-102.2 (ordering noted, not a gate: atlas Story 30.1 stops `kedro-viz-publish.yml` calling the retired verb) • **FR/AD:** spec-pyforge-steward CAP-168 (FR-41), extending spec-pyforge-steward CAP-2 and CAP-166; AD-1, AD-4 (amended 2026-10-14), AD-5 (the 2026-08-09 rule: delete, not deprecate), AD-7, AD-8 • Dream 2026-10-13 (the Pages duct)
 **Flag:** `pyforge.steward.pages_duty` (Story 102.2's; off, every verb refuses naming the flag with `EXIT_PAGES_REFUSAL`)
 **Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py` (`PagesDuty`, three verbs), `cli.py` (`DUTIES` gains `pages` after `ci`; the `pages` subparsers; `EXIT_PAGES_REFUSAL`; the `deploy dashboard` and `deploy status` subparsers go), `deploy.py` (`_DEPLOY_VERBS` → `perimeter`, `static`; `_run_dashboard`, `_run_status`, `build_dashboard`, `dashboard_diff`, `commit_and_push_dashboard`, `_push_pending_commit_if_ahead`, `last_deploy_commit`, `DeployRecord` deleted; `deploy static`'s docstring says the file lands through a PR), `tests/unit/test_cli.py` and `test_restore_duty.py` (count 30), `test_deploy_build.py`, `test_deploy_dry_run.py`, `test_deploy_reconcile.py`, `test_deploy_status.py`, `test_deploy_ledger_refusal.py` (deleted), `test_pages_duty.py` and `test_pages_duty_flag_states.py` (new), the tracked docs and comments that name the verbs as current (`docs/reference/github-workflows.md`, `docs/dashboard/README.md`, `scripts/fleet_scan.py`, `pyforge-atlas/tools/normalize_viz_build.py`, `fresh_clone.py` — co-governor reconciles), `deferred-work-ledger.md` (`DW-steward-102-3-1` if atlas 30.1 has not landed)
 **Spec:** `planning-artifacts/specs/spec-102-3-steward-pages-build-deploy-status-replaces-deploy-dashboard-and-deploy-status.md`
@@ -7370,7 +7370,7 @@ As a reader who opens a steward capability to learn what it guarantees, and the 
 I want every capability block in `spec-pyforge-steward/SPEC.md` to carry a real title and its full text, the `spec-foundry-regenerate-not-fold` memlog to name the amended rule as B's starting discipline, and the capability ledger to classify every CAP the one-PR effort mints,
 So that a requirement's arrow lands on text that says what it guarantees, pyforge-foundry re-derives its PRDs under the amended rule rather than the exception it reversed, and no minted CAP is unclassified (`fcl` CAP-2 makes that HARD).
 
-**Type:** chore • **Effort:** M • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-5 (amended 2026-10-26), CAP-3 and CAP-7 (the foundry on-ramp); spec-foundry-regenerate-not-fold CAP-7 (B's starting discipline); spec-foundry-capability-ledger CAP-2 (every minted CAP classified); spec-pyforge-steward CAP-1..CAP-168 (their text; no CAP minted)
+**Type:** chore • **Effort:** M • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-5 (amended 2026-10-26), spec-one-chain-per-station CAP-3 and CAP-7 (the foundry on-ramp); spec-foundry-regenerate-not-fold CAP-7 (B's starting discipline); spec-foundry-capability-ledger CAP-2 (every minted CAP classified); spec-pyforge-steward CAP-1..CAP-168 (their text; no CAP minted)
 **Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
 **Surface:** `planning-artifacts/specs/spec-pyforge-steward/SPEC.md` (23 placeholder titles `from spec-…` replaced — 9 restored from the pre-fold source line, 14 authored from the capability's intent; 29 'See absorbed Spec memlog' bullets restored from the source; 147 cut bullets rejoined; 15 `verified:` sub-bullets the fold had joined onto a success line split back out — by script from `git show 97e0816ad2^`, every id stable); `.memlog.md`; `specs/spec-foundry-regenerate-not-fold/.memlog.md` (the CAP-7 event: the chain standard B inherits is amended, not excepted); `docs/foundry/capability-ledger.yaml` (rows `pyforge-atlas:CAP-72`, `pyforge-doctor:CAP-92`, `pyforge-doctor:CAP-93`, all `rebuild`; `updated:`); PRD, spine and epics re-stamps (chain currency; no FR, AD or story text changes)
 **Spec:** `planning-artifacts/specs/spec-111-1-the-steward-spec-s-fold-cut-capability-text-is-restored-and-the-foundry-inherits-the-amended-rule.md`
@@ -7610,7 +7610,7 @@ As the operator who turned none of the 8 retrofit kill switches off in their 90-
 I want each key removed from the tree, its reader and its two-state test on 2027-01-24 (the Q4 clock, `on_everywhere` 2026-10-26 plus 90 days), declared with `retires-flag:` by this station,
 So that the gate's `flag-clock-overdue` never reds `detectors-ci`, no reader is left behind, and the inventory reads each row as retired by this story.
 
-**Type:** feature • **Effort:** M • **Deps:** 114.1 • **FR/AD:** the retirement path of the Guild flag rule (spec-feature-flag-governance, the gate capability as amended 2026-10-15; Q4)
+**Type:** feature • **Effort:** M • **Deps:** 114.1 • **FR/AD:** the retirement path of the Guild flag rule (spec-feature-flag-governance CAP-2, the gate capability as amended 2026-10-15; Q4)
 **Flag:** `flag-exempt: flag-infrastructure`; `retires-flag:` `pyforge.steward.budget`, `pyforge.steward.frame_upstream_check`, `pyforge.steward.workspace_clean`, `pyforge.steward.workspace_own_worktrees_only`, `pyforge.steward.deploy_perimeter`, `pyforge.steward.setup_hooks`, `pyforge.steward.workspace_full_refs`, `pyforge.steward.station_client_identity`
 **Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, the read sites and the two-state tests the Epic 114 stories name, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-steward.md` (regenerated)
 **Spec:** `planning-artifacts/specs/spec-114-9-the-retrofit-kill-switches-retire-on-their-cleanup-date.md`
@@ -7663,7 +7663,7 @@ As the operator whose every push and every PR waits on these gates,
 I want the steward suite runs under pytest-xdist and its serial remainder alone,
 So that a green local run still means a green CI run, and both answer in minutes, not a quarter of an hour.
 
-**Type:** chore • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (extends CAP-159 and CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence); lands on AD-1 (wrap, never reimplement: pytest-xdist, buildx, the registry render are the tools' own), AD-5 (provision wraps pixi) and AD-8 (exit-code sole ownership)
+**Type:** chore • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (extends spec-pyforge-steward CAP-159 and CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence); lands on AD-1 (wrap, never reimplement: pytest-xdist, buildx, the registry render are the tools' own), AD-5 (provision wraps pixi) and AD-8 (exit-code sole ownership)
 **Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
 **Surface:** `pixi.toml` (`[feature.pyforge-steward.dependencies]` gains `pytest-xdist`; task `pyforge-steward-test`), `pixi.lock`, `environment.yaml` (regenerated), `src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py` (runs alone: it SIGINTs its own process), `@pytest.mark.xdist_group` on fixtures that share scratch, the six heaviest test files (`test_workspace_stacked_landing.py`, `test_cutover.py`, `test_estate_verify.py`, `test_estate.py`, `test_preflight_scratch.py`, `test_estate_reconcile.py`)
 **Spec:** `planning-artifacts/specs/spec-117-1-the-steward-suite-runs-under-pytest-xdist-and-its-serial-remainder-alone.md`
@@ -7679,7 +7679,7 @@ As the operator whose every push and every PR waits on these gates,
 I want a station's coverage floor is judged from its own suite's run, and coverage-gates.yml retires,
 So that a green local run still means a green CI run, and both answer in minutes, not a quarter of an hour.
 
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (extends CAP-159 and CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence); lands on AD-1 (wrap, never reimplement: pytest-xdist, buildx, the registry render are the tools' own), AD-5 (provision wraps pixi) and AD-8 (exit-code sole ownership)
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (extends spec-pyforge-steward CAP-159 and CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence); lands on AD-1 (wrap, never reimplement: pytest-xdist, buildx, the registry render are the tools' own), AD-5 (provision wraps pixi) and AD-8 (exit-code sole ownership)
 **Flag:** none (`flag-exempt: detector-or-gate`: a CI job, a test task or a preflight report; `spec-feature-flag-governance` Q1)
 **Surface:** `scripts/station_suite_ci.py` (new: gate segment under `--cov` via `coverage_gates_ci._run_pytest_cov`, verdict via `_evaluate`, the complement without `--cov`), `scripts/coverage_gates_ci.py` (`--report <json>`), `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_suite_reduction.py` (`_parse_single_pytest` returns segments for `&&` tasks), `pixi.toml` (`pyforge-<s>-coverage-gate` reads the report and `depends-on` its suite), `.github/workflows/pyforge-station-tests.yml` (station jobs call the driver), `.github/workflows/coverage-gates.yml` (retired), `docs/governance/ci-surfaces.yaml` (row `state: retired`; `PAUSE_COVERAGE_GATES` deleted), `tests/scripts/`, steward `tests/unit/test_preflight_suite_reduction.py`
 **Spec:** `planning-artifacts/specs/spec-117-2-a-station-s-coverage-floor-is-judged-from-its-own-suite-s-run-and-coverage-gates-yml-retires.md`
@@ -7695,7 +7695,7 @@ As the operator whose every push and every PR waits on these gates,
 I want the preflight admits lanes longest-first by the cores they will use,
 So that a green local run still means a green CI run, and both answer in minutes, not a quarter of an hour.
 
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (extends CAP-159 and CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence); lands on AD-1 (wrap, never reimplement: pytest-xdist, buildx, the registry render are the tools' own), AD-5 (provision wraps pixi) and AD-8 (exit-code sole ownership)
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (extends spec-pyforge-steward CAP-159 and CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence); lands on AD-1 (wrap, never reimplement: pytest-xdist, buildx, the registry render are the tools' own), AD-5 (provision wraps pixi) and AD-8 (exit-code sole ownership)
 **Flag:** `pyforge.steward.preflight_critical_path` (default ON in dev, staging and production: a kill switch; OFF keeps declaration order and the static xdist share)
 **Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py` (`_next_lane`, the admission loop), `preflight_xdist.py` (`lane_weight`; per-admission shares replace the static minimum share), `preflight_budget.py` (`lane_medians(journal)`), `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, steward `tests/unit/test_preflight_concurrency.py`, `test_preflight_workers.py`
 **Spec:** `planning-artifacts/specs/spec-117-3-the-preflight-admits-lanes-longest-first-by-the-cores-they-will-use.md`
@@ -7711,7 +7711,7 @@ As the operator whose every push and every PR waits on these gates,
 I want each station suite runs as its package-local and live-tree halves,
 So that a green local run still means a green CI run, and both answer in minutes, not a quarter of an hour.
 
-**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (extends CAP-159 and CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence); lands on AD-1 (wrap, never reimplement: pytest-xdist, buildx, the registry render are the tools' own), AD-5 (provision wraps pixi) and AD-8 (exit-code sole ownership)
+**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (extends spec-pyforge-steward CAP-159 and CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence); lands on AD-1 (wrap, never reimplement: pytest-xdist, buildx, the registry render are the tools' own), AD-5 (provision wraps pixi) and AD-8 (exit-code sole ownership)
 **Flag:** none (`flag-exempt: detector-or-gate`: a CI job, a test task or a preflight report; `spec-feature-flag-governance` Q1)
 **Surface:** `pixi.toml` (per station `pyforge-<s>-test` collects the package-local tests, `pyforge-<s>-live-test` the live-tree readers; one convention — a `tests/live/` directory or a `live_tree` marker — for all), `.github/workflows/pyforge-station-tests.yml` (`changes` job: `<s>` output gated on the package + shared surface, `<s>_live` output on today's derived arrays; one `<s>-live-test` job per station), `src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py` (keys both jobs; a package-suite test with an outside read reds), steward's own live-tree files moved (`tests/meta/**` and the `ROOT_HANDOFF_INPUTS["steward"]` files); other stations move theirs on their own chains
 **Spec:** `planning-artifacts/specs/spec-117-4-each-station-suite-runs-as-its-package-local-and-live-tree-halves.md`
@@ -7727,7 +7727,7 @@ As the operator whose every push and every PR waits on these gates,
 I want preflight-budget names every lane over its journal-derived budget,
 So that a green local run still means a green CI run, and both answer in minutes, not a quarter of an hour.
 
-**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (extends CAP-159 and CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence); lands on AD-1 (wrap, never reimplement: pytest-xdist, buildx, the registry render are the tools' own), AD-5 (provision wraps pixi) and AD-8 (exit-code sole ownership)
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (extends spec-pyforge-steward CAP-159 and CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence); lands on AD-1 (wrap, never reimplement: pytest-xdist, buildx, the registry render are the tools' own), AD-5 (provision wraps pixi) and AD-8 (exit-code sole ownership)
 **Flag:** none (`flag-exempt: detector-or-gate`: a CI job, a test task or a preflight report; `spec-feature-flag-governance` Q1)
 **Surface:** `docs/governance/preflight-budgets.toml` (new: `[defaults] single_station = 90, full = 240`; `[lanes]` per `task@environment`), `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_budget.py` (`judge_run` gains per-lane rows; `lane_medians`), `scripts/pre_push_preflight.sh` (prints the report after a green run), steward `tests/unit/test_preflight_budget.py`
 **Spec:** `planning-artifacts/specs/spec-117-5-preflight-budget-names-every-lane-over-its-journal-derived-budget.md`
@@ -7743,7 +7743,7 @@ As the operator whose every push and every PR waits on these gates,
 I want image builds leave the pull-request path for main and the nightly canary,
 So that a green local run still means a green CI run, and both answer in minutes, not a quarter of an hour.
 
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (extends CAP-159 and CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence); lands on AD-1 (wrap, never reimplement: pytest-xdist, buildx, the registry render are the tools' own), AD-5 (provision wraps pixi) and AD-8 (exit-code sole ownership)
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (extends spec-pyforge-steward CAP-159 and CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence); lands on AD-1 (wrap, never reimplement: pytest-xdist, buildx, the registry render are the tools' own), AD-5 (provision wraps pixi) and AD-8 (exit-code sole ownership)
 **Flag:** none (`flag-exempt: detector-or-gate`: a CI job, a test task or a preflight report; `spec-feature-flag-governance` Q1)
 **Surface:** `.github/workflows/pyforge-station-tests.yml` (`guild-container`: `needs: changes` output `container` on the Containerfile, `.dockerignore`, `pixi.toml`, `pixi.lock`, `.pixi/config.toml`, `scripts/guild_image_ci.sh`, `scripts/container-gates`; docker leg with `docker buildx build --cache-from/--cache-to type=gha`; podman leg main-only), `.github/workflows/platform-ci.yml` (`container`, `container-dbgpt`, `golden-path-promotion` run on push and dispatch, not `pull_request`; the "Free runner disk" steps go with them), `.github/workflows/ci-canary.yml` (nightly for every `trigger: main` surface), `docs/governance/ci-surfaces.yaml` (rows gain `trigger: main` and `canary:`), `scripts/ci_surface_gates.py --render`, steward `tests/unit/test_ci_status.py`, `tests/scripts/test_ci_surface_gates.py`
 **Spec:** `planning-artifacts/specs/spec-117-6-image-builds-leave-the-pull-request-path-for-main-and-the-nightly-canary.md`
@@ -7759,7 +7759,7 @@ As the operator whose every push and every PR waits on these gates,
 I want the CI workflows run what the diff touches, with pinned tools and parallel detectors,
 So that a green local run still means a green CI run, and both answer in minutes, not a quarter of an hour.
 
-**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (extends CAP-159 and CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence); lands on AD-1 (wrap, never reimplement: pytest-xdist, buildx, the registry render are the tools' own), AD-5 (provision wraps pixi) and AD-8 (exit-code sole ownership)
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (extends spec-pyforge-steward CAP-159 and CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence); lands on AD-1 (wrap, never reimplement: pytest-xdist, buildx, the registry render are the tools' own), AD-5 (provision wraps pixi) and AD-8 (exit-code sole ownership)
 **Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
 **Surface:** `.github/workflows/detectors.yml` (`scripts/detectors.py --scope repo --jobs auto`; `scripts-suite` gains `needs: changes` on `tests/scripts/**`, `scripts/**`, `pyforge-core`, `pyforge-doctor`, `pixi.toml`, `pixi.lock`, `tests/packaging/**`; concurrency group `${{ github.event.pull_request.number || github.ref }}`), the 11 unpinned `prefix-dev/setup-pixi` steps (`pixi-version: v0.80.0`), `.github/workflows/marshal-local-recipes-seed-oracle.yml` (`paths:`), `.github/workflows/lint-types.yml` (`actions/cache` on `.mypy_cache` keyed on `pixi.lock` + `hashFiles('src/**/*.py')`), `.github/workflows/pyforge-station-tests.yml` (atlas: `which google-chrome ||` before `playwright install --with-deps chromium`, the CAP-174 shape), steward `tests/meta/test_workflow_path_filters_match.py`
 **Spec:** `planning-artifacts/specs/spec-117-7-the-ci-workflows-run-what-the-diff-touches-with-pinned-tools-and-parallel-detectors.md`
@@ -7775,7 +7775,7 @@ As the operator whose every push and every PR waits on these gates,
 I want the CFE regression net leaves the pull-request path, and the PR keeps its meta suite,
 So that a green local run still means a green CI run, and both answer in minutes, not a quarter of an hour.
 
-**Type:** feature • **Effort:** S • **Deps:** mason's `test-ci-meta` task story (minted on the mason chain; cites this story) • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (extends CAP-159 and CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence); lands on AD-1 (wrap, never reimplement: pytest-xdist, buildx, the registry render are the tools' own), AD-5 (provision wraps pixi) and AD-8 (exit-code sole ownership)
+**Type:** feature • **Effort:** S • **Deps:** mason's `test-ci-meta` task story (minted on the mason chain; cites this story) • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (extends spec-pyforge-steward CAP-159 and CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence); lands on AD-1 (wrap, never reimplement: pytest-xdist, buildx, the registry render are the tools' own), AD-5 (provision wraps pixi) and AD-8 (exit-code sole ownership)
 **Flag:** none (`flag-exempt: detector-or-gate`: a CI job, a test task or a preflight report; `spec-feature-flag-governance` Q1)
 **Surface:** `.github/workflows/cfe-regression-net.yml` (`pull_request` removed; push-to-main, nightly via `ci-canary.yml`, `workflow_dispatch`), a `cfe-meta` job (in `pyforge-station-tests.yml` or `detectors.yml`) that runs mason's `test-ci-meta` task on the CFE paths, `docs/governance/ci-surfaces.yaml` (the net's row `trigger: main`; a `cfe-meta` row), `src/shared/packages/pyforge-steward/tests/meta/test_cfe_regression_net_paths.py`
 **Spec:** `planning-artifacts/specs/spec-117-8-the-cfe-regression-net-leaves-the-pull-request-path-and-the-pr-keeps-its-meta-suite.md`
@@ -7807,7 +7807,7 @@ As the operator whose every PR waits on the slowest station job,
 I want each station half to run as N matrix shards sized so no shard works longer than about 45 s on four cores, with the coverage gate judging the shards' reports merged as one,
 So that a PR's wall is one shard plus its set-up, not one suite.
 
-**Type:** feature • **Effort:** L • **Deps:** 117.4; 117.6 and 117.8 first in the build order • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (amended 2026-10-27, later: sharded station jobs, shallow gates, the platform suite under xdist; extends CAP-159 and CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence); lands on AD-1 (wrap, never reimplement: pytest-split, pytest-xdist and the Actions matrix are the tools' own), AD-5 (provision wraps pixi) and AD-8 (exit-code sole ownership)
+**Type:** feature • **Effort:** L • **Deps:** 117.4; 117.6 and 117.8 first in the build order • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (amended 2026-10-27, later: sharded station jobs, shallow gates, the platform suite under xdist; extends spec-pyforge-steward CAP-159 and CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence); lands on AD-1 (wrap, never reimplement: pytest-split, pytest-xdist and the Actions matrix are the tools' own), AD-5 (provision wraps pixi) and AD-8 (exit-code sole ownership)
 **Flag:** none (`flag-exempt: detector-or-gate`: CI jobs, test tasks and a gate; `spec-feature-flag-governance` Q1)
 **Surface:** `pixi.toml` (`pytest-split` in the station features; `pyforge-<s>-test` / `pyforge-<s>-live-test` accept `--splits N --group K` through a task argument and write `.steward/coverage/<s>-<half>-<K>.json`), `.github/workflows/pyforge-station-tests.yml` (a `strategy.matrix.group` per station job, the gate's `download-artifact` pattern over all shards), `scripts/coverage_gates_ci.py` (`--report` already merges N paths), `tests/durations/<station>.json` (the `pytest-split` durations file, regenerated by the nightly run), `src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py` (`load_jobs` reads a matrix job as one job), `test_preflight_selection.py` (a shard set rides its job's rule)
 **Spec:** `planning-artifacts/specs/spec-117-10-each-station-suite-runs-as-sharded-jobs-whose-coverage-the-gate-merges.md`
@@ -7823,7 +7823,7 @@ As the operator whose every station job waits for the `changes` job before it st
 I want the `changes` step and every coverage-gate diff to read a shallow fetch of the PR's base sha instead of full history,
 So that the gate costs under ten seconds and no job pays twenty seconds for a clone it does not need.
 
-**Type:** chore • **Effort:** S • **Deps:** 117.2 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (amended 2026-10-27, later: sharded station jobs, shallow gates, the platform suite under xdist; extends CAP-159 and CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence); lands on AD-1 (wrap, never reimplement: pytest-split, pytest-xdist and the Actions matrix are the tools' own), AD-5 (provision wraps pixi) and AD-8 (exit-code sole ownership)
+**Type:** chore • **Effort:** S • **Deps:** 117.2 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (amended 2026-10-27, later: sharded station jobs, shallow gates, the platform suite under xdist; extends spec-pyforge-steward CAP-159 and CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence); lands on AD-1 (wrap, never reimplement: pytest-split, pytest-xdist and the Actions matrix are the tools' own), AD-5 (provision wraps pixi) and AD-8 (exit-code sole ownership)
 **Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
 **Surface:** `.github/workflows/pyforge-station-tests.yml` (`changes`: `fetch-depth: 1` + `git fetch --depth=1 origin $BASE_SHA` from `github.event.pull_request.base.sha`, a two-dot diff; every station and gate job drops `fetch-depth: 0` the same way), `scripts/coverage_gates_ci.py` (`--base` accepts a sha the job fetched shallowly), `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_ci.py` (the twin's base resolution unchanged), steward `tests/meta/test_workflow_path_filters_match.py` and `tests/unit/test_preflight_ci.py`
 **Spec:** `planning-artifacts/specs/spec-117-11-the-changes-gate-and-the-gate-diffs-run-on-shallow-fetches-of-the-pr-base.md`
@@ -7839,7 +7839,7 @@ As the operator whose shared-surface PRs wait on Platform CI's `test` job,
 I want the platform `test` job to run its pytest-django suite under xdist with ruff, mypy and the policy suite in a parallel job,
 So that Platform CI's wall is one short job, not a 350 s serial one.
 
-**Type:** feature • **Effort:** M • **Deps:** 117.6 (the image jobs leave the PR path first) • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (amended 2026-10-27, later: sharded station jobs, shallow gates, the platform suite under xdist; extends CAP-159 and CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence); lands on AD-1 (wrap, never reimplement: pytest-split, pytest-xdist and the Actions matrix are the tools' own), AD-5 (provision wraps pixi) and AD-8 (exit-code sole ownership); CAP-174 (the Platform CI test job's budget)
+**Type:** feature • **Effort:** M • **Deps:** 117.6 (the image jobs leave the PR path first) • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (amended 2026-10-27, later: sharded station jobs, shallow gates, the platform suite under xdist; extends spec-pyforge-steward CAP-159 and CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence); lands on AD-1 (wrap, never reimplement: pytest-split, pytest-xdist and the Actions matrix are the tools' own), AD-5 (provision wraps pixi) and AD-8 (exit-code sole ownership); spec-pyforge-steward CAP-174 (the Platform CI test job's budget)
 **Flag:** none (`flag-exempt: detector-or-gate`: a CI job and a test task; `spec-feature-flag-governance` Q1)
 **Surface:** `.github/workflows/platform-ci.yml` (`test` runs `pytest -n 4 --dist loadgroup`; a new `checks` job runs ruff, `ruff format --check`, mypy, `manage.py check` and the policy suite), `pixi.toml` (`pytest-xdist` in the `platform-ci-test` feature; `scripts/platform-ci-local.sh` mirrors both jobs), `src/platform/pyproject.toml` (`--reuse-db` per xdist worker; `xdist_group` on the tests that share a fixture database), `docs/governance/ci-surfaces.yaml` (the `platform-ci.checks` row), steward `tests/meta/test_platform_ci_*`
 **Spec:** `planning-artifacts/specs/spec-117-12-the-platform-suite-runs-under-xdist-with-its-checks-in-a-parallel-job.md`
@@ -8110,7 +8110,7 @@ As the operator who wants a Nebari platform the estate runs itself,
 I want `steward deploy nic` to bring up, report on and tear down an NKP cluster on this host's kind from one tracked config,
 So that the first Nebari cluster is a repeatable attended command, not a hand-run `nic` session.
 
-**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-176 / FR-50 (extends CAP-62 and CAP-65; works with CAP-1, CAP-3, CAP-56, CAP-178); lands on AD-1 (wrap, never reimplement: `nic` by subprocess), AD-8 (`DutyResult`) and pap:AD-16 (pixi-provisioned CLIs; Docker the one system tool); no AD moves.
+**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-176 / FR-50 (extends spec-pyforge-steward CAP-62 and CAP-65; works with spec-pyforge-steward CAP-1, CAP-3, CAP-56, CAP-178); lands on AD-1 (wrap, never reimplement: `nic` by subprocess), AD-8 (`DutyResult`) and pap:AD-16 (pixi-provisioned CLIs; Docker the one system tool); no AD moves.
 **Flag:** `pyforge.steward.nkp_deploy` (default ON in dev, staging and production: a kill switch; OFF makes `deploy nic` refuse with usage code 2)
 **Surface:** `src/shared/packages/pyforge-steward/**` (the `deploy` duty gains the `nic` sub-verb and its tests), `src/platform/deploy/nic/my-nebari-local.yaml` (the tracked kind config, `repository.local`), `pixi.toml` and `pixi.lock` (`nic` pinned into the steward feature; the channel is the Spec's open question, recorded on the memlog), `environment.yaml` (regenerated), `src/platform/config/flags.json` and the three shipped-flag tables, `docs/how-to/host-nebari.md` (new). (amended 2026-11-01 in place: `nic` is not pinned; it resolves from the SelfExplainML channel at the floor `>=0.14.0` with no version cap, the channel held by its `docs/governance/pin-policy.yaml` `hold: channel` row, and the Spec's open question is settled on its memlog, EGM audit STW-D-C4, STW-D-R5)
 **Spec:** `planning-artifacts/specs/spec-118-1-steward-deploy-nic-brings-up-and-tears-down-an-nkp-cluster-on-local-kind.md`
@@ -8142,7 +8142,7 @@ As the operator who wants a Nebari platform the estate runs itself,
 I want a cloud config to use `rxm7706/local-recipes` on `gitops/<project_name>` as its GitOps source, protected like the other operational branches, and a Hetzner k3s cluster with both packs to run from it,
 So that the second cluster has a real domain, Longhorn storage and Let's Encrypt, with its state in the monorepo and never on `main`.
 
-**Type:** feature • **Effort:** L • **Deps:** S-118.1, S-118.2, S-118.8 (amended 2026-11-01 in place: S-118.8 added, the gitops writer and this story's spec amendments land first, EGM audit STW-M-D1, STW-D-R1) • **FR/AD:** spec-pyforge-steward CAP-178 / FR-52 and CAP-176 / FR-50 (extends CAP-165; works with CAP-1, CAP-176; CAP-177's cloud proof added 2026-11-05, EGM audit STW-D-F6); lands on AD-1, AD-8 and AD-9; no AD moves.
+**Type:** feature • **Effort:** L • **Deps:** S-118.1, S-118.2, S-118.8 (amended 2026-11-01 in place: S-118.8 added, the gitops writer and this story's spec amendments land first, EGM audit STW-M-D1, STW-D-R1) • **FR/AD:** spec-pyforge-steward CAP-178 / FR-52 and CAP-176 / FR-50 (extends CAP-165; works with spec-pyforge-steward CAP-1, CAP-176; CAP-177's cloud proof added 2026-11-05, EGM audit STW-D-F6); lands on AD-1, AD-8 and AD-9; no AD moves.
 **Flag:** `pyforge.steward.nkp_gitops_branch` (default ON in dev, staging and production: a kill switch; OFF makes every `deploy nic` action refuse a `repository.existing` config; widened 2026-11-01 by Story 118.8)
 **Surface:** `docs/governance/guild-roster.json` (`protected_refs` gains `refs/heads/gitops/`, kind `operational-branch`), `docs/governance/rulesets/protected-refs.json` and CAP-165's live-ruleset proof (`scripts/_protected_refs_ruleset_lib.py`, `scripts/protected_refs_ruleset_check.py` and `tests/scripts/test_protected_refs_ruleset_check.py`, added 2026-11-05, EGM audit STW-M-F2), `.claude/hooks/pre-shell.py` tests, `src/shared/packages/pyforge-steward/**` (the branch refusal on every action, the `--yes` gate, the unechoed summary, the hetzner provider path, `opentofu` through `NIC_TOFU_PATH`, and `gitops_root_for`'s `repository.existing` fix in `deploy_nic_packs.py`: cloud packs are applied with `kubectl`), `.pre-commit-config.yaml` (the secret scan over `src/platform/deploy/nic/`), `src/platform/deploy/nic/<project_name>.yaml` (the Hetzner config), `pixi.toml` (`opentofu`), `src/platform/config/flags.json` and the three shipped-flag tables, `docs/how-to/host-nebari.md`.
 **Spec:** `planning-artifacts/specs/spec-118-3-the-gitops-branch-of-the-monorepo-is-the-gitops-source-and-a-hetzner-cluster-runs-on-it.md`
@@ -8566,7 +8566,7 @@ As someone who rebuilds steward from its Dream, memlog and Spec,
 I want every capability marker, count, verb, path and companion citation in `spec-pyforge-steward` to match the tree, and the two shipped duties `restore --drill` and `revoke --sub` to have the capability no Spec gave them,
 So that the Spec a second root reads is the contract the code keeps, not a record of verbs and scripts that are gone.
 
-**Type:** docs • **Effort:** L • **Deps:** S-120.1, S-120.2, S-120.3, S-120.4, S-120.5 • **FR/AD:** spec-pyforge-steward CAP-180 / FR-54 (minted 2026-11-10, `shipped 2026-09-02`; the text this story re-derives); the markers and text of CAP-2, CAP-4, CAP-5, CAP-6, CAP-7, CAP-26, CAP-43, CAP-46, CAP-53, CAP-153, CAP-159, CAP-161, CAP-167, CAP-175 and the markers of CAP-146..CAP-150, CAP-152..CAP-164, CAP-166..CAP-174 • no AD moves
+**Type:** docs • **Effort:** L • **Deps:** S-120.1, S-120.2, S-120.3, S-120.4, S-120.5 • **FR/AD:** spec-pyforge-steward CAP-180 / FR-54 (minted 2026-11-10, `shipped 2026-09-02`; the text this story re-derives); the markers and text of spec-pyforge-steward CAP-2, CAP-4, CAP-5, CAP-6, CAP-7, CAP-26, CAP-43, CAP-46, CAP-53, CAP-153, CAP-159, CAP-161, CAP-167, CAP-175 and the markers of spec-pyforge-steward CAP-146..CAP-150, CAP-152..CAP-164, CAP-166..CAP-174 • no AD moves
 **Flag:** none (`type: docs`, `flag-exempt: docs-only`; Spec text only)
 **Surface:** `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md` (re-derive only), `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md` (the `change` entries), `_bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-steward-2026-07-25/prd.md` (pointers on the FR-8..FR-11, UJ-2, D6 and SM-2 lines, the driver line and the Currency reconciliation section), `_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md` (the pointer on AD-4's `steward deploy dashboard` **Rule:** line, the `station_suite_ci.py` bullet (**No duty, port or adapter.**) of § *Currency reconciliation — 2026-10-27 (CAP-175)*, and the frontmatter `updated:`, anchored by content because Story 120.1 rewrites the satellite above them first; not the cutover satellite, `## Satellite: python-foundry cutover` up to `## Satellite: secure-live-dashboards`, which is Story 120.1's), `_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md` (the frontmatter `updated:` and currency lines only), `_bmad-output/projects/pyforge-steward/planning-artifacts/briefs/brief-pyforge-steward-2026-07-25/brief.md`
 **Spec:** `planning-artifacts/specs/spec-122-1-the-steward-spec-s-markers-numbers-and-names-match-the-tree-and-restore-and-revoke-have-a-capability.md`
@@ -8630,7 +8630,7 @@ As the operator closing the cutover-readiness change for steward,
 I want CAP-153, CAP-166, CAP-179, CAP-181 and CAP-182 flipped to `shipped`, one Surface reconcile event on each of `spec-pyforge-steward` and `spec-pyforge-unifying-strategy`, the steward deferred rows tracked and the chain re-stamped,
 So that the steward chain reads what landed, and doctor Story 58.4's scoped stamps find every changed path reconciled.
 
-**Type:** chore • **Effort:** M • **Deps:** S-29.5, S-120.5, S-121.1, S-121.2, S-121.6, S-121.7, S-122.2, S-122.3, S-122.4, S-123.1, S-123.2, S-123.3, S-124.1, S-124.2, S-124.3, S-124.4 • **FR/AD:** spec-pyforge-steward CAP-153 and CAP-166 (Story 122.1 keeps them `ready` while Stories 124.3 and 124.2 of this PR are open), CAP-179, CAP-181, CAP-182 (the markers flip; CAP-180 was minted `shipped`) • chain bookkeeping; no AD moves
+**Type:** chore • **Effort:** M • **Deps:** S-29.5, S-120.5, S-121.1, S-121.2, S-121.6, S-121.7, S-122.2, S-122.3, S-122.4, S-123.1, S-123.2, S-123.3, S-124.1, S-124.2, S-124.3, S-124.4 • **FR/AD:** spec-pyforge-steward CAP-153 and CAP-166 (Story 122.1 keeps them `ready` while Stories 124.3 and 124.2 of this PR are open), spec-pyforge-steward CAP-179, CAP-181, CAP-182 (the markers flip; CAP-180 was minted `shipped`) • chain bookkeeping; no AD moves
 **Flag:** none (a chore: no runtime path)
 **Surface:** `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md` (append), `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md` (re-derive only), `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/.memlog.md` (append), `_bmad-output/projects/pyforge-steward/planning-artifacts/briefs/brief-pyforge-steward-2026-07-25/brief.md, _bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-steward-2026-07-25/prd.md, _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md and _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md` (frontmatter `updated:` and one dated Currency reconciliation line each), `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md` (append: DW-steward-121-1..4 and DW-steward-cutover-2026-11-10-1..12), `_bmad-output/projects/pyforge-steward/planning-artifacts/implementation-readiness-report-<date>.md` (new, only when this story runs on or after 2026-12-01), `docs/dreams/pyforge-steward.md and docs/dreams/pyforge-unifying-strategy.md` (one closing Realization-log line each)
 **Spec:** `planning-artifacts/specs/spec-122-5-the-steward-and-host-specs-close-on-what-landed-shipped-markers-and-one-surface-reconcile-each.md`
@@ -8766,7 +8766,7 @@ As an agent addressing a station as a persona,
 I want each persona to name the MCP tools its station's face really serves, the host Spec to govern the eight station personas, and CAP-4 and CAP-14 to say what is true,
 So that a persona never sends me to `station_face` as the face, and a persona that drifts reds a stamp.
 
-**Type:** docs • **Effort:** M • **Deps:** S-122.2 • **FR/AD:** spec-pyforge-unifying-strategy CAP-16 (personas) and CAP-20 (the closed table) / canopy:FR-38; CAP-4 and CAP-14 amended • no new CAP, no AD moves
+**Type:** docs • **Effort:** M • **Deps:** S-122.2 • **FR/AD:** spec-pyforge-unifying-strategy CAP-16 (personas) and CAP-20 (the closed table) / canopy:FR-38; spec-pyforge-unifying-strategy CAP-4 and CAP-14 amended • no new CAP, no AD moves
 **Flag:** none (`type: docs`, `flag-exempt: docs-only`: instruction text and Spec text)
 **Surface:** `.claude/skills/bmad-agent-<station>/SKILL.md and customize.toml for atlas, doctor, herald, marshal, mason, scribe, steward and warden` (the tool lines only), `docs/how-to/reach-a-station-mcp-endpoint.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md` (re-derive only), `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/.memlog.md` (the three `change` entries were written at mint)
 **Spec:** `planning-artifacts/specs/spec-124-5-each-persona-names-the-mcp-tools-its-station-s-face-serves-and-the-host-spec-governs-the-personas-and-says-what-scribe-s-graph-store-is.md`
@@ -9295,7 +9295,7 @@ As a developer or an agent on a machine that has never built this repository,
 I want one read-only command to tell me whether the machine can clone, resolve its environments, run the station CLIs and run the full preflight, with the exact remedy for each thing that is missing and who may run it,
 So that I learn what the machine lacks from one report, before a lane fails on it.
 
-**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-183 (minted 2026-11-25), FR-57 ← CAP-183; amends what CAP-48's `init` reports; composes CAP-5, CAP-167 and CAP-175 (no text change); AD-1, AD-8
+**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-183 (minted 2026-11-25), FR-57 ← CAP-183; amends what CAP-48's `init` reports; composes spec-pyforge-steward CAP-5, CAP-167 and CAP-175 (no text change); AD-1, AD-8
 **Flag:** `flag-exempt: detector-or-gate` (a readiness check is a detector: it reads the machine and reports, and a gated check is a silent green (roster list))
 **Surface:** `docs/governance/machine-readiness.yaml`, `docs/governance/machine-readiness.schema.json`, `src/shared/packages/pyforge-steward/src/pyforge/steward/machine.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/bootstrap.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/estate_realize.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/session.py`, `src/shared/packages/pyforge-steward/tests/unit/test_machine.py`, `src/shared/packages/pyforge-steward/tests/unit/test_bootstrap*.py`, `src/shared/packages/pyforge-steward/tests/unit/test_cli.py`, `src/shared/packages/pyforge-steward/tests/meta/test_machine_readiness_data.py`, `src/shared/packages/pyforge-steward/README.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/contract.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/oracle-map.md`, `docs/reference/station-cheat-sheet.md`, `docs/governance/realization-register.yaml`
 **Spec:** `planning-artifacts/specs/spec-135-1-steward-init-reads-its-checks-from-a-tracked-file-and-reports-the-desktop-profile.md`
@@ -9312,7 +9312,7 @@ As a developer who wants to build the platform image, run it under compose, or p
 I want `steward init --profile container`, `pod`, `ocp` or `nkp` to tell me what that kind of work needs on this machine,
 So that I install an engine, a cluster tool or a pull secret once, from one list, and know which profile this platform cannot run at all.
 
-**Type:** feature • **Effort:** M • **Deps:** S-135.1 • **FR/AD:** spec-pyforge-steward CAP-183 (minted 2026-11-25), FR-57 ← CAP-183; composes CAP-175 and CAP-176 (no text change); pap:AD-16 (which tools pixi provisions and which stay on the system); AD-1, AD-8
+**Type:** feature • **Effort:** M • **Deps:** S-135.1 • **FR/AD:** spec-pyforge-steward CAP-183 (minted 2026-11-25), FR-57 ← CAP-183; composes spec-pyforge-steward CAP-175 and CAP-176 (no text change); pap:AD-16 (which tools pixi provisions and which stay on the system); AD-1, AD-8
 **Flag:** `flag-exempt: detector-or-gate` (a readiness check is a detector: it reads the machine and reports, and a gated check is a silent green (roster list))
 **Surface:** `docs/governance/machine-readiness.yaml`, `docs/governance/machine-readiness.schema.json`, `src/shared/packages/pyforge-steward/src/pyforge/steward/machine.py`, `src/shared/packages/pyforge-steward/tests/unit/test_machine.py`, `src/shared/packages/pyforge-steward/tests/meta/test_machine_readiness_data.py`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/contract.md`
 **Spec:** `planning-artifacts/specs/spec-135-2-the-container-pod-ocp-and-nkp-profiles-say-what-each-needs.md`
@@ -9338,4 +9338,190 @@ So that I do not assemble the path from six pages, and the page I follow shows o
 **Then** the tutorial's `sources:` name the files it describes and its `verified:` is the date its commands were run, a profile this laptop cannot reach shows its real NOT READY report and says so, and the bootstrap how-to no longer shows a podman failure as normal
 **And** the steward skill's `init` line, CLI block and duty table match the live `--help`, with its `[MANUAL]` blocks byte-identical
 **And** `docs-map-hygiene-check`, `docs-currency-check`, `governance-currency` and `general-docs-consistency-check` pass
+**Status:** done
+
+## Epic 136: The rows a lapsed blocker held close (spec-pyforge-steward CAP-5, CAP-166, CAP-175, CAP-179, CAP-182; spec-pyforge-unifying-strategy CAP-15, CAP-16)
+
+Minted 2026-11-25 from the station Dream's entry of the same date (the rows a lapsed blocker held close) on the operator ruling of 2026-11-25: "All 22 rows". Twenty-two open deferred-work rows across the ledgers carry a named blocker. For ten of them the blocker was the scope of the change that wrote the row, the 2026-11-10 cutover-readiness change, which landed as PR #2371; they are carried here, one story per kind of work: two modules that spell the layout (`DW-steward-123-2-2`), three package-data files that cite absorbed ids (`DW-steward-122-4-1`), the host's private import (`DW-steward-cutover-2026-11-10-3`), the personas' bare ids (`DW-steward-cutover-2026-11-10-10`), the Story lines of `epics.md` (`DW-steward-cutover-2026-11-10-9`), seven tests that run in no CI job (`DW-steward-cutover-2026-11-10-8`, `DW-steward-cutover-2026-11-10-12`, `DW-scribe-cutover-2026-11-10-2`), the missing durations files (`DW-steward-cutover-2026-11-10-11`) and seven atlas tasks in the recipe-factory feature (`DW-atlas-46-1-4`). Three more are atlas's own Epic 53. Stories 136.9 to 136.11 were added the same day on the operator ruling "lets address these too": a local preflight lane for the two steps of Story 136.6 (136.9), the six compiled station skills that cite the persona ids bare (`DW-steward-136-4-1`, 136.10) and the Story lines Story 136.5 left (`DW-steward-136-5-1`, 136.11).
+**HARD boundaries:**
+- Seven rows stay open with their blocker, by the operator ruling of 2026-11-25 "Leave them blocked": `DW-steward-121-2`, `DW-steward-121-3`, `DW-steward-cutover-2026-11-10-4`, `DW-steward-cutover-2026-11-10-5`, `DW-steward-cutover-2026-11-10-7`, `DW-atlas-46-1-3` and `DW-atlas-46-1-8`. No `blocked` key is flipped.
+- No CI job, ci-surfaces row or budget is added (operator ruling of 2026-11-25: "No new lane"), and no dependency is added, moved or re-pinned.
+- The session hook is not edited by an agent: `DW-steward-134-2-1` is the operator's act, on a patch this change hands over.
+- A compiled station skill is written by its own tool (`skf-update-skill`), never by hand.
+- No flag: each story restores what a capability or the chain standard already states.
+
+### Story 136.1: Steward's last two modules derive the station-packages directory from the root layout
+
+As a maintainer who moves this root's layout,
+I want `five_tier.py` and `preflight_suite_reduction.py` to read the station-packages directory from `root_layout.STATION_PACKAGES_DIR`,
+So that one module names the layout and no other spells it segment by segment.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-182 (one module names this root's layout; the marker drops its `not met: every other module derives from it` qualifier through the memlog); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: two modules read a constant that already exists)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/five_tier.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_suite_reduction.py`, `src/shared/packages/pyforge-steward/tests/meta/test_portability.py`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md`, `docs/foundry/capability-ledger.yaml`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-136-1-steward-s-last-two-modules-derive-the-station-packages-directory-from-the-root-layout.md`
+**Given** `DW-steward-123-2-2` reports that `five_tier.py` and `preflight_suite_reduction.py` spell the station-packages directory segment by segment and that `test_portability.py` excepts both by name
+**When** both modules derive the directory from `root_layout.STATION_PACKAGES_DIR` and the two `LAYOUT_EXCEPTIONS` entries are deleted
+**Then** `LAYOUT_EXCEPTIONS` is empty, `test_portability.py` passes, every path the two modules returned before is the same path, and no steward module but `root_layout.py` joins those three segments
+**And** the memlog of `spec-pyforge-steward` records that CAP-182's marker drops the qualifier naming `DW-steward-123-2-2`, and the row reads resolved
+**Status:** done
+
+### Story 136.2: Three steward package-data files cite today's capability ids
+
+As a reader who follows a capability id from a package file to the Spec,
+I want the sprint-ledger-query schema, the measure catalog and the estate catalog to cite the station Spec's ids,
+So that every id in steward's package resolves in `spec-pyforge-steward`.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-179 (the public contract and the ids the package cites; realized, no text change; its `oracle-map.md` row note is amended); reads CAP-148, CAP-45 and CAP-117 (no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: three comments or descriptions name ids the fold already re-keyed)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/data/sprint-ledger-query.schema.json`, `src/shared/packages/pyforge-steward/measures/measures.yaml`, `src/shared/packages/pyforge-steward/catalog/catalog.yaml`, `src/shared/packages/pyforge-steward/tests/meta/test_cap_citations.py`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/oracle-map.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-136-2-three-steward-package-data-files-cite-today-s-capability-ids.md`
+**Given** `DW-steward-122-4-1` reports three package-data files that cite an absorbed Spec's capability id and an `oracle-map.md` note that understates what `test_cap_citations.py` holds
+**When** each citation is re-keyed to the station Spec's id by the provenance map and the test reads the three files
+**Then** no file under the steward package cites `spec-sprint-ledger-query-module`, `spec-build-league-scorecard` or `spec-self-hosted-bmad-marketplace` as a live id, the three files cite spec-pyforge-steward:CAP-148, CAP-45 and CAP-117, and a test fails when one of them cites an absorbed Spec again
+**And** `oracle-map.md`'s CAP-179 row note says the test holds help, output, comments, docstrings and the three data files, and the row reads resolved
+**Status:** done
+
+### Story 136.3: The host's ingest imports steward's transport by its public name
+
+As a maintainer of the one dated carve-out under `src/platform/ingest/github_projects/`,
+I want the pipeline to import `default_transport`, and the diff guard to admit an edit of a carved-out file that shrinks the breach,
+So that the carve-out can shrink without every station suite turning red.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-182 (the public name `default_transport`; realized, no text change) and pap:AD-2 (the host never imports `pyforge.*`; the dated carve-out DW-steward-74-1 stands and only shrinks); reads `spec-pyforge-core` (the testing kit's diff guard; no text change)
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: an import reads a name that already exists, and a guard reads the allowlist another test already holds)
+**Surface:** `src/platform/ingest/github_projects/pipeline.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py`, `src/shared/packages/pyforge-testing-kit/**`, `src/shared/packages/pyforge-steward/tests/meta/test_object_store_seam_boundaries.py`, `src/shared/packages/pyforge-*/tests/**`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-136-3-the-host-s-ingest-imports-steward-s-transport-by-its-public-name.md`
+**Given** `DW-steward-cutover-2026-11-10-3` reports that the host pipeline imports steward's private `_default_transport`, and that every station suite's diff guard refuses any edit of that file
+**When** the kit's diff guard admits the four carved-out files and nothing else, and the pipeline imports `default_transport`
+**Then** the pipeline imports the public name, every one of the 20 guards passes on this branch, a test shows the guard still reds a changed `src/platform` file outside the four that imports `pyforge`, and the allowlist is written in one place two tests read
+**And** the carve-out does not grow: the four paths are the four of `PLATFORM_PYFORGE_IMPORTERS`, and the row reads resolved under DW-steward-74-1, which stays open
+**Status:** done
+
+### Story 136.4: The eight station personas cite their requirements and capabilities in qualified form
+
+As an agent that reads a station persona,
+I want each requirement and capability id the persona cites to name the chain it belongs to,
+So that `FR-13` in a persona cannot be read as the station's own FR-13.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-unifying-strategy CAP-16 (every station can be addressed as a persona) and CAP-15 (realized, no text change); CHAIN-STANDARD section 0 (the `canopy:` prefix); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: four ids take the prefix the chain standard already defines)
+**Surface:** `.claude/skills/bmad-agent-*/SKILL.md`, `.claude/skills/bmad-agent-*/customize.toml`, `src/shared/packages/pyforge-*/tests/meta/test_station_persona.py`, `src/shared/packages/pyforge-*/tests/meta/test_skf_skill_and_persona.py`, `src/shared/packages/pyforge-steward/tests/meta/test_steward_persona.py`, `src/shared/packages/pyforge-*/tests/**`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-136-4-the-eight-station-personas-cite-their-requirements-and-capabilities-in-qualified-form.md`
+**Given** `DW-steward-cutover-2026-11-10-10` reports that all eight station personas cite `FR-13`, `FR-11`, `CAP-15` and `CAP-16` unqualified and that each suite's persona test pins the wording
+**When** the four ids are qualified in the eight personas, their `customize.toml` and the template, and each suite's persona test asserts the qualified form
+**Then** no persona `SKILL.md` or `customize.toml` cites one of the four ids bare, every persona contract test passes, and a test fails when a persona cites one bare again
+**And** no other persona line changes, no compiled `pyforge-<station>` skill is hand-edited, and the row reads resolved
+**Status:** done
+
+### Story 136.5: Story lines in steward's epics cite today's capability ids
+
+As a reader who follows a Story's FR/AD line to the capability it realizes,
+I want each Story line in steward's `epics.md` to cite the station Spec's id,
+So that a Story minted before the fold resolves in `spec-pyforge-steward` without the provenance map.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-179 (the ids the station cites are the Spec's; realized, no text change); CHAIN-STANDARD section 2 (a citation names a defined capability); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a planning fix: citations move, no behaviour does)
+**Surface:** `_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-136-5-story-lines-in-steward-s-epics-cite-today-s-capability-ids.md`
+**Given** `DW-steward-cutover-2026-11-10-9` reports 383 Story FR/AD lines in steward's `epics.md` that cite an absorbed Spec's capability id, a bare id or none
+**When** each line citing an absorbed Spec is re-keyed through the Spec's provenance headings, and each bare id the page resolves is qualified
+**Then** no Story FR/AD line cites an absorbed steward Spec's capability as a live id, every re-keyed id is a capability `spec-pyforge-steward` defines, and the lines left unresolved are counted by kind in the story's change log
+**And** no Story key, heading, status or acceptance line changes, `chain-completeness-check`, `story-status-check` and `ledger-regression-check` pass, and the row reads resolved, naming any remainder as a new row if one is left
+**Status:** done
+
+### Story 136.6: The tests that ran in no CI job run in one
+
+As the operator who reads a green CI run as every test having run,
+I want steward's two share-tree tests and scribe's five skipped tests to run in a CI job whose environment holds what they need,
+So that a test that skips in its own station's environment is not a test that runs nowhere.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-175 (a station suite runs once, as its two halves) and CAP-166 (every pausable CI surface is declared once; no row is added, by the operator ruling of 2026-11-25 "No new lane"); reads `spec-pyforge-scribe:CAP-26` (no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix to CI coverage: no product behaviour moves)
+**Surface:** `.github/workflows/lint-types.yml`, `.github/workflows/pyforge-station-tests.yml`, `pixi.toml`, `environment.yaml`, `src/shared/packages/pyforge-steward/tests/unit/test_provision_module_installers.py`, `src/shared/packages/pyforge-scribe/tests/meta/test_live_tree_split.py`, `src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plane.py`, `src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py`, `docs/reference/github-workflows.md`, `docs/governance/**`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`, `_bmad-output/projects/pyforge-scribe/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-136-6-the-tests-that-ran-in-no-ci-job-run-in-one.md`
+**Given** `DW-steward-cutover-2026-11-10-8`, `DW-steward-cutover-2026-11-10-12` and `DW-scribe-cutover-2026-11-10-2` report seven tests that skip in the only environment their suite runs in, and the operator rules "No new lane"
+**When** each test is run by node id as a step of an existing CI job whose environment holds its imports, through a pixi task, and the step fails when a named test skips
+**Then** the two share-tree tests pass in a job on `pyforge-guild`, the five scribe tests pass in the job on `pyforge-foundry-full`, each locally through its pixi task, and no CI job, ci-surfaces row, budget or dependency is added
+**And** a skip of any of the seven fails its step, each skip reason and scribe's skip-site guard name the task that runs the test, `docs/reference/github-workflows.md` says so, and the three rows read resolved
+**Status:** done
+
+### Story 136.7: Each sharded suite splits by recorded durations
+
+As the operator who pays for every CI minute,
+I want each sharded test job to split its tests by how long they take,
+So that no shard runs far longer than its siblings because it drew the slow tests by count.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-175 (each station half runs as N shards sized by time; realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: the workflow already names the files)
+**Surface:** `tests/durations/**`, `.github/workflows/pyforge-station-tests.yml`, `pixi.toml`, `environment.yaml`, `tests/scripts/**`, `scripts/**`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-136-7-each-sharded-suite-splits-by-recorded-durations.md`
+**Given** `DW-steward-cutover-2026-11-10-11` reports that the workflow names six durations files and none exists
+**When** each file is written by one full unsharded run of its task with `--store-durations`
+**Then** `tests/durations/` holds a non-empty durations file for every `--durations-path` the workflow names, and a test fails when the workflow names one that is missing or empty
+**And** no shard count or workflow command changes, the README says how a file is refreshed, and the row reads resolved
+**Status:** done
+
+### Story 136.8: The seven atlas gate tasks run in atlas's own environment
+
+As an agent that runs an atlas gate,
+I want `dashboard-dryrun`, `dashboard-serve`, `vizro-ai-dryrun`, `publish`, `publish-range`, `wasm-build` and `wasm-smoke` to run in `-e pyforge-atlas`,
+So that an atlas gate does not need the 10 GB recipe-factory environment.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-5 (`pyforge-guild` and each station's own environment, never `local-recipes`, carry station work; realized, no text change); reads `spec-pyforge-atlas:CAP-50` and `spec-pyforge-atlas:CAP-69` (their `gate-contract.md` table moves with the tasks; no capability text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: seven tasks move to the environment CI already runs their suites in)
+**Surface:** `pixi.toml`, `pixi.lock`, `environment.yaml`, `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/gate-contract.md`, `src/shared/packages/pyforge-atlas/tests/**`, `src/shared/packages/pyforge-atlas/AGENTS.md`, `docs/**`, `.github/workflows/**`, `_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-136-8-the-seven-atlas-gate-tasks-run-in-atlas-s-own-environment.md`
+**Given** `DW-atlas-46-1-4` reports seven atlas gate tasks that run only in `-e local-recipes`, and the change that held them there has landed
+**When** each task whose dependencies `pyforge-atlas` already solves is moved to `[feature.pyforge-atlas.tasks]` unchanged, and `gate-contract.md` and every caller name the new environment
+**Then** each moved task resolves and runs in `-e pyforge-atlas`, is no longer defined under `feature.local-recipes`, and `gate-contract.md`'s table and its meta-test agree with `pixi.toml`
+**And** no dependency is added or moved, the lock is unchanged or passes `pixi lock --check` with the pinned pixi, a task that could not move is named with its reason, and the row reads resolved or names what is left
+**Status:** done
+
+### Story 136.9: The two named-test steps have a local preflight lane
+
+As an agent that reads a green local preflight as a green CI run,
+I want the two steps Story 136.6 added to the lint-types job to run as lanes of `pr-preflight`,
+So that a red of either is met before a push, not after.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-159 (the preflight selects and runs every lane a PR gates on) and CAP-175 (realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: two tasks join the list the preflight already reads)
+**Surface:** `pixi.toml`, `environment.yaml`, `src/shared/packages/pyforge-steward/tests/**`, `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight*.py`, `docs/how-to/pixi-tasks.md`, `docs/**`
+**Spec:** `planning-artifacts/specs/spec-136-9-the-two-named-test-steps-have-a-local-preflight-lane.md`
+**Given** the review of Story 136.6 found that the two new lint-types steps have no `pr-preflight` lane
+**When** both tasks are added to `pr-preflight-lanes`, each in the environment its CI step uses
+**Then** a full-scope `pr-preflight` lists and runs `steward-share-tree-test` in `pyforge-guild` and `scribe-plane-and-portal-test` in `pyforge-foundry-full`, and `pixi run --dry-run -e pyforge-guild pr-preflight-lanes` resolves every task
+**And** steward's preflight tests pass, and no CI job, ci-surfaces row or dependency is added
+**Status:** done
+
+### Story 136.10: Six station skills and their briefs cite the persona ids in qualified form
+
+As an agent that loads a station's compiled skill,
+I want the atlas, doctor, herald, marshal, scribe and warden skill briefs and compiled skills to cite the host's requirements and the strategy's capabilities by their qualified ids,
+So that a compiled skill and its persona name the same ids.
+
+**Type:** fix • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-unifying-strategy CAP-15 (every station teaches an agent its own work; realized, no text change) and CAP-16; no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: a compiled skill cites ids in the form the chain standard defines)
+**Surface:** `.claude/skills/pyforge-atlas/**`, `.claude/skills/pyforge-doctor/**`, `.claude/skills/pyforge-herald/**`, `.claude/skills/pyforge-marshal/**`, `.claude/skills/pyforge-scribe/**`, `.claude/skills/pyforge-warden/**`, `.claude/skills/.export-manifest.json`, `.claude/skills/export-skill-result-*.json`, `AGENTS.md`, `docs/reference/skills-catalog.md`, `docs/map.yaml`, `src/shared/packages/pyforge-doctor/tests/fixtures/**`, `src/shared/packages/pyforge-*/tests/**`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-136-10-six-station-skills-and-their-briefs-cite-the-persona-ids-in-qualified-form.md`
+**Given** `DW-steward-136-4-1` reports six skill briefs and four compiled skills that cite the persona ids bare
+**When** each brief is qualified and each of the six skills is regenerated by `skf-update-skill` and exported by `skf-export-skill`, one station at a time
+**Then** no active compiled skill or brief of the six stations cites one of the four ids bare, every `[MANUAL]` block is byte-identical to its earlier text, each `active` link serves the rebuilt version, and no other skill directory changes
+**And** the `AGENTS.md` skill block and the export manifest name the versions built, the scribe instruction-surface parity test and `governance-currency` pass, each station's test that reads its compiled skill passes, and the row reads resolved
+**Status:** done
+
+### Story 136.11: The Story lines the page did not resolve name their capabilities
+
+As a reader who follows a Story's FR/AD line to the capability it realizes,
+I want each Story line Story 136.5 left to name the capability the Story realizes, where the Story's own record shows it,
+So that the remainder is the lines that truly have no capability, each counted.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-179 (the ids the station cites are the Spec's; realized, no text change); CHAIN-STANDARD section 2 (a citation names a defined capability, traced, never counted); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a planning fix: citations move, no behaviour does)
+**Surface:** `_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-136-11-the-story-lines-the-page-did-not-resolve-name-their-capabilities.md`
+**Given** `DW-steward-136-5-1` lists the Story FR/AD lines of steward's `epics.md` that Story 136.5 could not resolve from the page
+**When** each is traced through its story spec, its Epic's prose and the capability's intent, and re-keyed or qualified only where a record names the capability
+**Then** every id written is a capability its Spec defines whose intent the Story's work matches, Stories 12.9 and 59.2 cite today's ids or record why not, and the lines still without a resolvable capability are counted by reason in the story's change log
+**And** no Story key, heading, status or acceptance line changes, the chain detectors pass, and the row reads resolved, naming the counted remainder as lines that have no capability to cite
 **Status:** done

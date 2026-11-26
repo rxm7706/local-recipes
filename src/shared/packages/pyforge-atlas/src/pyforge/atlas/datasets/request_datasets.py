@@ -18,15 +18,15 @@ the node body stays a pure ``DataFrame -> DataFrame`` transform:
 
 Both COMPOSE ``kedro_datasets.api.APIDataset`` for the physical HTTP (fsspec/requests
 are owned by the composed dataset, NOT imported here — this module stays clean under
-``tests/catalog/test_no_inline_io.py``). Construction is lazy + offline (the composed
+``tests/unit/catalog/test_no_inline_io.py``). Construction is lazy + offline (the composed
 APIDataset does no network at ``__init__``), so both materialize under the
 ``kedro-catalog-check`` offline resolution gate with stub credentials.
 
 The concrete per-{package,query} FAN-OUT (issuing N requests through the scheduler)
 is dataset-owned and deferred — B1 seeds the parameterization surface + the
 rate-limit ownership; the node consumes already-fetched DataFrames (THE CRUX). The
-rate-limit *contract* is fixture-tested against a stub in ``tests/datasets`` /
-``tests/pipelines`` (AD-10 / AD-11), never a live endpoint.
+rate-limit *contract* is fixture-tested against a stub in ``tests/unit/datasets`` /
+``tests/unit/pipelines`` (AD-10 / AD-11), never a live endpoint.
 """
 
 from __future__ import annotations
@@ -283,7 +283,7 @@ class _RequestParameterizedAPIDataset(AbstractDataset):
     (tokens never refill because the clock never advances, yet the no-op sleep never
     advances it either). Any fixture that exercises the fan-out MUST use an ADVANCING
     clock (a fake clock whose ``sleep`` advances ``now``) OR a ``bucket_capacity`` >=
-    the number of requests it issues. See ``tests/datasets/test_pypi_json_request_dataset.py``.
+    the number of requests it issues. See ``tests/unit/datasets/test_pypi_json_request_dataset.py``.
     """
 
     def __init__(
@@ -1210,7 +1210,7 @@ class PyPIJsonRequestDataset(_RequestParameterizedAPIDataset):
         adds a CODE ceiling in :meth:`RateLimitedScheduler.acquire` that RAISES rather
         than hangs, but fixtures should still use an advancing clock OR
         ``bucket_capacity >= len(names)`` (see the class docstring +
-        ``tests/datasets/test_pypi_json_request_dataset.py``).
+        ``tests/unit/datasets/test_pypi_json_request_dataset.py``).
         """
         out: dict[str, Any] = {}
         failures: dict[str, str] = {}

@@ -13,7 +13,7 @@ Both subclass :class:`_ParquetRefreshStore` (the shared last-good Parquet +
 staleness-marker persistence this module hoists out of the two near-identical
 implementations, review finding) and compose ``kedro_datasets.api.APIDataset`` for
 the physical HTTP fetch (dataset-owned IO, AD-2 — no ``requests``/``sqlite3`` import
-here; ``tests/catalog/test_no_inline_io.py`` bans both across the package).
+here; ``tests/unit/catalog/test_no_inline_io.py`` bans both across the package).
 
 Neither class fetches on a bare Kedro ``load()`` — ``load()`` is a read-only
 projection of the persisted store. The live fetch is driven by ``save()``, which

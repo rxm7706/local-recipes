@@ -744,7 +744,8 @@ def _scan_action(page: PageDef, data_root: Path) -> vm.Action:
     @capture("action")
     def run_scan(path_value: str | None) -> tuple[str, Any]:
         # `dash` reaches atlas only through vizro (a declared dependency), so it is imported where it is
-        # used, never at module level (tests/packaging/test_dependency_completeness.py, AUD-ATLAS-010).
+        # used, never at module level (test_dependency_completeness in the repository root's tests/packaging/,
+        # AUD-ATLAS-010).
         from dash import no_update
 
         submission = _scan.submit_scan(page_id, path_value, data_root=data_root)

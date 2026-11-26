@@ -478,5 +478,6 @@ The recipes repository slug lives in two places: `datasets/identity_sources.py`
 ## Lineage producer
 
 `observability.PRODUCER`, stamped on every OpenLineage facet and event, is exactly
-`https://github.com/rxm7706/local-recipes/tree/main/pyforge-atlas`: a path that does not exist (the package lives at
-`src/shared/packages/pyforge-atlas`). Deferred row DW-atlas-46-1-7. The default OpenLineage namespace is `cf_atlas`.
+`urn:local-recipes:pyforge-atlas`: a URN, the form the report-schema `$id`s use, which names no repository path
+(operator ruling 2026-11-25, Story 53.2; it closed deferred row DW-atlas-46-1-7). The default OpenLineage namespace is
+`cf_atlas`.

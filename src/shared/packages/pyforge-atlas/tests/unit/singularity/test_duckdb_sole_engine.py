@@ -9,7 +9,7 @@ to assert the FR-5 sole-engine property, so a future reintroduction of a SQLite 
 test whose name says exactly why.
 
 THE ONE LEGITIMATE EXCEPTION (documented, asserted): the B4 credentialed parity comparator
-``tests/parity/parity_runner.py`` reads the EXTERNAL legacy ``cf_atlas.db`` to prove dataset
+``tests/unit/parity/parity_runner.py`` reads the EXTERNAL legacy ``cf_atlas.db`` to prove dataset
 parity BEFORE retirement (AD-19, attended). That reads the OLD store to retire it — it is not
 the migrated engine, and it lives in ``tests/`` (never shipped in the package). This gate
 asserts that boundary holds: the legacy-SQLite reader is in tests/, never in src/.
@@ -78,8 +78,8 @@ def test_the_only_legacy_sqlite_reader_is_the_parity_comparator_in_tests():
     legacy cf_atlas.db to prove parity before retirement — lives in tests/, never in src/.
     This pins the boundary: retirement-verification tooling may read the OLD store; the
     migrated ENGINE never does."""
-    # src/: zero sqlite readers (the assertion above); tests/parity: exactly the comparator.
-    # Locate the member root from THIS test file (tests/singularity/…), not from the installed
+    # src/: zero sqlite readers (the assertion above); tests/unit/parity: exactly the comparator.
+    # Locate the member root from THIS test file (tests/unit/singularity/…), not from the installed
     # package location — a non-editable install puts ATLAS_SRC under site-packages, where
     # ATLAS_SRC.parents[2] would not hold tests/ (Gemini #92).
     member_root = Path(__file__).resolve().parents[3]

@@ -901,6 +901,24 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   as not a defect, with the test that shows it kept. **Constraints:** no flag is added (each fix restores behaviour
   a shipped capability already states), no dataset, catalog entry or exit code outside the frozen domain is added,
   and `pixi.toml`'s scanner and the other manifest readers are not in this change.
+- **2026-11-25 (the rows a lapsed blocker held close) — Found and ruled:** a sweep of the eight deferred-work
+  ledgers found 22 open rows held by a named blocker, six of them atlas's. Three are workable now. `DW-atlas-46-1-6`:
+  `tier-taxonomy.md` and `complete-export-contract.md` are read by CAP-54, CAP-55 and CAP-43 and sit under `archive/`,
+  held because the 2026-11-10 change did not edit `archive/`; that change landed as PR #2371. `DW-atlas-46-1-7`:
+  `observability.PRODUCER` names `…/tree/main/pyforge-atlas`, a path that does not exist, held for a ruling on what
+  the producer names once two roots exist. `DW-atlas-46-1-1`: 89 comment and docstring citations in 50 files name the
+  pre-`tests/unit/` test layout or sections of an archived intake spec, held because the touched-module coverage floor
+  counts a changed module. **Ruled** (operator rulings of 2026-11-25, in session: "All 22 rows"; on `DW-atlas-46-1-7`,
+  "Layout-free URN": the producer is `urn:local-recipes:pyforge-atlas`, true on either root; on the cutover rows,
+  "Leave them blocked"). **For atlas:** this entry binds `spec-pyforge-atlas` CAP-43, CAP-54 and CAP-55 (their cite
+  paths move with the two companions, through the memlog; no capability text change) and CAP-73 (the public contract's
+  `Lineage producer` section moves with the constant; the package's comments say what the tree has), and mints no
+  capability. It decomposes as Epic 53, three stories: the two live companions move into the station Spec folder
+  (53.1), the producer becomes a layout-free URN (53.2), and the comments cite the test layout and the specs that
+  exist (53.3). `DW-atlas-46-1-4` (seven gate tasks in the recipe-factory feature) is steward's Story 136.8, since
+  `pixi.toml` is steward's. **Constraints:** no flag is added; `SPEC.md` is moved only by a render from its memlog; no
+  statement of code changes in 53.3 and no coverage floor is lowered; `DW-atlas-46-1-3` and `DW-atlas-46-1-8` keep
+  their blocker and Story 24.2's key stays `blocked`.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 

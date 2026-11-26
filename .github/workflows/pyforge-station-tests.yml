@@ -417,8 +417,8 @@ jobs:
             .claude/settings.json
             .claude/skills/bmad-agent-scribe
             .claude/skills/conda-forge-expert/SKILL.md
-            .claude/skills/pyforge-marshal/0.1.1/pyforge-marshal/SKILL.md
-            .claude/skills/pyforge-scribe/0.1.1/pyforge-scribe/SKILL.md
+            .claude/skills/pyforge-marshal/0.1.2/pyforge-marshal/SKILL.md
+            .claude/skills/pyforge-scribe/0.1.2/pyforge-scribe/SKILL.md
             .claude/skills/pyforge-scribe/skill-brief.yaml
             '.cursor/rules/*.mdc'
             .cursor/rules/scribe-recall.mdc

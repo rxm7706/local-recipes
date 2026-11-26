@@ -84,10 +84,10 @@ def validate_transcript(events: list[dict]) -> None:
 
 
 def assert_skill_forbids_freelance(text: str) -> None:
-    allowed = _section(text, "Allowed actions (CAP-16)")
+    allowed = _section(text, "Allowed actions (spec-pyforge-unifying-strategy:CAP-16)")
     forbidden = _section(text, "Forbidden actions")
     if not allowed.strip():
-        raise PersonaContractError("persona skill missing Allowed actions (CAP-16)")
+        raise PersonaContractError("persona skill missing Allowed actions (spec-pyforge-unifying-strategy:CAP-16)")
     if not forbidden.strip():
         raise PersonaContractError("persona skill missing Forbidden actions")
     if re.search(r"(?i)\b(read|write|delete|strreplace)\b tool", allowed):
@@ -329,10 +329,13 @@ def test_live_persona_skill_forbids_filesystem_and_adhoc_http():
 
 def test_permissive_skill_text_fails_contract():
     live = (_persona_dir(_repo_root()) / "SKILL.md").read_text(encoding="utf-8")
-    allowed = "## Allowed actions (CAP-16)\n\n- You may use the Read tool and curl https://example.com\n"
+    allowed = (
+        "## Allowed actions (spec-pyforge-unifying-strategy:CAP-16)\n\n"
+        "- You may use the Read tool and curl https://example.com\n"
+    )
     forbidden = "## Forbidden actions\n\nNothing.\n"
     permissive = re.sub(
-        r"(?ms)^## Allowed actions \(CAP-16\).*?(?=^## Forbidden actions)",
+        r"(?ms)^## Allowed actions \(spec-pyforge-unifying-strategy:CAP-16\).*?(?=^## Forbidden actions)",
         allowed,
         live,
     )

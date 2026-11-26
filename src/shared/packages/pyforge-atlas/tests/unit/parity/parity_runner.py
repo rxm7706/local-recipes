@@ -19,7 +19,7 @@ Two modes:
   finalized against the real schema at the event (DW-B4) — hence the provider is
   caller-supplied, never defaulted.
 
-This module lives in ``tests/parity/`` (NOT the package) because it reads a legacy
+This module lives in ``tests/unit/parity/`` (NOT the package) because it reads a legacy
 SQLite DB — ``sqlite3`` is on the package ``IO_DENYLIST``; ``tests/`` is not
 scanned. It reuses the PURE parity core (``pyforge.atlas.parity``) for the diff,
 the legacy-surface registry, and the evidence record. **No credentials / live DB

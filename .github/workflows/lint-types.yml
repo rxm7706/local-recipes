@@ -12,6 +12,12 @@
 # Dagster, Kedro, Bokeh, … types). Guild mypy alone misses those libraries; this second leg keeps
 # CI aligned with `sbom-laptop-gate`.
 #
+# Story 136.6 (spec-pyforge-steward CAP-175; operator ruling 2026-11-25, "No new lane"): this job
+# already installs pyforge-guild and pyforge-foundry-full, so it also runs the seven tests that
+# skipped in the only environment their suite runs in: steward's two share-tree tests
+# (`steward-share-tree-test`) and scribe's plane and portal tests (`scribe-plane-and-portal-test`).
+# Each task names its tests by node id through scripts/run_named_tests.py, which fails on a skip.
+#
 # The setup-pixi pin below is a registered site of scripts/pixi_version_registry.py
 # (`lint-types.yml setup-pixi`); bump it with `pixi run -e local-recipes bump-pixi-version`.
 name: Lint and types
@@ -25,6 +31,7 @@ on:
       - "scripts/lint_types.py"
       - "scripts/target_version_check.py"
       - "scripts/precommit_config_check.py"
+      - "scripts/run_named_tests.py"
       - "scripts/commit_msg_hook.py"
       - "scripts/pre_push_preflight.sh"
       - ".pre-commit-config.yaml"
@@ -70,3 +77,7 @@ jobs:
         run: pixi run --frozen -e pyforge-guild lint-types
       - name: mypy (pyforge-foundry-full — real atlas runtime libraries)
         run: pixi run --frozen -e pyforge-foundry-full mypy
+      - name: steward share-tree tests (pyforge-guild — the bmad share packages; a skip fails)
+        run: pixi run --frozen -e pyforge-guild steward-share-tree-test
+      - name: scribe plane and portal tests (pyforge-foundry-full — duckdb, atlas, django; a skip fails)
+        run: pixi run --frozen -e pyforge-foundry-full scribe-plane-and-portal-test

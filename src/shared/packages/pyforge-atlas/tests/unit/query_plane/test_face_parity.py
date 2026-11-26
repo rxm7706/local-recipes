@@ -9,7 +9,7 @@ runs an IDENTICAL query set against (a) a ``connect_reader`` handle on
 ``pyforge.atlas.query_plane_boot.boot_query_plane``, and asserts row-for-row
 agreement.
 
-NOT the ``tests/parity/`` package. That directory's "parity" means
+NOT the ``tests/unit/parity/`` package. That directory's "parity" means
 legacy-``cf_atlas.db``-vs-migrated-pipeline-output (Story B1/B4/AD-19) — an
 unrelated concept. This gate compares CAP-19's two QUERY-PLANE FACES against
 each other, on the SAME fixture data, never two independently-seeded stores.

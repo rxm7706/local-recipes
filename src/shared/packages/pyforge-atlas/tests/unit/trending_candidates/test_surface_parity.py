@@ -16,7 +16,7 @@ the two surfaces returns different results, which is precisely what CAP-3's succ
 signal forbids. These tests pin all four declarations to one source of truth.
 
 ``server.py`` is read via AST rather than FastMCP internals, mirroring
-``tests/mcp/test_no_business_logic_in_tool_bodies.py``'s approach.
+``tests/unit/mcp/test_no_business_logic_in_tool_bodies.py``'s approach.
 """
 
 from __future__ import annotations
@@ -85,7 +85,7 @@ def _registered_server_tools() -> set[str]:
     """Every ``@mcp.tool``-decorated function in ``server.py``.
 
     Read via AST rather than by building the live server, mirroring
-    ``tests/nl/test_query_vizro_ai_dryrun.py``: FastMCP is an OPTIONAL extra and is not
+    ``tests/unit/nl/test_query_vizro_ai_dryrun.py``: FastMCP is an OPTIONAL extra and is not
     installed in this environment, so nothing here can invoke a registered tool.
     """
     return _tools_in_source(Path(inspect.getfile(server)).read_text(encoding="utf-8"))
@@ -165,7 +165,7 @@ def test_the_server_tool_forwards_every_filter_to_the_same_named_keyword():
 
     ``server.py``'s ``@mcp.tool()`` wrapper re-declares all five filters and passes them
     on by hand, and NOTHING exercised it: the default-parity tests above compare only
-    default VALUES, and ``tests/mcp/test_read_surface.py``'s delegation proof stops at
+    default VALUES, and ``tests/unit/mcp/test_read_surface.py``'s delegation proof stops at
     ``tools.py``. Transposing two kwargs in the wrapper (``period=tier, tier=period``)
     left the entire suite green while an MCP client's ``period="daily"`` reached the
     query seam as its ``tier`` — the exact CLI/MCP drift CAP-3's success signal forbids

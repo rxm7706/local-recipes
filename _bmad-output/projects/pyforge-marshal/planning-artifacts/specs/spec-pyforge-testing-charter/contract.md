@@ -34,6 +34,7 @@ namespace shared across stations, so the kit ships no `src/pyforge/__init__.py`.
 - `MockSupervisor` — from `db_factory`.
 - `MockWorktree` — from `page_object`.
 - `ORIGIN_MAIN` — from `branch_diff_guard`.
+- `PLATFORM_PYFORGE_IMPORTERS` — from `branch_diff_guard`.
 - `RunJournal` — from `db_factory`.
 - `RunStateFactory` — from `db_factory`.
 - `WorktreePage` — from `page_object`.
@@ -72,12 +73,14 @@ it. Every `git` call runs through `pyforge.core.process.PosixProcess`. A base re
 calling test (`pytest.skip`) instead of raising; an `origin/<branch>` base is read by its full refname.
 
 - `ORIGIN_MAIN` — `"refs/remotes/origin/main"`, every guard's default base.
+- `PLATFORM_PYFORGE_IMPORTERS` — `frozenset[str]`: the four `src/platform/ingest/github_projects/` files of the dated
+  pap:AD-2 carve-out (DW-steward-74-1), the one shared policy here; it only shrinks.
 - `diff_text_since` — `(root, *, base=ORIGIN_MAIN, pathspec=None, require=None) -> str`: raw `git diff` text.
 - `changed_paths_since` — `(root, *, base=ORIGIN_MAIN, pathspec=None, require=None, include_untracked=False,
   always_include=()) -> list[str]`: paths changed since `base`, sorted.
 - `existed_at_ref` — `(root, path, *, ref=ORIGIN_MAIN) -> bool`: the path was already in `ref`'s tree.
 - `pyforge_import_offenders` — `(paths, root) -> list[str]`: `"rel:lineno"` for each `import pyforge` / `from
-  pyforge...` in the given Python files.
+  pyforge...` in the given Python files; a path in `PLATFORM_PYFORGE_IMPORTERS` is admitted.
 - `commits_since` — `(root, *, base=ORIGIN_MAIN, pathspec=None, no_merges=True) -> list[str]`: full SHAs on
   `base..HEAD` touching `pathspec`.
 - `commit_subject` — `(root, sha) -> str`.

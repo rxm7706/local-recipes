@@ -9,7 +9,7 @@ then `.run()` a local dev server. Local-only by default (127.0.0.1); no daemon, 
 watch loop — foreground until Ctrl-C, matching the operator's manual-not-daemon
 preference for board tooling.
 
-Usage: pixi run -e local-recipes dashboard-serve [-- --port 8050]
+Usage: pixi run -e pyforge-atlas dashboard-serve [-- --port 8050]
 """
 from __future__ import annotations
 

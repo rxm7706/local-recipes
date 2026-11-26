@@ -63,7 +63,7 @@ VALID_VERDICT_PREFIXES = ("read_dataset:", "pipeline-trigger", "deferred-to-BSL(
 # Steward Story 34.2 (FR-47) registered `query_plane_cache` without adding this exemption --
 # found here (2026-08-27) as a pre-existing registry-mirror gap while landing Story 19.3 (pre-rekey 20.3);
 # fixed in the same edit rather than left red. `query_plane_cache` is invoked via `kedro run
-# --pipeline query_plane_cache` (see tests/test_query_plane_parquet_cache.py), never an MCP
+# --pipeline query_plane_cache` (see tests/unit/test_query_plane_parquet_cache.py), never an MCP
 # trigger tool.
 #
 # Story 19.3 (pre-rekey 20.3; CAP-6, `query-plane-catalog` ruling): `semantic_packages` is the SAME shape --

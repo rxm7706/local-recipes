@@ -1,17 +1,18 @@
-# pyforge-atlas — Data Catalog (Story A2; spec § 5.1/§ 9, FR-1, AD-2/AD-3/AD-13/AD-15).
+# pyforge-atlas — Data Catalog (Story A2; archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md § 5.1/§ 9, FR-1,
+# AD-2/AD-3/AD-13/AD-15).
 #
 # Every API source and every persisted output of the seven § 5.2 pipelines is
 # declared HERE — no data-access logic ever lives in node functions (AC-2;
 # enforced structurally by kedro-catalog-check's no-inline-IO meta-test).
 #
-# Conventions (spine Consistency rows; asserted by tests/catalog/):
+# Conventions (spine Consistency rows; asserted by tests/unit/catalog/):
 #   - names: `<domain>_<entity>` snake_case; the domain prefix maps 1:1 to a
 #     pipeline (core / pypi_intelligence / vulnerability / vcs_health /
 #     universal_sbom / seed_gaps / derived_artifacts, plus the later
 #     trending_ + org_audit_ + discovery_ -> upstream_discovery,
 #     artifactory_ -> artifactory_downloads, query_plane_ -> query_plane_cache,
 #     semantic_ -> semantic_packages — map declared once in
-#     tests/catalog/conftest.py PREFIX_TO_PIPELINE).
+#     tests/unit/catalog/conftest.py PREFIX_TO_PIPELINE).
 #   - layers: raw / intermediate / primary / derived via `metadata.layer`.
 #   - persisted outputs: Parquet under `data/<layer>/<dataset_name>/`
 #     (nodes never choose physical layout).
@@ -28,8 +29,8 @@
 #     must resolve before A3's class exists); Story A3 flips `type:` on
 #     exactly these entries and consumes their `ttls.<name>` parameter.
 #
-# Deliberately NOT declared (spec § 3.3/§ 3.4): `phase_state` (FR-4 removes
-# it), the 5 SQL views (query-time constructs — Waves D/F), dropped post-v25
+# Deliberately NOT declared (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md § 3.3/§ 3.4): `phase_state`
+# (FR-4 removes it), the 5 SQL views (query-time constructs — Waves D/F), dropped post-v25
 # tables, gemini_server + recipe-authoring surfaces + template trees +
 # authoring-time live fetches, read-CLI internals. § 13.1 Candidate /
 # Conditional rows: Story 13.1 (2026-08-09) landed CAP-1 GitHub-trending
@@ -73,7 +74,7 @@ core_channeldata_raw:
 # 2026-08-30) — the mirror is the only route reachable through an existing
 # override point (the story caps new points at 2), and both sit above the ≥5,000
 # scale-sanity floor. That floor is FIXTURE-asserted in
-# tests/catalog/test_scale_floors.py; the live count is NOT observed at runtime.
+# tests/unit/catalog/test_scale_floors.py; the live count is NOT observed at runtime.
 # Consumed ONLY by the enumerate_anaconda_main_packages node (core/pipeline.py) —
 # the materializer that keeps this live entry from being a bare, never-touched raw
 # entry.

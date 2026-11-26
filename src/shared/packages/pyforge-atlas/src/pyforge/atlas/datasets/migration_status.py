@@ -3,7 +3,7 @@
 The VCS & Health pipeline gains the data behind ``conda-forge.org/status/#migrations`` —
 the ``conda-forge/conda-forge-bot-data`` repo's ``status/`` tree. Two source-dataset kinds
 own the fetch IO (THE A2 CRUX — the pure classification node never touches a client;
-``tests/catalog/test_no_inline_io.py`` AST-scans the whole package and bans
+``tests/unit/catalog/test_no_inline_io.py`` AST-scans the whole package and bans
 ``subprocess``/HTTP imports):
 
 - :class:`MigrationCategoryDataset` — one of the **category-list** files
@@ -22,8 +22,9 @@ own the fetch IO (THE A2 CRUX — the pure classification node never touches a c
 
 **DELIBERATELY EXCLUDED — ``version_status.v2.json``** (the bot's version-update queue): the
 atlas measures version currency itself (Phases H/K, ``behind-upstream``) and does not mirror
-the bot's view of the same signal (spec § FR-21). :data:`EXCLUDED_STATUS_FILES` is the guard
-a fetch never routes through; ``tests/datasets/test_migration_status.py`` asserts the exclusion.
+the bot's view of the same signal (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md § FR-21).
+:data:`EXCLUDED_STATUS_FILES` is the guard a fetch never routes through;
+``tests/unit/datasets/test_migration_status.py`` asserts the exclusion.
 
 **AD-13 (offline degradation).** Both dataset kinds take an **injected** ``fetcher`` (default
 ``None`` == OFFLINE / consumer profile). Offline — or on any fetch/write failure — the dataset
@@ -56,7 +57,8 @@ from .refresh import StalenessMarker, _safe_int
 
 logger = logging.getLogger(__name__)
 
-# The status-page per-feedstock buckets a per-migration detail JSON renders (spec § FR-21).
+# The status-page per-feedstock buckets a per-migration detail JSON renders
+# (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md § FR-21).
 # `done` is the migrated set; the remaining five are the pending/blocker buckets.
 MIGRATION_BUCKETS = (
     "done",
@@ -78,8 +80,8 @@ BLOCKER_BUCKETS = (
     "bot-error",
 )
 
-# The category-list files (spec § FR-21). `regular` + `longterm` are the ACTIVE
-# (open) migrations; `closed`/`paused` are inactive; `total` is the summary.
+# The category-list files (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md § FR-21). `regular` + `longterm`
+# are the ACTIVE (open) migrations; `closed`/`paused` are inactive; `total` is the summary.
 CATEGORY_FILES = {
     "regular": "regular_status.json",
     "longterm": "longterm_status.json",
@@ -94,8 +96,8 @@ ACTIVE_CATEGORIES = ("regular", "longterm")
 # A migration name a partition file may carry: a bot migrator slug, never a path.
 _MIGRATION_NAME = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.+-]*")
 
-# The bot's version-update queue — DELIBERATELY EXCLUDED (spec § FR-21): the atlas
-# measures version currency itself (Phases H/K). A fetch never routes through it.
+# The bot's version-update queue — DELIBERATELY EXCLUDED (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md §
+# FR-21): the atlas measures version currency itself (Phases H/K). A fetch never routes through it.
 EXCLUDED_STATUS_FILES = frozenset({"version_status.v2.json"})
 
 # The status subtree under the conda-forge-bot-data repo (raw-content path prefix).

@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 8b6c1be15e48bc02
-story_count: 500
+source_fingerprint: 31520013394cc8ce
+story_count: 511
 test_file_count: 169
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 500
-- **Epics parsed:** 135
+- **Stories parsed:** 511
+- **Epics parsed:** 136
 - **Test files inventoried:** 169 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `8b6c1be15e48bc02`
+- **Source fingerprint:** `31520013394cc8ce`
 
 ## Risk Assessment
 
@@ -157,6 +157,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 132: The flip's loop guard reads the state bmad-loop writes (spec-python-foundry-cutover fnd:CAP-8)
 - Epic 133: The review's lower-severity defects are reproduced, then fixed or closed (spec-pyforge-steward CAP-1, CAP-22, CAP-55, CAP-167, CAP-168, CAP-175; spec-pyforge-unifying-strategy CAP-3, CAP-4, CAP-5, CAP-6, CAP-12)
 - Epic 135: One verb says whether this machine is ready for desktop, container or pod work (spec-pyforge-steward CAP-183)
+- Epic 136: The rows a lapsed blocker held close (spec-pyforge-steward CAP-5, CAP-166, CAP-175, CAP-179, CAP-182; spec-pyforge-unifying-strategy CAP-15, CAP-16)
 
 ### Low-risk epics
 
@@ -850,6 +851,17 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 135.1 | Steward init reads its checks from a tracked file and reports the desktop pro... | none observed |
 | 135.2 | The container, pod, ocp and nkp profiles say what each needs | none observed |
 | 135.3 | One onboarding tutorial takes a bare machine to a ready verdict per profile | none observed |
+| 136.1 | Steward's last two modules derive the station-packages directory from the roo... | none observed |
+| 136.2 | Three steward package-data files cite today's capability ids | none observed |
+| 136.3 | The host's ingest imports steward's transport by its public name | none observed |
+| 136.4 | The eight station personas cite their requirements and capabilities in qualif... | none observed |
+| 136.5 | Story lines in steward's epics cite today's capability ids | none observed |
+| 136.6 | The tests that ran in no CI job run in one | none observed |
+| 136.7 | Each sharded suite splits by recorded durations | none observed |
+| 136.8 | The seven atlas gate tasks run in atlas's own environment | none observed |
+| 136.9 | The two named-test steps have a local preflight lane | none observed |
+| 136.10 | Six station skills and their briefs cite the persona ids in qualified form | none observed |
+| 136.11 | The Story lines the page did not resolve name their capabilities | none observed |
 
 ## Quality Gates
 

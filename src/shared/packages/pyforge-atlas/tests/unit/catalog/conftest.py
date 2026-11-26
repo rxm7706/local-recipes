@@ -5,7 +5,8 @@ inputs (story Dev Notes "Domain-prefix rule": the chosen prefix->pipeline
 map is declared ONCE here so the checks are deterministic, not
 red-by-construction):
 
-- ``PREFIX_TO_PIPELINE``  — catalog-name prefix -> spec § 5.2 pipeline.
+- ``PREFIX_TO_PIPELINE``  — catalog-name prefix -> archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md § 5.2
+  pipeline.
 - ``EXPECTED_PIPELINE_COUNTS`` — per-pipeline entry counts (35 sources +
   38 outputs = 73 total; recorded in the A2 Dev Agent Record).
 - ``FLIP_LIST``           — the TTL-gated entries Story A3 flips to
@@ -57,7 +58,7 @@ NO_INLINE_IO_EXEMPT = {
     # script that launches the Mosaic duckdb-server HTTP/Arrow face — it must
     # spawn the server process (subprocess, on the denylist). Boot framework
     # code, not a data-access node; its launch surface is gated explicitly by
-    # tests/singularity/test_one_duckdb_server_launch_site.py.
+    # tests/unit/singularity/test_one_duckdb_server_launch_site.py.
     "query_plane_boot.py",
 }
 

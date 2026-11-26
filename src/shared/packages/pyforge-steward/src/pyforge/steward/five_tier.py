@@ -15,6 +15,8 @@ from pathlib import Path
 from pyforge.core.dispatch import script_map_from_packages_root
 from pyforge.core.roster import STATIONS as _ROSTER_STATIONS
 
+from .root_layout import STATION_PACKAGES_DIR
+
 TIERS: tuple[str, ...] = ("cli", "portal", "service", "skill", "persona")
 # Alphabetical, not roster declaration order (Story 59.6 / CAP-137): this
 # module reports a table, and a stable sort order for that table's rows is
@@ -67,7 +69,7 @@ class FiveTierReport:
 
 
 def _packages_root(repo_root: Path) -> Path:
-    return repo_root / "src" / "shared" / "packages"
+    return repo_root / STATION_PACKAGES_DIR
 
 
 def _portal_apps_py(repo_root: Path, station: str) -> Path:

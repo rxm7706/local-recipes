@@ -2,20 +2,20 @@
 """The real httpx-backed La Suite / Wagtail bring-up script (Story 16.2, CAP-2/CAP-3).
 
 ``factory/lasuite.py``'s sole network seam (``Opener``) has, until now, only ever been driven
-by an in-memory ``MockWagtail`` (``tests/factory/test_lasuite.py``). This script supplies the
+by an in-memory ``MockWagtail`` (``tests/unit/factory/test_lasuite.py``). This script supplies the
 LIVE half: :func:`build_httpx_opener` constructs a real ``httpx``-backed opener, and :func:`main`
 wires it into a :class:`~pyforge.atlas.factory.lasuite.LaSuiteClient` and runs a
 :class:`~pyforge.atlas.factory.lasuite.WikiSyncer` over it -- the exact same create/update/
 idempotent-skip/resume contract ``test_lasuite.py`` proves against the mock, now over real HTTP.
 
 This is the ONE code path both this story's offline loopback rehearsal
-(``tests/factory/test_lasuite_live_rehearsal.py``, which imports :func:`build_httpx_opener`
+(``tests/unit/factory/test_lasuite_live_rehearsal.py``, which imports :func:`build_httpx_opener`
 directly via ``importlib``) and the later ATTENDED DW-H3 bring-up run -- only
 ``LASUITE_BASE_URL``/``LASUITE_API_TOKEN`` differ between the two. No separate "real"
 implementation may be written later (spec Boundaries & Constraints).
 
 Lives under ``tools/`` -- OUTSIDE ``src/pyforge/atlas/**`` -- deliberately: the no-inline-IO scan
-(``tests/catalog/test_no_inline_io.py``) denylists ``httpx`` in package code with no exemption
+(``tests/unit/catalog/test_no_inline_io.py``) denylists ``httpx`` in package code with no exemption
 route (AC-2: package code holds no HTTP client), and ``factory/lasuite.py`` stays frozen. Mirrors
 the existing ``tools/normalize_viz_build.py`` precedent (invoked directly via
 ``python tools/<script>.py``, never packaged/importable).

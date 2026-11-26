@@ -1,0 +1,195 @@
+{
+  "provenance_version": "2.0",
+  "skill_name": "pyforge-warden",
+  "skill_type": "single",
+  "source_repo": "src/shared/packages/pyforge-warden",
+  "source_commit": "5f22584869704d9fb14aa6f422beaf12e165f039",
+  "source_ref": "local",
+  "generated_at": "2026-11-12T00:00:00Z",
+  "grounding": {
+    "date": "2026-11-25",
+    "commit_short": "5f22584869",
+    "station": "warden",
+    "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-136-10-six-station-skills-and-their-briefs-cite-the-persona-ids-in-qualified-form.md",
+    "path_base": "repository root; the tool's own map (gitignored forge data) is relative to source_repo, and this tracked copy is that map with source_repo prefixed to each source_file"
+  },
+  "entries": [
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "source_library": "pyforge-warden",
+      "params": [
+        "argv: list[str] | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py",
+      "source_line": 750,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "compose",
+      "export_type": "function",
+      "source_library": "pyforge-warden",
+      "params": [
+        "rungs: Iterable[tuple[Status | str, StatusDriver | None]]"
+      ],
+      "return_type": "tuple[Status, StatusDriver | None]",
+      "source_file": "src/shared/packages/pyforge-warden/src/pyforge/warden/verdict.py",
+      "source_line": 69,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "exit_code_for",
+      "export_type": "function",
+      "source_library": "pyforge-warden",
+      "params": [
+        "status: Status | str",
+        "warn_is_error: bool = False",
+        "driver: StatusDriver | None = None",
+        "allow_empty: bool = False"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-warden/src/pyforge/warden/verdict.py",
+      "source_line": 109,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "match_level_rung",
+      "export_type": "function",
+      "source_library": "pyforge-warden",
+      "params": [
+        "level: CveMatchLevel | str"
+      ],
+      "return_type": "Status",
+      "source_file": "src/shared/packages/pyforge-warden/src/pyforge/warden/verdict.py",
+      "source_line": 147,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_run_scan",
+      "export_type": "function",
+      "source_library": "pyforge-warden",
+      "params": [
+        "args: argparse.Namespace"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py",
+      "source_line": 1041,
+      "confidence": "T1-low",
+      "extraction_method": "source-read",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_run_doctor",
+      "export_type": "function",
+      "source_library": "pyforge-warden",
+      "params": [
+        "args: argparse.Namespace"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py",
+      "source_line": 842,
+      "confidence": "T1-low",
+      "extraction_method": "source-read",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "assemble_report",
+      "export_type": "function",
+      "source_library": "pyforge-warden",
+      "params": [
+        "inventory: ResolvedInventory",
+        "findings: Sequence[Finding]",
+        "rungs: Iterable[tuple[Status | str, StatusDriver | None]]",
+        "errors: Sequence[ErrorRecord]",
+        "manifests_found: int",
+        "manifests_parsed: int",
+        "vuln_data: VulnData",
+        "engine_results: Sequence[EngineResult] = ()",
+        "has_locked_closure: bool = False",
+        "hygiene_applicable: bool = True",
+        "allow_empty: bool = False",
+        "empty_extraction: bool = False",
+        "fail_under_coverage: float = 0.0",
+        "suppressions: Sequence[SuppressedFinding] = ()",
+        "kev_data: FeedProvenance | None = None",
+        "epss_data: FeedProvenance | None = None",
+        "license_gating: bool = False",
+        "currency_data: FeedProvenance | None = None",
+        "currency_gating: bool = False",
+        "warn_as_error: bool = False",
+        "actuation: object | None = None",
+        "advisory: object | None = None"
+      ],
+      "return_type": "ComplianceReport",
+      "source_file": "src/shared/packages/pyforge-warden/src/pyforge/warden/report.py",
+      "source_line": 208,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "render_json",
+      "export_type": "function",
+      "source_library": "pyforge-warden",
+      "params": [
+        "report: ComplianceReport"
+      ],
+      "return_type": "str",
+      "source_file": "src/shared/packages/pyforge-warden/src/pyforge/warden/report.py",
+      "source_line": 498,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "render_text",
+      "export_type": "function",
+      "source_library": "pyforge-warden",
+      "params": [
+        "report: ComplianceReport",
+        "applied_waivers: Sequence[WaiverNotice] = ()",
+        "expired_waivers: Sequence[WaiverNotice] = ()",
+        "applied_baseline: Sequence[BaselineNotice] = ()",
+        "expired_baseline: Sequence[BaselineNotice] = ()",
+        "warn_only: bool = False",
+        "warn_only_downgraded: int = 0",
+        "actuation: object | None = None",
+        "advisory: object | None = None",
+        "manifest_locations: Mapping[str, tuple[str, ...]] = MappingProxyType({})",
+        "fixed_versions: Mapping[str, str] = MappingProxyType({})"
+      ],
+      "return_type": "str",
+      "source_file": "src/shared/packages/pyforge-warden/src/pyforge/warden/report.py",
+      "source_line": 689,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    }
+  ],
+  "file_entries": [],
+  "last_update": "2026-11-25T22:15:30Z",
+  "update_type": "incremental",
+  "test_report_run_id": null,
+  "files_changed": 5,
+  "exports_affected": 3,
+  "confidence_tier": "Forge",
+  "manual_sections_preserved": 2
+}

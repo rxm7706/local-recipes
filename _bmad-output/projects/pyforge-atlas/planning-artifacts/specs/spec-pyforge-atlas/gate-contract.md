@@ -20,9 +20,9 @@ own gate.
 
 Test paths are relative to the package, `src/shared/packages/pyforge-atlas/`. Run a gate as
 `pixi run --frozen -e <feature> <task>`: each feature named here is also an environment of the
-same name. The `local-recipes` rows, and the three tasks below the table, stay in
-`feature.local-recipes`: moving them to `feature.pyforge-atlas` is an estate change steward
-declined for 2026-11-10 (steward Story 124.1), and it stays open as `DW-atlas-46-1-4`.
+same name. Every atlas task is held in `feature.pyforge-atlas`: four gates and the three tasks
+below the table sat in `feature.local-recipes` until 2026-11-25, when steward Story 136.8 moved
+them unchanged (`DW-atlas-46-1-4`).
 
 | Gate (pixi task) | pixi feature (env) | Test path | Origin | What it proves |
 |---|---|---|---|---|
@@ -32,11 +32,11 @@ declined for 2026-11-10 (steward Story 124.1), and it stays open as `DW-atlas-46
 | `parity-diff` | `pyforge-atlas` | `tests/unit/parity` | Wave B (Story B1) | Each migrated node's output frame matches its captured legacy snapshot (fixture mode) |
 | `dagster-dryrun` | `pyforge-atlas` | `tests/unit/orchestration` | Wave C (Story C1) | Definitions build; schedules enumerate; jobs resolve; **each op carries its own timeout**; Phase P is admin-only; profile precedence holds |
 | `bsl-metric-check` | `pyforge-atlas` | `tests/unit/semantic` | Wave D (Story D1) | Each core metric, declared once as Ibis→DuckDB, answers as the legacy CLI did |
-| `dashboard-dryrun` | `local-recipes` | `tests/integration/dashboard` | Wave D (Story D2) | The Vizro dashboard object builds offline (no server, no `.run()`) with each expected page at a stable id and title, its pages BSL-driven, the factory-status page carrying a build timestamp; the same suite runs a Playwright end-to-end and ARIA navigation check against a real local server, so it is loopback-only rather than server-free |
-| `vizro-ai-dryrun` | `local-recipes` | `tests/unit/nl` | Wave D (Story D3) | The `query_vizro_ai` MCP tool is registered and, with no backend configured, returns the structured not-configured advisory: no network, no crash, no hard-coded public host |
+| `dashboard-dryrun` | `pyforge-atlas` | `tests/integration/dashboard` | Wave D (Story D2) | The Vizro dashboard object builds offline (no server, no `.run()`) with each expected page at a stable id and title, its pages BSL-driven, the factory-status page carrying a build timestamp; the same suite runs a Playwright end-to-end and ARIA navigation check against a real local server, so it is loopback-only rather than server-free |
+| `vizro-ai-dryrun` | `pyforge-atlas` | `tests/unit/nl` | Wave D (Story D3) | The `query_vizro_ai` MCP tool is registered and, with no backend configured, returns the structured not-configured advisory: no network, no crash, no hard-coded public host |
 | `duckdb-singularity` | `pyforge-atlas` | `tests/unit/singularity` | Wave F (Story F1) | **No `sqlite3` read or write path** survives anywhere in the migrated surface, and the `duckdb-server` launch site is one |
-| `wasm-smoke` | `local-recipes` | `tests/integration/wasm` | Wave G (Story G1) | Headless Chromium loads the built artifact (`wasm-build` first) and queries it **client-side with no backend**, with **zero non-loopback requests** |
-| `publish-range` | `local-recipes` | `tests/integration/publish` | Wave G (Story G2) | The emitted static-host layout is consumed through HTTP Range: a 206 reading strictly fewer bytes than the whole file, the chunk path found from the manifest and matching its checksums, host-agnostic, the metric answer correct over the range-served Parquet. httpfs loads offline from cache: it skips when unprovisioned locally and fails under CI |
+| `wasm-smoke` | `pyforge-atlas` | `tests/integration/wasm` | Wave G (Story G1) | Headless Chromium loads the built artifact (`wasm-build` first) and queries it **client-side with no backend**, with **zero non-loopback requests** |
+| `publish-range` | `pyforge-atlas` | `tests/integration/publish` | Wave G (Story G2) | The emitted static-host layout is consumed through HTTP Range: a 206 reading strictly fewer bytes than the whole file, the chunk path found from the manifest and matching its checksums, host-agnostic, the metric answer correct over the range-served Parquet. httpfs loads offline from cache: it skips when unprovisioned locally and fails under CI |
 | `query-plane-parity` | `pyforge-atlas` | `tests/unit/query_plane` | Story 20.2 | An identical fixture query set answers row for row through the library face and the HTTP/Arrow face; a seeded divergence proves the gate bites; the stack-down path is marked `not-applicable`, never a silent pass |
 | `kedro-test` | `pyforge-atlas` | none of its own | Wave A; an alias since Story 32.2 | The alias of the whole suite: its `depends-on` runs `pyforge-atlas-test` and `pyforge-atlas-live-test`, so existing callers keep working; the canonical names are those two |
 
@@ -76,17 +76,17 @@ gates exist specifically to *stop short* of something.
 
 ## Tasks that run no pytest
 
-Three of the seven atlas tasks in `feature.local-recipes` run no test, so they are not gates; each
-runs in the env its feature names.
+Three of the seven atlas tasks steward Story 136.8 moved out of `feature.local-recipes` run no test,
+so they are not gates; each runs in the env its feature names.
 
-- `wasm-build` (`local-recipes`) is a **build step**, and the one place build-time network
+- `wasm-build` (`pyforge-atlas`) is a **build step**, and the one place build-time network
   access is allowed: it npm-installs the WASM bundle and esbuild, bundles the browser ESM, copies
   the MVP wasm module and worker, and **vendors the matching parquet extension locally** so the
   runtime never reaches `extensions.duckdb.org`.
-- `publish` (`local-recipes`) emits the host-agnostic static-host layout — chunked Parquet and a
+- `publish` (`pyforge-atlas`) emits the host-agnostic static-host layout — chunked Parquet and a
   single-owner `manifest.json` — for the demo dataset into a gitignored directory. The live
   GitHub Pages publish is the attended boundary event (`DW-G2`).
-- `dashboard-serve` (`local-recipes`) serves the Vizro dashboard locally, in the foreground on
+- `dashboard-serve` (`pyforge-atlas`) serves the Vizro dashboard locally, in the foreground on
   `127.0.0.1:8050`, through the same `build_dashboard()` the dashboard gate builds offline. It is
   how you look at the dashboard, not a proof that it builds.
 

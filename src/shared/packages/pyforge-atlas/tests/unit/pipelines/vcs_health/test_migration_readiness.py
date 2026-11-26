@@ -1,6 +1,6 @@
 """FR-21 migration-readiness classification node tests (Story B10; NEW-SIGNAL, AD-14).
 
-Two MANDATORY fixture-enforced tests (spec § 9 Story B10):
+Two MANDATORY fixture-enforced tests (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md § 9 Story B10):
   1. Zero-code-change partitioning — feeding a NEW migration name through the category-list
      -> partition -> classification chain classifies it with NO code change (python314 then
      python315, both classify).

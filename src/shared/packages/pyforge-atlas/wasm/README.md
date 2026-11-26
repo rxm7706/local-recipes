@@ -22,8 +22,8 @@ Parquet). There is no server that runs the query — the query runs in the brows
 ## Two-step flow: build (online) → verify (offline)
 
 ```
-pixi run -e local-recipes wasm-build    # BUILD-TIME network allowed (npm + ext host)
-pixi run -e local-recipes wasm-smoke    # OFFLINE: headless Chromium load-and-query gate
+pixi run -e pyforge-atlas wasm-build    # BUILD-TIME network allowed (npm + ext host)
+pixi run -e pyforge-atlas wasm-smoke    # OFFLINE: headless Chromium load-and-query gate
 ```
 
 - **`wasm-build`** (`build.py`) npm-installs the pinned deps, esbuild-bundles the browser

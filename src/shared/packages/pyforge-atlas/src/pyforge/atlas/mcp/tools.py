@@ -9,7 +9,7 @@ Every function here does exactly ONE of the two allowed shapes:
 
 NO metric/business logic lives here — metric semantics live in nodes
 (legacy CLIs/views until D1, BSL after). Enforced by the AST scan in
-``tests/mcp/test_no_business_logic_in_tool_bodies.py`` (no pandas/numpy/
+``tests/unit/mcp/test_no_business_logic_in_tool_bodies.py`` (no pandas/numpy/
 duckdb/sqlite/sqlalchemy/ibis/pyarrow, no aggregation arithmetic).
 """
 

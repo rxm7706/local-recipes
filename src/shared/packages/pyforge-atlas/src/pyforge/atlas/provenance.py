@@ -18,7 +18,7 @@ catalog's own dataset object — never a hardcoded name list:
   response — never a fabricated value).
 
 Lives OUTSIDE ``mcp/`` on purpose: ``mcp/tools.py``'s AD-7 AST gate
-(``tests/mcp/test_no_business_logic_in_tool_bodies.py``) denies importing
+(``tests/unit/mcp/test_no_business_logic_in_tool_bodies.py``) denies importing
 pandas/numpy/duckdb/sqlite3/sqlalchemy/ibis/pyarrow in the gated MCP files
 and pins every call in a tool body to an allowlisted seam root, so this is
 the one place both the MCP read surface AND the dashboard route their

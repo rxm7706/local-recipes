@@ -60,7 +60,7 @@ _CFG_ENV = {"OPENAI_BASE_URL": "http://localhost:4141/v1", "OPENAI_API_KEY": "un
 def _mcp_tool_registrations(server_src: str) -> dict[str, str]:
     """Map each ``@mcp.tool()``-decorated function in server.py to the tools.* it delegates
     to. Parsed from source so the assertion does not require the optional FastMCP *server*
-    extra AND is immune to the ``tests/mcp`` package shadowing the real ``mcp`` SDK when
+    extra AND is immune to the ``tests/unit/mcp`` package shadowing the real ``mcp`` SDK when
     pytest puts ``tests/`` on sys.path (building the live server would import the SDK)."""
     tree = ast.parse(server_src)
     build = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "build_server")

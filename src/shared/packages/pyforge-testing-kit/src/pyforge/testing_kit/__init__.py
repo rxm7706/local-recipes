@@ -14,6 +14,7 @@ from __future__ import annotations
 from pyforge.testing_kit.auth_http_time import FrozenClock, MockGitHubAPI
 from pyforge.testing_kit.branch_diff_guard import (
     ORIGIN_MAIN,
+    PLATFORM_PYFORGE_IMPORTERS,
     changed_paths_since,
     commit_files,
     commit_subject,
@@ -53,6 +54,7 @@ __all__ = [
     "MockSupervisor",
     "MockWorktree",
     "ORIGIN_MAIN",
+    "PLATFORM_PYFORGE_IMPORTERS",
     "RunJournal",
     "RunStateFactory",
     "WorktreePage",

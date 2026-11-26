@@ -1,12 +1,12 @@
 """``artifactory_downloads`` pipeline node unit tests (Story 15.3, CAP-4; Epic 15).
 
 Hand-built ``pd.DataFrame`` fixtures, no catalog -- mirrors
-``tests/pipelines/upstream_discovery/test_nodes.py``'s style. One test per I/O &
+``tests/unit/pipelines/upstream_discovery/test_nodes.py``'s style. One test per I/O &
 Edge-Case Matrix row in the story spec, plus a test proving the exported TSV row/header
 content matches ``export_purls.py::mapped_tsv_lines``'s shape exactly for a resolved row.
 
 The mock transport shape (routes on method + URL path, records calls) mirrors
-``tests/artifactory/test_aql_adapter.py``'s ``MockArtifactory``.
+``tests/unit/artifactory/test_aql_adapter.py``'s ``MockArtifactory``.
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from pyforge.atlas.pipelines.artifactory_downloads import nodes as N
 class MockArtifactory:
     """An in-memory Artifactory AQL API -- the injected ``transport`` (test-only, never
     present in the committed ``conf/base/parameters.yml``). Routes on method + URL path,
-    like ``tests/artifactory/test_aql_adapter.py``'s ``MockArtifactory``."""
+    like ``tests/unit/artifactory/test_aql_adapter.py``'s ``MockArtifactory``."""
 
     def __init__(
         self,

@@ -1,0 +1,73 @@
+{
+  "name": "pyforge-warden",
+  "version": "0.1.1",
+  "skill_type": "single",
+  "scope_type": "specific-modules",
+  "source_authority": "internal",
+  "source_repo": "src/shared/packages/pyforge-warden",
+  "source_root": "src/shared/packages/pyforge-warden",
+  "source_commit": "5f22584869704d9fb14aa6f422beaf12e165f039",
+  "source_ref": "local",
+  "confidence_tier": "Forge",
+  "spec_version": "1.3",
+  "generation_date": "2026-11-25T22:15:30Z",
+  "description": "Runs the warden dependency-hygiene and vulnerability gate via the warden CLI (scan / scan --doctor). Do not import pyforge.warden internals. Do not invent a second PR-gate verdict.",
+  "language": "python",
+  "exports": [
+    "main",
+    "compose",
+    "exit_code_for",
+    "match_level_rung",
+    "assemble_report",
+    "render_json",
+    "render_text",
+    "_run_scan",
+    "_run_doctor"
+  ],
+  "tool_versions": {
+    "ast_grep": "0.45.3",
+    "qmd": "unknown",
+    "skf": "3.0.0"
+  },
+  "confidence_distribution": {
+    "t1": 6,
+    "t1_low": 3,
+    "t2": 0,
+    "t3": 0
+  },
+  "stats": {
+    "exports_documented": 9,
+    "exports_public_api": 7,
+    "exports_internal": 0,
+    "exports_total": 7,
+    "public_api_coverage": 1.2857,
+    "total_coverage": 1.2857,
+    "scripts_count": 0,
+    "assets_count": 0
+  },
+  "scripts": [],
+  "assets": [],
+  "doc_sources": [
+    {
+      "url": "src/shared/packages/pyforge-warden/README.md",
+      "detected_via": "readme_always",
+      "recorded_at": "2026-08-25T00:00:00Z"
+    },
+    {
+      "url": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/contract.md",
+      "detected_via": "skill_brief_doc_urls",
+      "recorded_at": "2026-11-12T00:00:00Z"
+    }
+  ],
+  "generated_by": "create-skill",
+  "dependencies": [
+    "PyYAML",
+    "packaging",
+    "cyclonedx-python-lib",
+    "jsonschema",
+    "packageurl-python",
+    "license-expression",
+    "pyforge-core"
+  ],
+  "compatibility": "N/A -- internal station CLI, not a published library"
+}

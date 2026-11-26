@@ -13,7 +13,8 @@
 #   - atlas_phase._TTL_GATED (the F/G/G'/H/K/L gate-column map)
 #   - guides/atlas-operations.md cadence table
 #   - cve_manager CVE_TTL_DAYS=7, mapping_manager MAPPING_TTL_DAYS=7
-#   - spec § FR-3 named values (EPSS 1 d, CWE 90 d, eol 7 d, Phase P 30 d)
+#   - archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md § FR-3 named values (EPSS 1 d, CWE 90 d, eol 7 d,
+#     Phase P 30 d)
 
 ttls:
   # -- core (legacy Phase F fetch: PHASE_F_TTL_DAYS=7; gate column
@@ -95,8 +96,8 @@ freshness:
 # fixture (pyforge.atlas.datasets.LEGACY_REFRESH_TTLS; schedule-as-fixture, AC-1).
 # `dagster` is NEVER imported in package code (AD-1). Keyed by the catalog store
 # dataset name. NEVER conflate with `ttls:` (row-level fetch TTL) or `freshness:`
-# (AD-15 consumer gate). All three are WEEKLY (spec §5.4: vdb-refresh /
-# update-cve-db / update-mapping-cache weekly).
+# (AD-15 consumer gate). All three are WEEKLY (archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md §5.4:
+# vdb-refresh / update-cve-db / update-mapping-cache weekly).
 refresh_cadences:
   vulnerability_vdb_store: 604800          # 7 d (vdb-refresh weekly bootstrap; vuln-db env)
   vulnerability_osv_offline_store: 604800  # 7 d (update-cve-db; cve_manager CVE_TTL_DAYS=7)

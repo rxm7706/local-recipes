@@ -17,6 +17,8 @@ Verified in ``kedro-test`` (this package is collected there).
 
 from __future__ import annotations
 
+import json
+
 import attr
 import pandas as pd
 import pytest
@@ -25,11 +27,13 @@ from kedro.io import DataCatalog, MemoryDataset
 from kedro.pipeline import Pipeline, node
 from kedro.runner import SequentialRunner
 from openlineage.client.event_v2 import RunState
+from openlineage.client.serde import Serde
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
 from pyforge.atlas.observability import (
+    PRODUCER,
     AtlasNodeMetricsRunFacet,
     AtlasObservabilityHooks,
     make_capturing_client,
@@ -134,6 +138,56 @@ def test_node_metrics_run_facet_rows_latency_cache(captured):
     # was produced upstream this run → 1 in-run memory-cache hit.
     assert dm.cache_hits == 0
     assert tm.cache_hits == 1
+
+
+# --------------------------------------------------------------------------- #
+# The producer (Story 53.2): a layout-free URN on every event and facet
+# --------------------------------------------------------------------------- #
+def test_the_producer_is_a_layout_free_urn():
+    # A repository path names one root's layout and goes stale when the package moves.
+    assert PRODUCER == "urn:local-recipes:pyforge-atlas"
+    assert PRODUCER.startswith("urn:")
+    assert "/tree/" not in PRODUCER
+    assert "src/" not in PRODUCER
+    assert "://" not in PRODUCER
+
+
+def test_every_event_and_atlas_facet_carries_the_urn_producer_and_serializes(captured):
+    _, events = captured
+    assert events
+    assert {e.producer for e in events} == {PRODUCER}
+    metrics, statistics = 0, 0
+    for event in events:
+        # The OpenLineage client types ``producer`` as a URI; a URN is one, and Serde writes it as given.
+        payload = json.loads(Serde.to_json(event))
+        assert payload["producer"] == PRODUCER
+        # ``tags`` is the client's own facet (its version tag) and keeps the client's producer.
+        facets = {k: v for k, v in payload["run"]["facets"].items() if k != "tags"}
+        assert set(facets) <= {"atlasNodeMetrics"}
+        for facet in facets.values():
+            metrics += 1
+            assert facet["_producer"] == PRODUCER
+        for output in payload["outputs"]:
+            for facet in output.get("outputFacets", {}).values():
+                statistics += 1
+                assert facet["_producer"] == PRODUCER
+    assert metrics == 2 and statistics == 2
+
+
+def test_the_metrics_facet_stamps_the_urn_producer_unless_one_is_given():
+    assert json.loads(Serde.to_json(AtlasNodeMetricsRunFacet(rows=1)))["_producer"] == PRODUCER
+    assert json.loads(Serde.to_json(AtlasNodeMetricsRunFacet(rows=1, producer="urn:other")))["_producer"] == "urn:other"
+
+
+def test_the_error_facet_carries_the_urn_producer():
+    hooks, _, events = _direct_hooks()
+    n = node(_double, inputs="raw_in", outputs="mid", name="double_it")
+    hooks.before_pipeline_run({}, None, None)
+    hooks.before_node_run(n, None, {"raw_in": pd.DataFrame({"a": [1]})}, False, "r1")
+    hooks.on_node_error(ValueError("boom"), n, None, {"raw_in": None}, False, "r1")
+    hooks.after_pipeline_run({}, {}, None, None)
+    (fail,) = [e for e in events if e.eventType == RunState.FAIL]
+    assert json.loads(Serde.to_json(fail))["run"]["facets"]["errorMessage"]["_producer"] == PRODUCER
 
 
 # --------------------------------------------------------------------------- #

@@ -1,7 +1,7 @@
 """Story 21.6 (CAP-3, Phase D identity join) dataset tests: PurlAssociatorMappingsDataset,
 OpenTeamsBoardDataset, StagedRecipesPRDataset, LocalRecipesOverlayDataset.
 
-Mirrors ``tests/datasets/test_upstream_discovery.py``'s ``AboutMaintainersDataset``
+Mirrors ``tests/unit/datasets/test_upstream_discovery.py``'s ``AboutMaintainersDataset``
 taxonomy for the three ``ExternalRefreshDataset`` subclasses (cadence/force freshness +
 AD-13 keep-last-good/never-crash/atomic-write machinery is proven there for the shared
 base) — these tests cover each class's OWN fetch/parse/persist contract. All IO is via

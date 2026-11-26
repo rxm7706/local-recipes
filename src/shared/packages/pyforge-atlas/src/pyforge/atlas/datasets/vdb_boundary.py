@@ -6,7 +6,7 @@ store. Its FLIP to a real read-only VDB dataset class is genuinely **B5**'s
 store PATH (``MemoryDataset``); the vdb **parse** + the ``_coerce_cvss_score`` ScoreType
 unwrap are a **dataset/boundary** concern, kept OUT of the pure ``vulnerability`` node
 bodies (Gap G-3). This module carries the pure, IO-free coercion so the AC-3(b)
-contract is preserved + fixture-tested at the boundary layer (``tests/datasets/``),
+contract is preserved + fixture-tested at the boundary layer (``tests/unit/datasets/``),
 never in a node.
 
 **AC-3(b) — the ``_coerce_cvss_score`` unwrap** (legacy: ``detail_cf_atlas.py:295``,
@@ -20,7 +20,7 @@ an already-fetched value (no IO), so it lives at the boundary — the node recei
 already-coerced floats.
 
 No HTTP/DB client is imported here (the whole ``datasets/`` subpackage is scanned by
-``tests/catalog/test_no_inline_io.py``); the real vdb read + parse is B5's dataset
+``tests/unit/catalog/test_no_inline_io.py``); the real vdb read + parse is B5's dataset
 class.
 """
 

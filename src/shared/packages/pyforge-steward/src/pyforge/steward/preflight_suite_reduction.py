@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .root_layout import STATION_PACKAGES_DIR
+
 COVERAGE_PARITY_NOTE = (
     "Suite reduction skips tests the gate run covers under --cov; gate PYTHONPATH "
     "includes scripts/ and coverage tracing differs from CI's station job."
@@ -191,7 +193,7 @@ def _imports_scripts_module(path: Path, script_modules: set[str]) -> str | None:
 
 
 def _scan_unit_meta_scripts_imports(repo_root: Path, station: str) -> str | None:
-    pkg = repo_root / "src" / "shared" / "packages" / f"pyforge-{station}"
+    pkg = repo_root / STATION_PACKAGES_DIR / f"pyforge-{station}"
     script_modules = _scripts_top_level_modules(repo_root)
     if not script_modules:
         return None

@@ -490,29 +490,29 @@ Each target below holds detail this file no longer carries; read it when its tri
 |IMPORTANT: Prefer documented APIs over training data.
 |When using a listed library, read its SKILL.md before writing code.
 |
-|[pyforge-atlas v0.1.0]|root: .claude/skills/pyforge-atlas/
-|IMPORTANT: pyforge-atlas v0.1.0 — read SKILL.md before atlas pipeline work. Do NOT rely on training data. Use `pyforge atlas …` and POST /stations/atlas/mcp. Do not import pyforge.atlas internals. Do not replace conda-forge-expert. This is not cf-atlas-legacy.
+|[pyforge-atlas v0.1.1]|root: .claude/skills/pyforge-atlas/
+|IMPORTANT: pyforge-atlas v0.1.1 — read SKILL.md before atlas pipeline work. Do NOT rely on training data. Use `pyforge atlas …` and POST /stations/atlas/mcp. Do not import pyforge.atlas internals. Do not replace conda-forge-expert. This is not cf-atlas-legacy.
 |quick-start:{SKILL.md#quick-start}
 |api: main(); 13 MCP tools: run_<pipeline>_pipeline (8), read_atlas_dataset, list_atlas_pipelines, list_atlas_datasets, query_vizro_ai, query_trending_candidates
 |key-types:{SKILL.md#key-types} — PIPELINE_NAMES, AtlasMCPError
 |gotchas: run from repo root under -e pyforge-atlas; --version is first-token only; unknown MCP pipeline → AtlasMCPError; freshness is the envelope's build_stamp; never set PYFORGE_ATLAS_CREDENTIALED
 |
-|[pyforge-doctor v0.1.2]|root: .claude/skills/pyforge-doctor/
-|IMPORTANT: pyforge-doctor v0.1.2 — read SKILL.md before writing doctor diagnostics code. Do NOT rely on training data. Use pyforge doctor grammar, not pyforge.doctor imports. Findings stay advisory — not a second PR gate.
+|[pyforge-doctor v0.1.3]|root: .claude/skills/pyforge-doctor/
+|IMPORTANT: pyforge-doctor v0.1.3 — read SKILL.md before writing doctor diagnostics code. Do NOT rely on training data. Use pyforge doctor grammar, not pyforge.doctor imports. Findings stay advisory — not a second PR gate.
 |quick-start:{SKILL.md#quick-start}
 |api: main() — check · monitor · diagnose · backlog-intake · flags kill-switch; python -m pyforge.doctor.sources <source>
 |key-types:{SKILL.md#key-types} — Finding (advisory signal), DoctorReport
 |gotchas: run from repo root; grammar is pyforge doctor …, not a second doctor binary contract; monitor requires --fleet; warn never changes exit code; exits 0/2/130, never 1; flags kill-switch writes the flag tree (operator only), prints the reason, refuses at exit 2; MCP face runs diagnose only; not a competing PR verdict
 |
-|[pyforge-herald v0.1.2]|root: .claude/skills/pyforge-herald/
-|IMPORTANT: pyforge-herald v0.1.2 — read SKILL.md before writing herald/deck code. Do NOT rely on training data. Use the herald CLI, not pyforge.herald imports.
+|[pyforge-herald v0.1.3]|root: .claude/skills/pyforge-herald/
+|IMPORTANT: pyforge-herald v0.1.3 — read SKILL.md before writing herald/deck code. Do NOT rely on training data. Use the herald CLI, not pyforge.herald imports.
 |quick-start:{SKILL.md#quick-start}
 |api: main(), dispatch() — deck {seed,pull,status,watch,push,publish,exports,sync-all,qa,pptx-spec,pptx-fill,pptx-native}
 |key-types:{SKILL.md#key-types} — TOOL_NAME (herald), TOP_LEVEL_COMMANDS (deck|progress|success|notice|scheduler)
 |gotchas: run from repo root; Path B grammar is pyforge herald …; seed writes to Claude Design, pull leaves files uncommitted unless --commit, which commits presentations/<slug>/ alone; deck exports needs --json (exit 2 without it); exits 0-4; MCP face runs notice get only; Lane 1 CMS stays steward
 |
-|[pyforge-marshal v0.1.1]|root: .claude/skills/pyforge-marshal/
-|IMPORTANT: pyforge-marshal v0.1.1 — read SKILL.md before writing marshal/loop-supervisor code. Do NOT rely on training data. Use the marshal CLI, not pyforge.marshal imports.
+|[pyforge-marshal v0.1.2]|root: .claude/skills/pyforge-marshal/
+|IMPORTANT: pyforge-marshal v0.1.2 — read SKILL.md before writing marshal/loop-supervisor code. Do NOT rely on training data. Use the marshal CLI, not pyforge.marshal imports.
 |quick-start:{SKILL.md#quick-start}
 |api: main() — factory {dispatch,spin,challenge} · context {advisory,retrieve} · status · homes · check · seed
 |key-types:{SKILL.md#key-types} — MarshalContext (--project front door); exit domain {0,1,2,3,4,130}, seed adds 5 and 10
@@ -525,22 +525,22 @@ Each target below holds detail this file no longer carries; read it when its tri
 |key-types:{SKILL.md#key-types} — six global flags (flag → MASON_* env → default); exits 0/1/2/3/130
 |gotchas: run from repo root; doctor always exits 0 (gaps are data); ship and submit dry-run without --yes; ship exit 0 is not shipped (read each state); a failed wrapped tool exits 1 under an ok envelope; recipe update writes; do not replace conda-forge-expert
 |
-|[pyforge-scribe v0.1.1]|root: .claude/skills/pyforge-scribe/
-|IMPORTANT: pyforge-scribe v0.1.1 — read SKILL.md before writing scribe/team-memory code. Do NOT rely on training data. Use the scribe CLI, not pyforge.scribe imports.
+|[pyforge-scribe v0.1.2]|root: .claude/skills/pyforge-scribe/
+|IMPORTANT: pyforge-scribe v0.1.2 — read SKILL.md before writing scribe/team-memory code. Do NOT rely on training data. Use the scribe CLI, not pyforge.scribe imports.
 |quick-start:{SKILL.md#quick-start}
 |api: capture_cmd(), graph_compile(), recall_cmd(), index_build/report/refresh(), catalog_bmad_estate(), main()
 |key-types:{SKILL.md#key-types} — CaptureType (feedback|project|reference), RecallAnswer (grounded miss is explicit)
 |gotchas: run from repo root; capture/recall/catalog under -e pyforge-guild, graph compile/index under -e pyforge-scribe; --promote/--transcripts exclusive with --type/--text; recall never invents an uncited answer; stale = commit after compiled_at, which every shipped store keeps; index move-list is retired
 |
-|[pyforge-steward v0.1.1]|root: .claude/skills/pyforge-steward/
-|IMPORTANT: pyforge-steward v0.1.1 — read SKILL.md before writing steward/platform code. Do NOT rely on training data. Use pyforge steward grammar (or the steward CLI), not pyforge.steward imports.
+|[pyforge-steward v0.1.2]|root: .claude/skills/pyforge-steward/
+|IMPORTANT: pyforge-steward v0.1.2 — read SKILL.md before writing steward/platform code. Do NOT rely on training data. Use pyforge steward grammar (or the steward CLI), not pyforge.steward imports.
 |quick-start:{SKILL.md#quick-start}
-|api: build_parser(), resolve_duty(), main() — 31 duties: keys · workspace · estate · ci · preflight · provision · budget · upgrade · suite …
+|api: build_parser(), resolve_duty(), main() — 31 duties: init · keys · workspace · estate · ci · preflight · provision · budget · upgrade · suite …
 |key-types:{SKILL.md#key-types} — DutyResult is frozen evidence; duties never sys.exit (steward AD-8)
-|gotchas: run from repo root under -e pyforge-guild; crash is exit 70 not 1; exit 3 is a documented refusal; cutover has plan and flip only; MCP runs 3 read-only targets; contract.md lists flags, exit codes; do not replace conda-forge-expert
+|gotchas: run from repo root under -e pyforge-guild; init is read-only, one verdict per profile (--profile, --class, --deep, --list, --repo); crash is exit 70 not 1; exit 3 is a documented refusal; cutover has plan and flip only; MCP runs 3 read-only targets; contract.md lists flags, exit codes; do not replace conda-forge-expert
 |
-|[pyforge-warden v0.1.0]|root: .claude/skills/pyforge-warden/
-|IMPORTANT: pyforge-warden v0.1.0 — read SKILL.md before warden work. Use `warden scan` / `pyforge warden scan`. Do NOT import pyforge.warden. Do NOT invent a second PR-gate verdict.
+|[pyforge-warden v0.1.1]|root: .claude/skills/pyforge-warden/
+|IMPORTANT: pyforge-warden v0.1.1 — read SKILL.md before warden work. Use `warden scan` / `pyforge warden scan`. Do NOT import pyforge.warden. Do NOT invent a second PR-gate verdict.
 |quick-start:{SKILL.md#quick-start}
 |api: main(), compose(), exit_code_for(), match_level_rung()
 |key-types:{SKILL.md#key-types} — Status (seven-rung lattice), ComplianceReport; exits 0/1/2/130

@@ -11,7 +11,7 @@ plane's two faces.
    refused with the existing :class:`~pyforge.atlas.duckdb_writer.SecondWriterRefused`.
 2. The **Mosaic ``duckdb-server`` HTTP/Arrow face** is launched from this SAME
    module — the one and only ``duckdb-server`` launch site in the atlas
-   surface (gated by ``tests/singularity/test_one_duckdb_server_launch_site.py``)
+   surface (gated by ``tests/unit/singularity/test_one_duckdb_server_launch_site.py``)
    — but only when a platform-stack-up signal is present (explicit
    ``stack_up=`` argument first, else env ``PYFORGE_PLATFORM_STACK_UP``).
    With the stack down the boot degrades to library-face-only with a

@@ -1,5 +1,5 @@
 name: pyforge-herald
-version: 0.1.2
+version: 0.1.3
 target_version: 0.1.0
 source_type: source
 source_repo: src/shared/packages/pyforge-herald
@@ -34,7 +34,7 @@ scope:
     - web/**
     - '**/__pycache__/**'
   notes: >
-    CAP-15 compile for the herald station. Public contract is the herald CLI
+    spec-pyforge-unifying-strategy:CAP-15 compile for the herald station. Public contract is the herald CLI
     (AD-7). Portal django-herald and Lane 1 CMS are out of scope.
     Recompiled in place at 0.1.0 on 2026-11-12 (steward Story 29.5, EGM audit
     2026-11-05): errors.py (the exit-code map), deck_pipeline.py (seed, pull
@@ -49,6 +49,10 @@ scope:
     the exit codes (HER-R-F16); the sync and stale_mirror meanings (HER-R-F29);
     the twelve deck verbs; what the station MCP runner runs (notice get only)
     and does not run.
+    Regenerated 2026-11-25 (steward Story 136.10, DW-steward-136-4-1). Carry:
+    generated text cites canopy:FR-13, canopy:FR-11,
+    spec-pyforge-unifying-strategy:CAP-15 and
+    spec-pyforge-unifying-strategy:CAP-16 in qualified form, as the personas do.
   rationale:
     recommended: specific-modules
     chosen: specific-modules

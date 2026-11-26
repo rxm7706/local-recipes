@@ -7,10 +7,10 @@ offline and the AD-1 import-ban stays satisfied (only
 ``orchestration/definitions.py`` imports ``dagster`` / wraps this decision in a
 :class:`dagster.SensorDefinition`). Splitting it this way keeps the C1 rule
 "``orchestration/definitions.py`` is the ONE dagster-importing module" exactly
-as-is (``tests/catalog/test_no_inline_io.py`` ``AD1_GLUE_EXEMPT``).
+as-is (``tests/unit/catalog/test_no_inline_io.py`` ``AD1_GLUE_EXEMPT``).
 
-**Event source = RSS/poll cursor (resolved at G3, spec § 5.9 / Q2 revisit).**
-An :data:`EventSource` is a zero-arg callable returning the CURRENT feed
+**Event source = RSS/poll cursor (resolved at G3, archive/docs/specs/cfe-atlas-datapipeline-kedro-migration.md § 5.9 /
+Q2 revisit).** An :data:`EventSource` is a zero-arg callable returning the CURRENT feed
 snapshot (a list of raw event mappings — the shape an Atom/RSS poll of e.g.
 ``pypi.org/rss/updates.xml`` or a repo's ``releases.atom`` yields once parsed to
 dicts). The sensor owns the dedupe: a monotonic ``seq`` per event + a Dagster

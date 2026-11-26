@@ -515,7 +515,8 @@ sibling ledgers and the detector both use.
   severity: low
   promoted: 2026-11-11 — Story 31.3 (cutover-readiness change, branch `cutover-readiness-2026-11-10`)
   reason: named blocker: environment composition and django-scribe's suite are steward's, the plane driver's writer is atlas's, and no environment carries the packages together in CI.
-  status: open
+  resolution: 2026-11-25, steward Story 136.6 (branch `named-blocker-rows-2026-11-25`; operator ruling 2026-11-25 "All 22 rows"; "No new lane") - the five plane tests (five, not the four the row counted) and the portal render test run by node id through the pixi task scribe-plane-and-portal-test in -e pyforge-foundry-full, a step of the lint-types job; a skip fails the step. They still skip in -e pyforge-scribe, and the skip reasons and tests/meta/test_live_tree_split.py name the task that runs them.
+  status: resolved
 
 ### DW-scribe-cutover-2026-11-10-3: The scribe PRD traces requirements to 9 of the Spec's 35 capabilities
 

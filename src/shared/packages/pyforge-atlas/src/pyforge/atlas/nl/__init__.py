@@ -4,7 +4,7 @@ The ``nl/`` subpackage is the single glue layer the thin ``query_vizro_ai`` MCP 
 delegates to. It owns the LLM-backend resolution (repo model-backend config, Q3 §11 — never a
 hardcoded public endpoint) and the BSL-grounded (deferred) Vizro-AI call, keeping all NL/LLM
 logic OUT of the tool body. It is also the ONLY package subtree permitted to import
-``vizro_ai`` (AD-1, enforced by ``tests/catalog/test_no_inline_io.py``).
+``vizro_ai`` (AD-1, enforced by ``tests/unit/catalog/test_no_inline_io.py``).
 """
 
 from __future__ import annotations

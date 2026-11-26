@@ -1,0 +1,772 @@
+{
+  "provenance_version": "2.0",
+  "skill_name": "pyforge-scribe",
+  "skill_type": "single",
+  "source_repo": "src/shared/packages/pyforge-scribe",
+  "source_commit": "5f22584869704d9fb14aa6f422beaf12e165f039",
+  "source_ref": "local",
+  "generated_at": "2026-11-12T00:00:00Z",
+  "grounding": {
+    "date": "2026-11-25",
+    "commit_short": "5f22584869",
+    "station": "scribe",
+    "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-136-10-six-station-skills-and-their-briefs-cite-the-persona-ids-in-qualified-form.md",
+    "path_base": "repository root; the tool's own map (gitignored forge data) is relative to source_repo, and this tracked copy is that map with source_repo prefixed to each source_file"
+  },
+  "entries": [
+    {
+      "export_name": "capture_cmd",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "capture_type: CaptureType | None = typer.Option(None, \"--type\", help=\"Capture type: feedback | project | reference.\")",
+        "text: str | None = typer.Option(None, \"--text\", help=\"Raw text to capture verbatim (FR-1).\")",
+        "promote: bool = typer.Option(False, \"--promote\", help=(\"Scan user-local auto-memory, classify each entry, and propose \" \"team-voice promotions -- proposal-then-confirm (Story 1.3).\"))",
+        "transcripts: bool = typer.Option(False, \"--transcripts\", help=(\"Scan raw session transcripts for un-curated decision/fact \" \"sentences and propose captures -- proposal-then-confirm \" \"(Story 3.1).\"))",
+        "source: Path | None = typer.Option(None, \"--source\", help=(\"Override the auto-detected user-local auto-memory directory \" \"(--promote) or session-transcript directory (--transcripts).\"))"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
+      "source_line": 112,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "graph_compile",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "nightly: bool = typer.Option(False, \"--nightly\", help=\"Run in unattended nightly mode.\")"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
+      "source_line": 300,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "recall_cmd",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "query: str = typer.Argument(..., help=\"Natural-language question to recall an answer for.\")",
+        "semantic: bool = typer.Option(False, \"--semantic\", help=(\"Opt-in: rank by SHA-256 bag-of-concepts similarity (pgvector driver only; not embedding-model recall).\"))",
+        "scope: str = typer.Option(None, \"--scope\", help=(\"Restrict candidates to one project's planning tree \" \"(_bmad-output/projects/<scope>/) plus that slug's Herald \" \"fact ledger (presentations/<scope>/facts.yaml). Lexical \" \"token-overlap alone has no notion of project (marshal \" \"Story 28.27; scribe Story 9.1).\"))",
+        "kind: list[str] = typer.Option(None, \"--kind\", help=(\"Restrict candidates to these GraphNode kinds (repeatable). \" \"Default omits code. Pass --kind code to search AST nodes only; \" \"combine kinds explicitly when you want more than one. \" \"Exclusive with --mode.\"))",
+        "surface: str | None = typer.Option(None, \"--mode\", help=(\"Named candidate bag: planning (doc+memlog), memory, or code. \" \"Exclusive with --kind. Distinct from --semantic ranking.\"))"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
+      "source_line": 330,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "catalog_bmad_estate",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "write: bool = typer.Option(False, \"--write\", help=\"Render into docs/reference/bmad-estate-llms-full.md.\")",
+        "check: bool = typer.Option(False, \"--check\", help=\"Compare the committed catalog's per-section digests against a fresh derive; exit 1 on drift.\")",
+        "root: Path = typer.Option(Path(\".\"), \"--root\", help=\"Repository root (default: the current directory).\")",
+        "output: Path | None = typer.Option(None, \"--output\", help=\"Write/check this file instead of the default path.\")",
+        "pipeline_truth: Path | None = typer.Option(None, \"--pipeline-truth\", help=\"Optional `steward suite pipeline-truth --json` output to add the six-stage columns.\")"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
+      "source_line": 685,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "argv: list[str] | None = None"
+      ],
+      "return_type": "int | None",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
+      "source_line": 737,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "target: Path | None = _TARGET_OPTION"
+      ],
+      "return_type": "None",
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1",
+      "export_name": "index_build",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
+      "source_line": 421
+    },
+    {
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "target: Path | None = _TARGET_OPTION"
+      ],
+      "return_type": "None",
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1",
+      "export_name": "index_report",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
+      "source_line": 440
+    },
+    {
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [],
+      "return_type": "None",
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1-low",
+      "export_name": "index_move_list",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
+      "source_line": 455
+    },
+    {
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "target: Path | None = _TARGET_OPTION",
+        "declare: Path | None = _DECLARE_OPTION"
+      ],
+      "return_type": "None",
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1",
+      "export_name": "index_refresh",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
+      "source_line": 499
+    },
+    {
+      "export_name": "mark_retrofit_help",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
+      "source_line": 672,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "CaptureResult",
+      "export_type": "class",
+      "source_library": "pyforge-scribe",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/capture.py",
+      "source_line": 46,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "capture",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "memory_root: Path",
+        "capture_type: CaptureType",
+        "text: str",
+        "slug: str | None = None",
+        "description: str | None = None",
+        "supersedes: str | None = None"
+      ],
+      "return_type": "CaptureResult",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/capture.py",
+      "source_line": 54,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "CatalogSourceError",
+      "export_type": "class",
+      "source_library": "pyforge-scribe",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
+      "source_line": 131,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "Disagreement",
+      "export_type": "class",
+      "source_library": "pyforge-scribe",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
+      "source_line": 173,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "Estate",
+      "export_type": "class",
+      "source_library": "pyforge-scribe",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
+      "source_line": 179,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "Member",
+      "export_type": "class",
+      "source_library": "pyforge-scribe",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
+      "source_line": 144,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "RegisterRow",
+      "export_type": "class",
+      "source_library": "pyforge-scribe",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
+      "source_line": 152,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "RoutingRow",
+      "export_type": "class",
+      "source_library": "pyforge-scribe",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
+      "source_line": 165,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "Skill",
+      "export_type": "class",
+      "source_library": "pyforge-scribe",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
+      "source_line": 136,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "check",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "root: Path",
+        "catalog: Path | None = None",
+        "pipeline_truth: Path | None = None"
+      ],
+      "return_type": "list[str]",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
+      "source_line": 899,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "derive",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "root: Path",
+        "pipeline_truth: Path | None = None"
+      ],
+      "return_type": "Estate",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
+      "source_line": 624,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "digests",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "estate: Estate"
+      ],
+      "return_type": "dict[str, str]",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
+      "source_line": 653,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "find_disagreements",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "estate: Estate"
+      ],
+      "return_type": "list[Disagreement]",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
+      "source_line": 603,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "read_cadence_steps",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "root: Path"
+      ],
+      "return_type": "list[str]",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
+      "source_line": 571,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "read_harness_range",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "root: Path"
+      ],
+      "return_type": "str",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
+      "source_line": 564,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "read_help",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "root: Path"
+      ],
+      "return_type": "tuple[list[dict[str, str]], dict[str, str]]",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
+      "source_line": 344,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "read_installed",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "root: Path"
+      ],
+      "return_type": "dict[str, object]",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
+      "source_line": 272,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "read_members",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "root: Path"
+      ],
+      "return_type": "list[Member]",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
+      "source_line": 444,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "read_pins",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "root: Path"
+      ],
+      "return_type": "dict[str, dict[str, str]]",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
+      "source_line": 540,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "read_pipeline_truth",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "path: Path"
+      ],
+      "return_type": "dict[str, dict[str, str]]",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
+      "source_line": 578,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "read_recipe_versions",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "root: Path",
+        "names: list[str]"
+      ],
+      "return_type": "dict[str, str]",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
+      "source_line": 550,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "read_register",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "root: Path"
+      ],
+      "return_type": "tuple[dict[str, RegisterRow], list[RoutingRow]]",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
+      "source_line": 492,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "read_skills",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "root: Path",
+        "help_modules: dict[str, str]"
+      ],
+      "return_type": "tuple[list[Skill], list[str]]",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
+      "source_line": 411,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "recorded_digests",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "text: str"
+      ],
+      "return_type": "dict[str, str]",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
+      "source_line": 895,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "render",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "estate: Estate",
+        "today: date | None = None"
+      ],
+      "return_type": "str",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
+      "source_line": 675,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "write",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "root: Path",
+        "output: Path | None = None",
+        "pipeline_truth: Path | None = None",
+        "today: date | None = None"
+      ],
+      "return_type": "Path",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",
+      "source_line": 872,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "CompileInProgressError",
+      "export_type": "class",
+      "source_library": "pyforge-scribe",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py",
+      "source_line": 177,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "CompileResult",
+      "export_type": "class",
+      "source_library": "pyforge-scribe",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py",
+      "source_line": 185,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "compile_graph",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "memory_root: Path",
+        "repo_root: Path",
+        "store: GraphStore | None = None",
+        "store_path: Path | None = None",
+        "nightly: bool = False",
+        "max_commits: int = _DEFAULT_MAX_COMMITS",
+        "transcript_root: Path | None = None",
+        "compiled_at: datetime | None = None"
+      ],
+      "return_type": "CompileResult",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py",
+      "source_line": 203,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "default_store_path",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "repo_root: Path"
+      ],
+      "return_type": "Path",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py",
+      "source_line": 195,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "source_committed_after",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "repo_root: Path",
+        "node: GraphNode",
+        "compiled_at: datetime"
+      ],
+      "return_type": "bool",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py",
+      "source_line": 1155,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "PlaneGraphStore",
+      "export_type": "class",
+      "source_library": "pyforge-scribe",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_plane.py",
+      "source_line": 40,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "PlaneGraphStorePlugin",
+      "export_type": "class",
+      "source_library": "pyforge-scribe",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_plane.py",
+      "source_line": 195,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "open_graph_store",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "store_path: Path",
+        "registry: PluginRegistry | None = None",
+        "owner: str | None = None"
+      ],
+      "return_type": "GraphStore",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_plugins.py",
+      "source_line": 29,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "CaptureRecord",
+      "export_type": "class",
+      "source_library": "pyforge-scribe",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/models.py",
+      "source_line": 40,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "GraphNode",
+      "export_type": "class",
+      "source_library": "pyforge-scribe",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/models.py",
+      "source_line": 133,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "parse_capture_file",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "path: Path"
+      ],
+      "return_type": "\"CaptureRecord\"",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/models.py",
+      "source_line": 183,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "RecallAnswer",
+      "export_type": "class",
+      "source_library": "pyforge-scribe",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py",
+      "source_line": 119,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "class_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "answer",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "query: str",
+        "store: GraphStore",
+        "repo_root: Path",
+        "mode: str = \"lexical\"",
+        "scope: str | None = None",
+        "kinds: frozenset[str] | None = None",
+        "surface: str | None = None"
+      ],
+      "return_type": "RecallAnswer",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py",
+      "source_line": 199,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "resolve_recall_kinds",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "kinds: frozenset[str] | None"
+      ],
+      "return_type": "frozenset[str]",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py",
+      "source_line": 162,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    },
+    {
+      "export_name": "resolve_recall_selection",
+      "export_type": "function",
+      "source_library": "pyforge-scribe",
+      "params": [
+        "kinds: frozenset[str] | None = None",
+        "surface: str | None = None"
+      ],
+      "return_type": "frozenset[str]",
+      "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py",
+      "source_line": 179,
+      "confidence": "T1",
+      "extraction_method": "ast-grep",
+      "ast_node_type": "function_definition",
+      "signature_source": "T1"
+    }
+  ],
+  "file_entries": [],
+  "last_update": "2026-11-25T22:33:07Z",
+  "update_type": "incremental",
+  "test_report_run_id": null,
+  "files_changed": 10,
+  "exports_affected": 0,
+  "confidence_tier": "Forge",
+  "manual_sections_preserved": 3
+}

@@ -9,7 +9,7 @@ loadable here, ``kedro viz run`` has a DAG to render.
 
 AD-1/AD-6: ``kedro_viz`` is REPLACEABLE VISUALIZATION GLUE — it is imported ONLY
 here in a test (never in package code; the package-wide import-ban in
-``tests/catalog/test_no_inline_io.py`` scans the src tree, not tests). The
+``tests/unit/catalog/test_no_inline_io.py`` scans the src tree, not tests). The
 operator surface is the pixi ``viz`` task, not a package import.
 """
 
@@ -25,7 +25,7 @@ import pytest
 pytestmark = pytest.mark.live_tree
 
 # atlas project root: <repo>/src/shared/packages/pyforge-atlas (parents[2] from
-# tests/orchestration/<this file>: [0]=orchestration [1]=tests [2]=pyforge-atlas).
+# tests/unit/orchestration/<this file>: [0]=orchestration [1]=tests [2]=pyforge-atlas).
 PROJECT_PATH = Path(__file__).resolve().parents[3]
 REPO_ROOT = PROJECT_PATH.parents[3]  # pyforge-atlas -> packages -> shared -> src -> repo
 

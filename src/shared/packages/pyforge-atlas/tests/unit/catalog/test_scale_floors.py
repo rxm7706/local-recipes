@@ -13,7 +13,7 @@ Story 23.1 extends this module with Tier 3 OS-distro bulk-index floors (homebrew
 nixpkgs, spack, debian, fedora) — sub-threshold FAILS the assertion (never warn-only).
 
 Sub-threshold FAILS the assertion (never a log-only warning). No network anywhere —
-this whole ``tests/catalog/`` suite is offline and non-credentialed by design
+this whole ``tests/unit/catalog/`` suite is offline and non-credentialed by design
 (AD-11/NFR-1); "Bootstrap smoke" in catalog-sources.md's wording is satisfied here.
 """
 

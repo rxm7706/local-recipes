@@ -22,7 +22,7 @@ else), and the page chrome carries ``navigation``/``main`` landmarks that Vizro
 0.1.60 does not ship (``app.LandmarkDashboard``).
 
 ``vizro`` is REPLACEABLE visualization glue (AD-1/AD-6 spirit): only this subpackage may
-import it (enforced by ``tests/catalog/test_no_inline_io.py``), mirroring the C1
+import it (enforced by ``tests/unit/catalog/test_no_inline_io.py``), mirroring the C1
 dagster-glue and D1 BSL-in-``semantic/`` scoping.
 """
 

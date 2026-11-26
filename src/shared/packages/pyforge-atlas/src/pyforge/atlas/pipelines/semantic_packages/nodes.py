@@ -27,7 +27,7 @@ _UPLOAD_COLUMNS = (
 )
 
 # Column order mirrors the shipped `packages_parquet` test fixture
-# (tests/dashboard/conftest.py) -- the shape `build_packages_model` already expects.
+# (tests/integration/dashboard/conftest.py) -- the shape `build_packages_model` already expects.
 _OUTPUT_COLUMNS = (
     "conda_name",
     "latest_status",
