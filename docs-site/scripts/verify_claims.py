@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""The dossier's one measurer (CAP-46; Stories 43.5, 43.7, 51.1): what the tree says each ``check:`` figure is.
+"""The dossier's one measurer (CAP-46; Stories 43.5, 43.7, 51.1, 55.1): what the tree says each ``check:`` figure is.
 
-The dossier states concrete figures -- lines of source and tests, file counts, Python floors, stories and epics done
+The dossier states concrete figures -- lines of source and tests, file counts, Python floors, stories and epics done,
+stories open and blocked
 -- and those are the claims that rot as the code grows. Every figure in a stats band and every row of the scale table
 therefore carries ``check:`` and shows what this script counts, never a typed value: the Astro dossier loader
 (``src/loaders/dossier-loader.ts``) runs ``--emit -`` at build and shows the result, and the content schema
@@ -34,7 +35,7 @@ STATIONS = ("atlas", "doctor", "herald", "marshal", "mason", "scribe", "steward"
 #: the one scale-table ``section:`` that is not a station: the shared leaf package, ``pyforge-core``
 CORE = "core"
 #: the check keys a section's stats may carry, the hero's, and a table block's
-SECTION_CHECKS = ("src_lines", "test_lines", "python_floor", "stories_epics")
+SECTION_CHECKS = ("src_lines", "test_lines", "python_floor", "stories_epics", "stories_open")
 FLEET_CHECKS = ("fleet_src_lines", "fleet_test_lines", "fleet_stories_epics", "stations")
 TABLE_CHECK = "src_lines"
 LEDGER = Path("planning-artifacts") / "sprint-status-ledger.yaml"
@@ -68,6 +69,14 @@ def done(ledger: Path) -> tuple[int, int]:
     return sum(1 for k in keys if STORY.fullmatch(k)), sum(1 for k in keys if EPIC.fullmatch(k))
 
 
+def open_blocked(ledger: Path) -> tuple[int, int]:
+    """The stories a sprint ledger holds that are neither ``done`` nor ``blocked``, and the stories that are ``blocked``
+    (Story 55.1). An epic key and a retrospective key are not stories and are never counted."""
+    status = (yaml.safe_load(ledger.read_text(encoding="utf-8")) or {}).get("development_status") or {}
+    stories = [value for key, value in status.items() if STORY.fullmatch(str(key))]
+    return sum(1 for v in stories if v not in ("done", "blocked")), sum(1 for v in stories if v == "blocked")
+
+
 def emit(doc: dict, packages: Path, projects: Path) -> dict[str, dict[str, dict]]:
     """The measured value of every ``check:`` figure, shaped as the dossier shows it: ``{check key: {section id:
     {"value": ..., "files": ...}}}`` (``fleet`` for the hero's; ``rows`` keyed by a checked table row's ``section:``).
@@ -80,17 +89,20 @@ def emit(doc: dict, packages: Path, projects: Path) -> dict[str, dict[str, dict]
             raise ValueError(f"{where}: no package {pkg_dir} to measure")
         return memo.setdefault(section_id, measure(pkg_dir))
 
-    def ledger(section_id: str, where: str) -> tuple[int, int]:
+    def ledger(section_id: str, where: str, count=done) -> tuple[int, int]:
         path = projects / f"pyforge-{section_id}" / LEDGER
         if section_id not in STATIONS or not path.is_file():
             raise ValueError(f"{where}: no sprint ledger {path} to count")
-        return done(path)
+        return count(path)
 
     def shown(kind: str, section_id: str) -> dict:
         where = f"check {kind!r} in section {section_id!r}"
         if kind == "stories_epics":
             stories, epics = ledger(section_id, where)
             return {"value": f"{stories:,} / {epics:,}"}
+        if kind == "stories_open":
+            still_open, blocked = ledger(section_id, where, open_blocked)
+            return {"value": f"{still_open:,} / {blocked:,}"}
         m = facts(section_id, where)
         if kind != "python_floor":
             return {"value": f"{m[kind]:,}", **({"files": m["src_files"]} if kind == "src_lines" else {})}

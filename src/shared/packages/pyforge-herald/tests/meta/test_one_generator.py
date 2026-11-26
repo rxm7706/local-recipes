@@ -490,21 +490,16 @@ def test_43_5_the_dossier_shows_what_the_measurer_counted_and_every_page_its_bui
         assert (out / rel).read_text(encoding="utf-8").count(line) == 1, rel
 
 
-def _scale_table(html: str) -> list[list[str]]:
-    """The cells of each row of the built dossier's one scale table (the table headed Station, Source lines)."""
-    tables = re.findall(r"<table><thead><tr><th>Station</th><th>Source lines</th>.*?<tbody>(.*?)</tbody>", html, re.S)
-    assert len(tables) == 1, len(tables)
-    rows = re.findall(r"<tr>(.*?)</tr>", tables[0], re.S)
-    return [[re.sub(r"<[^>]+>", "", cell) for cell in re.findall(r"<td[^>]*>(.*?)</td>", row, re.S)] for row in rows]
-
-
 @needs_astro
 def test_51_1_the_stories_epics_tiles_the_hero_and_the_scale_table_equal_the_planted_counts(
     counted: tuple[Path, dict[str, dict[str, int]], Path],
 ) -> None:
     """Story 51.1 (CAP-46): every figure the dossier shows beyond lines -- each station's stories / epics done and
-    Python floor, the hero's four, and the scale table's lines and files per row -- is what the build counted from the
-    fixture tree's planted packages and ledgers (``pages_astro.station_packages``), whatever the copied dossier types."""
+    the hero's four -- is what the build counted from the fixture tree's planted packages and ledgers
+    (``pages_astro.station_packages``), whatever the copied dossier types. Story 55.1 (CAP-46 amended 2026-11-26):
+    each station band shows stories open over blocked in place of the Python floor (the fixture ledger plants one
+    backlog and one blocked story per station), and the dossier no longer carries the scale table, whose counting
+    ``test_verify_claims_emit.py`` holds on a fixture."""
     root, counts, out = counted
     html = (out / "herald/dossier/index.html").read_text(encoding="utf-8")
     doc = yaml.safe_load((root / DOSSIER_REL).read_text(encoding="utf-8"))
@@ -523,15 +518,10 @@ def test_51_1_the_stories_epics_tiles_the_hero_and_the_scale_table_equal_the_pla
         values = {stat["check"]: value for stat, (value, _) in zip(stats, shown[section["id"]], strict=True)}
         want = counts[section["id"]]
         assert values["stories_epics"] == f"{want['stories']} / {want['epics']}", section["id"]
-        assert values["python_floor"] == "py3.14", section["id"]
+        assert values["stories_open"] == "1 / 1", section["id"]
         tiles += 1
     assert tiles == len(STATIONS)
-    table = next(b for s in doc["sections"] for b in s["blocks"] if b["type"] == "table" and b.get("check"))
-    shown_rows = _scale_table(html)
-    assert len(shown_rows) == len(table["rows"]) == len(STATIONS) + 1
-    for row, cells in zip(table["rows"], shown_rows, strict=True):
-        want = counts[row["section"]]  # ``core`` is pyforge-core's planted package
-        assert (cells[0], cells[1], cells[2]) == (row["cells"][0], f"{want['src_lines']:,}", str(want["src_files"]))
+    assert not [b for s in doc["sections"] for b in s["blocks"] if b["type"] == "table" and b.get("check")]
 
 
 @needs_astro
@@ -603,7 +593,7 @@ def test_the_measurer_moved_beside_the_generator() -> None:
         {"src_lines", "fleet_src_lines"}
         <= set(emitted)
         <= {
-            *("src_lines", "test_lines", "python_floor", "stories_epics"),  # a station section's keys (Story 51.1)
+            *("src_lines", "test_lines", "python_floor", "stories_epics", "stories_open"),  # a station section's keys
             *("fleet_src_lines", "fleet_test_lines", "fleet_stories_epics", "stations"),  # the hero's
             "rows",  # a table block carrying ``check: src_lines``
         }
@@ -714,7 +704,7 @@ def test_43_3_ac4_search_holds_a_dossier_page_and_a_family_page(built: Path) -> 
     for path in (built / "pagefind" / "fragment").glob("*.pf_fragment"):
         raw = gzip.decompress(path.read_bytes())
         fragments.append(json.loads(raw[len(b"pagefind_dcd") :]))
-    dossier = [f["url"] for f in fragments if "/herald/" in f["url"] and "Cross-fleet synthesis" in f["content"]]
+    dossier = [f["url"] for f in fragments if "/herald/" in f["url"] and "The shared spine" in f["content"]]
     assert len(dossier) == 1 and dossier[0].endswith("/herald/dossier/"), dossier
     family = [f["url"] for f in fragments if "/herald/decks/" in f["url"] and "pyforge-herald" in f["content"]]
     assert len(family) == 1 and family[0].endswith("/herald/decks/pyforge-herald/"), family

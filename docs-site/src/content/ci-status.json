@@ -1,9 +1,9 @@
 {
-  "fetched_at": "2026-11-13T09:18:26.260843+00:00",
+  "fetched_at": "2026-11-26T07:37:19.363363+00:00",
   "repo": "rxm7706/local-recipes",
   "rate_limit": {
     "core_limit": 5000,
-    "core_remaining": 4887
+    "core_remaining": 4977
   },
   "rows": [
     {
@@ -16,11 +16,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-06T04:24:44Z",
+      "last_green_run": "2026-11-26T01:53:28Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-06T04:24:44Z",
-        "run_id": 42162345895
+        "created_at": "2026-11-26T01:53:28Z",
+        "run_id": 45738763638
       },
       "verdict": "live",
       "paused_by_master": false
@@ -35,11 +35,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-01T12:31:37Z",
+      "last_green_run": "2026-11-25T13:35:41Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-01T12:31:37Z",
-        "run_id": 41306911156
+        "created_at": "2026-11-25T13:35:41Z",
+        "run_id": 45625188501
       },
       "verdict": "live",
       "paused_by_master": false
@@ -54,11 +54,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-13T04:01:45Z",
+      "last_green_run": "2026-11-26T04:01:47Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-13T04:01:45Z",
-        "run_id": 43362793504
+        "created_at": "2026-11-26T04:01:47Z",
+        "run_id": 45752587912
       },
       "verdict": "live",
       "paused_by_master": false
@@ -88,11 +88,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-13T06:34:08Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-13T06:34:08Z",
-        "run_id": 43379602019
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773834851
       },
       "verdict": "live",
       "paused_by_master": false
@@ -107,11 +107,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909838
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773834728
       },
       "verdict": "live",
       "paused_by_master": false
@@ -141,11 +141,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-10-26T05:30:40Z",
+      "last_green_run": "2026-11-26T01:53:28Z",
       "latest_main_run": {
-        "conclusion": "cancelled",
-        "created_at": "2026-11-09T05:20:21Z",
-        "run_id": 42566726279
+        "conclusion": "success",
+        "created_at": "2026-11-26T01:53:28Z",
+        "run_id": 45738763728
       },
       "verdict": "live",
       "paused_by_master": false
@@ -160,11 +160,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909776
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773834739
       },
       "verdict": "live",
       "paused_by_master": false
@@ -194,11 +194,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T05:48:35Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909770
+        "created_at": "2026-11-26T05:48:35Z",
+        "run_id": 45763993122
       },
       "verdict": "live",
       "paused_by_master": false
@@ -213,11 +213,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-06T12:26:43Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-06T12:26:43Z",
-        "run_id": 42217704421
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773834899
       },
       "verdict": "live",
       "paused_by_master": false
@@ -247,11 +247,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-06T12:26:43Z",
+      "last_green_run": "2026-11-26T03:45:52Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-06T12:26:43Z",
-        "run_id": 42217704545
+        "created_at": "2026-11-26T03:45:52Z",
+        "run_id": 45750977949
       },
       "verdict": "live",
       "paused_by_master": false
@@ -266,11 +266,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -330,11 +330,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-13T03:34:54Z",
+      "last_green_run": "2026-11-26T03:34:23Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-13T03:34:54Z",
-        "run_id": 43359916650
+        "created_at": "2026-11-26T03:34:23Z",
+        "run_id": 45749778442
       },
       "verdict": "live",
       "paused_by_master": false
@@ -369,11 +369,7 @@
       "owner": "pyforge-steward",
       "trigger": null,
       "last_green_run": null,
-      "latest_main_run": {
-        "conclusion": "failure",
-        "created_at": "2025-12-31T12:30:53Z",
-        "run_id": 20619035944
-      },
+      "latest_main_run": null,
       "verdict": "live",
       "paused_by_master": false
     },
@@ -388,11 +384,7 @@
       "owner": "pyforge-steward",
       "trigger": null,
       "last_green_run": "2026-09-09T15:18:45Z",
-      "latest_main_run": {
-        "conclusion": "success",
-        "created_at": "2025-12-31T14:02:19Z",
-        "run_id": 20620533816
-      },
+      "latest_main_run": null,
       "verdict": "live",
       "paused_by_master": false
     },
@@ -407,11 +399,7 @@
       "owner": "pyforge-steward",
       "trigger": null,
       "last_green_run": "2026-09-09T12:30:08Z",
-      "latest_main_run": {
-        "conclusion": "success",
-        "created_at": "2026-01-01T00:27:09Z",
-        "run_id": 20629751214
-      },
+      "latest_main_run": null,
       "verdict": "live",
       "paused_by_master": false
     },
@@ -426,11 +414,7 @@
       "owner": "pyforge-steward",
       "trigger": null,
       "last_green_run": "2026-09-26T06:01:45Z",
-      "latest_main_run": {
-        "conclusion": "success",
-        "created_at": "2025-12-31T23:41:53Z",
-        "run_id": 20629163391
-      },
+      "latest_main_run": null,
       "verdict": "live",
       "paused_by_master": false
     },
@@ -444,11 +428,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": "main",
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -463,11 +447,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": "main",
-      "last_green_run": "2026-11-06T12:26:43Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-06T12:26:43Z",
-        "run_id": 42217704421
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773834899
       },
       "verdict": "live",
       "paused_by_master": false
@@ -482,11 +466,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": "main",
-      "last_green_run": "2026-11-06T12:26:43Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-06T12:26:43Z",
-        "run_id": 42217704421
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773834899
       },
       "verdict": "live",
       "paused_by_master": false
@@ -501,11 +485,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-06T12:26:43Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-06T12:26:43Z",
-        "run_id": 42217704421
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773834899
       },
       "verdict": "opt-in-off",
       "paused_by_master": false
@@ -520,11 +504,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-06T12:26:43Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-06T12:26:43Z",
-        "run_id": 42217704421
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773834899
       },
       "verdict": "opt-in-off",
       "paused_by_master": false
@@ -539,11 +523,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-06T12:26:43Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-06T12:26:43Z",
-        "run_id": 42217704421
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773834899
       },
       "verdict": "opt-in-off",
       "paused_by_master": false
@@ -558,11 +542,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-06T12:26:43Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-06T12:26:43Z",
-        "run_id": 42217704421
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773834899
       },
       "verdict": "opt-in-off",
       "paused_by_master": false
@@ -577,11 +561,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-06T12:26:43Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-06T12:26:43Z",
-        "run_id": 42217704421
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773834899
       },
       "verdict": "opt-in-off",
       "paused_by_master": false
@@ -596,11 +580,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-06T12:26:43Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-06T12:26:43Z",
-        "run_id": 42217704421
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773834899
       },
       "verdict": "opt-in-off",
       "paused_by_master": false
@@ -615,11 +599,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-06T12:26:43Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-06T12:26:43Z",
-        "run_id": 42217704421
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773834899
       },
       "verdict": "opt-in-off",
       "paused_by_master": false
@@ -634,11 +618,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-06T12:26:43Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-06T12:26:43Z",
-        "run_id": 42217704421
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773834899
       },
       "verdict": "live",
       "paused_by_master": false
@@ -653,11 +637,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": "main",
-      "last_green_run": "2026-11-06T12:26:43Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-06T12:26:43Z",
-        "run_id": 42217704421
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773834899
       },
       "verdict": "live",
       "paused_by_master": false
@@ -672,11 +656,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": "main",
-      "last_green_run": "2026-11-06T04:24:44Z",
+      "last_green_run": "2026-11-26T01:53:28Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-06T04:24:44Z",
-        "run_id": 42162345895
+        "created_at": "2026-11-26T01:53:28Z",
+        "run_id": 45738763638
       },
       "verdict": "live",
       "paused_by_master": false
@@ -691,11 +675,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-06T04:24:44Z",
+      "last_green_run": "2026-11-26T01:53:28Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-06T04:24:44Z",
-        "run_id": 42162345895
+        "created_at": "2026-11-26T01:53:28Z",
+        "run_id": 45738763638
       },
       "verdict": "live",
       "paused_by_master": false
@@ -710,11 +694,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-01T12:31:37Z",
+      "last_green_run": "2026-11-25T13:35:41Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-01T12:31:37Z",
-        "run_id": 41306911156
+        "created_at": "2026-11-25T13:35:41Z",
+        "run_id": 45625188501
       },
       "verdict": "live",
       "paused_by_master": false
@@ -759,11 +743,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-13T06:34:08Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-13T06:34:08Z",
-        "run_id": 43379602019
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773834851
       },
       "verdict": "live",
       "paused_by_master": false
@@ -778,11 +762,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-13T06:34:08Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-13T06:34:08Z",
-        "run_id": 43379602019
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773834851
       },
       "verdict": "live",
       "paused_by_master": false
@@ -797,11 +781,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-10-26T05:30:40Z",
+      "last_green_run": "2026-11-26T01:53:28Z",
       "latest_main_run": {
-        "conclusion": "cancelled",
-        "created_at": "2026-11-09T05:20:21Z",
-        "run_id": 42566726279
+        "conclusion": "success",
+        "created_at": "2026-11-26T01:53:28Z",
+        "run_id": 45738763728
       },
       "verdict": "live",
       "paused_by_master": false
@@ -816,11 +800,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-10-26T05:30:40Z",
+      "last_green_run": "2026-11-26T01:53:28Z",
       "latest_main_run": {
-        "conclusion": "cancelled",
-        "created_at": "2026-11-09T05:20:21Z",
-        "run_id": 42566726279
+        "conclusion": "success",
+        "created_at": "2026-11-26T01:53:28Z",
+        "run_id": 45738763728
       },
       "verdict": "live",
       "paused_by_master": false
@@ -835,11 +819,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-10-26T05:30:40Z",
+      "last_green_run": "2026-11-26T01:53:28Z",
       "latest_main_run": {
-        "conclusion": "cancelled",
-        "created_at": "2026-11-09T05:20:21Z",
-        "run_id": 42566726279
+        "conclusion": "success",
+        "created_at": "2026-11-26T01:53:28Z",
+        "run_id": 45738763728
       },
       "verdict": "live",
       "paused_by_master": false
@@ -854,11 +838,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909838
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773834728
       },
       "verdict": "live",
       "paused_by_master": false
@@ -873,11 +857,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909838
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773834728
       },
       "verdict": "live",
       "paused_by_master": false
@@ -907,11 +891,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909776
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773834739
       },
       "verdict": "live",
       "paused_by_master": false
@@ -926,11 +910,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T05:48:35Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909770
+        "created_at": "2026-11-26T05:48:35Z",
+        "run_id": 45763993122
       },
       "verdict": "live",
       "paused_by_master": false
@@ -945,11 +929,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-06T12:26:43Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-06T12:26:43Z",
-        "run_id": 42217704421
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773834899
       },
       "verdict": "live",
       "paused_by_master": false
@@ -964,11 +948,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-06T12:26:43Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-06T12:26:43Z",
-        "run_id": 42217704421
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773834899
       },
       "verdict": "live",
       "paused_by_master": false
@@ -983,11 +967,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-06T12:26:43Z",
+      "last_green_run": "2026-11-26T03:45:52Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-06T12:26:43Z",
-        "run_id": 42217704545
+        "created_at": "2026-11-26T03:45:52Z",
+        "run_id": 45750977949
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1002,11 +986,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1021,11 +1005,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1040,11 +1024,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1059,11 +1043,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1078,11 +1062,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1097,11 +1081,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1116,11 +1100,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1135,11 +1119,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1154,11 +1138,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1173,11 +1157,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1192,11 +1176,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1211,11 +1195,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1230,11 +1214,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1249,11 +1233,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1268,11 +1252,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1287,11 +1271,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1306,11 +1290,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1325,11 +1309,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1344,11 +1328,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1363,11 +1347,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1382,11 +1366,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1401,11 +1385,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1420,11 +1404,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1439,11 +1423,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1458,11 +1442,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1477,11 +1461,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1496,11 +1480,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-13T04:01:45Z",
+      "last_green_run": "2026-11-26T04:01:47Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-13T04:01:45Z",
-        "run_id": 43362793504
+        "created_at": "2026-11-26T04:01:47Z",
+        "run_id": 45752587912
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1515,11 +1499,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-13T04:01:45Z",
+      "last_green_run": "2026-11-26T04:01:47Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-13T04:01:45Z",
-        "run_id": 43362793504
+        "created_at": "2026-11-26T04:01:47Z",
+        "run_id": 45752587912
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1534,11 +1518,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1553,11 +1537,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1572,11 +1556,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-11T00:30:38Z",
+      "last_green_run": "2026-11-26T07:14:24Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-11T00:30:38Z",
-        "run_id": 42931909881
+        "created_at": "2026-11-26T07:14:24Z",
+        "run_id": 45773835080
       },
       "verdict": "live",
       "paused_by_master": false
@@ -1591,11 +1575,11 @@
       "review_days_left": null,
       "owner": "pyforge-steward",
       "trigger": null,
-      "last_green_run": "2026-11-13T03:34:54Z",
+      "last_green_run": "2026-11-26T03:34:23Z",
       "latest_main_run": {
         "conclusion": "success",
-        "created_at": "2026-11-13T03:34:54Z",
-        "run_id": 43359916650
+        "created_at": "2026-11-26T03:34:23Z",
+        "run_id": 45749778442
       },
       "verdict": "live",
       "paused_by_master": false
