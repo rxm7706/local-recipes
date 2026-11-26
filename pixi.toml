@@ -1002,6 +1002,7 @@ jsonschema = ">=4.26.0"
 # (no tomli: python 3.14's stdlib tomllib serves detectors.py / index_freshness_check.py; tomli is their <3.11 fallback only)
 pytest = ">=9.1.1"                # pyforge-station-coverage-gates' scripts/coverage_gates_ci.py
 pytest-cov = ">=7.1.0"
+pytest-xdist = ">=3.8.0"          # steward Story 117.16 / mason Story 48.1 (spec-pyforge-steward CAP-175): scripts-lib-test and test-ci-meta run -n auto in the Guild environment; execnet is its one new package there
 pptxgenjs-plus = { version = "4.2.1.*", channel = "SelfExplainML" }  # Story 32.1 (CAP-57): SelfExplainML build (node 24); >=4.2.1 would pull 4.3.4/node 26 and break codegraph's node 24 pin. Channel-pinned, not channel-priority = "flexible": flexible re-solves every env that carries the feature
 marp-cli = ">=4.2.3"              # Story 63.8 (spec-pyforge-steward CAP-5, a fix under Story 63.1): `deck-export` -- which herald `deck pull` / `deck sync-all` shell as `pixi run -e pyforge-guild deck-export <slug>` -- needs the `marp` binary, and only [feature.local-recipes.dependencies] declared it, so under the Guild env scripts/deck_export.py exited 1 ('marp' not on PATH) and the session hook refuses the `-e local-recipes` form. Same floor as the local-recipes line: conda-forge's marp-cli-feedstock tops out at 4.2.3 (nodejs 22/24 builds, which fit this env's nodejs 24 pin via codegraph / pptxgenjs-plus); 4.5.0 (SelfExplainML, nodejs 26) is NOT adopted here either -- nodejs 26 forces libabseil >=20260526.0, which a2a-sdk's protobuf cannot take. Bump both sites together once that ecosystem gap closes.
 
@@ -1458,8 +1459,8 @@ cmd = "pytest tests/scripts/test_docs_gen_common.py tests/scripts/test_docs_pixi
 # libraries are declared, and runs tests/scripts/test_pyforge_ci_is_stdlib_only.py, whose mirror assertion checks
 # that every library they guard imports here. The Detectors `scripts-suite` job and pr-preflight call it verbatim.
 # tests/scripts/test_detectors_doctor_sources.py is the one library-needing file not listed: its stdlib tests run in
-# `pyforge-ci`, and `pyforge-doctor-aggregate-scripts-test` runs it whole in `pyforge-doctor`. It runs serially
-# (pyforge-guild has no pytest-xdist), about 60-100 s. The files are listed one
+# `pyforge-ci`, and `pyforge-doctor-aggregate-scripts-test` runs it whole in `pyforge-doctor`. It runs under
+# pytest-xdist (steward Story 117.16; 107 s on one process before it). The files are listed one
 # per line in tests/scripts/scripts-lib-test.txt, which pytest reads as an argument file (`@path`), not in `cmd`:
 # scripts/detectors.py maps a detector to the first task whose `cmd` contains its file name, and
 # `test_flag_gate_check.py` contains `flag_gate_check.py`. A new file guarded this way goes on that list, or
@@ -1470,7 +1471,7 @@ cmd = "pytest .claude/skills/conda-forge-expert/tests/meta -q"
 
 [feature.guild-tasks.tasks.scripts-lib-test]
 description = "steward Story 103.3 (spec-pyforge-steward CAP-5): the tests/scripts files that need a library pyforge-ci does not carry (PyYAML, jsonschema, ruamel.yaml, openfeature, the doctor and scribe station packages; requests and packaging where a script needs them), listed in tests/scripts/scripts-lib-test.txt and run in pyforge-guild, which declares them, with tests/scripts/test_pyforge_ci_is_stdlib_only.py checking every library they guard imports here. In pyforge-ci, which is stdlib-only, each file skips on its pytest.importorskip. The Detectors scripts-suite job and pr-preflight call this task verbatim."
-cmd = "python -m pytest @tests/scripts/scripts-lib-test.txt -q"
+cmd = "python -m pytest @tests/scripts/scripts-lib-test.txt -q -n auto --dist loadgroup"
 
 [feature.guild-tasks.tasks.pixi-currency-staleness-check]
 description = "Detector: the Dream's four pixi dependency ledgers have not fallen behind pixi.toml's own commit history (Story 21.7, spec-pixi-candidate-currency CAP-4). Warn-only, read-only, fail-open — advisory ledger staleness, never a second PR gate. Contract: spec-21-7-the-pixi-candidate-ledgers-get-their-staleness-check."
@@ -3232,6 +3233,7 @@ hatchling = ">=1.32.4"            # Python build backend (drives both conda + wh
 python-build = ">=1.6.1"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
 pytest-split = ">=0.11.0"         # Story 117.10 (spec-pyforge-steward CAP-175; herald's xdist is its own Story H.1): --splits N --group K shards the CI matrix; the local preflight runs the suite unsharded
+pytest-xdist = ">=3.8.0"          # herald Story 58.1 (spec-pyforge-steward CAP-175): both halves of herald's suite run -n auto --dist loadgroup, the docs-site modules in one xdist group
 pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP-4, amended by spec-fleet-consistency-standard): coverage JSON for the named-module gate. Declared in only pyforge-marshal and local-recipes until 2026-09-07, so seven station envs could not run a coverage gate at all -- verified live against scribe, which exited 1 with "unrecognized arguments: --cov".
 daphne = ">=4.2.3"                # Story 13.6: the ASGI host `webhook_host.py` mounts behind (`webhook-host` extra) -- MUST stay byte-identical to pyproject.toml's `webhook-host` extra pin, itself byte-identical to [feature.pyforge-steward.dependencies]'s own daphne pin (line ~174) and to this file's pre-existing wagtail/coderedcms pin (line ~1253)
 # Story 14.2: deck_qa.py's headless-render gate drives Chromium via playwright
