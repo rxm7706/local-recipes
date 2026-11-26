@@ -2682,17 +2682,17 @@ Minted 2026-11-26 from the station Dream's entry of the same date on the operato
 ### Story 58.1: Herald's suite runs under xdist, its site builds in one worker
 
 As the operator whose PR waits on `herald-live-test`,
-I want herald's halves to run under xdist with every module that builds or reads the `docs-site/` tree in one group, and the live half's CI job in two shards,
+I want herald's halves to run under xdist with every module that builds the site in one group, and the live half's CI job in two shards,
 So that 650 tests stop waiting on one core behind the site builds.
 
 **Type:** chore • **Effort:** M • **Deps:** steward 124.1, steward 124.2 • **FR/AD:** spec-pyforge-steward:CAP-175 (realized here; no text change in this station's Spec); no AD moves
 **Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
-**Surface:** `pixi.toml` (herald's feature and its two suite tasks), `pixi.lock`, `environment.yaml`, `src/shared/packages/pyforge-herald/tests/` (the docs-site modules' marks, `conftest.py`), `.github/workflows/pyforge-station-tests.yml` (the `herald-live-test` job)
+**Surface:** `pixi.toml` (herald's feature and its two suite tasks), `pixi.lock`, `environment.yaml`, `src/shared/packages/pyforge-herald/tests/conftest.py`, `src/shared/packages/pyforge-herald/tests/meta/test_site_builders_share_a_worker.py` (new), `.github/workflows/pyforge-station-tests.yml` (the `herald-live-test` job)
 **Spec:** `planning-artifacts/specs/spec-58-1-herald-s-suite-runs-under-xdist-its-site-builds-in-one-worker.md`
 **Given** `d039bc7de3`, where `pyforge-herald-live-test` is one process: `812 passed` in 230 s alone, 441 to 471 s inside a full preflight, 263 to 425 s as the CI job; about 160 s are tests that run `astro build` with `docs-site/` as their working directory
-**When** `pytest-xdist` is in herald's environment, both halves pass `-n auto --dist loadgroup`, each module that builds or reads the `docs-site/` tree carries one shared `xdist_group`, and the `herald-live-test` job runs as two `pytest-split` shards whose coverage reports the gate merges
-**Then** each half passes with the passed and skipped counts it had, the live half takes under 180 s alone on 16 threads, and herald's coverage gate passes on the merged reports
-**And** a test holds that every herald test module that names the `docs-site/` tree or its build helper carries the group
+**When** `pytest-xdist` is in herald's environment, both halves pass `-n auto --dist loadgroup`, each module that names the build helper `tests/meta/pages_astro.py`, the one module that runs Astro, carries one shared `xdist_group`, and the `herald-live-test` job runs as two `pytest-split` shards whose coverage reports the gate merges
+**Then** each half passes with the passed and skipped counts it had, the live half takes under 210 s alone on 16 threads (its builds, about 180 s, still run in turn in the one tree), the package half under 25 s, and herald's coverage gate passes on the merged reports
+**And** a test holds that no herald test module starts Astro or a node package runner without the build helper, and that every test of a module naming the helper carries the group
 **Status:** backlog
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)

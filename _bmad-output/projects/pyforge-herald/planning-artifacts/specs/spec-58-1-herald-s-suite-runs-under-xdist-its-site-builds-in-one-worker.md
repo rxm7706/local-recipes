@@ -14,6 +14,7 @@ surface:
   - 'pixi.lock'
   - 'environment.yaml'
   - 'src/shared/packages/pyforge-herald/tests/conftest.py'
+  - 'src/shared/packages/pyforge-herald/tests/meta/test_site_builders_share_a_worker.py'
   - '.github/workflows/pyforge-station-tests.yml'
 context:
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
@@ -30,7 +31,7 @@ deferred: []
 
 **Problem:** Herald's halves each run as one pytest process. `pyforge-herald-live-test` is the longest lane of a full preflight (234 s alone, 441 to 471 s in the run) and the critical path of seven of eight PR heads (263 to 425 s). About 160 s of it are tests that run `astro build` with `docs-site/` as the working directory; they cannot overlap, and today everything else waits behind them.
 
-**Approach:** Add `pytest-xdist` to herald's environment and `-n auto --dist loadgroup` to both suite tasks. Put every module that builds or reads the `docs-site/` tree in one xdist group, so one worker runs them in turn and the others run the rest. Run the `herald-live-test` CI job as two `pytest-split` shards, each writing its coverage report, as the package half's job does.
+**Approach:** Add `pytest-xdist` to herald's environment and `-n auto --dist loadgroup` to both suite tasks. Put every module that names the build helper `tests/meta/pages_astro.py` (the one module that runs Astro) in one xdist group, decided in `tests/conftest.py` from the module's text, so one worker runs the builds in turn and the others run the rest. A module that only reads `docs-site/`'s tracked sources, or names its pixi tasks, stays out. Run the `herald-live-test` CI job as two `pytest-split` shards, each writing its coverage report, as the package half's job does.
 
 Ledger key: `58-1-herald-s-suite-runs-under-xdist-its-site-builds-in-one-worker`.
 
@@ -57,7 +58,7 @@ Ledger key: `58-1-herald-s-suite-runs-under-xdist-its-site-builds-in-one-worker`
 **Given** herald's halves on one process each
 **When** they run under xdist with the docs-site modules in one group
 **Then** each half passes with the counts it had and the gate passes
-**And** the live half takes under 180 s alone on 16 threads
+**And** the live half takes under 210 s alone on 16 threads, the package half under 25 s
 
 - **AC1 — Both halves pass with their counts.** Expected: exit 0; `1560 passed, 5 skipped` and `812 passed` plus the 5 of the second segment.
 
@@ -76,3 +77,13 @@ Ledger key: `58-1-herald-s-suite-runs-under-xdist-its-site-builds-in-one-worker`
 ## Evidence (2026-11-26)
 
 Standalone `pyforge-herald-live-test`: 233.9 s wall, 334 CPU-seconds, `812 passed, 1565 deselected in 230.54s`. Slowest: `test_the_install_runs_before_herald_s_suite_in_one_slot_and_many` 34.4 s, two `test_agent_surface_and_changes.py` builds at 12.8 s, thirteen build fixtures and tests at 5.6 to 7.4 s. CI job over seven PR heads: 314 s median, 425 s at most, 247 s of it the pytest step.
+
+## Result (2026-11-26)
+
+Alone on 16 threads: `pyforge-herald-test` 18.8 s (37.9 s before; `1564 passed, 5 skipped`, four of them this story's
+own), `pyforge-herald-live-test` 198.4 s (233.9 s before; `812 passed` and the 5 of the second segment). Measured on
+one process, the live half's time is 243 s over 812 tests, of which 207 s sit in five modules; the twelve modules that
+name the build helper sum to about 180 s and still run in turn, because every Astro build has `docs-site/` as its
+working directory. That chain is the half's floor in one tree. `test_preflight_pages_lane.py` (53 s) builds nothing
+and now runs beside it. Running builds side by side needs one copy of `docs-site/` per worker, which this story does
+not attempt.
