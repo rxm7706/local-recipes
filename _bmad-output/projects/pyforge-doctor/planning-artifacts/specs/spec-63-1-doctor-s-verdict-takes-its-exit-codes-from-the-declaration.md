@@ -2,7 +2,7 @@
 title: '63.1: Doctor''s verdict takes its exit codes from the declaration'
 type: 'fix'
 created: '2026-11-25'
-status: 'ready-for-dev'
+status: 'done'
 story: 63-1-doctor-s-verdict-takes-its-exit-codes-from-the-declaration
 spec: spec-pyforge-doctor
 difficulty: 'easy'
@@ -85,3 +85,5 @@ Ledger key: `63-1-doctor-s-verdict-takes-its-exit-codes-from-the-declaration`.
 ## Spec Change Log
 
 - 2026-11-25: minted from the station Dream's 2026-11-25 entry (one declaration names every exit-code domain) and the operator's ruling of the same date. Not implemented.
+- 2026-11-25: before and after: `_EXIT_OK` 0, `_EXIT_FAIL` 2, `EXIT_SIGINT` 130 and `LATTICE.exit_by_member` `{fail: 2, warn: 0, ok: 0}`, equal. `tests/meta/test_public_contract.py`'s `_exit_items` read only literal constants, so it found none; it now also reads an `exit_code("<domain>", "<member>")` binding as the declared number, and `contract.md` lists `pyforge.core.exit_domains` in its import closure (ten core modules) and says how an exit constant is read. Both are in this story's surface by necessity and recorded here. AC1 exit 0, AC2 exit 1 (no line matches).
+- 2026-11-25: closed. Implemented, independently reviewed against this spec (a read-only reviewer over the whole diff, every Acceptance Criterion run and read from its exit code), its findings applied; the full local `pr-preflight` gates the PR that lands it (branch `exit-code-vocabulary-2026-11-25`).

@@ -5718,6 +5718,7 @@
    "src/shared/packages/pyforge-core/src/pyforge/core/cutover_root.py": "b693ae52db7033947f54583f333440b4eb3f2454",
    "src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py": "92d3a23275ee84f485ce1a26c6522ead7a5b3ea5",
    "src/shared/packages/pyforge-core/src/pyforge/core/errors.py": "48775b2b8ef1a9ce9fd80f599aa099849eda6c75",
+   "src/shared/packages/pyforge-core/src/pyforge/core/exit_domains.py": "752dfa82af50897dcb5366610b14bae1a679d61d",
    "src/shared/packages/pyforge-core/src/pyforge/core/flags.py": "5435c138084d4121c5927467298a0e9dab558c67",
    "src/shared/packages/pyforge-core/src/pyforge/core/hooks.py": "03294772e3802e8a37154c16d660e9827ec25385",
    "src/shared/packages/pyforge-core/src/pyforge/core/landing_evidence.py": "611ac33b3ed39782705f9b1e6b6b16e2129b472f",
@@ -5749,6 +5750,8 @@
    "src/shared/packages/pyforge-core/tests/unit/test_cutover_root.py": "f720ab82a4ec312cdebd0e5091d4e60cdefdc83f",
    "src/shared/packages/pyforge-core/tests/unit/test_dispatch.py": "a40f325e1e72c748643e4d5cde4d0953f97555f0",
    "src/shared/packages/pyforge-core/tests/unit/test_errors.py": "cb0d234990797d401f15f4b59a247a96537648a9",
+   "src/shared/packages/pyforge-core/tests/unit/test_exit_domains.py": "e57b5e272733f97ef897a3c05ecc05d5ff519a17",
+   "src/shared/packages/pyforge-core/tests/unit/test_exit_domains_match_the_guild_roster.py": "7cab7a1860e7d9a663d62f594ab5463e117cd55e",
    "src/shared/packages/pyforge-core/tests/unit/test_flags.py": "d69ac14db99a757959dcc1b88bd598a19a649343",
    "src/shared/packages/pyforge-core/tests/unit/test_flags_reader.py": "7c1cd089920a2001d4ce0f42bbc84c953a33ad8c",
    "src/shared/packages/pyforge-core/tests/unit/test_hooks.py": "5ac71315e295d61831cd8b3794e2535cfcf11971",
@@ -5821,7 +5824,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "c26188bd0993caf2d3aac61efd418d91a3d92f77"
+  "memlog": "ccc07b3255a69fb3d85dbf379dd9bf5a0966e1ed"
  },
  "pyforge-steward/spec-python-foundry-cutover": {
   "files": {},

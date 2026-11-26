@@ -79,7 +79,7 @@ development_status:
   3-1-configurable-policy: done
   3-2-auditable-expiring-waivers: done
   3-3-waiver-expiry-warn-only-adoption-on-ramp: done
-  30-1-warden-s-verdict-takes-its-exit-codes-from-the-declaration: ready-for-dev
+  30-1-warden-s-verdict-takes-its-exit-codes-from-the-declaration: done
   4-1-cyclonedx-sbom-emission: done
   5-1-actionable-diagnostics-safe-by-default-posture: done
   5-2-fleet-scale-validation-corpus-oracle-maturation: done
@@ -145,7 +145,7 @@ development_status:
   epic-29-retrospective: optional
   epic-3: done
   epic-3-retrospective: done
-  epic-30: in-progress
+  epic-30: done
   epic-30-retrospective: optional
   epic-4: done
   epic-4-retrospective: done

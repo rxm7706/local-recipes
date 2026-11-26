@@ -94,7 +94,7 @@ every caller that reads one. What changed is that it is declared, not only descr
 `marshal`, `marshal-seed`), which also declares doctor's domain a narrowing of warden's
 (`exit_code_domains_narrowing`); `pyforge.core.exit_domains` carries the same table for in-process
 code (spec-pyforge-steward:CAP-184, `DW-VOCAB-2026-09-14-8`). Doctor's, warden's and marshal's verdict
-modules and `scripts/detectors.py` take their numbers from it, and
+modules, marshal's `seed/errors.py` and `scripts/detectors.py` take their numbers from it, and
 `tests/scripts/test_exit_code_domains_are_declared.py` fails when a module, or this table, differs from
 the declaration. Read a code in the domain of the surface that produced it, never another's.
 

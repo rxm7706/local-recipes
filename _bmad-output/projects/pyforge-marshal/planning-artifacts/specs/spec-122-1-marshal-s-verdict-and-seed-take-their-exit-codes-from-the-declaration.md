@@ -2,7 +2,7 @@
 title: '122.1: Marshal''s verdict and seed take their exit codes from the declaration'
 type: 'fix'
 created: '2026-11-25'
-status: 'ready-for-dev'
+status: 'done'
 story: 122-1-marshal-s-verdict-and-seed-take-their-exit-codes-from-the-declaration
 spec: spec-pyforge-marshal
 difficulty: 'easy'
@@ -86,3 +86,5 @@ Ledger key: `122-1-marshal-s-verdict-and-seed-take-their-exit-codes-from-the-dec
 ## Spec Change Log
 
 - 2026-11-25: minted from the station Dream's 2026-11-25 entry (one declaration names every exit-code domain) and the operator's ruling of the same date. Not implemented.
+- 2026-11-25: before and after: the six rungs (clean 0, warn 0, unevaluable 1, scope-violation 2, gate-failed 3, error 4), `EXIT_OK` 0, `EXIT_USAGE` 2, SIGINT 130, `GUARDED_EXIT_CODES` and the six seed leaves (1, 2, 3, 4, 5, 10), equal; `contract.md` did not move. `seed/errors.py` imports the helper as `_declared_exit_code` so the class attribute `exit_code` is not shadowed. AC1 exit 0 (1,314 passed), AC2 exit 1 (no line matches).
+- 2026-11-25: closed. Implemented, independently reviewed against this spec (a read-only reviewer over the whole diff, every Acceptance Criterion run and read from its exit code), its findings applied; the full local `pr-preflight` gates the PR that lands it (branch `exit-code-vocabulary-2026-11-25`).

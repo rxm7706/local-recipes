@@ -95,8 +95,11 @@ def _exit_domain() -> dict[str, int]:
     the thing that could not be read."""
     try:
         roster = json.loads((ROOT / "docs" / "governance" / "guild-roster.json").read_text(encoding="utf-8"))
-        domain = roster["exit_code_domains"]["detectors"]
-        return {name: int(domain[name]) for name in ("pass", "findings", "could-not-run")}
+        domains = roster["exit_code_domains"]
+        codes = {name: int(domains["detectors"][name]) for name in ("pass", "findings", "could-not-run")}
+        # A doctor source's own `ok` code, which a ported Doctor row is compared against.
+        codes["doctor-ok"] = int(domains["doctor"]["ok"])
+        return codes
     except (OSError, ValueError, KeyError, TypeError) as exc:
         print(f"detectors: the exit-code declaration could not be read -- {exc}", file=sys.stderr)
         raise SystemExit(2) from None
@@ -104,6 +107,7 @@ def _exit_domain() -> dict[str, int]:
 
 _EXIT = _exit_domain()
 EXIT_PASS, EXIT_FINDINGS, EXIT_COULD_NOT_RUN = _EXIT["pass"], _EXIT["findings"], _EXIT["could-not-run"]
+DOCTOR_EXIT_OK = _EXIT["doctor-ok"]
 
 # Where detectors may live, and what they are named. Two roots because the
 # dashboard's layout gate belongs beside the page it measures, not in scripts/.
@@ -418,10 +422,10 @@ def _run_doctor_sources(scope: str) -> list[dict]:
         started = time.monotonic()
         try:
             findings = DISPATCH[name](ROOT)
-            rc = EXIT_FINDINGS if exit_code_for(findings) != 0 else EXIT_PASS
+            rc = EXIT_FINDINGS if exit_code_for(findings) != DOCTOR_EXIT_OK else EXIT_PASS
             lines = [f"[{f.source.value}] {f.check}: {f.status.value} -- {f.message}"
                      for f in findings]
-            if rc:
+            if rc != EXIT_PASS:
                 status = "FINDINGS"
             elif findings and all(is_gather_failure(f) for f in findings):
                 status = "unmeasured"

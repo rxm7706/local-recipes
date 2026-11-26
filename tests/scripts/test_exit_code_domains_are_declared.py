@@ -94,7 +94,8 @@ def test_the_aggregator_reads_its_codes_from_the_declaration():
     """`scripts/detectors.py` is the ONLY surface where `2` means "could not run"; it takes 0, 1 and 2
     from the `detectors` domain rather than spelling them."""
     text = (REPO / "scripts" / "detectors.py").read_text(encoding="utf-8")
-    assert 'roster["exit_code_domains"]["detectors"]' in text
+    assert 'roster["exit_code_domains"]' in text and 'domains["detectors"]' in text
+    assert "exit_code_for(findings) != DOCTOR_EXIT_OK" in text, "a doctor row is compared to doctor's declared ok"
     # Assert the CODE, not its prose: findings return the findings code, an unknown row the
     # could-not-run code, and no bare 0, 1 or 2 is returned.
     assert re.search(r"if\s+registry_findings\s+or\s+any\(.*?FINDINGS.*?\):\s*\n\s*return EXIT_FINDINGS", text, re.S)

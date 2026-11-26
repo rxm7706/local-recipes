@@ -2,7 +2,7 @@
 title: '137.1: One declaration names every exit-code domain'
 type: 'feature'
 created: '2026-11-25'
-status: 'ready-for-dev'
+status: 'done'
 story: 137-1-one-declaration-names-every-exit-code-domain
 spec: spec-pyforge-steward
 difficulty: 'medium'
@@ -97,3 +97,6 @@ Ledger key: `137-1-one-declaration-names-every-exit-code-domain`.
 ## Spec Change Log
 
 - 2026-11-25: minted from the station Dream's 2026-11-25 entry (one declaration names every exit-code domain) and the operator's ruling of the same date. Not implemented.
+- 2026-11-25: before and after: each verdict module's exit constants were recorded on the unchanged tree and again after the change, in each station's own environment (doctor `{ok: 0, warn: 0, fail: 2}` and 130; warden's seven rungs, warn-as-error 1, SIGINT 130; marshal's six rungs, `EXIT_OK` 0, `EXIT_USAGE` 2, SIGINT 130, `GUARDED_EXIT_CODES` `{0, 1, 2, 3, 4, 130}`; seed 1, 2, 3, 4, 5, 10); every value is equal. AC1 exit 0 (15 passed), AC2 exit 0 (13 passed, warden skipped in `-e pyforge-guild`; it exits 0 in `-e pyforge-warden`), AC3 exit 1 (no line matches).
+- 2026-11-25: session lead, on the review: pyforge-core's public contract (`spec-pyforge-core/contract.md`) listed no `pyforge.core.exit_domains`, so `pyforge-core-test` exited 1 on `test_contract_and_source_agree`; the module and its four public names are listed and the `pyforge.core.verdict` paragraph says the exit values come from the declaration (`pyforge-core-test` exit 0, 466 and 2,235 passed). `scripts/detectors.py` compared a doctor row's code to a bare `0` and read `if rc:`; it now compares to doctor's declared `ok` (read from the same file) and to `EXIT_PASS`, and the pinning test checks that form. The glossary names `seed/errors.py` among the readers. Kept: an unreadable declaration makes `scripts/detectors.py` exit 2 (could-not-run) at import, which is correct for the aggregator; no workflow runs it on a sparse tree.
+- 2026-11-25: closed. Implemented, independently reviewed against this spec (a read-only reviewer over the whole diff, every Acceptance Criterion run and read from its exit code), its findings applied; the full local `pr-preflight` gates the PR that lands it (branch `exit-code-vocabulary-2026-11-25`).

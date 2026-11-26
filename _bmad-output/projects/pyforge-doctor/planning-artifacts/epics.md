@@ -4284,4 +4284,4 @@ So that doctor's numbers are declared once and its subset of warden's domain is 
 **When** it takes them from the `doctor` domain of `pyforge.core.exit_domains`
 **Then** `exit_code_for` returns the same code for every finding list it returned before, and a meta-test fails when doctor's lattice domain differs from its declared domain
 **And** `verdict.py` stays the sole owner of doctor's exit projection
-**Status:** ready-for-dev
+**Status:** done

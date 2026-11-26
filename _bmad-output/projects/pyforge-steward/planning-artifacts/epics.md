@@ -9549,4 +9549,4 @@ So that a reader learns what `2` means on each surface from one place, and a num
 **When** `guild-roster.json` gains `exit_code_domains` and `exit_code_domains_narrowing`, and `pyforge.core.exit_domains` carries the same table
 **Then** the five domains are declared by member name and number, a live-tree test fails when the Python table and the JSON key differ, `scripts/detectors.py` takes its 0, 1 and 2 from the `detectors` domain, and `test_exit_code_domains_are_declared.py` fails when a module's exit constants or the glossary page's domains differ from the declaration
 **And** no exit number on any surface changes, and the row reads resolved once Stories 63.1 (doctor), 30.1 (warden) and 122.1 (marshal) land
-**Status:** ready-for-dev
+**Status:** done

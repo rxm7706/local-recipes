@@ -1789,4 +1789,4 @@ So that warden's numbers are declared once, beside the doctor domain that narrow
 **When** it takes them from the `warden` domain of `pyforge.core.exit_domains`
 **Then** `exit_code_for` returns the same code for every input it returned before, including `--warn-is-error` and `--allow-empty`, and a meta-test fails when warden's lattice domain differs from its declared domain
 **And** `verdict.py` stays the sole owner of warden's exit projection
-**Status:** ready-for-dev
+**Status:** done

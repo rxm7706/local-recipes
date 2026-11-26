@@ -11902,4 +11902,4 @@ So that marshal's two domains are declared once and AD-7's frozen domain is chec
 **When** they take them from the `marshal` and `marshal-seed` domains of `pyforge.core.exit_domains`
 **Then** every verb exits with the same code for the same outcome as before, `GUARDED_EXIT_CODES` and `SEED_EXIT_CODES` are unchanged, and a meta-test fails when either differs from its declared domain
 **And** `contract.md`'s exit codes do not move
-**Status:** ready-for-dev
+**Status:** done

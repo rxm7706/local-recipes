@@ -2,7 +2,7 @@
 title: '30.1: Warden''s verdict takes its exit codes from the declaration'
 type: 'fix'
 created: '2026-11-25'
-status: 'ready-for-dev'
+status: 'done'
 story: 30-1-warden-s-verdict-takes-its-exit-codes-from-the-declaration
 spec: spec-pyforge-warden
 difficulty: 'easy'
@@ -85,3 +85,5 @@ Ledger key: `30-1-warden-s-verdict-takes-its-exit-codes-from-the-declaration`.
 ## Spec Change Log
 
 - 2026-11-25: minted from the station Dream's 2026-11-25 entry (one declaration names every exit-code domain) and the operator's ruling of the same date. Not implemented.
+- 2026-11-25: before and after: the seven rungs (error 2, policy-violation 1, indeterminate 1, warn, bypassed, clean and not-applicable 0), warn-as-error 1, the allow-empty downgrade 0 (still only for the empty-extraction driver) and SIGINT 130, equal. AC1 exit 0 (410 passed in the verdict, exit and contract selection), AC2 exit 1 (no line matches).
+- 2026-11-25: closed. Implemented, independently reviewed against this spec (a read-only reviewer over the whole diff, every Acceptance Criterion run and read from its exit code), its findings applied; the full local `pr-preflight` gates the PR that lands it (branch `exit-code-vocabulary-2026-11-25`).
