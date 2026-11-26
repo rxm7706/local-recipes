@@ -417,3 +417,106 @@ def test_a_run_journals_the_workers_each_xdist_lane_ran_on(tmp_path: Path) -> No
     by_task = {lane["task"]: lane for lane in run["lanes"]}
     assert by_task["xdist-suite"]["xdist_workers"] == 16
     assert "xdist_workers" not in by_task["serial-a"]
+
+
+def test_a_crowded_run_sizes_a_heavy_lane_by_the_target_seconds() -> None:
+    """Twelve lanes pending on sixteen free cores cannot all start: a heavy lane takes the workers that end its work
+    in the target time, not the two a proportional split leaves it. Lanes that all fit keep the proportional split."""
+    share = preflight_xdist.xdist_share_at_admission
+    crowded = {"free_cores": 16, "pending_xdist": 12, "logical_cores": 16, "pending_weight": 6000.0}
+    assert share(**crowded, weight=900.0) == 2
+    assert share(**crowded, weight=900.0, target_seconds=200.0) == 5
+    assert share(**crowded, weight=100.0, target_seconds=200.0) == 2  # a light lane keeps the floor
+    assert share(**crowded, weight=9000.0, target_seconds=200.0) == 16  # never above the free cores
+    assert share(**{**crowded, "free_cores": 3}, weight=900.0, target_seconds=200.0) == 3
+    fits = {"free_cores": 16, "pending_xdist": 3, "logical_cores": 16, "pending_weight": 1200.0}
+    assert share(**fits, weight=600.0, target_seconds=10.0) == 8  # side by side: the proportional split stands
+
+
+def test_the_docs_site_lanes_compete_by_what_is_left_of_their_chain() -> None:
+    """The docs-site lanes run one at a time: a three-second install in front of a five-minute suite goes before a
+    hundred-second lane. With no seconds known for any of them, every lane keeps its declared turn."""
+    long_lane = preflight.Lane("serial-long", INV)
+    install = preflight.Lane("docs-site-install", "site")
+    herald = preflight.Lane("pyforge-herald-live-test", "pyforge-herald")
+    lanes = [long_lane, install, herald]
+    pending = {(lane.task, lane.environment): lane for lane in lanes}
+    expected = {
+        ("serial-long", INV): 100.0,
+        ("docs-site-install", "site"): 3.0,
+        herald.task and (herald.task, herald.environment): 300.0,
+    }
+    assert preflight._next_lane([long_lane, install], lanes, pending, 1, expected) is install
+    del pending[(install.task, install.environment)]
+    assert preflight._next_lane([long_lane, herald], lanes, pending, 2, expected) is herald
+    # The chain's last lane, alone, competes by its own seconds.
+    short_tail = {**expected, (herald.task, herald.environment): 40.0}
+    assert preflight._next_lane([long_lane, herald], lanes, pending, 2, short_tail) is long_lane
+    # No history: equal weights, declared turns.
+    pending = {(lane.task, lane.environment): lane for lane in lanes}
+    assert preflight._next_lane([long_lane, install], lanes, pending, 1, {}) is long_lane
+
+
+def test_work_medians_prefer_the_cpu_a_lane_measured(tmp_path: Path) -> None:
+    path = tmp_path / "journal.jsonl"
+    lanes = [
+        {
+            "task": "built",
+            "environment": INV,
+            "seconds": 300.0,
+            "status": "ok",
+            "xdist_workers": 8,
+            "cpu_seconds": 420.5,
+        },
+        {"task": "wide", "environment": INV, "seconds": 100.0, "status": "ok", "xdist_workers": 8},
+        {"task": "serial", "environment": INV, "seconds": 50.0, "status": "ok", "cpu_seconds": 190.0},
+        {"task": "bad", "environment": INV, "seconds": 50.0, "status": "ok", "cpu_seconds": float("nan")},
+    ]
+    path.write_text(json.dumps({"run_id": "r", "verdict": "ok", "lanes": lanes}) + "\n", encoding="utf-8")
+    assert preflight.lane_work_medians(path) == {
+        ("built", INV): 420.5,  # not 2400: seven of its eight workers had nothing to build
+        ("wide", INV): 800.0,
+        ("serial", INV): 190.0,  # a lane that runs its own processes, measured
+    }
+
+
+def test_the_tracked_work_table_seeds_an_xdist_lane_s_share(tmp_path: Path) -> None:
+    path = tmp_path / preflight.BUDGETS_RELATIVE
+    path.parent.mkdir(parents=True)
+    path.write_text(
+        '[lanes]\n"a@e" = 10\n[work]\n"a@e" = 640\n"b@e" = inf\n"c@e" = -4\n"d@e" = nan\n"plain" = 3\n',
+        encoding="utf-8",
+    )
+    assert preflight.budget_seed_seconds(tmp_path) == {("a", "e"): 10.0}
+    assert preflight.budget_seed_work(tmp_path) == {("a", "e"): 640.0}
+    assert preflight.budget_seed_work(tmp_path / "missing") == {}
+    assert preflight._expected_work(("a", "e"), {("a", "e"): 10.0}, preflight.budget_seed_work(tmp_path)) == 640.0
+
+
+def test_a_reaped_lane_reports_its_exit_code_and_the_cpu_it_used() -> None:
+    import subprocess
+    import sys
+
+    burn = "import time\nend = time.process_time() + 0.3\nwhile time.process_time() < end:\n    pass\n"
+    done = subprocess.Popen([sys.executable, "-c", burn])  # noqa: S603
+    code, cpu = preflight._wait_measuring_cpu(done)
+    assert code == 0
+    assert cpu is not None and 0.25 <= cpu < 5.0
+    failed = subprocess.Popen([sys.executable, "-c", "import sys; sys.exit(3)"])  # noqa: S603
+    code, _cpu = preflight._wait_measuring_cpu(failed)
+    assert code == 3
+    # Reaped elsewhere first (a stop that terminates the lanes): the code Popen holds is returned, no CPU claimed.
+    gone = subprocess.Popen([sys.executable, "-c", "import sys; sys.exit(4)"])  # noqa: S603
+    assert gone.wait() == 4
+    assert preflight._wait_measuring_cpu(gone) == (4, None)
+
+
+def test_on_one_core_an_xdist_lane_still_starts(tmp_path: Path) -> None:
+    """Fewer free cores than the minimum share and nothing in flight to free one: the lane starts, it does not wait."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "pixi.toml").write_text(_pixi({"x1": "pytest x1 -q -n auto", "s1": "pytest s1 -q"}), encoding="utf-8")
+    order, workers, code = _run(repo, jobs=1, cores=1, critical=True)
+    assert code == preflight.EXIT_OK
+    assert sorted(order) == ["s1", "x1"]
+    assert workers["x1"] == str(preflight_xdist.MIN_XDIST_WORKERS)

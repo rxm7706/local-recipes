@@ -28,7 +28,7 @@ deferred: []
 
 **Problem:** The operator runs the full preflight before a push, as AGENTS.md asks, and the pre-push hook then runs `pr-preflight` again on the same tree: 98 s at touched scope, about ten minutes at full, judging nothing a green run has not judged.
 
-**Approach:** Before any install or lane, `pr-preflight` looks in its journal for a run with verdict `ok` whose recorded tree hash, base commit, lane-graph digest and `pixi.lock` digest equal this run's, at the same scope or a wider one. On a clean working tree with such a run it prints the run it reuses, journals a `reused` record naming it, and exits 0. Each full run journals those four values. Anything else runs the lanes. `PYFORGE_PREFLIGHT_REUSE=0` runs them regardless.
+**Approach:** Before any install or lane, `pr-preflight` looks in its journal for a run with verdict `ok` whose recorded tree hash, base commit and gate-variable digest (`PYFORGE_*`, `HERALD_*`, `CI*` and `PYTEST_ADDOPTS`) equal this run's, and in which every lane this run selects passed; that makes a wider scope cover a narrower one and never the reverse. The tree hash covers the lane graph and `pixi.lock`, which are tracked files, so neither needs a digest of its own. On a clean working tree with such a run it prints the run it reuses, journals a `reuse` record naming it, and exits 0. Each run of a clean tree that did not move while its lanes ran journals those three values. Anything else runs the lanes. `PYFORGE_PREFLIGHT_REUSE=0` runs them regardless.
 
 Ledger key: `117-17-a-push-reuses-the-green-verdict-its-tree-already-has`.
 
@@ -46,7 +46,7 @@ Ledger key: `117-17-a-push-reuses-the-green-verdict-its-tree-already-has`.
 - Journal every reuse with the run id it reuses.
 
 **Never:**
-- Never reuse a red, interrupted or deferred-lane verdict, a verdict of a narrower scope, or a `reused` record itself.
+- Never reuse a red, interrupted or deferred-lane verdict, a verdict of a narrower scope, or a `reuse` record itself.
 - Never reuse across a dirty or untracked file, another tree, another base or another lane graph.
 
 ## Acceptance Criteria
@@ -62,7 +62,7 @@ Ledger key: `117-17-a-push-reuses-the-green-verdict-its-tree-already-has`.
   pixi run --frozen -e pyforge-steward pytest src/shared/packages/pyforge-steward/tests/unit/test_preflight_verdict_reuse.py -q
   ```
 
-- **AC2 — A second full preflight of an unchanged clean tree reuses the first.** Expected: exit 0 in under 15 s, a `reused` record in `.steward/preflight-runs.jsonl`.
+- **AC2 — A second full preflight of an unchanged clean tree reuses the first.** Expected: exit 0 in under 15 s, a `reuse` record in `.steward/preflight-runs.jsonl`.
 
   ```bash
   PYFORGE_PREFLIGHT_SCOPE=full pixi run --frozen -e pyforge-guild pr-preflight

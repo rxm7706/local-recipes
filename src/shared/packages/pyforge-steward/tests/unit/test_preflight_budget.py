@@ -235,11 +235,12 @@ def test_pr_preflight_does_not_invoke_budget() -> None:
     assert "preflight_budget" not in source.split("def run_preflight", 1)[0]
     run_body = source.split("def run_preflight", 1)[1].split("def _parse_args", 1)[0]
     assert "preflight_budget" not in run_body
-    # Story 117.15: the run reads the tracked lane seconds through ``budget_seed_seconds``, to order and size the lanes
-    # its journal has no green run of. It still never judges a lane against its budget: that stays preflight-budget's,
-    # after the run, and never moves the exit code (ruling D3). So that one reader is the only budget the body may name.
+    # Story 117.15: the run reads the tracked lane seconds and work through ``budget_seed_seconds`` and
+    # ``budget_seed_work``, to order and size the lanes its journal has no green run of. It still never judges a lane
+    # against its budget: that stays preflight-budget's, after the run, and never moves the exit code (ruling D3). So
+    # those two readers are the only budget the body may name.
     code_lines = "\n".join(line for line in run_body.splitlines() if not line.lstrip().startswith("#"))
-    assert "budget" not in code_lines.replace("budget_seed_seconds", "")
+    assert "budget" not in code_lines.replace("budget_seed_seconds", "").replace("budget_seed_work", "")
 
 
 def test_load_budget_config_missing_lane_uses_defaults(tmp_path: Path) -> None:

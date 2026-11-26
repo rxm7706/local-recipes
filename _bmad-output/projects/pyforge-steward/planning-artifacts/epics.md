@@ -7924,9 +7924,9 @@ So that one tree is judged once.
 **Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py`, `src/shared/packages/pyforge-steward/tests/unit/test_preflight_verdict_reuse.py` (new), `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/oracle-map.md`, `docs/how-to/` page naming the preflight, if one states that every push runs every lane
 **Spec:** `planning-artifacts/specs/spec-117-17-a-push-reuses-the-green-verdict-its-tree-already-has.md`
 **Given** AGENTS.md has the operator run the full preflight before any push, and the pre-push hook then runs `pr-preflight` again on the same tree: a second run of 98 s at touched scope or about ten minutes at full, judging nothing new
-**When** `pr-preflight` starts on a clean working tree whose tree hash, base commit and lane graph equal those a journaled run recorded with verdict `ok`, at the same scope or a wider one, with no lane deferred that this scope would run
-**Then** it prints the run it reuses, journals a `reused` record naming that run, and exits 0 without starting a lane
-**And** any difference (a dirty or untracked file, another tree hash, another base, a changed lane graph or `pixi.lock`, a narrower earlier scope, a red, interrupted or `--keep-going` run that ended red, `PYFORGE_PREFLIGHT_REUSE=0`) runs the lanes as before; a reused verdict is never itself reused as proof of a wider scope
+**When** `pr-preflight` starts on a clean working tree whose tree hash, base commit and gate variables (`PYFORGE_*`, `HERALD_*`, `CI*`, `PYTEST_ADDOPTS`) equal those a journaled run recorded with verdict `ok`, and every lane this run selects passed in that run (so a full run covers the touched run of the same tree, never the reverse)
+**Then** it prints the run it reuses, journals a `reuse` record naming that run, and exits 0 without starting a lane
+**And** any difference (a dirty or untracked file, another tree hash, which a changed lane graph or `pixi.lock` gives, another base, another value of a gate variable, a lane the earlier run deferred, cut or failed, a red or interrupted run, `PYFORGE_PREFLIGHT_REUSE=0`) runs the lanes as before; a reuse record is never itself the proof of another reuse
 **Status:** backlog
 
 ### Story 117.18: The PR workflows write caches from main only, and the changes job fetches no file contents

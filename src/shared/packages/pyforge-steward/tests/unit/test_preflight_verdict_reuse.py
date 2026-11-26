@@ -207,6 +207,12 @@ def test_an_environment_variable_a_lane_can_read_is_part_of_the_state(
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", "/somewhere/else.json")
     assert _run(repo, runs) == preflight.EXIT_OK
     assert len(runs.started) == 4
+    # Every pytest lane inherits PYTEST_ADDOPTS, and it can deselect tests: a run under other options is another state.
+    assert _run(repo, runs) == preflight.EXIT_OK
+    assert len(runs.started) == 4, "the same variables: the second run of this state is reused"
+    monkeypatch.setenv("PYTEST_ADDOPTS", "--splits 2 --group 1")
+    assert _run(repo, runs) == preflight.EXIT_OK
+    assert len(runs.started) == 6
     # The scope and the opt-out choose which lanes run, not what a lane sees: they are not part of the state.
     before = preflight.tree_state(repo)
     monkeypatch.setenv(preflight.SCOPE_ENV, "touched")
@@ -262,3 +268,107 @@ def test_main_passes_the_opt_out_to_the_run(monkeypatch: pytest.MonkeyPatch, tmp
     monkeypatch.setenv(preflight.REUSE_ENV, "0")
     assert preflight.main([]) == preflight.EXIT_OK
     assert seen["reuse"] is False
+
+
+def test_another_commit_of_the_same_tree_runs_its_lanes(repo: Path) -> None:
+    """Some detectors judge history (commit subjects, per-commit diffs): a reworded commit keeps the tree and is
+    another state."""
+    runs = Runs()
+    assert _run(repo, runs) == preflight.EXIT_OK
+    tree = _git(repo, "rev-parse", "HEAD^{tree}")
+    _git(repo, "-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-q", "--amend", "-m", "reworded")
+    assert _git(repo, "rev-parse", "HEAD^{tree}") == tree
+    assert _run(repo, runs) == preflight.EXIT_OK
+    assert len(runs.started) == 4
+
+
+def test_another_day_runs_its_lanes(repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Some detectors judge a date (a flag past its clock): yesterday's green is not today's."""
+    runs = Runs()
+    monkeypatch.setattr(preflight, "_today", lambda: "2026-11-26")
+    assert _run(repo, runs) == preflight.EXIT_OK
+    monkeypatch.setattr(preflight, "_today", lambda: "2026-11-27")
+    assert _run(repo, runs) == preflight.EXIT_OK
+    assert len(runs.started) == 4
+
+
+def test_a_later_red_run_of_the_same_state_takes_the_green_back(repo: Path) -> None:
+    runs = Runs()
+    assert _run(repo, runs) == preflight.EXIT_OK
+    runs.red = {"beta"}
+    assert _run(repo, runs, reuse=False, keep_going=True) == preflight.EXIT_LANE_RED
+    runs.red = set()
+    started = len(runs.started)
+    assert _run(repo, runs) == preflight.EXIT_OK
+    assert len(runs.started) == started + 2, "the newest word on this state was red, so the lanes run"
+    assert _run(repo, runs) == preflight.EXIT_OK
+    assert len(runs.started) == started + 2, "and that green run is reused again"
+
+
+def test_a_green_run_older_than_the_limit_is_not_reused(repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from datetime import UTC, datetime, timedelta
+
+    runs = Runs()
+    assert _run(repo, runs) == preflight.EXIT_OK
+    state = preflight.tree_state(repo)
+    lanes = [preflight.Lane("alpha", INV), preflight.Lane("beta", INV)]
+    path = repo / preflight.JOURNAL_RELATIVE
+    now = datetime.now(tz=UTC)
+    assert preflight.reusable_run(path, state, lanes, now=now) is not None
+    late = now + timedelta(seconds=preflight.REUSE_MAX_AGE_SECONDS + 120)
+    assert preflight.reusable_run(path, state, lanes, now=late) is None
+    # A record whose start cannot be read has no age and is never reused.
+    records = _journal(repo)
+    for record in records:
+        record["started_at"] = "not a time"
+    path.write_text("\n".join(json.dumps(r) for r in records) + "\n", encoding="utf-8")
+    assert preflight.reusable_run(path, state, lanes, now=now) is None
+    monkeypatch.setattr(preflight, "REUSE_MAX_AGE_SECONDS", 1800.0)
+    assert _run(repo, runs) == preflight.EXIT_OK
+    assert len(runs.started) == 4
+
+
+def test_a_lane_that_another_lane_judges_in_full_is_covered_by_it(repo: Path) -> None:
+    """A touched run's fast-core detectors each run inside detectors-ci: a green full run covers them, and only when
+    the caller names that lane as their stand-in."""
+    runs = Runs()
+    assert _run(repo, runs) == preflight.EXIT_OK
+    state = preflight.tree_state(repo)
+    path = repo / preflight.JOURNAL_RELATIVE
+    wanted = [preflight.Lane("alpha", INV), preflight.Lane("spec-surface-check", INV)]
+    assert preflight.reusable_run(path, state, wanted) is None
+    stands_for = {("spec-surface-check", INV): ("beta", INV)}
+    assert preflight.reusable_run(path, state, wanted, stands_for=stands_for) is not None
+    assert preflight.reusable_run(path, state, wanted, stands_for={("spec-surface-check", INV): ("gone", INV)}) is None
+
+
+def test_whether_a_github_token_is_set_is_part_of_the_state_and_its_value_is_not(
+    repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("GH_TOKEN", raising=False)
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    without = preflight.tree_state(repo)
+    monkeypatch.setenv("GH_TOKEN", "one")
+    with_one = preflight.tree_state(repo)
+    monkeypatch.setenv("GH_TOKEN", "two")
+    assert preflight.tree_state(repo) == with_one
+    assert without is not None and with_one is not None and without.env_digest != with_one.env_digest
+    assert "one" not in json.dumps(with_one.to_journal())
+
+
+def test_a_reuse_record_lists_what_the_run_leaves_to_ci(repo: Path) -> None:
+    from pyforge.steward import preflight_verify
+
+    runs = Runs()
+    assert _run(repo, runs) == preflight.EXIT_OK
+    assert _run(repo, runs) == preflight.EXIT_OK
+    path = repo / preflight.JOURNAL_RELATIVE
+    records = _journal(repo)
+    reuse = records[-1]
+    assert reuse["phase"] == "reuse" and reuse["deferred"] == []
+    # A touched run that reused a verdict still owes its deferred lanes: verify-deferred lists it.
+    reuse["deferred"] = [{"lane": "left", "environment": INV, "reason": "CI arbitrates"}]
+    path.write_text("\n".join(json.dumps(r) for r in records) + "\n", encoding="utf-8")
+    owed, warnings = preflight_verify.deferred_runs(path, None)
+    assert [entry.lanes for entry in owed] == [f"left@{INV}"]
+    assert warnings == []

@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import shlex
 import shutil
@@ -41,11 +42,16 @@ import uuid
 from collections.abc import Callable, Mapping, Sequence
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
 from pyforge.core.flags import FlagConfigError, read_boolean
+
+try:  # the CPU a lane used is read from this process's children total; Windows has no ``resource`` module
+    import resource
+except ImportError:  # pragma: no cover
+    resource = None  # type: ignore[assignment]
 
 from pyforge.steward import preflight_ci, preflight_suite_reduction, preflight_xdist
 
@@ -73,9 +79,13 @@ CRITICAL_PATH_FLAG_KEY = "pyforge.steward.preflight_critical_path"
 #: green runs feed its expected seconds.
 UNKNOWN_LANE_SECONDS = 30.0
 LANE_MEDIAN_RUNS = 5
+#: Story 117.15: an xdist lane is given the workers that finish its expected work in this fraction of the run's ideal
+#: length (the expected work of every selected lane over the machine's cores). Half: a heavy lane ends by the middle
+#: of the run and its cores go to the lanes behind it (:func:`preflight_xdist.xdist_share_at_admission`).
+LANE_TARGET_FRACTION = 0.5
 #: The tracked per-lane budgets (Story 117.5). ``preflight-budget`` judges against them after a run and never changes
-#: its exit code; since Story 117.15 the run itself reads the ``[lanes]`` table, and only to order and size lanes its
-#: journal has no green run of.
+#: its exit code; since Story 117.15 the run itself reads the ``[lanes]`` table (seconds) and the ``[work]`` table
+#: (seconds times workers, for the xdist lanes), and only to order and size lanes its journal has no green run of.
 BUDGETS_RELATIVE = Path("docs/governance/preflight-budgets.toml")
 DEFERRED_REASON = "CI arbitrates"
 # The cheap planning detectors a touched run keeps, each a guild task of its own, in place of the
@@ -227,11 +237,14 @@ def lane_medians(journal_path: Path, *, last_n: int = LANE_MEDIAN_RUNS) -> dict[
 
 
 def lane_work_medians(journal_path: Path, *, last_n: int = LANE_MEDIAN_RUNS) -> dict[LaneKey, float]:
-    """Each xdist lane's median work, wall seconds times the workers it ran on, over its last green runs (Story 117.15).
+    """Each lane's median work in core-seconds over its last green runs (Story 117.15).
 
-    Read from the ``xdist_workers`` a lane's journal entry carries since that story; a lane with no such entry is
-    absent. Work, not seconds, sizes a lane's share at admission: seconds fall when a lane is given more workers,
-    so a share sized by seconds would swing from run to run, while the work stays about the same.
+    The CPU seconds the lane's processes used (``cpu_seconds``, measured when the lane is reaped) where its journal
+    entry carries them; else its wall seconds times the workers it ran on (``xdist_workers``); a lane with neither
+    is absent. Work, not seconds, sizes a lane's share at admission: seconds fall when a lane is given more workers,
+    so a share sized by seconds would swing from run to run. Measured CPU is the better of the two readings: seconds
+    times workers grows with every worker a lane is given and cannot use (herald's built-site tests build in one
+    worker), which would hand such a lane more workers on each run.
     """
     if not journal_path.is_file():
         return {}
@@ -251,41 +264,70 @@ def lane_work_medians(journal_path: Path, *, last_n: int = LANE_MEDIAN_RUNS) -> 
         for lane in run.get("lanes") or []:
             if not isinstance(lane, dict) or lane.get("status") != "ok":
                 continue
+            cpu = lane.get("cpu_seconds")
             workers = lane.get("xdist_workers")
-            if not isinstance(workers, int) or isinstance(workers, bool) or workers < 1:
+            if isinstance(cpu, int | float) and not isinstance(cpu, bool) and math.isfinite(cpu) and cpu > 0:
+                sample = float(cpu)
+            elif isinstance(workers, int) and not isinstance(workers, bool) and workers >= 1:
+                sample = float(lane.get("seconds", 0.0)) * workers
+            else:
                 continue
             key = (str(lane.get("task")), str(lane.get("environment")))
             values = samples.setdefault(key, [])
             if len(values) < last_n:
-                values.append(float(lane.get("seconds", 0.0)) * workers)
+                values.append(sample)
     return {key: statistics.median(values) for key, values in samples.items() if values}
 
 
-def budget_seed_seconds(repo_root: Path) -> dict[LaneKey, float]:
-    """Each lane's seconds in the tracked ``docs/governance/preflight-budgets.toml``, keyed like the medians (Story 117.15).
-
-    The expected seconds of a lane the journal has no green run of: a fresh worktree's journal is empty, and it is
-    where every effort's first preflight runs. A missing or unreadable file seeds nothing, and each lane then weighs
-    :data:`UNKNOWN_LANE_SECONDS` as before.
-    """
+def _budget_table(repo_root: Path, table: str) -> dict[LaneKey, float]:
+    """One ``"task@environment" = number`` table of the tracked budgets file, keyed as the journal keys a lane."""
     try:
         data = tomllib.loads((repo_root / BUDGETS_RELATIVE).read_text(encoding="utf-8"))
     except OSError, ValueError:
         return {}
-    lanes = data.get("lanes")
+    rows = data.get(table)
     seeds: dict[LaneKey, float] = {}
-    for label, seconds in (lanes if isinstance(lanes, dict) else {}).items():
+    for label, number in (rows if isinstance(rows, dict) else {}).items():
         task, sep, environment = str(label).rpartition("@")
-        if sep and task and environment and isinstance(seconds, int | float) and not isinstance(seconds, bool):
-            seeds[(task, environment)] = float(seconds)
+        if not (isinstance(number, int | float) and not isinstance(number, bool) and math.isfinite(number)):
+            continue
+        if sep and task and environment and number >= 0:
+            seeds[(task, environment)] = float(number)
     return seeds
+
+
+def budget_seed_seconds(repo_root: Path) -> dict[LaneKey, float]:
+    """Each lane's tracked budget in seconds, keyed as the journal keys it (Story 117.15).
+
+    The expected seconds of a lane the journal has no green run of: a fresh worktree's journal is empty, and it is
+    where a full preflight most often runs. A missing or unreadable file, or a row that is not ``task@environment``
+    with a number, seeds nothing: the run then orders that lane as before, by :data:`UNKNOWN_LANE_SECONDS`.
+    """
+    return _budget_table(repo_root, "lanes")
+
+
+def budget_seed_work(repo_root: Path) -> dict[LaneKey, float]:
+    """Each xdist lane's tracked work, its seconds times the workers it ran on (the ``[work]`` table; Story 117.15).
+
+    The seed of a lane's share where the journal has no green run of it: seconds alone do not say how many workers
+    took them. A lane with no row is sized from its seconds at the minimum share, as before.
+    """
+    return _budget_table(repo_root, "work")
 
 
 #: Story 117.17: ``PYFORGE_PREFLIGHT_REUSE=0`` runs the lanes even when the journal holds a green run of this tree.
 REUSE_ENV = "PYFORGE_PREFLIGHT_REUSE"
 #: The variables a lane's verdict can depend on besides the tree; a run and the run it reuses must agree on them.
-_REUSE_ENV_PREFIXES = ("PYFORGE_", "HERALD_", "CI")
+#: ``PYTEST_ADDOPTS`` is one: every pytest lane inherits it, and it can deselect tests (``-k``, ``--splits``).
+_REUSE_ENV_PREFIXES = ("PYFORGE_", "HERALD_", "CI", "PYTEST_ADDOPTS")
 _REUSE_ENV_IGNORED = frozenset({REUSE_ENV, SCOPE_ENV, "PYFORGE_PREFLIGHT_SKIP", "PYFORGE_PREFLIGHT_SKIP_REASON"})
+#: Tokens a detector's GitHub probe reads: whether each is set is part of the state, its value never is (an
+#: unauthenticated probe fails open, AGENTS.md § Known pitfalls, so a run without a token is another run).
+_REUSE_ENV_PRESENCE = ("GH_TOKEN", "GITHUB_TOKEN")
+#: How old a green run may be and still be reused. Some lanes judge more than the tree, the commit and the day: loop
+#: homes under the home directory, refs, what GitHub answers. A run cannot hash those, so its verdict stands only for
+#: the push that follows it: half an hour, about three times the length of a full run.
+REUSE_MAX_AGE_SECONDS = 1800.0
 
 
 def reuse_enabled() -> bool:
@@ -293,32 +335,47 @@ def reuse_enabled() -> bool:
     return os.environ.get(REUSE_ENV, "1").strip() != "0"
 
 
+def _today() -> str:
+    """The local date, as the detectors that judge an expiry read it (``date.today()``)."""
+    return date.today().isoformat()
+
+
 @dataclass(frozen=True)
 class TreeState:
-    """What a verdict was reached on (Story 117.17): the tree, the base its diff was read against, and the
-    environment variables a lane can read. ``clean`` is false when a tracked file differs from ``HEAD`` or an
-    untracked, unignored file exists: such a tree has no hash to compare, so its verdict is never reused."""
+    """What a verdict was reached on (Story 117.17): the tree, the commit, the base its diff was read against, the
+    local day, and the environment variables a lane can read.
+
+    The commit is its own field because some detectors judge history, not content: a squash or a reworded subject
+    keeps the tree and changes what they read. The day is one because some judge a date (a flag past its clock, an
+    exemption past its expiry). ``clean`` is false when a tracked file differs from ``HEAD`` or an untracked,
+    unignored file exists: such a tree has no hash to compare, so its verdict is never reused.
+    """
 
     tree_sha: str
+    head_sha: str
     base_sha: str
     env_digest: str
+    day: str
     clean: bool
 
     def to_journal(self) -> dict[str, Any]:
         return {
             "tree_sha": self.tree_sha,
+            "head_sha": self.head_sha,
             "base_sha": self.base_sha,
             "env_digest": self.env_digest,
+            "day": self.day,
             "clean": self.clean,
         }
 
 
 def _reuse_env_digest() -> str:
-    relevant = sorted(
+    relevant: list[tuple[str, str | bool]] = sorted(
         (name, value)
         for name, value in os.environ.items()
         if name.startswith(_REUSE_ENV_PREFIXES) and name not in _REUSE_ENV_IGNORED
     )
+    relevant.extend((name, name in os.environ) for name in _REUSE_ENV_PRESENCE)
     return hashlib.sha256(json.dumps(relevant).encode("utf-8")).hexdigest()[:16]
 
 
@@ -333,35 +390,59 @@ def tree_state(repo_root: Path) -> TreeState | None:
         return done.stdout if done.returncode == 0 else None
 
     tree = git("rev-parse", "--verify", "--quiet", "HEAD^{tree}")
+    head = git("rev-parse", "--verify", "--quiet", "HEAD")
     base = git("rev-parse", "--verify", "--quiet", preflight_ci.BASE_REF)
     status = git("status", "--porcelain", "--untracked-files=normal")
-    if not tree or not base or status is None:
+    if not tree or not head or not base or status is None:
         return None
-    return TreeState(tree.strip(), base.strip(), _reuse_env_digest(), clean=not status.strip())
+    return TreeState(tree.strip(), head.strip(), base.strip(), _reuse_env_digest(), _today(), clean=not status.strip())
 
 
 def _tree_for_journal(repo_root: Path, at_start: TreeState | None) -> dict[str, Any] | None:
     """The state to journal with a finished run: the one read at its start, when the tree still reads the same.
 
-    A tree that moved while the lanes ran (an edit, a commit, a fetch that moved the base) has no single state the
-    verdict belongs to, and a dirty tree has no hash to compare: both journal ``None``, which nothing reuses.
+    A tree that moved while the lanes ran (an edit, a commit, a fetch that moved the base, midnight) has no single
+    state the verdict belongs to, and a dirty tree has no hash to compare: both journal ``None``, which nothing reuses.
     """
     if at_start is None or not at_start.clean:
         return None
     return at_start.to_journal() if tree_state(repo_root) == at_start else None
 
 
-def reusable_run(journal_path: Path, state: TreeState | None, lanes: Sequence[Lane]) -> dict[str, Any] | None:
-    """The newest journaled green run that already judged every lane of this run on this tree (Story 117.17).
+def _finished_seconds_ago(record: Mapping[str, Any], now: datetime) -> float | None:
+    """How long ago a journaled run ended, from its ``started_at`` and ``total_seconds``; ``None`` when unreadable."""
+    try:
+        started = datetime.fromisoformat(str(record.get("started_at")))
+        total = float(record.get("total_seconds", 0.0))
+    except TypeError, ValueError:
+        return None
+    if started.tzinfo is None:
+        return None
+    return (now - started).total_seconds() - total
 
-    A run qualifies when its verdict is ``ok``, it recorded the same clean :class:`TreeState`, and every lane this
-    run selects ran there with status ``ok``. That makes a wider scope cover a narrower one (a full run covers the
-    touched run of the same tree) and never the reverse, and a lane that was paused, deferred or cut then is not
-    covered now. A ``reuse`` record carries no lanes, so a reused verdict is never the proof of another reuse.
+
+def reusable_run(
+    journal_path: Path,
+    state: TreeState | None,
+    lanes: Sequence[Lane],
+    *,
+    stands_for: Mapping[LaneKey, LaneKey] | None = None,
+    now: datetime | None = None,
+) -> dict[str, Any] | None:
+    """The newest journaled green run that already judged every lane of this run on this state (Story 117.17).
+
+    A run qualifies when its verdict is ``ok``, it recorded the same clean :class:`TreeState`, it ended no more than
+    :data:`REUSE_MAX_AGE_SECONDS` ago, and every lane this run selects ran there with status ``ok``. That makes a
+    wider scope cover a narrower one and never the reverse, and a lane that was paused, deferred or cut then is not
+    covered now. ``stands_for`` names the lanes another lane judges in full: a touched run's fast-core detectors are
+    each run inside ``detectors-ci``, so a green ``detectors-ci`` covers them. A later run of the same state that was
+    not green takes the verdict back: the newest word on a state is the one that counts. A ``reuse`` record carries
+    no lanes, so a reused verdict is never the proof of another reuse.
     """
     if state is None or not state.clean or not journal_path.is_file():
         return None
     wanted = {_lane_key(lane) for lane in lanes}
+    stand_ins = dict(stands_for or {})
     found: dict[str, Any] | None = None
     for line in journal_path.read_text(encoding="utf-8").splitlines():
         stripped = line.strip()
@@ -371,18 +452,22 @@ def reusable_run(journal_path: Path, state: TreeState | None, lanes: Sequence[La
             record = json.loads(stripped)
         except json.JSONDecodeError:
             continue
-        if not isinstance(record, dict) or record.get("verdict") != "ok" or "lanes" not in record:
+        if not isinstance(record, dict) or "lanes" not in record or record.get("tree") != state.to_journal():
             continue
-        if record.get("tree") != state.to_journal():
+        if record.get("verdict") != "ok":
+            found = None
             continue
         green = {
             (str(lane.get("task")), str(lane.get("environment")))
             for lane in record.get("lanes") or []
             if isinstance(lane, dict) and lane.get("status") == "ok"
         }
-        if wanted <= green:
+        if all(key in green or stand_ins.get(key) in green for key in wanted):
             found = record
-    return found
+    if found is None:
+        return None
+    age = _finished_seconds_ago(found, now or datetime.now(tz=UTC))
+    return found if age is not None and -60.0 <= age <= REUSE_MAX_AGE_SECONDS else None
 
 
 def _critical_path_flag_on() -> bool:
@@ -819,6 +904,8 @@ class _RunCoordinator:
     )
     suite_reduction_runtime_journal: dict[LaneKey, dict[str, Any]] = field(default_factory=dict)
     xdist_workers: dict[LaneKey, int] = field(default_factory=dict)
+    #: Story 117.15: the CPU seconds each lane's processes used, summed over its segments as each is reaped.
+    lane_cpu: dict[LaneKey, float] = field(default_factory=dict)
     subprocess_argv_for_lane: Callable[[Lane], list[str]] | None = None
     before_popen: Callable[[LaneRunContext], None] | None = None
     between_segments: Callable[[LaneRunContext, int], None] | None = None
@@ -911,6 +998,35 @@ def _terminate_proc_group(proc: subprocess.Popen[Any]) -> None:
             proc.kill()
 
 
+#: One reap at a time is measured: the children's CPU total moves by exactly the reaped lane's between two readings.
+_REAP_LOCK = threading.Lock()
+
+
+def _wait_measuring_cpu(proc: subprocess.Popen[Any]) -> tuple[int, float | None]:
+    """Wait for a lane's process; its exit code, and the CPU seconds it and its descendants used (Story 117.15).
+
+    ``waitid`` with ``WNOWAIT`` returns when the process has exited and leaves it to be reaped; the reap then happens
+    under a lock, between two readings of this process's children total, so the difference is this lane's. The exit
+    code is ``Popen.wait``'s, as before. ``None`` for the CPU where the platform has no ``waitid`` or ``resource``,
+    or when another thread reaped the process first (a stop that terminates the lanes): the code is still returned.
+    """
+    waitid = getattr(os, "waitid", None)
+    if waitid is None or resource is None:
+        return int(proc.wait()), None
+    try:
+        waitid(os.P_PID, proc.pid, os.WEXITED | os.WNOWAIT)
+    except OSError:
+        return int(proc.wait()), None
+    with _REAP_LOCK:
+        if proc.returncode is not None:
+            return int(proc.returncode), None
+        before = resource.getrusage(resource.RUSAGE_CHILDREN)
+        code = int(proc.wait())
+        after = resource.getrusage(resource.RUSAGE_CHILDREN)
+    cpu = (after.ru_utime - before.ru_utime) + (after.ru_stime - before.ru_stime)
+    return code, cpu if cpu > 0 else None
+
+
 def _segment_outcome(exit_code: int) -> str:
     if exit_code == 0:
         return "passed"
@@ -937,7 +1053,12 @@ def _run_pixi_argv(
     )
     coord.register_proc(proc, _lane_key(ctx.lane))
     try:
-        return int(proc.wait())
+        code, cpu = _wait_measuring_cpu(proc)
+        if cpu is not None:
+            with coord.proc_lock:
+                key = _lane_key(ctx.lane)
+                coord.lane_cpu[key] = coord.lane_cpu.get(key, 0.0) + cpu
+        return code
     finally:
         coord.unregister_proc(proc)
 
@@ -1215,16 +1336,27 @@ def _next_lane(
                 lanes.index(lane),
             ),
         )
-        turns.append((rank(first, lanes.index(first) if docs_turn is None else docs_turn), first))
+        turn = lanes.index(first) if docs_turn is None else docs_turn
+        if expected is None:
+            turns.append((rank(first, turn), first))
+        else:
+            # Story 117.15: the docs-site lanes run one at a time, so the lanes behind this one wait for it: it
+            # competes by the seconds the whole chain still needs, not by its own. A three-second install in front
+            # of herald's built-site tests otherwise waits behind every longer lane, and the chain ends the run.
+            # Only seconds the journal or the budgets know count: with no history every lane weighs the same and
+            # keeps its declared turn, as before.
+            chain = sum(expected.get(key, 0.0) for key, lane in pending.items() if lane.task in DOCS_SITE_TASKS)
+            own = expected.get(_lane_key(first), UNKNOWN_LANE_SECONDS)
+            turns.append(((-max(chain, own), turn), first))
     return min(turns, key=lambda turn: turn[0])[1]
 
 
 def _expected_work(key: LaneKey, expected: Mapping[LaneKey, float] | None, work: Mapping[LaneKey, float]) -> float:
     """An xdist lane's expected work in core-seconds (Story 117.15).
 
-    Its journal median of seconds times workers when the journal has one; else its expected seconds (journal median,
-    tracked budget, or :data:`UNKNOWN_LANE_SECONDS`) at the :data:`preflight_xdist.MIN_XDIST_WORKERS` workers a lane
-    with no better claim was given.
+    Its journal median of work (:func:`lane_work_medians`) or its tracked work when either is known; else its
+    expected seconds (journal median, tracked budget, or :data:`UNKNOWN_LANE_SECONDS`) at the
+    :data:`preflight_xdist.MIN_XDIST_WORKERS` workers a lane with no better claim was given.
     """
     known = work.get(key)
     if known is not None and known > 0:
@@ -1307,6 +1439,11 @@ def _run_lane_in_pool(
         if workers is not None:
             # Story 117.15: the workers the lane ran on, so the next run can size its share by work done.
             journal_extra = {**(journal_extra or {}), "xdist_workers": workers}
+        with coord.proc_lock:
+            cpu = coord.lane_cpu.get(key)
+        if cpu is not None:
+            # The CPU seconds the lane's processes used: its work, whatever workers it was given.
+            journal_extra = {**(journal_extra or {}), "cpu_seconds": round(cpu, 1)}
         if key in coord.terminated_lanes:
             trigger, trigger_env = _stop_cause(coord, "interrupt")
             return LaneResult(
@@ -1486,11 +1623,15 @@ def run_preflight(
     # Story 117.17: the state this run's verdict will be tied to, read before any lane can touch the tree.
     state_at_start = tree_state(repo_root)
     if reuse and lanes:
-        earlier = reusable_run(repo_root / JOURNAL_RELATIVE, state_at_start, lanes)
+        # A touched run's fast-core detectors each run inside detectors-ci, so a green full run covers them.
+        stands_for = {
+            _lane_key(lane): (FAST_CORE_REPLACES, lane.environment) for lane in (cut.fast_core if cut else ())
+        }
+        earlier = reusable_run(repo_root / JOURNAL_RELATIVE, state_at_start, lanes, stands_for=stands_for)
         if earlier is not None and state_at_start is not None:
             head_sha, branch = _git_head(repo_root)
             print(
-                f"preflight: this tree ({state_at_start.tree_sha[:12]}, base {state_at_start.base_sha[:12]}) is "
+                f"preflight: this commit ({state_at_start.head_sha[:12]}, base {state_at_start.base_sha[:12]}) is "
                 f"already green: run {earlier.get('run_id')} of {earlier.get('started_at')} "
                 f"(scope {earlier.get('mode')}) passed all {len(lanes)} lane(s) this run selects. "
                 f"Nothing to run; {REUSE_ENV}=0 runs them again.",
@@ -1508,6 +1649,8 @@ def run_preflight(
                     "mode": scope,
                     "tree": state_at_start.to_journal(),
                     "lanes_covered": sorted(lane_label(lane.task, lane.environment) for lane in lanes),
+                    # What this run leaves to CI, as a run that ran its lanes journals it (verify-deferred reads it).
+                    "deferred": _deferred_journal(deferred),
                     "verdict": "ok",
                 },
             )
@@ -1524,9 +1667,20 @@ def run_preflight(
         else:
             # Story 117.15: the journal's own medians, and for a lane it has no green run of, the tracked budget.
             expected = {**budget_seed_seconds(repo_root), **lane_medians(repo_root / JOURNAL_RELATIVE)}
-            work = lane_work_medians(repo_root / JOURNAL_RELATIVE)
+            work = {**budget_seed_work(repo_root), **lane_work_medians(repo_root / JOURNAL_RELATIVE)}
     if worker_count < 1:
         worker_count = 1
+    # Story 117.15: the seconds a lane should take, from the expected work of every selected lane (an xdist lane's
+    # seconds times its workers, a serial lane's seconds) over the machine's cores.
+    target_seconds: float | None = None
+    if critical and cores > 0:
+        run_work = sum(
+            _expected_work(_lane_key(lane), expected, work)
+            if preflight_xdist.task_cmd_uses_xdist_auto(pixi_data, lane.task)
+            else work.get(_lane_key(lane), (expected or {}).get(_lane_key(lane), UNKNOWN_LANE_SECONDS))
+            for lane in lanes
+        )
+        target_seconds = LANE_TARGET_FRACTION * run_work / cores
 
     mutex_keys = lane_mutex_keys(lanes, preflight_ci.static_service_mutex_keys(repo_root, lanes, pixi_data))
     suite_lane_plan = preflight_suite_reduction.build_suite_lane_overrides(
@@ -1719,13 +1873,24 @@ def run_preflight(
                                 logical_cores=cores,
                                 weight=_expected_work(pick_key, expected, work),
                                 pending_weight=sum(_expected_work(k, expected, work) for k in pending_xdist_keys),
+                                target_seconds=target_seconds,
                             )
+                            if share == 0 and not futures:
+                                # Nothing is in flight to free a core (a one-core machine): the lane starts on the
+                                # minimum, or it would wait for ever.
+                                share = preflight_xdist.MIN_XDIST_WORKERS
                             if share == 0:
+                                if futures and pick.task in DOCS_SITE_TASKS:
+                                    # Story 117.15: the docs-site lanes behind this one wait for it, so its turn is
+                                    # held: no shorter lane takes the core it is short of. A lane in flight frees it.
+                                    break
                                 ready_candidates.remove(pick)
                                 continue
                             weights[pick_key] = share
                             coord.xdist_workers[pick_key] = share
-                        elif free_cores < 1:
+                        elif free_cores < 1 and futures:
+                            if pick.task in DOCS_SITE_TASKS:
+                                break
                             ready_candidates.remove(pick)
                             continue
                         else:

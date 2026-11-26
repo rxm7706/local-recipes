@@ -105,7 +105,10 @@ def deferred_runs(path: Path, since: date | None) -> tuple[list[Owed], list[str]
         except json.JSONDecodeError:
             warnings.append(f"verify-deferred: warning: {path.name} line {number} is not JSON; skipped")
             continue
-        if not isinstance(record, dict) or "run_id" not in record or "lanes" not in record:
+        # A run that reused a green verdict (Story 117.17) ran no lane and still left its deferred lanes to CI.
+        if not isinstance(record, dict) or "run_id" not in record:
+            continue
+        if "lanes" not in record and record.get("phase") != "reuse":
             continue
         entries = record.get("deferred")
         if not isinstance(entries, list) or not entries:
