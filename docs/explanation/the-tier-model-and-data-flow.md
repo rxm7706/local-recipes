@@ -3,7 +3,7 @@ sources:
   - docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md
   - scripts/promote_sprint_status.py
   - _bmad-output/PROJECTS.md
-verified: 2026-11-17
+verified: 2026-11-26
 ---
 
 # The Tier Model and Data Flow
