@@ -8473,8 +8473,11 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   is computed once and the lockfile read by the C loader (117.14); a fresh worktree admits longest-first from the
   tracked budgets and an xdist lane's workers follow its expected work (117.15); the scripts-lib lane runs under
   xdist and builds its flag reports once (117.16); a push reuses the green verdict its tree already has (117.17);
-  the PR workflows write caches from `main` only, the gates run in a small environment, the `changes` job and
-  the detectors fetch what they read, and the image builds copy their manifests before the tree (117.18). Doctor
+  the PR workflows write caches from `main` only, and the `changes` job fetches no file contents (117.18). Three
+  parts of the plan were measured and not built, each recorded in the 117.18 story spec: the gates in a small
+  environment (the local preflight matches a gate lane to its CI step by environment; about 10 s of critical path),
+  a shallower fetch for the detectors (they read commit dates and merge subjects), and the image layer order (no
+  layer cache exists to reuse a layer, and the image builds do not run on a pull request). Doctor
   (the detector run measures its sources beside the script detectors; its slowest live tests), herald (its live half
   under xdist) and mason (the CFE meta suite) relay under their own Dream entries of this date. **Constraints:** no
   coverage floor, mypy setting, ruff rule or detector is weakened, removed or skipped; the station-tests path arrays

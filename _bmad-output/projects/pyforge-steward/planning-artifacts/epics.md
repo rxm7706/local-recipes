@@ -7929,20 +7929,20 @@ So that one tree is judged once.
 **And** any difference (a dirty or untracked file, another tree hash, another base, a changed lane graph or `pixi.lock`, a narrower earlier scope, a red, interrupted or `--keep-going` run that ended red, `PYFORGE_PREFLIGHT_REUSE=0`) runs the lanes as before; a reused verdict is never itself reused as proof of a wider scope
 **Status:** backlog
 
-### Story 117.18: The PR workflows write caches from main only and fetch what they read, and the gates run in a small environment
+### Story 117.18: The PR workflows write caches from main only, and the changes job fetches no file contents
 
 As the operator landing a PR,
-I want the workflows to stop writing caches no later run can read, the gates to stop restoring a station environment for a one-second script, and the `changes` job and the detectors to fetch only what they read,
-So that the cache stays under its limit and a PR's jobs start and finish sooner.
+I want the PR workflows to stop writing caches no later run can read, and the `changes` job to stop fetching file contents it never reads,
+So that the cache stays under its limit and every station job starts sooner.
 
-**Type:** chore • **Effort:** M • **Deps:** 117.2, 117.10, 117.11 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); spec-pyforge-steward CAP-166 (the CI surfaces registry: no surface is added or removed); no AD moves
+**Type:** chore • **Effort:** S • **Deps:** 117.10, 117.11 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); spec-pyforge-steward CAP-166 (the CI surfaces registry: no surface is added or removed); no AD moves
 **Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
-**Surface:** `.github/workflows/pyforge-station-tests.yml`, `.github/workflows/detectors.yml`, `.github/workflows/lint-types.yml`, `.github/workflows/cfe-regression-net.yml`, `.github/workflows/pages.yml`, `.github/workflows/marshal-local-recipes-seed-oracle.yml`, `.github/workflows/copilot-setup-steps.yml`, `Containerfile`, `src/platform/Containerfile`, `.dockerignore`, `src/shared/packages/pyforge-steward/tests/meta/` (the tests that hold the workflows)
-**Spec:** `planning-artifacts/specs/spec-117-18-the-pr-workflows-write-caches-from-main-only-and-fetch-what-they-read-and-the-gates-run-in-a-small-environment.md`
-**Given** eight PR heads of 2026-11-26: the Actions cache at 41.7 GB against a 40 GB limit with 14.9 GB written from PR refs (47 of 49 `setup-pixi` uses set no `cache-write`), each of the eight `*-gate` jobs restoring 321 to 961 MB to run `scripts/coverage_gates_ci.py` for about a second, the `changes` job taking 15 to 21 s ahead of every station job with 11 to 16 s of it checkout, the Detectors jobs fetching all history (22 s at the median), and every image build copying the tree before `pixi install`
-**When** every `setup-pixi` use writes its cache on a push to `main` alone, the gates run where the gate script's imports are installed and nothing more, the `changes` job checks out no file contents, the detectors fetch the history their checks read, and each Containerfile copies `pixi.toml`, `pixi.lock` and the path-package manifests before the source tree
-**Then** a PR head writes no `pixi-` cache entry, every gate still judges the same merged reports against the same floors, `changes` computes the same outputs, every detector returns the verdict it returned on full history, and each image builds and passes its smoke with the same contents
-**And** no job, trigger path or CI surface is added or removed, and the workflow meta-tests (trigger map, duplicate keys, the CI surfaces registry) pass
+**Surface:** `.github/workflows/pyforge-station-tests.yml`, `.github/workflows/detectors.yml`, `.github/workflows/lint-types.yml`, `.github/workflows/cfe-regression-net.yml`, `.github/workflows/pages.yml`, `.github/workflows/marshal-local-recipes-seed-oracle.yml`, `.github/workflows/copilot-setup-steps.yml`, `tests/durations/pyforge-steward-live.json`
+**Spec:** `planning-artifacts/specs/spec-117-18-the-pr-workflows-write-caches-from-main-only-and-the-changes-job-fetches-no-file-contents.md`
+**Given** eight PR heads of 2026-11-26: the Actions cache at 41.7 GB against a 40 GB limit with 14.9 GB written from PR refs (37 `setup-pixi` uses in the seven workflows a pull request runs set no `cache-write`, and `lint-types` saves a new mypy cache entry for every source change), and the `changes` job taking 15 to 21 s ahead of every station job, 11 to 16 s of it a two-commit fetch of every file's contents for a job that only compares trees
+**When** each of those `setup-pixi` uses writes its cache on a push to `main` alone, the mypy cache is restored on every run and saved from `main` alone, and the `changes` job fetches with `filter: blob:none` and checks out `.github/` only
+**Then** a PR head writes no `pixi-` or `mypy-` cache entry, and `changes` computes the same outputs as before for the same diff
+**And** no job, trigger path or CI surface is added or removed, the workflow meta-tests (trigger map, duplicate keys, the CI surfaces registry) pass, and the steward live half's shard durations are re-measured after Story 117.14
 **Status:** backlog
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)

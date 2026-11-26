@@ -121,11 +121,14 @@ jobs:
           sudo docker image prune --all --force >/dev/null 2>&1 || true
           df -h / | tail -1
 
+      # Story 117.18 (spec-pyforge-steward CAP-175): a pull request restores the cache main wrote and writes none. A cache
+      # written from a PR ref can be read by that PR alone, and 14.9 GB of them had filled the repository's 40 GB limit.
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           pixi-version: v0.80.0
           environments: local-recipes
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
 
       # A strictly read-only pytest invocation — the exit code stands (no
       # `|| true`, no trailing `exit 0`). The marker selection lives in the
@@ -150,6 +153,7 @@ jobs:
           pixi-version: v0.80.0
           environments: pyforge-guild
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
 
       - name: CFE meta suite (the pull-request lane)
         run: pixi run --frozen -e pyforge-guild test-ci-meta

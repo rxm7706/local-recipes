@@ -56,18 +56,24 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
+      # Story 117.18 (spec-pyforge-steward CAP-175): a pull request restores the cache main wrote and writes none. A cache
+      # written from a PR ref can be read by that PR alone, and 14.9 GB of them had filled the repository's 40 GB limit.
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           pixi-version: v0.80.0
           environments: pyforge-guild pyforge-foundry-full
           locked: true
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       # Story 117.7 (spec-pyforge-steward CAP-175): mypy rebuilt its cache on every run (87 s of the
       # foundry-full leg alone). scripts/lint_types.py keeps one cache per package and environment under
       # <package>/.mypy_cache/<environment> (Story 106.1), gitignored, so restoring those directories is safe
       # and a warm run only re-checks the modules whose sources or dependencies moved.
+      # Story 117.18: restored on every run, saved from main alone (the step at the end of this job); a PR used to
+      # save a new 46 MB entry per source change that no other PR could read.
       - name: Restore the per-environment mypy caches
-        uses: actions/cache@v6
+        id: mypy-cache
+        uses: actions/cache/restore@v6
         with:
           path: src/shared/packages/*/.mypy_cache
           key: mypy-${{ runner.os }}-${{ hashFiles('pixi.lock') }}-${{ hashFiles('src/shared/packages/*/src/**/*.py', 'src/shared/packages/*/src/**/*.pyi') }}
@@ -81,3 +87,9 @@ jobs:
         run: pixi run --frozen -e pyforge-guild steward-share-tree-test
       - name: scribe plane and portal tests (pyforge-foundry-full — duckdb, atlas, django; a skip fails)
         run: pixi run --frozen -e pyforge-foundry-full scribe-plane-and-portal-test
+      - name: Save the per-environment mypy caches (main only)
+        if: ${{ github.event_name == 'push' && github.ref_name == 'main' && steps.mypy-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v6
+        with:
+          path: src/shared/packages/*/.mypy_cache
+          key: ${{ steps.mypy-cache.outputs.cache-primary-key }}
