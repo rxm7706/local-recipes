@@ -180,7 +180,7 @@ class RunAdmissionRejected(PyforgeError, RuntimeError):
             f"To wait for the holder instead of rejecting, a `kedro run` can pass "
             f"`--params {WAIT_PARAM}=<seconds>`, and a caller of "
             f"`mcp.tools.run_pipeline` can pass `extra_params={{{WAIT_PARAM!r}: <seconds>}}` "
-            f"(the MCP `run_*` tools currently hardcode no params, so from those "
+            f"(the FastMCP `run_*` tools currently hardcode no params, so from those "
             f"retry once the holding run finishes)."
         )
 
