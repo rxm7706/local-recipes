@@ -617,8 +617,10 @@ def test_discover_skips_detector_none_files_without_a_registry_finding(monkeypat
 
 
 def _repo_scope_source_names() -> list[str]:
-    sources = pytest.importorskip("pyforge.doctor.sources")
-    models = pytest.importorskip("pyforge.doctor.models")
+    """The repo-scope sources, or the skip ``_doctor_dispatch`` gives where Doctor's run-deps are absent."""
+    _doctor_dispatch()
+    from pyforge.doctor import models, sources
+
     return [
         name for name, _task in detectors._DOCTOR_SOURCE_TASKS if sources.scope_for(models.Source(name)) == "repo"
     ]
