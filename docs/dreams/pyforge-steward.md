@@ -8363,3 +8363,12 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   ladder is declared, and doctor's detectors read the declaration) and mints none; it decomposes as Epic 138, one
   story (138.1): the amendment, the three re-keys and the row's close. **Constraints:** `SPEC.md` moves only by a
   render; CAP-132 keeps its id and heading; no capability is minted to give a line something to cite; no code moves.
+- **2026-11-25 (the session hook reads the commands inside a substitution) — Found and ruled:** probing the hook patch
+  of `DW-steward-134-2-1` against `main` found a gap that patch did not open: `.claude/hooks/pre-shell.py` never reads
+  inside `$(...)`, backticks or a process substitution, so `cat $(bash scripts/submit_pr.sh)` and
+  `x=$(pixi add numpy)` pass a hook that denies the same command written plainly. **Ruled** (operator, 2026-11-25, in
+  session: "Fix it as a Story" (asked whether the hook's gap inside command substitution should be fixed) and "do the hook-gap tightening story"). Closing it only adds denials, which an agent story may do (the Story 134.2 ruling, tightening
+  only). **For steward:** this entry binds `spec-pyforge-steward` CAP-5 (each denial refuses every form of the command
+  its reason names) and CAP-165 (realized, no text change) and mints none; it decomposes as Epic 139, one story
+  (139.1). **Constraints:** no rule is loosened and `session_denials` does not change; a here-document body is text,
+  never read as a command line; no flag.
