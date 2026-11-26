@@ -934,7 +934,7 @@ def _factory_page(
         text=(
             f"### Factory Status\n\n"
             f"**Build timestamp (AD-17):** `{build_stamp}`\n\n"
-            "Live BMAD artifact state — sprint-status.yaml `development_status` and "
+            "BMAD artifact state — the tracked sprint ledger's `development_status` and "
             "epics.md frontmatter status."
         ),
     )

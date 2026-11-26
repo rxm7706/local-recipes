@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: mason
-# stories: 225
+# stories: 228
 development_status:
   1-1-workspace-member-scaffold-and-dual-artifact-build: done
   1-10-configuration-surface-logging-and-child-output-streaming: done
@@ -141,6 +141,7 @@ development_status:
   40-1-the-cfe-scripts-merge-the-pixi-config-layers-and-the-mcp-reference-names-the-server-it-is: done
   41-1-the-pypi-test-rehearsal-asks-the-index-it-uploads-to-and-a-wrapped-tool-s-failure-exits-as-the-contract-says: done
   42-1-a-failed-wrapped-tool-makes-mason-exit-1: done
+  43-1-mason-s-exit-codes-are-held-to-their-declared-domain: done
   5-1-cfe-independence-test: done
   5-2-governance-test: done
   5-3-delegation-fidelity-test: done
@@ -229,6 +230,8 @@ development_status:
   epic-41-retrospective: optional
   epic-42: done
   epic-42-retrospective: optional
+  epic-43: done
+  epic-43-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional
   epic-6: done

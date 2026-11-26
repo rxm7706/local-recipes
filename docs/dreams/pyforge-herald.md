@@ -913,6 +913,9 @@ Herald rebases to one Dream, one Spec, one PRD, one spine, one epic chain. Folde
   loosened; no flag is added (documentation, and a count the measurer adds to a page that already shows counts); the
   measurer keeps `python_floor` for a caller that still asks for it. **Non-goals:** a redesign of the page's
   components or its look; a second page that keeps the removed history. Owner `spec-pyforge-herald`.
+- **2026-11-26 (the exit codes are held to their declared domain) — Found and ruled:** herald's exit codes are spelled in `errors.py` and its `contract.md` and declared nowhere outside herald. The same read found the operator-role refusal telling the operator to run `herald auth login`, a command the parser never had. **Ruled** (operator ruling of 2026-11-26, on the convention gaps the removed cross-fleet section of the dossier listed: "rederive the open convention gaps and fix them all", then, on the list of those that need no further ruling, "Yes, start them"). Steward's Dream entry of
+  the same date declares the `herald` exit-code domain (spec-pyforge-steward:CAP-184, amended). **For herald:**
+  this entry binds `spec-pyforge-herald` (herald's public contract, CAP-62, realized with no text change; the operations surface, CAP-13, realized with no text change) and decomposes as Epic 56, one story: a meta-test holds `errors.exit_code_for` and its map to the `herald` domain, and the refusal names what `resolve_auth_context` reads, `HERALD_TOKEN` and `~/.herald/config`. **Constraints:** no exit number changes; the error map keeps its literals; no flag. Owner `spec-pyforge-herald`.
 
 ## 2026-10-26 — The deck family stays current — infographics re-derived from the ledgers, not remembered (folded from deck-family-currency)
 

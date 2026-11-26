@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: 47d7a535ab11236c
-story_count: 165
-test_file_count: 102
+source_fingerprint: 306d9f9ff6754337
+story_count: 166
+test_file_count: 103
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-herald`
-- **Stories parsed:** 165
-- **Epics parsed:** 55
-- **Test files inventoried:** 102 under `src/shared/packages/pyforge-herald/tests/`
+- **Stories parsed:** 166
+- **Epics parsed:** 56
+- **Test files inventoried:** 103 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `47d7a535ab11236c`
+- **Source fingerprint:** `306d9f9ff6754337`
 
 ## Risk Assessment
 
@@ -78,6 +78,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 53: The Pages site reads as one product (spec-pyforge-herald CAP-63)
 - Epic 54: deck pull --commit commits, and three CLI defects close (spec-pyforge-herald CAP-1, CAP-4, CAP-11, CAP-12, CAP-13, CAP-38, CAP-54)
 - Epic 55: The dossier states the present (spec-pyforge-herald CAP-64; CAP-46 amended)
+- Epic 56: Herald's exit codes are held to their declared domain (spec-pyforge-steward:CAP-184; spec-pyforge-herald CAP-62, CAP-13)
 
 ### Low-risk epics
 
@@ -111,6 +112,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-herald/tests/meta/test_docsite_zero_origin.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_dossier_cutover_claims.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_dossier_golden.py` | meta | none observed |
+| `src/shared/packages/pyforge-herald/tests/meta/test_exit_codes_match_the_exit_declaration.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_herald_pages_model.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_marketplace_mount.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_one_generator.py` | meta | none observed |
@@ -368,6 +370,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 53.3 | Kedro-Viz opens under the site header, with a way back | none observed |
 | 54.1 | herald deck pull --commit commits, and three CLI defects are closed | none observed |
 | 55.1 | The dossier is rewritten from a fresh read of the source, to one outline, wit... | none observed |
+| 56.1 | Herald's exit codes are held to their declared domain | none observed |
 
 ## Quality Gates
 

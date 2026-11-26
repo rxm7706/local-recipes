@@ -198,10 +198,9 @@ class ShipState(StrEnum):
     reportable success), `pending` (a confirmed attempt initiated something
     real -- a pushed branch, an opened PR -- but confirming it reached a
     durable end state requires interrogating the target later, AD-10, out
-    of scope for the call that produced this result), `terminal` (a later
-    interrogation confirmed the target reached its end state; no code path
-    in this story produces it -- AD-10's interrogation-based idempotence,
-    not yet built, is the only way a future caller would ever learn it).
+    of scope for the call that produced this result), `terminal` (the target
+    reached its end state: `package.py` returns it for a PyPI or channel
+    upload whose push the tool reported complete).
     **`pending` is never collapsed into success in any rendering** (AD-9).
 
     `StrEnum` (stdlib since 3.11, this package's floor is 3.14), not a plain `Enum`

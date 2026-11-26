@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: a289129825e9be34
-story_count: 141
-test_file_count: 47
+source_fingerprint: b4b4c47864d998f1
+story_count: 142
+test_file_count: 48
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 141
-- **Epics parsed:** 42
-- **Test files inventoried:** 47 under `src/shared/packages/pyforge-mason/tests/`
+- **Stories parsed:** 142
+- **Epics parsed:** 43
+- **Test files inventoried:** 48 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `a289129825e9be34`
+- **Source fingerprint:** `b4b4c47864d998f1`
 
 ## Risk Assessment
 
@@ -74,6 +74,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 40: The conda-forge-expert scripts read the pixi configuration pixi reads (spec-pyforge-mason CAP-1)
 - Epic 41: The pypi-test rehearsal asks the index it uploads to (spec-pyforge-mason CAP-3, CAP-5)
 - Epic 42: A failed wrapped tool makes mason exit 1 (spec-pyforge-mason CAP-2, CAP-5)
+- Epic 43: Mason's exit codes are held to their declared domain (spec-pyforge-steward:CAP-184; spec-pyforge-mason CAP-5)
 
 ### Low-risk epics
 
@@ -95,6 +96,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-mason/tests/meta/test_dependency_direction.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_engine_version_range_sync.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_exit_code_ownership.py` | meta | none observed |
+| `src/shared/packages/pyforge-mason/tests/meta/test_exit_codes_match_the_exit_declaration.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_live_tree_split.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_mason_skills.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_namespace_is_implicit.py` | meta | none observed |
@@ -276,6 +278,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 40.1 | The CFE scripts merge the pixi config layers, and the MCP reference names the... | none observed |
 | 41.1 | The pypi-test rehearsal asks the index it uploads to, and a wrapped tool's fa... | none observed |
 | 42.1 | A failed wrapped tool makes mason exit 1 | none observed |
+| 43.1 | Mason's exit codes are held to their declared domain | none observed |
 
 ## Quality Gates
 

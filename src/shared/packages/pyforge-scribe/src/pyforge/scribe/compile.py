@@ -2,7 +2,7 @@
 AD-1/AD-5/AD-6/AD-9).
 
 `compile_graph()` is the "compile" layer of the architecture's paradigm:
-event-sourced capture with a derived, rebuildable read-model. It reads seven
+event-sourced capture with a derived, rebuildable read-model. It reads the
 named real-tool surfaces -- `.claude/memory/`, `.memlog.md` files, git
 history, retros, CHANGELOGs (PRD Open Question 2, resolved here),
 un-curated session transcripts (Story 3.1's `scan_transcripts()`, registered
@@ -23,11 +23,11 @@ content depends only on the current on-disk/in-git state, two consecutive
 runs against unchanged sources produce byte-identical `GraphStore` output --
 the idempotency Story 2.2 requires.
 
-That reproducibility is per-machine, not repo-wide: six of the seven surfaces
-are repo artifacts, but the transcript surface (Story 3.2) reads a per-user,
+That reproducibility is per-machine, not repo-wide: every surface but one
+is a repo artifact, but the transcript surface (Story 3.2) reads a per-user,
 per-machine `~/.claude/projects/<encoded-cwd>/` tree that is not part of the
 repository. Two operators compiling the same commit therefore get the same
-six-surface repo core plus whatever transcript nodes their own machine holds --
+repo core plus whatever transcript nodes their own machine holds --
 by design (that local-only content is the gap Epic 3 exists to close), but
 worth stating, since the AD-1 quote above otherwise reads as repo-determinism.
 
@@ -86,7 +86,7 @@ graphify `compile_surface` extra (`pyforge.scribe.extras.graphify`),
 writing `code`-kind `GraphNode`s through this SAME `GraphStore` -- never a
 parallel store. Off by default (AD-6): the env var is checked before the
 extra's own lazy `graphify` import ever runs, so an off-mode compile is
-byte-for-byte identical to the seven-surface compile that predates Story 6.1
+byte-for-byte identical to the compile of the named surfaces alone
 (facts.yaml is a named surface, not this extra). If the extra is on but
 graphifyy fails to import (or errors during extraction), that degrades to a
 warning like every other optional surface here -- it does not abort the rest
@@ -211,7 +211,7 @@ def compile_graph(
     transcript_root: Path | None = None,
     compiled_at: datetime | None = None,
 ) -> CompileResult:
-    """Rebuild the compiled graph from scratch from the seven named surfaces.
+    """Rebuild the compiled graph from scratch from the named surfaces.
 
     `nightly` is accepted for CLI/scheduling clarity only -- compile is
     unattended-by-construction either way (no prompts in any code path).

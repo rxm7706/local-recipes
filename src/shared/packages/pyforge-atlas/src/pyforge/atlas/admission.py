@@ -12,7 +12,7 @@ property so the claim can be restored truthfully.
 Mechanism
 ---------
 :class:`RunAdmissionHooks` is registered ONCE in ``settings.HOOKS``, so every entry point
-that dispatches through the kedro **hook manager** inherits admission: the CLI, the seven
+that dispatches through the kedro **hook manager** inherits admission: the CLI, the
 MCP ``run_*`` tools, and the Dagster plane. ``before_pipeline_run`` takes one OS file lock
 (``filelock``, ``fcntl.flock``) per dataset in ``pipeline.all_outputs()``, in ``sorted()``
 order; ``after_pipeline_run`` AND ``on_pipeline_error`` both release. The default is
@@ -180,7 +180,7 @@ class RunAdmissionRejected(PyforgeError, RuntimeError):
             f"To wait for the holder instead of rejecting, a `kedro run` can pass "
             f"`--params {WAIT_PARAM}=<seconds>`, and a caller of "
             f"`mcp.tools.run_pipeline` can pass `extra_params={{{WAIT_PARAM!r}: <seconds>}}` "
-            f"(the seven FastMCP `run_*` tools currently hardcode no params, so from those "
+            f"(the FastMCP `run_*` tools currently hardcode no params, so from those "
             f"retry once the holding run finishes)."
         )
 
@@ -716,7 +716,7 @@ def release(ticket: AdmissionTicket) -> None:
 class RunAdmissionHooks:
     """AD-23 run admission, registered ONCE in ``settings.HOOKS`` (D2).
 
-    One registration is what makes the CLI, the seven MCP ``run_*`` tools and the Dagster
+    One registration is what makes the CLI, the MCP ``run_*`` tools and the Dagster
     plane all inherit admission: they dispatch through the same kedro HOOK MANAGER. (Note
     the Dagster plane does *not* ride ``KedroSession.run`` — kedro-dagster fires the hooks
     itself — which is why the guarantee is stated against the hook manager, not the session.)

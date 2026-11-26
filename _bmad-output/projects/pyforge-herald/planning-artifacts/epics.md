@@ -2626,6 +2626,29 @@ So that I can trust a sentence on the page without asking which earlier read of 
 **And** the A→B section's and § 10's `asserts:` still resolve true against the ledgers, the flag tree and the capability ledger, and the site builds (`pages-check`)
 **Status:** done
 
+## Epic 56: Herald's exit codes are held to their declared domain (spec-pyforge-steward:CAP-184; spec-pyforge-herald CAP-62, CAP-13)
+
+Minted 2026-11-26 from the station Dream's entry of the same date on the operator ruling of 2026-11-26, on the convention gaps the removed cross-fleet section of the dossier listed: "rederive the open convention gaps and fix them all", then, on the list of those that need no further ruling, "Yes, start them". Steward Story 142.1 declares the `herald` exit-code domain; this Epic binds herald's suite to it and corrects the refusal message that names a command herald does not have.
+**HARD boundaries:**
+- No exit code herald returns changes, and its exit constants stay literals its `contract.md` test reads.
+- No flag, and no capability text of `spec-pyforge-herald` moves.
+
+### Story 56.1: Herald's exit codes are held to their declared domain
+
+As an operator refused a write, or a maintainer of herald's exit contract,
+I want a refusal that names where a role is really read from, and a test that fails when herald's error map differs from the `herald` domain,
+So that I am not sent to a command that does not exist, and herald's numbers are declared beside the fleet's others.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward:CAP-184 (the declaration; amended 2026-11-26), spec-pyforge-herald CAP-62 (the public contract; realized, no text change) and CAP-13 (the operations surface; realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: a test holds numbers the code already uses, and stale text is corrected)
+**Surface:** `src/shared/packages/pyforge-herald/tests/meta/test_exit_codes_match_the_exit_declaration.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/auth.py`, `src/shared/packages/pyforge-herald/tests/unit/test_auth.py`
+**Spec:** `planning-artifacts/specs/spec-56-1-herald-s-exit-codes-are-held-to-their-declared-domain.md`
+**Given** herald's exit codes are declared only in herald, and the role refusal names `herald auth login`, which is not a command
+**When** the meta-test is added and the refusal names `HERALD_TOKEN` and `~/.herald/config`
+**Then** the test fails when the error map or the default code differs from the `herald` domain, and `test_auth.py` fails when the refusal names a `herald auth` command
+**And** no exit number changes, and a refused write still raises `OperatorAuthorizationError` and exits 1
+**Status:** done
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

@@ -51,7 +51,7 @@ _DOCUMENTED_EXITS = frozenset(
 
 _ISO_DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 
-# The eight duties — all real as of this story. `keys` (Epic 1), `deploy`
+# The first eight duties, by the epic that built each (`DUTIES` below names every one). `keys` (Epic 1), `deploy`
 # (Epic 2), `provision` (Epic 3), `budget` (Epic 4, complete as of Story 4.3),
 # `sync` (Epic 8, Story 8.1), `workspace` (Epic 13, Stories 13.1–13.2),
 # `upgrade` (Epic 14, Stories 14.1–14.5 — pre-flight + apply + CAP-11 reconcile + CAP-12 pin fan-out + CAP-13 prove-landed),

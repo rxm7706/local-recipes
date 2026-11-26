@@ -5,7 +5,7 @@ sources:
   - src/shared/packages/pyforge-herald/src/pyforge/herald/scheduler.py
   - src/shared/packages/pyforge-herald/scripts
   - src/shared/packages/pyforge-herald/web/package.json
-verified: 2026-11-25
+verified: 2026-11-26
 ---
 
 # How to record progress, claims and notices with Herald

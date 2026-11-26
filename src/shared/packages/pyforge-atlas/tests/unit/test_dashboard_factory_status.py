@@ -33,7 +33,8 @@ def test_default_repo_root_finds_the_real_git_root():
 def test_default_paths_shape():
     paths = fs._default_paths()
     assert set(paths) == {"sprint_status_path", "epics_path"}
-    assert paths["sprint_status_path"].name == "sprint-status.yaml"
+    assert paths["sprint_status_path"].name == "sprint-status-ledger.yaml"
+    assert paths["sprint_status_path"].parent.name == "planning-artifacts"  # the tracked twin, never Tier 3
     assert paths["epics_path"].name == "epics.md"
 
 
@@ -178,3 +179,15 @@ def test_build_factory_status_frame_uses_default_paths_when_none(monkeypatch, tm
     monkeypatch.setattr(fs, "_default_paths", lambda: fake_defaults)
     frame = fs.build_factory_status_frame(build_stamp=STAMP)
     assert list(frame["source"]) == ["build"]
+
+
+def test_a_status_row_is_labelled_with_the_file_it_was_read_from(tmp_path):
+    """Story 54.1: the default is the tracked ledger, so its rows say so; a fixture's rows carry its own name."""
+    ledger = tmp_path / "sprint-status-ledger.yaml"
+    ledger.write_text("development_status:\n  1-1-first: done\n", encoding="utf-8")
+    frame = fs.build_factory_status_frame(
+        build_stamp="2026-11-26T00:00:00Z", sprint_status_path=ledger, epics_path=tmp_path / "absent-epics.md"
+    )
+    rows = frame[frame["artifact"] == "development_status"]
+    assert list(rows["source"]) == ["sprint-status-ledger.yaml"]
+    assert list(rows["key"]) == ["1-1-first"]

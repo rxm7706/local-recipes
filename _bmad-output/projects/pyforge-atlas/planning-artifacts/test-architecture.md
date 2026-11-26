@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: 5a8a8ce90100412e
-story_count: 175
-test_file_count: 189
+source_fingerprint: 13b71d0a969ae3d3
+story_count: 176
+test_file_count: 190
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 175
-- **Epics parsed:** 52
-- **Test files inventoried:** 189 under `src/shared/packages/pyforge-atlas/tests/`
+- **Stories parsed:** 176
+- **Epics parsed:** 53
+- **Test files inventoried:** 190 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `5a8a8ce90100412e`
+- **Source fingerprint:** `13b71d0a969ae3d3`
 
 ## Risk Assessment
 
@@ -84,6 +84,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 51: A stopped refresh starts where the last one ended (spec-pyforge-atlas CAP-64, CAP-65; AD-13)
 - Epic 52: The review's atlas defects are reproduced, then fixed (spec-pyforge-atlas CAP-13, CAP-55, CAP-65, CAP-66, CAP-73)
 - Epic 53: Atlas's rows a lapsed blocker held close (spec-pyforge-atlas CAP-43, CAP-54, CAP-55, CAP-73)
+- Epic 54: Atlas's exit codes are held to their declared domain, and its status page reads the tracked ledger (spec-pyforge-steward:CAP-184; spec-pyforge-atlas CAP-69)
 
 ### Low-risk epics
 
@@ -110,6 +111,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/integration/wasm/test_wasm_smoke.py` | integration | none observed |
 | `src/shared/packages/pyforge-atlas/tests/meta/test_catalog_contract.py` | meta | none observed |
 | `src/shared/packages/pyforge-atlas/tests/meta/test_cli_tool_parity.py` | meta | none observed |
+| `src/shared/packages/pyforge-atlas/tests/meta/test_exit_codes_match_the_exit_declaration.py` | meta | none observed |
 | `src/shared/packages/pyforge-atlas/tests/meta/test_foundry_full_mypy_lane.py` | meta | none observed |
 | `src/shared/packages/pyforge-atlas/tests/meta/test_planning_record.py` | meta | none observed |
 | `src/shared/packages/pyforge-atlas/tests/meta/test_portal_inventory_row.py` | meta | none observed |
@@ -462,6 +464,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 53.1 | The two live companions sit in the station Spec folder | none observed |
 | 53.2 | The lineage producer is a layout-free identifier | none observed |
 | 53.3 | Atlas's comments cite the test layout and the specs that exist | none observed |
+| 54.1 | Atlas's exit codes are held to their declared domain, and its status page rea... | none observed |
 
 ## Quality Gates
 

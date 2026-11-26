@@ -7,10 +7,8 @@ module's docstring for the shared engine-adapter reasoning. Two structural
 differences set this adapter apart from every other one in this package:
 
 1. `find_open_pr` is built and unit-tested STANDALONE, never wired into any
-   `ship_*` function (spec Never boundary) -- `ship_conda_forge` (Story 3.6)
-   does not exist in this branch's lineage (a sibling, not-yet-merged
-   worktree branched from the same point). It is ready for that wiring once
-   the branches converge.
+   `ship_*` function (spec Never boundary). `package.ship_conda_forge`
+   (Story 3.6) exists and does not call it: it delegates to `recipe.submit`.
 2. `find_open_pr` uses `probe_engine`, never `require_engine` -- the same
    deliberate deviation `engines.pixi.search` makes from `build()`/
    `upload()`'s own "raise `EngineAbsentError` first" convention. A missing

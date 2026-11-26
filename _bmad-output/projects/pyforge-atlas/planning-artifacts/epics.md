@@ -3867,3 +3867,26 @@ So that a citation leads somewhere.
 **Then** each remaining test-path citation under the package resolves with `git ls-files`, each spec citation names a file that exists, and atlas's coverage gate passes on the branch
 **And** no statement of code changes (a module's AST differs only in docstrings), the modules whose docstrings were left are listed with their coverage, and the row reads resolved or is replaced by one row naming exactly those modules
 **Status:** done
+
+## Epic 54: Atlas's exit codes are held to their declared domain, and its status page reads the tracked ledger (spec-pyforge-steward:CAP-184; spec-pyforge-atlas CAP-69)
+
+Minted 2026-11-26 from the station Dream's entry of the same date on the operator ruling of 2026-11-26, on the convention gaps the removed cross-fleet section of the dossier listed: "rederive the open convention gaps and fix them all", then, on the list of those that need no further ruling, "Yes, start them". Steward Story 142.1 declares the `atlas` exit-code domain; this Epic binds atlas's suite to it, points the factory-status page at the tracked ledger, and corrects one stale count.
+**HARD boundaries:**
+- No exit code atlas returns changes, and its exit constants stay literals its `contract.md` test reads.
+- No flag, and no capability text of `spec-pyforge-atlas` moves.
+
+### Story 54.1: Atlas's exit codes are held to their declared domain, and its status page reads the tracked ledger
+
+As a reader of atlas's factory-status page on a fresh clone, or a maintainer of atlas's exit contract,
+I want the page to read the tracked sprint ledger, and a test that fails when atlas's usage code differs from the `atlas` domain,
+So that the page shows the same rows in CI and on a new machine as on an operator's checkout, and atlas's numbers are declared beside the fleet's others.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward:CAP-184 (the declaration; amended 2026-11-26) and spec-pyforge-atlas CAP-69 (the Vizro boards; realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: a test holds numbers the code already uses, and stale text is corrected)
+**Surface:** `src/shared/packages/pyforge-atlas/tests/meta/test_exit_codes_match_the_exit_declaration.py`, `src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/factory_status.py`, `src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_factory_status.py`, `src/shared/packages/pyforge-atlas/src/pyforge/atlas/admission.py`
+**Spec:** `planning-artifacts/specs/spec-54-1-atlas-s-exit-codes-are-held-to-their-declared-domain-and-its-status-page-reads-the-tracked-ledger.md`
+**Given** atlas's exit codes are declared only in atlas, the factory-status page defaults to the gitignored Tier-3 feed, and `admission.py` counts seven `run_*` tools
+**When** the meta-test is added, the page's default is the tracked ledger, and the count is removed
+**Then** the test fails when `EXIT_USAGE` differs from the `atlas` domain; `_default_paths()` names `planning-artifacts/sprint-status-ledger.yaml`; a row's `source` is the name of the file read
+**And** no exit number changes, an injected path still wins, and a missing file still contributes no rows
+**Status:** done

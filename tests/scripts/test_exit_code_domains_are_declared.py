@@ -1,7 +1,7 @@
 """Every exit-code domain matches its declaration (steward Story 137.1, spec-pyforge-steward:CAP-184;
 DW-VOCAB-2026-09-14-8).
 
-The estate projects exit codes through five domains, and **`2` means opposite things in two of
+The estate projects exit codes through ten declared domains, and **`2` means opposite things in two of
 them**: a doctor source exits `2` for FAIL, while `scripts/detectors.py` exits `2` for could-not-run.
 That inversion is not theoretical -- on 2026-09-14 a real FAIL from `chain-completeness` was read as
 "the check couldn't run", because `CLAUDE.md` documented only the aggregator's domain while telling
@@ -44,7 +44,18 @@ def _codes(domain: str) -> set[int]:
 def test_the_declaration_and_the_glossary_exist():
     """Every assertion below reads these two files. Moving either means moving this test too."""
     assert ROSTER.is_file() and GLOSSARY.is_file()
-    assert set(_declared()) == {"doctor", "warden", "marshal", "marshal-seed", "detectors"}
+    assert set(_declared()) == {
+        "doctor",
+        "warden",
+        "marshal",
+        "marshal-seed",
+        "detectors",
+        "mason",
+        "herald",
+        "steward",
+        "scribe",
+        "atlas",
+    }
 
 
 def test_the_core_mirror_is_the_declaration():
@@ -113,6 +124,11 @@ _GLOSSARY_ROWS = {
     "warden": "`pyforge-warden`",
     "marshal": "`pyforge-marshal`",
     "marshal-seed": "`pyforge-marshal seed`",
+    "mason": "`pyforge-mason`",
+    "herald": "`pyforge-herald`",
+    "steward": "`pyforge-steward`",
+    "scribe": "`pyforge-scribe`",
+    "atlas": "`pyforge-atlas`",
 }
 
 

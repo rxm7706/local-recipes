@@ -1438,3 +1438,26 @@ So that a source committed after the compile is never served from the store that
 **Then** a store reloaded after a compile still knows `compiled_at` and recall withholds a node whose source was committed after it, lexical and semantic, on the flat file, PostgreSQL and the plane, an edit under `src/platform/` or `scripts/` recomputes `graphify-ingest`, a DSN with `?sslmode=require` reaches `psycopg.connect` with it, and no lock or plugin error prints a traceback, on `capture` (`--type`/`--text` and `--promote`), `recall`, `graph compile`, `index build` and both modes of `index refresh`
 **And** the reserved row is never a graph node (no scan, citation lookup, similarity query, compile count or recall answer returns it) and no relation, column or changeset is added for it; a defect the tree does not reproduce is recorded in the story spec as not a defect, with the command run and what it showed, and no code moves for it; the PostgreSQL store issues no DDL; both halves of scribe's suite pass
 **Status:** done
+
+## Epic 36: Scribe's exit codes are held to their declared domain (spec-pyforge-steward:CAP-184)
+
+Minted 2026-11-26 from the station Dream's entry of the same date on the operator ruling of 2026-11-26, on the convention gaps the removed cross-fleet section of the dossier listed: "rederive the open convention gaps and fix them all", then, on the list of those that need no further ruling, "Yes, start them". Steward Story 142.1 declares the `scribe` exit-code domain; this Epic binds scribe's suite to it and corrects two docstrings the same read found stale.
+**HARD boundaries:**
+- No exit code scribe returns changes, and its exit constants stay literals its `contract.md` test reads.
+- No flag, and no capability text of `spec-pyforge-scribe` moves.
+
+### Story 36.1: Scribe's exit codes are held to their declared domain
+
+As a maintainer of scribe's exit contract,
+I want a test that fails when a `typer.Exit` code in the package falls outside the `scribe` domain, and the two stale docstrings corrected,
+So that scribe's numbers are declared beside the fleet's others, and a reader is not told `recall` is a stub.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward:CAP-184 (the declaration; amended 2026-11-26); no capability text of spec-pyforge-scribe moves; no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: a test holds numbers the code already uses, and stale text is corrected)
+**Surface:** `src/shared/packages/pyforge-scribe/tests/meta/test_exit_codes_match_the_exit_declaration.py`, `src/shared/packages/pyforge-scribe/src/pyforge/scribe/__init__.py`, `src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py`
+**Spec:** `planning-artifacts/specs/spec-36-1-scribe-s-exit-codes-are-held-to-their-declared-domain.md`
+**Given** scribe's exit codes are declared only in scribe, and two docstrings describe an earlier state of the code
+**When** the meta-test is added and the two docstrings are corrected
+**Then** the test fails when the set of codes scribe's `typer.Exit` calls carry differs from the `scribe` domain, or one carries a code that is not a literal
+**And** no exit number changes and no code path moves
+**Status:** done

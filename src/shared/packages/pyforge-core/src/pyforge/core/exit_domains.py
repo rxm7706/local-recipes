@@ -15,6 +15,11 @@ has one -- to the code it exits with. A domain's code set is the set of its valu
 and several names may share one code. The numbers are the ones each module already
 used; declaring them changed none.
 
+``mason``, ``herald``, ``steward``, ``scribe`` and ``atlas`` have no verdict module
+(steward Story 142.1, CAP-184 as amended 2026-11-26): each spells its own numbers, and a
+meta-test in its own suite holds them to this table. ``steward`` names the codes
+steward itself decides: ``keys exec`` and ``deploy nic`` return a child's code unchanged.
+
 The one trap the declaration exists to make visible: ``2`` is FAIL in ``doctor`` and
 could-not-run in ``detectors``, so a code is read in the domain of the surface that
 produced it, never another's.
@@ -58,6 +63,11 @@ _DOMAINS: dict[str, dict[str, int]] = {
         "internal-error": 10,
     },
     "detectors": {"pass": 0, "unmeasured": 0, "findings": 1, "could-not-run": 2},
+    "mason": {"ok": 0, "failed": 1, "usage": 2, "cfe-unavailable": 3, "interrupted": 130},
+    "herald": {"ok": 0, "failed": 1, "usage": 2, "conflict": 3, "transport": 4, "interrupted": 130},
+    "steward": {"ok": 0, "failed": 1, "usage": 2, "refusal": 3, "internal-error": 70, "interrupted": 130},
+    "scribe": {"ok": 0, "drift": 1, "could-not-run": 2},
+    "atlas": {"ok": 0, "failed": 1, "usage": 2, "interrupted": 130},
 }
 
 EXIT_CODE_DOMAINS: Mapping[str, Mapping[str, int]] = MappingProxyType(

@@ -10,7 +10,7 @@ sources:
   - scripts/platform-ci-local.sh
   - src/platform/compose/compose.yml
   - pixi.toml
-verified: 2026-11-25
+verified: 2026-11-26
 ---
 
 # Onboard a machine

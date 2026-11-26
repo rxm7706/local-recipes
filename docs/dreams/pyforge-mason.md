@@ -881,6 +881,9 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   mean shipped; `doctor` still always exits 0; a non-zero return code stays data on the result and is never raised;
   and no flag is added: the ruling changes the contract for every caller at once, and a flag would leave two
   contracts to read.
+- **2026-11-26 (the exit codes are held to their declared domain) — Found and ruled:** mason's five exit codes are spelled in `exit_codes.py` and declared nowhere outside mason, and `3`, conda-forge-expert not found, means something else on three other command lines. The same read found two docstrings that no longer match the code: `engines/gh.py` says `ship_conda_forge` does not exist, and it is in `package.py`; `models.py` says no code path produces the `terminal` ship state, and `package.py` returns it. **Ruled** (operator ruling of 2026-11-26, on the convention gaps the removed cross-fleet section of the dossier listed: "rederive the open convention gaps and fix them all", then, on the list of those that need no further ruling, "Yes, start them"). Steward's Dream entry of
+  the same date declares the `mason` exit-code domain (spec-pyforge-steward:CAP-184, amended). **For mason:**
+  this entry binds `spec-pyforge-mason` (the CLI shell and output contract, CAP-5, realized with no text change) and decomposes as Epic 43, one story: a meta-test holds every `EXIT_*` name of `exit_codes.py` to the `mason` domain, and the two docstrings say what the code does. **Constraints:** no exit number changes; `exit_codes.py` keeps its literals, which `test_public_contract.py` reads; no flag. Owner `spec-pyforge-mason`.
 
 ## One-chain fold — 2026-09-17
 
