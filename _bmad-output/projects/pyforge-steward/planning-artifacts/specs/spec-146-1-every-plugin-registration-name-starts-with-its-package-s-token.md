@@ -74,3 +74,14 @@ Ledger key: `146-1-every-plugin-registration-name-starts-with-its-package-s-toke
   ```
 
 </intent-contract>
+
+## Review (2026-11-26)
+
+An independent `bmad-review` pass read the diff against the stated intent only. It confirmed the core claim: `PluginRegistry.load_entry_points` uses an entry-point name only in error labels, mason selects by `engine_name` and marshal and steward by `plugin_id`, and none of the nine old names is read by code, a script, a workflow, a task, a skill or the lock. Findings and what was done:
+
+1. **Mason CAP-37 named the old entry points** (intent and success). Fixed: a memlog decision and an anchored render amend CAP-37 to name `mason-engine-*`; FR-59 and the spine are re-stamped; Epic 45 no longer says no Spec text moves.
+2. **The three station tests that read `pyproject.toml` pinned the old names** (`test_build_hooks.py`, `test_loop_runner_hook.py`, `test_deploy_profile_plugins.py`), and marshal's edited line failed `ruff format --check`. Fixed: the pins read the new names, the line is wrapped, and each test is in its story's surface.
+3. **The station Specs had no reconcile entry for the moved paths.** Fixed: each governing Spec's memlog names its paths, with scoped stamps; the cascade also named paths that the 2026-11-25 exit-declaration change and the 2026-11-26 JSON change had left unnamed on doctor, marshal, warden, core and unifying-strategy.
+4. **Only `pyforge-*` packages are scanned.** Kept, and the test's docstring states the scope: no `django-*` portal or `src/platform` registers on the group today.
+5. **The token came from the directory name.** Fixed: it comes from `[project].name`.
+6. **A synthetic case still used `dummy`.** Fixed: `core-dummy`.
