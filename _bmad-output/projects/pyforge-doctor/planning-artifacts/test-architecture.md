@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: fe0e467f8b2f31b7
-story_count: 201
+source_fingerprint: efebb6a0bb243b76
+story_count: 202
 test_file_count: 132
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 201
-- **Epics parsed:** 64
+- **Stories parsed:** 202
+- **Epics parsed:** 65
 - **Test files inventoried:** 132 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `fe0e467f8b2f31b7`
+- **Source fingerprint:** `efebb6a0bb243b76`
 
 ## Risk Assessment
 
@@ -100,6 +100,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 63: Doctor's verdict takes its exit codes from the declaration (spec-pyforge-steward:CAP-184)
 - Epic 64: A tag of another spine is written qualified (spec-one-chain-per-station:CAP-9)
 - Epic 65: Doctor's verbs take both spellings for JSON (spec-pyforge-steward:CAP-185)
+- Epic 66: The detector run measures the doctor sources beside the script detectors (spec-pyforge-steward:CAP-175)
 
 ## Test Inventory
 
@@ -443,6 +444,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 63.1 | Doctor's verdict takes its exit codes from the declaration | none observed |
 | 64.1 | Doctor's source cites marshal's and the cutover's decisions qualified | none observed |
 | 65.1 | Doctor's verbs take both spellings for JSON | none observed |
+| 66.1 | The detector run measures the doctor sources beside the script detectors | none observed |
 
 ## Quality Gates
 

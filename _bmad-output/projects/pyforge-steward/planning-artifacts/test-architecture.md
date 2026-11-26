@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 1e4218dab8ea377a
-story_count: 523
+source_fingerprint: 8dc5d170bd23ed0f
+story_count: 528
 test_file_count: 171
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 523
+- **Stories parsed:** 528
 - **Epics parsed:** 147
 - **Test files inventoried:** 171 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `1e4218dab8ea377a`
+- **Source fingerprint:** `8dc5d170bd23ed0f`
 
 ## Risk Assessment
 
@@ -798,6 +798,11 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 117.11 | The changes gate and the gate diffs run on shallow fetches of the PR base | none observed |
 | 117.12 | The platform suite runs under xdist, its checks in a parallel job | none observed |
 | 117.13 | The herald job builds on the checkout's filesystem | none observed |
+| 117.14 | The trigger map is derived once and the lockfile is read by the C loader | none observed |
+| 117.15 | A fresh worktree admits lanes longest-first and an xdist lane's workers follo... | none observed |
+| 117.16 | The scripts-lib lane runs under xdist and builds its flag reports once | none observed |
+| 117.17 | A push reuses the green verdict its tree already has | none observed |
+| 117.18 | The PR workflows write caches from main only and fetch what they read, and th... | none observed |
 | 118.1 | steward deploy nic brings up and tears down an NKP cluster on local kind | none observed |
 | 118.2 | nebi-pack and the data-science pack reach Healthy on kind and a notebook spawns | none observed |
 | 118.3 | The gitops branch of the monorepo is the GitOps source and a Hetzner cluster ... | none observed |
