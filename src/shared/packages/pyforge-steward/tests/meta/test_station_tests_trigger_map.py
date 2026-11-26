@@ -1784,6 +1784,11 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
             "Story 130.1 (spec-pyforge-steward CAP-168): the tests run scripts/pages_changes.py, found from the "
             "repo root, over temporary repositories of their own",
         ),
+        "src/shared/packages/pyforge-steward/tests/unit/test_preflight.py": (
+            ("docs/governance/preflight-budgets.toml",),
+            "Story 117.15 (spec-pyforge-steward CAP-175): budget_seed_seconds reads the tracked lane budgets from "
+            "the root it is handed, and the test holds every row to a lane the journal names",
+        ),
         "src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py": _H["PIXI_AND_WORKFLOWS"],
         "src/shared/packages/pyforge-steward/tests/unit/test_preflight_suite_reduction.py": _H["PIXI_AND_WORKFLOWS"],
         "src/shared/packages/pyforge-steward/tests/unit/test_session.py": _H["STEWARD_SESSION"],
