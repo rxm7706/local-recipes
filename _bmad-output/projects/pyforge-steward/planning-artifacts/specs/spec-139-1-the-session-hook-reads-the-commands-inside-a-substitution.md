@@ -67,7 +67,7 @@ Ledger key: `139-1-the-session-hook-reads-the-commands-inside-a-substitution`.
 - **AC3 — The denial list is unchanged and its forms still hold.** Expected: exit 0.
 
   ```bash
-  pixi run -e pyforge-ci python -m pytest tests/scripts/test_session_denial_forms.py -q
+  pixi run -e pyforge-guild python -m pytest tests/scripts/test_session_denial_forms.py -q
   ```
 
 </intent-contract>
@@ -88,3 +88,5 @@ Ledger key: `139-1-the-session-hook-reads-the-commands-inside-a-substitution`.
 ## Spec Change Log
 
 - 2026-11-25: minted from the station Dream's 2026-11-25 entry (the session hook reads the commands inside a substitution) and the operator's rulings of the same date. Not implemented.
+- 2026-11-25: AC2 run first, with only the test file changed: exit 1, 10 failed and 7 passed (the six allowed forms, and `echo $(echo ')' ; pixi add numpy)`, which the `;` split already exposed). Then the fix: `_without_heredoc_bodies` and `_substitution_bodies` beside `_heredoc_bodies`, and `normalised_subcommands` reads each body at the next depth. AC1 exit 0 (561 passed, the 544 of `main` plus 17); AC3 exit 0 (17 passed). Timed on adversarial input: 2,000 nested `$(` 0.016 s, an unterminated backtick over 200,000 characters 0.67 s, 20,000 substitutions 0.11 s, a 50,000-line here-document 0.18 s.
+- 2026-11-25: session lead: AC3 corrected to `-e pyforge-guild`. As minted it named `-e pyforge-ci`, where `test_session_denial_forms.py` skips (it needs PyYAML, which only `scripts-lib-test`'s environment carries); the criterion is unchanged.

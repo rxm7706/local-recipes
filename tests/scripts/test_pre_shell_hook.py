@@ -2106,3 +2106,55 @@ def test_134_2_normal_forms_keep_the_original_tokens(hook_module) -> None:
     assert ["FOO=1", "BAR=2", "pixi", "add", "numpy"] in after
     assert ["git", "status"] in after
     assert hook_module.normalised_subcommands("ls -la") == [["ls", "-la"]]
+
+
+# --------------------------------------------------------------------------
+# Steward Story 139.1: the hook reads the commands inside a substitution --
+# `$(...)`, backticks, `<(...)` and `>(...)` -- so a denied command wrapped in
+# one is denied as its plain form is. Tightening only.
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "cat $(bash scripts/submit_pr.sh)",
+        "cat `bash scripts/submit_pr.sh`",
+        "diff <(bash scripts/submit_pr.sh) README.md",
+        "tee >(bash scripts/submit_pr.sh) < README.md",
+        'echo "$(bash scripts/submit_pr.sh x)"',
+        "x=$(pixi add numpy)",
+        "echo $(echo $(pixi add numpy))",
+        'echo "`pixi update`"',
+        "ls $(  pixi add numpy  ) >/dev/null",
+        "echo $(echo ')' ; pixi add numpy)",
+    ],
+)
+def test_139_1_a_denied_command_inside_a_substitution_is_denied(fake_repo: Path, command: str) -> None:
+    result = _run(_claude_bash(command, fake_repo), fake_repo)
+    assert _claude_deny_reason(result) is not None, command
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "echo '$(pixi add numpy)'",
+        "echo \\$(pixi add numpy)",
+        "echo $((1 + 2))",
+        'git log -1 --format="$(echo %h)"',
+        "ls $(git rev-parse --show-toplevel)",
+        "git status -F - <<'EOF'\nmentions $(pixi add numpy) and `pixi update` in prose\nEOF",
+    ],
+)
+def test_139_1_a_substitution_that_runs_nothing_denied_is_allowed(fake_repo: Path, command: str) -> None:
+    result = _run(_claude_bash(command, fake_repo), fake_repo)
+    assert _claude_deny_reason(result) is None, command
+
+
+def test_139_1_substitution_bodies_are_read_and_here_documents_are_not(hook_module) -> None:
+    bodies = hook_module._substitution_bodies
+    assert bodies("a $(b c) d `e f` <(g) >(h)") == ["b c", "e f", "g", "h"]
+    assert bodies("a $(b $(c) d)") == ["b $(c) d"]
+    assert bodies("echo '$(x)' \\$(y) $((1+2))") == []
+    assert bodies("cat <<'EOF'\n$(x) `y`\nEOF\n$(z)") == ["z"]
+    assert ["c"] in hook_module.normalised_subcommands("a $(b $(c) d)")

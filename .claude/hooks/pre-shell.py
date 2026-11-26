@@ -437,6 +437,13 @@ def normalised_subcommands(command: str, _depth: int = 0) -> list[list[str]]:
             if inner is not None:
                 for sub in normalised_subcommands(inner, _depth + 1):
                     add(sub)
+    # Steward Story 139.1: the commands inside a `$(...)`, a backtick pair or a process
+    # substitution run too, so every rule reads them beside the outer command. Added,
+    # never in place of a token list: tightening only.
+    if _depth < 8:
+        for body in _substitution_bodies(command):
+            for sub in normalised_subcommands(body, _depth + 1):
+                add(sub)
     return result
 
 
@@ -678,6 +685,74 @@ def _heredoc_bodies(text: str) -> list[str]:
         bodies.append(text[body_start : line_starts[end_line]])
         pos = line_starts[end_line] + len(lines[end_line])
     return bodies
+
+
+def _without_heredoc_bodies(text: str) -> str:
+    """`text` with the body of every here-document taken out: a body is text, not a command
+    line, so a commit message or PR body that only mentions a command is not read as one."""
+    for body in _heredoc_bodies(text):
+        text = text.replace(body, "", 1)
+    return text
+
+
+def _substitution_bodies(command: str) -> list[str]:
+    """The body of each outermost command substitution (`$(...)`, backticks) and process
+    substitution (`<(...)`, `>(...)`) in `command`, in order (steward Story 139.1).
+
+    One linear pass: single-quoted text, a backslash-escaped character, an arithmetic
+    `$((` and here-document bodies are skipped; parentheses nest, and a quote inside a
+    `$(...)` body is respected, so `$(echo ')')` closes where bash closes it. An opener
+    with no close takes the rest of the text, as bash would read it. A nested
+    substitution is the caller's to find, by reading the body again."""
+    text = _without_heredoc_bodies(command)
+    bodies: list[str] = []
+    n = len(text)
+    i = 0
+    while i < n:
+        ch = text[i]
+        if ch == "\\":
+            i += 2
+            continue
+        if ch == "'":
+            close = text.find("'", i + 1)
+            i = n if close == -1 else close + 1
+            continue
+        if ch == "`":
+            j = i + 1
+            while j < n and text[j] != "`":
+                j += 2 if text[j] == "\\" else 1
+            bodies.append(text[i + 1 : min(j, n)])
+            i = j + 1
+            continue
+        if text.startswith("$((", i):
+            i += 3
+            continue
+        if text.startswith(("$(", "<(", ">("), i):
+            depth = 1
+            j = i + 2
+            quote = ""
+            while j < n and depth:
+                c = text[j]
+                if quote:
+                    if c == "\\" and quote == '"':
+                        j += 1
+                    elif c == quote:
+                        quote = ""
+                elif c == "\\":
+                    j += 1
+                elif c in ("'", '"'):
+                    quote = c
+                elif c == "(":
+                    depth += 1
+                elif c == ")":
+                    depth -= 1
+                j += 1
+            end = j - 1 if depth == 0 else n
+            bodies.append(text[i + 2 : end])
+            i = j
+            continue
+        i += 1
+    return [body for body in bodies if body.strip()]
 
 
 def _stdin_text_in_command(command: str, tokens: list[str], cwd: str) -> str:
