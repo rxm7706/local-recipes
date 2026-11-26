@@ -363,6 +363,69 @@ def test_two_pytest_task_is_not_reduced(tmp_path: Path) -> None:
     assert "single pytest" in entry.get("suite_reduction_reason", "")
 
 
+def test_a_suite_is_not_reduced_when_its_gate_only_judges_reports(tmp_path: Path) -> None:
+    """Story 145.1: with ``--report`` the gate judges the reports the suite wrote and runs no test itself, so the
+    suite must run whole. Reduced, the lane selects nothing and the gate judges an empty report (found 2026-11-26:
+    ``pyforge.mason.cli`` read 34.3% in the preflight and 99.2% from the suite run whole)."""
+    pixi = {
+        "feature": {
+            "pyforge-mason": {
+                "tasks": {
+                    "pyforge-mason-test": {"cmd": "pytest a/tests -q -m 'not slow and not live_tree'"},
+                    "pyforge-mason-coverage-gate": {
+                        "cmd": (
+                            "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit "
+                            '--report .steward/coverage/mason-unit.json --report ".steward/coverage/mason-live*.json"'
+                        ),
+                        "env": {"COVERAGE_GATES_STATIONS": "mason"},
+                    },
+                }
+            }
+        }
+    }
+    with patch.object(psr, "_read_gate_plan") as read_plan:
+        overrides = psr.build_suite_lane_overrides(
+            tmp_path,
+            selected_task_names={"pyforge-mason-test", "pyforge-mason-coverage-gate"},
+            pixi_data=pixi,
+        )
+    entry = overrides["pyforge-mason-test"]
+    assert isinstance(entry, dict)
+    assert entry["suite_reduction"] is False
+    assert "--report" in entry["suite_reduction_reason"]
+    read_plan.assert_not_called()  # decided from the gate's own command, before any plan is asked for
+
+
+@pytest.mark.parametrize(
+    ("cmd", "judges"),
+    [
+        ("python scripts/coverage_gates_ci.py --suites unit --report a.json", True),
+        ("python scripts/coverage_gates_ci.py --suites unit --report=a.json", True),
+        ("python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit", False),
+        ("python scripts/coverage_gates_ci.py --suites unit --reporter x", False),
+        ("python scripts/coverage_gates_ci.py --report 'unterminated", False),
+    ],
+)
+def test_gate_judges_reports_reads_the_gate_command(cmd: str, judges: bool) -> None:
+    assert psr.gate_judges_reports(cmd) is judges
+
+
+def test_every_station_gate_in_the_repo_judges_reports_so_no_suite_is_reduced() -> None:
+    """Every ``pyforge-<station>-coverage-gate`` task in ``pixi.toml`` passes ``--report`` today; if one stops, the
+    reduction applies to it again and this says so."""
+    import tomllib
+
+    pixi_data = tomllib.loads((REPO_ROOT / "pixi.toml").read_text(encoding="utf-8"))
+    gates = {
+        name: task["cmd"]
+        for feature in pixi_data.get("feature", {}).values()
+        for name, task in feature.get("tasks", {}).items()
+        if name.startswith("pyforge-") and name.endswith("-coverage-gate") and isinstance(task, dict)
+    }
+    assert len(gates) >= 8
+    assert {name for name, cmd in gates.items() if not psr.gate_judges_reports(cmd)} == set()
+
+
 def test_scripts_import_blocks_reduction(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     repo.mkdir()

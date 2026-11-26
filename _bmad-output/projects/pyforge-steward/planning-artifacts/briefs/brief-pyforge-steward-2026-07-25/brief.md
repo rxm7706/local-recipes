@@ -309,3 +309,7 @@ work. **Content changed:** this section and `updated:`.
 ## Currency reconciliation — 2026-11-26 (CAP-184 amended)
 
 *Chain-currency cascade, CAP-184 amended.* 2026-11-26: the operator's ruling on the open convention gaps extends the one exit-code declaration to five more command lines. That is a consistency rule the platform layer already owns; this brief's vision, problem, scope and success criteria do not change. It is carried downstream: `spec-pyforge-steward` amended CAP-184, the PRD amended FR-58, and Epic 142 holds the work. **Content changed:** this section and `updated:`.
+
+## Currency reconciliation — 2026-11-26 (CAP-185)
+
+*Chain-currency cascade, CAP-185 minted.* 2026-11-26: the operator's ruling on the open convention items gives every station one way to be asked for JSON. That is a consistency rule the platform layer already owns; this brief's vision, problem, scope and success criteria do not change. It is carried downstream: `spec-pyforge-steward` minted CAP-185, the PRD registered FR-59, and Epic 144 holds the work. **Content changed:** this section.

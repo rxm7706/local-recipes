@@ -296,6 +296,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
 
+from pyforge.core.cli_output import align_json_options
 from pyforge.core.flags import read_boolean
 
 from . import __version__
@@ -744,6 +745,7 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
             "scans only"
         ),
     )
+    align_json_options(parser)  # every verb that takes --json also takes --format json, and the reverse (Story 144.1)
     return parser, scan
 
 

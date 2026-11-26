@@ -35,72 +35,72 @@ verbs are the rows under it. A verb whose kill switch is off stays listed and re
 |---|---|
 | `marshal` | `--version` |
 | `marshal adapters` | — |
-| `marshal adapters conform` | `--format` |
-| `marshal adapters entry-files` | `--format` |
-| `marshal adapters matrix` | `--stale-after-days`, `--format` |
-| `marshal adapters models` | `--write`, `--format` |
-| `marshal adapters probe` | `--adapter`, `--format` |
-| `marshal adapters smoke` | `--adapter`, `--timeout-seconds`, `--format` |
-| `marshal adapters sync` | `--format` |
+| `marshal adapters conform` | `--format`, `--json` |
+| `marshal adapters entry-files` | `--format`, `--json` |
+| `marshal adapters matrix` | `--stale-after-days`, `--format`, `--json` |
+| `marshal adapters models` | `--write`, `--format`, `--json` |
+| `marshal adapters probe` | `--adapter`, `--format`, `--json` |
+| `marshal adapters smoke` | `--adapter`, `--timeout-seconds`, `--format`, `--json` |
+| `marshal adapters sync` | `--format`, `--json` |
 | `marshal benchmark` | — |
-| `marshal benchmark compare` | `--project`, `--off`, `--on`, `--home`, `--story`, `--output`, `--format`, `--per-layer`, `--layer-legs` |
-| `marshal benchmark structure-graph-dispatch` | `--project`, `--index-build-seconds`, `--index-bytes`, `--sync-seconds`, `--codegraph-reported-seconds`, `--files-indexed`, `--nodes`, `--edges`, `--output`, `--format` |
-| `marshal check` | `--scope`, `--project`, `--format` |
-| `marshal config` | `--project-policy`, `--project`, `--set`, `--materialize`, `--write-harness-policy`, `--format` |
+| `marshal benchmark compare` | `--project`, `--off`, `--on`, `--home`, `--story`, `--output`, `--format`, `--per-layer`, `--layer-legs`, `--json` |
+| `marshal benchmark structure-graph-dispatch` | `--project`, `--index-build-seconds`, `--index-bytes`, `--sync-seconds`, `--codegraph-reported-seconds`, `--files-indexed`, `--nodes`, `--edges`, `--output`, `--format`, `--json` |
+| `marshal check` | `--scope`, `--project`, `--format`, `--json` |
+| `marshal config` | `--project-policy`, `--project`, `--set`, `--materialize`, `--write-harness-policy`, `--format`, `--json` |
 | `marshal context` | — |
-| `marshal context advisory` | `--project`, `--root`, `--format` |
-| `marshal context bootstrap` | `--from`, `--offline`, `--tag`, `--repo`, `--root`, `--format` |
-| `marshal context bundle` | `--project`, `--epic`, `--root`, `--expect-digest`, `--format` |
-| `marshal context pack` | `--out`, `--source-commit`, `--root`, `--format` |
-| `marshal context refresh` | `--project`, `--epic`, `--root`, `--format` |
-| `marshal context retrieve` | `--project`, `--epic`, `--story`, `--root`, `--format` |
+| `marshal context advisory` | `--project`, `--root`, `--format`, `--json` |
+| `marshal context bootstrap` | `--from`, `--offline`, `--tag`, `--repo`, `--root`, `--format`, `--json` |
+| `marshal context bundle` | `--project`, `--epic`, `--root`, `--expect-digest`, `--format`, `--json` |
+| `marshal context pack` | `--out`, `--source-commit`, `--root`, `--format`, `--json` |
+| `marshal context refresh` | `--project`, `--epic`, `--root`, `--format`, `--json` |
+| `marshal context retrieve` | `--project`, `--epic`, `--story`, `--root`, `--format`, `--json` |
 | `marshal deploy` | — |
-| `marshal deploy batch-pr` | `--format` |
-| `marshal deploy land-story` | `--justification`, `--since`, `--format` |
-| `marshal deploy promote` | `--project`, `--format` |
-| `marshal deploy reconcile-completions` | `--project`, `--format` |
-| `marshal deploy recover-spec` | `--format` |
-| `marshal deploy refresh-feed` | `--project`, `--format` |
+| `marshal deploy batch-pr` | `--format`, `--json` |
+| `marshal deploy land-story` | `--justification`, `--since`, `--format`, `--json` |
+| `marshal deploy promote` | `--project`, `--format`, `--json` |
+| `marshal deploy reconcile-completions` | `--project`, `--format`, `--json` |
+| `marshal deploy recover-spec` | `--format`, `--json` |
+| `marshal deploy refresh-feed` | `--project`, `--format`, `--json` |
 | `marshal factory` | — |
 | `marshal factory attach` | — |
-| `marshal factory challenge` | `--project`, `--stage`, `--target`, `--section`, `--dream-section`, `--epic`, `--audit`, `--force`, `--format` |
+| `marshal factory challenge` | `--project`, `--stage`, `--target`, `--section`, `--dream-section`, `--epic`, `--audit`, `--force`, `--format`, `--json` |
 | `marshal factory challenge resolve` | `--project`, `--report`, `--accept`, `--reject` |
 | `marshal factory checkpoint` | — |
-| `marshal factory dispatch` | `--stories`, `--format`, `--harness`, `--hold-landing` |
+| `marshal factory dispatch` | `--stories`, `--format`, `--harness`, `--hold-landing`, `--json` |
 | `marshal factory dispatch-attach` | — |
-| `marshal factory dispatch-resume` | `--format` |
-| `marshal factory drain` | `--mode`, `--station`, `--stories`, `--leave-remaining`, `--once`, `--max-cycles`, `--tick-seconds`, `--campaign`, `--format`, `--harness`, `--max-in-flight`, `--retry-environment-blocks`, `--plan`, `--all-stories`, `--check-env` |
-| `marshal factory resume` | `--format` |
-| `marshal factory spin` | `--epic`, `--story`, `--max-count`, `--foreground`, `--format` |
+| `marshal factory dispatch-resume` | `--format`, `--json` |
+| `marshal factory drain` | `--mode`, `--station`, `--stories`, `--leave-remaining`, `--once`, `--max-cycles`, `--tick-seconds`, `--campaign`, `--format`, `--harness`, `--max-in-flight`, `--retry-environment-blocks`, `--plan`, `--all-stories`, `--check-env`, `--json` |
+| `marshal factory resume` | `--format`, `--json` |
+| `marshal factory spin` | `--epic`, `--story`, `--max-count`, `--foreground`, `--format`, `--json` |
 | `marshal gate` | — |
-| `marshal gate evaluate` | `--project`, `--run`, `--scope-check`, `--story`, `--format` |
-| `marshal homes` | `--format` |
-| `marshal init` | `--format` |
-| `marshal land` | `--retire-live-branch`, `--format` |
+| `marshal gate evaluate` | `--project`, `--run`, `--scope-check`, `--story`, `--format`, `--json` |
+| `marshal homes` | `--format`, `--json` |
+| `marshal init` | `--format`, `--json` |
+| `marshal land` | `--retire-live-branch`, `--format`, `--json` |
 | `marshal login` | `--pkce`, `--issuer`, `--client-id`, `--bearer-file` |
 | `marshal planning` | — |
-| `marshal planning chain-regenerate` | `--project`, `--dream`, `--chain-mode`, `--minimal`, `--resume`, `--root`, `--format`, `--live`, `--preserve-code-status`, `--no-preserve-code-status`, `--apply-orphans`, `--stage` |
-| `marshal preflight` | `--acknowledge`, `--format` |
+| `marshal planning chain-regenerate` | `--project`, `--dream`, `--chain-mode`, `--minimal`, `--resume`, `--root`, `--format`, `--live`, `--preserve-code-status`, `--no-preserve-code-status`, `--apply-orphans`, `--stage`, `--json` |
+| `marshal preflight` | `--acknowledge`, `--format`, `--json` |
 | `marshal preserve` | — |
-| `marshal preserve list` | `--format`, `--station`, `--story`, `--producer`, `--state` |
+| `marshal preserve list` | `--format`, `--station`, `--story`, `--producer`, `--state`, `--json` |
 | `marshal preserve push` | `--pending` |
 | `marshal preserve retire` | `--evidence` |
 | `marshal preserve tag` | `--story`, `--producer`, `--from`, `--provenance`, `--reason`, `--source`, `--run`, `--journal` |
-| `marshal refresh` | `--project`, `--base`, `--format` |
-| `marshal retire` | `--project`, `--execute`, `--format` |
+| `marshal refresh` | `--project`, `--base`, `--format`, `--json` |
+| `marshal retire` | `--project`, `--execute`, `--format`, `--json` |
 | `marshal seed` | — |
-| `marshal seed accept` | `--repo-root`, `--apply`, `--reason`, `--dry-run`, `--json`, `--quiet` |
-| `marshal seed adopt` | `--repo-root`, `--apply`, `--yes`, `--agents`, `--skip`, `--force`, `--project`, `--dry-run`, `--json`, `--quiet` |
-| `marshal seed check` | `--repo-root`, `--strict`, `--project`, `--json`, `--quiet` |
-| `marshal seed explain` | `--json`, `--quiet` |
-| `marshal seed init` | `--slug`, `--agents`, `--force`, `--dry-run`, `--json`, `--quiet` |
-| `marshal seed kit` | `--repo-root`, `--apply`, `--project`, `--dry-run`, `--json`, `--quiet` |
-| `marshal seed update` | `--repo-root`, `--run`, `--force`, `--include-seeded`, `--skip`, `--yes`, `--project`, `--dry-run`, `--json`, `--quiet` |
-| `marshal seed version` | `--repo-root`, `--json`, `--quiet` |
-| `marshal status` | `--project`, `--run`, `--escalations`, `--reconcile-ledger`, `--format` |
-| `marshal teardown` | `--force`, `--abandon`, `--format` |
-| `marshal upstream` | `--format` |
-| `marshal watch` | `--project`, `--run`, `--fleet`, `--format` |
+| `marshal seed accept` | `--repo-root`, `--apply`, `--reason`, `--dry-run`, `--json`, `--quiet`, `--format` |
+| `marshal seed adopt` | `--repo-root`, `--apply`, `--yes`, `--agents`, `--skip`, `--force`, `--project`, `--dry-run`, `--json`, `--quiet`, `--format` |
+| `marshal seed check` | `--repo-root`, `--strict`, `--project`, `--json`, `--quiet`, `--format` |
+| `marshal seed explain` | `--json`, `--quiet`, `--format` |
+| `marshal seed init` | `--slug`, `--agents`, `--force`, `--dry-run`, `--json`, `--quiet`, `--format` |
+| `marshal seed kit` | `--repo-root`, `--apply`, `--project`, `--dry-run`, `--json`, `--quiet`, `--format` |
+| `marshal seed update` | `--repo-root`, `--run`, `--force`, `--include-seeded`, `--skip`, `--yes`, `--project`, `--dry-run`, `--json`, `--quiet`, `--format` |
+| `marshal seed version` | `--repo-root`, `--json`, `--quiet`, `--format` |
+| `marshal status` | `--project`, `--run`, `--escalations`, `--reconcile-ledger`, `--format`, `--json` |
+| `marshal teardown` | `--force`, `--abandon`, `--format`, `--json` |
+| `marshal upstream` | `--format`, `--json` |
+| `marshal watch` | `--project`, `--run`, `--fleet`, `--format`, `--json` |
 
 ## MCP tools
 

@@ -916,6 +916,13 @@ Herald rebases to one Dream, one Spec, one PRD, one spine, one epic chain. Folde
 - **2026-11-26 (the exit codes are held to their declared domain) — Found and ruled:** herald's exit codes are spelled in `errors.py` and its `contract.md` and declared nowhere outside herald. The same read found the operator-role refusal telling the operator to run `herald auth login`, a command the parser never had. **Ruled** (operator ruling of 2026-11-26, on the convention gaps the removed cross-fleet section of the dossier listed: "rederive the open convention gaps and fix them all", then, on the list of those that need no further ruling, "Yes, start them"). Steward's Dream entry of
   the same date declares the `herald` exit-code domain (spec-pyforge-steward:CAP-184, amended). **For herald:**
   this entry binds `spec-pyforge-herald` (herald's public contract, CAP-62, realized with no text change; the operations surface, CAP-13, realized with no text change) and decomposes as Epic 56, one story: a meta-test holds `errors.exit_code_for` and its map to the `herald` domain, and the refusal names what `resolve_auth_context` reads, `HERALD_TOKEN` and `~/.herald/config`. **Constraints:** no exit number changes; the error map keeps its literals; no flag. Owner `spec-pyforge-herald`.
+- **2026-11-26 (herald's verbs take both spellings for JSON) — Ruled:** steward's Dream entry of the same date mints
+  one capability for the fleet: every station verb that prints JSON accepts both `--json` and `--format json`
+  (operator ruling of 2026-11-26 on the open convention items: "go with your recommendations, start in the suggested order" (the recommendation: one way to ask for JSON, by accepting both spellings on every station)). **For herald:** this entry binds that capability (spec-pyforge-steward:CAP-185, realized here) and decomposes as Epic
+  57, one story: herald's verbs take `--json` today; its parser builder calls
+  `pyforge.core.cli_output.align_json_options`, so each also takes `--format {text,json}`, writing to the same destination, and
+  `contract.md` lists the added spelling. **Constraints:** nothing is renamed or removed; no flag; the compiled
+  station skill is not edited. Owner `spec-pyforge-herald`.
 
 ## 2026-10-26 — The deck family stays current — infographics re-derived from the ledgers, not remembered (folded from deck-family-currency)
 

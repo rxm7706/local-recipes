@@ -2649,3 +2649,9 @@ FR-44's changes the stylesheet and labels `marketplace_pages.py` renders. No mod
 *Chain-currency cascade (PRD -> arch), CAP-184 amended, Epic 142.*
 
 The PRD amended FR-58 (← CAP-184): five more exit-code domains join the one declaration. No decision moves. The declaration is still `docs/governance/guild-roster.json`'s `exit_code_domains`, mirrored for in-process code by `pyforge.core.exit_domains` (the `pyforge.core.roster` pattern, CAP-137), and a station's exit projection stays where it was: the five added stations spell their own numbers and a test holds them to their domain, which is not a how. **Content changed:** this section and `updated:`; no AD added, amended or removed.
+
+## Currency reconciliation — 2026-11-26 (CAP-185)
+
+*Chain-currency cascade (PRD -> arch), CAP-185 minted, Epic 144.*
+
+The PRD registered FR-59 (← CAP-185). No decision moves. The helper is one more module of the stdlib-only kernel, the home the fleet already uses for a mechanism every station needs once (the pattern of the verdict lattice and the exit-code declaration), and each station's command line stays the sole owner of its parser: it calls the helper on the tree it built. **Content changed:** this section; no AD added, amended or removed.

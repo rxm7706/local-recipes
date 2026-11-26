@@ -59,6 +59,7 @@ from dataclasses import asdict
 from datetime import UTC, date, datetime
 from pathlib import Path
 
+from pyforge.core.cli_output import align_json_options
 from pyforge.core.flags import FlagOff, disabled_help, require
 
 from . import (
@@ -778,6 +779,7 @@ def _build_parser() -> _HeraldArgumentParser:
         help="machine-readable JSON output (no colorization)",
     )
 
+    align_json_options(parser)  # every verb that takes --json also takes --format json, and the reverse (Story 144.1)
     return parser
 
 

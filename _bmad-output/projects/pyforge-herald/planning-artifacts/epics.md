@@ -2649,6 +2649,29 @@ So that I am not sent to a command that does not exist, and herald's numbers are
 **And** no exit number changes, and a refused write still raises `OperatorAuthorizationError` and exits 1
 **Status:** done
 
+## Epic 57: Herald's verbs take both spellings for JSON (spec-pyforge-steward:CAP-185)
+
+Minted 2026-11-26 from the station Dream's entry of the same date on the operator ruling of 2026-11-26 on the open convention items: "go with your recommendations, start in the suggested order" (the recommendation: one way to ask for JSON, by accepting both spellings on every station). Steward Story 144.1 adds the shared helper; this Epic has herald's parser call it.
+**HARD boundaries:**
+- Nothing is renamed or removed: every invocation that parsed before parses the same way.
+- No flag, no capability text of `spec-pyforge-herald` moves, and the compiled station skill is not edited.
+
+### Story 57.1: Herald's verbs take both spellings for JSON
+
+As a caller scripting more than one station,
+I want herald's verbs to take `--format {text,json}` as well as `--json`,
+So that the same spelling works on every station.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward:CAP-185 (realized here; no text change in this station's Spec); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1: an added spelling of an option each verb already has)
+**Surface:** `src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/contract.md`
+**Spec:** `planning-artifacts/specs/spec-57-1-herald-s-verbs-take-both-spellings-for-json.md`
+**Given** herald's verbs take `--json` and not `--format {text,json}`
+**When** its parser builder calls `pyforge.core.cli_output.align_json_options`
+**Then** each such verb also takes `--format {text,json}` with the same result, and `contract.md` lists it
+**And** every invocation that parsed before parses the same way, and herald's contract test passes
+**Status:** done
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

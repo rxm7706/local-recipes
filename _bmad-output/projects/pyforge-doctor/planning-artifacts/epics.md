@@ -4309,6 +4309,29 @@ So that a bare `AD-n` here always means doctor's own spine.
 **And** doctor's suites pass with no behaviour changed
 **Status:** done
 
+## Epic 65: Doctor's verbs take both spellings for JSON (spec-pyforge-steward:CAP-185)
+
+Minted 2026-11-26 from the station Dream's entry of the same date on the operator ruling of 2026-11-26 on the open convention items: "go with your recommendations, start in the suggested order" (the recommendation: one way to ask for JSON, by accepting both spellings on every station). Steward Story 144.1 adds the shared helper; this Epic has doctor's parser call it.
+**HARD boundaries:**
+- Nothing is renamed or removed: every invocation that parsed before parses the same way.
+- No flag, no capability text of `spec-pyforge-doctor` moves, and the compiled station skill is not edited.
+
+### Story 65.1: Doctor's verbs take both spellings for JSON
+
+As a caller scripting more than one station,
+I want doctor's verbs to take `--format {text,json}` as well as `--json`,
+So that the same spelling works on every station.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward:CAP-185 (realized here; no text change in this station's Spec); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1: an added spelling of an option each verb already has)
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/__main__.py`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/contract.md`
+**Spec:** `planning-artifacts/specs/spec-65-1-doctor-s-verbs-take-both-spellings-for-json.md`
+**Given** doctor's verbs take `--json` and not `--format {text,json}`
+**When** its parser builder calls `pyforge.core.cli_output.align_json_options`
+**Then** each such verb also takes `--format {text,json}` with the same result, and `contract.md` lists it, with the kernel module in its import-closure table
+**And** every invocation that parsed before parses the same way, and doctor's contract test passes
+**Status:** done
+
 ## Currency reconciliation — 2026-11-26 (the tag rule reaches station source)
 
 *Chain-currency cascade (arch -> epics).* 2026-11-26: Epic 64 / Story 64.1 minted under `spec-one-chain-per-station` (its capability 9, realized with no text change); no AD moves. The keys go through the Tier-3 feed and `sprint-ledger-sync`. **Content changed:** the Epic, this section and `updated:`.

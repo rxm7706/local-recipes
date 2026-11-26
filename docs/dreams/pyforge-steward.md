@@ -8416,3 +8416,30 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   and no portal face but atlas's importing its station; `docs/reference/station-state.md` says where each station
   keeps state, whether it is a record or derived, and what to back up. **Constraints:** no code moves and no flag.
   Owner `spec-pyforge-steward`.
+- **2026-11-26 (one way to ask any station for JSON) — Found and ruled:** the stations spell the same request two ways.
+  Doctor, herald and steward take `--json`; mason and warden take `--format json`; marshal is mixed, `--format json` on
+  most verbs and `--json` on its `seed` verbs. No verb takes both. A caller scripting several stations, which is what an agent does, has to know which each verb takes, and a
+  wrong guess is a usage error. **Ruled** (operator ruling of 2026-11-26 on the open convention items: "go with your recommendations, start in the suggested order" (the recommendation: one way to ask for JSON, by accepting both spellings on every station)). **For steward:** this entry mints one capability on
+  `spec-pyforge-steward` (every station verb that prints JSON accepts both spellings) and decomposes as Epic 144, one
+  story: `pyforge.core.cli_output.align_json_options` walks a built parser once and gives every parser that accepts
+  one spelling the other, writing to the same destination; steward calls it on its own parser, and a repo-root test
+  holds every station's built parser to it. Doctor, herald, marshal, mason and warden call it under their own Dream
+  entries of this date. **Constraints:** nothing is renamed or removed, so every invocation that parsed before parses
+  the same way; a `--format` that takes anything but `text` and `json` (ledger-query's formatter names, glass's
+  export formats) is another option and is left alone; scribe (typer, no JSON option) and atlas (Kedro's command
+  line, whose module entry points keep `--json` alone) are not aligned and the test names them with the reason; a twin is
+  matched only when spelled in full, so no abbreviation that resolved before turns ambiguous; the compiled station skills are not edited. No flag:
+  an added spelling of an option the verb already has. Owner `spec-pyforge-steward`.
+- **2026-11-26 (the preflight runs a suite whole when its gate only judges) — Found and ruled:** the full preflight of
+  the JSON-output change went red twice on mason's coverage gate: `pyforge.mason.cli` read 34.3% where the suite, run
+  whole, gives 99.2%. Since the gates took `--report` they judge the union of the reports the station's own test
+  lanes wrote and run no test themselves; the preflight's suite reduction still assumed the gate runs the unit
+  tests, reduced mason's package half to the complement of that run, which selects nothing, and the empty lane wrote
+  the report the gate then judged. It bites when a touched module's coverage comes from the package half (a module
+  the live half covers well passes by accident). **Ruled** (operator ruling of 2026-11-26, "go with your
+  recommendations, start in the suggested order": the change it blocks is that work, and a broken window in the
+  tooling it runs through is fixed now, as its own Story). **For steward:** this entry binds `spec-pyforge-steward`
+  (the pr-preflight, CAP-159, realized with no text change) and decomposes as Epic 145, one story: a suite lane is
+  not reduced when its gate's command carries `--report`; the journal says why. Every station's gate carries it
+  today, and a test says so, so the reduction applies again to a gate that stops. **Constraints:** no flag (a fix);
+  the reduction code stays for a gate that runs its own tests. Owner `spec-pyforge-steward`.

@@ -15,6 +15,7 @@ import sys
 from collections.abc import Sequence
 from datetime import date
 
+from pyforge.core.cli_output import align_json_options
 from pyforge.core.cutover_root import resolve_flags_path
 from pyforge.core.flags import FlagConfigError, FlagOff, disabled_help, require
 
@@ -476,6 +477,7 @@ def build_parser() -> argparse.ArgumentParser:
                     metavar="NAME",
                     help="pixi environment for CLI smoke (default: pyforge-guild)",
                 )
+    align_json_options(parser)  # every verb that takes --json also takes --format json, and the reverse (Story 144.1)
     return parser
 
 

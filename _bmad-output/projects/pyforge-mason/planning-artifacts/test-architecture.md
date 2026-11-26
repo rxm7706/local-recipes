@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: b4b4c47864d998f1
-story_count: 142
+source_fingerprint: 32fdc014743519b0
+story_count: 143
 test_file_count: 48
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 142
-- **Epics parsed:** 43
+- **Stories parsed:** 143
+- **Epics parsed:** 44
 - **Test files inventoried:** 48 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `b4b4c47864d998f1`
+- **Source fingerprint:** `32fdc014743519b0`
 
 ## Risk Assessment
 
@@ -75,6 +75,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 41: The pypi-test rehearsal asks the index it uploads to (spec-pyforge-mason CAP-3, CAP-5)
 - Epic 42: A failed wrapped tool makes mason exit 1 (spec-pyforge-mason CAP-2, CAP-5)
 - Epic 43: Mason's exit codes are held to their declared domain (spec-pyforge-steward:CAP-184; spec-pyforge-mason CAP-5)
+- Epic 44: Mason's verbs take both spellings for JSON (spec-pyforge-steward:CAP-185)
 
 ### Low-risk epics
 
@@ -279,6 +280,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 41.1 | The pypi-test rehearsal asks the index it uploads to, and a wrapped tool's fa... | none observed |
 | 42.1 | A failed wrapped tool makes mason exit 1 | none observed |
 | 43.1 | Mason's exit codes are held to their declared domain | none observed |
+| 44.1 | Mason's verbs take both spellings for JSON | none observed |
 
 ## Quality Gates
 

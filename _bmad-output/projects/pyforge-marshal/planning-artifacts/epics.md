@@ -11928,6 +11928,29 @@ So that I can find the decision without knowing which spine the author had in mi
 **And** the detector exits 0 on the tree with no baseline entry for source, and the chain standard's id table says where a bare tag may stand
 **Status:** done
 
+## Epic 124: Marshal's verbs take both spellings for JSON (spec-pyforge-steward:CAP-185)
+
+Minted 2026-11-26 from the station Dream's entry of the same date on the operator ruling of 2026-11-26 on the open convention items: "go with your recommendations, start in the suggested order" (the recommendation: one way to ask for JSON, by accepting both spellings on every station). Steward Story 144.1 adds the shared helper; this Epic has marshal's parser call it.
+**HARD boundaries:**
+- Nothing is renamed or removed: every invocation that parsed before parses the same way.
+- No flag, no capability text of `spec-pyforge-marshal` moves, and the compiled station skill is not edited.
+
+### Story 124.1: Marshal's verbs take both spellings for JSON
+
+As a caller scripting more than one station,
+I want every marshal verb that prints JSON to take both `--json` and `--format {text,json}`,
+So that the same spelling works on every station.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward:CAP-185 (realized here; no text change in this station's Spec); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1: an added spelling of an option each verb already has)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/contract.md`
+**Spec:** `planning-artifacts/specs/spec-124-1-marshal-s-verbs-take-both-spellings-for-json.md`
+**Given** most of marshal's verbs take `--format {text,json}` and its `seed` verbs take `--json`, each only one
+**When** its parser builder calls `pyforge.core.cli_output.align_json_options`
+**Then** each such verb also takes the other spelling with the same result, and `contract.md` lists it
+**And** every invocation that parsed before parses the same way, and marshal's contract test passes
+**Status:** done
+
 ## Currency reconciliation — 2026-11-26 (the tag rule reaches station source)
 
 *Chain-currency cascade (arch -> epics).* 2026-11-26: Epic 123 / Story 123.1 minted under `spec-one-chain-per-station` (its capability 9, realized with no text change); no AD moves. The keys go through the Tier-3 feed and `sprint-ledger-sync`. **Content changed:** the Epic, this section and `updated:`.

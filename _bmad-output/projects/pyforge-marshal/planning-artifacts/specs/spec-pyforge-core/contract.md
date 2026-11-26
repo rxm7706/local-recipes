@@ -117,6 +117,20 @@ narrows which. It reads no file; a live-tree test holds it equal to the governan
 
 Public names: `EXIT_CODE_DOMAINS`, `EXIT_CODE_DOMAINS_NARROWING`, `domain_codes`, `exit_code`.
 
+### `pyforge.core.cli_output`
+
+Governed by: spec-pyforge-steward:CAP-185.
+
+One way to ask any station for JSON. `align_json_options` walks a built `argparse` tree once and gives every parser
+that accepts one spelling the other, writing to the same destination: a parser with a `--json` flag gains
+`--format {text,json}`, and a parser whose `--format` takes exactly `text` and `json` gains `--json`. A `--format` with
+any other choices, and a parser that already holds both, are left alone. Nothing is renamed or removed, and an added
+spelling is matched only when written in full, so no abbreviation that resolved before turns ambiguous. `json_twins`
+names what was added to one parser.
+
+Public names: `FORMAT_CHOICES`, `FORMAT_FLAG`, `JSON`, `JSON_FLAG`, `TEXT`, `align_json_options`, `iter_parsers`,
+`json_spellings`, `json_twins`.
+
 ### `pyforge.core.hooks`
 
 Governed by: spec-pyforge-unifying-strategy:CAP-18.

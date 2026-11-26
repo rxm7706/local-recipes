@@ -6,7 +6,7 @@ sources:
   - pixi.toml
   - src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/contract.md
-verified: 2026-11-25
+verified: 2026-11-26
 ---
 
 # How to run and read the pre-push preflight

@@ -40,7 +40,7 @@ The program is `warden` (`[project.scripts] warden = "pyforge.warden.cli:main"`)
 which is the same verb as `pyforge warden scan <path>` through pyforge-core's `pyforge` dispatcher; run either from the
 repository root. `-h`/`--help` on both parsers is argparse's own and is not listed. `--doctor` is a flag on `scan`, not
 a second verb. A usage error, `--bypass` without `--reason` included, exits 2. A CLI flag overrides the
-`[tool.pyforge-warden]` key of the same name (section 2). The rows are the verb, its positional, its 23 options,
+`[tool.pyforge-warden]` key of the same name (section 2). The rows are the verb, its positional, its options (`--json` is another spelling of `--format json`),
 then the top-level `--version`.
 
 | Argument | Form and default | CAP |
@@ -48,6 +48,7 @@ then the top-level `--version`.
 | `scan` | The one verb: scan a project directory and emit the compliance report. | CAP-1 |
 | `<path>` | Positional and optional: the directory to scan; default `.`. | CAP-1 |
 | `--format` | `text` (default) or `json`. `json` puts exactly one schema-valid `ComplianceReport` on stdout; `text` prints one summary line that is not contract. | CAP-7 |
+| `--json` | The same as `--format json` (steward Story 144.1). | CAP-7 |
 | `--sbom-output` | `PATH`; unset by default. Writes a CycloneDX 1.6 SBOM to `PATH` beside the report; a render or write failure is a stderr diagnostic and never changes the exit code. | CAP-7 |
 | `--deterministic` | Switch. Accepted and changes nothing today: the report is already byte-identical by default (the flag stays reserved, operator ruling 2026-11-10). | CAP-10 |
 | `--allow-empty` | Switch. When manifests parse but extraction yields nothing, the exit is 0 while the status stays `indeterminate`. | CAP-3 |

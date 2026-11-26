@@ -113,6 +113,7 @@ import argparse
 import inspect
 import sys
 
+from pyforge.core.cli_output import align_json_options
 from pyforge.core.flags import FlagConfigError, FlagOff
 
 from ..adapters.harness_bmadloop import (
@@ -294,6 +295,7 @@ def _build_parser() -> argparse.ArgumentParser:
     from . import preserve as preserve_cli
 
     preserve_cli.add_preserve_subparser(subparsers)
+    align_json_options(parser)  # every verb that takes --json also takes --format json, and the reverse (Story 144.1)
     return parser
 
 

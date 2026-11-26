@@ -64,7 +64,7 @@ root. `main()` is the sole owner of the exit code (canopy:AD-8): a duty returns 
 | `steward keys encrypt` | `--recipient`, `-r`, `--output`, `-o` | `<file>` | CAP-1 | age-encrypts a file to a recipient. |
 | `steward keys decrypt` | `--identity`, `-i`, `--output`, `-o` | `<file>` | CAP-1 | age-decrypts a file with an identity. |
 | `steward keys rotate` | `--scope`, `--new-identity`, `--inventory` | — | CAP-1 | Rotates an issued identity, re-encrypting every secret it protects. |
-| `steward keys list` | `--inventory`, `--json` | — | CAP-1 | Lists the known credential identities from `.steward/keys-inventory.yaml`, never a secret value. |
+| `steward keys list` | `--inventory`, `--json`, `--format` | — | CAP-1 | Lists the known credential identities from `.steward/keys-inventory.yaml`, never a secret value. |
 | `steward keys audit` | `--drift`, `--path`, `--secrets`, `--inventory` | — | CAP-1, CAP-164 | Scans for host-unscoped credential attachment (`--drift`) or plaintext secrets (`--secrets`); `--inventory` checks that no payload serves both GitHub Enterprise scopes. |
 | `steward keys revoke` | `--scope`, `--inventory` | — | CAP-1 | Marks a credential retired and prints manual remediation guidance. |
 | `steward keys exec` | `--scope`, `--approval`, `--inventory` | `<argv>` | CAP-164 | Runs the command after `--` with a scoped GitHub Enterprise token in `GH_ENTERPRISE_TOKEN` and `GH_HOST`, the only delivery path; behind `pyforge.steward.ghe_fleet_credentials`. |
@@ -75,70 +75,70 @@ root. `main()` is the sole owner of the exit code (canopy:AD-8): a duty returns 
 | `steward deploy nic kubeconfig` | `-f`, `--config` | — | CAP-176 | Runs `nic kubeconfig`. |
 | `steward deploy nic outputs` | `-f`, `--config` | — | CAP-176 | Runs `nic outputs`. |
 | `steward deploy nic down` | `-f`, `--config` | — | CAP-176 | Runs `nic destroy --auto-approve`. All five `deploy nic` verbs sit behind `pyforge.steward.nkp_deploy`. |
-| `steward provision` | `--list-modules`, `--module`, `--prove-class-path`, `--plugin`, `--skill`, `--env`, `--runner`, `--list`, `--json`, `--verify` | — | CAP-3, CAP-18, CAP-19, CAP-20, CAP-29, CAP-35 | Materializes, lists and verifies pixi environments (`--env`, `--list`, `--verify`); provisions a BMAD module (`--module`, `--list-modules`); installs a consented labs skill (`--plugin labs --skill`); proves the fresh-clone class path. Flags, not nested verbs. |
+| `steward provision` | `--list-modules`, `--module`, `--prove-class-path`, `--plugin`, `--skill`, `--env`, `--runner`, `--list`, `--json`, `--verify`, `--format` | — | CAP-3, CAP-18, CAP-19, CAP-20, CAP-29, CAP-35 | Materializes, lists and verifies pixi environments (`--env`, `--list`, `--verify`); provisions a BMAD module (`--module`, `--list-modules`); installs a consented labs skill (`--plugin labs --skill`); proves the fresh-clone class path. Flags, not nested verbs. |
 | `steward budget set` | `--cap` | — | CAP-4 | Declares a machine-readable ceiling (`1500usd/month`). |
-| `steward budget show` | `--json` | — | CAP-4 | Prints the declared ceilings. |
+| `steward budget show` | `--json`, `--format` | — | CAP-4 | Prints the declared ceilings. |
 | `steward budget check` | — | — | CAP-4 | Reports spend against the ceiling; v1 has no metered source and exits 3. Every `budget` verb sits behind `pyforge.steward.budget`. |
 | `steward sync reconcile` | `--github-item`, `--jira-issue`, `--schedule`, `--config`, `--dry-run` | — | CAP-57, CAP-58, CAP-59, CAP-60, CAP-61 | Re-reads a linked GitHub Projects V2 item and Jira issue and converges the divergent side; `--schedule` reconciles every linked item in one run. |
-| `steward workspace start` | `--from`, `--json` | `<slug>` | CAP-104, CAP-158 | Creates a scratch worktree on a new branch from `origin/main` (or `--from`) and records it. |
-| `steward workspace ls` | `--json` | — | CAP-105 | Lists the tool's own scratch worktrees from bookkeeping, no git subprocess. |
-| `steward workspace status` | `--json` | `<slug>` | CAP-106, CAP-158 | Reports dirty, ahead and merged per owned worktree. |
-| `steward workspace clean` | `--merged-only`, `--delete`, `--json` | `<slug>` | CAP-107, CAP-108, CAP-155, CAP-157, CAP-165 | Removes merged worktrees, archived rather than deleted, only the ones it created; parks unlanded commits as a preserve tag behind `pyforge.steward.workspace_preserve_tag`. |
-| `steward upgrade bmad-core` | `--target`, `--apply`, `--branch`, `--installer`, `--no-shims`, `--json`, `--package-root`, `--installed-package-root`, `--catalog-dir`, `--repo-root`, `--installed-version` | — | CAP-9, CAP-10, CAP-11, CAP-14, CAP-15, CAP-16, CAP-17 | The pre-flight diff for a target bmad-method release, or the deliberate `--apply` on a review branch with the custom-surface reconcile. |
-| `steward upgrade pin-fan-out` | `--package`, `--from`, `--to`, `--repo-root`, `--loops-home`, `--json` | — | CAP-12 | Report only: every pin site a bmad-loop or bmad-method move touches, moved or not. |
-| `steward upgrade prove-landed` | `--repo-root`, `--loops-home`, `--no-init`, `--json` | — | CAP-13 | One verdict after an apply: `bmad-drift-check`'s exit, the CFE meta-tests, each loop home's `bmad-loop init` and `validate`. |
-| `steward upgrade verify` | `--repo-root`, `--loops-home`, `--no-init`, `--json` | — | CAP-13 | An alias of `steward upgrade prove-landed`. |
-| `steward suite pipeline-truth` | `--repo-root`, `--baseline`, `--json` | — | CAP-21 | Upstream, recipe, channel, installed and wired state for the 13 bmad-suite packages, drift named per stage. |
-| `steward suite advance` | `--package`, `--repo-root`, `--baseline`, `--dry-run`, `--json` | — | CAP-22 | Advances one stale suite package end to end to a reviewable pull request, never auto-merged. |
-| `steward init` | `--json`, `--profile`, `--class`, `--deep`, `--list`, `--repo` | — | CAP-48, CAP-183 | Reports whether this machine is ready for a kind of work, one verdict per chosen profile (`desktop`, `container`, `pod`, `ocp`, `nkp`, each with the profiles it requires; `all`; a bare `steward init` is `desktop`). The checks are rows of `docs/governance/machine-readiness.yaml`; each one that is not ok prints `remedy (agent or operator): <command>`. Read-only: an in-environment probe runs `pixi run --as-is`, and a check marked deep (a cluster, one throwaway linux/amd64 container that pulls one small image) runs only with `--deep`. `--class` narrows the run to checks of a class (`software`, `configuration`, `environment`, `usable`) and what they need; `--list` prints the profiles and checks and probes nothing; `--repo` names the checkout to judge. The report goes to stdout whatever the verdict; its `--json` form is under *The `init` report* below. |
-| `steward shell-init` | `--json` | — | CAP-48 | Emits an idempotent PATH, completions and environment snippet for `eval`. |
-| `steward setup` | `--json`, `--url`, `--dest`, `--env` | — | CAP-48, CAP-154 | Clones when `--dest` is missing, runs `pixi install`, installs the pre-commit hooks (behind `pyforge.steward.setup_hooks`). |
-| `steward initrepo` | `--json`, `--repo`, `--env` | — | CAP-48 | Scaffolds `pyforge.toml` when absent, materializes the environment, runs `steward validate-fast`. |
-| `steward validate-fast` | `--json`, `--repo`, `--env` | — | CAP-48, CAP-183 | The fast green gate: prerequisites (the `desktop` profile's software checks: pixi at its floor, git, gh; never a container engine), `environment.yaml` sync, a `steward --version` smoke. |
+| `steward workspace start` | `--from`, `--json`, `--format` | `<slug>` | CAP-104, CAP-158 | Creates a scratch worktree on a new branch from `origin/main` (or `--from`) and records it. |
+| `steward workspace ls` | `--json`, `--format` | — | CAP-105 | Lists the tool's own scratch worktrees from bookkeeping, no git subprocess. |
+| `steward workspace status` | `--json`, `--format` | `<slug>` | CAP-106, CAP-158 | Reports dirty, ahead and merged per owned worktree. |
+| `steward workspace clean` | `--merged-only`, `--delete`, `--json`, `--format` | `<slug>` | CAP-107, CAP-108, CAP-155, CAP-157, CAP-165 | Removes merged worktrees, archived rather than deleted, only the ones it created; parks unlanded commits as a preserve tag behind `pyforge.steward.workspace_preserve_tag`. |
+| `steward upgrade bmad-core` | `--target`, `--apply`, `--branch`, `--installer`, `--no-shims`, `--json`, `--package-root`, `--installed-package-root`, `--catalog-dir`, `--repo-root`, `--installed-version`, `--format` | — | CAP-9, CAP-10, CAP-11, CAP-14, CAP-15, CAP-16, CAP-17 | The pre-flight diff for a target bmad-method release, or the deliberate `--apply` on a review branch with the custom-surface reconcile. |
+| `steward upgrade pin-fan-out` | `--package`, `--from`, `--to`, `--repo-root`, `--loops-home`, `--json`, `--format` | — | CAP-12 | Report only: every pin site a bmad-loop or bmad-method move touches, moved or not. |
+| `steward upgrade prove-landed` | `--repo-root`, `--loops-home`, `--no-init`, `--json`, `--format` | — | CAP-13 | One verdict after an apply: `bmad-drift-check`'s exit, the CFE meta-tests, each loop home's `bmad-loop init` and `validate`. |
+| `steward upgrade verify` | `--repo-root`, `--loops-home`, `--no-init`, `--json`, `--format` | — | CAP-13 | An alias of `steward upgrade prove-landed`. |
+| `steward suite pipeline-truth` | `--repo-root`, `--baseline`, `--json`, `--format` | — | CAP-21 | Upstream, recipe, channel, installed and wired state for the 13 bmad-suite packages, drift named per stage. |
+| `steward suite advance` | `--package`, `--repo-root`, `--baseline`, `--dry-run`, `--json`, `--format` | — | CAP-22 | Advances one stale suite package end to end to a reviewable pull request, never auto-merged. |
+| `steward init` | `--json`, `--profile`, `--class`, `--deep`, `--list`, `--repo`, `--format` | — | CAP-48, CAP-183 | Reports whether this machine is ready for a kind of work, one verdict per chosen profile (`desktop`, `container`, `pod`, `ocp`, `nkp`, each with the profiles it requires; `all`; a bare `steward init` is `desktop`). The checks are rows of `docs/governance/machine-readiness.yaml`; each one that is not ok prints `remedy (agent or operator): <command>`. Read-only: an in-environment probe runs `pixi run --as-is`, and a check marked deep (a cluster, one throwaway linux/amd64 container that pulls one small image) runs only with `--deep`. `--class` narrows the run to checks of a class (`software`, `configuration`, `environment`, `usable`) and what they need; `--list` prints the profiles and checks and probes nothing; `--repo` names the checkout to judge. The report goes to stdout whatever the verdict; its `--json` form is under *The `init` report* below. |
+| `steward shell-init` | `--json`, `--format` | — | CAP-48 | Emits an idempotent PATH, completions and environment snippet for `eval`. |
+| `steward setup` | `--json`, `--url`, `--dest`, `--env`, `--format` | — | CAP-48, CAP-154 | Clones when `--dest` is missing, runs `pixi install`, installs the pre-commit hooks (behind `pyforge.steward.setup_hooks`). |
+| `steward initrepo` | `--json`, `--repo`, `--env`, `--format` | — | CAP-48 | Scaffolds `pyforge.toml` when absent, materializes the environment, runs `steward validate-fast`. |
+| `steward validate-fast` | `--json`, `--repo`, `--env`, `--format` | — | CAP-48, CAP-183 | The fast green gate: prerequisites (the `desktop` profile's software checks: pixi at its floor, git, gh; never a container engine), `environment.yaml` sync, a `steward --version` smoke. |
 | `steward restore` | `--drill`, `--backup-path` | — | CAP-180 | Restores a custom-format dump into a scratch database and asserts the manifest's row counts through the host's `src/platform/db/postgres_backup.py`. |
 | `steward revoke` | `--sub`, `--python` | — | CAP-180 | Runs the host's `manage.py revoke_subject --sub <id> --json` and reports what it said. |
 | `steward track assemble` | `--run-dir`, `--out` | — | CAP-54 | Writes one tracked `track.json` from a run directory's journal, gate record and state; not a detector. |
 | `steward guards catalog` | — | — | CAP-55 | Prints the seven-category Guard library. |
 | `steward guards lacking` | `--spec` | — | CAP-55 | The Guard categories a Spec (or the library) still lacks; never a PR verdict. |
 | `steward guards source-ground` | `--text`, `--repo` | — | CAP-55 | Requires a resolvable `[source: path]` on each claim of a text; not a PR gate. |
-| `steward cutover plan` | `--regenerate`, `--append`, `--check`, `--ledger`, `--json` | — | spec-python-foundry-cutover:CAP-9 | Generates (`--regenerate`, `--append`, behind `pyforge.steward.cutover_ledger_write`) or validates (`--check`, the default; exit 1 on a finding) `docs/foundry/capability-ledger.yaml`. |
+| `steward cutover plan` | `--regenerate`, `--append`, `--check`, `--ledger`, `--json`, `--format` | — | spec-python-foundry-cutover:CAP-9 | Generates (`--regenerate`, `--append`, behind `pyforge.steward.cutover_ledger_write`) or validates (`--check`, the default; exit 1 on a finding) `docs/foundry/capability-ledger.yaml`. |
 | `steward cutover flip` | `--to`, `--flags` | — | spec-python-foundry-cutover:CAP-8 | Sets `pyforge.cutover_root`; refused while a Marshal loop runs; stamps the Realization log. |
 | `steward ledger-query` | `--unimplemented`, `--unlinked`, `--ready`, `--running`, `--station`, `--status`, `--epic`, `--search`, `--format`, `--output`, `--sync-postgres`, `--flag` | — | CAP-146, CAP-147, CAP-148, CAP-149, CAP-150 | One query engine over every station's tracked ledger; exporters behind the `ledger_query_*` keys, overridable with `--flag`. |
-| `steward catalog` | `--catalog`, `--json` | — | CAP-117 | The estate BMAD catalog; a bare `steward catalog` runs `check`. |
-| `steward catalog check` | `--catalog`, `--json` | — | CAP-117 | Binds declared backends and sources to plugins, validates listings, detects manifest drift. |
-| `steward catalog list` | `--catalog`, `--json` | — | CAP-120 | Every listing with its source and trust tier. |
-| `steward catalog render` | `--check`, `--catalog`, `--json` | — | CAP-117, CAP-120, CAP-123, CAP-169 | Regenerates the Claude and Codex marketplace manifests (estate catalog: also the Frame index and browse list); `--check` reports drift and writes nothing. |
-| `steward catalog pointers` | `--catalog`, `--json` | — | CAP-117 | Prints how the installer, Claude and Codex point at this catalog. |
-| `steward catalog ship` | `--backend`, `--output`, `--catalog`, `--json` | — | CAP-119 | Materializes the vendored snapshot and runs the default (conda) ship backend. |
-| `steward catalog publish` | `--listing`, `--review`, `--dry-run`, `--catalog`, `--json` | — | CAP-118 | Appends a reviewed module row to `registry/estate.yaml`; refuses without a review record. |
-| `steward measure` | `--measures-dir`, `--json` | — | CAP-44 | The Build League measure catalog. |
-| `steward measure check` | `--measures-dir`, `--json` | — | CAP-44, CAP-45 | Validates measure declarations: new rows start off, archived ids are never reused. |
-| `steward measure list` | `--measures-dir`, `--json` | — | CAP-44 | Every measure with its dimension, source and state. |
-| `steward load` | `--corridor`, `--json` | — | CAP-139 | The extract corridor; transports are declared in `corridor.yaml`. |
+| `steward catalog` | `--catalog`, `--json`, `--format` | — | CAP-117 | The estate BMAD catalog; a bare `steward catalog` runs `check`. |
+| `steward catalog check` | `--catalog`, `--json`, `--format` | — | CAP-117 | Binds declared backends and sources to plugins, validates listings, detects manifest drift. |
+| `steward catalog list` | `--catalog`, `--json`, `--format` | — | CAP-120 | Every listing with its source and trust tier. |
+| `steward catalog render` | `--check`, `--catalog`, `--json`, `--format` | — | CAP-117, CAP-120, CAP-123, CAP-169 | Regenerates the Claude and Codex marketplace manifests (estate catalog: also the Frame index and browse list); `--check` reports drift and writes nothing. |
+| `steward catalog pointers` | `--catalog`, `--json`, `--format` | — | CAP-117 | Prints how the installer, Claude and Codex point at this catalog. |
+| `steward catalog ship` | `--backend`, `--output`, `--catalog`, `--json`, `--format` | — | CAP-119 | Materializes the vendored snapshot and runs the default (conda) ship backend. |
+| `steward catalog publish` | `--listing`, `--review`, `--dry-run`, `--catalog`, `--json`, `--format` | — | CAP-118 | Appends a reviewed module row to `registry/estate.yaml`; refuses without a review record. |
+| `steward measure` | `--measures-dir`, `--json`, `--format` | — | CAP-44 | The Build League measure catalog. |
+| `steward measure check` | `--measures-dir`, `--json`, `--format` | — | CAP-44, CAP-45 | Validates measure declarations: new rows start off, archived ids are never reused. |
+| `steward measure list` | `--measures-dir`, `--json`, `--format` | — | CAP-44 | Every measure with its dimension, source and state. |
+| `steward load` | `--corridor`, `--json`, `--format` | — | CAP-139 | The extract corridor; transports are declared in `corridor.yaml`. |
 | `steward load inbound` | `--file`, `--waybill`, `--transport` | — | CAP-139 | Loads an inbound extract, idempotent on batch sha and waybill. |
 | `steward load outbound` | `--file`, `--waybill`, `--transport`, `--slice`, `--signer` | — | CAP-139, CAP-142 | Loads an outbound extract; default deny without a named slice and signer. |
-| `steward passport` | `--json` | — | CAP-140 | Vendor work-passport identity. |
+| `steward passport` | `--json`, `--format` | — | CAP-140 | Vendor work-passport identity. |
 | `steward passport mint` | `--vendor-id`, `--jira-key`, `--github-item-id`, `--title` | — | CAP-140 | Mints a fresh Work Passport UUID per inbound key; never merges by key. |
 | `steward glass` | `--json` | — | CAP-141 | As-of glass: standup and shipped freshness over the inbound corridor. |
 | `steward glass export` | `--format`, `--flag` | — | CAP-141 | Renders the two-row standup and shipped table, behind `pyforge.steward.glass_export` (or `--flag enable_glass_export=true`). |
-| `steward quarantine` | `--json`, `--corridor` | — | CAP-143 | The shelf for inbound rows without a passport. |
+| `steward quarantine` | `--json`, `--corridor`, `--format` | — | CAP-143 | The shelf for inbound rows without a passport. |
 | `steward quarantine admit` | `--vendor-id`, `--jira-key`, `--github-item-id`, `--title`, `--arrived-at` | — | CAP-143 | Admits an inbound row without a passport; mints during the configured window, then refuses to mint. |
 | `steward quarantine shelf` | `--include-linked` | — | CAP-143 | Lists the unlinked rows on the shelf. |
-| `steward session check` | `--repo`, `--project`, `--json` | — | CAP-5, CAP-162 | One verdict over the seven session preconditions; the bmad-method finding is `bmad-drift-check`'s exit, read by command (spec-pyforge-steward:CAP-182). |
+| `steward session check` | `--repo`, `--project`, `--json`, `--format` | — | CAP-5, CAP-162 | One verdict over the seven session preconditions; the bmad-method finding is `bmad-drift-check`'s exit, read by command (spec-pyforge-steward:CAP-182). |
 | `steward deck-drift` | `--slug`, `--path`, `--artifact-key`, `--bridge-state`, `--baseline` | — | CAP-135 | Flags silent size or etag drift on a pulled Design deck against a steward-owned baseline sidecar; Herald owns the pull. |
-| `steward estate plan` | `--json`, `--due` | — | CAP-167 | Dry-runs the pin upgrade through the pin policy; `--due` exits non-zero when the last journal is older than 30 days or absent; exits 3 when the pixi dry run fails. |
+| `steward estate plan` | `--json`, `--due`, `--format` | — | CAP-167 | Dry-runs the pin upgrade through the pin policy; `--due` exits non-zero when the last journal is older than 30 days or absent; exits 3 when the pixi dry run fails. |
 | `steward estate refresh` | `--transitive` | — | CAP-167 | Runs the upgrade, restores losses, re-locks and journals. `--transitive` (`pixi update`) is operator-only, denied to agents by the session hook. |
 | `steward estate reconcile` | — | — | CAP-167 | Regenerates the derived surfaces, runs the gating checks, reconciles spec-surface drift. |
 | `steward estate verify` | `--env`, `--lane`, `--probe`, `--all`, `--keep`, `--ignore-ci-pauses`, `--budget-minutes` | — | CAP-167 | Installs the default tier in a detached worktree and runs the CI lanes and realization probes. |
 | `steward estate realize` | `--plan`, `--yes`, `--all`, `--journal` | — | CAP-167 | Re-applies side-effect installs for moved register rows; agents run `--plan`, `--yes` is the operator's. |
-| `steward estate status` | `--json`, `--all` | — | CAP-167 | Prints the last estate refresh journal (`--all`: every one). Every `estate` verb sits behind `pyforge.steward.estate_refresh`. |
-| `steward ci status` | `--json` | — | CAP-166 | The pause state of every CI surface, one table or `ci-status-schema` JSON; exit 1 with the envelope on stdout on a partial read. |
+| `steward estate status` | `--json`, `--all`, `--format` | — | CAP-167 | Prints the last estate refresh journal (`--all`: every one). Every `estate` verb sits behind `pyforge.steward.estate_refresh`. |
+| `steward ci status` | `--json`, `--format` | — | CAP-166 | The pause state of every CI surface, one table or `ci-status-schema` JSON; exit 1 with the envelope on stdout on a partial read. |
 | `steward ci vars` | `--refresh` | — | CAP-166 | Reads, or with `--refresh` rewrites, the gitignored `.steward/ci-vars.json` snapshot. |
 | `steward ci pause` | `--reason`, `--review-by`, `--yes`, `--i-am-removing-a-merge-gate` | `<target>` | CAP-166 | Pauses a CI surface; a dry run unless `--yes` (operator only). |
 | `steward ci resume` | `--yes` | `<target>` | CAP-166 | Resumes a paused CI surface; a dry run unless `--yes`. Every `ci` verb sits behind `pyforge.steward.ci_pause_control`. |
-| `steward pages build` | `--json`, `--dry-run`, `--stamp`, `--site-url` | — | CAP-168 | Writes `docs-site/src/content/fleet-status.json`, runs `pages-check`, reports the tree hash. |
+| `steward pages build` | `--json`, `--dry-run`, `--stamp`, `--site-url`, `--format` | — | CAP-168 | Writes `docs-site/src/content/fleet-status.json`, runs `pages-check`, reports the tree hash. |
 | `steward pages deploy` | `--dry-run`, `--wait` | — | CAP-168 | Triggers one `pages.yml` run on `main` and names it. |
-| `steward pages status` | `--json`, `--site-url` | — | CAP-168 | The live root, the last `pages.yml` run and the registry verdict. Every `pages` verb sits behind `pyforge.steward.pages_duty`. |
+| `steward pages status` | `--json`, `--site-url`, `--format` | — | CAP-168 | The live root, the last `pages.yml` run and the registry verdict. Every `pages` verb sits behind `pyforge.steward.pages_duty`. |
 | `steward preflight verify-deferred` | `--since` | — | CAP-159 | Lists the runs that left lanes to CI and the pushes that skipped the preflight, then runs the full preflight on HEAD: exit 0 green, 1 red, 3 could not run. |
 
 `five_tier.py` is a check library with no verb (canopy:AD-14's five-tier completeness, read by
