@@ -320,6 +320,13 @@ One-chain fold: satellite Dreams archived in place with `Consolidated into [[pyf
   and decomposes as Epic 31, one story: each such tag is written with the prefix of the spine it means (`suite:AD-4`, `suite:AD-9`, `suite:AD-10`).
   **Constraints:** comments, docstrings and message text only; no behaviour, exit code or flag moves; a bare tag that
   does mean this station's own spine stays bare. Owner `spec-pyforge-warden`.
+- **2026-11-26 (warden's verbs take both spellings for JSON) — Ruled:** steward's Dream entry of the same date mints
+  one capability for the fleet: every station verb that prints JSON accepts both `--json` and `--format json`
+  (operator ruling of 2026-11-26 on the open convention items: "go with your recommendations, start in the suggested order" (the recommendation: one way to ask for JSON, by accepting both spellings on every station)). **For warden:** this entry binds that capability (spec-pyforge-steward:CAP-185, realized here) and decomposes as Epic
+  32, one story: warden's verbs take `--format {text,json}` today; its parser builder calls
+  `pyforge.core.cli_output.align_json_options`, so each also takes `--json`, writing to the same destination, and
+  `contract.md` lists the added spelling. **Constraints:** nothing is renamed or removed; no flag; the compiled
+  station skill is not edited. Owner `spec-pyforge-warden`.
 
 ## 2026-10-26 — A web face for the compliance factory — upload a manifest, watch warden and atlas analyze it (folded from compliance-factory-web-face)
 

@@ -9711,6 +9711,31 @@ So that I do not have to read eight packages to learn either.
 **And** no code moves, and the docs map lists the new page
 **Status:** done
 
+## Epic 144: One way to ask any station for JSON (spec-pyforge-steward:CAP-185)
+
+Minted 2026-11-26 from the station Dream's entry of the same date on the operator ruling of 2026-11-26 on the open convention items: "go with your recommendations, start in the suggested order" (the recommendation: one way to ask for JSON, by accepting both spellings on every station). Doctor, herald and steward take `--json`, mason and warden take `--format json`, and marshal is mixed. This Epic adds the shared helper and aligns steward; doctor, herald, marshal, mason and warden align under their own Epics 65, 57, 124, 44 and 32.
+**HARD boundaries:**
+- Nothing is renamed or removed: every invocation that parsed before parses the same way.
+- A `--format` that takes anything but `text` and `json` is another option and is left alone.
+- Scribe and atlas are not aligned; the test names them with the reason.
+- No flag, and the compiled station skills are not edited.
+
+### Story 144.1: Every station verb that prints JSON accepts both spellings
+
+As a caller scripting more than one station,
+I want `--json` and `--format json` to both work on every verb that can print JSON,
+So that I do not have to know which spelling a station chose.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward:CAP-185 (minted with this story); FR-59 ← CAP-185; works with spec-pyforge-core:CAP-3 (no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1: an added spelling of an option each verb already has; no behaviour is switched)
+**Surface:** `src/shared/packages/pyforge-core/src/pyforge/core/cli_output.py`, `src/shared/packages/pyforge-core/tests/unit/test_cli_output.py`, `tests/scripts/test_json_output_spellings.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py`, `src/shared/packages/pyforge-steward/tests/meta/test_public_contract.py`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/contract.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/contract.md`
+**Spec:** `planning-artifacts/specs/spec-144-1-every-station-verb-that-prints-json-accepts-both-spellings.md`
+**Given** three stations take `--json`, three take `--format json`, and a caller must know which
+**When** `pyforge.core.cli_output.align_json_options` gives every parser that accepts one spelling the other, and steward calls it on its built parser
+**Then** every steward verb that took `--json` also takes `--format {text,json}` with the same result, a verb whose `--format` names formatters is unchanged, the kernel's tests fail when a twin is missing, writes another destination or is added twice, and `tests/scripts/test_json_output_spellings.py` fails when a station's built parser has a verb with exactly one spelling
+**And** every invocation that parsed before parses the same way, and steward's `contract.md` lists the added spelling on each verb
+**Status:** done
+
 ## Currency reconciliation — 2026-11-26 (CAP-184 amended)
 
 *Chain-currency cascade (arch -> epics), CAP-184 amended.* 2026-11-26: Epic 142 and Story 142.1 are minted under `spec-pyforge-steward` CAP-184 as amended (FR-58); no AD moves. The keys `142-1`, `epic-142` and `epic-142-retrospective` go through the Tier-3 feed and `sprint-ledger-sync`. **Content changed:** Epic 142, this section and `updated:`.
@@ -9718,3 +9743,7 @@ So that I do not have to read eight packages to learn either.
 ## Currency reconciliation — 2026-11-26 (the tag rule reaches station source)
 
 *Chain-currency cascade (arch -> epics).* 2026-11-26: Epic 143 and Stories 143.1 and 143.2 are minted under `spec-one-chain-per-station` (its capability 9) and `spec-pyforge-unifying-strategy` (its capability 4), each realized with no text change; canopy:AD-5 gains a placement clause. **Content changed:** Epic 143 and this section.
+
+## Currency reconciliation — 2026-11-26 (CAP-185)
+
+*Chain-currency cascade (arch -> epics), CAP-185 minted.* 2026-11-26: Epic 144 and Story 144.1 are minted under `spec-pyforge-steward` CAP-185 (FR-59); no AD moves. The keys go through the Tier-3 feed and `sprint-ledger-sync`. **Content changed:** Epic 144 and this section.

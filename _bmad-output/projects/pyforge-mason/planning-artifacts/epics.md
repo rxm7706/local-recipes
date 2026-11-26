@@ -4453,3 +4453,26 @@ So that mason's numbers are declared beside the fleet's others, and a reader of 
 **Then** the test fails when an `EXIT_*` name is added, removed or renumbered without the declaration, and pins the five numbers mason always used
 **And** no exit number changes and no code path moves
 **Status:** done
+
+## Epic 44: Mason's verbs take both spellings for JSON (spec-pyforge-steward:CAP-185)
+
+Minted 2026-11-26 from the station Dream's entry of the same date on the operator ruling of 2026-11-26 on the open convention items: "go with your recommendations, start in the suggested order" (the recommendation: one way to ask for JSON, by accepting both spellings on every station). Steward Story 144.1 adds the shared helper; this Epic has mason's parser call it.
+**HARD boundaries:**
+- Nothing is renamed or removed: every invocation that parsed before parses the same way.
+- No flag, no capability text of `spec-pyforge-mason` moves, and the compiled station skill is not edited.
+
+### Story 44.1: Mason's verbs take both spellings for JSON
+
+As a caller scripting more than one station,
+I want mason's verbs to take `--json` as well as `--format {text,json}`,
+So that the same spelling works on every station.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward:CAP-185 (realized here; no text change in this station's Spec); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1: an added spelling of an option each verb already has)
+**Surface:** `src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py`, `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/contract.md`
+**Spec:** `planning-artifacts/specs/spec-44-1-mason-s-verbs-take-both-spellings-for-json.md`
+**Given** mason's verbs take `--format {text,json}` and not `--json`
+**When** its parser builder calls `pyforge.core.cli_output.align_json_options`
+**Then** each such verb also takes `--json` with the same result, and `contract.md` lists it, as one more row of the global options table
+**And** every invocation that parsed before parses the same way, and mason's contract test passes
+**Status:** done

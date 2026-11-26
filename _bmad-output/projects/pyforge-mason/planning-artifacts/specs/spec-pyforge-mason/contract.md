@@ -55,7 +55,7 @@ documented exception is `mason package --ship <targets>` (D-12), an option row o
 
 ## Global options
 
-AD-13's closed set of six knobs. Each is accepted on every parser path above, before or after the noun and verb, and
+AD-13's closed set of six knobs, and `--json`, which is not a seventh: it is another spelling of `--format json`, with no variable and no default of its own (steward Story 144.1). Each knob is accepted on every parser path above, before or after the noun and verb, and
 resolves flag, then its variable, then the default. No global option is required for any command to run.
 
 | Option | Variable | Default | What it sets |
@@ -64,6 +64,7 @@ resolves flag, then its variable, then the default. No global option is required
 | `--cfe-python` | `MASON_CFE_PYTHON` | the running interpreter | The interpreter that runs CFE's scripts (`PATH`). |
 | `--cfe-timeout` | `MASON_CFE_TIMEOUT` | none (each adapter's own default) | Per-operation CFE subprocess timeout in seconds; finite and positive. |
 | `--format` | `MASON_FORMAT` | `text` | `text` or `json`; `json` is the only machine contract. |
+| `--json` | — | — | The same as `--format json` (steward Story 144.1). |
 | `--verbose` | `MASON_VERBOSE` | off | Log at INFO. |
 | `--quiet` | `MASON_QUIET` | off | Log at ERROR only; wins over `--verbose`. |
 

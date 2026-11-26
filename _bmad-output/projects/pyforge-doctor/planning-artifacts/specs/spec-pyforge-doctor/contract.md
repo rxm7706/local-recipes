@@ -108,18 +108,22 @@ the current working directory (it takes no target), which the `*-check` pixi tas
 | `doctor check` | `--scope` | choice | `all`; one of `repo`, `runtime`, `all` |
 | `doctor check` | `--list` | flag | print the check catalog and run nothing |
 | `doctor check` | `--json` | flag | one schema-valid DoctorReport on stdout |
+| `doctor check` | `--format` | option (`text`, `json`) | `--format json` is `--json` (steward Story 144.1) |
 | `doctor monitor` | `--fleet` | flag, required | names the scope the verb watches |
 | `doctor monitor` | `--watch` | option `AXIS[,AXIS...]` | `staleness,cve`; axes `staleness`, `cve`, `abandonment`, `adoption`, `behind-upstream` |
 | `doctor monitor` | `--target` | option `MAINTAINER` | absent; scope every axis to one maintainer or feedstock |
 | `doctor monitor` | `--source` | option `SOURCE` | absent; filter the rendered output to one Finding source |
 | `doctor monitor` | `--json` | flag | one schema-valid DoctorReport on stdout |
+| `doctor monitor` | `--format` | option (`text`, `json`) | `--format json` is `--json` (steward Story 144.1) |
 | `doctor monitor` | `--surface` | option `PATH` | absent; also write the fleet-health surface file (CAP-6, NFR-1's sanctioned write) |
 | `doctor diagnose` | `--target` | option `TARGET`, required | the feedstock or maintainer; an existing directory also gets the engines and env checks |
 | `doctor diagnose` | `--prescribe` | flag | partition, rank and name the root cause |
 | `doctor diagnose` | `--json` | flag | one schema-valid DoctorReport on stdout |
+| `doctor diagnose` | `--format` | option (`text`, `json`) | `--format json` is `--json` (steward Story 144.1) |
 | `doctor backlog-intake` | `identifier` | positional, required | an epic (`13`) or story (`13.1`, `13-1`), optionally prefixed `Epic ` or `Story ` |
 | `doctor backlog-intake` | `path` | positional, optional | `.` |
 | `doctor backlog-intake` | `--json` | flag | one schema-valid DoctorReport on stdout |
+| `doctor backlog-intake` | `--format` | option (`text`, `json`) | `--format json` is `--json` (steward Story 144.1) |
 | `doctor flags kill-switch` | `--flag` | option, required | the flag key to disable |
 | `doctor flags kill-switch` | `--reason` | option, required | the operator's reason, printed on the result line (on one line) and recorded on the metric label |
 | `doctor flags kill-switch` | `--flags-path` | option | absent; the tree `django_pyforge.flags.resolve_tree_path()` names |
@@ -130,6 +134,7 @@ the current working directory (it takes no target), which the `*-check` pixi tas
 |---|---|---|---|
 | `python -m pyforge.doctor.sources` | `source` | positional, required | one `DISPATCH` name (the Sources table's `yes` rows) |
 | `python -m pyforge.doctor.sources` | `--json` | flag | the findings as a JSON array of `Finding.to_json_dict()` |
+| `python -m pyforge.doctor.sources` | `--format` | option (`text`, `json`) | `--format json` is `--json` (steward Story 144.1) |
 | `python -m pyforge.doctor.sources` | `--groundtruth` | flag | `bmad-drift` only: print its six live facts instead of findings |
 | `python -m pyforge.doctor.sources` | `--dreams` | flag | `dream-chain` only: the Dream-tier hygiene mode (the `dreams-hygiene` gather) |
 | `python -m pyforge.doctor.sources` | `--layers` | flag | `chain-completeness` only, with `--project`: the per-project chain audit (`chain-layers-audit`) |
@@ -370,6 +375,7 @@ except warden's engines through the one declared relay (`tests/meta/test_source_
 | Import | Kind | Imported by | For |
 |---|---|---|---|
 | `pyforge.core.verdict` | required | `verdict.py` | `Lattice`: the exit domain as a computed subset of warden's (spec-pyforge-core:CAP-3) |
+| `pyforge.core.cli_output` | required | `__main__.py` | `align_json_options`: every verb that takes `--json` also takes `--format json` (steward Story 144.1) |
 | `pyforge.core.exit_domains` | required | `verdict.py` | `exit_code`: the `doctor` domain of the one exit-code declaration (spec-pyforge-steward:CAP-184) |
 | `pyforge.core.report` | required | `__main__.py` | `BASE_ENVELOPE_SCHEMA`, `compose`: the DoctorReport envelope (spec-pyforge-core:CAP-4) |
 | `pyforge.core.hooks` | required | `hooks.py` | `HookSpec`, `PluginRegistry`: the `doctor-gather` and `doctor-prescribe` entry points |

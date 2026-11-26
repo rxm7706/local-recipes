@@ -32,29 +32,29 @@ names.
 | `herald deck watch` | `<slug>...` `--repo-root` `--interval` | CAP-4 |
 | `herald deck push` | `<slug>` `--repo-root` `--prove` | CAP-4, CAP-34 |
 | `herald deck publish` | `<slug>` `--repo-root` `--dry-run` | CAP-54, CAP-55 |
-| `herald deck exports` | `<slug>` `--repo-root` `--json/-j` | CAP-54 |
+| `herald deck exports` | `<slug>` `--repo-root` `--json/-j` `--format` | CAP-54 |
 | `herald deck sync-all` | `--slug` `--repo-root` `--dry-run` `--proof-dir` | CAP-31, CAP-36, CAP-50 |
 | `herald deck qa` | `<slug>` `--repo-root` | CAP-26..CAP-28 |
 | `herald deck pptx-spec` | `--template` `-o/--out` | CAP-41 |
 | `herald deck pptx-fill` | `<content_plan>` `--template` `-o/--out` | CAP-40, CAP-41 |
 | `herald deck pptx-native` | `<slug>` `--repo-root` | CAP-57 |
-| `herald progress` | `[station]` `--json/-j` `--date-range` `--station/-s` `--update` `--list` `--shipped` `--compute-hours` `--token-spend` `--wall-clock-hours` `--unblock-narrative` | CAP-11 |
-| `herald success` | `--json/-j` `--date-range` `--station/-s` `--repo-root` | CAP-12 |
+| `herald progress` | `[station]` `--json/-j` `--date-range` `--station/-s` `--update` `--list` `--shipped` `--compute-hours` `--token-spend` `--wall-clock-hours` `--unblock-narrative` `--format` | CAP-11 |
+| `herald success` | `--json/-j` `--date-range` `--station/-s` `--repo-root` `--format` | CAP-12 |
 | `herald success create` | `<project_name>` `--shipped-date` `--evidence-test-results` `--evidence-metrics` `--evidence-adoption` `--evidence-notice` | CAP-12 |
 | `herald success review` | `<claim_id>` | CAP-12 |
 | `herald success publish` | `<claim_id>` `--thesis` | CAP-12 |
 | `herald success list` | `--status` | CAP-12 |
 | `herald success get` | `<claim_id>` | CAP-12 |
 | `herald success validate` | `[claim_id]` `--all` | CAP-12 |
-| `herald notice` | `--json/-j` `--date-range` `--station/-s` | CAP-13 |
-| `herald notice list` | `--json/-j` `--date-range` `--station/-s` `--category` `--status` | CAP-13 |
+| `herald notice` | `--json/-j` `--date-range` `--station/-s` `--format` | CAP-13 |
+| `herald notice list` | `--json/-j` `--date-range` `--station/-s` `--category` `--status` `--format` | CAP-13 |
 | `herald notice author` | `--type` `--component` `--what` `--why` `--migration` `--deadline` `--reason-link` `--publish` | CAP-13 |
 | `herald notice publish` | `<component>` | CAP-13 |
 | `herald notice get` | `<component>` | CAP-13 |
 | `herald notice close` | `<component>` `--reason` | CAP-13 |
 | `herald notice archive` | `--rename` | CAP-13 |
 | `herald scheduler` | — | — |
-| `herald scheduler run` | `--repo-root` `--out-dir` `--json/-j` | CAP-39 |
+| `herald scheduler run` | `--repo-root` `--out-dir` `--json/-j` `--format` | CAP-39 |
 
 `herald deck` and `herald scheduler` take a verb and run nothing alone. `herald success` and `herald notice` with no
 verb list, as `herald success list` and `herald notice list` do. `deck publish`, `deck exports` and `deck pptx-native`

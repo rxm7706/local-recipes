@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: warden
-source_fingerprint: ffd983f5f8577f67
-story_count: 88
+source_fingerprint: 4f3ff242d0305457
+story_count: 89
 test_file_count: 90
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-warden`
-- **Stories parsed:** 88
-- **Epics parsed:** 30
+- **Stories parsed:** 89
+- **Epics parsed:** 31
 - **Test files inventoried:** 90 under `src/shared/packages/pyforge-warden/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `ffd983f5f8577f67`
+- **Source fingerprint:** `4f3ff242d0305457`
 
 ## Risk Assessment
 
@@ -62,7 +62,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 28: The upload and the job views answer only to the warden role (spec-pyforge-warden CAP-16)
 - Epic 29: The web face and the actuator fail honestly and leave nothing behind (spec-pyforge-warden CAP-12, CAP-16, CAP-17, CAP-24, CAP-29)
 - Epic 30: Warden's verdict takes its exit codes from the declaration (spec-pyforge-steward:CAP-184)
-- Epic 31: A tag of another spine is written qualified (spec-one-chain-per-station:CAP-3)
+- Epic 31: A tag of another spine is written qualified (spec-one-chain-per-station:CAP-9)
+- Epic 32: Warden's verbs take both spellings for JSON (spec-pyforge-steward:CAP-185)
 
 ### Low-risk epics
 
@@ -255,6 +256,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 29.1 | An unscannable upload fails, and the web face and the actuator leave nothing ... | none observed |
 | 30.1 | Warden's verdict takes its exit codes from the declaration | none observed |
 | 31.1 | Warden's source cites the suite spine's decisions qualified | none observed |
+| 32.1 | Warden's verbs take both spellings for JSON | none observed |
 
 ## Quality Gates
 

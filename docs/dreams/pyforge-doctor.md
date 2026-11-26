@@ -839,6 +839,13 @@ Folded Dreams: [[bmad-drift-new-artifact-shape]], [[bmad-method-version-drift]],
   and decomposes as Epic 64, one story: each such tag is written with the prefix of the spine it means (`pyforge-marshal:AD-n` for marshal's, `fnd:AD-22` for the cutover's).
   **Constraints:** comments, docstrings and message text only; no behaviour, exit code or flag moves; a bare tag that
   does mean this station's own spine stays bare. Owner `spec-pyforge-doctor`.
+- **2026-11-26 (doctor's verbs take both spellings for JSON) — Ruled:** steward's Dream entry of the same date mints
+  one capability for the fleet: every station verb that prints JSON accepts both `--json` and `--format json`
+  (operator ruling of 2026-11-26 on the open convention items: "go with your recommendations, start in the suggested order" (the recommendation: one way to ask for JSON, by accepting both spellings on every station)). **For doctor:** this entry binds that capability (spec-pyforge-steward:CAP-185, realized here) and decomposes as Epic
+  65, one story: doctor's verbs take `--json` today; its parser builder calls
+  `pyforge.core.cli_output.align_json_options`, so each also takes `--format {text,json}`, writing to the same destination, and
+  `contract.md` lists the added spelling. **Constraints:** nothing is renamed or removed; no flag; the compiled
+  station skill is not edited. Owner `spec-pyforge-doctor`.
 
 ## 2026-10-26 — A spike report is not a corrupt file, and the classifier can't yet tell the difference (folded from bmad-drift-new-artifact-shape)
 

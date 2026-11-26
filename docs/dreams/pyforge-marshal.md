@@ -14001,6 +14001,13 @@ row; the `steward setup` read rules) · [[pyforge-scribe]] (the
   counts as qualified for the fixed list of spine prefixes; tests are not scanned. Doctor, steward and warden qualify
   their own tags under their own Dream entries of this date, so the detector lands green with no baseline entry for
   source. **Constraints:** no baseline is added for source; no flag (a detector). Owner `spec-pyforge-marshal`.
+- **2026-11-26 (marshal's verbs take both spellings for JSON) — Ruled:** steward's Dream entry of the same date mints
+  one capability for the fleet: every station verb that prints JSON accepts both `--json` and `--format json`
+  (operator ruling of 2026-11-26 on the open convention items: "go with your recommendations, start in the suggested order" (the recommendation: one way to ask for JSON, by accepting both spellings on every station)). **For marshal:** this entry binds that capability (spec-pyforge-steward:CAP-185, realized here) and decomposes as Epic
+  124, one story: most of marshal's verbs take `--format {text,json}` today and its `seed` verbs take `--json`; its parser builder calls
+  `pyforge.core.cli_output.align_json_options`, so each also takes the other spelling, writing to the same destination, and
+  `contract.md` lists the added spelling. **Constraints:** nothing is renamed or removed; no flag; the compiled
+  station skill is not edited. Owner `spec-pyforge-marshal`.
 
 ## 2026-11-10 — The Spec says what marshal is, and its roots come from one place
 

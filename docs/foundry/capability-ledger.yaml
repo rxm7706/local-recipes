@@ -6,7 +6,7 @@
 schema: pyforge.capability-ledger/v1
 generated_by: pyforge steward cutover plan
 updated: "2026-11-26"
-source_sha: "c0588e36e2f0a009f12e43b544db142f052931a8"
+source_sha: "725eb78ee455ee1d0da08f4b060e186445e3b02e"
 extract: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-capability-ledger/extract.md
 modes: [rebuild, retire, A-only, B-only, pending]
 states: [planned, rebuilding, verified-in-foundry, cut]
@@ -5765,6 +5765,14 @@ capabilities:
     mode: rebuild
     state: planned
     defaulted: "2026-11-25"
+  - id: pyforge-steward:CAP-185
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: every station verb that prints JSON accepts both spellings
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+    mode: rebuild
+    state: planned
+    defaulted: "2026-11-26"
   - id: pyforge-unifying-strategy:CAP-1
     spec: pyforge-unifying-strategy
     station: pyforge-steward

@@ -3318,3 +3318,13 @@ from that capability's intent and success. No other FR moves. It states as a cap
 The declaration also names the exit codes of the mason, herald, steward, scribe and atlas command lines, by member name and number, so a reader can look up what `3` or `70` means on any of the ten surfaces in one place. Those five have no verdict module and spell their own numbers; a meta-test in each station's own suite fails when that station's exit constants, error map or `typer.Exit` codes differ from its declared domain. The glossary page shows a row for each of the ten, and no exit number changes on any surface.
 
 **Content changed:** this section added; FR-58 amended by this section, derived from its CAP; no FR added, renumbered or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-11-26 (CAP-185)
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-steward` gained CAP-185 on 2026-11-26 from the station Dream's entry of that date (one way to ask any station for JSON) and the operator's ruling of the same day. Same-day reconcile; the requirement is traced from the capability's intent and success. FR-59 is the next free id after FR-58.*
+
+#### FR-59: Every station verb that prints JSON accepts both spellings ← CAP-185
+
+A caller can ask any station verb that prints JSON for it with either `--json` or `--format json`, and gets the same result from both. Each of the six stations with an `argparse` command line (doctor, herald, marshal, mason, steward, warden) gives every parser that accepts one spelling the other, through one kernel helper, and its public contract lists the added spelling. Nothing is renamed or removed, and a twin is matched only when spelled in full, so no abbreviation that resolved before turns ambiguous. A `--format` that names anything but `text` and `json` is left alone. Scribe and atlas are named as not aligned, with the reason; atlas's module entry points keep `--json` alone.
+
+**Content changed:** this section added; FR-59 registered, derived from its CAP; no FR renumbered or removed.

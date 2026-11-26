@@ -884,6 +884,13 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
 - **2026-11-26 (the exit codes are held to their declared domain) — Found and ruled:** mason's five exit codes are spelled in `exit_codes.py` and declared nowhere outside mason, and `3`, conda-forge-expert not found, means something else on three other command lines. The same read found two docstrings that no longer match the code: `engines/gh.py` says `ship_conda_forge` does not exist, and it is in `package.py`; `models.py` says no code path produces the `terminal` ship state, and `package.py` returns it. **Ruled** (operator ruling of 2026-11-26, on the convention gaps the removed cross-fleet section of the dossier listed: "rederive the open convention gaps and fix them all", then, on the list of those that need no further ruling, "Yes, start them"). Steward's Dream entry of
   the same date declares the `mason` exit-code domain (spec-pyforge-steward:CAP-184, amended). **For mason:**
   this entry binds `spec-pyforge-mason` (the CLI shell and output contract, CAP-5, realized with no text change) and decomposes as Epic 43, one story: a meta-test holds every `EXIT_*` name of `exit_codes.py` to the `mason` domain, and the two docstrings say what the code does. **Constraints:** no exit number changes; `exit_codes.py` keeps its literals, which `test_public_contract.py` reads; no flag. Owner `spec-pyforge-mason`.
+- **2026-11-26 (mason's verbs take both spellings for JSON) — Ruled:** steward's Dream entry of the same date mints
+  one capability for the fleet: every station verb that prints JSON accepts both `--json` and `--format json`
+  (operator ruling of 2026-11-26 on the open convention items: "go with your recommendations, start in the suggested order" (the recommendation: one way to ask for JSON, by accepting both spellings on every station)). **For mason:** this entry binds that capability (spec-pyforge-steward:CAP-185, realized here) and decomposes as Epic
+  44, one story: mason's verbs take `--format {text,json}` today; its parser builder calls
+  `pyforge.core.cli_output.align_json_options`, so each also takes `--json`, writing to the same destination, and
+  `contract.md` lists the added spelling. **Constraints:** nothing is renamed or removed; no flag; the compiled
+  station skill is not edited. Owner `spec-pyforge-mason`.
 
 ## One-chain fold — 2026-09-17
 
