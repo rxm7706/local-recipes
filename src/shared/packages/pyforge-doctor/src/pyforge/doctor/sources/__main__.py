@@ -45,6 +45,8 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
+from pyforge.core.cli_output import align_json_options
+
 from ..models import Finding, Source
 from ..refs import ORIGIN_MAIN
 from ..verdict import EXIT_SIGINT, exit_code_for
@@ -274,6 +276,7 @@ def _build_parser() -> argparse.ArgumentParser:
             f"{Source.CHAIN_COMPLETENESS.value!r} findings (e.g. INV-0 INV-1)"
         ),
     )
+    align_json_options(parser)  # --format json is --json here too (Story 65.1)
     return parser
 
 

@@ -725,7 +725,7 @@ def test_fires_on_a_planted_flag(code_side: CodeSide, contract_text: str, spec_t
 
 def test_fires_on_a_contract_flag_the_parser_lacks(code_side: CodeSide, contract_text: str, spec_text: str) -> None:
     planted = contract_text.replace(
-        "| `steward budget show` | `--json` |", "| `steward budget show` | `--json`, `--gone` |"
+        "| `steward budget show` | `--json`, `--format` |", "| `steward budget show` | `--json`, `--format`, `--gone` |"
     )
     assert planted != contract_text, "the budget show row moved; re-point the plant"
     findings = _live(code_side, planted, spec_text)
@@ -893,14 +893,16 @@ def test_fires_on_a_retired_verb_that_is_live_again(code_side: CodeSide, contrac
 def test_fires_on_a_row_without_a_capability(contract_text: str, spec_text: str) -> None:
     spec_capabilities = set(_SPEC_CAPABILITY.findall(spec_text))
     planted = contract_text.replace(
-        "| `steward budget show` | `--json` | — | CAP-4 |", "| `steward budget show` | `--json` | — | — |"
+        "| `steward budget show` | `--json`, `--format` | — | CAP-4 |",
+        "| `steward budget show` | `--json`, `--format` | — | — |",
     )
     assert planted != contract_text, "the budget show row moved; re-point the plant"
     assert "§ CLI verbs and flags: the row `steward budget show` names no capability" in capability_findings(
         planted, spec_capabilities
     )
     unknown = contract_text.replace(
-        "| `steward budget show` | `--json` | — | CAP-4 |", "| `steward budget show` | `--json` | — | CAP-999 |"
+        "| `steward budget show` | `--json`, `--format` | — | CAP-4 |",
+        "| `steward budget show` | `--json`, `--format` | — | CAP-999 |",
     )
     assert "§ CLI verbs and flags: the row `steward budget show` cites CAP-999, which SPEC.md does not define" in (
         capability_findings(unknown, spec_capabilities)

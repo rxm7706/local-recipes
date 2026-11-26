@@ -92,6 +92,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
+from pyforge.core.cli_output import align_json_options
+
 from . import __version__, doctor, environment, package, recipe, render
 from .errors import CfeUnresolvedError, MasonError
 from .exit_codes import (
@@ -990,6 +992,7 @@ def build_parser() -> argparse.ArgumentParser:
     # that `environment` has two real verbs registered (`lock`, `check`).
     _noun_verbs["environment"].metavar = "{" + ",".join(_noun_verbs["environment"].choices) + "}"
 
+    align_json_options(parser)  # every verb that takes --json also takes --format json, and the reverse (Story 144.1)
     return parser
 
 

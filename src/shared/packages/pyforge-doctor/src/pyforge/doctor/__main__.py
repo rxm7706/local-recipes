@@ -45,6 +45,7 @@ from importlib import resources
 from pathlib import Path
 
 import jsonschema
+from pyforge.core.cli_output import align_json_options
 from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
 
 from . import fleet_surface, score, sources
@@ -336,6 +337,7 @@ def _build_parser() -> tuple[
         help="path to flags.json (default: resolve via django_pyforge.flags)",
     )
 
+    align_json_options(parser)  # every verb that takes --json also takes --format json, and the reverse (Story 144.1)
     return parser, check, monitor, diagnose, backlog_intake_parser, flags_parser
 
 
