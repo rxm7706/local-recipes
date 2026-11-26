@@ -33,8 +33,8 @@ dependencies = ["packaging", "pyforge-core", "PyYAML>=6.0.3"]
 mason = "pyforge.mason.cli:main"
 
 [project.entry-points."pyforge.core.hooks"]
-rattler-build = "pyforge.mason.engines.build_hooks:RattlerBuildPlugin"
-conda-build = "pyforge.mason.engines.build_hooks:CondaBuildPlugin"
+mason-engine-rattler-build = "pyforge.mason.engines.build_hooks:RattlerBuildPlugin"
+mason-engine-conda-build = "pyforge.mason.engines.build_hooks:CondaBuildPlugin"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyforge"]

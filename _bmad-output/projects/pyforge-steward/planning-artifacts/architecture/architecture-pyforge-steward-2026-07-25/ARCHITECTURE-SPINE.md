@@ -2655,3 +2655,9 @@ The PRD amended FR-58 (← CAP-184): five more exit-code domains join the one de
 *Chain-currency cascade (PRD -> arch), CAP-185 minted, Epic 144.*
 
 The PRD registered FR-59 (← CAP-185). No decision moves. The helper is one more module of the stdlib-only kernel, the home the fleet already uses for a mechanism every station needs once (the pattern of the verdict lattice and the exit-code declaration), and each station's command line stays the sole owner of its parser: it calls the helper on the tree it built. **Content changed:** this section; no AD added, amended or removed.
+
+## Currency reconciliation — 2026-11-26 (unifying CAP-18)
+
+*Chain-currency cascade (PRD -> arch), CAP-18 of `spec-pyforge-unifying-strategy` amended, Epic 146.*
+
+canopy:FR-43 gained a consequence: a name registered on the shared hook group starts with its package's token and is registered once. No decision moves: the group stays the one registration mechanism, and the name stays a registration key the registry never selects by. **Content changed:** this section; no AD added, amended or removed.

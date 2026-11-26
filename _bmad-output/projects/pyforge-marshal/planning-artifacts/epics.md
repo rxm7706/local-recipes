@@ -11951,6 +11951,29 @@ So that the same spelling works on every station.
 **And** every invocation that parsed before parses the same way, and marshal's contract test passes
 **Status:** done
 
+## Epic 125: Marshal's loop-runner plugin is registered under marshal's name (spec-pyforge-unifying-strategy:CAP-18)
+
+Minted 2026-11-26 from the station Dream's entry of the same date on the operator ruling of 2026-11-26 on the open convention items: "go with your recommendations, start in the suggested order" (the recommendation: every plugin registration name carries its station, after checking that no operator types one; the values an operator does type stay). Steward Story 146.1 adds the rule and its check; this Epic renames marshal's registrations.
+**HARD boundaries:**
+- Marshal still selects its plugin by `plugin_id`; no value an operator types changes.
+- No flag, and no capability text of `spec-pyforge-marshal` moves.
+
+### Story 125.1: Marshal's loop-runner plugin is registered under marshal's name
+
+As a maintainer reading the shared hook group,
+I want marshal's plugins registered under marshal's name,
+So that the name says whose plugin it is.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-unifying-strategy:CAP-18 (realized here; no text change in this station's Spec); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1: registration names the registry never selects by)
+**Surface:** `src/shared/packages/pyforge-marshal/pyproject.toml`, `src/shared/packages/pyforge-marshal/tests/unit/test_loop_runner_hook.py`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/contract.md`
+**Spec:** `planning-artifacts/specs/spec-125-1-marshal-s-loop-runner-plugin-is-registered-under-marshal-s-name.md`
+**Given** marshal registers `bmad-loop` on `pyforge.core.hooks`
+**When** it registers `marshal-runner-bmad-loop` instead
+**Then** the conformance test's name check passes for marshal, and `contract.md` names the new registration (the hook spec row says the default plugin's `plugin_id` is `bmad-loop`)
+**And** marshal still selects its plugin by `plugin_id`, and its plugin tests pass
+**Status:** done
+
 ## Currency reconciliation — 2026-11-26 (the tag rule reaches station source)
 
 *Chain-currency cascade (arch -> epics).* 2026-11-26: Epic 123 / Story 123.1 minted under `spec-one-chain-per-station` (its capability 9, realized with no text change); no AD moves. The keys go through the Tier-3 feed and `sprint-ledger-sync`. **Content changed:** the Epic, this section and `updated:`.

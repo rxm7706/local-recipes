@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: mason
-# stories: 231
+# stories: 234
 development_status:
   1-1-workspace-member-scaffold-and-dual-artifact-build: done
   1-10-configuration-surface-logging-and-child-output-streaming: done
@@ -143,6 +143,7 @@ development_status:
   42-1-a-failed-wrapped-tool-makes-mason-exit-1: done
   43-1-mason-s-exit-codes-are-held-to-their-declared-domain: done
   44-1-mason-s-verbs-take-both-spellings-for-json: done
+  45-1-mason-s-build-engine-plugins-are-registered-under-mason-s-name: done
   5-1-cfe-independence-test: done
   5-2-governance-test: done
   5-3-delegation-fidelity-test: done
@@ -235,6 +236,8 @@ development_status:
   epic-43-retrospective: optional
   epic-44: done
   epic-44-retrospective: optional
+  epic-45: done
+  epic-45-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional
   epic-6: done

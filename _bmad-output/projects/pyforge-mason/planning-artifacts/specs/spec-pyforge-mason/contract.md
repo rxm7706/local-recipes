@@ -252,10 +252,11 @@ engine is data in the report, not a failure.
 ### The build-engine hook
 
 Mason publishes the hook spec `pyforge.mason.build_engine` (owner `mason`) on pyforge-core's `pyforge.core.hooks`
-entry-point group with two entry points: `rattler-build` (`pyforge.mason.engines.build_hooks:RattlerBuildPlugin`, the
-default, which runs today's CFE native build) and `conda-build` (`pyforge.mason.engines.build_hooks:CondaBuildPlugin`,
-registered for selection; it spawns nothing). A caller selects one plugin and calls it; it never invokes every plugin
-on the spec.
+entry-point group with two entry points: `mason-engine-rattler-build` (`pyforge.mason.engines.build_hooks:RattlerBuildPlugin`,
+the default, which runs today's CFE native build) and `mason-engine-conda-build`
+(`pyforge.mason.engines.build_hooks:CondaBuildPlugin`, registered for selection; it spawns nothing). A caller selects
+one plugin by its `engine_name` (`rattler-build`, `conda-build`), never by the entry-point name, and calls it; it never
+invokes every plugin on the spec.
 
 ### Layout
 

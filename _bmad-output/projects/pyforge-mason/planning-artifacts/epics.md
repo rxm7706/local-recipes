@@ -4476,3 +4476,26 @@ So that the same spelling works on every station.
 **Then** each such verb also takes `--json` with the same result, and `contract.md` lists it, as one more row of the global options table
 **And** every invocation that parsed before parses the same way, and mason's contract test passes
 **Status:** done
+
+## Epic 45: Mason's build-engine plugins are registered under mason's name (spec-pyforge-unifying-strategy:CAP-18)
+
+Minted 2026-11-26 from the station Dream's entry of the same date on the operator ruling of 2026-11-26 on the open convention items: "go with your recommendations, start in the suggested order" (the recommendation: every plugin registration name carries its station, after checking that no operator types one; the values an operator does type stay). Steward Story 146.1 adds the rule and its check; this Epic renames mason's registrations.
+**HARD boundaries:**
+- Mason still selects its plugin by `engine_name`; no value an operator types changes.
+- No flag. CAP-37 of `spec-pyforge-mason`, which names the entry points, moves through its memlog and a render; no other capability text moves.
+
+### Story 45.1: Mason's build-engine plugins are registered under mason's name
+
+As a maintainer reading the shared hook group,
+I want mason's plugins registered under mason's name,
+So that the name says whose plugin it is.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-unifying-strategy:CAP-18 (realized here); spec-pyforge-mason CAP-37 amended to name the new entry points; no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1: registration names the registry never selects by)
+**Surface:** `src/shared/packages/pyforge-mason/pyproject.toml`, `src/shared/packages/pyforge-mason/tests/unit/test_build_hooks.py`, `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md`, `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/.memlog.md`, `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/contract.md`
+**Spec:** `planning-artifacts/specs/spec-45-1-mason-s-build-engine-plugins-are-registered-under-mason-s-name.md`
+**Given** mason registers `rattler-build` and `conda-build` on `pyforge.core.hooks`
+**When** it registers `mason-engine-rattler-build` and `mason-engine-conda-build` instead
+**Then** the conformance test's name check passes for mason, and `contract.md` and CAP-37 name the new registration, with the `engine_name` a caller selects by
+**And** mason still selects its plugin by `engine_name`, and its plugin tests pass
+**Status:** done

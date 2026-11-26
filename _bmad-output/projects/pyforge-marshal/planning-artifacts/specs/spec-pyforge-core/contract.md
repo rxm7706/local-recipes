@@ -322,10 +322,12 @@ usage code.
 | Group | Name | Target |
 |---|---|---|
 | `console_scripts` | `pyforge` | `pyforge.core.dispatch:main` |
-| `pyforge.core.hooks` | `dummy` | `pyforge.core.hooks:DummyPlugin` |
+| `pyforge.core.hooks` | `core-dummy` | `pyforge.core.hooks:DummyPlugin` |
 
 A station registers a plugin on `pyforge.core.hooks` and never declares a group of its own
-(spec-pyforge-unifying-strategy:CAP-18).
+(spec-pyforge-unifying-strategy:CAP-18). Every name registered on that group starts with the registering package's
+token and a hyphen (`core-`, `mason-`, `testing-kit-`), and no name is registered twice across the packages; the
+registry never selects by this name, so a station selects its plugin by an attribute of its own.
 
 ## Python floor
 

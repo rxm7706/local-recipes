@@ -19,7 +19,7 @@ dependencies = []
 pyforge = "pyforge.core.dispatch:main"
 
 [project.entry-points."pyforge.core.hooks"]
-dummy = "pyforge.core.hooks:DummyPlugin"
+core-dummy = "pyforge.core.hooks:DummyPlugin"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyforge"]
