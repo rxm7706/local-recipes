@@ -217,3 +217,213 @@ def test_the_flag_switches_the_scheduler(
     order, _workers, code = _run(repo, jobs=1, cores=16, critical=None)
     assert code == preflight.EXIT_OK
     assert order == (["serial-c", "xdist-suite", "serial-d", "serial-a", "serial-b"] if on else list(FIVE))
+
+
+# ---------------------------------------------------------------------------
+# Story 117.15: a fresh worktree is ordered from the tracked budgets, and an xdist lane's share follows its work
+# ---------------------------------------------------------------------------
+
+
+def _budgets(repo: Path, lanes: dict[str, float]) -> None:
+    path = repo / preflight.BUDGETS_RELATIVE
+    path.parent.mkdir(parents=True, exist_ok=True)
+    body = "\n".join(f'"{task}@{INV}" = {seconds}' for task, seconds in lanes.items())
+    path.write_text(f"[defaults]\nsingle_station = 90\nfull = 240\n\n[lanes]\n{body}\n", encoding="utf-8")
+
+
+def _weighted_run(repo: Path, *, cores: int) -> tuple[dict[str, int], int, int]:
+    """Run every lane of ``repo`` at once (eight slots); each lane's workers, the peak cores in flight, the exit code."""
+    in_flight = 0
+    peak = 0
+    lock = threading.Lock()
+    workers: dict[str, int] = {}
+
+    def run_ctx(ctx: preflight.LaneRunContext) -> int:
+        nonlocal in_flight, peak
+        weight = int(ctx.env.get("PYTEST_XDIST_AUTO_NUM_WORKERS", "1"))
+        with lock:
+            workers[ctx.lane.task] = weight
+            in_flight += weight
+            peak = max(peak, in_flight)
+        time.sleep(0.2)
+        with lock:
+            in_flight -= weight
+        return 0
+
+    code = preflight.run_preflight(
+        repo,
+        invoking_env=INV,
+        jobs=8,
+        logical_cores=cores,
+        critical_path=True,
+        install_environment=_NOOP_INSTALL,
+        run_lane_ctx=run_ctx,
+        scratch_parent=repo.parent,
+    )
+    return workers, peak, code
+
+
+def test_a_fresh_worktree_orders_lanes_by_the_tracked_budgets(tmp_path: Path) -> None:
+    """No journal: a lane's expected seconds are its tracked budget, and a lane in neither weighs thirty seconds."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "pixi.toml").write_text(_pixi(FIVE), encoding="utf-8")
+    _budgets(repo, {"serial-b": 200.0, "xdist-suite": 80.0, "serial-a": 10.0})
+    order, _workers, code = _run(repo, jobs=1, cores=16, critical=True)
+    assert code == preflight.EXIT_OK
+    assert order == ["serial-b", "xdist-suite", "serial-c", "serial-d", "serial-a"]
+
+
+def test_a_journal_median_outranks_the_budget_seed(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "pixi.toml").write_text(_pixi(FIVE), encoding="utf-8")
+    _budgets(repo, {"serial-a": 500.0, "serial-b": 1.0})
+    _journal(repo, {"serial-a": 2.0})  # the lane's own green runs say two seconds, whatever the budget says
+    order, _workers, code = _run(repo, jobs=1, cores=16, critical=True)
+    assert code == preflight.EXIT_OK
+    assert order == ["xdist-suite", "serial-c", "serial-d", "serial-a", "serial-b"]
+
+
+def test_off_ignores_the_budget_seed(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "pixi.toml").write_text(_pixi(FIVE), encoding="utf-8")
+    _budgets(repo, {"serial-d": 900.0})
+    order, _workers, code = _run(repo, jobs=1, cores=16, critical=False)
+    assert code == preflight.EXIT_OK
+    assert order == list(FIVE)
+
+
+def test_a_missing_or_unreadable_budgets_file_seeds_nothing(tmp_path: Path) -> None:
+    assert preflight.budget_seed_seconds(tmp_path) == {}
+    path = tmp_path / preflight.BUDGETS_RELATIVE
+    path.parent.mkdir(parents=True)
+    path.write_text("[lanes\n", encoding="utf-8")
+    assert preflight.budget_seed_seconds(tmp_path) == {}
+    path.write_text('[lanes]\n"no-environment" = 5\n"flag@env" = true\n"task@env" = 7\n', encoding="utf-8")
+    assert preflight.budget_seed_seconds(tmp_path) == {("task", "env"): 7.0}
+
+
+def test_the_tracked_budgets_name_lanes_the_way_the_journal_does() -> None:
+    """The live file seeds real lanes: every label is ``task@environment`` and the longest lanes are among them."""
+    repo_root = Path(__file__).resolve().parents[6]
+    seeds = preflight.budget_seed_seconds(repo_root)
+    raw = tomllib.loads((repo_root / preflight.BUDGETS_RELATIVE).read_text(encoding="utf-8"))["lanes"]
+    assert len(seeds) == len(raw)
+    assert ("pyforge-steward-live-test", "pyforge-steward") in seeds
+    assert ("pyforge-herald-live-test", "pyforge-herald") in seeds
+
+
+def test_xdist_share_follows_the_expected_work() -> None:
+    share = preflight_xdist.xdist_share_at_admission
+    assert share(free_cores=16, pending_xdist=4, logical_cores=16, weight=600.0, pending_weight=800.0) == 12
+    assert share(free_cores=16, pending_xdist=4, logical_cores=16, weight=20.0, pending_weight=800.0) == 2  # the floor
+    assert share(free_cores=1, pending_xdist=4, logical_cores=16, weight=600.0, pending_weight=800.0) == 0  # waits
+    assert share(free_cores=8, pending_xdist=1, logical_cores=4, weight=1.0, pending_weight=1.0) == 4  # the machine
+    assert (
+        share(free_cores=3, pending_xdist=2, logical_cores=16, weight=900.0, pending_weight=1000.0) == 3
+    )  # the free cores
+    # no work known for the pending lanes: the even split of Story 117.3
+    assert share(free_cores=6, pending_xdist=3, logical_cores=16, weight=0.0, pending_weight=0.0) == 2
+
+
+def test_on_three_xdist_lanes_split_the_cores_by_their_expected_seconds(tmp_path: Path) -> None:
+    """With no workers journaled a lane's work is its expected seconds at the minimum share, so shares follow seconds."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    lanes = {
+        "small": "pytest small -q -n auto",
+        "big": "pytest big -q -n auto",
+        "mid": "pytest mid -q -n auto",
+        "s1": "pytest s1 -q",
+    }
+    (repo / "pixi.toml").write_text(_pixi(lanes), encoding="utf-8")
+    _journal(repo, {"big": 300.0, "mid": 200.0, "small": 100.0, "s1": 5.0})
+    workers, peak, code = _weighted_run(repo, cores=16)
+    assert code == preflight.EXIT_OK
+    # big: 16 * 600/1200 = 8; mid: 8 * 400/600 = 5; small: 3 * 200/200 = 3; the serial lane waits for a core
+    assert (workers["big"], workers["mid"], workers["small"]) == (8, 5, 3)
+    assert peak <= 16, workers
+
+
+def test_on_the_share_follows_journaled_work_not_seconds(tmp_path: Path) -> None:
+    """Two lanes that took the same seconds, one on eight workers and one on two: the first did four times the work."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    lanes = {"wide": "pytest wide -q -n auto", "narrow": "pytest narrow -q -n auto"}
+    (repo / "pixi.toml").write_text(_pixi(lanes), encoding="utf-8")
+    rows = []
+    for index in range(3):
+        rows.append(
+            {
+                "run_id": f"r{index}",
+                "verdict": "ok",
+                "total_seconds": 100.0,
+                "lanes": [
+                    {
+                        "task": "wide",
+                        "environment": INV,
+                        "seconds": 100.0,
+                        "status": "ok",
+                        "exit_code": 0,
+                        "xdist_workers": 8,
+                    },
+                    {
+                        "task": "narrow",
+                        "environment": INV,
+                        "seconds": 100.0,
+                        "status": "ok",
+                        "exit_code": 0,
+                        "xdist_workers": 2,
+                    },
+                ],
+            }
+        )
+    path = repo / preflight.JOURNAL_RELATIVE
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8")
+    assert preflight.lane_work_medians(path) == {("wide", INV): 800.0, ("narrow", INV): 200.0}
+    workers, peak, code = _weighted_run(repo, cores=16)
+    assert code == preflight.EXIT_OK
+    assert (workers["wide"], workers["narrow"]) == (13, 3)  # 16 * 800/1000, then the three cores left
+    assert peak <= 16
+
+
+def test_work_medians_skip_red_runs_and_lanes_without_workers(tmp_path: Path) -> None:
+    path = tmp_path / "journal.jsonl"
+    rows = [
+        {
+            "verdict": "ok",
+            "lanes": [{"task": "x", "environment": INV, "seconds": 10.0, "status": "ok", "xdist_workers": 4}],
+        },
+        {"verdict": "ok", "lanes": [{"task": "serial", "environment": INV, "seconds": 10.0, "status": "ok"}]},
+        {
+            "verdict": "red",
+            "lanes": [{"task": "x", "environment": INV, "seconds": 999.0, "status": "ok", "xdist_workers": 4}],
+        },
+        {
+            "verdict": "ok",
+            "lanes": [{"task": "x", "environment": INV, "seconds": 999.0, "status": "red", "xdist_workers": 4}],
+        },
+        {
+            "verdict": "ok",
+            "lanes": [{"task": "x", "environment": INV, "seconds": 5.0, "status": "ok", "xdist_workers": True}],
+        },
+    ]
+    path.write_text("\n".join(json.dumps(row) for row in rows) + "\nnot json\n", encoding="utf-8")
+    assert preflight.lane_work_medians(path) == {("x", INV): 40.0}
+    assert preflight.lane_work_medians(tmp_path / "missing.jsonl") == {}
+
+
+def test_a_run_journals_the_workers_each_xdist_lane_ran_on(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "pixi.toml").write_text(_pixi(FIVE), encoding="utf-8")
+    _order, _workers, code = _run(repo, jobs=1, cores=16, critical=True)
+    assert code == preflight.EXIT_OK
+    lines = (repo / preflight.JOURNAL_RELATIVE).read_text(encoding="utf-8").splitlines()
+    run = next(row for row in map(json.loads, reversed(lines)) if "lanes" in row)
+    by_task = {lane["task"]: lane for lane in run["lanes"]}
+    assert by_task["xdist-suite"]["xdist_workers"] == 16
+    assert "xdist_workers" not in by_task["serial-a"]

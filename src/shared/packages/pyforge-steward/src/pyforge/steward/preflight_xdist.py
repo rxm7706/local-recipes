@@ -70,18 +70,33 @@ def lane_xdist_worker_map(
 MIN_XDIST_WORKERS = 2
 
 
-def xdist_share_at_admission(*, free_cores: int, pending_xdist: int, logical_cores: int) -> int:
+def xdist_share_at_admission(
+    *,
+    free_cores: int,
+    pending_xdist: int,
+    logical_cores: int,
+    weight: float | None = None,
+    pending_weight: float | None = None,
+) -> int:
     """The workers an xdist lane admitted now gets (Story 117.3), or ``0`` when it cannot start yet.
 
     The free cores are split among the xdist lanes still to start, this one included, so the longest lane -- admitted
     first by the scheduler -- takes the largest share while cores are plentiful and later lanes take what frees up.
     Never below :data:`MIN_XDIST_WORKERS` (an xdist run on one worker is a serial run that paid for the workers) and
     never above ``logical_cores``; with fewer than :data:`MIN_XDIST_WORKERS` free cores the lane waits.
+
+    With ``weight`` and ``pending_weight`` (Story 117.15: this lane's expected work and the summed expected work of
+    the xdist lanes still to start, this one included) the split follows the work: the lane takes the free cores in
+    the proportion its work has among them, so a thirteen-thousand-test suite no longer starts on the two workers a
+    ten-second suite starts on. Without them, or when the pending work sums to nothing, the split is even.
     """
     if free_cores < MIN_XDIST_WORKERS:
         return 0
-    share = free_cores // max(1, pending_xdist)
-    return max(MIN_XDIST_WORKERS, min(share, logical_cores))
+    if weight is not None and pending_weight is not None and pending_weight > 0:
+        share = round(free_cores * min(weight, pending_weight) / pending_weight)
+    else:
+        share = free_cores // max(1, pending_xdist)
+    return max(MIN_XDIST_WORKERS, min(share, free_cores, logical_cores))
 
 
 def pytest_xdist_argv_from_cmd(cmd: str) -> list[str]:

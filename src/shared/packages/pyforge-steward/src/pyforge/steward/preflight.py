@@ -72,6 +72,10 @@ CRITICAL_PATH_FLAG_KEY = "pyforge.steward.preflight_critical_path"
 #: green runs feed its expected seconds.
 UNKNOWN_LANE_SECONDS = 30.0
 LANE_MEDIAN_RUNS = 5
+#: The tracked per-lane budgets (Story 117.5). ``preflight-budget`` judges against them after a run and never changes
+#: its exit code; since Story 117.15 the run itself reads the ``[lanes]`` table, and only to order and size lanes its
+#: journal has no green run of.
+BUDGETS_RELATIVE = Path("docs/governance/preflight-budgets.toml")
 DEFERRED_REASON = "CI arbitrates"
 # The cheap planning detectors a touched run keeps, each a guild task of its own, in place of the
 # detectors-ci lane that runs them among the rest.
@@ -219,6 +223,61 @@ def lane_medians(journal_path: Path, *, last_n: int = LANE_MEDIAN_RUNS) -> dict[
             if len(values) < last_n:
                 values.append(float(lane.get("seconds", 0.0)))
     return {key: statistics.median(values) for key, values in samples.items() if values}
+
+
+def lane_work_medians(journal_path: Path, *, last_n: int = LANE_MEDIAN_RUNS) -> dict[LaneKey, float]:
+    """Each xdist lane's median work, wall seconds times the workers it ran on, over its last green runs (Story 117.15).
+
+    Read from the ``xdist_workers`` a lane's journal entry carries since that story; a lane with no such entry is
+    absent. Work, not seconds, sizes a lane's share at admission: seconds fall when a lane is given more workers,
+    so a share sized by seconds would swing from run to run, while the work stays about the same.
+    """
+    if not journal_path.is_file():
+        return {}
+    runs: list[dict[str, Any]] = []
+    for line in journal_path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        try:
+            record = json.loads(stripped)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(record, dict) and "lanes" in record and record.get("verdict") == "ok":
+            runs.append(record)
+    samples: dict[LaneKey, list[float]] = {}
+    for run in reversed(runs):
+        for lane in run.get("lanes") or []:
+            if not isinstance(lane, dict) or lane.get("status") != "ok":
+                continue
+            workers = lane.get("xdist_workers")
+            if not isinstance(workers, int) or isinstance(workers, bool) or workers < 1:
+                continue
+            key = (str(lane.get("task")), str(lane.get("environment")))
+            values = samples.setdefault(key, [])
+            if len(values) < last_n:
+                values.append(float(lane.get("seconds", 0.0)) * workers)
+    return {key: statistics.median(values) for key, values in samples.items() if values}
+
+
+def budget_seed_seconds(repo_root: Path) -> dict[LaneKey, float]:
+    """Each lane's seconds in the tracked ``docs/governance/preflight-budgets.toml``, keyed like the medians (Story 117.15).
+
+    The expected seconds of a lane the journal has no green run of: a fresh worktree's journal is empty, and it is
+    where every effort's first preflight runs. A missing or unreadable file seeds nothing, and each lane then weighs
+    :data:`UNKNOWN_LANE_SECONDS` as before.
+    """
+    try:
+        data = tomllib.loads((repo_root / BUDGETS_RELATIVE).read_text(encoding="utf-8"))
+    except OSError, ValueError:
+        return {}
+    lanes = data.get("lanes")
+    seeds: dict[LaneKey, float] = {}
+    for label, seconds in (lanes if isinstance(lanes, dict) else {}).items():
+        task, sep, environment = str(label).rpartition("@")
+        if sep and task and environment and isinstance(seconds, int | float) and not isinstance(seconds, bool):
+            seeds[(task, environment)] = float(seconds)
+    return seeds
 
 
 def _critical_path_flag_on() -> bool:
@@ -1055,6 +1114,20 @@ def _next_lane(
     return min(turns, key=lambda turn: turn[0])[1]
 
 
+def _expected_work(key: LaneKey, expected: Mapping[LaneKey, float] | None, work: Mapping[LaneKey, float]) -> float:
+    """An xdist lane's expected work in core-seconds (Story 117.15).
+
+    Its journal median of seconds times workers when the journal has one; else its expected seconds (journal median,
+    tracked budget, or :data:`UNKNOWN_LANE_SECONDS`) at the :data:`preflight_xdist.MIN_XDIST_WORKERS` workers a lane
+    with no better claim was given.
+    """
+    known = work.get(key)
+    if known is not None and known > 0:
+        return known
+    seconds = (expected or {}).get(key, UNKNOWN_LANE_SECONDS)
+    return max(seconds, 0.0) * preflight_xdist.MIN_XDIST_WORKERS
+
+
 def _blocked_lane_result(lane: Lane, blocker: tuple[str, str | None], *, keep_going: bool) -> LaneResult:
     name, environment = blocker
     if keep_going:
@@ -1126,6 +1199,9 @@ def _run_lane_in_pool(
         _print_lane_log(log_path)
 
         journal_extra = _lane_journal_extra(coord, lane)
+        if workers is not None:
+            # Story 117.15: the workers the lane ran on, so the next run can size its share by work done.
+            journal_extra = {**(journal_extra or {}), "xdist_workers": workers}
         if key in coord.terminated_lanes:
             trigger, trigger_env = _stop_cause(coord, "interrupt")
             return LaneResult(
@@ -1300,8 +1376,14 @@ def run_preflight(
     worker_count = jobs if jobs is not None else cores
     critical = critical_path if critical_path is not None else _critical_path_flag_on()
     expected: Mapping[LaneKey, float] | None = None
+    work: Mapping[LaneKey, float] = {}
     if critical:
-        expected = expected_seconds if expected_seconds is not None else lane_medians(repo_root / JOURNAL_RELATIVE)
+        if expected_seconds is not None:
+            expected = expected_seconds
+        else:
+            # Story 117.15: the journal's own medians, and for a lane it has no green run of, the tracked budget.
+            expected = {**budget_seed_seconds(repo_root), **lane_medians(repo_root / JOURNAL_RELATIVE)}
+            work = lane_work_medians(repo_root / JOURNAL_RELATIVE)
     if worker_count < 1:
         worker_count = 1
 
@@ -1483,13 +1565,19 @@ def run_preflight(
                             break
                         pick_key = _lane_key(pick)
                         if preflight_xdist.task_cmd_uses_xdist_auto(pixi_data, pick.task):
-                            pending_xdist = sum(
-                                1
-                                for lane in pending.values()
+                            pending_xdist_keys = [
+                                lane_key
+                                for lane_key, lane in pending.items()
                                 if preflight_xdist.task_cmd_uses_xdist_auto(pixi_data, lane.task)
-                            )
+                            ]
+                            # Story 117.15: the share follows the lane's expected work among the xdist lanes still
+                            # to start (pick is still pending, so it is in the sum).
                             share = preflight_xdist.xdist_share_at_admission(
-                                free_cores=free_cores, pending_xdist=pending_xdist, logical_cores=cores
+                                free_cores=free_cores,
+                                pending_xdist=len(pending_xdist_keys),
+                                logical_cores=cores,
+                                weight=_expected_work(pick_key, expected, work),
+                                pending_weight=sum(_expected_work(k, expected, work) for k in pending_xdist_keys),
                             )
                             if share == 0:
                                 ready_candidates.remove(pick)
