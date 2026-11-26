@@ -8381,3 +8381,20 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   `spec-pyforge-steward` CAP-5 (realized, no text change) and mints none; it decomposes as Epic 140, one story
   (140.1): the operator's patch lands unchanged and the row closes, the `submit_pr.sh` half declined.
   **Constraints:** nothing is loosened beyond the patch; `session_denials` does not change; no flag.
+- **2026-11-26 (the declaration names five more exit-code domains) — Found and ruled:** the entry of 2026-11-25 declared
+  the exit codes of doctor, warden, marshal, marshal's `seed` verb and the detectors aggregator, and left the other
+  five command lines out by a stated boundary (Epic 137: herald, scribe, mason, steward and atlas "stay with their own
+  public contracts and are not declared here"). A re-read of the source on 2026-11-26 found what that leaves: `3` means
+  conda-forge-expert not found in mason, a conflict in herald, a documented refusal in steward and gate-failed in
+  marshal, and only marshal's is declared; `70` exists in steward alone; each of the five spells its numbers in its own
+  module and its own `contract.md`, and nothing holds the ten side by side. **Ruled** (operator ruling of 2026-11-26, on the convention gaps the removed cross-fleet section of the dossier listed: "rederive the open convention gaps and fix them all", then, on the list of those that need no further ruling, "Yes, start them"). That ruling
+  supersedes Epic 137's boundary. **For steward:** this entry amends `spec-pyforge-steward` CAP-184 (one declaration
+  names every exit-code domain) and decomposes as Epic 142, one story: `guild-roster.json`'s `exit_code_domains` and
+  `pyforge.core.exit_domains` gain the domains `mason`, `herald`, `steward`, `scribe` and `atlas`, by member name and
+  number; the glossary page shows ten rows; and a meta-test in steward's own suite holds the dispatcher's exit
+  constants, and every `EXIT_*` constant in the package, to the `steward` domain. Mason, herald, scribe and atlas each
+  bind their own suite to their domain under their own Dream entries of this date. **Constraints:** no exit number
+  changes on any surface. These five have no verdict module, and their `contract.md` tests read the exit constants as
+  literals, so each keeps spelling its own numbers and a test holds them to the declaration; none is rewritten to
+  read it. No flag. The same story corrects one stale docstring it passes, `interfaces.py`'s list of duties.
+  Owner `spec-pyforge-steward`.

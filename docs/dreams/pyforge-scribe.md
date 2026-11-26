@@ -326,6 +326,9 @@ owner of the facts (the register, `pipeline-truth`), Doctor of any ambient verdi
   column is added for `compiled_at` on any store: the stamp is one reserved row of the node relation the PostgreSQL
   and the plane store already have, and it is never a graph node;
   no GraphStore Protocol method is added; no exit code outside `contract.md` is minted.
+- **2026-11-26 (the exit codes are held to their declared domain) — Found and ruled:** scribe's exit codes are `typer.Exit` literals across `cli.py`, tabled in its `contract.md` and declared nowhere outside scribe. The same read found two docstrings that no longer match the code: the package's `__init__` calls `graph compile` and `recall` stubs, and `compile.py` says it reads seven surfaces where it reads more. **Ruled** (operator ruling of 2026-11-26, on the convention gaps the removed cross-fleet section of the dossier listed: "rederive the open convention gaps and fix them all", then, on the list of those that need no further ruling, "Yes, start them"). Steward's Dream entry of
+  the same date declares the `scribe` exit-code domain (spec-pyforge-steward:CAP-184, amended). **For scribe:**
+  this entry binds `spec-pyforge-scribe` (the public contract's exit-code table, realized with no text change) and decomposes as Epic 36, one story: a meta-test holds every `typer.Exit` code in the package to the `scribe` domain, and the two docstrings say what the code does without a count. **Constraints:** no exit number changes; `cli.py` is not edited; no flag. Owner `spec-pyforge-scribe`.
 
 ## 2026-10-26 — Dream — PyForge Scribe: Team Memory Management (folded from pyforge-scribe-team-memory)
 

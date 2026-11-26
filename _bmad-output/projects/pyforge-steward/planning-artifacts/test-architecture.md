@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 1f57bc53b77301bc
-story_count: 516
-test_file_count: 169
+source_fingerprint: 86a443ebb4e39ff4
+story_count: 517
+test_file_count: 170
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 516
-- **Epics parsed:** 141
-- **Test files inventoried:** 169 under `src/shared/packages/pyforge-steward/tests/`
+- **Stories parsed:** 517
+- **Epics parsed:** 142
+- **Test files inventoried:** 170 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `1f57bc53b77301bc`
+- **Source fingerprint:** `86a443ebb4e39ff4`
 
 ## Risk Assessment
 
@@ -163,6 +163,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 139: The session hook reads the commands inside a substitution (spec-pyforge-steward CAP-5)
 - Epic 140: A redirection after git push is not read as its remote (spec-pyforge-steward CAP-5)
 - Epic 141: Broker TLS is a capability (spec-pyforge-unifying-strategy CAP-21)
+- Epic 142: The declaration names five more exit-code domains (spec-pyforge-steward:CAP-184, amended)
 
 ### Low-risk epics
 
@@ -191,6 +192,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/meta/test_capability_ledger_live.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_cfe_regression_net_paths.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_cutover_case_list.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_exit_codes_match_the_exit_declaration.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_first_portal_slice_provision_list.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_five_tier_check.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_guild_environment_stations.py` | meta | none observed |
@@ -872,6 +874,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 139.1 | The session hook reads the commands inside a substitution | none observed |
 | 140.1 | A redirection after git push is not read as its remote | none observed |
 | 141.1 | Broker TLS is a capability, and the Story and code that build it cite it | none observed |
+| 142.1 | The declaration names the exit-code domains of mason, herald, steward, scribe... | none observed |
 
 ## Quality Gates
 

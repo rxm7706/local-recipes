@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: scribe
-source_fingerprint: 035f5cf2b7e42218
-story_count: 68
-test_file_count: 31
+source_fingerprint: 07a21cdade42ac9c
+story_count: 69
+test_file_count: 32
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-scribe`
-- **Stories parsed:** 68
-- **Epics parsed:** 35
-- **Test files inventoried:** 31 under `src/shared/packages/pyforge-scribe/tests/`
+- **Stories parsed:** 69
+- **Epics parsed:** 36
+- **Test files inventoried:** 32 under `src/shared/packages/pyforge-scribe/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `035f5cf2b7e42218`
+- **Source fingerprint:** `07a21cdade42ac9c`
 
 ## Risk Assessment
 
@@ -65,6 +65,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 32: The instruction surface, team memory and the seed state the ruled cutover (spec-pyforge-scribe CAP-1, CAP-27, CAP-35)
 - Epic 34: The src/platform import guard reads code, not text (spec-pyforge-scribe CAP-31; relay of spec-pyforge-steward:CAP-175)
 - Epic 35: The stale guard fires on every store, and refresh, the DSN and the CLI's errors follow the contract (spec-pyforge-scribe CAP-26, CAP-33, CAP-9, CAP-3, CAP-4)
+- Epic 36: Scribe's exit codes are held to their declared domain (spec-pyforge-steward:CAP-184)
 
 ### Low-risk epics
 
@@ -78,6 +79,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | Relative path | Level | Linked stories |
 |---------------|-------|----------------|
 | `src/shared/packages/pyforge-scribe/tests/meta/test_cutover_wording.py` | meta | none observed |
+| `src/shared/packages/pyforge-scribe/tests/meta/test_exit_codes_match_the_exit_declaration.py` | meta | none observed |
 | `src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py` | meta | none observed |
 | `src/shared/packages/pyforge-scribe/tests/meta/test_guild_env_membership.py` | meta | none observed |
 | `src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py` | meta | none observed |
@@ -181,6 +183,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 33.2 | The package's metadata and docs agree with the estate | none observed |
 | 34.1 | The src/platform import guard reads code, not text | none observed |
 | 35.1 | The stale guard fires on every store, and refresh, the DSN and the CLI's erro... | none observed |
+| 36.1 | Scribe's exit codes are held to their declared domain | none observed |
 
 ## Quality Gates
 

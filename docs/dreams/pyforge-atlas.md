@@ -919,6 +919,9 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   `pixi.toml` is steward's. **Constraints:** no flag is added; `SPEC.md` is moved only by a render from its memlog; no
   statement of code changes in 53.3 and no coverage floor is lowered; `DW-atlas-46-1-3` and `DW-atlas-46-1-8` keep
   their blocker and Story 24.2's key stays `blocked`.
+- **2026-11-26 (the exit codes are held to their declared domain, and the status page reads the tracked ledger) — Found and ruled:** atlas's exit codes are Kedro's, with one constant in `__main__.py`, and declared nowhere outside atlas. The same read found the dashboard's factory-status page reading `implementation-artifacts/sprint-status.yaml`, the gitignored Tier-3 feed, which a fresh clone and CI do not have, so the page's status rows are empty everywhere but an operator's checkout; and `admission.py` counting seven MCP `run_*` tools where the server registers more. **Ruled** (operator ruling of 2026-11-26, on the convention gaps the removed cross-fleet section of the dossier listed: "rederive the open convention gaps and fix them all", then, on the list of those that need no further ruling, "Yes, start them"). Steward's Dream entry of
+  the same date declares the `atlas` exit-code domain (spec-pyforge-steward:CAP-184, amended). **For atlas:**
+  this entry binds `spec-pyforge-atlas` (the Vizro boards, CAP-69, realized with no text change) and decomposes as Epic 54, one story: a meta-test holds `__main__.EXIT_USAGE` to the `atlas` domain; the factory-status page reads the tracked `planning-artifacts/sprint-status-ledger.yaml`, the same shape, and labels its rows with the file it read; and `admission.py` names the tools without a count. **Constraints:** no exit number changes; no flag. Owner `spec-pyforge-atlas`.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 

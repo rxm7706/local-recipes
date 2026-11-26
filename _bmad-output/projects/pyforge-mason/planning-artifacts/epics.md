@@ -4430,3 +4430,26 @@ So that a failed build or submission is never read as a pass by a caller that re
 **And** a failed build reached through `start_build` still fails its run with the build's own return code and the tail of its log, no sentence in `contract.md`, the compiled skill, Mason's source or django-pyforge's states the old exit, and no page under `docs/` did
 **And** `chain-currency` reads the mason chain current after the Spec, the PRD and the spine carry their dated notes, and `DW-mason-41-1-1` reads closed in its ledger naming the ruling and the commit
 **Status:** done
+
+## Epic 43: Mason's exit codes are held to their declared domain (spec-pyforge-steward:CAP-184; spec-pyforge-mason CAP-5)
+
+Minted 2026-11-26 from the station Dream's entry of the same date on the operator ruling of 2026-11-26, on the convention gaps the removed cross-fleet section of the dossier listed: "rederive the open convention gaps and fix them all", then, on the list of those that need no further ruling, "Yes, start them". Steward Story 142.1 declares the `mason` exit-code domain; this Epic binds mason's suite to it and corrects two docstrings the same read found stale.
+**HARD boundaries:**
+- No exit code mason returns changes, and its exit constants stay literals its `contract.md` test reads.
+- No flag, and no capability text of `spec-pyforge-mason` moves.
+
+### Story 43.1: Mason's exit codes are held to their declared domain
+
+As a maintainer of mason's exit contract,
+I want a test that fails when an `EXIT_*` name of `exit_codes.py` differs from the `mason` domain of the one declaration, and the two stale docstrings corrected,
+So that mason's numbers are declared beside the fleet's others, and a reader of `engines/gh.py` or `models.py` is not told something the code contradicts.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward:CAP-184 (the declaration; amended 2026-11-26) and spec-pyforge-mason CAP-5 (the CLI shell and output contract; realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: a test holds numbers the code already uses, and stale text is corrected)
+**Surface:** `src/shared/packages/pyforge-mason/tests/meta/test_exit_codes_match_the_exit_declaration.py`, `src/shared/packages/pyforge-mason/src/pyforge/mason/engines/gh.py`, `src/shared/packages/pyforge-mason/src/pyforge/mason/models.py`
+**Spec:** `planning-artifacts/specs/spec-43-1-mason-s-exit-codes-are-held-to-their-declared-domain.md`
+**Given** mason's exit codes are declared only in mason, and two docstrings contradict `package.py`
+**When** the meta-test is added and the two docstrings are corrected
+**Then** the test fails when an `EXIT_*` name is added, removed or renumbered without the declaration, and pins the five numbers mason always used
+**And** no exit number changes and no code path moves
+**Status:** done
