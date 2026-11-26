@@ -12,7 +12,7 @@ Asserts:
   * every expected page is present with a stable id + title (deterministic layout, NFR-8);
   * pages are BSL-driven — the data loaders route through the D1 semantic models (AD-8),
     proven by comparing each loader's output to an INDEPENDENT BSL query;
-  * the factory-status page reads the real sprint-status.yaml + carries a build stamp (AD-17);
+  * the factory-status page reads the status file it is given + carries a build stamp (AD-17);
   * agent-legibility structural properties hold (title/id, semantic table, no fabrication).
 """
 
@@ -283,11 +283,10 @@ def test_factory_status_reads_the_sprint_status_it_is_pointed_at(bmad_fixture):
     """The factory-status frame surfaces every story key + status from the
     sprint-status.yaml it is GIVEN, alongside epics.md frontmatter status.
 
-    Pointed at the ``bmad_fixture`` file through the injectable parameter, not at
-    ``_default_paths()``: that default is the gitignored, locally-generated Tier-3
-    ``implementation-artifacts/sprint-status.yaml``, so the previous form of this
-    test skipped itself in a fresh worktree and in CI — it asserted nothing where
-    it mattered most (Story 27.3, DW-FU-20-5-6).
+    Pointed at the ``bmad_fixture`` file through the injectable parameter, so the
+    assertion does not depend on the repository's own ledger (Story 27.3,
+    DW-FU-20-5-6). The default is the tracked ``planning-artifacts/sprint-status-ledger.yaml``
+    (Story 54.1), which the next test pins.
     """
     frame = fs.build_factory_status_frame(
         build_stamp=STAMP,
@@ -311,20 +310,20 @@ def test_factory_status_defaults_to_the_tracked_bmad_locations():
     defaults = fs._default_paths()
     assert defaults["sprint_status_path"].parts[-3:] == (
         "pyforge-atlas",
-        "implementation-artifacts",
-        "sprint-status.yaml",
+        "planning-artifacts",
+        "sprint-status-ledger.yaml",  # the tracked twin, never the gitignored Tier-3 feed (Story 54.1)
     )
     assert defaults["epics_path"].parts[-2:] == ("planning-artifacts", "epics.md")
 
 
 def test_factory_status_of_an_absent_sprint_feed_is_empty_never_fabricated(tmp_path):
-    """The Tier-3 feed really can be absent; that renders no sprint rows, not a guess."""
+    """A status file really can be absent; that renders no status rows, not a guess."""
     frame = fs.build_factory_status_frame(
         build_stamp=STAMP,
         sprint_status_path=tmp_path / "absent-sprint-status.yaml",
         epics_path=tmp_path / "absent-epics.md",
     )
-    assert (frame["source"] == "sprint-status.yaml").sum() == 0
+    assert (frame["artifact"] == "development_status").sum() == 0
     # row 0 (the AD-17 stamp) is always there -- the frame is never empty.
     assert frame.iloc[0]["key"] == "generated_at"
 

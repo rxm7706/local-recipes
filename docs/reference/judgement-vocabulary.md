@@ -84,6 +84,11 @@ trap, and it has caused at least one real misread:
 | `pyforge-warden` | `{0, 1, 2, 130}` | error |
 | `pyforge-marshal` | `{0, 1, 2, 3, 4, 130}` | scope-violation (`3` is gate-failed) |
 | `pyforge-marshal seed` | `{1, 2, 3, 4, 5, 10}` | usage error (`5` is an invalid state file, `10` an internal error) |
+| `pyforge-mason` | `{0, 1, 2, 3, 130}` | usage error (`3` is conda-forge-expert not found) |
+| `pyforge-herald` | `{0, 1, 2, 3, 4, 130}` | usage error, or a verb whose flag is off (`3` is a conflict, `4` a transport failure) |
+| `pyforge-steward` | `{0, 1, 2, 3, 70, 130}` | usage error, or a kill switch that is off (`3` is a documented refusal, which is also how `ci`, `pages` and `estate` answer with their flag off; `70` a crash; `keys exec` and `deploy nic` return their child's own code) |
+| `pyforge-scribe` | `{0, 1, 2}` | usage error or could not run (`1` is `catalog bmad-estate --check` drift) |
+| `pyforge-atlas` | `{0, 1, 2, 130}` | usage error, or a refused flag (`pyforge atlas` itself exits `0`, `1` or `2`; `130` is its other entry points') |
 | argparse, on any of them | `2` | invalid arguments |
 | script-based detectors (`scripts/*_check.py`) | `{0, 1}` or `{0, 1, 2}` | **could not run**, where the script has a `2` (`flag_gate_check.py`, `pixi_version_check.py`); `governance_currency_check.py` returns `0` or `1` and exits `2` only when it crashes |
 
@@ -92,14 +97,16 @@ omits warden's policy rung `1` because Doctor reports operability, not policy). 
 with the aggregator's `2` is **not** deliberate, and it stays: changing a live exit code would break
 every caller that reads one. What changed is that it is declared, not only described.
 
-**The declaration.** The first five rows are declared once, by member name and number, in
+**The declaration.** The first ten rows are declared once, by member name and number, in
 `docs/governance/guild-roster.json`'s `exit_code_domains` (domains `doctor`, `detectors`, `warden`,
-`marshal`, `marshal-seed`), which also declares doctor's domain a narrowing of warden's
+`marshal`, `marshal-seed`, `mason`, `herald`, `steward`, `scribe`, `atlas`), which also declares doctor's domain a narrowing of warden's
 (`exit_code_domains_narrowing`); `pyforge.core.exit_domains` carries the same table for in-process
 code (spec-pyforge-steward:CAP-184, `DW-VOCAB-2026-09-14-8`). Doctor's, warden's and marshal's verdict
 modules, marshal's `seed/errors.py` and `scripts/detectors.py` take their numbers from it, and
 `tests/scripts/test_exit_code_domains_are_declared.py` fails when a module, or this table, differs from
-the declaration. Read a code in the domain of the surface that produced it, never another's.
+the declaration. Mason, herald, steward, scribe and atlas have no verdict module: each spells its own
+numbers, and a meta-test in its own suite (`test_exit_codes_match_the_exit_declaration.py`) fails when
+one differs from its declared domain (steward Story 142.1). Read a code in the domain of the surface that produced it, never another's.
 
 **The aggregator's four row words.** `scripts/detectors.py` reads each row as `pass`,
 `FINDINGS` (exit `1`), `unknown` (could not run, exit `2`) or **`unmeasured`**. A Doctor row is

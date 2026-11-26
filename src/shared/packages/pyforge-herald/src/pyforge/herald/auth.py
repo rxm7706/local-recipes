@@ -113,7 +113,8 @@ def require_operator_role(context: AuthContext | None, *, action: str) -> AuthCo
     if context is None:
         logger.info("auth check for %s: no auth context found", action)
         raise OperatorAuthorizationError(
-            "auth context missing. Configure with `herald auth login` or set HERALD_TOKEN env var"
+            "auth context missing. Set the HERALD_TOKEN env var (<role>:<token>) "
+            'or write {"role": "<role>"} to ~/.herald/config'
         )
     if context.role != OPERATOR_ROLE:
         logger.info(

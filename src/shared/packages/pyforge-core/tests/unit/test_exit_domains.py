@@ -13,8 +13,19 @@ from pyforge.core.exit_domains import (
 )
 
 
-def test_the_five_domains_are_declared() -> None:
-    assert set(EXIT_CODE_DOMAINS) == {"doctor", "warden", "marshal", "marshal-seed", "detectors"}
+def test_the_declared_domains_are_the_closed_set() -> None:
+    assert set(EXIT_CODE_DOMAINS) == {
+        "doctor",
+        "warden",
+        "marshal",
+        "marshal-seed",
+        "detectors",
+        "mason",
+        "herald",
+        "steward",
+        "scribe",
+        "atlas",
+    }
 
 
 @pytest.mark.parametrize(
@@ -25,6 +36,11 @@ def test_the_five_domains_are_declared() -> None:
         ("marshal", {0, 1, 2, 3, 4, 130}),
         ("marshal-seed", {1, 2, 3, 4, 5, 10}),
         ("detectors", {0, 1, 2}),
+        ("mason", {0, 1, 2, 3, 130}),
+        ("herald", {0, 1, 2, 3, 4, 130}),
+        ("steward", {0, 1, 2, 3, 70, 130}),
+        ("scribe", {0, 1, 2}),
+        ("atlas", {0, 1, 2, 130}),
     ],
 )
 def test_each_domain_keeps_the_codes_its_module_used(domain: str, codes: set[int]) -> None:

@@ -29,10 +29,10 @@ Use this page to diagnose a `herald progress`, `herald success`, `herald notice`
 If neither `HERALD_TOKEN` nor `~/.herald/config` resolves an auth context, a write refuses with exit code 1:
 
 ```
-herald: OperatorAuthorizationError: auth context missing. Configure with `herald auth login` or set HERALD_TOKEN env var
+herald: OperatorAuthorizationError: auth context missing. Set the HERALD_TOKEN env var (<role>:<token>) or write {"role": "<role>"} to ~/.herald/config
 ```
 
-That message names `herald auth login`, but no such subcommand exists: `herald --help` lists only `deck`, `progress`, `success`, `notice` and `scheduler`. The wording is locked to Story 6.3's acceptance criteria and its test (`src/shared/packages/pyforge-herald/tests/unit/test_auth.py`). Ignore that half of the message and set `HERALD_TOKEN=operator:<anything>`, or write `~/.herald/config` with `{"role": "operator"}`.
+Herald has no `auth` subcommand: `herald --help` lists only `deck`, `progress`, `success`, `notice` and `scheduler`. Set `HERALD_TOKEN=operator:<anything>`, or write `~/.herald/config` with `{"role": "operator"}`; the file must be that JSON object, and anything else in it is ignored.
 
 If a role resolves but is not `operator` (e.g. `HERALD_TOKEN=viewer:x`), the refusal is more specific:
 

@@ -109,12 +109,13 @@ def test_require_operator_role_raises_for_no_auth_context():
         auth.require_operator_role(None, action="herald success publish")
 
 
-def test_require_operator_role_error_names_herald_token_and_auth_login():
-    """The AC's own wording: 'Configure with herald auth login or set
-    HERALD_TOKEN env var'."""
+def test_require_operator_role_error_names_the_two_places_a_role_is_read_from():
+    """Story 56.1: the message names what `resolve_auth_context` reads, HERALD_TOKEN and
+    ~/.herald/config, and no `herald auth` command, which the parser never had."""
     with pytest.raises(OperatorAuthorizationError) as excinfo:
         auth.require_operator_role(None, action="herald notice author")
-    assert "herald auth login" in str(excinfo.value)
+    assert "herald auth" not in str(excinfo.value)
+    assert "~/.herald/config" in str(excinfo.value)
     assert "HERALD_TOKEN" in str(excinfo.value)
 
 

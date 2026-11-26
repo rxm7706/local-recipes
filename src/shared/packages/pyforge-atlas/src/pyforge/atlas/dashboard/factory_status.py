@@ -1,8 +1,10 @@
 """factory-status page data — reads the BMAD artifact state, agent-readably (§ 13.2).
 
-Renders, as ONE deterministic semantic table, the live factory state from two tracked
+Renders, as ONE deterministic semantic table, the factory state from two tracked
 artifacts:
-  * ``sprint-status.yaml`` ``development_status`` (epic/story → status),
+  * ``sprint-status-ledger.yaml`` ``development_status`` (epic/story → status), the tracked
+    twin of the gitignored Tier-3 ``sprint-status.yaml`` (same shape), so a fresh clone and CI
+    show the same table an operator's checkout does (atlas Story 54.1),
   * ``epics.md`` frontmatter ``status``.
 
 The table carries a **build timestamp** (AD-17 — authoring-feeding pages carry build
@@ -62,7 +64,7 @@ def _default_paths() -> dict[str, Path]:
     root = default_repo_root()
     proj = root / "_bmad-output" / "projects" / "pyforge-atlas"
     return {
-        "sprint_status_path": proj / "implementation-artifacts" / "sprint-status.yaml",
+        "sprint_status_path": proj / "planning-artifacts" / "sprint-status-ledger.yaml",
         "epics_path": proj / "planning-artifacts" / "epics.md",
     }
 
@@ -123,13 +125,12 @@ def build_factory_status_frame(
         # AD-17: the build timestamp travels IN the rendered surface, row 0.
         {"source": "build", "artifact": "build_stamp", "key": "generated_at", "status": build_stamp}
     ]
+    source = Path(sprint_status_path).name  # the file read: the tracked ledger by default, a fixture's own name
     for key, value in read_sprint_status(sprint_status_path).items():
-        rows.append(
-            {"source": "sprint-status.yaml", "artifact": "development_status", "key": str(key), "status": str(value)}
-        )
+        rows.append({"source": source, "artifact": "development_status", "key": str(key), "status": str(value)})
     epics_status = read_epics_status(epics_path)
     # Only contribute a row when epics.md actually yields a status — a missing/malformed
-    # epics.md contributes ZERO rows, exactly like sprint-status.yaml above.
+    # epics.md contributes ZERO rows, exactly like the status file above.
     # (Reviewer-B S1: appending str(None) rendered a literal "None" status an agent could
     # not distinguish from a real None; the "never fabricated status" contract wins.)
     if epics_status is not None:
