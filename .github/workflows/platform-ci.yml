@@ -843,7 +843,10 @@ jobs:
           environments: pyforge-warden
           activate-environment: pyforge-warden
           locked: true
+          # Story 117.18 (spec-pyforge-steward CAP-175): the pixi cache is written from main alone; a pull
+          # request restores it and saves nothing, so no PR ref holds a cache entry no later run can read.
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
 
       # Story 12.4 (CAP-3): explicit OSV DB provisioning — never silent egress
       # during the Warden scan. Cache keyed by UTC date so the daily roll owns
@@ -1217,6 +1220,7 @@ jobs:
           environments: platform-dev
           locked: true
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
 
       # `kind` is AD-16's one explicit, named system-level exception
       # alongside the container engine itself -- everything else in this
@@ -1466,6 +1470,7 @@ jobs:
           environments: platform-dev
           locked: true
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
 
       # AD-16 named system exception alongside kind (gke-smoke) and the
       # container engine: CRC bundles its own `oc`, installed by the action
@@ -1709,6 +1714,7 @@ jobs:
           environments: platform-dev
           locked: true
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
 
       # Same AD-16 named system exception as `gke-portability-smoke`'s own
       # step -- not re-derived here.
