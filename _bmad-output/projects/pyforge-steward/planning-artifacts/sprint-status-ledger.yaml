@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 786
+# stories: 789
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -185,6 +185,7 @@ development_status:
   136-8-the-seven-atlas-gate-tasks-run-in-atlas-s-own-environment: done
   136-9-the-two-named-test-steps-have-a-local-preflight-lane: done
   137-1-one-declaration-names-every-exit-code-domain: done
+  138-1-story-59-2-s-capability-is-re-homed-and-two-story-lines-name-what-they-build: ready-for-dev
   14-1-the-pre-flight-diff-retrodicts-a-real-upgrade: done
   14-10-the-next-rehearsal-exercises-cap-6s-fallback-and-cap-8s-conflict-path-report-only: done
   14-2-apply-is-deliberate-branched-and-never-clobbers-custom: done
@@ -612,6 +613,8 @@ development_status:
   epic-136-retrospective: optional
   epic-137: done
   epic-137-retrospective: optional
+  epic-138: in-progress
+  epic-138-retrospective: optional
   epic-14: done
   epic-14-retrospective: optional
   epic-15: done

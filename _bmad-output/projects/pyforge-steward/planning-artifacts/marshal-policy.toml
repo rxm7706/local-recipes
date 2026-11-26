@@ -1886,6 +1886,21 @@ verify_commands = [
   "src/shared/packages/pyforge-core/tests/unit/test_exit_domains_match_the_guild_roster.py",
   "tests/scripts/test_exit_code_domains_are_declared.py",
 ]
+"138" = [  # Story 59.2's capability is re-homed (spec-pyforge-steward CAP-132), added 2026-11-25
+  "_bmad-output/projects/pyforge-*/planning-artifacts/specs/spec-pyforge-*/.memlog.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-111-1-the-steward-spec-s-fold-cut-capability-text-is-restored-and-the-foundry-inherits-the-amended-rule.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-41-4-broker-tls-is-verified.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-59-2-detectors-read-one-declaration-in-progress-is-grandfathered.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/oracle-map.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml",
+  "docs/dreams/pyforge-steward.md",
+  "scripts/.spec-surface-baseline.json",
+]
 
 # dispatch (Story 85.1 / CAP-286 knobs), added 2026-10-13: steward's verify-fix turn gets 45 minutes, not the
 # 15-minute default. pyforge-steward-test alone runs ~4 minutes (2482 tests), so a fix turn that must re-run it two or
