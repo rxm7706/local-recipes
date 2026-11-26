@@ -2005,7 +2005,7 @@
  },
  "pyforge-marshal/spec-pyforge-core": {
   "files": {
-   "pixi.toml": "1a2d766074f760cb8983893377831a46a0a88bb9",
+   "pixi.toml": "f86687d027263aec252d85dfe9a080026a979265",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__init__.py": "f634eebb7d280de9667527361cb160b786242fd0",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__main__.py": "66be577717f43a35185857ca7a964300c68f431e",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/a2a/__init__.py": "dd387bcc5aaee5fffc97b0aae8c59fae9a18b0da",
@@ -2711,7 +2711,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "ad2c379b3e3f6515904608583136a3bb3f154c40"
+  "memlog": "b46556979c661362e60c46ae9c85de98ca4fa7a1"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -2772,7 +2772,7 @@
    "docs/dashboard/README.md": "cb70e19c69f4e5ae6b82a1f72a12672a5d8b49d4",
    "docs/reference/library-llms-full.md": "53bf041ca959113430a21796a4d95f69e62e91dc",
    "environment.yaml": "f99dc805fb754121638f8352c7061e0ef49a7dfb",
-   "pixi.toml": "1a2d766074f760cb8983893377831a46a0a88bb9",
+   "pixi.toml": "f86687d027263aec252d85dfe9a080026a979265",
    "scripts/.ad-citation-baseline.json": "685db30063a76e6a36e8ed25a938bd92c3dfa4cf",
    "scripts/ad_citation_check.py": "505a75a95dcb42b9ebe6a8c4bc9255152d2cb43e",
    "scripts/bmad-loop-worktree": "87bce267cac861accebffa6e29e7bc1ecaa398ab",
@@ -3380,7 +3380,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "39ee7652d263b2d56ba7f4d3d5dbffca86ab90ce"
+  "memlog": "c0996c7a47fa1262dc1665267a8046c3c0f406d5"
  },
  "pyforge-marshal/spec-pyforge-testing-charter": {
   "files": {
@@ -4126,7 +4126,7 @@
    "evals/review-catches-planted-defect/scoring-policy.json": "18b8ff32419ccef507e68c659ed789fca0461102",
    "evals/review-catches-planted-defect/test_driver.py": "385da3656b300393ec549ff40377bb1df25540b0",
    "pixi.lock": "7c8d5f9bc9dd6bf7a4b3f3cb2cc3761548a490b1",
-   "pixi.toml": "1a2d766074f760cb8983893377831a46a0a88bb9",
+   "pixi.toml": "f86687d027263aec252d85dfe9a080026a979265",
    "recipes/bmad-eval-quality/LICENSE": "55625f964b7ddb4580e8e3612d553a6cada606f7",
    "recipes/bmad-eval-quality/build.bat": "79dcc2ecf4d78df61c2799cc5fb9be9fb988eae8",
    "recipes/bmad-eval-quality/build.sh": "aa8925aaf5b98492d41cf6a5389f9ee150dce298",
@@ -4353,7 +4353,7 @@
    "src/shared/packages/pyforge-steward/tests/meta/test_machine_readiness_data.py": "384d15d6f717b639b9c3dcae605438aac71c8424",
    "src/shared/packages/pyforge-steward/tests/meta/test_marp_in_guild_env_story_63_8.py": "65ef942a28c25a0cba42bc782c912af27801e0c6",
    "src/shared/packages/pyforge-steward/tests/meta/test_no_station_assumes_local_recipes.py": "4750c9c067f90140fb370e19c80ea25bfd810f5c",
-   "src/shared/packages/pyforge-steward/tests/meta/test_object_store_seam_boundaries.py": "b80ed3d5ea839885ebcf284a92266d77d6243f79",
+   "src/shared/packages/pyforge-steward/tests/meta/test_object_store_seam_boundaries.py": "e882b2115e9bfdc6fa91848b50734cb04d454fbf",
    "src/shared/packages/pyforge-steward/tests/meta/test_oracle_map.py": "737c0b3d55d05769d0e5de3abc50adde6a98ba56",
    "src/shared/packages/pyforge-steward/tests/meta/test_pages_workflow.py": "64c4b6c76d58a2ea6697c29c263de3f598df70ab",
    "src/shared/packages/pyforge-steward/tests/meta/test_portability.py": "6522a2d7c7146add32bd353b52839396dd2e9005",
@@ -4516,7 +4516,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "c62fc32ef0919ac3bc12ae10a0fa21d48bbd7639"
+  "memlog": "f65d0bad08b305d42e61c8b7841e3f49d1b75296"
  },
  "pyforge-steward/spec-pyforge-unifying-strategy": {
   "files": {
@@ -4646,7 +4646,7 @@
    ".claude/skills/pyforge-warden/0.1.1/pyforge-warden/provenance-map.json": "583918363ff2723d63d19882d093c691509b7680",
    ".claude/skills/pyforge-warden/skill-brief.yaml": "8e54ad4d8565f1e5bc2ab3b558c15f36dbd4201d",
    "environment.yaml": "f99dc805fb754121638f8352c7061e0ef49a7dfb",
-   "pixi.toml": "1a2d766074f760cb8983893377831a46a0a88bb9",
+   "pixi.toml": "f86687d027263aec252d85dfe9a080026a979265",
    "recipes/liquibase/build.sh": "30c0bd688cabffd2b362cb67afaeeb9095e706be",
    "recipes/liquibase/conda-forge.yml": "7f3b86d5026062d0aa432ea9bd0a87747015c57d",
    "recipes/liquibase/liquibase": "525ed696037f8cd6cfdaf9df3bd465c9746ba916",
@@ -5052,7 +5052,7 @@
    "src/platform/tests/test_warden_fleet_proposal_stale_portal.py": "ba7d48a37d71ebc805eee82f96fd4c5e468c2746",
    "src/platform/tests/test_warden_fleet_proposals.py": "f864d2da1164e77229f5328c303d90b0d15a5654",
    "src/platform/tests/test_warden_fleet_run.py": "8e771d0e46a77a02f5b20c6f1bb00e1222ec5f6d",
-   "src/platform/tests/test_warden_portal_audit_start_get.py": "7a092b7f5b2cfd4fa5f83bab9d1ea1e33162bb72",
+   "src/platform/tests/test_warden_portal_audit_start_get.py": "6db6486094147d92ed9e80619780107f659d4169",
    "src/platform/tests/test_warden_portal_job_outcomes.py": "8f88514e41f58d5a8073185922c091f35c6ed2af",
    "src/platform/tests/test_warden_portal_upload_gate.py": "96543675f7138249ce049200bfe23913917d0c37",
    "src/platform/tests/test_webhook_herald_forward_host.py": "83aa0655658f16cb500e8c2ede062c1c14d02805",
@@ -5821,7 +5821,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "249eb14fcc96f927de3ec36300bb2f085761b30f"
+  "memlog": "c26188bd0993caf2d3aac61efd418d91a3d92f77"
  },
  "pyforge-steward/spec-python-foundry-cutover": {
   "files": {},

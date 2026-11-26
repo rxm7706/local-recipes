@@ -496,19 +496,38 @@ def _platform_python_rels() -> list[str]:
     return sorted(rels)
 
 
+# The dated pap:AD-2 carve-out (DW-steward-74-1): these four files may import the two steward
+# modules below and no other `pyforge` module. A copy of the testing kit's
+# `PLATFORM_PYFORGE_IMPORTERS` and `_CARVE_OUT_MODULES`, since this file cannot import the kit
+# (see `_platform_python_rels`); steward's `test_object_store_seam_boundaries.py` reds the copy
+# drifting from the kit's (steward Story 136.3).
+PLATFORM_PYFORGE_IMPORTERS = frozenset(
+    {
+        "src/platform/ingest/github_projects/graphql.py",
+        "src/platform/ingest/github_projects/pipeline.py",
+        "src/platform/ingest/github_projects/source.py",
+        "src/platform/ingest/github_projects/test_github_metrics_dlt.py",
+    }
+)
+CARVE_OUT_MODULES = frozenset({"pyforge.steward.keys", "pyforge.steward.sync"})
+
+
 def test_platform_diff_has_no_pyforge_import():
     offenders: list[str] = []
     for rel in _platform_python_rels():
+        admitted = (
+            CARVE_OUT_MODULES if rel in PLATFORM_PYFORGE_IMPORTERS else frozenset()
+        )
         path = REPO_ROOT / rel
         if path.suffix != ".py" or not path.is_file():
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
-            names: list[str] = []
+            modules: list[str] = []
             if isinstance(node, ast.Import):
-                names = [alias.name.split(".")[0] for alias in node.names]
+                modules = [alias.name for alias in node.names]
             elif isinstance(node, ast.ImportFrom) and node.module:
-                names = [node.module.split(".")[0]]
-            if "pyforge" in names:
+                modules = [node.module]
+            if any(m.split(".")[0] == "pyforge" and m not in admitted for m in modules):
                 offenders.append(f"{rel}:{node.lineno}")
     assert not offenders

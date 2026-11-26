@@ -134,6 +134,27 @@ def test_src_platform_imports_no_pyforge_beyond_the_closed_allowlist() -> None:
     )
 
 
+def _frozenset_literal(tree: ast.Module, name: str) -> frozenset[str]:
+    """The string members of a module-level ``NAME = frozenset({...})`` assignment."""
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == name for target in node.targets
+        ):
+            return frozenset(ast.literal_eval(node.value.args[0]))  # type: ignore[attr-defined]
+    raise AssertionError(f"{name} is not assigned at module level")
+
+
+def test_the_platform_guards_copy_of_the_carve_out_matches_the_kit() -> None:
+    # The Platform CI guard cannot import the kit, so it holds a copy; a copy that drifts
+    # reds a carved-out file's edit there or admits an import the kit refuses (Story 136.3).
+    from pyforge.testing_kit.branch_diff_guard import _CARVE_OUT_MODULES
+
+    guard = PLATFORM / "tests" / "test_warden_portal_audit_start_get.py"
+    tree = ast.parse(guard.read_text(encoding="utf-8"), filename=str(guard))
+    assert _frozenset_literal(tree, "PLATFORM_PYFORGE_IMPORTERS") == PLATFORM_PYFORGE_IMPORTERS
+    assert _frozenset_literal(tree, "CARVE_OUT_MODULES") == _CARVE_OUT_MODULES
+
+
 def test_django_pyforge_imports_nothing_from_the_host_config_package() -> None:
     importers = importers_of(DJANGO_PYFORGE, "config", repo_root=ROOT)
     assert not chrome_findings(importers), "\n" + "\n".join(chrome_findings(importers))
