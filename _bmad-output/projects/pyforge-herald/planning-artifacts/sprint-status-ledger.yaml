@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: herald
-# stories: 272
+# stories: 275
 development_status:
   1-1-package-scaffold-for-pyforge-herald: done
   1-2-transport-port-primary-mcp-client-adapter-the-transport-spike: done
@@ -162,6 +162,7 @@ development_status:
   53-2-every-page-reads-at-phone-width-and-names-itself: done
   53-3-kedro-viz-opens-under-the-site-header-with-a-way-back: done
   54-1-herald-deck-pull-commit-commits-and-three-cli-defects-are-closed: done
+  55-1-the-dossier-is-rewritten-from-a-fresh-read-of-the-source-to-one-outline-with-no-history: done
   6-1-implement-herald-cli-dispatcher: done
   6-2-implement-shared-argument-conventions: done
   6-3-implement-cli-authentication-authorization: done
@@ -278,6 +279,8 @@ development_status:
   epic-53-retrospective: optional
   epic-54: done
   epic-54-retrospective: optional
+  epic-55: done
+  epic-55-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional
   epic-7: done
