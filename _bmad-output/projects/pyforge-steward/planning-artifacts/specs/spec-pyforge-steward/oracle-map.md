@@ -145,7 +145,7 @@ same change.
 | CAP-129 | `keys.py` | script | `tests/scripts/test_container_gates.py` | |
 | CAP-130 | — | script | `tests/scripts/test_container_volumes_roundtrip.py` | |
 | CAP-131 | `provision.py` | script | `tests/scripts/test_container_cli_smoke.py` | |
-| CAP-132 | — | script | `tests/scripts/test_spec_ladder_is_declared.py` | |
+| CAP-132 | — | script, other-station | `tests/scripts/test_spec_ladder_is_declared.py`, `src/shared/packages/pyforge-doctor/tests/unit/test_sources_board_chain_completeness.py`, `src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_consistency.py` | The doctor tests prove the detectors read the declaration (amended 2026-11-25, Story 59.2). |
 | CAP-133 | — | script | `tests/scripts/test_bmad_cross_walk_is_declared.py` | |
 | CAP-134 | — | none | — | A vocabulary ruling only; it minted no story and no code. |
 | CAP-135 | `deck_integrity.py`, `cli.py` | package | `unit/test_deck_drift_duty.py` | |

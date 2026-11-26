@@ -62,10 +62,10 @@ Ledger key: `138-1-story-59-2-s-capability-is-re-homed-and-two-story-lines-name-
 **Then** Story 59.2 cites spec-pyforge-steward CAP-132, Story 111.1 cites `spec-foundry-regenerate-not-fold CAP-5` (B's starting five-fields; the memlog's `CAP-7` entries are spec-one-chain-per-station CAP-7's, which the line already cites), and Story 41.4 cites spec-pyforge-unifying-strategy's 2026-09-02 red-team Constraint that names it (`rediss://` verifies the chain) beside pap:CAP-6, with no bare id left on the three lines
 **And** CAP-132's heading and id do not change, the capability ledger's row still matches it, and the row reads resolved
 
-- **AC1 — No re-keyed line keeps a dead id.** Expected: exit 1 (no line matches).
+- **AC1 — No re-keyed line keeps a dead id.** Expected: prints `0` (the pipe's last command is the count, so read the number, not the exit code).
 
   ```bash
-  grep -nE 'spec-vocabulary-one-name-one-job CAP-2|spec-foundry-regenerate-not-fold CAP-7|FR/AD:\*\* CAP-12 ' _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
+  awk '/^### Story (59\.2|111\.1|41\.4):/{f=1} f&&/\*\*FR\/AD:\*\*/{print; f=0}' _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md | grep -cE 'spec-vocabulary-one-name-one-job CAP-2|spec-foundry-regenerate-not-fold CAP-7|FR/AD:\*\* CAP-12 '
   ```
 
 - **AC2 — The chain and the ledgers hold.** Expected: exit 0 each.
@@ -98,3 +98,4 @@ Ledger key: `138-1-story-59-2-s-capability-is-re-homed-and-two-story-lines-name-
 ## Spec Change Log
 
 - 2026-11-25: minted from the station Dream's 2026-11-25 entry (Story 59.2's capability is re-homed) and the operator's rulings of the same date. Not implemented.
+- 2026-11-25: session lead: AC1 corrected before it ran. As minted it grepped all of `epics.md`, which also matches the file's frontmatter history comment and Story 138.1's own description of the dead ids; it now reads only the FR/AD lines of Stories 59.2, 111.1 and 41.4, the lines this story changes. The criterion is unchanged.
