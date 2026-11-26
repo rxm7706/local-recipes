@@ -10,7 +10,7 @@ sources:
   - src/shared/packages/django-pyforge/src/django_pyforge/events/constants.py
   - src/shared/packages/django-pyforge/src/django_pyforge/queues.py
   - .github/workflows/platform-deploy.yml
-verified: 2026-11-25
+verified: 2026-11-26
 ---
 
 # Deploying the platform (Story 12.1)
@@ -164,7 +164,7 @@ ServiceAccounts, and an Ingress on `ingress.host` (default
 terminator, set `django.secureSslRedirect: "False"` — the same switch the
 compose stack flips locally.
 
-**Broker TLS (Story 41.4):** a `rediss://` broker is *verified*, not merely
+**Broker TLS (Story 41.4, spec-pyforge-unifying-strategy:CAP-21):** a `rediss://` broker is *verified*, not merely
 encrypted — `ssl_cert_reqs` is `CERT_REQUIRED` and the certificate is checked
 against a real CA. The chart wires plaintext `redis://` today, so these knobs
 matter once a deployment points `REDIS_URL` / `REDIS_BROKER_URL` at a TLS
