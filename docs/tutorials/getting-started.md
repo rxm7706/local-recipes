@@ -9,7 +9,7 @@ sources:
   - scripts/ensure-local-recipes-env.sh
   - .claude/skills/conda-forge-expert/scripts/health_check.py
   - .claude/scripts/conda-forge-expert/native-build.sh
-verified: 2026-11-25
+verified: 2026-11-26
 ---
 
 # Getting started
