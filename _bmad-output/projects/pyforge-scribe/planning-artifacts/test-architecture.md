@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: scribe
-source_fingerprint: 7e264c4ee2d22df1
+source_fingerprint: 035f5cf2b7e42218
 story_count: 68
-test_file_count: 30
+test_file_count: 31
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -21,10 +21,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Station:** `pyforge-scribe`
 - **Stories parsed:** 68
 - **Epics parsed:** 35
-- **Test files inventoried:** 30 under `src/shared/packages/pyforge-scribe/tests/`
+- **Test files inventoried:** 31 under `src/shared/packages/pyforge-scribe/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `7e264c4ee2d22df1`
+- **Source fingerprint:** `035f5cf2b7e42218`
 
 ## Risk Assessment
 
@@ -99,6 +99,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_operations.py` | unit | none observed |
 | `src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_pg.py` | unit | none observed |
 | `src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plane.py` | unit | none observed |
+| `src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plane_inmemory.py` | unit | none observed |
 | `src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plugins.py` | unit | none observed |
 | `src/shared/packages/pyforge-scribe/tests/unit/test_navigation_owner.py` | unit | none observed |
 | `src/shared/packages/pyforge-scribe/tests/unit/test_promote.py` | unit | none observed |

@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 31520013394cc8ce
-story_count: 511
+source_fingerprint: 20760275af859580
+story_count: 512
 test_file_count: 169
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 511
-- **Epics parsed:** 136
+- **Stories parsed:** 512
+- **Epics parsed:** 137
 - **Test files inventoried:** 169 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `31520013394cc8ce`
+- **Source fingerprint:** `20760275af859580`
 
 ## Risk Assessment
 
@@ -158,6 +158,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 133: The review's lower-severity defects are reproduced, then fixed or closed (spec-pyforge-steward CAP-1, CAP-22, CAP-55, CAP-167, CAP-168, CAP-175; spec-pyforge-unifying-strategy CAP-3, CAP-4, CAP-5, CAP-6, CAP-12)
 - Epic 135: One verb says whether this machine is ready for desktop, container or pod work (spec-pyforge-steward CAP-183)
 - Epic 136: The rows a lapsed blocker held close (spec-pyforge-steward CAP-5, CAP-166, CAP-175, CAP-179, CAP-182; spec-pyforge-unifying-strategy CAP-15, CAP-16)
+- Epic 137: One declaration names every exit-code domain (spec-pyforge-steward:CAP-184; spec-pyforge-core:CAP-3)
 
 ### Low-risk epics
 
@@ -862,6 +863,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 136.9 | The two named-test steps have a local preflight lane | none observed |
 | 136.10 | Six station skills and their briefs cite the persona ids in qualified form | none observed |
 | 136.11 | The Story lines the page did not resolve name their capabilities | none observed |
+| 137.1 | One declaration names every exit-code domain | none observed |
 
 ## Quality Gates
 

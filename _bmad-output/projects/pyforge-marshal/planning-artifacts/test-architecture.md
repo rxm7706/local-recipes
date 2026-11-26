@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: 981dd4c00505ea9c
-story_count: 553
-test_file_count: 306
+source_fingerprint: 3b6dba9c67288cfe
+story_count: 554
+test_file_count: 307
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 553
-- **Epics parsed:** 119
-- **Test files inventoried:** 306 under `src/shared/packages/pyforge-marshal/tests/`
+- **Stories parsed:** 554
+- **Epics parsed:** 120
+- **Test files inventoried:** 307 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `981dd4c00505ea9c`
+- **Source fingerprint:** `3b6dba9c67288cfe`
 
 ## Risk Assessment
 
@@ -140,6 +140,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 119: A challenge run past its ceiling is checked without a race (spec-pyforge-marshal:CAP-298)
 - Epic 120: The dispatch-verification fakes match a command by its words (spec-pyforge-marshal:CAP-170)
 - Epic 121: Teardown, the front door and the required-check read fail closed (spec-pyforge-marshal:CAP-287, CAP-304, CAP-210)
+- Epic 122: Marshal's verdict and seed take their exit codes from the declaration (spec-pyforge-steward:CAP-184, spec-pyforge-marshal:CAP-304)
 
 ### Low-risk epics
 
@@ -236,6 +237,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/meta/test_tea_architecture_generator.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_tool_surface_coverage.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_tree_read_guard.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_verdict_reads_the_exit_declaration.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_wire_store_ignored_not_the_seed_namespace.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_adapters_cli.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_bmad_loop_status_vocabulary.py` | unit | none observed |
@@ -1024,6 +1026,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 119.1 | A challenge run past its ceiling is checked without a race | none observed |
 | 120.1 | The dispatch-verification fakes match a command by its words | none observed |
 | 121.1 | Teardown compares tips, a bad environment is a usage error, and a required ch... | none observed |
+| 122.1 | Marshal's verdict and seed take their exit codes from the declaration | none observed |
 
 ## Quality Gates
 
