@@ -2582,7 +2582,7 @@ As a platform operator,
 I want `rediss://` brokers verified against the corporate CA with `CERT_NONE` confined to the laptop,
 So that an encrypted-looking broker link is actually authenticated.
 
-**Type:** fix • **Effort:** S • **Deps:** none • **FR/AD:** CAP-12 • pap:CAP-6 (air-gap parity) • red-team X-2 / R-14
+**Type:** fix • **Effort:** S • **Deps:** none • **FR/AD:** spec-pyforge-unifying-strategy's 2026-09-02 red-team Constraint (`rediss://` verifies the chain; `CERT_NONE` only under `COMPONENT_RUNTIME=local`; 41.4; Story 138.1) • pap:CAP-6 (air-gap parity) • red-team X-2 / R-14
 **Given** the story spec `spec-41-4-broker-tls-is-verified.md` **When** its acceptance criteria run **Then** they pass
 **And** Given production settings and a `rediss://` broker, when loaded, then `ssl_cert_reqs` is `CERT_REQUIRED` and `ssl_ca_certs` points at the configured bundle.
 
@@ -4120,7 +4120,7 @@ and warned, never reset
 
 ### Story 59.2: Detectors read one declaration; in-progress is grandfathered
 
-**Type:** feature • **Effort:** M • **Deps:** S-59.1 • **FR/AD:** spec-vocabulary-one-name-one-job CAP-2
+**Type:** feature • **Effort:** M • **Deps:** S-59.1 • **FR/AD:** spec-pyforge-steward CAP-132 (amended 2026-11-25 to carry the status-set half of the dropped vocabulary CAP-2; Story 138.1)
 **Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py`,
 `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py`,
 `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/status_body_consistency.py`,
@@ -7370,7 +7370,7 @@ As a reader who opens a steward capability to learn what it guarantees, and the 
 I want every capability block in `spec-pyforge-steward/SPEC.md` to carry a real title and its full text, the `spec-foundry-regenerate-not-fold` memlog to name the amended rule as B's starting discipline, and the capability ledger to classify every CAP the one-PR effort mints,
 So that a requirement's arrow lands on text that says what it guarantees, pyforge-foundry re-derives its PRDs under the amended rule rather than the exception it reversed, and no minted CAP is unclassified (`fcl` CAP-2 makes that HARD).
 
-**Type:** chore • **Effort:** M • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-5 (amended 2026-10-26), spec-one-chain-per-station CAP-3 and CAP-7 (the foundry on-ramp); spec-foundry-regenerate-not-fold CAP-7 (B's starting discipline); spec-foundry-capability-ledger CAP-2 (every minted CAP classified); spec-pyforge-steward CAP-1..CAP-168 (their text; no CAP minted)
+**Type:** chore • **Effort:** M • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-5 (amended 2026-10-26), spec-one-chain-per-station CAP-3 and CAP-7 (the foundry on-ramp); spec-foundry-regenerate-not-fold CAP-5 (B's starting five-fields, recorded under spec-one-chain-per-station CAP-7; Story 138.1); spec-foundry-capability-ledger CAP-2 (every minted CAP classified); spec-pyforge-steward CAP-1..CAP-168 (their text; no CAP minted)
 **Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
 **Surface:** `planning-artifacts/specs/spec-pyforge-steward/SPEC.md` (23 placeholder titles `from spec-…` replaced — 9 restored from the pre-fold source line, 14 authored from the capability's intent; 29 'See absorbed Spec memlog' bullets restored from the source; 147 cut bullets rejoined; 15 `verified:` sub-bullets the fold had joined onto a success line split back out — by script from `git show 97e0816ad2^`, every id stable); `.memlog.md`; `specs/spec-foundry-regenerate-not-fold/.memlog.md` (the CAP-7 event: the chain standard B inherits is amended, not excepted); `docs/foundry/capability-ledger.yaml` (rows `pyforge-atlas:CAP-72`, `pyforge-doctor:CAP-92`, `pyforge-doctor:CAP-93`, all `rebuild`; `updated:`); PRD, spine and epics re-stamps (chain currency; no FR, AD or story text changes)
 **Spec:** `planning-artifacts/specs/spec-111-1-the-steward-spec-s-fold-cut-capability-text-is-restored-and-the-foundry-inherits-the-amended-rule.md`
@@ -9549,4 +9549,28 @@ So that a reader learns what `2` means on each surface from one place, and a num
 **When** `guild-roster.json` gains `exit_code_domains` and `exit_code_domains_narrowing`, and `pyforge.core.exit_domains` carries the same table
 **Then** the five domains are declared by member name and number, a live-tree test fails when the Python table and the JSON key differ, `scripts/detectors.py` takes its 0, 1 and 2 from the `detectors` domain, and `test_exit_code_domains_are_declared.py` fails when a module's exit constants or the glossary page's domains differ from the declaration
 **And** no exit number on any surface changes, and the row reads resolved once Stories 63.1 (doctor), 30.1 (warden) and 122.1 (marshal) land
+**Status:** done
+
+## Epic 138: Story 59.2's capability is re-homed and the last unresolved Story lines name what they build (spec-pyforge-steward CAP-132)
+
+Minted 2026-11-25 from the station Dream's entry of the same date (Story 59.2's capability is re-homed) on the operator rulings of 2026-11-25: "Amend CAP-132" (2026-11-25, in session) and "do the CAP-132 amendment and the story re-keys" (2026-11-25). `DW-steward-136-11-1` holds the three Story lines Story 136.11 could not resolve; the exit-code half of the dropped capability became CAP-184 under Epic 137, and this Epic finishes the row.
+**HARD boundaries:**
+- `SPEC.md` moves only by a render from its memlog; CAP-132 keeps its id and heading.
+- A Story line is re-keyed only to a record that defines what the Story builds; no capability is minted to give a line something to cite.
+- No code, test or flag changes.
+
+### Story 138.1: Story 59.2's capability is re-homed and two Story lines name what they build
+
+As a reader who follows a Story's FR/AD line to the contract it builds,
+I want Stories 59.2, 111.1 and 41.4 to cite records that define what each built,
+So that no Story line in steward's `epics.md` cites a capability that no live Spec holds.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-132 (amended with this story: the Spec ladder is declared, and doctor's detectors read the declaration -- the status-set half of the dropped spec-vocabulary-one-name-one-job CAP-2); reads spec-foundry-regenerate-not-fold CAP-5, spec-one-chain-per-station CAP-7 and spec-pyforge-unifying-strategy's 2026-09-02 red-team Constraint and pap:CAP-6 (no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, planning artifacts only)
+**Surface:** `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/oracle-map.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-59-2-detectors-read-one-declaration-in-progress-is-grandfathered.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-111-1-the-steward-spec-s-fold-cut-capability-text-is-restored-and-the-foundry-inherits-the-amended-rule.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-41-4-broker-tls-is-verified.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-138-1-story-59-2-s-capability-is-re-homed-and-two-story-lines-name-what-they-build.md`
+**Given** `DW-steward-136-11-1` reports that Story 59.2 cites `spec-vocabulary-one-name-one-job CAP-2`, which the 2026-09-17 fold carried into no live Spec, that Story 111.1 cites `spec-foundry-regenerate-not-fold CAP-7`, which that Spec (CAP-1 to CAP-5) does not define, and that Story 41.4 keeps a bare `CAP-12` whose intent is not broker TLS
+**When** CAP-132 is amended through the memlog to carry the status-set half Story 59.2 shipped, and each of the three Story lines is traced to the record that defines what it builds
+**Then** Story 59.2 cites spec-pyforge-steward CAP-132, Story 111.1 cites `spec-foundry-regenerate-not-fold CAP-5` (B's starting five-fields; the memlog's `CAP-7` entries are spec-one-chain-per-station CAP-7's, which the line already cites), and Story 41.4 cites spec-pyforge-unifying-strategy's 2026-09-02 red-team Constraint that names it (`rediss://` verifies the chain) beside pap:CAP-6, with no bare id left on the three lines
+**And** CAP-132's heading and id do not change, the capability ledger's row still matches it, and the row reads resolved
 **Status:** done

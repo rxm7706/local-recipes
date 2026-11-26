@@ -40,7 +40,7 @@ declared_low_risk: false
 
 ## Binding
 
-Parent Spec capability: `spec-vocabulary-one-name-one-job CAP-2`.
+Parent Spec capability: `spec-pyforge-steward CAP-132` (amended 2026-11-25 to carry the status-set half of the dropped vocabulary CAP-2, Story 138.1; this story's archived citation was `spec-vocabulary-one-name-one-job CAP-2`, which the 2026-09-17 fold carried into no live Spec).
 Surface: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py, chain.py, status_body_consistency.py; exit-code domains in the same declaration file (different key; DW-VOCAB-2026-09-14-8)..
 Ledger key: `59-2-detectors-read-one-declaration-in-progress-is-grandfathered`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-59-2-detectors-read-one-declaration-in-progress-is-grandfathered.md`.

@@ -435,6 +435,11 @@ Red-team review: `research/architecture-review-pyforge-unifying-strategy-red-tea
 `epics.md` Story 41.4). Sprint change proposal:
 `sprint-change-proposal-2026-09-02-red-team-high.md`.
 
+Governing contract (re-keyed 2026-11-25 by steward Story 138.1): `spec-pyforge-unifying-strategy`'s 2026-09-02 red-team
+Constraint (`rediss://` verifies the chain; `CERT_NONE` only under `COMPONENT_RUNTIME=local`; 41.4), beside pap:CAP-6.
+The bare `CAP-12` the FR/AD line carried is not broker TLS (that Spec's CAP-12 is IdP roles and secret delivery), and no
+capability of that Spec states broker TLS.
+
 ## Review Triage Log
 
 ### 2026-09-02 — Review pass
