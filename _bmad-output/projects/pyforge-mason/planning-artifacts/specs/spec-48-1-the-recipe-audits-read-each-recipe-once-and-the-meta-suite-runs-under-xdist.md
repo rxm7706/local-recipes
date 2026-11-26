@@ -13,6 +13,7 @@ surface:
   - 'pixi.toml'
   - '.claude/skills/conda-forge-expert/tests/meta/test_recipe_yaml_parse_audit.py'
   - '.claude/skills/conda-forge-expert/tests/meta/test_split_distribution_run_deps.py'
+  - '.claude/skills/conda-forge-expert/tests/_recipe_trees.py'
   - '.claude/skills/conda-forge-expert/CHANGELOG.md'
   - '.claude/skills/conda-forge-expert/SKILL.md'
 context:
@@ -30,7 +31,7 @@ deferred: []
 
 **Problem:** `test-ci-meta`, the PR lane of the CFE regression net, is one pytest process: 79 s alone for `7790 passed, 7 skipped`, 209 to 291 s inside a full preflight, 155 s as the `cfe-meta` job. Four tests each parse every one of 7,566 `recipe.yaml` files with PyYAML's pure-Python loader, about 13 s a pass (52.6 s summed); the C loader parses them all in 1.4 s.
 
-**Approach:** Give the audits that need a recipe's parsed document one shared parse per file, made by `yaml.CSafeLoader` where libyaml is built in and `yaml.SafeLoader` otherwise, with the parse error kept beside the file that raised it. Pass `-n auto --dist loadgroup` in the task. The audits whose subject is the parser itself (duplicate keys, sentinel keys) keep the reader they have.
+**Approach:** Give the audits that need a recipe's parsed document one shared parse per file, made by `yaml.CSafeLoader` where libyaml is built in and `yaml.SafeLoader` otherwise, with the parse error kept beside the file that raised it. Pass `-n auto --dist loadgroup` in the task. The parse audit (`test_all_recipe_yaml_parse`) still reads every recipe with `yaml.safe_load` and fails when the shared parse disagrees with it; the duplicate-key audit's strict loader is built on the same C loader.
 
 Ledger key: `48-1-the-recipe-audits-read-each-recipe-once-and-the-meta-suite-runs-under-xdist`.
 

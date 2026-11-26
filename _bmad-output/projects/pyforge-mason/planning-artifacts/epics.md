@@ -4584,7 +4584,7 @@ So that a None the type allows cannot reach a parameter that needs a value unnot
 
 Minted 2026-11-26 from the station Dream's entry of the same date on the operator ruling of that day ("Approve plan", on the ranked preflight and CI report steward's Dream entry records). The PR lane of the CFE regression net is one pytest process, and four of its audits each parse every recipe with the pure-Python YAML loader.
 **HARD boundaries:**
-- Every audit judges the same files and reports the same findings; an audit whose subject is the parser keeps its reader.
+- Every audit judges the same files and reports the same findings; the parse audit keeps `yaml.safe_load` and checks the shared parse against it.
 - The full net (`test-ci`) does not move. No flag, and no capability text of `spec-pyforge-mason` moves. The `conda-forge-expert` retro and CHANGELOG entry close the story.
 
 ### Story 48.1: The recipe audits read each recipe once, and the meta suite runs under xdist
@@ -4595,7 +4595,7 @@ So that the lane stops parsing 7,566 recipes four times on one core.
 
 **Type:** chore • **Effort:** S • **Deps:** steward 117.8, steward 117.16 • **FR/AD:** spec-pyforge-steward:CAP-175 (realized here; no text change in this station's Spec); no AD moves
 **Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
-**Surface:** `pixi.toml` (the `test-ci-meta` task), `.claude/skills/conda-forge-expert/tests/meta/test_recipe_yaml_parse_audit.py`, `.claude/skills/conda-forge-expert/tests/meta/test_split_distribution_run_deps.py`, `.claude/skills/conda-forge-expert/tests/meta/conftest.py`, `.claude/skills/conda-forge-expert/CHANGELOG.md`, `.claude/skills/conda-forge-expert/SKILL.md`
+**Surface:** `pixi.toml` (the `test-ci-meta` task), `.claude/skills/conda-forge-expert/tests/meta/test_recipe_yaml_parse_audit.py`, `.claude/skills/conda-forge-expert/tests/meta/test_split_distribution_run_deps.py`, `.claude/skills/conda-forge-expert/tests/_recipe_trees.py` (new), `.claude/skills/conda-forge-expert/CHANGELOG.md`, `.claude/skills/conda-forge-expert/SKILL.md`
 **Spec:** `planning-artifacts/specs/spec-48-1-the-recipe-audits-read-each-recipe-once-and-the-meta-suite-runs-under-xdist.md`
 **Given** `d039bc7de3`, where `pytest .claude/skills/conda-forge-expert/tests/meta -q` takes 79 s for `7790 passed, 7 skipped` on one process, 52.6 s of it in four tests that each `yaml.safe_load` every `recipe.yaml`
 **When** those audits read one shared parse per file, made by the C safe loader where libyaml is built in, and the task passes `-n auto --dist loadgroup` (steward Story 117.16 puts `pytest-xdist` in the Guild environment)

@@ -921,8 +921,8 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   allow; realized here, no text change in this station's Spec) and decomposes as Epic 48, one story: the audits that
   need every recipe's parsed document share one parse per file, by the C safe loader where libyaml is built in, and
   `test-ci-meta` passes `-n auto --dist loadgroup`. **Constraints:** every audit judges the same files and the same
-  findings; an audit whose subject is the parser itself (the duplicate-key and sentinel scans) keeps the reader it
-  has; the full net (`test-ci`) is not moved; the `conda-forge-expert` skill's retro and CHANGELOG entry close the
+  findings; the parse audit itself still reads every recipe with `yaml.safe_load` and fails when the shared parse
+  disagrees with it; the full net (`test-ci`) is not moved; the `conda-forge-expert` skill's retro and CHANGELOG entry close the
   story. No flag (a chore). Owner `spec-pyforge-mason`.
 
 ## One-chain fold — 2026-09-17
