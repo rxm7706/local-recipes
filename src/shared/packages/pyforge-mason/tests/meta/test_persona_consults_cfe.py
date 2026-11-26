@@ -187,7 +187,7 @@ def test_station_binary_without_pyforge_grammar_fails():
             "skill": CONTENT_SKILL,
             "path": CONTENT_SKILL_MD,
         },
-        {"kind": "grammar", "argv": ["mason", "doctor"]},
+        {"kind": "grammar", "argv": ["mason", "self-check"]},
     ]
     try:
         validate_transcript(events)
@@ -229,7 +229,7 @@ def test_third_content_skill_consult_fails():
             "skill": "pyforge-steward",
             "path": ".claude/skills/pyforge-steward/active/pyforge-steward/SKILL.md",
         },
-        {"kind": "grammar", "argv": ["pyforge", "mason", "doctor"]},
+        {"kind": "grammar", "argv": ["pyforge", "mason", "self-check"]},
     ]
     try:
         validate_transcript(events)
@@ -246,7 +246,7 @@ def test_consult_path_must_be_exact_cfe_skill_md():
             "skill": CONTENT_SKILL,
             "path": "tmp/evil/.claude/skills/conda-forge-expert/SKILL.md",
         },
-        {"kind": "grammar", "argv": ["pyforge", "mason", "doctor"]},
+        {"kind": "grammar", "argv": ["pyforge", "mason", "self-check"]},
     ]
     try:
         validate_transcript(events)

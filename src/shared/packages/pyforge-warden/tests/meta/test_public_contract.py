@@ -664,7 +664,7 @@ def contract_text() -> str:
 
 def test_derivations_are_not_blind() -> None:
     """Each inventory derives something, so a green below is never a scan that found nothing."""
-    assert {"scan", "<path>", "--version", "--format", "--doctor"} <= _live_cli()
+    assert {"scan", "<path>", "--version", "--format", "--self-check"} <= _live_cli()
     assert len(_scan_options()) >= 24
     assert len(config._RECOGNIZED_KEYS) >= 13
     assert len(_flags_derived(_live_flag_sources())) >= 9

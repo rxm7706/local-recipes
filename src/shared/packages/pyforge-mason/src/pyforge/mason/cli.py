@@ -13,7 +13,7 @@ because the seam is a **capability** decision, not an implementation one
 * ``package``      — built natively; no wheel-build/upload path exists to wrap.
 * ``environment``  — built natively; no lock orchestration exists to wrap.
 
-``doctor`` is a fourth, top-level leaf (OQ-A4) with no verb level — its real
+``self-check`` (``doctor`` until Story 46.2) is a fourth, top-level leaf (OQ-A4) with no verb level — its real
 diagnosis lands in Story 1.8; here it is a stub, same pattern as the other
 nouns were in Story 1.1.
 
@@ -24,7 +24,7 @@ it there, in the same function. (argparse forbids calling
 ``add_subparsers()`` a second time on one parser, so this cannot be done
 from outside ``build_parser()`` after the fact.) A single generic loop
 builds the three verb-bearing nouns, capturing each one's verb-subparsers
-action into a local ``_noun_verbs`` dict; ``doctor`` has no verb level by
+action into a local ``_noun_verbs`` dict; ``self-check`` has no verb level by
 design (OQ-A4) and is built separately, immediately after that loop.
 
 Story 2.4 registers the first real verb, ``recipe new`` (FR-7), on
@@ -115,26 +115,9 @@ _NOUNS = {
     "package": "build and ship distributions to PyPI and conda-forge",
     "environment": "resolve conflicting worlds into one lockfile",
 }
-_DOCTOR_HELP = "diagnose the installed Mason: version, CFE resolution, engine presence"
-# Story 46.1: the self-diagnosis command is `self-check`; `doctor`, the fleet doctor station's name, stays an alias
-# for one release and says on stderr that it is renamed.
+_SELF_CHECK_HELP = "diagnose the installed Mason: version, CFE resolution, engine presence"
+# Story 46.1: the self-diagnosis command is `self-check`; `doctor` is the fleet doctor station's name.
 SELF_CHECK_NOUN = "self-check"
-OLD_SELF_CHECK_NOUN = "doctor"
-OLD_SELF_CHECK_NOTICE = (
-    f"mason: {OLD_SELF_CHECK_NOUN} is renamed {SELF_CHECK_NOUN}; the old spelling is accepted for one release"
-)
-
-
-def _notice(message: str) -> None:
-    """One line on stderr that never reaches stdout and never raises: with fd 2 closed at start-up ``sys.stderr`` is
-    ``None``, and ``print(file=None)`` would write to stdout, breaking the one-JSON-document rule (CAP-5)."""
-    stream = sys.stderr
-    if stream is None:
-        return
-    try:
-        print(message, file=stream)
-    except OSError, ValueError:
-        pass
 
 
 _RECIPE_NEW_HELP = "generate a recipe from PyPI/GitHub/CRAN/npm via conda-forge-expert"
@@ -331,7 +314,7 @@ def _configure_logging(verbose: bool, quiet: bool) -> None:
 
     Called once, in `main()`, immediately after `parser.parse_args(argv)`
     returns successfully and before any noun dispatch, so every command path
-    that reaches that point (bare invocation, `doctor`, the custom bare-noun
+    that reaches that point (bare invocation, `self-check`, the custom bare-noun
     usage error) is covered uniformly. This does NOT cover a usage error
     `argparse` itself raises *during* `parse_args` (an invalid `--format`
     choice, a non-numeric `--cfe-timeout`, an unrecognized flag) -- those
@@ -627,14 +610,13 @@ def build_parser() -> argparse.ArgumentParser:
         # bare-noun usage error without re-parsing or rebuilding a parser.
         noun_parser.set_defaults(_noun_parser=noun_parser)
 
-    doctor_parser = nouns.add_parser(
+    self_check_parser = nouns.add_parser(
         SELF_CHECK_NOUN,
-        aliases=[OLD_SELF_CHECK_NOUN],
-        help=_DOCTOR_HELP,
-        description=_DOCTOR_HELP,
+        help=_SELF_CHECK_HELP,
+        description=_SELF_CHECK_HELP,
         parents=[global_flags],
     )
-    doctor_parser.set_defaults(_noun_parser=doctor_parser)
+    self_check_parser.set_defaults(_noun_parser=self_check_parser)
 
     # Story 2.4: mason recipe new --from-{pypi,github,cran,npm} <pkg> --output
     # <path> — the first verb registered under any noun in epic order (FR-7).
@@ -1171,7 +1153,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         # FR-49/AD-25: configure logging immediately, before any noun
         # dispatch, so every command path that reaches this point (bare
-        # invocation, doctor, the custom bare-noun usage error) is covered --
+        # invocation, self-check, the custom bare-noun usage error) is covered --
         # not just the ones that reach a use-case. (A usage error argparse
         # itself raises during parse_args, above, never reaches this line --
         # see _configure_logging's docstring.)
@@ -1186,20 +1168,18 @@ def main(argv: Sequence[str] | None = None) -> int:
             parser.print_help()
             return EXIT_OK
 
-        if ns.noun in (SELF_CHECK_NOUN, OLD_SELF_CHECK_NOUN):
-            if ns.noun == OLD_SELF_CHECK_NOUN:
-                _notice(OLD_SELF_CHECK_NOTICE)
-            # This branch must stay ahead of the verb check: `doctor` has no
+        if ns.noun == SELF_CHECK_NOUN:
+            # This branch must stay ahead of the verb check: `self-check` has no
             # verb level, so its namespace carries no `verb` attribute at
-            # all, and a verb-less `doctor` is a complete command (EXIT_OK),
+            # all, and a verb-less `self-check` is a complete command (EXIT_OK),
             # not a usage error.
             #
-            # FR-34 frames `doctor` as a reporting command, so its result
+            # FR-34 frames `self-check` as a reporting command, so its result
             # goes through the one formatter (AD-8) to stdout, not a raw
             # stderr print(). `doctor.build_report` never raises (Story
             # 1.8), so this branch always reports EXIT_OK, even with CFE or
             # an engine absent -- the gap is data in the report, not a
-            # failure of the `doctor` command itself.
+            # failure of the `self-check` command itself.
             fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
             report = doctor.build_report(
                 getattr(ns, "cfe_root", None),
@@ -1207,8 +1187,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 os.environ,
                 Path.cwd(),
             )
-            # The envelope names the command as it was called, so a reader of `"doctor"` keeps working.
-            render.write(fmt, sys.stdout, ns.noun, "ok", dataclasses.asdict(report), [])
+            render.write(fmt, sys.stdout, SELF_CHECK_NOUN, "ok", dataclasses.asdict(report), [])
             return EXIT_OK
 
         if ns.noun == "package" and getattr(ns, "ship", None) is not None and getattr(ns, "verb", None):
@@ -1361,7 +1340,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 return EXIT_USAGE
 
             fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
-            result = recipe.build(
+            build_result = recipe.build(
                 ns.recipe_path,
                 docker=docker,
                 config=config,
@@ -1379,8 +1358,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             # carries the returncode, while the exit code projects it --
             # EXIT_FAILED when the build failed (Story 42.1, operator
             # ruling 2026-11-25: a failed wrapped tool makes mason exit 1).
-            render.write(fmt, sys.stdout, "recipe build", "ok", dataclasses.asdict(result), [])
-            return EXIT_OK if result.returncode == 0 else EXIT_FAILED
+            render.write(fmt, sys.stdout, "recipe build", "ok", dataclasses.asdict(build_result), [])
+            return EXIT_OK if build_result.returncode == 0 else EXIT_FAILED
 
         if ns.noun == "recipe" and ns.verb == "diagnose":
             # FR-10: delegates to CFE's failure analyzer via recipe.py.
@@ -1497,7 +1476,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             # above), passed straight through as `confirm`/`prepare_only`;
             # `recipe.submit` does the `--dry-run` inversion itself.
             fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
-            result = recipe.submit(
+            submit_result = recipe.submit(
                 ns.recipe_path,
                 confirm=ns.yes,
                 prepare_only=ns.prepare_only,
@@ -1512,13 +1491,13 @@ def main(argv: Sequence[str] | None = None) -> int:
                 sys.stdout,
                 "recipe submit",
                 "ok",
-                dataclasses.asdict(result),
+                dataclasses.asdict(submit_result),
                 [],
             )
             # The ship state is projected as `package ship` projects it
             # (Story 42.1): `failed` exits EXIT_FAILED; `not_attempted`
             # (a dry run), `pending` and `terminal` exit EXIT_OK.
-            return EXIT_FAILED if result.state == ShipState.FAILED else EXIT_OK
+            return EXIT_FAILED if submit_result.state == ShipState.FAILED else EXIT_OK
 
         if ns.noun == "recipe" and ns.verb == "update":
             # FR-14: delegates to CFE's autotick scripts via recipe.py.
@@ -1574,7 +1553,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             # CFE at all (spec Always boundary) -- no cfe-root/cfe-python/
             # cfe-timeout flags are read here.
             fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
-            result = package.build(ns.project_path, target=ns.target)
+            package_result = package.build(ns.project_path, target=ns.target)
             # A non-zero delegated engine returncode is DATA on `result`,
             # never raised (AD-4): the envelope's `status` stays "ok" and
             # carries both returncodes, while the exit code projects them
@@ -1582,8 +1561,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             # `PackageVersionMismatchError` is the one exception `package.
             # build()` can still raise, propagating to main()'s existing
             # `except MasonError` handler below.
-            render.write(fmt, sys.stdout, "package build", "ok", dataclasses.asdict(result), [])
-            return EXIT_OK if result.pep517_returncode == 0 and result.pixi_returncode == 0 else EXIT_FAILED
+            render.write(fmt, sys.stdout, "package build", "ok", dataclasses.asdict(package_result), [])
+            return (
+                EXIT_OK
+                if package_result.pep517_returncode == 0 and package_result.pixi_returncode == 0
+                else EXIT_FAILED
+            )
 
         if ns.noun == "package" and ns.verb == "ship":
             # FR-16/FR-24/FR-50/D-12: the canonical shipping verb --
@@ -1612,7 +1595,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             if not manifest_paths:
                 manifest_paths = environment.discover_manifests(Path.cwd())
                 print(f"discovered manifests: {', '.join(manifest_paths)}", file=sys.stderr)
-            result = environment.lock(manifest_paths, ns.output, platforms=_join_platform_flags(ns.platform))
+            lock_result = environment.lock(manifest_paths, ns.output, platforms=_join_platform_flags(ns.platform))
             # A non-zero delegated engine returncode is DATA on `result`,
             # never raised (AD-4): the JSON envelope's `status` stays "ok"
             # and carries the returncode, while the exit code projects it --
@@ -1627,10 +1610,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                 sys.stdout,
                 "environment lock",
                 "ok",
-                dataclasses.asdict(result),
+                dataclasses.asdict(lock_result),
                 [],
             )
-            return EXIT_OK if result.returncode == 0 else EXIT_FAILED
+            return EXIT_OK if lock_result.returncode == 0 else EXIT_FAILED
 
         if ns.noun == "environment" and ns.verb == "check":
             # FR-28 (Story 4.4): CI's own companion to `environment lock`
@@ -1669,16 +1652,16 @@ def main(argv: Sequence[str] | None = None) -> int:
             if not manifest_paths:
                 manifest_paths = environment.discover_manifests(Path.cwd())
                 print(f"discovered manifests: {', '.join(manifest_paths)}", file=sys.stderr)
-            result = environment.check(ns.lockfile, manifest_paths, platforms=_join_platform_flags(ns.platform))
+            check_result = environment.check(ns.lockfile, manifest_paths, platforms=_join_platform_flags(ns.platform))
             render.write(
                 fmt,
                 sys.stdout,
                 "environment check",
                 "ok",
-                dataclasses.asdict(result),
+                dataclasses.asdict(check_result),
                 [],
             )
-            return EXIT_OK if not result.stale and result.returncode == 0 else EXIT_FAILED
+            return EXIT_OK if not check_result.stale and check_result.returncode == 0 else EXIT_FAILED
 
         # Unreachable now for every verb-noun pair except `recipe new`/
         # `recipe validate`/`recipe build`/`recipe diagnose`/`recipe

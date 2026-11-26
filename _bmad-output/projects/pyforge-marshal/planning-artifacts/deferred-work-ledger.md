@@ -9243,7 +9243,8 @@ status: open
   origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
   severity: low
   promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
-  status: open
+  resolution: 2026-11-26 — marshal Story 126.1 (`126-1-three-open-rows-close-classify-is-total-the-live-path-guard-holds-no-dead-entry-and-cap-305-names-both-guard-parts`), branch `broken-windows-2026-11-26`: both CAP-305 entries dropped from `ALLOW`; the guard passes without them
+  status: closed
 
 ### DW-marshal-114-3-1: About 290 capabilities name no test or command that proves them.
 
@@ -9265,7 +9266,8 @@ status: open
   origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
   severity: low
   promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
-  status: open
+  resolution: 2026-11-26 — marshal Story 126.1 (`126-1-three-open-rows-close-classify-is-total-the-live-path-guard-holds-no-dead-entry-and-cap-305-names-both-guard-parts`), branch `broken-windows-2026-11-26`: `_CLASSIFY_TABLE` holds MRS-CHAIN-005 (error), MRS-PREFLIGHT-016 and MRS-REFRESH-008 (warn); `test_classify_is_total_over_every_registered_code` holds the table total; the contract's cells read `error` and `warn`
+  status: closed
 
 ### DW-marshal-115-1-1: adapters/published_plane.py is a seven-line alias that only a Doctor test names.
 
@@ -9320,7 +9322,8 @@ status: open
   origin: spec-deferred — recorded by hand in the cutover-readiness PR (2026-11-10)
   severity: low
   promoted: 2026-11-13 — written by hand at the cutover-readiness close (marshal Story 116.5, branch cutover-readiness-2026-11-10)
-  status: open
+  resolution: 2026-11-26 — marshal Story 126.1 (`126-1-three-open-rows-close-classify-is-total-the-live-path-guard-holds-no-dead-entry-and-cap-305-names-both-guard-parts`), branch `broken-windows-2026-11-26`: CAP-305's guard clause names both parts, the audit hook and `_package_half_off_the_tree`, by a memlog decision and a render
+  status: closed
 
 ### DW-marshal-cutover-2026-11-10-1: marshal check maps Doctor's detectors row word `unmeasured` to the generic MRS-CHECK-001 WARN.
 

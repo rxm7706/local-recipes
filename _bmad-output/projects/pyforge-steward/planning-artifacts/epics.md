@@ -9783,6 +9783,28 @@ So that a name says whose plugin it is and a second package cannot take it.
 **And** no value an operator types changes, steward's deploy profiles are still selected by `plugin_id`, and both contracts name the new registrations
 **Status:** done
 
+## Epic 147: CAP-183 and CAP-185 read shipped (spec-pyforge-steward CAP-183, CAP-185)
+
+Minted 2026-11-26 from the station Dream's entry of the same date on the operator ruling of 2026-11-26: "lets fix these - and leave no broken windows" (spec-pyforge-steward:CAP-183 and spec-pyforge-steward:CAP-185 still read ready though their stories landed; mason's hidden mypy errors in cli.py; three marshal deferred rows and DW-mason-37-2), then "should close these too" (remove `--doctor` and `mason doctor` now rather than after a release; regenerate the two compiled station skills).
+**HARD boundaries:**
+- Markers only: no intent or success moves. No flag.
+
+### Story 147.1: CAP-183 and CAP-185 read shipped
+
+As a reader of the steward Spec,
+I want each capability's marker to say whether it is built,
+So that a shipped capability does not read as planned work.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-183 and CAP-185 (markers re-rendered); no AD moves
+**Flag:** none (a status marker)
+**Surface:** `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md`
+**Spec:** `planning-artifacts/specs/spec-147-1-cap-183-and-cap-185-read-shipped.md`
+**Given** CAP-183 and CAP-185 read `ready` though their stories landed (6db8d6e60f, 3556bd1f2e)
+**When** a memlog decision and a render set their markers
+**Then** CAP-183 reads (shipped 2026-11-25) and CAP-185 (shipped 2026-11-26)
+**And** no other line of the Spec moves
+**Status:** done
+
 ## Currency reconciliation — 2026-11-26 (CAP-184 amended)
 
 *Chain-currency cascade (arch -> epics), CAP-184 amended.* 2026-11-26: Epic 142 and Story 142.1 are minted under `spec-pyforge-steward` CAP-184 as amended (FR-58); no AD moves. The keys `142-1`, `epic-142` and `epic-142-retrospective` go through the Tier-3 feed and `sprint-ledger-sync`. **Content changed:** Epic 142, this section and `updated:`.

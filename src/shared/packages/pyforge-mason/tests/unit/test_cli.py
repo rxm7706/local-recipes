@@ -4718,27 +4718,9 @@ def test_failed_wrapped_tool_sibling_a_tool_that_passed_exits_ok(patched, wrappe
     _assert_wrapped_envelope(capsys, expected_data)
 
 
-def test_the_old_doctor_name_runs_the_same_self_check_and_says_it_is_renamed(capsys):
-    """Story 46.1: `doctor` (the fleet doctor station's name) is the old name of `self-check`, accepted for one release.
-    It reports the same data, names the command as it was called, and says on stderr that it is renamed; the new name
-    says nothing."""
-    with patch("pyforge.mason.cli.doctor.build_report", return_value=_FIXED_REPORT):
-        assert main(["self-check", "--format", "json"]) == EXIT_OK
-        new = capsys.readouterr()
-        assert main(["doctor", "--format", "json"]) == EXIT_OK
-        old = capsys.readouterr()
-    new_doc, old_doc = json.loads(new.out), json.loads(old.out)
-    assert (new_doc["command"], old_doc["command"]) == ("self-check", "doctor")
-    assert old_doc["data"] == new_doc["data"]
-    assert new.err == ""
-    assert old.err == "mason: doctor is renamed self-check; the old spelling is accepted for one release\n"
-
-
-def test_the_renamed_notice_never_reaches_stdout_with_stderr_closed(capsys, monkeypatch):
-    """Story 46.1 review: with fd 2 closed at start-up `sys.stderr` is None; the notice is dropped, so stdout stays one
-    JSON document."""
-    with patch("pyforge.mason.cli.doctor.build_report", return_value=_FIXED_REPORT):
-        monkeypatch.setattr("sys.stderr", None)
-        assert main(["doctor", "--format", "json"]) == EXIT_OK
-    out = capsys.readouterr().out
-    assert json.loads(out)["command"] == "doctor"
+def test_the_old_doctor_name_is_refused(capsys):
+    """Story 46.2: `doctor`, the fleet doctor station's name, is no longer a mason command; `self-check` is."""
+    with pytest.raises(SystemExit) as excinfo:
+        build_parser().parse_args(["doctor"])
+    assert excinfo.value.code == 2
+    assert "invalid choice: 'doctor'" in capsys.readouterr().err

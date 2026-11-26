@@ -7,7 +7,7 @@ source_authority: internal
 language: python
 description: >
   Unified dependency-hygiene + vulnerability scanner. Agents use the warden
-  CLI (scan / scan --doctor) and canopy:FR-13 grammar `pyforge warden …`, never
+  CLI (scan / scan --self-check) and canopy:FR-13 grammar `pyforge warden …`, never
   importing pyforge.warden internals. The CLI is the sole PR-gate publisher.
 doc_urls:
   - url: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/contract.md

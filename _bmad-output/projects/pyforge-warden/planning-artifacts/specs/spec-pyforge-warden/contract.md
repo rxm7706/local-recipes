@@ -39,7 +39,7 @@ the backticked tokens of each row's first cell and of the cells its tables name 
 The program is `warden` (`[project.scripts] warden = "pyforge.warden.cli:main"`). Its one verb is `warden scan <path>`,
 which is the same verb as `pyforge warden scan <path>` through pyforge-core's `pyforge` dispatcher; run either from the
 repository root. `-h`/`--help` on both parsers is argparse's own and is not listed. `--self-check` is a flag on `scan`, not
-a second verb; `--doctor` is its old spelling, accepted for one release (Story 33.1). A usage error, `--bypass` without `--reason` included, exits 2. A CLI flag overrides the
+a second verb (Story 33.1 renamed it from `--doctor`, the fleet doctor station's name; Story 33.2 removed the old spelling). A usage error, `--bypass` without `--reason` included, exits 2. A CLI flag overrides the
 `[tool.pyforge-warden]` key of the same name (section 2). The rows are the verb, its positional, its options (`--json` is another spelling of `--format json`),
 then the top-level `--version`.
 
@@ -65,7 +65,6 @@ then the top-level `--version`.
 | `--reason` | Text: the waiver reason the `--bypass` stanza records. No prompts, ever. | CAP-6 |
 | `--warn-only` | Switch. Every still-blocking rung is downgraded to `warn` before the verdict composes. | CAP-9 |
 | `--self-check` | Switch. An environment self-check instead of a scan (engines, the offline OSV database, the KEV, EPSS and end-of-life feeds): exit 0 when healthy, else 2, never 1. | CAP-8 |
-| `--doctor` | The old spelling of `--self-check` (it is the fleet doctor station's name), accepted for one release: the same self-check, plus one line on stderr saying it is renamed. | CAP-8 |
 | `--baseline` | `PATH` to a committed `.warden-baseline.yaml`; the findings it lists are suppressed. A missing or invalid file is a loud error. | CAP-9 |
 | `--baseline-emit` | Switch. Prints candidate baseline entries (stdout under `text`, stderr under `json`); never changes the status or the exit. | CAP-9 |
 | `--open-fix-prs` | Switch. The post-verdict fix-PR actuator; credentials and repo from the environment (section 5). | CAP-12, CAP-24 |

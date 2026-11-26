@@ -1840,6 +1840,7 @@ So that the same spelling works on every station.
 ## Epic 33: Warden's self-check is not called doctor (spec-pyforge-warden CAP-8)
 
 Minted 2026-11-26 from the station Dream's entry of the same date on the operator ruling of 2026-11-26 on the open convention items: "go with your recommendations, start in the suggested order" (the recommendation: the two self-diagnosis spellings that reuse the doctor station's name are renamed, warden's `scan --doctor` to `--self-check` and `mason doctor` to `mason self-check`, and the old spelling is accepted for one release with a notice).
+**Amended 2026-11-26:** on the operator's ruling of the same day the old spelling is removed now (Story 33.2), not after a release, and the compiled station skill is regenerated (Story 33.3).
 **HARD boundaries:**
 - `--doctor` keeps working for one release: the same self-check and exit code, plus one line on stderr.
 - The exit codes, the JSON document and the MCP face do not move; no capability text moves.
@@ -1859,6 +1860,38 @@ So that it is not mistaken for the fleet's doctor station.
 **When** the flag is `--self-check` and `--doctor` is kept as its old spelling
 **Then** both run the same self-check with the same exit code and stdout, and only `--doctor` prints one line on stderr saying it is renamed
 **And** the contract, the how-to, the dossier and the persona prompt use `--self-check`, and two deferred rows hold the removal of `--doctor` and the skill's regeneration
+**Status:** done
+
+### Story 33.2: Warden's --doctor is gone, and --self-check is the one spelling
+
+As a reader of a warden command line,
+I want one spelling of the self-check,
+So that the doctor station's name means only the doctor station.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-warden CAP-8 (no text change); FR-29; no AD moves
+**Flag:** none (a removal on the operator's ruling)
+**Surface:** `src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py`, `src/shared/packages/pyforge-warden/tests/unit/test_cli_doctor.py`, `src/shared/packages/pyforge-warden/tests/meta/test_public_contract.py`, `_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/contract.md`, `docs/how-to/scan-for-compliance-with-warden.md`, `docs/foundry/marketplace/skills/warden/scan/SKILL.md`, `docs/foundry/marketplace/skills/warden/scan/steps.md`, `docs/foundry/marketplace/site/skills/warden/scan.html`, `docs/foundry/frames/stations/warden.frame.md`, `_bmad-output/projects/pyforge-warden/planning-artifacts/prds/prd-pyforge-warden-2026-07-14/prd.md`, `src/shared/packages/pyforge-warden/README.md`, `src/shared/packages/pyforge-warden/tests/integration/test_doctor.py`
+**Spec:** `planning-artifacts/specs/spec-33-2-warden-s-doctor-is-gone-and-self-check-is-the-one-spelling.md`
+**Given** Story 33.1 kept `--doctor` as an old spelling for one release
+**When** the operator rules it removed now
+**Then** `warden scan --doctor` is an unrecognized argument (exit 2) and `--self-check` runs the self-check
+**And** the contract, the docs and the Frame name `--self-check` alone
+**Status:** done
+
+### Story 33.3: The warden station skill documents --self-check
+
+As an agent reading warden's compiled skill,
+I want the skill to name `scan --self-check`,
+So that an agent never runs a refused flag.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-warden CAP-8 (no text change); no AD moves
+**Flag:** none (a regenerated skill)
+**Surface:** `.claude/skills/pyforge-warden/active/pyforge-warden/SKILL.md`, `src/shared/packages/pyforge-warden/tests/meta/test_skf_domain_skill.py`, `.claude/skills/pyforge-warden/0.1.2/pyforge-warden/SKILL.md`, `.claude/skills/pyforge-warden/skill-brief.yaml`, `AGENTS.md`, `docs/reference/skills-catalog.md`, `docs/reference/bmad-estate-llms-full.md`, `_bmad-output/projects/pyforge-warden/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-33-3-the-warden-station-skill-documents-self-check.md`
+**Given** the compiled skill still documents `scan --doctor`
+**When** `skf-update-skill` regenerates it from the renamed source and `skf-export-skill` re-exports it
+**Then** the skill names `scan --self-check` and no `--doctor`
+**And** its meta-test pins the new spelling
 **Status:** done
 
 ## Currency reconciliation — 2026-11-26 (the tag rule reaches station source)

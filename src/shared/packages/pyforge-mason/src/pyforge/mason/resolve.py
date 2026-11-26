@@ -239,7 +239,7 @@ _ENV_FOUNDRY_ROOT = "MASON_FOUNDRY_ROOT"
 """Explicit foundry git root when building `factory/recipes/<r>` from local-recipes."""
 
 _ENV_FACTORY_ROOT = "MASON_FACTORY_ROOT"
-"""Set by `recipe.build()` for CFE's native-build wrapper — never read by Mason."""
+"""Set by `recipe.build()` for a factory-island build; `cfe.build_native` reads it back to place the artifacts."""
 
 _FACTORY_PIXI = Path("factory/pixi.toml")
 _FACTORY_LOCK = Path("factory/pixi.lock")

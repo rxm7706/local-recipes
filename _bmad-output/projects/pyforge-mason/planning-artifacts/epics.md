@@ -4503,6 +4503,7 @@ So that the name says whose plugin it is.
 ## Epic 46: Mason's self-diagnosis is not called doctor (spec-pyforge-mason CAP-5, CAP-29)
 
 Minted 2026-11-26 from the station Dream's entry of the same date on the operator ruling of 2026-11-26 on the open convention items: "go with your recommendations, start in the suggested order" (the recommendation: the two self-diagnosis spellings that reuse the doctor station's name are renamed, warden's `scan --doctor` to `--self-check` and `mason doctor` to `mason self-check`, and the old spelling is accepted for one release with a notice).
+**Amended 2026-11-26:** on the operator's ruling of the same day the old name is removed now (Story 46.2), not after a release, and the compiled station skill is regenerated (Story 46.3).
 **HARD boundaries:**
 - `mason doctor` keeps working for one release: the same report and exit code, plus one line on stderr.
 - The exit code and the report's fields do not move; CAP-29's grammar list moves through its memlog and a render.
@@ -4522,4 +4523,59 @@ So that it is not mistaken for the fleet's doctor station.
 **When** the command is `mason self-check` and `doctor` is kept as its alias
 **Then** both report the same data with exit 0, the envelope names the command as it was called, and only `doctor` prints one line on stderr saying it is renamed
 **And** CAP-29, FR-34, the contract and the persona use `self-check`, and two deferred rows hold the removal of `doctor` and the skill's regeneration
+**Status:** done
+
+### Story 46.2: Mason's doctor is gone, and self-check is the one name
+
+As a reader of a mason command line,
+I want one name for the self-diagnosis,
+So that the doctor station's name means only the doctor station.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-29 (grammar list re-rendered) and CAP-5 (no text change); FR-34; no AD moves
+**Flag:** none (a removal on the operator's ruling)
+**Surface:** `src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py`, `src/shared/packages/pyforge-mason/tests/unit/test_cli.py`, `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/contract.md`, `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md`, `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/.memlog.md`, `_bmad-output/projects/pyforge-mason/planning-artifacts/architecture/architecture-pyforge-mason-2026-07-25/ARCHITECTURE-SPINE.md`, `src/shared/packages/pyforge-mason/README.md`, `src/shared/packages/pyforge-mason/src/pyforge/mason/resolve.py`, `src/shared/packages/pyforge-mason/tests/meta/test_persona_consults_cfe.py`, `_bmad-output/projects/pyforge-mason/planning-artifacts/prds/prd-pyforge-mason-2026-07-25/prd.md`
+**Spec:** `planning-artifacts/specs/spec-46-2-mason-s-doctor-is-gone-and-self-check-is-the-one-name.md`
+**Given** Story 46.1 kept `doctor` as an alias of `self-check` for one release
+**When** the operator rules it removed now
+**Then** `mason doctor` is an invalid choice (exit 2), and CAP-29's grammar list and the `companions:` comments say what is true
+**And** the self-check's report and exit code are unchanged
+**Status:** done
+
+### Story 46.3: The mason station skill documents mason self-check
+
+As an agent reading mason's compiled skill,
+I want the skill to name `pyforge mason self-check`,
+So that an agent never runs a refused command.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-29 (no text change); no AD moves
+**Flag:** none (a regenerated skill)
+**Surface:** `.claude/skills/pyforge-mason/active/pyforge-mason/SKILL.md`, `src/shared/packages/pyforge-mason/tests/meta/test_skf_mason_skill.py`, `.claude/skills/pyforge-mason/0.1.2/pyforge-mason/SKILL.md`, `AGENTS.md`
+**Spec:** `planning-artifacts/specs/spec-46-3-the-mason-station-skill-documents-mason-self-check.md`
+**Given** the compiled skill still documents `pyforge mason doctor`
+**When** `skf-update-skill` regenerates it and `skf-export-skill` re-exports it
+**Then** the skill names `pyforge mason self-check` and no `mason doctor`
+**And** its meta-test pins the new name
+**Status:** done
+
+## Epic 47: Mason's types are checked whole (spec-pyforge-mason CAP-5)
+
+Minted 2026-11-26 from the station Dream's entry of the same date on the operator ruling of 2026-11-26: "lets fix these - and leave no broken windows" (spec-pyforge-steward:CAP-183 and spec-pyforge-steward:CAP-185 still read ready though their stories landed; mason's hidden mypy errors in cli.py; three marshal deferred rows and DW-mason-37-2), then "should close these too" (remove `--doctor` and `mason doctor` now rather than after a release; regenerate the two compiled station skills). Four `[[tool.mypy.overrides]]` entries hid 28 type errors in four modules; the 2026-11-12 retro's action to fix them the next time `cli.py` was touched did not land.
+**HARD boundaries:**
+- No override is added and no `# type: ignore` hides an error; a hidden None becomes a refusal by an existing error or a narrowing the code proves.
+- Exit codes and report fields do not move. No flag.
+
+### Story 47.1: Mason's types are checked whole
+
+As a maintainer of mason,
+I want mypy to check every mason module with no exemption,
+So that a None the type allows cannot reach a parameter that needs a value unnoticed.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-5 (no text change); no AD moves
+**Flag:** none (a type fix; no behaviour is switched)
+**Surface:** `src/shared/packages/pyforge-mason/pyproject.toml`, `src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py`, `src/shared/packages/pyforge-mason/src/pyforge/mason/cfe.py`, `src/shared/packages/pyforge-mason/src/pyforge/mason/recipe.py`, `src/shared/packages/pyforge-mason/src/pyforge/mason/package.py`, `src/shared/packages/pyforge-mason/tests/unit/test_cfe.py`, `src/shared/packages/pyforge-mason/tests/unit/test_recipe.py`, `src/shared/packages/pyforge-mason/tests/unit/test_package.py`
+**Spec:** `planning-artifacts/specs/spec-47-1-mason-s-types-are-checked-whole.md`
+**Given** four mypy exemptions hide 28 errors in `cli`, `cfe`, `package` and `recipe`
+**When** the exemptions are removed and each error is fixed at its cause
+**Then** `lint-types` exits 0 with no mason override, and each newly refused path has a test
+**And** every existing mason test passes unchanged in what it asserts
 **Status:** done

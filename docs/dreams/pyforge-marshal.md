@@ -14014,6 +14014,12 @@ row; the `steward setup` read rules) · [[pyforge-scribe]] (the
   125, one story: marshal registers `bmad-loop` on the shared group; it registers `marshal-runner-bmad-loop` instead, and `contract.md` says
   so. **Constraints:** marshal still selects its plugin by `plugin_id`, so no value an operator types changes; no flag.
   Owner `spec-pyforge-marshal`.
+- **2026-11-26 (three open rows close) — Ruled:** operator ruling of 2026-11-26: "lets fix these - and leave no broken windows" (spec-pyforge-steward:CAP-183 and spec-pyforge-steward:CAP-185 still read ready though their stories landed; mason's hidden mypy errors in cli.py; three marshal deferred rows and DW-mason-37-2), then "should close these too" (remove `--doctor` and `mason doctor` now rather than after a release; regenerate the two compiled station skills). **For marshal:** Epic 126, one story (126.1), closes the three
+  rows the 2026-11-13 and 2026-11-26 retros carried. `classify` gets a member for `MRS-CHAIN-005` (error),
+  `MRS-PREFLIGHT-016` and `MRS-REFRESH-008` (warn), and a test holds it total over every registered code
+  (DW-marshal-114-3-2); the live-path guard drops two `ALLOW` entries whose files exist (DW-marshal-114-2-3);
+  CAP-305's guard clause names both parts of the package-half guard (DW-marshal-116-4-1). **Constraints:** no finding's
+  severity moves; the CAP-305 amendment is text only; no flag. Owner `spec-pyforge-marshal`.
 
 ## 2026-11-10 — The Spec says what marshal is, and its roots come from one place
 

@@ -1,0 +1,30 @@
+{
+  "skill": "skf-export-skill",
+  "status": "success",
+  "outputs": [
+    {
+      "type": "skill",
+      "path": ".claude/skills/pyforge-warden/0.1.2/pyforge-warden/context-snippet.md"
+    },
+    {
+      "type": "config",
+      "path": "AGENTS.md"
+    },
+    {
+      "type": "manifest",
+      "path": ".claude/skills/.export-manifest.json"
+    }
+  ],
+  "summary": {
+    "skills": [
+      "pyforge-warden"
+    ],
+    "always_on_tokens": 1626,
+    "on_trigger_tokens": {
+      "pyforge-warden": 3681
+    }
+  },
+  "timestamp": "2026-11-26T17:39:50Z",
+  "headless_decisions": [],
+  "warnings": []
+}

@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: f5763b5e8e576e81
-story_count: 557
+source_fingerprint: 38e626a0ba819b5e
+story_count: 558
 test_file_count: 307
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 557
-- **Epics parsed:** 123
+- **Stories parsed:** 558
+- **Epics parsed:** 124
 - **Test files inventoried:** 307 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `f5763b5e8e576e81`
+- **Source fingerprint:** `38e626a0ba819b5e`
 
 ## Risk Assessment
 
@@ -144,6 +144,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 123: The citation detector reads station source (spec-one-chain-per-station:CAP-9)
 - Epic 124: Marshal's verbs take both spellings for JSON (spec-pyforge-steward:CAP-185)
 - Epic 125: Marshal's loop-runner plugin is registered under marshal's name (spec-pyforge-unifying-strategy:CAP-18)
+- Epic 126: Three open rows close (spec-pyforge-marshal CAP-13, CAP-305)
 
 ### Low-risk epics
 
@@ -1033,6 +1034,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 123.1 | The citation detector holds station source to the tag rule | none observed |
 | 124.1 | Marshal's verbs take both spellings for JSON | none observed |
 | 125.1 | Marshal's loop-runner plugin is registered under marshal's name | none observed |
+| 126.1 | Three open rows close: classify is total, the live-path guard holds no dead e... | none observed |
 
 ## Quality Gates
 

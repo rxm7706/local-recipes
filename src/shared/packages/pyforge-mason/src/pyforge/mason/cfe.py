@@ -12,8 +12,9 @@ do (AD-2, enforced by `tests/meta/test_dependency_direction.py`).
 Story 1.7 adds `ensure_cfe_root`, mirroring `ensure_import_floor`'s split
 from `probe_import_floor`: it takes the already-computed `ResolvedCfeRoot`
 (never re-resolving -- `resolve.py`'s own docstring says a later caller
-"never needs to re-resolve") and raises `CfeUnresolvedError` when
-`resolved.step == STEP_NOT_FOUND`. It lives here, not in `resolve.py`,
+"never needs to re-resolve"), raises `CfeUnresolvedError` when
+`resolved.step == STEP_NOT_FOUND` (or `resolved.root` is `None`), and
+otherwise returns the proven root `Path` for the caller to pass on. It lives here, not in `resolve.py`,
 because `resolve.py`'s own docstring and every existing test treat
 `resolve_cfe_root` as a function that "never raises" -- raising is `cfe.py`'s
 job, matching the Capability -> Architecture map's "CFE seam (FR-1 - FR-6)"
@@ -162,6 +163,7 @@ from __future__ import annotations
 
 import codecs
 import functools
+import io
 import json
 import math
 import re
@@ -171,7 +173,7 @@ import threading
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TextIO
+from typing import TextIO, cast
 
 from .errors import CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError
 from .models import BuildResult, CfeResult
@@ -283,16 +285,22 @@ def ensure_import_floor(interpreter: str) -> None:
         raise CfeImportFloorError(missing=result.missing, interpreter=interpreter)
 
 
-def ensure_cfe_root(resolved: ResolvedCfeRoot) -> None:
-    """Raise `CfeUnresolvedError` if `resolved.step` is `STEP_NOT_FOUND`;
-    otherwise return `None`.
+def ensure_cfe_root(resolved: ResolvedCfeRoot) -> Path:
+    """Raise `CfeUnresolvedError` if `resolved.step` is `STEP_NOT_FOUND`, or
+    if `resolved.root` is `None`; otherwise return `resolved.root`, the
+    proven CFE root.
+
+    `resolve_cfe_root` pairs `root=None` with `STEP_NOT_FOUND` only, so the
+    second check never fires for a resolver-built value; it is what lets a
+    caller pass the returned `Path` on without re-checking it for `None`.
 
     Takes the already-computed `ResolvedCfeRoot` -- never re-resolves by
     calling `resolve_cfe_root` itself (spec Never boundary; mirrors
     `ensure_import_floor`'s split from `probe_import_floor` above).
     """
-    if resolved.step == STEP_NOT_FOUND:
+    if resolved.step == STEP_NOT_FOUND or resolved.root is None:
         raise CfeUnresolvedError()
+    return resolved.root
 
 
 _JOIN_GRACE_SECONDS = 5.0
@@ -552,7 +560,12 @@ def run_streamed(
             # rewrites the child's `\r` into `\n`. Only this thread ever
             # reads stderr, and it never touches the text layer, so nothing
             # is stranded between the two.
-            raw = proc.stderr.buffer
+            # `text=True` with `stderr=PIPE` makes this pipe a `TextIOWrapper`
+            # over a `BufferedReader` at runtime; `Popen`'s stub types it only
+            # as `IO[str]` (no `.buffer`), and typeshed's wrapped buffer has no
+            # `read1`, so both certain runtime types are stated here.
+            text_stderr = cast(io.TextIOWrapper, proc.stderr)
+            raw = cast(io.BufferedReader, text_stderr.buffer)
             decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
             while True:
                 chunk = raw.read1(_STDERR_CHUNK_BYTES)

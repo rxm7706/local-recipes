@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: warden
-# stories: 154
+# stories: 156
 development_status:
   1-1-frozen-contract-verdict-lattice-projection-safety: done
   1-2-interfaces-null-engine-regression-harness-socket-deny: done
@@ -83,6 +83,8 @@ development_status:
   31-1-warden-s-source-cites-the-suite-spine-s-decisions-qualified: done
   32-1-warden-s-verbs-take-both-spellings-for-json: done
   33-1-warden-s-self-check-is-self-check-and-doctor-is-its-old-spelling: done
+  33-2-warden-s-doctor-is-gone-and-self-check-is-the-one-spelling: done
+  33-3-the-warden-station-skill-documents-self-check: done
   4-1-cyclonedx-sbom-emission: done
   5-1-actionable-diagnostics-safe-by-default-posture: done
   5-2-fleet-scale-validation-corpus-oracle-maturation: done

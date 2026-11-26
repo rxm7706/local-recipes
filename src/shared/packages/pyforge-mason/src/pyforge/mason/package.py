@@ -242,9 +242,14 @@ def build(project_path: str, *, target: str = "library") -> PackageBuildResult:
     pep517_result = pep517.build(resolved_project_path)
     pixi_result = pixi.build(resolved_project_path)
 
+    # Each engine sets its version only alongside the artifact path it was
+    # parsed from, so a non-None version implies a non-None path; the path
+    # checks make that pairing visible to the type checker.
     if (
         pep517_result.wheel_version is not None
+        and pep517_result.wheel_path is not None
         and pixi_result.conda_version is not None
+        and pixi_result.conda_path is not None
         and _versions_disagree(pep517_result.wheel_version, pixi_result.conda_version)
     ):
         raise PackageVersionMismatchError(
@@ -567,7 +572,9 @@ def ship_pypi(
 
     build_result = build(project_path, target=target)
 
-    if build_result.wheel_path is None or build_result.sdist_path is None:
+    # `wheel_version` is parsed from `wheel_path`'s own filename, so it is
+    # None only when `wheel_path` is; checking it here states that pairing.
+    if build_result.wheel_path is None or build_result.sdist_path is None or build_result.wheel_version is None:
         return ShipTargetResult(
             target=canonical,
             state=ShipState.FAILED,
@@ -719,7 +726,9 @@ def ship_channel(
 
     canonical = f"{_CHANNEL_PREFIX}{channel_name}"
 
-    if build_result.conda_path is None:
+    # `conda_version` is parsed from `conda_path`'s own filename, so it is
+    # None only when `conda_path` is; checking it here states that pairing.
+    if build_result.conda_path is None or build_result.conda_version is None:
         return ShipTargetResult(
             target=canonical,
             state=ShipState.FAILED,
@@ -1034,6 +1043,12 @@ def ship(
                     repository_url=_TESTPYPI_REPOSITORY_URL,
                 )
             if t.kind is ShipTargetKind.CHANNEL:
+                if t.channel_name is None:
+                    # `parse_ship_targets` builds a CHANNEL target only with
+                    # a non-empty name and refuses a bare `channel:` with
+                    # this same error, so this refusal never fires for a
+                    # parsed target.
+                    raise InvalidShipTargetError(_CHANNEL_PREFIX)
                 return ship_channel(project_path, t.channel_name, environ=environ, target=target)
             if t.kind is ShipTargetKind.CONDA_FORGE:
                 return ship_conda_forge(
@@ -1053,37 +1068,40 @@ def ship(
                 message=str(exc),
             )
 
-    results: list[ShipTargetResult | None] = [None] * len(targets)
-
     # FR-24/FR-50/AD-26 rehearsal pre-run: only when a PYPI target exists
     # anywhere in this invocation is there anything to gate -- find the
     # FIRST PYPI_TEST target (if any) and run it now, ahead of the main
-    # loop, caching its result at its own original index.
+    # loop, remembering its original index so the loop below reuses it there.
+    rehearsal_index: int | None = None
     rehearsal_result: ShipTargetResult | None = None
     if any(t.kind is ShipTargetKind.PYPI for t in targets):
         for i, t in enumerate(targets):
             if t.kind is ShipTargetKind.PYPI_TEST:
+                rehearsal_index = i
                 rehearsal_result = _ship_one(t)
-                results[i] = rehearsal_result
                 break
 
+    results: list[ShipTargetResult] = []
     for i, t in enumerate(targets):
-        if results[i] is not None:
-            continue  # the pre-run rehearsal slot above -- reused, not re-run
+        if i == rehearsal_index and rehearsal_result is not None:
+            results.append(rehearsal_result)  # the pre-run rehearsal -- reused, not re-run
+            continue
         if t.kind is ShipTargetKind.PYPI and rehearsal_result is not None:
             if rehearsal_result.state is not ShipState.TERMINAL:
-                results[i] = ShipTargetResult(
-                    target=_canonical_target_name(t),
-                    state=ShipState.NOT_ATTEMPTED,
-                    reference=None,
-                    message=(
-                        "gated on this invocation's pypi-test rehearsal: rehearsal state "
-                        f"is {rehearsal_result.state.value!r}, not terminal -- the pypi "
-                        "upload was not attempted"
-                    ),
+                results.append(
+                    ShipTargetResult(
+                        target=_canonical_target_name(t),
+                        state=ShipState.NOT_ATTEMPTED,
+                        reference=None,
+                        message=(
+                            "gated on this invocation's pypi-test rehearsal: rehearsal state "
+                            f"is {rehearsal_result.state.value!r}, not terminal -- the pypi "
+                            "upload was not attempted"
+                        ),
+                    )
                 )
                 continue
-        results[i] = _ship_one(t)
+        results.append(_ship_one(t))
 
     return tuple(results)
 

@@ -30,7 +30,7 @@ def test_doctor_real_environment_is_healthy_end_to_end(capsys, tmp_path):
     captured = capsys.readouterr()
     assert rc == 0
     lines = captured.out.splitlines()
-    assert lines[0] == "warden: doctor status=ok checks=7"
+    assert lines[0] == "warden: self-check status=ok checks=7"
     assert len(lines) == 8  # header + 7 checks (Story 11.2 adds "tea")
     for line in lines[1:]:
         assert " ok -- " in line

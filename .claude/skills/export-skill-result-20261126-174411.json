@@ -1,0 +1,30 @@
+{
+  "skill": "skf-export-skill",
+  "status": "success",
+  "outputs": [
+    {
+      "type": "skill",
+      "path": ".claude/skills/pyforge-mason/0.1.2/pyforge-mason/context-snippet.md"
+    },
+    {
+      "type": "config",
+      "path": "AGENTS.md"
+    },
+    {
+      "type": "manifest",
+      "path": ".claude/skills/.export-manifest.json"
+    }
+  ],
+  "summary": {
+    "skills": [
+      "pyforge-mason"
+    ],
+    "always_on_tokens": 1628,
+    "on_trigger_tokens": {
+      "pyforge-mason": 6269
+    }
+  },
+  "timestamp": "2026-11-26T17:44:11Z",
+  "headless_decisions": [],
+  "warnings": []
+}

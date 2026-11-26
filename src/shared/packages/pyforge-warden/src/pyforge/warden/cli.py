@@ -439,30 +439,6 @@ def _min_epss_type(value: str) -> float:
 
 
 SELF_CHECK_FLAG = "--self-check"
-OLD_SELF_CHECK_FLAG = "--doctor"
-OLD_SELF_CHECK_NOTICE = (
-    f"{TOOL_NAME}: {OLD_SELF_CHECK_FLAG} is renamed {SELF_CHECK_FLAG}; the old spelling is accepted for one release"
-)
-
-
-class _SelfCheckAction(argparse.Action):
-    """``--self-check`` (warden Story 33.1): a switch, like the ``store_true`` it
-    replaces, that also takes the old spelling ``--doctor`` -- the name of the fleet's doctor station -- and says on
-    stderr that it is renamed. Both spellings write ``args.doctor``."""
-
-    def __init__(self, option_strings: list[str], dest: str, **kwargs: object) -> None:
-        super().__init__(option_strings, dest, nargs=0, default=False, **kwargs)
-
-    def __call__(
-        self,
-        parser: argparse.ArgumentParser,
-        namespace: argparse.Namespace,
-        values: object,
-        option_string: str | None = None,
-    ) -> None:
-        if option_string == OLD_SELF_CHECK_FLAG:
-            _stderr(OLD_SELF_CHECK_NOTICE)
-        setattr(namespace, self.dest, True)
 
 
 def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
@@ -684,17 +660,14 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
     )
     scan.add_argument(
         SELF_CHECK_FLAG,
-        OLD_SELF_CHECK_FLAG,
         dest="doctor",
-        action=_SelfCheckAction,
+        action="store_true",
         help=(
             "run an environment self-check instead of a project scan (D8) "
             "-- engine/OSV-DB/KEV/EPSS-feed detection only, no discovery/"
             "extraction/policy/engine-scan and no network. Exits 0 when "
             "every check is healthy, else 2 (never 1 -- the self-check reports "
-            "operability, not policy); --format applies as usual. "
-            "--doctor is the old spelling, accepted for one release with a "
-            "notice on stderr"
+            "operability, not policy); --format applies as usual"
         ),
     )
     scan.add_argument(
@@ -884,11 +857,11 @@ def _run_doctor(args: argparse.Namespace) -> int:
     when every check is ``ok``, else ``exit_code_for(Status.ERROR)`` —
     NEVER ``1`` (doctor reports operability, not policy)."""
     # Review finding (2026-07-24): --doctor previously no-op'd every other
-    # scan/policy flag SILENTLY -- someone appending --doctor to an existing
+    # scan/policy flag SILENTLY -- someone appending --self-check to an existing
     # CI scan line would disable the gate with no trace. Diff the parsed
     # args against the scan subparser's own defaults (drift-proof: any
     # future flag is covered automatically) and name what is ignored on
-    # stderr; path/--format/--doctor are the only honored inputs. Emitted
+    # stderr; path/--format/--self-check are the only honored inputs. Emitted
     # BEFORE target resolution (follow-up review finding 2026-07-24: a bad
     # path must not suppress the very trace this exists to guarantee).
     try:
@@ -934,14 +907,14 @@ def _run_doctor(args: argparse.Namespace) -> int:
         }
         rendered = json.dumps(document, sort_keys=True, indent=2) + "\n"
     else:
-        lines = [f"{TOOL_NAME}: doctor status={status_word} checks={len(checks)}"]
+        lines = [f"{TOOL_NAME}: self-check status={status_word} checks={len(checks)}"]
         for check in checks:
             outcome = "ok" if check.ok else "problem"
             # _single_line (review finding 2026-07-24): a future check
             # message embedding subprocess stderr or a raw path must never
-            # forge extra [doctor] lines under the checks=N header -- the
+            # forge extra [self-check] lines under the checks=N header -- the
             # same invariant render_text enforces on every free-text field.
-            lines.append(f"  [doctor] {check.name} {outcome} -- {_single_line(check.message)}")
+            lines.append(f"  [self-check] {check.name} {outcome} -- {_single_line(check.message)}")
         rendered = "\n".join(lines) + "\n"
     try:
         # Mirrors _run_scan's own stdout-emission guard (BrokenPipeError

@@ -104,7 +104,7 @@ def test_compiled_skill_is_agentskills_compliant_with_provenance():
     body = skill_md.read_text(encoding="utf-8")
     assert "warden scan" in body
     assert "pyforge warden" in body
-    assert "scan --doctor" in body
+    assert "scan --self-check" in body
 
 
 def test_cli_is_the_sole_pr_gate_publisher():

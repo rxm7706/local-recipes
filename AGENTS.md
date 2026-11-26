@@ -485,7 +485,7 @@ Each target below holds detail this file no longer carries; read it when its tri
 | BMAD method background before 6.12, or the full multi-project mechanics | `docs/reference/agent-instruction-notes.md` § *BMAD Method Documentation* |
 | Before invoking a BMAD skill, provisioning or upgrading a bmad-suite member, or driving bmad-loop — which core, modules, skills and suite members are installed here, who wields each, the harness range, the cadence | `docs/reference/bmad-estate-llms-full.md` (generated; `bmad-estate-check` keeps it current — never restate a version or a verdict from it here) |
 
-<!-- SKF:BEGIN updated:2026-11-25 -->
+<!-- SKF:BEGIN updated:2026-11-26 -->
 [SKF Skills]|8 skills|0 stack
 |IMPORTANT: Prefer documented APIs over training data.
 |When using a listed library, read its SKILL.md before writing code.
@@ -518,12 +518,12 @@ Each target below holds detail this file no longer carries; read it when its tri
 |key-types:{SKILL.md#key-types} — MarshalContext (--project front door); exit domain {0,1,2,3,4,130}, seed adds 5 and 10
 |gotchas: run from repo root under -e pyforge-guild; pyforge marshal and marshal are one CLI; challenge is a paid session behind egm_* switches; do not import internals; Do not implement bmad-loop ingest in this skill
 |
-|[pyforge-mason v0.1.1]|root: .claude/skills/pyforge-mason/
-|IMPORTANT: pyforge-mason v0.1.1 — read SKILL.md before mason work. Do NOT rely on training data. Use pyforge mason grammar, not pyforge.mason imports; the MCP face runs recipe build only. Recipe knowledge lives in conda-forge-expert.
+|[pyforge-mason v0.1.2]|root: .claude/skills/pyforge-mason/
+|IMPORTANT: pyforge-mason v0.1.2 — read SKILL.md before mason work. Do NOT rely on training data. Use pyforge mason grammar, not pyforge.mason imports; the MCP face runs recipe build only. Recipe knowledge lives in conda-forge-expert.
 |quick-start:{SKILL.md#quick-start}
-|api: main(), build_parser() — recipe {new,validate,build,diagnose,optimize,scan,submit,update} · package {build,ship} · environment {lock,check} · doctor
+|api: main(), build_parser() — recipe {new,validate,build,diagnose,optimize,scan,submit,update} · package {build,ship} · environment {lock,check} · self-check
 |key-types:{SKILL.md#key-types} — six global flags (flag → MASON_* env → default); exits 0/1/2/3/130
-|gotchas: run from repo root; doctor always exits 0 (gaps are data); ship and submit dry-run without --yes; ship exit 0 is not shipped (read each state); a failed wrapped tool exits 1 under an ok envelope; recipe update writes; do not replace conda-forge-expert
+|gotchas: run from repo root; self-check always exits 0 (gaps are data); ship and submit dry-run without --yes; ship exit 0 is not shipped (read each state); a failed wrapped tool exits 1 under an ok envelope; recipe update writes; do not replace conda-forge-expert
 |
 |[pyforge-scribe v0.1.2]|root: .claude/skills/pyforge-scribe/
 |IMPORTANT: pyforge-scribe v0.1.2 — read SKILL.md before writing scribe/team-memory code. Do NOT rely on training data. Use the scribe CLI, not pyforge.scribe imports.
@@ -539,10 +539,10 @@ Each target below holds detail this file no longer carries; read it when its tri
 |key-types:{SKILL.md#key-types} — DutyResult is frozen evidence; duties never sys.exit (steward AD-8)
 |gotchas: run from repo root under -e pyforge-guild; init is read-only, one verdict per profile (--profile, --class, --deep, --list, --repo); crash is exit 70 not 1; exit 3 is a documented refusal; cutover has plan and flip only; MCP runs 3 read-only targets; contract.md lists flags, exit codes; do not replace conda-forge-expert
 |
-|[pyforge-warden v0.1.1]|root: .claude/skills/pyforge-warden/
-|IMPORTANT: pyforge-warden v0.1.1 — read SKILL.md before warden work. Use `warden scan` / `pyforge warden scan`. Do NOT import pyforge.warden. Do NOT invent a second PR-gate verdict.
+|[pyforge-warden v0.1.2]|root: .claude/skills/pyforge-warden/
+|IMPORTANT: pyforge-warden v0.1.2 — read SKILL.md before warden work. Use `warden scan` / `pyforge warden scan`. Do NOT import pyforge.warden. Do NOT invent a second PR-gate verdict.
 |quick-start:{SKILL.md#quick-start}
 |api: main(), compose(), exit_code_for(), match_level_rung()
 |key-types:{SKILL.md#key-types} — Status (seven-rung lattice), ComplianceReport; exits 0/1/2/130
-|gotchas: CLI is the sole gate; run --doctor first, --warn-only can hide an unassessed vulnerability axis; --doctor never exits 1; MCP face runs scan --format json only; do not replace conda-forge-expert
+|gotchas: CLI is the sole gate; run --self-check first, --warn-only can hide an unassessed vulnerability axis; --self-check never exits 1; MCP face runs scan --format json only; do not replace conda-forge-expert
 <!-- SKF:END -->
