@@ -544,7 +544,7 @@
    "docs/how-to/ocp-cluster-bringup.md": "7872c5794d39fc49c00e1ec5c3d018ce271542b9",
    "docs/how-to/one-chain-station-ops.md": "7d8846d2a87da34b304e41e990bd16055793725d",
    "docs/how-to/pause-ci.md": "6ce61cf6171b4bb9634da6c8ef3e0ecd5d05c7f6",
-   "docs/how-to/pixi-tasks.md": "10848e64463fac01b5e80f7e9352cb3ba9a9dd37",
+   "docs/how-to/pixi-tasks.md": "580352d592c325de089317c366974d9aa8e7f602",
    "docs/how-to/presentation-deck.md": "deb8f952650591c95b6023ff39f3dce702904960",
    "docs/how-to/purge-preserved-refs.md": "1f548463a94af87266c527f10fb30597750d8649",
    "docs/how-to/reach-a-station-mcp-endpoint.md": "1366daf1c2c9b20c5cc7e1889f8257ba47cf3397",
@@ -569,7 +569,7 @@
    "docs/how-to/upgrade-bmad-core.md": "0e9fb43b356fe55ae43691aabca612110a621abb",
    "docs/how-to/use-marshal-in-an-air-gapped-site.md": "8be1fbe8ad58d3a7bd73726039f552b1eca06020",
    "docs/how-to/use-steward-duties-that-need-operator-consent.md": "ec0eb4e3d42e7196a78fc116b9b9d43e87ff6177",
-   "docs/map.yaml": "1279c507f91962a9b05ee00f4abde7cd11765159",
+   "docs/map.yaml": "4db42988051286b33fe83b04334e3cb934ac1c10",
    "docs/tutorials/README.md": "86e06be35f14e42696e998bb9cc113b5a4da47fb",
    "docs/tutorials/getting-started.md": "f629febe3d429fab8d8d14e9abbfd35f411b2815",
    "docs/tutorials/local-platform-development.md": "ea8352fd1cd6b82ee8e74f47ccfdef3f052dbe96",
@@ -824,7 +824,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "0ba31d9fd2e8234a8b52d5e9f96bbba5387f5e3b"
+  "memlog": "3e95e50d810d1ac509388406227fca519ae28813"
  },
  "pyforge-herald/spec-pyforge-herald": {
   "files": {
