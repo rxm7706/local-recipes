@@ -341,6 +341,13 @@ One-chain fold: satellite Dreams archived in place with `Consolidated into [[pyf
   station skill `pyforge-warden` with `skf-update-skill`, and its meta-test pins `scan --self-check`. This closes
   DW-warden-33-1-1 and DW-warden-33-1-2. **Constraints:** the JSON self-check document keeps its `doctor` key; exit codes
   and the MCP face do not move; no capability text moves; no flag. Owner `spec-pyforge-warden`.
+- **2026-11-26 (the skill's two citations are checked) — Ruled:** operator ruling of 2026-11-26: "close DW-warden-33-3-1 too". **For warden:** Story 33.4 under Epic 33.
+  DW-warden-33-3-1 said two citations in the compiled skill pointed a line off; read against main they do not:
+  `report.py:192` is `REPORT_SCHEMA_VERSION` and `report.py:193` is `TOOL_NAME`, so both cite what they claim. What
+  the skill lacked was a citation for two facts it states, the schema's urn (`data/report-schema.json:3`) and
+  `prog=TOOL_NAME` (`cli.py:446`); the story adds both and closes the row with the corrected evidence. The provenance map
+  holds the API exports only, not prose citations, so the edit does not touch it. No behaviour moves; no flag. Owner
+  `spec-pyforge-warden`.
 
 ## 2026-10-26 — A web face for the compliance factory — upload a manifest, watch warden and atlas analyze it (folded from compliance-factory-web-face)
 

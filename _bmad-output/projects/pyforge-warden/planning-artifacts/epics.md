@@ -1841,6 +1841,7 @@ So that the same spelling works on every station.
 
 Minted 2026-11-26 from the station Dream's entry of the same date on the operator ruling of 2026-11-26 on the open convention items: "go with your recommendations, start in the suggested order" (the recommendation: the two self-diagnosis spellings that reuse the doctor station's name are renamed, warden's `scan --doctor` to `--self-check` and `mason doctor` to `mason self-check`, and the old spelling is accepted for one release with a notice).
 **Amended 2026-11-26:** on the operator's ruling of the same day the old spelling is removed now (Story 33.2), not after a release, and the compiled station skill is regenerated (Story 33.3).
+**Amended again 2026-11-26:** on the operator's ruling "close DW-warden-33-3-1 too", Story 33.4 edits two prose citation lines of the compiled skill outside its `[MANUAL]` blocks; the provenance map holds API exports only and a regeneration carries prose lines through, so the edit is the one sanctioned exception to the boundary below.
 **HARD boundaries:**
 - `--doctor` keeps working for one release: the same self-check and exit code, plus one line on stderr.
 - The exit codes, the JSON document and the MCP face do not move; no capability text moves.
@@ -1892,6 +1893,22 @@ So that an agent never runs a refused flag.
 **When** `skf-update-skill` regenerates it from the renamed source and `skf-export-skill` re-exports it
 **Then** the skill names `scan --self-check` and no `--doctor`
 **And** its meta-test pins the new spelling
+**Status:** done
+
+### Story 33.4: The warden station skill cites the schema's urn and the parser's prog
+
+As an agent following warden's compiled skill to the source,
+I want every fact it states to carry a citation that points at it,
+So that a claim can be checked in one step.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-warden CAP-8 (no text change); no AD moves
+**Flag:** none (two citations in a compiled skill; nothing is switched)
+**Surface:** `.claude/skills/pyforge-warden/0.1.2/pyforge-warden/SKILL.md`, `_bmad-output/projects/pyforge-warden/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-33-4-the-warden-station-skill-cites-the-schema-s-urn-and-the-parser-s-prog.md`
+**Given** DW-warden-33-3-1 reports two citations a line off, and the skill states the schema's urn and the parser's `prog` without citing where
+**When** each citation is read against main and the two missing ones are added
+**Then** `report.py:192` (the schema version) and `report.py:193` (`TOOL_NAME`) are confirmed, and `data/report-schema.json:3` and `cli.py:446` are cited
+**And** every citation in the skill resolves, warden's meta-tests pass, and the row closes with the corrected evidence
 **Status:** done
 
 ## Currency reconciliation — 2026-11-26 (the tag rule reaches station source)

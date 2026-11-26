@@ -1374,4 +1374,5 @@ verified: 2026-11-11 — still-open — DW-FU-5-1: no review of 5-1-actionable-d
   owner: warden
   severity: low
   promoted: 2026-11-26 — Story 33.3
-  status: open
+  resolution: 2026-11-26 — warden Story 33.4 (`33-4-the-warden-station-skill-cites-the-schema-s-urn-and-the-parser-s-prog`), branch `skill-citations-2026-11-26`, on the operator's ruling of that day: read against main, both citations were right (`report.py:192` is `REPORT_SCHEMA_VERSION`, `report.py:193` is `TOOL_NAME`; the check had counted one line off); the skill now also cites the schema's urn (`data/report-schema.json:3`) and `prog=TOOL_NAME` (`cli.py:446`), and every citation in it resolves, checked by hand at `afdc9099df`: the provenance verifier ignores a citation that matches no export, so nothing re-checks prose citations when the source moves. The provenance map holds API exports only, so a prose citation is not pinned by it, contrary to the row's assumption.
+  status: closed
