@@ -1890,6 +1890,23 @@ def _parse_git_remote_mutation(args: list[str]) -> Optional[str]:
     return None
 
 
+#: A shell redirection as one token: an optional descriptor or `&`, the operator, then a
+#: duplicated descriptor (`2>&1`), a target written against it (`>out.log`) or nothing, when the
+#: target is the next token (`> out.log`).
+_REDIRECTION_RE = re.compile(r"^(?:\d*|&)(?:>>?|<)(&(?:\d+|-))?(.*)$")
+
+
+def _redirection_span(args: list[str], i: int) -> int:
+    """How many tokens the redirection at `args[i]` takes: 0 when it is not one, 1 when the
+    token holds its own target, 2 when the target is the next token (DW-steward-134-2-1)."""
+    match = _REDIRECTION_RE.match(args[i])
+    if match is None:
+        return 0
+    if match.group(1) or match.group(2):
+        return 1
+    return 2
+
+
 def _parse_git_push_repository(args: list[str]) -> Optional[str]:
     if not args or args[0] != "push":
         return None
@@ -1897,6 +1914,10 @@ def _parse_git_push_repository(args: list[str]) -> Optional[str]:
     repository: Optional[str] = None
     while i < len(args):
         tok = args[i]
+        span = _redirection_span(args, i)
+        if span:  # `git push -h 2>&1`: a redirection is never the remote
+            i += span
+            continue
         if tok.startswith("--repo="):
             repository = tok.split("=", 1)[1]
             i += 1

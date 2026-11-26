@@ -2,7 +2,7 @@
 title: '139.1: A redirection after git push is not read as its remote'
 type: 'fix'
 created: '2026-11-25'
-status: 'ready-for-dev'
+status: 'done'
 story: 140-1-a-redirection-after-git-push-is-not-read-as-its-remote
 spec: spec-pyforge-steward
 difficulty: 'medium'
@@ -89,3 +89,5 @@ Ledger key: `140-1-a-redirection-after-git-push-is-not-read-as-its-remote`.
 ## Spec Change Log
 
 - 2026-11-25: minted from the station Dream's 2026-11-25 entry (the operator lands the push half of the hook patch) and the operator's rulings of the same date. Not implemented.
+- 2026-11-25: the operator applied the patch in the primary checkout; this story applied the same file in its worktree, and the two diffs are byte-identical (`cmp` exit 0). AC2 on the unpatched hook: exit 1, 2 failed and 6 passed (the two false denials the row reports, `git push -h 2>&1` and `git push 2>&1 origin main`, fail there; `git push --help 2>/dev/null`, `git push --dry-run origin main > push.log 2>&1` and the four foreign-remote denials already held). With the patch: AC1 exit 0 (584 passed), AC3 exit 0 (17 passed).
+- 2026-11-25: closed. The operator's patch landed unchanged and `DW-steward-134-2-1` reads resolved; the `submit_pr.sh` half stays denied by the operator's ruling. The full local `pr-preflight` gates the PR that lands it (branch `hook-push-redirect-2026-11-25`).

@@ -9621,4 +9621,4 @@ So that a redirection is not mistaken for a remote and a harmless push is not re
 **When** `_parse_git_push_repository` skips each redirection token, and the token after a redirection operator that stands alone, before it reads the remote (the operator's patch, applied by the operator)
 **Then** a redirection after `git push` is no longer read as the remote, and a push to a foreign remote written beside a redirection (`git push 2>&1 https://github.com/someone/else.git main`, `git push > push.log <url> main`) is still denied
 **And** the other half of the row (reading `submit_pr.sh` is denied) is declined by the same ruling and stays denied, `session_denials` is unchanged, and the row reads resolved
-**Status:** ready-for-dev
+**Status:** done
