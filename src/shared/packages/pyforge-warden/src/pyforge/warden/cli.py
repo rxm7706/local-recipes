@@ -1393,14 +1393,14 @@ def _run_scan(args: argparse.Namespace) -> int:
     try:
         invoke_pr_gate(PR_GATE_SCAN, "around", plugin_context, registry=plugin_registry)
     except TeaRosterMissingError as exc:
-        # AD-10 / DW-FU-11-2: the operator explicitly enabled
-        # tea-test-review (WARDEN_OPTIONAL_SCANNERS) but the AD-9 module
+        # suite:AD-10 / DW-FU-11-2: the operator explicitly enabled
+        # tea-test-review (WARDEN_OPTIONAL_SCANNERS) but the suite:AD-9 module
         # roster has no `tea` entry at all -- a tool-misconfiguration
         # refusal, not a scored advisory finding, so it is recorded the
         # same way select_scanner_plugins' PluginError is above: a real
         # CONFIG_VALIDATION error rung, never silently absorbed. This is
         # the ONE way this plugin's own state can move the exit code —
-        # AD-4's "advisory lenses never gate" invariant governs SCORED
+        # suite:AD-4's "advisory lenses never gate" invariant governs SCORED
         # findings about the scanned code, not an unmet tool prerequisite.
         _record_error(
             errors,

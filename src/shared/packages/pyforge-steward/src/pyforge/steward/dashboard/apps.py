@@ -1,6 +1,6 @@
-"""Story 9.1 — AD-13's reusable-Django-app scaffold.
+"""Story 9.1 — sld:AD-13's reusable-Django-app scaffold.
 
-This story ships no model, but the `AppConfig` follows AD-13 now so Story
+This story ships no model, but the `AppConfig` follows sld:AD-13 now so Story
 9.3's audit model inherits a compliant scaffold instead of retrofitting one:
 an explicit label, unique in `INSTALLED_APPS` and never colliding with a
 contrib label (`auth`, `admin`, `messages`), and `default_auto_field` set —
@@ -17,7 +17,7 @@ from django.apps import AppConfig
 
 
 class DashboardConfig(AppConfig):
-    """AD-13 scaffold for `pyforge.steward.dashboard`."""
+    """sld:AD-13 scaffold for `pyforge.steward.dashboard`."""
 
     name = "pyforge.steward.dashboard"
     label = "pyforge_steward_dashboard"

@@ -1,4 +1,4 @@
-"""Story 9.1 — `DashboardIdentityMiddleware`: CAP-109 + AD-4's refuse-the-start rule.
+"""Story 9.1 — `DashboardIdentityMiddleware`: CAP-109 + sld:AD-4's refuse-the-start rule.
 
 A raw ASGI3 callable (no Django/Channels middleware base class needed — the
 ASGI3 signature IS the contract): extracts identity/role from the
@@ -20,7 +20,7 @@ perform no trusted-hop validation — verified against the installed daphne's
 `daphne.utils.parse_x_forwarded_for`. Under a proxy that APPENDS to
 `X-Forwarded-For` (the standard nginx `$proxy_add_x_forwarded_for`), that
 leftmost entry is client-supplied, which both refuses legitimate traffic and
-lets a caller name any address it likes. So AD-4's check is only as sound as
+lets a caller name any address it likes. So sld:AD-4's check is only as sound as
 the server's client-address reporting: the deployment must either leave
 proxy-header parsing OFF (so `scope["client"]` is the real TCP peer) or
 terminate `X-Forwarded-For` at a hop it controls. Enforcing that is the
@@ -52,7 +52,7 @@ value that legitimately contains a comma (an LDAP DN, say), so it is not
 refused — see the deferred-work ledger.
 
 Imports nothing from `django`/`channels` — the ASGI3 callable shape is
-protocol, not framework, per AD-8, so this module works standalone even
+protocol, not framework, per sld:AD-8, so this module works standalone even
 without the `[dashboard]` extra installed (it still lives under `dashboard/`
 and ships only with the rest of the package by convention, not because it
 needs the extra itself).
@@ -85,7 +85,7 @@ def _peer_in_trusted_ingress(peer_host: str | None, ingress: TrustedIngress) -> 
 
 
 class UntrustedIngressError(Exception):
-    """AD-4: an identity header arrived from outside the declared `TrustedIngress`.
+    """sld:AD-4: an identity header arrived from outside the declared `TrustedIngress`.
 
     Raised before `send()` is ever called for the connection it names — the
     ASGI response never starts, which is the property this module owns and
@@ -131,7 +131,7 @@ def _header_values(scope: Scope, header_name: str) -> list[str]:
 
 
 class AmbiguousIdentityHeaderError(UntrustedIngressError):
-    """AD-4: the identity or role header arrived more than once on one request.
+    """sld:AD-4: the identity or role header arrived more than once on one request.
 
     A subclass so `except UntrustedIngressError` still catches it: both are
     the same refusal on the same refuse-the-start path, and both mean the
@@ -178,7 +178,7 @@ class DashboardIdentityMiddleware:
             raise TypeError(
                 f"DashboardIdentityMiddleware requires a TrustedIngress, got "
                 f"{type(ingress).__name__} — its construction-time validation "
-                f"is what keeps AD-4's membership check from degrading into a "
+                f"is what keeps sld:AD-4's membership check from degrading into a "
                 f"substring match, so it cannot be bypassed by a look-alike"
             )
         self.app = app
@@ -214,7 +214,7 @@ class DashboardIdentityMiddleware:
         client = scope.get("client")
         peer_host = client[0] if client else None
         if not _peer_in_trusted_ingress(peer_host, self.ingress):
-            # AD-4: refuse the START, not the request -- raise before `send`
+            # sld:AD-4: refuse the START, not the request -- raise before `send`
             # (and therefore before the wrapped app) is ever invoked. Note
             # this fires for a PRESENT header regardless of its value: an
             # empty one still asserts identity from an undeclared path.

@@ -4,16 +4,16 @@ CAP-112's contract is "who saw how many rows of what, and when" — this model
 is that record. `AuditAction` names the four request-time actions CAP-112
 requires (`load`/`filter`/`navigate`/`export`) plus `audit_read`, the fifth
 action `audit.py::query_audit_entries` writes for its own invocation per
-AD-7 ("reading the audit trail is itself a recorded act"), and `purge`, the
+sld:AD-7 ("reading the audit trail is itself a recorded act"), and `purge`, the
 sixth action `audit.py::purge_expired_entries` writes when retention deletes
 expired rows (Story 84.1).
 
 This is the package's first Django model, so it is also the first thing
-that exercises AD-13's reusable-app scaffold (`apps.py`'s explicit
+that exercises sld:AD-13's reusable-app scaffold (`apps.py`'s explicit
 `AppConfig` label and `default_auto_field`) for real: no `app_label` is set
 here in `Meta` — Django resolves it automatically from this module's
 package (`pyforge.steward.dashboard`) being present in `INSTALLED_APPS`,
-which is exactly the AD-13 wiring `apps.py` shipped early in Story 9.1 to
+which is exactly the sld:AD-13 wiring `apps.py` shipped early in Story 9.1 to
 receive this model without retrofitting.
 
 Field values are stored verbatim by `audit.py` (never trimmed, case-folded,
@@ -35,7 +35,7 @@ from .declarations import AUDIT_IDENTITY_MAX_LENGTH
 
 
 class AuditAction(models.TextChoices):
-    """CAP-112's four request-time actions, plus AD-7's audit-of-the-audit action and retention purge."""
+    """CAP-112's four request-time actions, plus sld:AD-7's audit-of-the-audit action and retention purge."""
 
     LOAD = "load", "Load"
     FILTER = "filter", "Filter"

@@ -285,6 +285,10 @@ pages:
     quadrant: reference
     owner: doctor
     kind: authored
+  - path: reference/station-state.md
+    quadrant: reference
+    owner: steward
+    kind: authored
   - path: reference/bmad-estate-llms-full.md
     quadrant: reference
     owner: scribe

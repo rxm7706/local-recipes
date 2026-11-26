@@ -456,7 +456,7 @@ REGISTRY: tuple[SourceRegistration, ...] = (
         subject_station="steward",
         owning_station="doctor",
     ),  # Story 20.3 -- sources/frozen_path.py. subject_station="steward":
-    # steward owns the cutover plan / capability ledger (AD-22's own
+    # steward owns the cutover plan / capability ledger (fnd:AD-22's own
     # "steward cutover plan --append" ownership). A DISPATCH member
     # (Callable[[Path], tuple[Finding, ...]]), same shape as
     # BMAD_RENDER_CONFIG_AMBIGUITY/PLATFORM_POLICY_SUITE above -- unlike

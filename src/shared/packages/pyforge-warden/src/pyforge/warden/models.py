@@ -576,11 +576,11 @@ class ComplianceReport:
     kev_data: FeedProvenance | None = None
     epss_data: FeedProvenance | None = None
     actuation: object | None = None
-    # Story 11.2 (AD-4): the tea-test-review advisory lens's notes -- an
+    # Story 11.2 (suite:AD-4): the tea-test-review advisory lens's notes -- an
     # additive, defaulted reserved slot, structurally identical to
     # `actuation` one line up (Design Notes: a direct copy of that proven
     # shape, not a new mechanism). Never read by verdict.py/compose() --
-    # AD-4's "advisory lenses never gate" holds simply because nothing in
+    # suite:AD-4's "advisory lenses never gate" holds simply because nothing in
     # the status-composition path consults this field.
     advisory: object | None = None
 

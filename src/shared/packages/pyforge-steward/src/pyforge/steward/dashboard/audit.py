@@ -5,17 +5,17 @@ CAP-112's write/read/retention API over the `AuditEntry` model (`models.py`):
 * `record_audit_entry` is the CAP-112 primitive — every data load, filter,
   navigation, and export lands here, naming the actor, their role, the
   action, and the row count involved.
-* `query_audit_entries` reads the trail AND, per AD-7 ("reading the audit
+* `query_audit_entries` reads the trail AND, per sld:AD-7 ("reading the audit
   trail is a recorded act"), calls `record_audit_entry` for its own
-  invocation before returning. AD-7's role-isolation half returns no rows when
+  invocation before returning. sld:AD-7's role-isolation half returns no rows when
   the reader established no role (fail-closed, like spec-pyforge-steward CAP-110's ``filter_by_role``),
   otherwise filters to rows whose stored ``role`` equals ``reader_role``,
   applies a bounded ``limit``, and persists the
   read's validated ``**filters`` into the ``AUDIT_READ`` row's ``scope`` field
   (Story 84.2).
 * `purge_expired_entries` requires an `AuditRetention` (`declarations.py`)
-  with **no default anywhere** — AD-7's "refused rather than run unbounded",
-  enforced the same way AD-6 enforces filter-then-search: by the function's
+  with **no default anywhere** — sld:AD-7's "refused rather than run unbounded",
+  enforced the same way sld:AD-6 enforces filter-then-search: by the function's
   own signature, not by a caller's discipline.
 
 **Verbatim storage, enforced in Python, not the column type.** `actor`,
@@ -31,7 +31,7 @@ Python, before any DB write, rather than left to the column type: SQLite
 (dev) enforces no `VARCHAR(n)` length at all, so a value that overflows the
 column is silently accepted there and would only be caught once the same
 code ran against PostgreSQL (deployment) — the exact dev/prod asymmetry
-AD-14 warns against for a different mechanism. An embedded NUL is refused
+sld:AD-14 warns against for a different mechanism. An embedded NUL is refused
 for the same reason and on the same line, as is a lone surrogate — a legal
 `str` no database can store, which otherwise surfaced as a bare
 `UnicodeEncodeError` from inside the ORM. Rejecting an overlong value
@@ -63,7 +63,7 @@ from .models import AuditAction, AuditEntry
 # declared retention -- pass 2 reproduced that with `now = +100,000 days`.
 # Applied with zero tolerance it also refuses ordinary clock skew: a purge
 # cron on a host one millisecond ahead of the app host raised instead of
-# purging, and a job that never purges is the unbounded trail AD-7's
+# purging, and a job that never purges is the unbounded trail sld:AD-7's
 # declaration exists to prevent -- the guard starving the trail it protects.
 # A minute is far below any retention this API can express (`AuditRetention`
 # is denominated in whole days), so it cannot meaningfully widen a purge,
@@ -477,13 +477,13 @@ def query_audit_entries(
     limit: int | None = None,
     **filters,
 ) -> list[AuditEntry]:
-    """Read the audit trail, and record that this read happened (AD-7).
+    """Read the audit trail, and record that this read happened (sld:AD-7).
 
     Any keyword filters are applied via `AuditEntry.objects.filter(**filters)`.
     Before returning, this function itself calls `record_audit_entry` with
     `action=AuditAction.AUDIT_READ`, `target="audit_trail"`, and a
     `row_count` equal to the number of rows this call is about to return —
-    per AD-7, "reading the audit trail is a recorded act". That write is not
+    per sld:AD-7, "reading the audit trail is a recorded act". That write is not
     optional and cannot be skipped by a caller: it is this function's whole
     point, not a side effect of it.
 
@@ -508,7 +508,7 @@ def query_audit_entries(
     were fetched first, so a caller passing a blank ``reader_actor`` — or a
     misspelled filter keyword — got a full read of the trail followed by an
     exception, leaving no `AUDIT_READ` row behind at all: an unrecorded read
-    on demand, repeatable indefinitely, which is precisely what AD-7 forbids.
+    on demand, repeatable indefinitely, which is precisely what sld:AD-7 forbids.
     ``**filters`` is held to the write path's own rules by column, not by the
     value's Python type (`_check_filters`, review pass 4): anything compared
     against ``occurred_at`` must satisfy the identical naive/aware rule
@@ -604,7 +604,7 @@ def purge_expired_entries(retention: AuditRetention, *, actor: str, now=None) ->
     ``retention`` has NO default value — the only way to call this function
     at all is to supply an `AuditRetention`, which is itself
     construction-validated (`declarations.py`) to be a positive number of
-    days. This is AD-7's refusal expressed as a property of the function's
+    days. This is sld:AD-7's refusal expressed as a property of the function's
     own signature: there is no call path through this module that expires
     audit entries without a retention policy someone actually declared.
 
@@ -618,7 +618,7 @@ def purge_expired_entries(retention: AuditRetention, *, actor: str, now=None) ->
     not lead this process's clock by more than `_FUTURE_NOW_TOLERANCE` — a
     future reference time silently widens the purge past the declared
     retention, up to and including deleting the entire trail, which is the
-    one outcome AD-7's required-declaration exists to make impossible (review
+    one outcome sld:AD-7's required-declaration exists to make impossible (review
     pass 2: `now=<far future>` deleted every row regardless of `retention`).
     The tolerance is what keeps that refusal from also rejecting ordinary
     inter-host clock skew and starving the purge entirely (review pass 3).
@@ -640,7 +640,7 @@ def purge_expired_entries(retention: AuditRetention, *, actor: str, now=None) ->
         raise TypeError(
             f"purge_expired_entries requires an AuditRetention, got "
             f"{type(retention).__name__} — its construction-time validation "
-            f"is what keeps AD-7's refusal from being bypassed by a "
+            f"is what keeps sld:AD-7's refusal from being bypassed by a "
             f"look-alike object"
         )
     # `isinstance` admits SUBCLASSES, and a subclass that overrides
@@ -649,7 +649,7 @@ def purge_expired_entries(retention: AuditRetention, *, actor: str, now=None) ->
     # below it. Verified by execution: a subclass adding one field
     # constructed with `days=0`, passed the `isinstance` check, produced
     # `cutoff = now`, and deleted the ENTIRE trail. The value this function
-    # actually depends on is re-checked here, at the point of use, so AD-7's
+    # actually depends on is re-checked here, at the point of use, so sld:AD-7's
     # refusal does not rest on a check inheritance defeats.
     if not isinstance(retention.days, int) or isinstance(retention.days, bool):
         raise TypeError(
@@ -680,7 +680,7 @@ def purge_expired_entries(retention: AuditRetention, *, actor: str, now=None) ->
                 f"{_FUTURE_NOW_TOLERANCE} in the future, got {now!r} — a "
                 f"future reference time deletes more than the declared "
                 f"retention allows (far enough ahead, the whole trail), "
-                f"turning AD-7's required declaration into a formality"
+                f"turning sld:AD-7's required declaration into a formality"
             )
 
     # `AuditRetention` already rejects a `days` value no reference time could

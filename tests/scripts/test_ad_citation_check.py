@@ -138,3 +138,129 @@ def test_a_baselined_subset_still_prints_every_remaining_new_row(isolated: Path,
     assert rc == 1
     assert "[cap-citation] 14 NEW issue(s), not in the baseline:" in out
     assert len(cap_rows) == 14
+
+
+# --- marshal Story 123.1: station source is held to the same rule as planning prose -------------------------------
+
+
+def _source(tmp_path: Path, package: str, name: str, text: str) -> Path:
+    path = tmp_path / "src" / "shared" / "packages" / package / "src" / "pyforge" / "fixture" / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+@pytest.fixture
+def clean(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """The fixture project with no broken planning citation, a spine that also defines the qualified
+    ``suite:AD-9`` and ``canopy:AD-14``, and a second project, so only source findings show."""
+    proj = _project(tmp_path, n_ad=0, n_cap=0)
+    spine = next(proj.glob("planning-artifacts/architecture/*/ARCHITECTURE-SPINE.md"))
+    spine.write_text(
+        spine.read_text(encoding="utf-8") + "\n#### suite:AD-9 — A satellite decision\n\n#### canopy:AD-14 — Another\n",
+        encoding="utf-8",
+    )
+    other = proj.parent / "pyforge-other" / "planning-artifacts" / "architecture" / "architecture-pyforge-other-2026-01-01"
+    other.mkdir(parents=True)
+    (other / "ARCHITECTURE-SPINE.md").write_text("# Spine\n\n### AD-24 — The other project's decision\n", encoding="utf-8")
+    monkeypatch.setattr(m, "ROOT", tmp_path)
+    monkeypatch.setattr(m, "PROJECTS", proj.parent)
+    monkeypatch.setattr(m, "_BASELINE_PATH", tmp_path / ".ad-citation-baseline.json")
+    monkeypatch.setattr(m, "_CAP_BASELINE_PATH", tmp_path / ".cap-citation-baseline.json")
+    monkeypatch.setattr(sys, "argv", ["ad_citation_check.py"])
+    return tmp_path
+
+
+def test_a_bare_tag_in_station_source_that_its_own_spine_lacks_is_a_finding(
+    clean: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _source(clean, "pyforge-fixture", "ok.py", "# AD-1 is this station's own decision\n")
+    _source(clean, "pyforge-fixture", "bad.py", "# the AD-9 module roster is another spine's\n")
+    assert m.main() == 1
+    out = capsys.readouterr().out
+    assert "SOURCE: pyforge-fixture: src/shared/packages/pyforge-fixture/src/pyforge/fixture/bad.py cites bare AD-9" in out
+    assert "ok.py" not in out
+
+
+def test_a_qualified_tag_that_resolves_is_not_a_finding(clean: Path) -> None:
+    _source(
+        clean,
+        "pyforge-fixture",
+        "qualified.py",
+        "# suite:AD-9 by colon, canopy AD-14 by space, pyforge-other:AD-24 by project,\n"
+        "# spec-pyforge-fixture:AD-1 by the station Spec's name\n",
+    )
+    assert m.main() == 0
+
+
+@pytest.mark.parametrize(
+    ("line", "named"),
+    [
+        ("# suit:AD-9 is a typo of the prefix\n", "cites suit:AD-9, and no spine is named `suit`"),
+        ("# suite:AD-99 is an id that spine lacks\n", "cites suite:AD-99, which `suite` does not define"),
+        ("# pyforge-other:AD-7 is an id that project lacks\n", "cites pyforge-other:AD-7, which `pyforge-other` does not define"),
+        ("# canopy AD-15 is an id the canopy lacks\n", "cites canopy:AD-15, which `canopy` does not define"),
+    ],
+)
+def test_a_qualified_tag_that_does_not_resolve_is_a_finding(
+    clean: Path, capsys: pytest.CaptureFixture[str], line: str, named: str
+) -> None:
+    _source(clean, "pyforge-fixture", "wrong.py", line)
+    assert m.main() == 1
+    assert named in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    "line",
+    ["# the roster AD-9 names is another spine's\n", "# the test suite AD-9 must not read as qualified\n", "# Canopy AD-9\n"],
+)
+def test_a_word_before_a_tag_is_not_a_qualifier(clean: Path, capsys: pytest.CaptureFixture[str], line: str) -> None:
+    _source(clean, "pyforge-fixture", "prose.py", line)
+    assert m.main() == 1
+    assert "prose.py cites bare AD-9" in capsys.readouterr().out
+
+
+def test_a_source_finding_is_never_absolved_by_the_baseline(
+    clean: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """``--write-baseline`` records prose debt only: a source finding still fails on the next run."""
+    _source(clean, "pyforge-fixture", "bad.py", "# AD-9 is another spine's\n")
+    monkeypatch.setattr(sys, "argv", ["ad_citation_check.py", "--write-baseline"])
+    assert m.main() == 0
+    assert json.loads((clean / ".ad-citation-baseline.json").read_text(encoding="utf-8"))["known"] == []
+    monkeypatch.setattr(sys, "argv", ["ad_citation_check.py"])
+    capsys.readouterr()
+    assert m.main() == 1
+    assert "bad.py cites bare AD-9" in capsys.readouterr().out
+
+
+def test_a_kernel_package_is_held_to_its_home_projects_spine(
+    clean: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """``pyforge-core`` has no project of its own; ``_SOURCE_HOME`` names the project its Spec lives in."""
+    monkeypatch.setattr(m, "_SOURCE_HOME", {"pyforge-core": "pyforge-fixture"})
+    _source(clean, "pyforge-core", "home.py", "# AD-1 resolves in the home project; AD-7 does not\n")
+    assert m.main() == 1
+    out = capsys.readouterr().out
+    assert "home.py cites bare AD-7" in out and "AD-1," not in out
+
+
+def test_a_package_with_no_home_project_is_a_finding_and_tests_are_not_scanned(
+    clean: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    tests = clean / "src" / "shared" / "packages" / "pyforge-fixture" / "tests" / "test_x.py"
+    tests.parent.mkdir(parents=True)
+    tests.write_text("# a fixture may quote AD-99\n", encoding="utf-8")
+    assert m.main() == 0
+    _source(clean, "pyforge-orphan", "x.py", "# anything\n")
+    assert m.main() == 1
+    assert "pyforge-orphan: no project `pyforge-orphan`" in capsys.readouterr().out
+
+
+def test_the_two_kernel_packages_are_homed_in_marshals_project() -> None:
+    assert m._SOURCE_HOME == {"pyforge-core": "pyforge-marshal", "pyforge-testing-kit": "pyforge-marshal"}
+
+
+def test_the_committed_baseline_holds_no_source_row() -> None:
+    known = json.loads((REPO_ROOT / "scripts" / ".ad-citation-baseline.json").read_text(encoding="utf-8"))["known"]
+    assert [row for row in known if "src/shared/packages" in row] == []

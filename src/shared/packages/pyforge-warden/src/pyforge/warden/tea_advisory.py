@@ -1,10 +1,10 @@
-"""``tea-test-review`` is a warden advisory finding (Story 11.2, AD-4).
+"""``tea-test-review`` is a warden advisory finding (Story 11.2, suite:AD-4).
 
 Wraps steward 46.3's ``tea-test-review`` pixi task (TEA's headless
 test-review CLI, ``bmad-method-test-architecture-enterprise``) as a
 fail-open advisory lens beside Warden's compliance gate: the score and
 findings are surfaced, but they NEVER move a rung, the composed status, or
-the exit code (AD-4: advisory lenses never gate). The scanner is optional
+the exit code (suite:AD-4: advisory lenses never gate). The scanner is optional
 -- registered in ``scanner_plugins.OPTIONAL_SCANNER_IDS``, enabled only via
 ``WARDEN_OPTIONAL_SCANNERS=tea-test-review`` -- because a present
 ``tea-test-review`` binary spawns a real (possibly LLM-backed) review
@@ -19,11 +19,11 @@ malformed JSON, an unreadable ``--json`` file) degrades to
 (belt-and-suspenders: a defect in this module must never crash a PR-gate
 scan).
 
-Fail-CLOSED exception -- ``TeaRosterMissingError`` (AD-10, resolved
-2026-09-07, DW-FU-11-2): "31.1 / 11.2 refuse when the AD-9 roster lacks
+Fail-CLOSED exception -- ``TeaRosterMissingError`` (suite:AD-10, resolved
+2026-09-07, DW-FU-11-2): "31.1 / 11.2 refuse when the suite:AD-9 roster lacks
 tea" is architecture-mandated and distinct in KIND from the fail-open cases
 above. When the scanner is explicitly enabled
-(``WARDEN_OPTIONAL_SCANNERS=tea-test-review``) but the AD-9 module roster
+(``WARDEN_OPTIONAL_SCANNERS=tea-test-review``) but the suite:AD-9 module roster
 (``target/_bmad/custom/config.toml``'s ``[modules.tea]`` table) has no
 ``tea`` entry at all, that is not an environmental blip -- it means
 ``steward provision --module tea`` never ran here, i.e. this station never
@@ -37,14 +37,14 @@ deliberately does NOT swallow (unlike every other exception) so it
 propagates out of the PR-gate scan; ``cli.py``'s ``_run_scan`` records it
 as a ``CONFIG_VALIDATION`` error (the same treatment
 ``select_scanner_plugins``'s ``PluginError`` already gets), a real ERROR
-rung -- never AD-4's advisory-lens exit-code exemption, because this is a
+rung -- never suite:AD-4's advisory-lens exit-code exemption, because this is a
 tool-misconfiguration refusal, not a scored finding about the scanned
 code. A roster entry that DOES name ``tea`` but whose binary is merely not
 on THIS process's PATH remains fail-open exactly as before -- that is the
-environmental case AD-10 does not govern.
+environmental case suite:AD-10 does not govern.
 
 Testing seam: ``run_tea_test_review``'s ``runner`` parameter replaces the
-ENTIRE default-resolution path -- both the AD-9 roster check and the
+ENTIRE default-resolution path -- both the suite:AD-9 roster check and the
 ``shutil.which`` presence probe run only when ``runner is None``; an
 injected ``runner`` stands in for "TEA is present and behaves this way",
 bypassing both checks. The "TEA roster missing" / "binary absent" fail-open
@@ -101,10 +101,10 @@ TeaRunner = Callable[[Path, Path], TeaRunOutcome | None]
 
 class TeaRosterMissingError(PyforgeError, RuntimeError):
     """Raised by ``run_tea_test_review`` (default-resolution path only --
-    ``runner is None``) when the AD-9 module roster
+    ``runner is None``) when the suite:AD-9 module roster
     (``target/_bmad/custom/config.toml``'s ``[modules.tea]`` table) has no
-    ``tea`` entry at all. Fail-CLOSED by architecture mandate (AD-10:
-    "31.1 / 11.2 refuse when the AD-9 roster lacks tea", resolved
+    ``tea`` entry at all. Fail-CLOSED by architecture mandate (suite:AD-10:
+    "31.1 / 11.2 refuse when the suite:AD-9 roster lacks tea", resolved
     2026-09-07 per DW-FU-11-2) -- distinct from the fail-open case where the
     roster DOES carry ``tea`` but the binary is merely absent from THIS
     process's PATH (an environmental blip, not a governance gap).
@@ -118,7 +118,7 @@ class TeaRosterMissingError(PyforgeError, RuntimeError):
 
 
 def _ad9_roster_has_tea(target: Path) -> bool:
-    """Read the AD-9 module roster exactly as ``engines._doctor_check_tea``
+    """Read the suite:AD-9 module roster exactly as ``engines._doctor_check_tea``
     does: ``target/_bmad/custom/config.toml``'s ``[modules.tea]`` table,
     written by ``steward provision --module tea``. A missing, unreadable,
     or malformed config file degrades to "no roster entry" -- the same
@@ -176,14 +176,14 @@ def run_tea_test_review(
     runner: TeaRunner | None = None,
 ) -> TeaAdvisoryResult:
     """Wrapper over the ``tea-test-review`` CLI -- fail-open for an
-    environmental problem, fail-CLOSED for a governance gap (AD-10).
+    environmental problem, fail-CLOSED for a governance gap (suite:AD-10).
 
-    No ``runner`` injected (the real default-resolution path): the AD-9
+    No ``runner`` injected (the real default-resolution path): the suite:AD-9
     roster is checked FIRST -- a roster with no ``tea`` entry at all raises
     ``TeaRosterMissingError`` (never caught by this function; it is meant
     to propagate) regardless of whether a same-named binary happens to be
     reachable on PATH anyway (a leaked/ambient copy from an unrelated
-    environment is exactly the ungoverned state AD-10 refuses, not a reason
+    environment is exactly the ungoverned state suite:AD-10 refuses, not a reason
     to proceed). Only once the roster confirms ``tea`` is provisioned does
     an absent binary degrade to the ordinary fail-open ``ran=False`` (no
     subprocess spawned) -- that combination is a transient environmental
@@ -205,11 +205,11 @@ def run_tea_test_review(
     if runner is None:
         if not _ad9_roster_has_tea(target):
             raise TeaRosterMissingError(
-                "tea-test-review: the AD-9 module roster "
+                "tea-test-review: the suite:AD-9 module roster "
                 "(_bmad/custom/config.toml [modules.tea]) has no `tea` "
                 "entry -- run `steward provision --module tea` before "
                 "enabling WARDEN_OPTIONAL_SCANNERS=tea-test-review "
-                "(AD-10: an unprovisioned tool refuses loudly; a "
+                "(suite:AD-10: an unprovisioned tool refuses loudly; a "
                 "provisioned tool merely absent from this process's PATH "
                 "still fails open)"
             )
@@ -302,9 +302,9 @@ class TeaAdvisoryScanPlugin:
     Registered OPTIONAL-only (``scanner_plugins.OPTIONAL_SCANNER_IDS``);
     enabled only via ``WARDEN_OPTIONAL_SCANNERS=tea-test-review``.
 
-    Exception to the above (AD-10, DW-FU-11-2): ``TeaRosterMissingError``
+    Exception to the above (suite:AD-10, DW-FU-11-2): ``TeaRosterMissingError``
     is deliberately let through ``_contribute``'s otherwise-total
-    fail-open net -- an unprovisioned AD-9 roster is a tool-misconfiguration
+    fail-open net -- an unprovisioned suite:AD-9 roster is a tool-misconfiguration
     refusal, not a scored finding, so ``cli.py`` records it as a
     ``CONFIG_VALIDATION`` error (a real ERROR rung) rather than swallowing
     it. That is the only path by which this plugin's own state can ever
@@ -313,7 +313,7 @@ class TeaAdvisoryScanPlugin:
     ``runner`` (defaults to ``None``, forwarded verbatim to
     ``run_tea_test_review``) is the sole test-injection seam -- production
     code never supplies one, so a shipped scan always resolves the real
-    AD-9 roster + binary via ``_ad9_roster_has_tea``/``shutil.which``."""
+    suite:AD-9 roster + binary via ``_ad9_roster_has_tea``/``shutil.which``."""
 
     hook_spec: str = PR_GATE_SCAN.name
     owner: str = "tea-test-review"
@@ -338,8 +338,8 @@ class TeaAdvisoryScanPlugin:
     def _contribute(self, context: MutableMapping[str, Any]) -> None:
         """Fail-open at the plugin boundary too (belt-and-suspenders): no
         subprocess/parse/binary defect ever raises. The ONE deliberate
-        exception is ``TeaRosterMissingError`` (AD-10, DW-FU-11-2) --
-        re-raised, not swallowed, so a genuinely unprovisioned AD-9 roster
+        exception is ``TeaRosterMissingError`` (suite:AD-10, DW-FU-11-2) --
+        re-raised, not swallowed, so a genuinely unprovisioned suite:AD-9 roster
         propagates out of the PR-gate scan for ``cli.py`` to record as a
         loud ``CONFIG_VALIDATION`` error instead of a silent no-op.
 
@@ -362,7 +362,7 @@ class TeaAdvisoryScanPlugin:
         except TeaRosterMissingError:
             raise
         except Exception:  # noqa: BLE001 -- fail-open: never raise (except
-            # the roster-missing refusal above, which AD-10 requires loud)
+            # the roster-missing refusal above, which suite:AD-10 requires loud)
             return
         if not result.ran and result.skipped_reason in (None, _BINARY_ABSENT_REASON):
             return

@@ -3,7 +3,7 @@
 
 **The regression, twice.** Story 27.1 scoped ``sources/marshal.py``'s and
 ``sources/ledger.py``'s templated-merge-subject match to each station's OWN
-``merge_subject_template`` — but AD-24's repo-default (``Merge {key} into
+``merge_subject_template`` — but pyforge-marshal:AD-24's repo-default (``Merge {key} into
 main``, no station token) still exists as a real merge shape wherever a
 station has not (yet) overridden its template, or landed a story BEFORE it
 did. Marshal's own ``34-3`` landed exactly this way on 2026-09-12
@@ -94,7 +94,7 @@ __all__ = (
     "station_slugs_touched",
 )
 
-#: AD-24's repo-default merge-subject template — carries no station token of
+#: pyforge-marshal:AD-24's repo-default merge-subject template — carries no station token of
 #: its own (Story 27.1's own acknowledged residual). Identical to
 #: ``sources/marshal.py``'s / ``sources/ledger.py``'s own private
 #: ``_MERGE_SUBJECT_TEMPLATE`` constants — kept in sync by hand, the same

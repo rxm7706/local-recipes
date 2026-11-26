@@ -8,8 +8,8 @@ refusal that guarded the committing verb): the generator they wrapped retired on
 `steward pages build|deploy|status` (`pages_duty.py`) is the duty that speaks to it. They were
 deleted, not deprecated (AD-5's 2026-08-09 rule); no verb here commits or pushes.
 
-Story 9.5 slice (CAP-114, AD-5, AD-8): `DeploymentTopology` + `check_shareable_
-state` implement AD-5's refusal — "any cross-worker shared state that cannot
+Story 9.5 slice (CAP-114, sld:AD-5, AD-8): `DeploymentTopology` + `check_shareable_
+state` implement sld:AD-5's refusal — "any cross-worker shared state that cannot
 be shared across worker processes is refused when the deployment runs more
 than one worker" — that `dashboard/cache.py`'s own module docstring named as
 explicitly deferred to this story. `render_daphne_unit`/`render_edge_config`
@@ -25,8 +25,8 @@ channels`) already forbids this file from importing anything under
 strings (dotted backend class paths, peer addresses, file paths), never a
 real Django/Channels object. Wired as `steward deploy perimeter`.
 
-Story 9.7 slice (CAP-116, AD-10): `StaticPanel` + `render_static_index` +
-`_run_static` implement AD-10's refusal — "a board that has declared an
+Story 9.7 slice (CAP-116, sld:AD-10): `StaticPanel` + `render_static_index` +
+`_run_static` implement sld:AD-10's refusal — "a board that has declared an
 access column may not be delivered by static export... refuses rather than
 warns" — wired as a FOURTH verb, `steward deploy static`. Panels arrive as
 caller-supplied, already-rendered HTML fragments (e.g. an adopter's own
@@ -77,7 +77,7 @@ def repo_root() -> Path:
     )
 
 
-# ── Deployment topology + AD-5 shareability refusal (CAP-114, Story 9.5) ───
+# ── Deployment topology + sld:AD-5 shareability refusal (CAP-114, Story 9.5) ───
 
 
 @dataclass(frozen=True)
@@ -152,13 +152,13 @@ class DeploymentTopology:
 
 
 class UnshareableStateError(ValueError):
-    """AD-5: a cross-worker-unshareable backend was declared while
+    """sld:AD-5: a cross-worker-unshareable backend was declared while
     `worker_count > 1` — the response cache or the Channels channel layer
     cannot actually deliver the property (one upstream fetch; every viewer
     sees a broadcast) the deployment claims to have."""
 
 
-# AD-5's allowlist (fail-closed): only backends this story can cite as
+# sld:AD-5's allowlist (fail-closed): only backends this story can cite as
 # genuinely cross-process-shared AND actually usable with what the
 # `[dashboard]` extra installs. Judgment call, recorded here rather than
 # assumed (this story's spec leaves the exact class path(s) open): only
@@ -184,9 +184,9 @@ _SHAREABLE_CHANNEL_LAYER_BACKENDS: tuple[str, ...] = ("channels_redis.core.Redis
 
 
 def check_shareable_state(topology: DeploymentTopology) -> None:
-    """AD-5: refuse a cross-worker-unshareable backend once `workers > 1`.
+    """sld:AD-5: refuse a cross-worker-unshareable backend once `workers > 1`.
 
-    `worker_count == 1` passes unconditionally, for any backend — AD-5's own
+    `worker_count == 1` passes unconditionally, for any backend — sld:AD-5's own
     text: "a single-worker adopter may use in-process backends for both."
     Above that, `cache_backend` and `channel_layer_backend` must each match
     one of the allowlisted Redis-backed classes above; an in-process backend
@@ -208,14 +208,14 @@ def check_shareable_state(topology: DeploymentTopology) -> None:
         raise UnshareableStateError(
             f"cache_backend {topology.cache_backend!r} is not cross-worker "
             f"shareable under worker_count={topology.worker_count} — "
-            f"allowlisted backends are {_SHAREABLE_CACHE_BACKENDS!r} (AD-5)"
+            f"allowlisted backends are {_SHAREABLE_CACHE_BACKENDS!r} (sld:AD-5)"
         )
     if topology.channel_layer_backend not in _SHAREABLE_CHANNEL_LAYER_BACKENDS:
         raise UnshareableStateError(
             f"channel_layer_backend {topology.channel_layer_backend!r} is "
             f"not cross-worker shareable under worker_count="
             f"{topology.worker_count} — allowlisted backends are "
-            f"{_SHAREABLE_CHANNEL_LAYER_BACKENDS!r} (AD-5)"
+            f"{_SHAREABLE_CHANNEL_LAYER_BACKENDS!r} (sld:AD-5)"
         )
 
 
@@ -569,7 +569,7 @@ def _run_perimeter(ns: argparse.Namespace) -> DutyResult:
     PATH --tls-key PATH] [--output-dir DIR]`.
 
     Always validates first: `DeploymentTopology`'s own construction-time
-    checks, then `check_shareable_state` (AD-5). Every `TypeError`/
+    checks, then `check_shareable_state` (sld:AD-5). Every `TypeError`/
     `ValueError`/`AttributeError` from validation OR rendering is caught
     here and reported as a named duty-level refusal — never an uncaught
     crash (AD-8's boundary stays `cli.main()`'s alone). `AttributeError` is
@@ -731,7 +731,7 @@ def _run_perimeter(ns: argparse.Namespace) -> DutyResult:
     return DutyResult(ok=True, summary=summary)
 
 
-# ── Static export (CAP-116, AD-10, Story 9.7) ───────────────────────────────
+# ── Static export (CAP-116, sld:AD-10, Story 9.7) ───────────────────────────────
 
 
 @dataclass(frozen=True)
@@ -843,7 +843,7 @@ def render_static_index(panels: Sequence[StaticPanel], *, board: str) -> str:
 
 # Hand-rolled `^[A-Za-z0-9_-]+$` equivalent — `import re` is unconditionally
 # banned in this module (`test_deploy_has_no_story_status_derivation`, Story
-# 5.2/AD-71/AD-1), so this replicates the same character-set semantics by
+# 5.2/pyforge-marshal:AD-71/AD-1), so this replicates the same character-set semantics by
 # hand rather than reaching for the toolkit that ban exists to keep out.
 _VALID_BOARD_SLUG_CHARS = frozenset("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
 
@@ -975,11 +975,11 @@ def _run_static(ns: argparse.Namespace) -> DutyResult:
     """`deploy static --board SLUG --panel LABEL=PATH [--panel ...]
     [--access-column NAME]`.
 
-    AD-10's refusal runs FIRST, unconditionally, before any other
+    sld:AD-10's refusal runs FIRST, unconditionally, before any other
     validation, path construction, or `--panel` file read: a declared
     (stripped, non-empty) `--access-column` refuses outright — "a board
     that has declared an access column may not be delivered by static
-    export... refuses rather than warns" (AD-10). This is caller-asserted,
+    export... refuses rather than warns" (sld:AD-10). This is caller-asserted,
     never independently verified against a real `AccessDeclaration` —
     `deploy.py` may not import `dashboard/declarations.py` at all (the
     import-boundary invariant); an accepted, documented tradeoff identical
@@ -1027,7 +1027,7 @@ def _run_static(ns: argparse.Namespace) -> DutyResult:
             summary=(
                 f"deploy static: refused — --access-column {access_column!r} is declared; "
                 "a board with a declared access column may not be delivered by static "
-                "export (AD-10)"
+                "export (sld:AD-10)"
             ),
         )
 

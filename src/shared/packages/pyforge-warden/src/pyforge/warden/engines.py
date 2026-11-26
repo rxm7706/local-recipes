@@ -823,14 +823,14 @@ def _doctor_check_feed(
 
 
 def _doctor_check_tea(target: Path) -> DoctorCheck:
-    """Story 11.2 (AD-9): the ``tea-test-review`` advisory scanner's
+    """Story 11.2 (suite:AD-9): the ``tea-test-review`` advisory scanner's
     presence self-check -- ALWAYS ``ok=True`` (mirrors ``_doctor_check_feed``'s
     own "operating air-gapped" convention one level up): an advisory lens
     has no default gate to fail against, so there is nothing for
     ``--doctor`` to flag even when TEA is fully absent (the shipped
     default: this repo's own ``pyforge-warden`` pixi environment does not
     depend on the ``bmad-method-test-architecture-enterprise`` conda
-    package). Names which HALF is present/absent -- the AD-9 roster entry
+    package). Names which HALF is present/absent -- the suite:AD-9 roster entry
     (``target/_bmad/custom/config.toml``'s ``[modules.tea]`` table, written
     by ``steward provision --module tea``) and the ``tea-test-review``
     binary on PATH -- so an operator can tell "never provisioned" apart

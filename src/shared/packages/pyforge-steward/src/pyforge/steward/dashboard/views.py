@@ -2,7 +2,7 @@
 
 `build_navigation_view` is a Django view *factory*: it closes over a fixed
 set of declared `Page`s and returns a plain view callable an adopter wires
-into their own `urlpatterns` (AD-1 — the library provides the pipeline, not
+into their own `urlpatterns` (sld:AD-1 — the library provides the pipeline, not
 the routing; no `urls.py` or template ships here). The returned view reads
 the role Story 9.1's `DashboardIdentityMiddleware` already placed on
 `request.scope`, builds the role-filtered navigation via `navigation.py`,

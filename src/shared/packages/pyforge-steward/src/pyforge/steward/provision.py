@@ -16,7 +16,7 @@ wrap). Wired as `steward provision --env <name>`.
 
 Story 5.1 RETIRED the Story 3.2 slice. `provision --runner bmad-loop` used to
 wrap the LEGACY `scripts/bmad-loop-worktree`; `marshal init` is a strict
-superset (worktree + marker/symlink agreement + the AD-11 never-write proof +
+superset (worktree + marker/symlink agreement + the pyforge-marshal:AD-11 never-write proof +
 an idempotent step report), so two stations were shipping two ways to make the
 same thing, one of them the weaker one. `--runner` now REPORTS and points at
 `marshal init <slug>`; it never provisions. `run_bmad_loop_worktree` and its
@@ -90,7 +90,7 @@ leaving the module unimportable" clause). `FileNotFoundError`
 locally -- both occur before any subprocess call, so Story 6.1's existing
 message via `ProvisionDuty.run()`'s outer boundary already covers it.
 
-Story 46.2 slice (AD-9): `_record_module_manifest` -- the roster writer
+Story 46.2 slice (suite:AD-9): `_record_module_manifest` -- the roster writer
 SHARED by every `CondaInstallBackend` module (tea/cis/utility-skills/
 manticore) -- moves from `_bmad/config.yaml` to `_bmad/custom/config.toml`
 `[modules.<name>]`, written via targeted text editing (locate-and-replace
@@ -143,7 +143,7 @@ never a subprocess call, so it cannot introduce a `cleanup-legacy.py`/
 `--legacy-dir` invocation by construction -- the existing Story 6.1 argv
 guard test needs no change. `_bmad/config.yaml` still gains the `bmb` section
 via the unchanged `merge-config.py` mechanism; `bmb` is still explicitly NOT
-part of the Story 46.2 AD-9 migration to `_bmad/custom/config.toml`.
+part of the Story 46.2 suite:AD-9 migration to `_bmad/custom/config.toml`.
 
 Story 46.5 slice (the plugin-path install class's first real wiring):
 `bmad-labs-skills` had `wire_policy` = "documented" everywhere (register row
@@ -1605,7 +1605,7 @@ def _run_runner(ns: argparse.Namespace) -> DutyResult:
 
     This wrapped the *legacy* `scripts/bmad-loop-worktree` while `marshal init`
     (Marshal Epic 1, 10 shipped stories) is a strict superset: the same worktree
-    plus the marker/symlink agreement invariant, the AD-11 never-write proof, and
+    plus the marker/symlink agreement invariant, the pyforge-marshal:AD-11 never-write proof, and
     an idempotent `done | skipped | failed` step report. Two stations shipping
     two ways to make the same thing, one of them the weaker one.
 

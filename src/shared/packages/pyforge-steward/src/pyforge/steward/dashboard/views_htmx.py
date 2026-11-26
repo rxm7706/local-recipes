@@ -7,7 +7,7 @@ Imports `django` lazily, inside each view, so the module itself loads without
 the `[dashboard]` extra; calling a view needs it. `glass.py` is a base-package
 module (no django), so importing it here at module level is safe. Like
 `views.py`, this ships views only -- the adopter wires them into their own
-`urlpatterns` (AD-1), and there is no HTTP URLconf in this package to
+`urlpatterns` (sld:AD-1), and there is no HTTP URLconf in this package to
 register them with.
 """
 
