@@ -87,3 +87,7 @@ Three parts of the approved plan were dropped after they were measured, and the 
 - **The gates in a small environment.** The local preflight matches a gate lane to its CI step by the step's command line and environment, so moving the CI step to another environment unbinds all eight lanes from CI. The gain is the environment restore of one gate job at the end of the critical path, about 10 s (`herald-gate`: 22 s).
 - **A shallower fetch for the detectors.** The detectors read commit dates (`docs-currency`, `chain-currency`), merge subjects (`story-status`) and a base commit (`fr-without-cap`, `ledger-regression`), so they need the history they fetch.
 - **The image layer order.** No workflow keeps a layer cache (no buildx, no `cache-from`), so a reordered layer is never reused on a fresh runner, and the cache is already over its limit. The image builds run on pushes to `main` and nightly, not on a pull request, so a change to them cannot be proved before it lands.
+
+## Review round (2026-11-26)
+
+The independent review held one finding: three Platform CI cluster jobs set up pixi with `cache: true` and no `cache-write`, and can run on a pull request when their variables are on, so "a PR head writes no `pixi-` cache entry" was not met. `platform-ci.yml`'s four `setup-pixi` uses now carry the same gate.

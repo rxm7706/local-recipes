@@ -72,3 +72,7 @@ Ledger key: `66-1-the-detector-run-measures-the-doctor-sources-beside-the-script
 ## Evidence (2026-11-26)
 
 Standalone `detectors-ci`: 83.9 s wall, 141 CPU-seconds, 50 rows summing 104.2 s: `chain_currency_sweep_check` 41.5 s, `capability-effect` 15.8 s, `docs-currency` 9.5 s, `flag_gate_check` 5.6 s, `deferred-work` 4.4 s. Inside two full preflights: 230.3 s and 303.8 s.
+
+## Review round (2026-11-26)
+
+The independent review held one finding: the serial-against-parallel comparison (`test_detectors_jobs.py`) runs only in `pyforge-ci`, where Doctor does not import, so both sides read `unknown` and the comparison could not fail on this change. `tests/scripts/test_detectors_doctor_sources.py` now gathers real sources in turn and through a process pool and holds the rows equal; it runs where Doctor imports (`pyforge-doctor-aggregate-scripts-test`, `scripts-lib-test`). The new tests also first skipped by a guard of their own that failed in `pyforge-ci`; they use the file's existing guard.

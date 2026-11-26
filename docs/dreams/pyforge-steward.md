@@ -8485,3 +8485,14 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   non-zero when any lane fails and names the lane; every number in the PR is measured with the harness that
   measured the baseline. The verdict reuse carries no flag (`detector-or-gate`: a gated gate is a silent green) and
   an opt-out, `PYFORGE_PREFLIGHT_REUSE=0`. Owner `spec-pyforge-steward`.
+  **Realization (2026-11-26, same change):** four measured full runs and an independent review sent Stories
+  117.15 and 117.17 back once, and each story spec records what it found. The scheduler now sizes a lane by
+  the CPU seconds its processes used (journaled as `cpu_seconds`; seconds times workers grew with every worker
+  a lane could not use), starts the docs-site chain first and keeps its slot, and gives a heavy lane more than
+  the minimum when a full run crowds the cores; the selection splits each workflow step's command once, where
+  it split some 220,000 a run. `docs/governance/preflight-budgets.toml` is re-measured and gains a `[work]`
+  table (a governance act, made here on the operator's "Approve plan"). The reused verdict is tied to the
+  commit, the local day and half an hour, and a later red run of the same state takes it back: lanes also read
+  state no hash covers, so a green run stands only for the push that follows it. What the measurements did not
+  give: a full run of all fifty lanes stays bound by the machine (about 6,500 CPU-seconds on sixteen threads),
+  so its gain is the smaller one; the larger ones are each lane alone, CI's jobs, and the push after a green run.

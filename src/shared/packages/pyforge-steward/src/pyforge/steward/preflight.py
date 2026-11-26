@@ -1670,17 +1670,31 @@ def run_preflight(
             work = {**budget_seed_work(repo_root), **lane_work_medians(repo_root / JOURNAL_RELATIVE)}
     if worker_count < 1:
         worker_count = 1
+    # The lanes whose task runs pytest under ``-n auto``, read once: the admission loop asks for every pending lane
+    # on every pick, and parsing each task's command there cost a full run half a minute of this thread's time.
+    xdist_lanes = frozenset(
+        _lane_key(lane) for lane in lanes if preflight_xdist.task_cmd_uses_xdist_auto(pixi_data, lane.task)
+    )
     # Story 117.15: the seconds a lane should take, from the expected work of every selected lane (an xdist lane's
-    # seconds times its workers, a serial lane's seconds) over the machine's cores.
+    # work, a serial lane's work or seconds) over the machine's cores.
     target_seconds: float | None = None
     if critical and cores > 0:
         run_work = sum(
             _expected_work(_lane_key(lane), expected, work)
-            if preflight_xdist.task_cmd_uses_xdist_auto(pixi_data, lane.task)
+            if _lane_key(lane) in xdist_lanes
             else work.get(_lane_key(lane), (expected or {}).get(_lane_key(lane), UNKNOWN_LANE_SECONDS))
             for lane in lanes
         )
         target_seconds = LANE_TARGET_FRACTION * run_work / cores
+
+    # Story 117.15: the docs-site lanes run one at a time, so they share one slot, and the slot is as wide as its
+    # widest lane: a serial docs-site lane holds the cores the xdist one behind it will need. With one core held, the
+    # install ended and herald's suite then waited 78 s for a second core, on the chain that ended the run.
+    docs_slot_cores = (
+        preflight_xdist.MIN_XDIST_WORKERS
+        if any(lane.task in DOCS_SITE_TASKS and _lane_key(lane) in xdist_lanes for lane in lanes)
+        else 1
+    )
 
     mutex_keys = lane_mutex_keys(lanes, preflight_ci.static_service_mutex_keys(repo_root, lanes, pixi_data))
     suite_lane_plan = preflight_suite_reduction.build_suite_lane_overrides(
@@ -1859,12 +1873,8 @@ def run_preflight(
                             ready = pick
                             break
                         pick_key = _lane_key(pick)
-                        if preflight_xdist.task_cmd_uses_xdist_auto(pixi_data, pick.task):
-                            pending_xdist_keys = [
-                                lane_key
-                                for lane_key, lane in pending.items()
-                                if preflight_xdist.task_cmd_uses_xdist_auto(pixi_data, lane.task)
-                            ]
+                        if pick_key in xdist_lanes:
+                            pending_xdist_keys = [lane_key for lane_key in pending if lane_key in xdist_lanes]
                             # Story 117.15: the share follows the lane's expected work among the xdist lanes still
                             # to start (pick is still pending, so it is in the sum).
                             share = preflight_xdist.xdist_share_at_admission(
@@ -1888,13 +1898,14 @@ def run_preflight(
                                 continue
                             weights[pick_key] = share
                             coord.xdist_workers[pick_key] = share
-                        elif free_cores < 1 and futures:
-                            if pick.task in DOCS_SITE_TASKS:
-                                break
-                            ready_candidates.remove(pick)
-                            continue
                         else:
-                            weights[pick_key] = 1
+                            need = docs_slot_cores if pick.task in DOCS_SITE_TASKS else 1
+                            if free_cores < need and futures:
+                                if pick.task in DOCS_SITE_TASKS:
+                                    break
+                                ready_candidates.remove(pick)
+                                continue
+                            weights[pick_key] = need
                         ready = pick
                         break
                     if ready is None:

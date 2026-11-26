@@ -73,3 +73,16 @@ Ledger key: `117-17-a-push-reuses-the-green-verdict-its-tree-already-has`.
 ## Evidence (2026-11-26)
 
 `grep -n head_sha src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py`: the head sha is journaled and never read back. Two full runs of one tree: 606 s and 652 s.
+
+## Review round (2026-11-26)
+
+The independent review found paths to a green verdict that no lane had earned, and sent the story back. Each is closed and held by a test in `test_preflight_verdict_reuse.py`:
+
+- **The state was the tree, not the commit.** Some detectors judge history (commit subjects, per-commit diffs): a squash or a reworded subject keeps the tree. The commit is now part of the state.
+- **No age limit.** Some detectors judge a date. The local day is part of the state, and a green run older than half an hour is not reused: lanes also read state no hash covers (loop homes, refs, what GitHub answers), so a verdict stands only for the push that follows it.
+- **A later red run of the same state did not take the green back.** It does now.
+- **`PYTEST_ADDOPTS` was not in the state**, and it can deselect tests. It is, and so is whether a GitHub token is set (never its value).
+- **A full run did not cover a touched run**, the push the story is for: a touched run swaps `detectors-ci` for five detectors that `detectors-ci` runs. A green `detectors-ci` now stands for them.
+- **A reuse record dropped the deferred lanes.** It lists them, and `verify-deferred` reads it.
+
+Known limit, stated in the how-to: within the half hour, state outside the tree is as it was when the lanes ran.

@@ -29,6 +29,7 @@ expand, a ``changes`` step that fails, a lane with no CI counterpart.
 
 from __future__ import annotations
 
+import functools
 import json
 import os
 import re
@@ -303,13 +304,20 @@ def _expand(text: str, context: Mapping[str, str], *, strict: bool) -> str:
     return _EXPRESSION.sub(replace, text)
 
 
-def _tokens(text: str) -> list[str]:
+@functools.lru_cache(maxsize=None)
+def _tokens_of(text: str) -> tuple[str, ...]:
     lines = [line for line in text.replace("\\\n", " ").splitlines() if not line.lstrip().startswith("#")]
     body = "\n".join(lines)
     try:
-        return shlex.split(body)
+        return tuple(shlex.split(body))
     except ValueError:
-        return body.split()
+        return tuple(body.split())
+
+
+def _tokens(text: str) -> list[str]:
+    """A ``run:`` text's shell words. Split once per text (steward Story 117.15): the selection asks for every step
+    of every workflow once per lane, some two hundred thousand splits of the same few hundred texts in one run."""
+    return list(_tokens_of(text))
 
 
 def _task_def(pixi_data: Mapping[str, Any], name: str) -> Mapping[str, Any] | None:
@@ -378,16 +386,21 @@ def _split_segments(tokens: Sequence[str]) -> list[list[str]]:
 
 def _lane_segments(cmd: Any) -> list[tuple[list[str], list[tuple[str, str | None]]]]:
     """The lane's own command line as (words, [(flag, value)]) per ``&&`` segment, without
-    its leading interpreter."""
+    its leading interpreter. Parsed once per command line (steward Story 117.15); each caller gets its own lists."""
     if isinstance(cmd, list):
         cmd = " ".join(str(part) for part in cmd)
     if not isinstance(cmd, str):
         return []
+    return [(list(words), list(flags)) for words, flags in _lane_segments_of(cmd)]
+
+
+@functools.lru_cache(maxsize=None)
+def _lane_segments_of(cmd: str) -> tuple[tuple[tuple[str, ...], tuple[tuple[str, str | None], ...]], ...]:
     try:
         tokens = shlex.split(cmd)
     except ValueError:
-        return []
-    parsed: list[tuple[list[str], list[tuple[str, str | None]]]] = []
+        return ()
+    parsed: list[tuple[tuple[str, ...], tuple[tuple[str, str | None], ...]]] = []
     for segment in _split_segments(tokens):
         if segment[0] in _PYTHON_INTERPRETERS:
             segment = segment[1:]
@@ -406,9 +419,9 @@ def _lane_segments(cmd: Any) -> list[tuple[list[str], list[tuple[str, str | None
             else:
                 i += 1
         if not words:
-            return []  # no program words to anchor on: never a vacuous match
-        parsed.append((words, flags))
-    return parsed
+            return ()  # no program words to anchor on: never a vacuous match
+        parsed.append((tuple(words), tuple(flags)))
+    return tuple(parsed)
 
 
 def _dynamic(value: str) -> bool:

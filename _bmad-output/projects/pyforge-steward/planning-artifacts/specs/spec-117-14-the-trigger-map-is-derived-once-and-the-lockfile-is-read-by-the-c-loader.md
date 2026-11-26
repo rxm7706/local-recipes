@@ -72,3 +72,7 @@ Ledger key: `117-14-the-trigger-map-is-derived-once-and-the-lockfile-is-read-by-
 ## Evidence (2026-11-26)
 
 Standalone on 16 threads: `pyforge-steward-live-test` 194.0 s wall, 2,521 CPU-seconds. Fifteen trigger-map tests at 84 to 91 s each, one per worker. `test_bmad_preflight_and_suite_advance_hint` 169.0 s, `test_realize_argv_per_moved_class` 71.4 s, `test_operator_gate_runs_with_yes` 64.6 s. Loader bench on `pixi.lock`: `CSafeLoader` 0.54 s, `safe_load` 2.94 s, documents equal.
+
+## Review round (2026-11-26)
+
+The independent review read the diff against this spec and held one finding. The lockfile cache was keyed by the file's size and modification time, which serves a stale document for a same-size rewrite inside one clock tick; "never cache a lockfile across a change of its bytes" was not met. The cache is now keyed by a hash of the bytes, read on every ask. `test_estate_realize.py` passes, 31 tests.

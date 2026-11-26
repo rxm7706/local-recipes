@@ -520,3 +520,53 @@ def test_on_one_core_an_xdist_lane_still_starts(tmp_path: Path) -> None:
     assert code == preflight.EXIT_OK
     assert sorted(order) == ["s1", "x1"]
     assert workers["x1"] == str(preflight_xdist.MIN_XDIST_WORKERS)
+
+
+def test_a_serial_docs_site_lane_holds_the_cores_the_suite_behind_it_needs(tmp_path: Path) -> None:
+    """The docs-site lanes share one slot as wide as its widest lane: the install holds two cores, so herald's suite
+    starts the moment the install ends and never waits for another lane to free a second core."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    lanes = {
+        "docs-site-install": "npm ci",
+        "pyforge-herald-test": "pytest herald -q -n auto",
+        "s1": "pytest s1 -q",
+        "s2": "pytest s2 -q",
+        "s3": "pytest s3 -q",
+    }
+    (repo / "pixi.toml").write_text(_pixi(lanes), encoding="utf-8")
+    _journal(repo, {"docs-site-install": 5.0, "pyforge-herald-test": 400.0, "s1": 90.0, "s2": 80.0, "s3": 70.0})
+    started: dict[str, float] = {}
+    ended: dict[str, float] = {}
+    in_flight: set[str] = set()
+    beside_install: set[str] = set()
+    lock = threading.Lock()
+
+    def run_ctx(ctx: preflight.LaneRunContext) -> int:
+        task = ctx.lane.task
+        with lock:
+            started[task] = time.monotonic()
+            in_flight.add(task)
+            if "docs-site-install" in in_flight:
+                beside_install.update(in_flight - {"docs-site-install"})
+        time.sleep(0.05 if task == "docs-site-install" else 0.4)
+        with lock:
+            in_flight.discard(task)
+            ended[task] = time.monotonic()
+        return 0
+
+    code = preflight.run_preflight(
+        repo,
+        invoking_env=INV,
+        jobs=8,
+        logical_cores=4,
+        critical_path=True,
+        install_environment=_NOOP_INSTALL,
+        run_lane_ctx=run_ctx,
+        scratch_parent=tmp_path,
+    )
+    assert code == preflight.EXIT_OK
+    # Four cores: the install's slot takes two, so two serial lanes run beside it and the third waits.
+    assert len(beside_install) == 2, beside_install
+    # The suite starts when the install ends, long before any of the 0.4 s lanes frees a core.
+    assert started["pyforge-herald-test"] - ended["docs-site-install"] < 0.2

@@ -71,3 +71,7 @@ Ledger key: `48-1-the-recipe-audits-read-each-recipe-once-and-the-meta-suite-run
 ## Evidence (2026-11-26)
 
 Standalone `test-ci-meta`: 80.3 s wall, 77 CPU-seconds. `test_no_crm_sentinel_keys_in_recipe_yaml` 13.2 s, `test_no_duplicate_mapping_keys_anywhere` 13.2 s, `test_no_noarch_python_recipe_depends_on_the_wrong_half` 13.2 s, `test_all_recipe_yaml_parse` 13.0 s. Loader bench over 7,566 recipes: `CSafeLoader` 1.42 s, `safe_load` about 15.3 s.
+
+## Review round (2026-11-26)
+
+The independent review held two findings. The shared parse was keyed by size and modification time, which serves a stale tree for a same-size rewrite inside one clock tick; it is keyed by a hash of the file's bytes. The split-distribution audit skipped a recipe on any parse exception where it used to skip only a YAML error; it skips only a YAML error again and raises anything else.
