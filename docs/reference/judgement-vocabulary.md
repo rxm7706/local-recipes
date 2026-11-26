@@ -9,7 +9,7 @@ sources:
   - docs/governance/guild-roster.json
   - src/shared/packages/pyforge-core/src/pyforge/core/exit_domains.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/errors.py
-verified: 2026-11-25
+verified: 2026-11-26
 ---
 
 # The judgement vocabulary — what each word means, positively

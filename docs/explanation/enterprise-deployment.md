@@ -12,7 +12,7 @@ sources:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py
   - .claude/skills/conda-forge-expert/scripts/vulnerability_scanner.py
   - .claude/skills/conda-forge-expert/scripts/cve_manager.py
-verified: 2026-11-25
+verified: 2026-11-26
 ---
 
 # Enterprise Deployment & Air-Gapped Environments

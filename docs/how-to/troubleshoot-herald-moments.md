@@ -5,7 +5,7 @@ sources:
   - src/shared/packages/pyforge-herald/src/pyforge/herald/db.py
   - src/shared/packages/pyforge-herald/src/pyforge/herald/evidence.py
   - src/shared/packages/pyforge-herald/tests/unit/test_auth.py
-verified: 2026-11-25
+verified: 2026-11-26
 ---
 
 # How to troubleshoot Herald's progress, claims and notices
