@@ -309,6 +309,11 @@ One-chain fold: satellite Dreams archived in place with `Consolidated into [[pyf
   approved again), and a whole-run failure keeps its cause. Every defect is reproduced by a failing test before it is fixed, and one the tree does not show is
   closed as not a defect, with what was run recorded in the story spec. **Constraints:** no flag is added (a fix), no
   model or migration moves, and a job status never becomes a verdict.
+- **2026-11-25 (the verdict takes its exit codes from the declaration) — Ruled:** steward's Dream entry of the same
+  date mints `spec-pyforge-steward:CAP-184` on the operator's ruling "Unify for real": the estate's exit-code domains are
+  declared once in `docs/governance/guild-roster.json` and mirrored for in-process code in `pyforge.core.exit_domains`.
+  Warden's `verdict.py` spells its seven rungs' codes, the warn-as-error `1`, the allow-empty `0` and `130`; it takes them from the `warden` domain, and a meta-test holds its lattice to the declared domain. This entry binds `spec-pyforge-steward:CAP-184` and mints no capability; it decomposes as Epic 30, one story.
+  **Constraints:** no exit code the station returns changes, the projection stays in its sole-owner module, no flag.
 
 ## 2026-10-26 — A web face for the compliance factory — upload a manifest, watch warden and atlas analyze it (folded from compliance-factory-web-face)
 

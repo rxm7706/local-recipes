@@ -58,6 +58,11 @@ from a handler only when the dispatched command is `seed`, so a schema-
 breaking state file exits 5 and a broken packaged manifest exits 10, while
 every other verb keeps AD-7's frozen domain (`core/verdict.py`'s
 `GUARDED_EXIT_CODES`, which does not move).
+
+Story 122.1 (spec-pyforge-steward:CAP-184): each leaf's `exit_code` is read
+from the `marshal-seed` domain of the one exit-code declaration
+(`pyforge.core.exit_domains`, which mirrors `docs/governance/guild-roster.json`),
+never spelled here; the numbers did not change.
 """
 
 from __future__ import annotations
@@ -65,6 +70,7 @@ from __future__ import annotations
 from typing import ClassVar
 
 from pyforge.core.errors import PyforgeError
+from pyforge.core.exit_domains import exit_code as _declared_exit_code
 
 
 class SeedError(PyforgeError, Exception):
@@ -136,7 +142,7 @@ class ConformanceFailure(SeedError):
     detects a conformance failure is a later story's surface
     (`seed/verbs/`)."""
 
-    exit_code: ClassVar[int] = 1
+    exit_code: ClassVar[int] = _declared_exit_code("marshal-seed", "conformance-failure")
 
 
 class UsageError(SeedError):
@@ -146,7 +152,7 @@ class UsageError(SeedError):
     validates CLI arguments is a later story's surface
     (`seed/cli/seed.py`)."""
 
-    exit_code: ClassVar[int] = 2
+    exit_code: ClassVar[int] = _declared_exit_code("marshal-seed", "usage")
 
 
 class PreconditionFailure(SeedError):
@@ -157,7 +163,7 @@ class PreconditionFailure(SeedError):
     checks these preconditions is a later story's surface (`seed/verbs/`).
     """
 
-    exit_code: ClassVar[int] = 3
+    exit_code: ClassVar[int] = _declared_exit_code("marshal-seed", "precondition-failure")
 
 
 class NeverWriteViolation(SeedError):
@@ -168,7 +174,7 @@ class NeverWriteViolation(SeedError):
     No concrete raise site is added by this story -- `seed/fs.py`, the
     never-write guard itself, is Story 7.3's surface, not this one's."""
 
-    exit_code: ClassVar[int] = 4
+    exit_code: ClassVar[int] = _declared_exit_code("marshal-seed", "never-write-violation")
 
 
 class StateInvalid(SeedError):
@@ -178,7 +184,7 @@ class StateInvalid(SeedError):
     No concrete raise site is added by this story -- the module that reads
     and validates that state is a later story's surface (`seed/state/`)."""
 
-    exit_code: ClassVar[int] = 5
+    exit_code: ClassVar[int] = _declared_exit_code("marshal-seed", "state-invalid")
 
 
 class InternalError(SeedError):
@@ -189,7 +195,7 @@ class InternalError(SeedError):
     dispatcher that catches an unanticipated failure and wraps it is a
     later story's surface (`seed/cli/seed.py`)."""
 
-    exit_code: ClassVar[int] = 10
+    exit_code: ClassVar[int] = _declared_exit_code("marshal-seed", "internal-error")
 
 
 #: The seed verb group's closed exit taxonomy (Story 115.3, CAP-13 amended

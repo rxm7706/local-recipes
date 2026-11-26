@@ -21,14 +21,20 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from pyforge.core.exit_domains import exit_code
 from pyforge.core.verdict import Lattice
 
 from .models import DoctorReport, DoctorStatus, Finding
 
-EXIT_SIGINT = 130
+# Doctor Story 63.1, spec-pyforge-steward:CAP-184: the numbers come from the
+# `doctor` domain of the one exit-code declaration (`docs/governance/guild-roster.json`
+# `exit_code_domains`, mirrored in process by `pyforge.core.exit_domains`), never
+# spelled here; `tests/meta/test_verdict_reads_the_exit_declaration.py` holds this
+# module's domain to it.
+EXIT_SIGINT = exit_code("doctor", "interrupted")
 
-_EXIT_OK = 0
-_EXIT_FAIL = 2
+_EXIT_OK = exit_code("doctor", "ok")
+_EXIT_FAIL = exit_code("doctor", "fail")
 
 # Story 14.3, SPEC-pyforge-core CAP-3: the shared domain-declaration
 # mechanism -- `exit_code_for`'s own any-fail predicate below is UNCHANGED
@@ -38,7 +44,7 @@ _EXIT_FAIL = 2
 # `_LATTICE`): that test imports this name from outside the module.
 LATTICE = Lattice(
     order=(DoctorStatus.FAIL, DoctorStatus.WARN, DoctorStatus.OK),
-    exit_by_member={DoctorStatus.FAIL: _EXIT_FAIL, DoctorStatus.WARN: _EXIT_OK, DoctorStatus.OK: _EXIT_OK},
+    exit_by_member={status: exit_code("doctor", status.value) for status in DoctorStatus},
 )
 
 

@@ -4,7 +4,8 @@ sources:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
   - docs/reference/judgement-vocabulary.md
   - archive/docs/dreams/fidelity-enforcement.md
-verified: 2026-11-24
+  - docs/governance/guild-roster.json
+verified: 2026-11-25
 ---
 
 # The Detector Framework
@@ -41,6 +42,9 @@ PyForge's detector registry exit codes obey a strict rule regarding failure to r
 * Exit `0` means every selected detector ran and passed, or ran and measured nothing (an `unmeasured` row, below).
 * Exit `1` means at least one detector ran and reported findings.
 * Exit `2` means at least one detector **could not run**, and none reported findings.
+
+The aggregator reads these numbers from the `detectors` domain of `docs/governance/guild-roster.json`'s
+`exit_code_domains`, the one declaration every verdict module's exit codes come from (spec-pyforge-steward:CAP-184).
 
 Exit code 2 is not a softer 0. If a detector crashes, times out, or fails to import a dependency, it reports `unknown`. The framework never treats a failure to measure as a clean bill of health. This ensures the dashboard status strip (and CI gates) never claim "green" for an invariant they didn't actually verify.
 

@@ -8336,3 +8336,20 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   Stories 136.8 and 136.7, which they amend. **Constraints:** an arrow is traced, never counted, so a Story line no
   record resolves keeps its text and is counted; a compiled skill is written by its own tool; no dependency, CI job or
   ci-surfaces row is added; `DW-steward-134-2-1` stays the operator's.
+- **2026-11-25 (one declaration names every exit-code domain) — Found and ruled:** tracing `DW-steward-136-11-1`
+  found that `spec-vocabulary-one-name-one-job` CAP-2 had two halves and the 2026-09-17 fold carried neither. Its
+  status-set half shipped in Story 59.2 (doctor's `board.py`, `chain.py` and `status_body_consistency.py` read
+  `docs/governance/guild-roster.json`). Its exit-code half never did: five domains are live, each spelled in its own
+  module (doctor `{0, 2, 130}` where 2 is FAIL, warden `{0, 1, 2, 130}`, marshal `{0, 1, 2, 3, 4, 130}`, marshal
+  `seed` `{1, 2, 3, 4, 5, 10}`, the detectors aggregator `{0, 1, 2}` where 2 is could-not-run), declared only in
+  `docs/reference/judgement-vocabulary.md`'s prose, and `DW-VOCAB-2026-09-14-8` has read `partially-fixed` since
+  2026-09-14. **Ruled** (operator, 2026-11-25, in session, choosing among "declared is enough", "unify for real" and "keep
+  it open": "Unify for real": one machine-readable exit-code declaration in `guild-roster.json` that doctor, warden, marshal and
+  `scripts/detectors.py` read). **For steward:** this entry mints `spec-pyforge-steward` CAP-184 (one declaration
+  names every exit-code domain, and each verdict module reads it), re-homing the dropped CAP-2's exit-code half; it
+  works with `spec-pyforge-core:CAP-3` (the shared `Lattice` mechanism) and CAP-137 (the roster's in-process mirror,
+  the pattern `pyforge.core.exit_domains` follows). It decomposes as Epic 137, one story: the declaration and its
+  core mirror, the aggregator reading it, and the pinning test and glossary checked against it (137.1); doctor's,
+  warden's and marshal's verdict modules read it under their own Epics 63, 30 and 122, on their own Dreams.
+  **Constraints:** no exit number changes; an installed package never reads the governance file; other stations' CLI
+  exit codes stay with their own contracts; no flag.

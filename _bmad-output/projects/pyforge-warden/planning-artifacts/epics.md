@@ -1767,3 +1767,26 @@ module tree re-drawn as built, the two Python floor lines at 3.14; no AD added, 
 
 No story is minted, renumbered or restructured. This section, the two inventory lines, Epic 9's opening line, Story
 21.1's status line and the frontmatter note are the whole edit.
+
+## Epic 30: Warden's verdict takes its exit codes from the declaration (spec-pyforge-steward:CAP-184)
+
+Minted 2026-11-25 from the station Dream's entry of the same date on the operator ruling of 2026-11-25: "Unify for real". Steward Story 137.1 declares the exit-code domains; this Epic makes warden's `verdict.py` read its domain from there.
+**HARD boundaries:**
+- No exit code warden returns changes, `--warn-is-error` and `--allow-empty` included, and `verdict.py` stays the sole owner of the projection.
+- No flag.
+
+### Story 30.1: Warden's verdict takes its exit codes from the declaration
+
+As a maintainer of warden's exit projection,
+I want `pyforge.warden.verdict` to take each rung's exit code, the warn-as-error code and `130` from the `warden` domain of `pyforge.core.exit_domains`,
+So that warden's numbers are declared once, beside the doctor domain that narrows it.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward:CAP-184 (each verdict module reads the declaration; no text change) and spec-pyforge-warden's verdict lattice (verdict.py stays its sole owner; no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: constants read numbers a declaration now holds)
+**Surface:** `src/shared/packages/pyforge-warden/src/pyforge/warden/verdict.py`, `src/shared/packages/pyforge-warden/tests/meta/test_verdict_reads_the_exit_declaration.py`
+**Spec:** `planning-artifacts/specs/spec-30-1-warden-s-verdict-takes-its-exit-codes-from-the-declaration.md`
+**Given** warden's `verdict.py` spells its exit numbers
+**When** it takes them from the `warden` domain of `pyforge.core.exit_domains`
+**Then** `exit_code_for` returns the same code for every input it returned before, including `--warn-is-error` and `--allow-empty`, and a meta-test fails when warden's lattice domain differs from its declared domain
+**And** `verdict.py` stays the sole owner of warden's exit projection
+**Status:** done

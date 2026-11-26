@@ -38,6 +38,10 @@ EXIT CODES, and the rule that governs them:
     1   at least one reported findings
     2   at least one COULD NOT RUN, and none reported findings
 
+These are the `detectors` domain of `docs/governance/guild-roster.json`'s
+`exit_code_domains` (spec-pyforge-steward:CAP-184), which this file reads. A
+doctor source's 2 is FAIL; here 2 is could-not-run.
+
 2 is not a softer 0. A detector that cannot run reports **unknown, never green**
 (fidelity-enforcement, invariant 3) — the dashboard's status strip has behaved
 this way since it was built ("the strip never claims green it did not measure"),
@@ -81,6 +85,29 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+
+
+def _exit_domain() -> dict[str, int]:
+    """The aggregator's exit codes, read from the declaration every verdict module reads
+    (`docs/governance/guild-roster.json` `exit_code_domains.detectors`; steward Story 137.1,
+    spec-pyforge-steward:CAP-184). An unreadable declaration means nothing ran, so it leaves
+    with could-not-run -- the one number this file spells, because the file that names it is
+    the thing that could not be read."""
+    try:
+        roster = json.loads((ROOT / "docs" / "governance" / "guild-roster.json").read_text(encoding="utf-8"))
+        domains = roster["exit_code_domains"]
+        codes = {name: int(domains["detectors"][name]) for name in ("pass", "findings", "could-not-run")}
+        # A doctor source's own `ok` code, which a ported Doctor row is compared against.
+        codes["doctor-ok"] = int(domains["doctor"]["ok"])
+        return codes
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        print(f"detectors: the exit-code declaration could not be read -- {exc}", file=sys.stderr)
+        raise SystemExit(2) from None
+
+
+_EXIT = _exit_domain()
+EXIT_PASS, EXIT_FINDINGS, EXIT_COULD_NOT_RUN = _EXIT["pass"], _EXIT["findings"], _EXIT["could-not-run"]
+DOCTOR_EXIT_OK = _EXIT["doctor-ok"]
 
 # Where detectors may live, and what they are named. Two roots because the
 # dashboard's layout gate belongs beside the page it measures, not in scripts/.
@@ -380,7 +407,7 @@ def _run_doctor_sources(scope: str) -> list[dict]:
     except ImportError as exc:
         return [
             {"path": f"pyforge.doctor.sources:{name}", "name": name,
-             "scope": "?", "task": task, "rc": 2, "status": "unknown",
+             "scope": "?", "task": task, "rc": EXIT_COULD_NOT_RUN, "status": "unknown",
              "secs": 0.0,
              "summary": f"pyforge.doctor is not importable here — {exc}",
              "output": ""}
@@ -395,10 +422,10 @@ def _run_doctor_sources(scope: str) -> list[dict]:
         started = time.monotonic()
         try:
             findings = DISPATCH[name](ROOT)
-            rc = 1 if exit_code_for(findings) != 0 else 0
+            rc = EXIT_FINDINGS if exit_code_for(findings) != DOCTOR_EXIT_OK else EXIT_PASS
             lines = [f"[{f.source.value}] {f.check}: {f.status.value} -- {f.message}"
                      for f in findings]
-            if rc:
+            if rc != EXIT_PASS:
                 status = "FINDINGS"
             elif findings and all(is_gather_failure(f) for f in findings):
                 status = "unmeasured"
@@ -410,7 +437,7 @@ def _run_doctor_sources(scope: str) -> list[dict]:
             # itself (escaping its own degrade_on_exception net) must not
             # take the other nine sources down with it, and must not read
             # as a silent pass -- unknown, same as the import-failure path.
-            rc, status = 2, "unknown"
+            rc, status = EXIT_COULD_NOT_RUN, "unknown"
             summary = f"{name} raised {exc.__class__.__name__}: {exc}"
             output = summary
         rows.append({
@@ -503,8 +530,8 @@ def run_one(det: dict, timeout: int) -> dict:
             argv, cwd=ROOT, capture_output=True, text=True, timeout=timeout)
         rc, out = proc.returncode, (proc.stdout or "") + (proc.stderr or "")
     except subprocess.TimeoutExpired:
-        rc, out = 2, f"UNKNOWN: exceeded {timeout}s"
-    status = {0: "pass", 1: "FINDINGS"}.get(rc, "unknown")
+        rc, out = EXIT_COULD_NOT_RUN, f"UNKNOWN: exceeded {timeout}s"
+    status = {EXIT_PASS: "pass", EXIT_FINDINGS: "FINDINGS"}.get(rc, "unknown")
     tail = [ln for ln in out.strip().splitlines() if ln.strip()]
     structured_findings = _structured_findings_from_output(det["name"], out)
     return {
@@ -558,7 +585,7 @@ def main() -> int:
             for s in doctor_sources:
                 print(f"  {s['scope']:7} {s['source']:22} "
                       f"subject={s['subject_station']:<8} owner={s['owning_station']}")
-        return 1 if registry_findings else 0
+        return EXIT_FINDINGS if registry_findings else EXIT_PASS
 
     # Story 6.9: the ten ported Doctor sources run for real here too, merged
     # into the SAME results/exit-code aggregation a scanned detector's row
@@ -599,10 +626,10 @@ def main() -> int:
     # Registry gaps are findings in their own right: a detector nothing can
     # invoke is the same defect class as a rule nothing enforces.
     if registry_findings or any(r["status"] == "FINDINGS" for r in results):
-        return 1
+        return EXIT_FINDINGS
     if any(r["status"] == "unknown" for r in results):
-        return 2
-    return 0
+        return EXIT_COULD_NOT_RUN
+    return EXIT_PASS
 
 
 if __name__ == "__main__":

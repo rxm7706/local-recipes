@@ -828,6 +828,11 @@ Folded Dreams: [[bmad-drift-new-artifact-shape]], [[bmad-method-version-drift]],
   sanctioned write and a change to CAP-96 and NFR-1, which this entry does not make), the counter stays, and no flag
   is added. The other row of that review on this ledger, `DW-doctor-61-1-1`, is a re-derive of four governance Specs
   and is not this epic's.
+- **2026-11-25 (the verdict takes its exit codes from the declaration) — Ruled:** steward's Dream entry of the same
+  date mints `spec-pyforge-steward:CAP-184` on the operator's ruling "Unify for real": the estate's exit-code domains are
+  declared once in `docs/governance/guild-roster.json` and mirrored for in-process code in `pyforge.core.exit_domains`.
+  Doctor's `verdict.py` spells `0`, `2` and `130` itself; it takes them from the `doctor` domain, and a meta-test holds its lattice to the declared domain and its subset of warden's. This entry binds `spec-pyforge-steward:CAP-184` and mints no capability; it decomposes as Epic 63, one story.
+  **Constraints:** no exit code the station returns changes, the projection stays in its sole-owner module, no flag.
 
 ## 2026-10-26 — A spike report is not a corrupt file, and the classifier can't yet tell the difference (folded from bmad-drift-new-artifact-shape)
 

@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: warden
-source_fingerprint: fc050a9cdc227036
-story_count: 86
-test_file_count: 89
+source_fingerprint: 5c08cd881fe8313f
+story_count: 87
+test_file_count: 90
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-warden`
-- **Stories parsed:** 86
-- **Epics parsed:** 28
-- **Test files inventoried:** 89 under `src/shared/packages/pyforge-warden/tests/`
+- **Stories parsed:** 87
+- **Epics parsed:** 29
+- **Test files inventoried:** 90 under `src/shared/packages/pyforge-warden/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `fc050a9cdc227036`
+- **Source fingerprint:** `5c08cd881fe8313f`
 
 ## Risk Assessment
 
@@ -61,6 +61,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 27: Warden's live-tree readers run as their own half (relay of spec-pyforge-steward:CAP-175; decision D2)
 - Epic 28: The upload and the job views answer only to the warden role (spec-pyforge-warden CAP-16)
 - Epic 29: The web face and the actuator fail honestly and leave nothing behind (spec-pyforge-warden CAP-12, CAP-16, CAP-17, CAP-24, CAP-29)
+- Epic 30: Warden's verdict takes its exit codes from the declaration (spec-pyforge-steward:CAP-184)
 
 ### Low-risk epics
 
@@ -104,6 +105,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-warden/tests/meta/test_socket_deny_alive.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_station_persona.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_subprocess_sole_site.py` | meta | none observed |
+| `src/shared/packages/pyforge-warden/tests/meta/test_verdict_reads_the_exit_declaration.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_verdict_sole_ownership.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_actuator.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_actuator_draft_pr_estate.py` | unit | none observed |
@@ -250,6 +252,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 27.1 | Warden's live-tree readers run as their own half | none observed |
 | 28.1 | The upload and the job views answer only to the warden role | none observed |
 | 29.1 | An unscannable upload fails, and the web face and the actuator leave nothing ... | none observed |
+| 30.1 | Warden's verdict takes its exit codes from the declaration | none observed |
 
 ## Quality Gates
 

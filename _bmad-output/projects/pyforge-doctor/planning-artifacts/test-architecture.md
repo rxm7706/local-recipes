@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: c8e48a3331208ce7
-story_count: 198
-test_file_count: 131
+source_fingerprint: 2936b4e01d95a0c8
+story_count: 199
+test_file_count: 132
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 198
-- **Epics parsed:** 61
-- **Test files inventoried:** 131 under `src/shared/packages/pyforge-doctor/tests/`
+- **Stories parsed:** 199
+- **Epics parsed:** 62
+- **Test files inventoried:** 132 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `c8e48a3331208ce7`
+- **Source fingerprint:** `2936b4e01d95a0c8`
 
 ## Risk Assessment
 
@@ -97,6 +97,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 60: The documentation refresh's deferred rows close (spec-pyforge-doctor CAP-84, CAP-2, CAP-3)
 - Epic 61: The documentation says what the tree does (spec-pyforge-doctor CAP-84)
 - Epic 62: The kill switch writes the flag tree whole and reports its reason (spec-pyforge-doctor CAP-96)
+- Epic 63: Doctor's verdict takes its exit codes from the declaration (spec-pyforge-steward:CAP-184)
 
 ## Test Inventory
 
@@ -125,6 +126,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-doctor/tests/meta/test_sources_warden_no_subprocess.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_station_persona.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_verdict_narrows_warden.py` | meta | none observed |
+| `src/shared/packages/pyforge-doctor/tests/meta/test_verdict_reads_the_exit_declaration.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_verdict_sole_ownership.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_capability_ledger.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_check_speed_budget.py` | unit | none observed |
@@ -436,6 +438,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 60.4 | Doctor's chain closes: CAP-84 reads shipped and the incident log's home is se... | none observed |
 | 61.1 | The shelf, the front doors and the dossier say what the tree does | none observed |
 | 62.1 | The kill switch writes the flag tree whole and reports its reason | none observed |
+| 63.1 | Doctor's verdict takes its exit codes from the declaration | none observed |
 
 ## Quality Gates
 

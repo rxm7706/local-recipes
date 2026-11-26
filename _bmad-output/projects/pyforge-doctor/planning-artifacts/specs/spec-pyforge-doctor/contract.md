@@ -37,7 +37,8 @@ The code side, family by family:
   `E = os.environ`), and so is a copy of the environment (`env = dict(os.environ)`, `os.environ.copy()`,
   `{**os.environ}`, a copy of a copy) in the function that makes it, or anywhere for a module-level copy; and, apart,
   the keys set on a copy of `os.environ` handed to a child.
-- **Exit codes:** the module-level `EXIT_*` / `_EXIT_*` constants of `verdict.py`, with their numbers.
+- **Exit codes:** the module-level `EXIT_*` / `_EXIT_*` constants of `verdict.py`, with their numbers; a constant bound by
+  `exit_code("doctor", <member>)` reads the number the declaration gives that member (Story 63.1).
 - **Sources:** the `Source` enum, `sources.REGISTRY` (scope and subject) and the dispatcher's `DISPATCH`.
 - **Check codes:** every `check=` keyword in the package, and the argument in `check`'s place of a `Finding(...)` that
   has no `check=` keyword (`Finding` under any name the module binds to it, `from ... import Finding as F` included):
@@ -363,12 +364,13 @@ The one computed environment read:
 
 Every import that leaves the package and the standard library. `pyproject.toml` declares `jsonschema`, `mcp`,
 `PyYAML` and `pyforge-core`; `pyforge-warden` is the optional `gate` extra (AD-1); `prometheus_client` and
-`django_pyforge` are undeclared and guarded. Nine `pyforge.core` modules are imported; no other station's package is,
+`django_pyforge` are undeclared and guarded. Ten `pyforge.core` modules are imported; no other station's package is,
 except warden's engines through the one declared relay (`tests/meta/test_source_independence.py`).
 
 | Import | Kind | Imported by | For |
 |---|---|---|---|
 | `pyforge.core.verdict` | required | `verdict.py` | `Lattice`: the exit domain as a computed subset of warden's (spec-pyforge-core:CAP-3) |
+| `pyforge.core.exit_domains` | required | `verdict.py` | `exit_code`: the `doctor` domain of the one exit-code declaration (spec-pyforge-steward:CAP-184) |
 | `pyforge.core.report` | required | `__main__.py` | `BASE_ENVELOPE_SCHEMA`, `compose`: the DoctorReport envelope (spec-pyforge-core:CAP-4) |
 | `pyforge.core.hooks` | required | `hooks.py` | `HookSpec`, `PluginRegistry`: the `doctor-gather` and `doctor-prescribe` entry points |
 | `pyforge.core.landing_evidence` | required | `bare_merge.py`, `sources/ledger.py`, `sources/marshal.py` | merge-subject and branch-name parsing (CAP-78, CAP-80) |

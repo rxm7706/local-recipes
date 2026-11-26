@@ -5,7 +5,8 @@ sources:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_currency.py
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/verdict.py
   - docs/reference/judgement-vocabulary.md
-verified: 2026-11-24
+  - docs/governance/guild-roster.json
+verified: 2026-11-25
 ---
 
 # How to run and understand Detectors
@@ -53,6 +54,9 @@ The detector registry adheres strictly to a three-tier exit code system:
 | `0` | **Pass** | Every selected detector ran and passed, or ran and measured nothing (`unmeasured`, below). |
 | `1` | **FINDINGS** | At least one detector reported a violation of an invariant. |
 | `2` | **UNKNOWN** | At least one detector **could not run** (e.g., timed out, threw an exception, or a dependency like `pyforge.doctor` was unimportable), and no detector reported findings. |
+
+These three codes are the `detectors` domain of the one exit-code declaration, `docs/governance/guild-roster.json`'s
+`exit_code_domains`, which `scripts/detectors.py` reads (spec-pyforge-steward:CAP-184).
 
 :::caution
 **Exit code 2 is not a softer 0.** A detector that cannot run reports `unknown`, which is never green. The dashboard status strip will not claim "green" if it could not measure the metric.

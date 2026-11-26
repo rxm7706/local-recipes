@@ -422,6 +422,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from pyforge.core.exit_domains import exit_code
 from pyforge.core.verdict import Lattice
 
 from .findings import require_registered
@@ -436,22 +437,21 @@ LATTICE_ORDER: tuple[Verdict, ...] = (
     Verdict.CLEAN,
 )
 
-EXIT_SIGINT = 130
+# Marshal Story 122.1, spec-pyforge-steward:CAP-184: every number below comes
+# from the `marshal` domain of the one exit-code declaration
+# (`docs/governance/guild-roster.json` `exit_code_domains`, mirrored in process by
+# `pyforge.core.exit_domains`), keyed by each rung's own value, never spelled
+# here; `tests/meta/test_verdict_reads_the_exit_declaration.py` holds AD-7's
+# frozen domain to it.
+EXIT_SIGINT = exit_code("marshal", "interrupted")
 
-_EXIT_BY_VERDICT: dict[Verdict, int] = {
-    Verdict.CLEAN: 0,
-    Verdict.WARN: 0,
-    Verdict.UNEVALUABLE: 1,
-    Verdict.SCOPE_VIOLATION: 2,
-    Verdict.GATE_FAILED: 3,
-    Verdict.ERROR: 4,
-}
+_EXIT_BY_VERDICT: dict[Verdict, int] = {verdict: exit_code("marshal", verdict.value) for verdict in LATTICE_ORDER}
 
 # CLI-boundary constants (like EXIT_SIGINT above, not lattice rungs).
 # EXIT_USAGE is argparse's usage-error convention; it numerically coincides
 # with scope-violation's exit code but is a distinct concern.
-EXIT_OK = 0
-EXIT_USAGE = 2
+EXIT_OK = exit_code("marshal", "ok")
+EXIT_USAGE = exit_code("marshal", "usage")
 
 # Story 14.3, SPEC-pyforge-core CAP-3: rank + exit-domain bookkeeping now
 # delegates to the shared Lattice primitive -- same rungs, same exit

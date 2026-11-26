@@ -6,7 +6,10 @@ sources:
   - scripts/detectors.py
   - tests/scripts/test_exit_code_domains_are_declared.py
   - scripts/governance_currency_check.py
-verified: 2026-11-24
+  - docs/governance/guild-roster.json
+  - src/shared/packages/pyforge-core/src/pyforge/core/exit_domains.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/errors.py
+verified: 2026-11-25
 ---
 
 # The judgement vocabulary — what each word means, positively
@@ -80,14 +83,23 @@ trap, and it has caused at least one real misread:
 | `scripts/detectors.py` (the aggregator) | `{0, 1, 2}` | **could not run** |
 | `pyforge-warden` | `{0, 1, 2, 130}` | error |
 | `pyforge-marshal` | `{0, 1, 2, 3, 4, 130}` | scope-violation (`3` is gate-failed) |
+| `pyforge-marshal seed` | `{1, 2, 3, 4, 5, 10}` | usage error (`5` is an invalid state file, `10` an internal error) |
 | argparse, on any of them | `2` | invalid arguments |
 | script-based detectors (`scripts/*_check.py`) | `{0, 1}` or `{0, 1, 2}` | **could not run**, where the script has a `2` (`flag_gate_check.py`, `pixi_version_check.py`); `governance_currency_check.py` returns `0` or `1` and exits `2` only when it crashes |
 
 Doctor's subset of warden's domain is deliberate and documented (the module docstring of Doctor's `verdict.py`: it
 omits warden's policy rung `1` because Doctor reports operability, not policy). The collision
-with the aggregator's `2` is **not** deliberate and is tracked as `DW-VOCAB-2026-09-14-8`
-(steward's deferred-work ledger, `partially-fixed`: `tests/scripts/test_exit_code_domains_are_declared.py`
-pins the domains against this page; the unification is open).
+with the aggregator's `2` is **not** deliberate, and it stays: changing a live exit code would break
+every caller that reads one. What changed is that it is declared, not only described.
+
+**The declaration.** The first five rows are declared once, by member name and number, in
+`docs/governance/guild-roster.json`'s `exit_code_domains` (domains `doctor`, `detectors`, `warden`,
+`marshal`, `marshal-seed`), which also declares doctor's domain a narrowing of warden's
+(`exit_code_domains_narrowing`); `pyforge.core.exit_domains` carries the same table for in-process
+code (spec-pyforge-steward:CAP-184, `DW-VOCAB-2026-09-14-8`). Doctor's, warden's and marshal's verdict
+modules, marshal's `seed/errors.py` and `scripts/detectors.py` take their numbers from it, and
+`tests/scripts/test_exit_code_domains_are_declared.py` fails when a module, or this table, differs from
+the declaration. Read a code in the domain of the surface that produced it, never another's.
 
 **The aggregator's four row words.** `scripts/detectors.py` reads each row as `pass`,
 `FINDINGS` (exit `1`), `unknown` (could not run, exit `2`) or **`unmeasured`**. A Doctor row is

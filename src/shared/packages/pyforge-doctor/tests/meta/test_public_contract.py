@@ -69,6 +69,7 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from pyforge.core.exit_domains import exit_code
 
 from pyforge.doctor import __main__ as doctor_cli
 from pyforge.doctor import sources as doctor_sources
@@ -199,13 +200,26 @@ def _mcp_tool_items(text: str) -> set[Item]:
 
 
 def _exit_items(text: str) -> set[Item]:
-    """``verdict.py``'s exit constants: (code, constant)."""
+    """``verdict.py``'s exit constants: (code, constant). A constant is a literal, or (doctor Story 63.1,
+    spec-pyforge-steward:CAP-184) an ``exit_code("<domain>", "<member>")`` call, read as the number the
+    declaration gives that member."""
     items: set[Item] = set()
     for node in ast.parse(text).body:
         if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
             name = node.targets[0].id
-            if re.fullmatch(r"_?EXIT_[A-Z_]+", name) and isinstance(node.value, ast.Constant):
+            if not re.fullmatch(r"_?EXIT_[A-Z_]+", name):
+                continue
+            if isinstance(node.value, ast.Constant):
                 items.add((str(node.value.value), name))
+            elif (
+                isinstance(node.value, ast.Call)
+                and isinstance(node.value.func, ast.Name)
+                and node.value.func.id == "exit_code"
+                and len(node.value.args) == 2
+                and all(isinstance(arg, ast.Constant) and isinstance(arg.value, str) for arg in node.value.args)
+            ):
+                domain, member = (arg.value for arg in node.value.args)  # type: ignore[attr-defined]
+                items.add((str(exit_code(domain, member)), name))
     return items
 
 

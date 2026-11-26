@@ -9525,3 +9525,28 @@ So that the remainder is the lines that truly have no capability, each counted.
 **Then** every id written is a capability its Spec defines whose intent the Story's work matches, Stories 12.9 and 59.2 cite today's ids or record why not, and the lines still without a resolvable capability are counted by reason in the story's change log
 **And** no Story key, heading, status or acceptance line changes, the chain detectors pass, and the row reads resolved, naming the counted remainder as lines that have no capability to cite
 **Status:** done
+
+## Epic 137: One declaration names every exit-code domain (spec-pyforge-steward:CAP-184; spec-pyforge-core:CAP-3)
+
+Minted 2026-11-25 from the station Dream's entry of the same date (one declaration names every exit-code domain) on the operator ruling of 2026-11-25: "Unify for real". The exit-code half of `spec-vocabulary-one-name-one-job` CAP-2, which the 2026-09-17 fold carried into no live Spec (`DW-steward-136-11-1`), is re-minted as spec-pyforge-steward:CAP-184, and `DW-VOCAB-2026-09-14-8` is its row. This Epic adds the declaration; the doctor, warden and marshal verdict modules read it under their own stations' Epics 63, 30 and 122.
+**HARD boundaries:**
+- No exit number changes on any surface.
+- An installed package never reads `docs/governance/guild-roster.json`; in-process code reads `pyforge.core.exit_domains`.
+- Other stations' CLI exit codes (herald, scribe, mason, steward, atlas) stay with their own public contracts and are not declared here.
+- No flag: the declaration holds numbers the code already uses.
+
+### Story 137.1: One declaration names every exit-code domain
+
+As a maintainer who reads or changes an exit code anywhere in the estate,
+I want the exit codes of doctor's sources, warden's scan, marshal's verbs, marshal's `seed` verb and the detectors aggregator declared once, by name and number, in `docs/governance/guild-roster.json`, with `pyforge.core.exit_domains` carrying the same table for in-process code,
+So that a reader learns what `2` means on each surface from one place, and a number that drifts from it fails a test.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward:CAP-184 (one declaration names every exit-code domain, and each verdict module reads it; minted with this story), works with spec-pyforge-core:CAP-3 (the shared `Lattice` mechanism; no text change) and spec-pyforge-steward:CAP-137 (the roster's in-process mirror is the pattern; no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a declaration of numbers the code already uses; no behaviour changes)
+**Surface:** `docs/governance/guild-roster.json`, `src/shared/packages/pyforge-core/src/pyforge/core/exit_domains.py`, `src/shared/packages/pyforge-core/tests/unit/test_exit_domains.py`, `src/shared/packages/pyforge-core/tests/unit/test_exit_domains_match_the_guild_roster.py`, `scripts/detectors.py`, `tests/scripts/test_exit_code_domains_are_declared.py`, `docs/reference/judgement-vocabulary.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-137-1-one-declaration-names-every-exit-code-domain.md`
+**Given** `DW-VOCAB-2026-09-14-8` reports four exit-code domains spelled in four modules, declared only in prose, and an aggregator whose `2` means the opposite of a doctor source's
+**When** `guild-roster.json` gains `exit_code_domains` and `exit_code_domains_narrowing`, and `pyforge.core.exit_domains` carries the same table
+**Then** the five domains are declared by member name and number, a live-tree test fails when the Python table and the JSON key differ, `scripts/detectors.py` takes its 0, 1 and 2 from the `detectors` domain, and `test_exit_code_domains_are_declared.py` fails when a module's exit constants or the glossary page's domains differ from the declaration
+**And** no exit number on any surface changes, and the row reads resolved once Stories 63.1 (doctor), 30.1 (warden) and 122.1 (marshal) land
+**Status:** done

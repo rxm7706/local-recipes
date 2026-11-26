@@ -13983,6 +13983,11 @@ row; the `steward setup` read rules) · [[pyforge-scribe]] (the
   failing test before it is fixed, and one the tree does not show is closed as not a defect, its code left alone.
   **Constraints:** no flag is added (a fix that restores a fail-closed read), the exit domain gains no code, and
   `contract.md` does not move.
+- **2026-11-25 (the verdict takes its exit codes from the declaration) — Ruled:** steward's Dream entry of the same
+  date mints `spec-pyforge-steward:CAP-184` on the operator's ruling "Unify for real": the estate's exit-code domains are
+  declared once in `docs/governance/guild-roster.json` and mirrored for in-process code in `pyforge.core.exit_domains`.
+  Marshal's `core/verdict.py` spells its six rungs' codes and its boundary constants, and `seed/errors.py` its six leaves' codes; they take them from the `marshal` and `marshal-seed` domains, and a meta-test holds `GUARDED_EXIT_CODES` and `SEED_EXIT_CODES` to the declaration. This entry binds `spec-pyforge-steward:CAP-184` and mints no capability; it decomposes as Epic 122, one story.
+  **Constraints:** no exit code the station returns changes, the projection stays in its sole-owner module, no flag.
 
 ## 2026-11-10 — The Spec says what marshal is, and its roots come from one place
 

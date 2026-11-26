@@ -107,6 +107,16 @@ environments.
 
 Public names: `STATIONS`, `long_form`.
 
+### `pyforge.core.exit_domains`
+
+Governed by: spec-pyforge-steward:CAP-184.
+
+The in-process copy of the one exit-code declaration (`docs/governance/guild-roster.json` `exit_code_domains` and
+`exit_code_domains_narrowing`): each domain's member names and the codes they exit with, read-only, and which domain
+narrows which. It reads no file; a live-tree test holds it equal to the governance file.
+
+Public names: `EXIT_CODE_DOMAINS`, `EXIT_CODE_DOMAINS_NARROWING`, `domain_codes`, `exit_code`.
+
 ### `pyforge.core.hooks`
 
 Governed by: spec-pyforge-unifying-strategy:CAP-18.
@@ -287,7 +297,8 @@ and `pyforge.core.example` the example hook spec's name.
 | `EXIT_NOT_FOUND` | `127` | `pyforge.core.dispatch` | The station's console script could not be started. |
 
 Otherwise `pyforge.core.dispatch.main` returns the child's own exit code unchanged. The verdict lattice in
-`pyforge.core.verdict` defines no value: a station builds its `Lattice` from its own members and exit values, and
+`pyforge.core.verdict` defines no value: a station builds its `Lattice` from its own members and the exit values
+`pyforge.core.exit_domains` declares for its domain (spec-pyforge-steward:CAP-184), and
 `Lattice.exit_codes` is that station's frozen exit-code domain; a narrowing (doctor's domain inside warden's) is
 `Lattice.narrows`. `pyforge.core.flags` defines none either: a station's `main()` catches `FlagOff` and returns its own
 usage code.
