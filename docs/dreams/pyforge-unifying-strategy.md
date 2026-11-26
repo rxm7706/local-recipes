@@ -1301,4 +1301,4 @@ Entries through 2026-08-31: [archive § Realization log (historical)](<https://g
   and the code's comments cite CAP-12, which is identity roles and secret delivery (`DW-steward-138-1-1`, raised by
   steward Story 138.1). Ruled (operator, 2026-11-25, in session: "Yes, mint it" (asked whether broker TLS should become a capability, on the recommendation that it should; the operator's own view: "i think it should be yes")): broker TLS becomes CAP-21, a broker link is
   authenticated, not only encrypted, already met; canopy:FR-52 is traced from it; steward Epic 141, one story
-  (141.1), mints it and re-keys Story 41.4 and the six comments that cite CAP-12. No behaviour changes and no flag.
+  (141.1), mints it and re-keys Story 41.4 and the seven comments that cite CAP-12. No behaviour changes and no flag.

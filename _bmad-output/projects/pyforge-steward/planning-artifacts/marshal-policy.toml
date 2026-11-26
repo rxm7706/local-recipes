@@ -1936,6 +1936,7 @@ verify_commands = [
   "scripts/.spec-surface-baseline.json",
   "src/platform/config/broker_tls.py",
   "src/platform/config/settings/base.py",
+  "src/platform/config/startup/__init__.py",
   "src/platform/config/startup/stage_one.py",
   "src/platform/tests/test_broker_tls_verified.py",
 ]

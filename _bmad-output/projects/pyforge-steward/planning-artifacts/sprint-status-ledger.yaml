@@ -198,7 +198,7 @@ development_status:
   14-8-local-edits-to-installer-owned-files-are-found-before-and-re-applied-after: done
   14-9-the-apply-retires-deprecation-shims-on-purpose-no-shims: done
   140-1-a-redirection-after-git-push-is-not-read-as-its-remote: done
-  141-1-broker-tls-is-a-capability-and-the-story-and-code-that-build-it-cite-it: ready-for-dev
+  141-1-broker-tls-is-a-capability-and-the-story-and-code-that-build-it-cite-it: done
   15-1-one-command-reports-the-whole-pipelines-truth: done
   15-2-one-command-advances-a-stale-package-end-to-end: done
   15-3-five-modules-wire-through-the-provisioning-verb: done
@@ -624,7 +624,7 @@ development_status:
   epic-14-retrospective: optional
   epic-140: done
   epic-140-retrospective: optional
-  epic-141: in-progress
+  epic-141: done
   epic-141-retrospective: optional
   epic-15: done
   epic-15-retrospective: optional

@@ -16,7 +16,7 @@ they return before any condition runs, so CI and local/test settings stay
 usable. Locality is ``config.locality`` (re-exported here by identity).
 
 Public surface: ``run_stage_one``, ``run_stage_two``, ``is_deployed``,
-``is_serving_process``. Story 41.4 / CAP-12 added the one celery-scoped
+``is_serving_process``. Story 41.4 / unifying-strategy CAP-21 added the one celery-scoped
 refusal there is — ``refuse_unverified_broker_tls`` (broker TLS is verified or
 the deployed component does not boot); do not add OIDC/JWKS/OTEL/claims or
 further feature-scoped refusals here, those belong to later stories.

@@ -6,7 +6,7 @@
 schema: pyforge.capability-ledger/v1
 generated_by: pyforge steward cutover plan
 updated: "2026-11-25"
-source_sha: "17b094750994997cf3137af1f1044c1df24470ec"
+source_sha: "678467b6f762dc93e3aca0d7942a647303f2fbec"
 extract: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-capability-ledger/extract.md
 modes: [rebuild, retire, A-only, B-only, pending]
 states: [planned, rebuilding, verified-in-foundry, cut]
@@ -5917,6 +5917,14 @@ capabilities:
     mode: A-only
     expiry: "steward:121.5"
     note: host/portals later; laptop stack first; not Launch
+  - id: pyforge-unifying-strategy:CAP-21
+    spec: pyforge-unifying-strategy
+    station: pyforge-steward
+    heading: A broker link is authenticated, not only encrypted
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
+    mode: rebuild
+    state: planned
+    defaulted: "2026-11-25"
   - id: pap:CAP-1
     spec: pyforge-unifying-strategy
     station: pyforge-steward

@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: da77101cd9790203
-story_count: 515
+source_fingerprint: 1f57bc53b77301bc
+story_count: 516
 test_file_count: 169
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 515
-- **Epics parsed:** 140
+- **Stories parsed:** 516
+- **Epics parsed:** 141
 - **Test files inventoried:** 169 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `da77101cd9790203`
+- **Source fingerprint:** `1f57bc53b77301bc`
 
 ## Risk Assessment
 
@@ -162,6 +162,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 138: Story 59.2's capability is re-homed and the last unresolved Story lines name what they build (spec-pyforge-steward CAP-132)
 - Epic 139: The session hook reads the commands inside a substitution (spec-pyforge-steward CAP-5)
 - Epic 140: A redirection after git push is not read as its remote (spec-pyforge-steward CAP-5)
+- Epic 141: Broker TLS is a capability (spec-pyforge-unifying-strategy CAP-21)
 
 ### Low-risk epics
 
@@ -870,6 +871,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 138.1 | Story 59.2's capability is re-homed and two Story lines name what they build | none observed |
 | 139.1 | The session hook reads the commands inside a substitution | none observed |
 | 140.1 | A redirection after git push is not read as its remote | none observed |
+| 141.1 | Broker TLS is a capability, and the Story and code that build it cite it | none observed |
 
 ## Quality Gates
 

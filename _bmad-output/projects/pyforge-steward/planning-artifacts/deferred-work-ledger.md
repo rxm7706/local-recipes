@@ -7553,4 +7553,5 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-11-25 - steward Story 138.1
   reason: named blocker: minting a capability is a Spec change the operator rules on.
-  status: open
+  status: resolved
+  resolution: 2026-11-25, steward Story 141.1 (branch `broker-tls-capability-2026-11-25`; operator ruling 2026-11-25 "Yes, mint it") - broker TLS is `spec-pyforge-unifying-strategy` CAP-21, a broker link is authenticated, not only encrypted, minted through the memlog and an anchored render with a `verified:` line naming `src/platform/tests/test_broker_tls_verified.py` and `test_startup_required_settings.py`; canopy:FR-52 is traced from it in steward's PRD and the capability ledger has its row. Story 41.4 and its story spec cite CAP-21, and the seven comments in `src/platform` that cited CAP-12 for broker TLS (`config/broker_tls.py`, `config/startup/stage_one.py` three times, `config/startup/__init__.py`, `config/settings/base.py`, `tests/test_broker_tls_verified.py`) cite CAP-21; CAP-12's two genuine citations (`base.py`'s allauth setting, `production.py`'s IdP re-read) stay. The 2026-09-02 red-team Constraint stays as written. No executable line changed.

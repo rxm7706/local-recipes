@@ -12,7 +12,7 @@ Called in two places from ``config.settings.production``:
 Conditions, in the order ``run_stage_one`` evaluates them:
 
 * ``refuse_required_settings`` — deployed env keys that must be supplied.
-* ``refuse_unverified_broker_tls`` — Story 41.4 / CAP-12: a deployed broker is
+* ``refuse_unverified_broker_tls`` — Story 41.4 / unifying-strategy CAP-21: a deployed broker is
   verified TLS or it does not boot. Reads the composed ``CELERY_BROKER_URL``.
 
 Every condition is deployed-only (``is_deployed()`` early return).
@@ -165,7 +165,7 @@ def refuse_required_settings() -> None:
 def refuse_unverified_broker_tls(settings_module: ModuleType | None = None) -> None:
     """Refuse a deployed component whose broker TLS would not be verified.
 
-    Story 41.4 / CAP-12 (red-team X-2 → R-14). Three forbidden states, each
+    Story 41.4 / unifying-strategy CAP-21 (red-team X-2 → R-14). Three forbidden states, each
     named in its message:
 
     1. an unrecognised ``COMPONENT_BROKER_SSL_CERT_REQS`` value;
@@ -219,7 +219,7 @@ def run_stage_one(settings_module: ModuleType, /) -> None:
 
     1. :func:`refuse_required_settings` — deployed env keys that must be
        supplied. Reads ``os.environ``; it runs before django-environ would.
-    2. :func:`refuse_unverified_broker_tls` — Story 41.4 / CAP-12. Reads the
+    2. :func:`refuse_unverified_broker_tls` — Story 41.4 / unifying-strategy CAP-21. Reads the
        *composed* ``CELERY_BROKER_URL`` off ``settings_module``, which is why
        this entry point takes one and why leaves call it last.
 
