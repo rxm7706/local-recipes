@@ -4,7 +4,7 @@ spec: pyforge-unifying-strategy
 status: ready
 chain: pyforge-unifying-strategy
 created: "2026-08-24"
-updated: "2026-11-25"   # AMENDED 2026-11-25 (CAP-21 minted from the memlog entries of that date: a broker link is authenticated, not only encrypted, on the operator ruling "Yes, mint it"; steward Story 141.1; nothing else re-derived). Prior "2026-11-13"   # AMENDED 2026-11-13 (steward Story 122.5): the companion stack.md's python-duckdb row qualifies atlas's decision as pyforge-atlas:AD-13 (the memlog's 2026-11-13 correction); no capability, Constraint or surface moves. Prior "2026-11-11"
+updated: "2026-11-25"   # AMENDED 2026-11-25 (CAP-21 minted, its verified: line corrected on review, from the memlog entries of that date: a broker link is authenticated, not only encrypted, on the operator ruling "Yes, mint it"; steward Story 141.1; nothing else re-derived). Prior "2026-11-13"   # AMENDED 2026-11-13 (steward Story 122.5): the companion stack.md's python-duckdb row qualifies atlas's decision as pyforge-atlas:AD-13 (the memlog's 2026-11-13 correction); no capability, Constraint or surface moves. Prior "2026-11-11"
 companions:
   - convergence.md
   - resilience-invariants.md
@@ -592,8 +592,8 @@ they are why this is not merely a UI project.
     unrecognised one, or has no trust for a TLS broker is refused at startup, by name, before it
     serves. A plain `redis://` broker and a laptop's explicit `CERT_NONE` still boot.
   - **verified:** `src/platform/tests/test_broker_tls_verified.py` (composition, the trust tiers,
-    the stage-1 refusals, every entrypoint) and `src/platform/tests/test_startup_required_settings.py`,
-    in Platform CI's `test` job.
+    the stage-1 refusals, every entrypoint, the result backend beside the broker), in Platform CI's
+    `test` job.
   - *(Minted 2026-11-25 on the operator's ruling "Yes, mint it", already met by Story 41.4: it
     names the 2026-09-02 red-team Constraint "`rediss://` verifies the chain", which stays.)*
 

@@ -1448,17 +1448,17 @@ table. **CAP-20.**
   `pyforge.steward.start_loop_dispatch` on.
 - A verb that spends, or that collides with itself, never starts twice for one run.
 
-##### canopy:FR-52: A broker link is verified, not only encrypted
+##### canopy:FR-52: A broker link is authenticated, not only encrypted
 
 A component that reaches its task broker or result backend over `rediss://` verifies the broker's
-certificate against the configured trust; only a laptop that asks by name may skip it. **CAP-21.**
+certificate against the configured trust; only a laptop that asks by name may skip it.
+**spec-pyforge-unifying-strategy:CAP-21.**
 
 **Consequences (testable):**
 - Production settings with a `rediss://` broker compose `CERT_REQUIRED` and the resolved trust paths.
 - A deployed component that asks for a weaker policy, names an unrecognised one, or has no trust for
   a TLS broker is refused at startup, by name, before it serves.
-- The trust resolves from the operating system's store first, then an explicit bundle, with no
-  network call.
+- The trust resolves from the operating system's store first, then an explicit bundle.
 - A plain `redis://` broker and a laptop's explicit `CERT_NONE` still boot.
 
 ---

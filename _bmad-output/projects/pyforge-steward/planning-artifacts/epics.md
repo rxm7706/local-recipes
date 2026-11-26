@@ -9644,5 +9644,5 @@ So that Story 41.4 and the code that builds it cite something that names what th
 **Given** `DW-steward-138-1-1` reports that broker TLS (Story 41.4) is a guarantee no capability states: `spec-pyforge-unifying-strategy` holds it only as a 2026-09-02 red-team Constraint with no stable id, and seven comments in `src/platform` cite `CAP-12`, which is identity roles and secret delivery
 **When** CAP-21 is minted on `spec-pyforge-unifying-strategy` through its memlog and a render, with canopy:FR-52 traced from it, and Story 41.4, its story spec and the seven comments cite CAP-21
 **Then** CAP-21 states that a `rediss://` broker is verified against the configured trust and a deployed component that is not is refused at startup, its `verified:` line names `src/platform/tests/test_broker_tls_verified.py`, and no comment in `src/platform` cites CAP-12 for broker TLS
-**And** no behaviour changes (comments only in `src/platform`), CAP-12's two genuine citations (`base.py`'s allauth setting and `production.py`'s IdP re-read) stay, and the row reads resolved
+**And** no behaviour changes (comments only in `src/platform`), CAP-12's genuine citations (identity roles and secret delivery: `base.py`'s allauth setting, `production.py`'s IdP re-read, `idp_userinfo.py`, `test_idp_revoke_next_request.py`) stay, and the row reads resolved
 **Status:** done
