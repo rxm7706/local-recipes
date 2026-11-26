@@ -11,6 +11,7 @@ twins were added turns ambiguous.
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 
 import pytest
 
@@ -45,17 +46,16 @@ def _steward() -> list[argparse.ArgumentParser]:
     return [pytest.importorskip("pyforge.steward.cli").build_parser()]
 
 
-def _warden() -> list[argparse.ArgumentParser]:
-    return [pytest.importorskip("pyforge.warden.cli")._build_parser()[0]]  # noqa: SLF001
-
-
 BUILDERS = {
     "doctor": _doctor,
     "herald": _herald,
     "marshal": _marshal,
     "mason": _mason,
     "steward": _steward,
-    "warden": _warden,
+}
+#: aligned, and held by a test in the station's own suite because this lane's environment does not carry the station
+HELD_IN_ITS_OWN_SUITE = {
+    "warden": "src/shared/packages/pyforge-warden/tests/meta/test_json_output_spellings.py"
 }
 
 
@@ -151,6 +151,11 @@ def test_aligning_a_built_parser_again_adds_nothing(station: str) -> None:
 
 def test_every_station_is_aligned_or_named_with_a_reason() -> None:
     roster = pytest.importorskip("pyforge.core.roster")
-    assert set(BUILDERS) | set(NOT_ALIGNED) == set(roster.STATIONS)
-    assert not set(BUILDERS) & set(NOT_ALIGNED)
+    groups = (set(BUILDERS), set(NOT_ALIGNED), set(HELD_IN_ITS_OWN_SUITE))
+    assert set().union(*groups) == set(roster.STATIONS)
+    assert sum(len(group) for group in groups) == len(
+        roster.STATIONS
+    )  # each station in exactly one group
     assert all(NOT_ALIGNED.values())
+    repo = Path(__file__).resolve().parents[2]
+    assert all((repo / path).is_file() for path in HELD_IN_ITS_OWN_SUITE.values())
