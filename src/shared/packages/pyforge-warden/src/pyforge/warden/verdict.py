@@ -25,6 +25,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from pyforge.core.exit_domains import exit_code
 from pyforge.core.verdict import Lattice
 
 from .models import EMPTY_EXTRACTION_DRIVER_ID, CveMatchLevel, Status, StatusDriver
@@ -39,17 +40,14 @@ _RUNG_ORDER: tuple[Status, ...] = (
     Status.NOT_APPLICABLE,
 )
 
-EXIT_SIGINT = 130
+# Warden Story 30.1, spec-pyforge-steward:CAP-184: every number comes from the
+# `warden` domain of the one exit-code declaration (`docs/governance/guild-roster.json`
+# `exit_code_domains`, mirrored in process by `pyforge.core.exit_domains`), keyed by
+# each rung's own value, never spelled here;
+# `tests/meta/test_verdict_reads_the_exit_declaration.py` holds this module to it.
+EXIT_SIGINT = exit_code("warden", "interrupted")
 
-_EXIT_BY_STATUS: dict[Status, int] = {
-    Status.ERROR: 2,
-    Status.POLICY_VIOLATION: 1,
-    Status.INDETERMINATE: 1,
-    Status.WARN: 0,
-    Status.BYPASSED: 0,
-    Status.CLEAN: 0,
-    Status.NOT_APPLICABLE: 0,
-}
+_EXIT_BY_STATUS: dict[Status, int] = {status: exit_code("warden", status.value) for status in _RUNG_ORDER}
 
 # Story 14.3, SPEC-pyforge-core CAP-3: rank + exit-domain bookkeeping now
 # delegates to the shared Lattice primitive -- same rungs, same exit values,
@@ -63,7 +61,11 @@ _EXIT_BY_STATUS: dict[Status, int] = {
 # OTHER module from dereferencing a `_`-private name off `verdict`.
 LATTICE = Lattice(order=_RUNG_ORDER, exit_by_member=_EXIT_BY_STATUS)
 
-_EXIT_WARN_AS_ERROR = 1
+_EXIT_WARN_AS_ERROR = exit_code("warden", "warn-as-error")
+
+# `--allow-empty` downgrades the empty-extraction `indeterminate` to the code a
+# clean scan exits with (Story 1.9); the status itself stays `indeterminate`.
+_EXIT_ALLOW_EMPTY = exit_code("warden", "clean")
 
 
 def compose(
@@ -140,7 +142,7 @@ def exit_code_for(
         and driver is not None
         and driver.finding_id == EMPTY_EXTRACTION_DRIVER_ID
     ):
-        return 0
+        return _EXIT_ALLOW_EMPTY
     return _EXIT_BY_STATUS[status]
 
 
