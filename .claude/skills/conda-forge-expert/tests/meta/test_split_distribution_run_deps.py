@@ -87,8 +87,10 @@ def test_no_noarch_python_recipe_depends_on_the_wrong_half() -> None:
     offenders: list[str] = []
     for path in sorted(_RECIPES.glob("**/recipe.yaml")):
         recipe, error = recipe_tree(path)
-        if error is not None:
+        if isinstance(error, yaml.YAMLError):
             continue  # the parse audit owns unparseable recipes
+        if error is not None:
+            raise error  # anything else (an unreadable file, bad bytes) is this audit's to report, as before
         if not isinstance(recipe, dict):
             continue
         for package, names in _noarch_python_run_lists(recipe, path.parent.name):
