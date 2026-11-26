@@ -7,9 +7,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import pytest
+import yaml
 from pyforge.testing_kit import make_flag_provider_fixture
 from pyforge.testing_kit.flags import flag_states
 
+from pyforge.steward import estate_realize
 from pyforge.steward.estate import ESTATE_FLAG_KEY
 from pyforge.steward.estate_realize import (
     RealizeDeps,
@@ -490,3 +492,21 @@ def test_stage_probe_reads_each_cell_ok_not_its_value() -> None:
     stale = {"env": "pyforge-guild", "probe": {"expect": "stage-ok", "member": "mybmad-dashboard"}}
     assert run_probe(deps, live, package="bmad-method-test-architecture-enterprise") == "live"
     assert run_probe(deps, stale, package="mybmad-dashboard") == "stale"
+
+
+def test_the_c_loader_reads_the_lockfile_to_the_document_the_python_loader_reads() -> None:
+    """Story 117.14: the lockfile is parsed by PyYAML's C safe loader where libyaml is built in; it must read the
+    live ``pixi.lock`` to the very document ``yaml.safe_load`` reads, so no probe sees another locked version."""
+    text = (REPO_ROOT / "pixi.lock").read_text(encoding="utf-8")
+    assert yaml.load(text, Loader=estate_realize._SAFE_LOADER) == yaml.safe_load(text)  # noqa: S506 -- a safe loader
+
+
+def test_the_lockfile_is_parsed_once_per_file_state_and_read_again_when_it_changes(tmp_path: Path) -> None:
+    """Story 117.14: one parse serves every row of a realize run; an edited lockfile is never served from the cache."""
+    lock = tmp_path / "pixi.lock"
+    lock.write_text("version: 6\n", encoding="utf-8")
+    first = estate_realize._lock_document(lock)
+    assert first == {"version": 6}
+    assert estate_realize._lock_document(lock) is first
+    lock.write_text("version: 7\nenvironments: {}\n", encoding="utf-8")
+    assert estate_realize._lock_document(lock) == {"version": 7, "environments": {}}

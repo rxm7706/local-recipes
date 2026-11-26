@@ -102,9 +102,33 @@ def _locked_version(root: Path, env: str, package: str, platform: str) -> str | 
     lock_path = root / "pixi.lock"
     if not lock_path.is_file():
         return None
-    lock = yaml.safe_load(lock_path.read_text(encoding="utf-8"))
+    lock = _lock_document(lock_path)
     ver = locked_version_in_env(lock, env, package, platform=platform)
     return str(ver) if ver is not None else None
+
+
+#: PyYAML's C safe loader where libyaml is built in, else the pure-Python one: the same safe construction, about five
+#: times faster on the 4 MB ``pixi.lock`` (Story 117.14).
+_SAFE_LOADER: Any = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+
+#: The parsed lockfile per path, with the size and modification time it was read at; a changed file is read again.
+_LOCK_DOCUMENTS: dict[str, tuple[int, int, Any]] = {}
+
+
+def _lock_document(lock_path: Path) -> Any:
+    """``pixi.lock`` parsed once per file state (Story 117.14).
+
+    A realize run asks for one locked version per register row, and each ask used to parse the whole lockfile again.
+    The cached document is shared: callers read it and never change it.
+    """
+    stat = lock_path.stat()
+    key = str(lock_path.resolve())
+    held = _LOCK_DOCUMENTS.get(key)
+    if held is not None and held[0] == stat.st_size and held[1] == stat.st_mtime_ns:
+        return held[2]
+    document = yaml.load(lock_path.read_text(encoding="utf-8"), Loader=_SAFE_LOADER)  # noqa: S506 -- a safe loader
+    _LOCK_DOCUMENTS[key] = (stat.st_size, stat.st_mtime_ns, document)
+    return document
 
 
 def _yaml_dotted_get(doc: dict[str, Any], dotted: str) -> str | None:
