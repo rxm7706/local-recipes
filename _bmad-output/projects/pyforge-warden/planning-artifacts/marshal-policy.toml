@@ -339,6 +339,15 @@ verify_commands = [
   "src/shared/packages/pyforge-warden/tests/unit/test_actuator_github_client.py",
   "src/shared/packages/pyforge-warden/tests/unit/test_non_python_lockfiles.py",
 ]
+"30" = [  # Warden's verdict takes its exit codes from the declaration (spec-pyforge-steward:CAP-184), added 2026-11-25
+  "_bmad-output/projects/pyforge-*/planning-artifacts/specs/spec-pyforge-*/.memlog.md",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml",
+  "docs/dreams/pyforge-warden.md",
+  "scripts/.spec-surface-baseline.json",
+  "src/shared/packages/pyforge-warden/src/pyforge/warden/verdict.py",
+  "src/shared/packages/pyforge-warden/tests/meta/test_verdict_reads_the_exit_declaration.py",
+]
 
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).

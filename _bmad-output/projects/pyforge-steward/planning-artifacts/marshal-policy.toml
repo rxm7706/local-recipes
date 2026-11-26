@@ -1871,6 +1871,21 @@ verify_commands = [
   "tests/durations/**",
   "tests/scripts/**",
 ]
+"137" = [  # One declaration names every exit-code domain (spec-pyforge-steward:CAP-184; spec-pyforge-core:CAP-3), added 2026-11-25
+  "_bmad-output/projects/pyforge-*/planning-artifacts/specs/spec-pyforge-*/.memlog.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml",
+  "docs/dreams/pyforge-steward.md",
+  "docs/governance/guild-roster.json",
+  "docs/reference/judgement-vocabulary.md",
+  "scripts/.spec-surface-baseline.json",
+  "scripts/detectors.py",
+  "src/shared/packages/pyforge-core/src/pyforge/core/exit_domains.py",
+  "src/shared/packages/pyforge-core/tests/unit/test_exit_domains.py",
+  "src/shared/packages/pyforge-core/tests/unit/test_exit_domains_match_the_guild_roster.py",
+  "tests/scripts/test_exit_code_domains_are_declared.py",
+]
 
 # dispatch (Story 85.1 / CAP-286 knobs), added 2026-10-13: steward's verify-fix turn gets 45 minutes, not the
 # 15-minute default. pyforge-steward-test alone runs ~4 minutes (2482 tests), so a fix turn that must re-run it two or

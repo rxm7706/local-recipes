@@ -4262,3 +4262,26 @@ Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml` key, and eve
 *The `arch→epics` cascade for the spine's § Currency reconciliation — 2026-11-17.* Epic 59 and Stories 59.1 to 59.8
 minted above under spec-pyforge-doctor CAP-84 (amended 2026-11-17), from the station Dream's 2026-11-17 entry (the
 full documentation refresh). No other epic or story changed; no blocked key flipped.
+
+## Epic 63: Doctor's verdict takes its exit codes from the declaration (spec-pyforge-steward:CAP-184)
+
+Minted 2026-11-25 from the station Dream's entry of the same date on the operator ruling of 2026-11-25: "Unify for real". Steward Story 137.1 declares the exit-code domains in `docs/governance/guild-roster.json` and `pyforge.core.exit_domains`; this Epic makes doctor's `verdict.py` read its domain from there.
+**HARD boundaries:**
+- No exit code doctor returns changes, and `verdict.py` stays the sole owner of the projection.
+- No flag.
+
+### Story 63.1: Doctor's verdict takes its exit codes from the declaration
+
+As a maintainer of doctor's exit projection,
+I want `pyforge.doctor.verdict` to take `0`, `2` and `130` from the `doctor` domain of `pyforge.core.exit_domains`,
+So that doctor's numbers are declared once and its subset of warden's domain is checked against the declaration.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward:CAP-184 (each verdict module reads the declaration; no text change) and spec-pyforge-doctor's exit-code projection (verdict.py stays its sole owner; no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: three constants read numbers a declaration now holds)
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/verdict.py`, `src/shared/packages/pyforge-doctor/tests/meta/test_verdict_reads_the_exit_declaration.py`
+**Spec:** `planning-artifacts/specs/spec-63-1-doctor-s-verdict-takes-its-exit-codes-from-the-declaration.md`
+**Given** doctor's `verdict.py` spells its three exit numbers
+**When** it takes them from the `doctor` domain of `pyforge.core.exit_domains`
+**Then** `exit_code_for` returns the same code for every finding list it returned before, and a meta-test fails when doctor's lattice domain differs from its declared domain
+**And** `verdict.py` stays the sole owner of doctor's exit projection
+**Status:** ready-for-dev

@@ -192,6 +192,7 @@ same change.
 | CAP-181 | — | live-tree | `meta/test_oracle_map.py` | This companion. |
 | CAP-182 | `root_layout.py`, `bootstrap.py`, `catalog.py`, `ci.py`, `corridor.py`, `marketplace_pages.py`, `measures.py`, `preflight_ci.py`, `sync.py`, `upgrade.py` | package | `meta/test_portability.py` | `root_layout.py` names the layout and the repository; the others derive from it. |
 | CAP-183 | `machine.py`, `bootstrap.py`, `session.py`, `cli.py` | package, live-tree | `unit/test_machine.py`, `meta/test_machine_readiness_data.py`, `unit/test_bootstrap.py`, `unit/test_bootstrap_setup_flow.py` | `steward init`'s profiles. The data file is `docs/governance/machine-readiness.yaml`; the container, pod, ocp and nkp profiles reach READY only on a machine that has their software, which is an attended run recorded on the story specs. |
+| CAP-184 | `docs/governance/guild-roster.json` `exit_code_domains`; `pyforge.core.exit_domains`; the verdict modules of doctor, warden and marshal; `scripts/detectors.py` | package, live-tree | core `unit/test_exit_domains.py`, `unit/test_exit_domains_match_the_guild_roster.py`; `tests/scripts/test_exit_code_domains_are_declared.py`; each station's `meta/test_verdict_reads_the_exit_declaration.py` | No exit number moves; the declaration is read in process from the core mirror, never from the governance file. |
 
 ## Capabilities of other Specs this package realizes
 

@@ -11880,3 +11880,26 @@ So that no unpushed commit is removed, no crash reads as a verdict, and no red c
 **Then** `teardown --force` refuses a home branch whose tip no local remote-tracking ref, `origin/main` ancestry or preserve tag holds, naming `git fetch origin` and `--force --abandon <branch>` as the remedy, and proceeds on a tip a local remote-tracking ref holds, a bad `PYFORGE_ENVIRONMENT` exits 2 with no traceback and no invocation exits outside the frozen domain, and a failed required check on a later page reads `failure`
 **And** a defect the tree does not reproduce is recorded in the story spec as not a defect and its code is left alone, and marshal's suite passes
 **Status:** done
+
+## Epic 122: Marshal's verdict and seed take their exit codes from the declaration (spec-pyforge-steward:CAP-184, spec-pyforge-marshal:CAP-304)
+
+Minted 2026-11-25 from the station Dream's entry of the same date on the operator ruling of 2026-11-25: "Unify for real". Steward Story 137.1 declares the exit-code domains; this Epic makes marshal's `core/verdict.py` and `seed/errors.py` read their two domains from there.
+**HARD boundaries:**
+- No exit code marshal returns changes, AD-7's frozen domain gains no code, and `contract.md` does not move.
+- No flag.
+
+### Story 122.1: Marshal's verdict and seed take their exit codes from the declaration
+
+As a maintainer of marshal's exit projection,
+I want `pyforge.marshal.core.verdict` and `pyforge.marshal.seed.errors` to take their exit codes from the `marshal` and `marshal-seed` domains of `pyforge.core.exit_domains`,
+So that marshal's two domains are declared once and AD-7's frozen domain is checked against the declaration.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward:CAP-184 (each verdict module reads the declaration; no text change), spec-pyforge-marshal:CAP-304 (the public contract and its exit codes; no text change) and marshal AD-7 (the frozen exit domain; no AD moves)
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: constants read numbers a declaration now holds)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/errors.py`, `src/shared/packages/pyforge-marshal/tests/meta/test_verdict_reads_the_exit_declaration.py`
+**Spec:** `planning-artifacts/specs/spec-122-1-marshal-s-verdict-and-seed-take-their-exit-codes-from-the-declaration.md`
+**Given** marshal's `core/verdict.py` and `seed/errors.py` spell their exit numbers
+**When** they take them from the `marshal` and `marshal-seed` domains of `pyforge.core.exit_domains`
+**Then** every verb exits with the same code for the same outcome as before, `GUARDED_EXIT_CODES` and `SEED_EXIT_CODES` are unchanged, and a meta-test fails when either differs from its declared domain
+**And** `contract.md`'s exit codes do not move
+**Status:** ready-for-dev

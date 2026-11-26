@@ -716,6 +716,15 @@ verify_commands = [
   "src/shared/packages/pyforge-doctor/tests/unit/test_flag_kill_switch.py",
   "src/shared/packages/pyforge-doctor/tests/unit/test_live_flag_kill_switch.py",
 ]
+"63" = [  # Doctor's verdict takes its exit codes from the declaration (spec-pyforge-steward:CAP-184), added 2026-11-25
+  "_bmad-output/projects/pyforge-*/planning-artifacts/specs/spec-pyforge-*/.memlog.md",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
+  "docs/dreams/pyforge-doctor.md",
+  "scripts/.spec-surface-baseline.json",
+  "src/shared/packages/pyforge-doctor/src/pyforge/doctor/verdict.py",
+  "src/shared/packages/pyforge-doctor/tests/meta/test_verdict_reads_the_exit_declaration.py",
+]
 
 # dispatch (Story 102.1 / spec-pyforge-marshal CAP-161), added 2026-10-15: a re-landing reuses this station's own
 # verified verdict when only merges of main and planning-only commits moved the branch since the head it judged,
