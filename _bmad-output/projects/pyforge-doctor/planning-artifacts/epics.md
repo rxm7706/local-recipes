@@ -4353,7 +4353,7 @@ So that the run takes as long as its longest member, not that member plus every 
 **When** `--jobs` is above one and each source is gathered in a worker process while the script detectors run, the two kinds sharing the one job limit
 **Then** the run prints the same rows in the same order with the same statuses and exits with the same code as `--jobs 1`, and takes under 55 s alone on 16 threads
 **And** a source that raises reads `unknown` for its own row while the others run, and an unimportable `pyforge.doctor` still yields every source row as `unknown`
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-11-26 (the tag rule reaches station source)
 

@@ -83,11 +83,11 @@ development_status:
   117-11-the-changes-gate-and-the-gate-diffs-run-on-shallow-fetches-of-the-pr-base: done
   117-12-the-platform-suite-runs-under-xdist-with-its-checks-in-a-parallel-job: done
   117-13-the-herald-job-builds-on-the-checkout-s-filesystem: done
-  117-14-the-trigger-map-is-derived-once-and-the-lockfile-is-read-by-the-c-loader: backlog
-  117-15-a-fresh-worktree-admits-lanes-longest-first-and-an-xdist-lane-s-workers-follow-its-expected-work: backlog
-  117-16-the-scripts-lib-lane-runs-under-xdist-and-builds-its-flag-reports-once: backlog
-  117-17-a-push-reuses-the-green-verdict-its-tree-already-has: backlog
-  117-18-the-pr-workflows-write-caches-from-main-only-and-the-changes-job-fetches-no-file-contents: backlog
+  117-14-the-trigger-map-is-derived-once-and-the-lockfile-is-read-by-the-c-loader: done
+  117-15-a-fresh-worktree-admits-lanes-longest-first-and-an-xdist-lane-s-workers-follow-its-expected-work: done
+  117-16-the-scripts-lib-lane-runs-under-xdist-and-builds-its-flag-reports-once: done
+  117-17-a-push-reuses-the-green-verdict-its-tree-already-has: done
+  117-18-the-pr-workflows-write-caches-from-main-only-and-the-changes-job-fetches-no-file-contents: done
   117-2-a-station-s-coverage-floor-is-judged-from-its-own-suite-s-run-and-coverage-gates-yml-retires: done
   117-3-the-preflight-admits-lanes-longest-first-by-the-cores-they-will-use: done
   117-4-each-station-suite-runs-as-its-package-local-and-live-tree-halves: done

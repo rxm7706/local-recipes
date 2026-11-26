@@ -2693,7 +2693,7 @@ So that 650 tests stop waiting on one core behind the site builds.
 **When** `pytest-xdist` is in herald's environment, both halves pass `-n auto --dist loadgroup`, each module that names the build helper `tests/meta/pages_astro.py`, the one module that runs Astro, carries one shared `xdist_group`, and the `herald-live-test` job runs as two `pytest-split` shards whose coverage reports the gate merges
 **Then** each half passes with the passed and skipped counts it had, the live half takes under 210 s alone on 16 threads (its builds, about 180 s, still run in turn in the one tree), the package half under 25 s, and herald's coverage gate passes on the merged reports
 **And** a test holds that no herald test module starts Astro or a node package runner without the build helper, and that every test of a module naming the helper carries the group
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

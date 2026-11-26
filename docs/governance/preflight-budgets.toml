@@ -29,7 +29,7 @@ full = 240
 "pyforge-steward-live-test@pyforge-steward" = 247
 "pyforge-doctor-test@pyforge-doctor" = 62
 "pyforge-doctor-live-test@pyforge-doctor" = 219
-"detectors-ci@pyforge-guild" = 481
+"detectors-ci@pyforge-guild" = 130
 "lint-types@pyforge-guild" = 87
 "ruff@pyforge-guild" = 2
 "ruff-format@pyforge-guild" = 2
@@ -37,7 +37,7 @@ full = 240
 "mypy@pyforge-foundry-full" = 149
 "target-version-check@pyforge-guild" = 1
 "precommit-config-check@pyforge-guild" = 1
-"test-ci-meta@pyforge-guild" = 120
+"test-ci-meta@pyforge-guild" = 101
 "pyforge-core-package-test@pyforge-core" = 19
 "pyforge-core-live-test@pyforge-core" = 73
 "pyforge-testing-kit-package-test@pyforge-testing-kit" = 7
@@ -78,6 +78,8 @@ full = 240
 "scribe-plane-and-portal-test@pyforge-foundry-full" = 10
 
 [work]
+"detectors-ci@pyforge-guild" = 166
+"test-ci-meta@pyforge-guild" = 193
 "ruff@pyforge-guild" = 3
 "ruff-format@pyforge-guild" = 2
 "mypy@pyforge-guild" = 98

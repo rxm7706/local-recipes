@@ -2,7 +2,7 @@
 title: '58.1: Herald''s suite runs under xdist, its site builds in one worker'
 type: 'chore'
 created: '2026-11-26'
-status: 'ready-for-dev'
+status: 'done'
 story: 58-1-herald-s-suite-runs-under-xdist-its-site-builds-in-one-worker
 spec: spec-pyforge-herald
 difficulty: 'medium'

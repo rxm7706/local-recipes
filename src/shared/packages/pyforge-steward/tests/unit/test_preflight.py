@@ -506,5 +506,12 @@ def test_the_tracked_budgets_seed_real_lanes() -> None:
     seeds = preflight.budget_seed_seconds(REPO_ROOT)
     raw = tomllib.loads((REPO_ROOT / preflight.BUDGETS_RELATIVE).read_text(encoding="utf-8"))["lanes"]
     assert len(seeds) == len(raw)
+    # Every row names a task pixi.toml defines, in an environment it declares: a renamed lane cannot keep a dead row.
+    pixi = tomllib.loads((REPO_ROOT / "pixi.toml").read_text(encoding="utf-8"))
+    tasks = {name for feature in pixi["feature"].values() for name in feature.get("tasks", {})}
+    assert sorted(key for key in seeds if key[0] not in tasks or key[1] not in pixi["environments"]) == []
+    # The work table sizes lanes the seconds table ranks: no work row without its seconds row.
+    work = preflight.budget_seed_work(REPO_ROOT)
+    assert work and set(work) <= set(seeds)
     assert ("pyforge-steward-live-test", "pyforge-steward") in seeds
     assert ("pyforge-herald-live-test", "pyforge-herald") in seeds

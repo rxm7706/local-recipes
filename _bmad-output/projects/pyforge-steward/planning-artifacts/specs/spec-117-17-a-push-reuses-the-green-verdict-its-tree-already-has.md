@@ -2,7 +2,7 @@
 title: '117.17: A push reuses the green verdict its tree already has'
 type: 'feature'
 created: '2026-11-26'
-status: 'ready-for-dev'
+status: 'done'
 story: 117-17-a-push-reuses-the-green-verdict-its-tree-already-has
 spec: spec-pyforge-steward
 difficulty: 'medium'

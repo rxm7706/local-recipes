@@ -2,7 +2,7 @@
 title: '48.1: The recipe audits read each recipe once, and the meta suite runs under xdist'
 type: 'chore'
 created: '2026-11-26'
-status: 'ready-for-dev'
+status: 'done'
 story: 48-1-the-recipe-audits-read-each-recipe-once-and-the-meta-suite-runs-under-xdist
 spec: spec-pyforge-mason
 difficulty: 'medium'

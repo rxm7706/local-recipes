@@ -7879,7 +7879,7 @@ So that the half stops spending two thirds of its CPU on work it has already don
 **When** the module's tests share one xdist group, and the lockfile is read by `yaml.CSafeLoader` (the pure-Python loader where libyaml is absent) and kept per path, size and modification time
 **Then** the module computes its derivation once in a run, `test_estate_realize.py` takes under 10 s summed, and the half runs the same tests it ran before, by count
 **And** a test holds that the two loaders read `pixi.lock` to equal documents, and that an edited lockfile is read again
-**Status:** backlog
+**Status:** done
 
 ### Story 117.15: A fresh worktree admits lanes longest-first and an xdist lane's workers follow its expected work
 
@@ -7896,7 +7896,7 @@ So that the first run of an effort is not the slowest one and the last minutes o
 **Then** on a fresh worktree the three longest lanes start in the first admission round, no xdist lane starts on fewer than `MIN_XDIST_WORKERS`, the workers of the lanes in flight never sum above the logical cores, and a full run journals each lane's workers
 **And** with the kill switch off the order and the shares are those of Story 71.6, and the red-lane stop, `--keep-going`, the mutexes and the exit codes are unchanged, each held by the tests that hold them today
 **And** (review round, measured on four full runs) a lane's work is the CPU seconds its processes used, read as the lane is reaped and journaled as `cpu_seconds`, with seconds times workers only where no CPU was measured: seconds times workers grows with every worker a lane cannot use and would hand herald's built-site tests more workers on each run; the tracked budgets gain a `[work]` table beside `[lanes]`, both re-measured; when more xdist lanes are pending than the free cores hold at the minimum, a lane takes at least the workers that end its work in half the run's ideal length; the docs-site lanes compete by the seconds their whole chain still needs, their slot holds the cores its widest lane needs, and its turn is never given away, because the first measured run left herald's suite waiting 78 s for a second core on the chain that ended the run; an xdist lane starts on the minimum when nothing is in flight to free a core; and the selection splits each workflow step's command once per run, not once per lane (some 220,000 splits a run before, 33 s to 7 s on the herald test that runs it four times)
-**Status:** backlog
+**Status:** done
 
 ### Story 117.16: The scripts-lib lane runs under xdist and builds its flag reports once
 
@@ -7912,7 +7912,7 @@ So that the Detectors `scripts-suite` job and the local lane stop running 1,074 
 **When** the task passes `-n auto --dist loadgroup`, the tests that cannot share a process with others carry an `xdist_group`, and the live reports are built by one module-scoped fixture
 **Then** the lane passes with the same passed and skipped counts as before, and takes under 40 s alone on 16 threads
 **And** CI runs the same task line (the `scripts-suite` step and the preflight lane call it verbatim), and `test_pyforge_ci_is_stdlib_only.py` still holds the list
-**Status:** backlog
+**Status:** done
 
 ### Story 117.17: A push reuses the green verdict its tree already has
 
@@ -7928,7 +7928,7 @@ So that one tree is judged once.
 **When** `pr-preflight` starts on a clean working tree whose commit, tree hash, base commit, local day and gate variables (`PYFORGE_*`, `HERALD_*`, `CI*`, `PYTEST_ADDOPTS`, and whether `GH_TOKEN` and `GITHUB_TOKEN` are set) equal those a journaled run recorded with verdict `ok` no more than half an hour ago, and every lane this run selects passed in that run, a touched run's fast-core detectors counting as passed where `detectors-ci`, which runs each of them, passed (so a full run covers the touched run of the same commit, never the reverse)
 **Then** it prints the run it reuses, journals a `reuse` record naming that run, and exits 0 without starting a lane
 **And** any difference (a dirty or untracked file, another tree hash, which a changed lane graph or `pixi.lock` gives, another base, another value of a gate variable, a lane the earlier run deferred, cut or failed, a red or interrupted run, a later run of the same state that was not green, a reworded or squashed commit of the same tree, another day, a green run older than half an hour, `PYFORGE_PREFLIGHT_REUSE=0`) runs the lanes as before; a reuse record is never itself the proof of another reuse, and it lists what its run leaves to CI, which `steward preflight verify-deferred` reads
-**Status:** backlog
+**Status:** done
 
 ### Story 117.18: The PR workflows write caches from main only, and the changes job fetches no file contents
 
@@ -7944,7 +7944,7 @@ So that the cache stays under its limit and every station job starts sooner.
 **When** each of those `setup-pixi` uses writes its cache on a push to `main` alone, the mypy cache is restored on every run and saved from `main` alone, and the `changes` job fetches with `filter: blob:none` and checks out `.github/` only
 **Then** a PR head writes no `pixi-` or `mypy-` cache entry, and `changes` computes the same outputs as before for the same diff
 **And** no job, trigger path or CI surface is added or removed, the workflow meta-tests (trigger map, duplicate keys, the CI surfaces registry) pass, and the steward live half's shard durations are re-measured after Story 117.14
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

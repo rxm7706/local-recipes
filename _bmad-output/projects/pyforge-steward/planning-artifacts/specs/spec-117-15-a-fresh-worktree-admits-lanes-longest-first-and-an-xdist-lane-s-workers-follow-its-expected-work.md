@@ -2,7 +2,7 @@
 title: '117.15: A fresh worktree admits lanes longest-first and an xdist lane''s workers follow its expected work'
 type: 'fix'
 created: '2026-11-26'
-status: 'ready-for-dev'
+status: 'done'
 story: 117-15-a-fresh-worktree-admits-lanes-longest-first-and-an-xdist-lane-s-workers-follow-its-expected-work
 spec: spec-pyforge-steward
 difficulty: 'medium'

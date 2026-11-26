@@ -2,7 +2,7 @@
 title: '117.18: The PR workflows write caches from main only, and the changes job fetches no file contents'
 type: 'chore'
 created: '2026-11-26'
-status: 'ready-for-dev'
+status: 'done'
 story: 117-18-the-pr-workflows-write-caches-from-main-only-and-the-changes-job-fetches-no-file-contents
 spec: spec-pyforge-steward
 difficulty: 'medium'

@@ -4601,4 +4601,4 @@ So that the lane stops parsing 7,566 recipes four times on one core.
 **When** those audits read one shared parse per file, made by the C safe loader where libyaml is built in, and the task passes `-n auto --dist loadgroup` (steward Story 117.16 puts `pytest-xdist` in the Guild environment)
 **Then** the lane passes with the same passed and skipped counts and takes under 30 s alone on 16 threads
 **And** a test holds that the shared parse equals `yaml.safe_load` on every recipe that parses, and reports the same files as unparseable
-**Status:** backlog
+**Status:** done

@@ -2,7 +2,7 @@
 title: '66.1: The detector run measures the doctor sources beside the script detectors'
 type: 'chore'
 created: '2026-11-26'
-status: 'ready-for-dev'
+status: 'done'
 story: 66-1-the-detector-run-measures-the-doctor-sources-beside-the-script-detectors
 spec: spec-pyforge-doctor
 difficulty: 'medium'

@@ -148,7 +148,7 @@ development_status:
   46-2-mason-s-doctor-is-gone-and-self-check-is-the-one-name: done
   46-3-the-mason-station-skill-documents-mason-self-check: done
   47-1-mason-s-types-are-checked-whole: done
-  48-1-the-recipe-audits-read-each-recipe-once-and-the-meta-suite-runs-under-xdist: backlog
+  48-1-the-recipe-audits-read-each-recipe-once-and-the-meta-suite-runs-under-xdist: done
   5-1-cfe-independence-test: done
   5-2-governance-test: done
   5-3-delegation-fidelity-test: done
@@ -247,7 +247,7 @@ development_status:
   epic-46-retrospective: optional
   epic-47: done
   epic-47-retrospective: optional
-  epic-48: backlog
+  epic-48: done
   epic-48-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional

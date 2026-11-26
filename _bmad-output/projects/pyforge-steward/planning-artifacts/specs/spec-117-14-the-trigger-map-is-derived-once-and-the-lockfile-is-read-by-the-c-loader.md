@@ -2,7 +2,7 @@
 title: '117.14: The trigger map is derived once and the lockfile is read by the C loader'
 type: 'fix'
 created: '2026-11-26'
-status: 'ready-for-dev'
+status: 'done'
 story: 117-14-the-trigger-map-is-derived-once-and-the-lockfile-is-read-by-the-c-loader
 spec: spec-pyforge-steward
 difficulty: 'easy'

@@ -200,7 +200,7 @@ development_status:
   63-1-doctor-s-verdict-takes-its-exit-codes-from-the-declaration: done
   64-1-doctor-s-source-cites-marshal-s-and-the-cutover-s-decisions-qualified: done
   65-1-doctor-s-verbs-take-both-spellings-for-json: done
-  66-1-the-detector-run-measures-the-doctor-sources-beside-the-script-detectors: backlog
+  66-1-the-detector-run-measures-the-doctor-sources-beside-the-script-detectors: done
   7-1-the-emitter-mints-identity-at-defer-time: done
   7-2-grandfather-the-470-at-a-dated-cut-off: done
   7-3-the-detector-sees-anonymous-tier-3-entries: done
@@ -338,7 +338,7 @@ development_status:
   epic-64-retrospective: optional
   epic-65: done
   epic-65-retrospective: optional
-  epic-66: backlog
+  epic-66: done
   epic-66-retrospective: optional
   epic-7: done
   epic-7-retrospective: optional

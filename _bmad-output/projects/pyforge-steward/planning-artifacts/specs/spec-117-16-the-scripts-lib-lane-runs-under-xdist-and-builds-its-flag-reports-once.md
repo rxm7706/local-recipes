@@ -2,7 +2,7 @@
 title: '117.16: The scripts-lib lane runs under xdist and builds its flag reports once'
 type: 'chore'
 created: '2026-11-26'
-status: 'ready-for-dev'
+status: 'done'
 story: 117-16-the-scripts-lib-lane-runs-under-xdist-and-builds-its-flag-reports-once
 spec: spec-pyforge-steward
 difficulty: 'easy'
