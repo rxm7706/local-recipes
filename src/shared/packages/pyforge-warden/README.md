@@ -59,11 +59,11 @@ non-blocking on-ramp for trying the gate before wiring it into CI.
 `--warn-only`. An unprovisioned offline OSV database is different — the
 vulnerability axis composes `indeterminate` *findings*, which block by
 default (exit `1`) but are downgraded like any other finding under
-`--warn-only`, leaving that axis silently unassessed — so run `--doctor`
+`--warn-only`, leaving that axis silently unassessed — so run `--self-check`
 first to make sure the environment can assess what you think it is
 assessing.)
 
-**Environment self-check:** `warden scan --doctor` verifies the local
+**Environment self-check:** `warden scan --self-check` verifies the local
 install itself — engine versions, the offline OSV database, and the
 KEV/EPSS/endoflife feed caches — without scanning a project at all (no
 discovery, no network). It exits `0` when everything checks out and `2`
@@ -72,7 +72,7 @@ or out of its tested range, when a *provisioned* feed cache file is
 unreadable or invalid, or when the KEV feed is present but stale (its gate
 is on by default, so a stale KEV feed blocks every default scan's trusted
 verdict) — always naming the specific problem. It never exits `1` —
-`--doctor` reports on the environment's operability, never on a project's
+`--self-check` reports on the environment's operability, never on a project's
 policy compliance. An *absent* feed is reported as an informational
 "operating air-gapped" line and does **not** fail the check — but note the
 default `fail-on-kev` gate: until the KEV feed is provisioned (or that gate

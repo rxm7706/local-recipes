@@ -1059,6 +1059,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-REFRESH-005": Verdict.WARN,
     "MRS-REFRESH-006": Verdict.WARN,
     "MRS-REFRESH-007": Verdict.WARN,
+    # Story 126.1 (DW-marshal-114-3-2): 008, the sprint-status sync failed to launch or failed, is a WARN finding.
+    "MRS-REFRESH-008": Verdict.WARN,
     # Story 17.4 / 86.5 (planning chain-regenerate; retired ``marshal chain regenerate``):
     # 001 missing planning tree → UNEVALUABLE; 002 phase fail ERROR;
     # 003 done-key refuse ERROR; 004 orphan report WARN.
@@ -1066,6 +1068,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-CHAIN-002": Verdict.ERROR,
     "MRS-CHAIN-003": Verdict.ERROR,
     "MRS-CHAIN-004": Verdict.WARN,
+    # Story 126.1 (DW-marshal-114-3-2): 005, a chain blocked mid-run, is an ERROR finding.
+    "MRS-CHAIN-005": Verdict.ERROR,
     # Story 22.1 (factory dispatch, FR-193 CAP-1): 001 malformed slug ERROR;
     # 002 malformed story ERROR; 003 harness missing ERROR; 004 repo root ERROR;
     # 005 spec missing/unreadable ERROR; 006 worktree ERROR; 007 run dir/journal
@@ -1294,6 +1298,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # here would violate the story's own "never blocking a seed on a missing
     # optional instrument".
     "MRS-PREFLIGHT-015": Verdict.WARN,
+    # Story 126.1 (DW-marshal-114-3-2): 016, the Tier-3 feed stale against the tracked ledger, is a WARN finding.
+    "MRS-PREFLIGHT-016": Verdict.WARN,
     # Story 28.15 (scope-violation enforcement mode, policy-declared,
     # default warn, SPEC-marshal-token-economy CAP-17): the `warn`-mode
     # advisory siblings of MRS-GATE-007/008 -- WARN, deliberately never

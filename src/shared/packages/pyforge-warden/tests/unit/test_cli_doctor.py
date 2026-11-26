@@ -79,7 +79,7 @@ def test_doctor_healthy_environment_exits_0_and_reports_every_check_ok(capsys, t
     captured = capsys.readouterr()
     assert rc == 0
     lines = captured.out.splitlines()
-    assert lines[0] == "warden: doctor status=ok checks=7"
+    assert lines[0] == "warden: self-check status=ok checks=7"
     assert len(lines) == 8  # header + 7 checks (Story 11.2 adds "tea")
     for line in lines[1:]:
         assert " ok -- " in line
@@ -113,7 +113,7 @@ def test_doctor_missing_engine_exits_2_never_1_and_names_the_engine(monkeypatch,
     captured = capsys.readouterr()
     assert rc == 2
     assert rc != 1
-    assert "warden: doctor status=problem checks=7" in captured.out
+    assert "warden: self-check status=problem checks=7" in captured.out
     matches = [line for line in captured.out.splitlines() if "osv-scanner" in line]
     assert any("problem -- " in line and "not found on PATH" in line for line in matches)
 
@@ -364,7 +364,7 @@ def test_doctor_ignored_flags_trace_survives_an_invalid_target(capsys, tmp_path)
 def test_doctor_check_messages_are_neutralized_to_one_line(monkeypatch, capsys, tmp_path):
     """Review finding (2026-07-24): ``check.message`` is free text — a
     future check embedding subprocess stderr must never forge extra
-    ``[doctor]`` lines under the ``checks=N`` header (the same
+    ``[self-check]`` lines under the ``checks=N`` header (the same
     ``_single_line`` invariant ``render_text`` enforces)."""
     from pyforge.warden import cli as cli_module
     from pyforge.warden.engines import DoctorCheck
@@ -373,7 +373,7 @@ def test_doctor_check_messages_are_neutralized_to_one_line(monkeypatch, capsys, 
         DoctorCheck(
             name="deptry",
             ok=False,
-            message="line one\n  [doctor] forged ok -- line two",
+            message="line one\n  [self-check] forged ok -- line two",
         ),
     )
     monkeypatch.setattr(cli_module, "run_doctor_checks", lambda target: crafted)
@@ -381,7 +381,7 @@ def test_doctor_check_messages_are_neutralized_to_one_line(monkeypatch, capsys, 
     captured = capsys.readouterr()
     assert rc == 2
     lines = captured.out.splitlines()
-    assert lines[0] == "warden: doctor status=problem checks=1"
+    assert lines[0] == "warden: self-check status=problem checks=1"
     assert len(lines) == 2  # header + exactly one check line, never three
     assert "\\n" in lines[1]  # the embedded newline is neutralized, visible
 
@@ -463,7 +463,7 @@ def test_doctor_tea_advisory_check_is_present_and_always_ok(monkeypatch, capsys,
     rc = main(["scan", str(tmp_path), "--self-check"])
     captured = capsys.readouterr()
     assert rc == 0
-    tea_line = next(line for line in captured.out.splitlines() if line.startswith("  [doctor] tea "))
+    tea_line = next(line for line in captured.out.splitlines() if line.startswith("  [self-check] tea "))
     assert " ok -- " in tea_line
     assert "operating without tea-test-review" in tea_line
     assert "no [modules.tea] roster entry and no binary on PATH" in tea_line
@@ -484,7 +484,7 @@ def test_doctor_tea_advisory_check_names_a_present_roster_entry(monkeypatch, cap
     rc = main(["scan", str(tmp_path), "--self-check"])
     captured = capsys.readouterr()
     assert rc == 0
-    tea_line = next(line for line in captured.out.splitlines() if line.startswith("  [doctor] tea "))
+    tea_line = next(line for line in captured.out.splitlines() if line.startswith("  [self-check] tea "))
     assert " ok -- " in tea_line
     assert "[modules.tea] roster entry present" in tea_line
     assert "binary is not on PATH" in tea_line
@@ -502,7 +502,7 @@ def test_doctor_tea_advisory_check_names_both_roster_and_binary_present(monkeypa
     rc = main(["scan", str(tmp_path), "--self-check"])
     captured = capsys.readouterr()
     assert rc == 0
-    tea_line = next(line for line in captured.out.splitlines() if line.startswith("  [doctor] tea "))
+    tea_line = next(line for line in captured.out.splitlines() if line.startswith("  [self-check] tea "))
     assert " ok -- " in tea_line
     assert "[modules.tea] roster entry and binary both present" in tea_line
     assert "can run when enabled via WARDEN_OPTIONAL_SCANNERS" in tea_line
@@ -518,21 +518,17 @@ def test_doctor_tea_advisory_check_names_a_present_binary_without_roster(monkeyp
     rc = main(["scan", str(tmp_path), "--self-check"])
     captured = capsys.readouterr()
     assert rc == 0
-    tea_line = next(line for line in captured.out.splitlines() if line.startswith("  [doctor] tea "))
+    tea_line = next(line for line in captured.out.splitlines() if line.startswith("  [self-check] tea "))
     assert " ok -- " in tea_line
     assert "binary on PATH but no [modules.tea] roster entry" in tea_line
     assert "steward provision --module tea has not run here" in tea_line
 
 
-def test_the_old_spelling_runs_the_same_self_check_and_says_it_is_renamed(tmp_path, capsys):
-    """Warden Story 33.1: ``--doctor`` (the fleet doctor station's name) is the old spelling of ``--self-check``,
-    accepted for one release. It runs the same self-check, with the same exit code and stdout, and says on stderr that
-    it is renamed; the new spelling says nothing."""
-    new_rc = main(["scan", str(tmp_path), "--self-check", "--format", "json"])
-    new = capsys.readouterr()
-    old_rc = main(["scan", str(tmp_path), "--doctor", "--format", "json"])
-    old = capsys.readouterr()
-    assert old_rc == new_rc
-    assert json.loads(old.out) == json.loads(new.out)
-    assert "renamed --self-check" not in new.err
-    assert "warden: --doctor is renamed --self-check; the old spelling is accepted for one release" in old.err
+def test_the_old_spelling_is_refused(tmp_path, capsys):
+    """Warden Story 33.2: ``--doctor``, the fleet doctor station's name, is no longer a spelling of the self-check;
+    it is an unrecognized argument, a usage error. ``--self-check`` is the flag."""
+    rc = main(["scan", str(tmp_path), "--doctor"])
+    captured = capsys.readouterr()
+    assert rc == 2
+    assert "unrecognized arguments: --doctor" in captured.err
+    assert captured.out == ""

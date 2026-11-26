@@ -242,9 +242,8 @@ conformance vocabulary of `marshal seed check` and the other seed verbs.
 ### `MRS-*` finding codes
 
 `pyforge.marshal.core.findings.REGISTERED_CODES` (format `MRS-<AREA>-<NNN>`, never reused or renumbered; marshal's AD-15), each
-with the lattice member `pyforge.marshal.core.verdict.classify` gives it (marshal's AD-31). `unclassified` marks a registered code
-`classify` has no member for: it raises for `MRS-CHAIN-005`, `MRS-PREFLIGHT-016` and `MRS-REFRESH-008`, though each is
-emitted, so this table records the gap as the code holds it.
+with the lattice member `pyforge.marshal.core.verdict.classify` gives it (marshal's AD-31). `classify` is total: every
+registered code has a member (Story 126.1 gave the last three, `MRS-CHAIN-005`, `MRS-PREFLIGHT-016` and `MRS-REFRESH-008`).
 
 | Code | Verdict |
 |---|---|
@@ -273,7 +272,7 @@ emitted, so this table records the gap as the code holds it.
 | `MRS-CHAIN-002` | `error` |
 | `MRS-CHAIN-003` | `error` |
 | `MRS-CHAIN-004` | `warn` |
-| `MRS-CHAIN-005` | `unclassified` |
+| `MRS-CHAIN-005` | `error` |
 | `MRS-CHECK-001` | `warn` |
 | `MRS-CHECK-002` | `error` |
 | `MRS-CHECK-003` | `error` |
@@ -494,7 +493,7 @@ emitted, so this table records the gap as the code holds it.
 | `MRS-PREFLIGHT-013` | `warn` |
 | `MRS-PREFLIGHT-014` | `error` |
 | `MRS-PREFLIGHT-015` | `warn` |
-| `MRS-PREFLIGHT-016` | `unclassified` |
+| `MRS-PREFLIGHT-016` | `warn` |
 | `MRS-PRESERVE-001` | `error` |
 | `MRS-PRESERVE-002` | `gate-failed` |
 | `MRS-PRESERVE-003` | `gate-failed` |
@@ -505,7 +504,7 @@ emitted, so this table records the gap as the code holds it.
 | `MRS-REFRESH-005` | `warn` |
 | `MRS-REFRESH-006` | `warn` |
 | `MRS-REFRESH-007` | `warn` |
-| `MRS-REFRESH-008` | `unclassified` |
+| `MRS-REFRESH-008` | `warn` |
 | `MRS-RETIRE-001` | `unevaluable` |
 | `MRS-RETIRE-002` | `warn` |
 | `MRS-RETIRE-003` | `warn` |

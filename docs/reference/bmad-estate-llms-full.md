@@ -10,12 +10,12 @@
 > from steward's adoption register (AD-2), and a version the sources disagree on is shown
 > as a disagreement, never resolved here.
 >
-> Generated: 2026-11-25. Regenerate: `pixi run -e pyforge-guild scribe catalog bmad-estate --write`.
+> Generated: 2026-11-26. Regenerate: `pixi run -e pyforge-guild scribe catalog bmad-estate --write`.
 > Drift detector: `pixi run -e pyforge-guild bmad-estate-check` (structured: a section reds when
 > its derived facts move, prose is exempt).
 
 <!-- bmad-estate-digest: installed=2a8aac8d7467 -->
-<!-- bmad-estate-digest: skills=1aa37072e8e4 -->
+<!-- bmad-estate-digest: skills=f607bba04d58 -->
 <!-- bmad-estate-digest: phases=b74a30513e46 -->
 <!-- bmad-estate-digest: suite=dbc85dd78eb2 -->
 <!-- bmad-estate-digest: pins=a16daebabc88 -->
@@ -193,10 +193,10 @@ core/bmm split comes from `_bmad/_config/bmad-help.csv`. 133 skills.
 | `pyforge-doctor` | Pre-flight and fleet-watch diagnostics via the doctor CLI (check, monitor, diagnose, backlog-intake). Use when running pyforge doctor grammar, POST /stations/doctor/mcp, or working in src/shared/packages/pyforge-doctor/. |
 | `pyforge-herald` | Seeds, pulls, and reports Claude Design deck bridge state via the herald CLI. Use when running herald deck seed / pull / status, or working in src/shared/packages/pyforge-herald/. Do not import pyforge.herald internals; |
 | `pyforge-marshal` | Deterministic BMAD-loop supervisor: fleet status, loop homes, detector check, and Genesis seed via the marshal CLI. Use when running marshal status / homes / check / seed, or working in src/shared/packages/pyforge-marsha |
-| `pyforge-mason` | Mason station CLI grammar for the recipe, package and environment crafts plus doctor, reached as pyforge mason or POST /stations/mason/mcp. Use when running pyforge mason recipe, package, environment or doctor commands, |
+| `pyforge-mason` | Mason station CLI grammar for the recipe, package and environment crafts plus self-check, reached as pyforge mason or POST /stations/mason/mcp. Use when running pyforge mason recipe, package, environment or self-check co |
 | `pyforge-scribe` | Captures team-memory decisions into .claude/memory, compiles the scribe knowledge graph, and recalls cited answers via the scribe CLI. Use when writing or retrieving team memory, running scribe capture / graph compile / |
 | `pyforge-steward` | Provisioner's station CLI — keys, deploy, provision, budget, sync, workspace, upgrade, suite, and machine bootstrap. Use when running steward duties, pyforge steward grammar, or working in src/shared/packages/pyforge-ste |
-| `pyforge-warden` | Runs the warden dependency-hygiene and vulnerability gate via the warden CLI (scan / scan --doctor). Use when scanning Python/Conda/Pixi manifests, checking the scanner environment, or working in src/shared/packages/pyfo |
+| `pyforge-warden` | Runs the warden dependency-hygiene and vulnerability gate via the warden CLI (scan / scan --self-check). Use when scanning Python/Conda/Pixi manifests, checking the scanner environment, or working in src/shared/packages/ |
 
 ### Other bmad-* skills (2)
 

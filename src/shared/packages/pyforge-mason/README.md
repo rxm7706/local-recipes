@@ -8,11 +8,11 @@ Mason — the Artisan Builder's station. `mason recipe` / `package` / `environme
 - **Planning:** `_bmad-output/projects/pyforge-mason/planning-artifacts/`
 - **Practice it tends:** `archive/docs/dreams/packaging-factory.md`
 
-Mason ships its three verb-bearing nouns and `doctor`: `recipe` (`new`, `validate`,
+Mason ships its three verb-bearing nouns and `self-check`: `recipe` (`new`, `validate`,
 `build`, `diagnose`, `optimize`, `scan`, `submit`, `update`), `package` (`build`,
 `ship`) and `environment` (`lock`, `check`), on a noun-verb CLI with global flags,
 text and JSON output and one exit-code contract. CFE root and interpreter
-resolution probes the import floor and degrades gracefully; `mason doctor`
+resolution probes the import floor and degrades gracefully; `mason self-check`
 reports it. The package's Python floor is 3.14 (decision D6).
 
 The `recipe` noun **wraps** the `conda-forge-expert` craft by subprocess
@@ -21,7 +21,7 @@ keeps improving through the Rule-2 retro loop. It is never forked.
 
 **Agents:** consult `.claude/skills/conda-forge-expert/SKILL.md` for every recipe
 question; consult this package's compiled station skill (`.claude/skills/pyforge-mason/`)
-for `pyforge mason …` grammar, `package`/`environment` crafts and `doctor` — the
+for `pyforge mason …` grammar, `package`/`environment` crafts and `self-check` — the
 grammar reaches every verb; never import `pyforge.mason` internals.
 
 **The MCP face is a supervised build, not a second grammar.** `POST /stations/mason/mcp`

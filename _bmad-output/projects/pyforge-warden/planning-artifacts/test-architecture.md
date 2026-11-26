@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: warden
-source_fingerprint: e6ad5841a1003804
-story_count: 90
+source_fingerprint: df86fe038c235a5c
+story_count: 92
 test_file_count: 91
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-warden`
-- **Stories parsed:** 90
+- **Stories parsed:** 92
 - **Epics parsed:** 32
 - **Test files inventoried:** 91 under `src/shared/packages/pyforge-warden/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `e6ad5841a1003804`
+- **Source fingerprint:** `df86fe038c235a5c`
 
 ## Risk Assessment
 
@@ -259,6 +259,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 31.1 | Warden's source cites the suite spine's decisions qualified | none observed |
 | 32.1 | Warden's verbs take both spellings for JSON | none observed |
 | 33.1 | Warden's self-check is --self-check, and --doctor is its old spelling | none observed |
+| 33.2 | Warden's --doctor is gone, and --self-check is the one spelling | none observed |
+| 33.3 | The warden station skill documents --self-check | none observed |
 
 ## Quality Gates
 

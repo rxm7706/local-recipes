@@ -373,6 +373,30 @@ def test_build_docker_resolves_a_cfe_interpreter_from_the_flag(fake_cfe_root, mo
         )
 
 
+def test_build_docker_without_config_refuses_before_any_subprocess_spawns(fake_cfe_root, monkeypatch):
+    """`cli.py` refuses `--docker` without `--config`; a direct caller that
+    skips that check gets a `ValueError` naming the missing config, never a
+    `None` argv entry handed to `cfe.build_docker`."""
+    _clear_fixture_env(monkeypatch)
+
+    def _boom(*args, **kwargs):
+        raise AssertionError("cfe.build_docker must not be called without a config")
+
+    monkeypatch.setattr("pyforge.mason.cfe.build_docker", _boom)
+
+    with pytest.raises(ValueError, match="non-None config"):
+        build(
+            "recipes/foo",
+            docker=True,
+            config=None,
+            cfe_root_arg=str(fake_cfe_root),
+            cfe_python_arg=sys.executable,
+            cfe_timeout_arg=15.0,
+            environ={},
+            start_directory=Path("/does/not/matter"),
+        )
+
+
 # =============================================================================
 # Story 2.5: validate() -- numerically the first `recipe` verb (see module
 # docstring); mirrors diagnose()'s composition shape exactly, except `args`
@@ -400,7 +424,7 @@ def test_validate_passes_json_flag_then_recipe_path_as_validate_recipe_args():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root") as mock_ensure,
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root) as mock_ensure,
         patch(
             "pyforge.mason.cfe.validate_recipe",
             return_value=_VALIDATE_RESULT,
@@ -429,7 +453,7 @@ def test_validate_passes_an_explicit_cfe_timeout_arg_straight_through():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch(
             "pyforge.mason.cfe.validate_recipe",
             return_value=_VALIDATE_RESULT,
@@ -455,7 +479,7 @@ def test_validate_returns_the_cfe_result_verbatim_no_reinterpretation():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch("pyforge.mason.cfe.validate_recipe", return_value=_VALIDATE_RESULT),
     ):
         result = validate(
@@ -479,7 +503,7 @@ def test_validate_forwards_cfe_root_and_cfe_python_flag_values_unresolved():
             "resolve_cfe_interpreter",
             return_value=_INTERPRETER,
         ) as mock_interp,
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch("pyforge.mason.cfe.validate_recipe", return_value=_VALIDATE_RESULT),
     ):
         validate(
@@ -503,7 +527,7 @@ def test_validate_never_calls_ensure_import_floor():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch("pyforge.mason.cfe.validate_recipe", return_value=_VALIDATE_RESULT),
         patch("pyforge.mason.cfe.ensure_import_floor") as mock_ensure_floor,
         patch("pyforge.mason.cfe.probe_import_floor") as mock_probe_floor,
@@ -654,7 +678,7 @@ def test_diagnose_passes_log_path_as_the_sole_diagnose_failure_argument():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root") as mock_ensure,
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root) as mock_ensure,
         patch("pyforge.mason.cfe.diagnose_failure", return_value=_RESULT) as mock_diagnose,
     ):
         result = diagnose(
@@ -680,7 +704,7 @@ def test_diagnose_passes_an_explicit_cfe_timeout_arg_straight_through():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch("pyforge.mason.cfe.diagnose_failure", return_value=_RESULT) as mock_diagnose,
     ):
         diagnose(
@@ -701,7 +725,7 @@ def test_diagnose_returns_the_cfe_result_verbatim_no_reinterpretation():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch("pyforge.mason.cfe.diagnose_failure", return_value=_RESULT),
     ):
         result = diagnose(
@@ -728,7 +752,7 @@ def test_diagnose_forwards_cfe_root_and_cfe_python_flag_values_unresolved():
             "resolve_cfe_interpreter",
             return_value=_INTERPRETER,
         ) as mock_interp,
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch("pyforge.mason.cfe.diagnose_failure", return_value=_RESULT),
     ):
         diagnose(
@@ -752,7 +776,7 @@ def test_diagnose_never_calls_ensure_import_floor():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch("pyforge.mason.cfe.diagnose_failure", return_value=_RESULT),
         patch("pyforge.mason.cfe.ensure_import_floor") as mock_ensure_floor,
     ):
@@ -907,7 +931,7 @@ def test_optimize_passes_recipe_path_as_the_sole_optimize_recipe_argument():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root") as mock_ensure_root,
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root) as mock_ensure_root,
         patch(
             "pyforge.mason.cfe.probe_import_floor",
             return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
@@ -938,7 +962,7 @@ def test_optimize_passes_an_explicit_cfe_timeout_arg_straight_through():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch(
             "pyforge.mason.cfe.probe_import_floor",
             return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
@@ -963,7 +987,7 @@ def test_optimize_returns_the_cfe_result_verbatim_no_reinterpretation():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch(
             "pyforge.mason.cfe.probe_import_floor",
             return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
@@ -991,7 +1015,7 @@ def test_optimize_forwards_cfe_root_and_cfe_python_flag_values_unresolved():
             "resolve_cfe_interpreter",
             return_value=_INTERPRETER,
         ) as mock_interp,
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch(
             "pyforge.mason.cfe.probe_import_floor",
             return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
@@ -1019,7 +1043,7 @@ def test_optimize_calls_probe_import_floor_with_the_resolved_interpreter():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch(
             "pyforge.mason.cfe.probe_import_floor",
             return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
@@ -1046,7 +1070,7 @@ def test_optimize_is_not_rejected_when_only_an_unrelated_floor_entry_is_missing(
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch(
             "pyforge.mason.cfe.probe_import_floor",
             return_value=ImportFloorResult(
@@ -1170,7 +1194,7 @@ def test_optimize_is_rejected_when_the_relevant_floor_entry_is_missing():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch(
             "pyforge.mason.cfe.probe_import_floor",
             return_value=ImportFloorResult(
@@ -1249,7 +1273,7 @@ def test_scan_passes_json_flag_then_recipe_path_as_scan_for_vulnerabilities_args
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root") as mock_ensure_root,
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root) as mock_ensure_root,
         patch(
             "pyforge.mason.cfe.probe_import_floor",
             return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
@@ -1283,7 +1307,7 @@ def test_scan_passes_an_explicit_cfe_timeout_arg_straight_through():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch(
             "pyforge.mason.cfe.probe_import_floor",
             return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
@@ -1312,7 +1336,7 @@ def test_scan_returns_the_cfe_result_verbatim_no_reinterpretation():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch(
             "pyforge.mason.cfe.probe_import_floor",
             return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
@@ -1340,7 +1364,7 @@ def test_scan_forwards_cfe_root_and_cfe_python_flag_values_unresolved():
             "resolve_cfe_interpreter",
             return_value=_INTERPRETER,
         ) as mock_interp,
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch(
             "pyforge.mason.cfe.probe_import_floor",
             return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
@@ -1367,7 +1391,7 @@ def test_scan_calls_probe_import_floor_with_the_resolved_interpreter():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch(
             "pyforge.mason.cfe.probe_import_floor",
             return_value=ImportFloorResult(interpreter=_INTERPRETER.path, missing=()),
@@ -1394,7 +1418,7 @@ def test_scan_is_not_rejected_when_only_an_unrelated_floor_entry_is_missing():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch(
             "pyforge.mason.cfe.probe_import_floor",
             return_value=ImportFloorResult(
@@ -1433,7 +1457,7 @@ def test_scan_is_rejected_when_only_one_relevant_floor_entry_is_missing(missing_
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch(
             "pyforge.mason.cfe.probe_import_floor",
             return_value=ImportFloorResult(
@@ -1667,7 +1691,7 @@ def test_submit_dry_run_appends_dry_run_flag_and_returns_not_attempted():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root") as mock_ensure,
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root) as mock_ensure,
         patch(
             "pyforge.mason.cfe.submit_pr",
             return_value=_SUBMIT_DRY_RUN_RESULT,
@@ -1705,7 +1729,7 @@ def test_submit_confirmed_full_flow_returns_pending_with_pr_url():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch(
             "pyforge.mason.cfe.submit_pr",
             return_value=_SUBMIT_FULL_SUCCESS_RESULT,
@@ -1740,7 +1764,7 @@ def test_submit_confirmed_prepare_only_appends_the_flag_and_returns_pending_with
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch(
             "pyforge.mason.cfe.submit_pr",
             return_value=_SUBMIT_PREPARE_ONLY_RESULT,
@@ -1774,7 +1798,7 @@ def test_submit_confirmed_push_succeeded_pr_failed_returns_failed_with_branch_ur
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch(
             "pyforge.mason.cfe.submit_pr",
             return_value=_SUBMIT_PUSH_SUCCEEDED_PR_FAILED_RESULT,
@@ -1809,7 +1833,7 @@ def test_submit_computes_cfe_recipes_root_from_the_recipe_paths_parent_for_an_ou
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch(
             "pyforge.mason.cfe.submit_pr",
             return_value=_SUBMIT_DRY_RUN_RESULT,
@@ -1847,7 +1871,7 @@ def test_submit_overrides_a_pre_existing_cfe_recipes_root_in_environ():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch(
             "pyforge.mason.cfe.submit_pr",
             return_value=_SUBMIT_DRY_RUN_RESULT,
@@ -1881,7 +1905,7 @@ def test_submit_dry_run_prepare_only_composes_both_flags():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch(
             "pyforge.mason.cfe.submit_pr",
             return_value=_SUBMIT_DRY_RUN_RESULT,
@@ -1916,7 +1940,7 @@ def test_submit_confirmed_unparseable_body_falls_back_to_returncode(returncode, 
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch(
             "pyforge.mason.cfe.submit_pr",
             return_value=CfeResult(
@@ -1955,7 +1979,7 @@ def test_submit_treats_a_missing_success_key_as_failure():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch(
             "pyforge.mason.cfe.submit_pr",
             return_value=CfeResult(
@@ -1991,7 +2015,7 @@ def test_submit_preserves_an_explicit_empty_string_message_instead_of_falling_ba
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch(
             "pyforge.mason.cfe.submit_pr",
             return_value=CfeResult(
@@ -2028,7 +2052,7 @@ def test_submit_recovers_from_an_unresolvable_recipe_path_as_a_failed_result():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch.object(
             recipe_module.Path,
             "resolve",
@@ -2064,7 +2088,7 @@ def test_submit_never_calls_probe_import_floor():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch("pyforge.mason.cfe.submit_pr", return_value=_SUBMIT_DRY_RUN_RESULT),
         patch("pyforge.mason.cfe.probe_import_floor") as mock_probe_floor,
         patch("pyforge.mason.cfe.ensure_import_floor") as mock_ensure_floor,
@@ -2211,7 +2235,7 @@ def test_update_default_apply_calls_update_recipe_with_recipe_path_only():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root") as mock_ensure,
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root) as mock_ensure,
         patch("pyforge.mason.cfe.update_recipe", return_value=_UPDATE_RESULT) as mock_update,
         patch("pyforge.mason.cfe.update_recipe_from_github") as mock_update_gh,
     ):
@@ -2243,7 +2267,7 @@ def test_update_dry_run_appends_the_dry_run_flag():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch("pyforge.mason.cfe.update_recipe", return_value=_UPDATE_RESULT) as mock_update,
     ):
         update(
@@ -2271,7 +2295,7 @@ def test_update_github_flag_dispatches_to_update_recipe_from_github():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch("pyforge.mason.cfe.update_recipe") as mock_update,
         patch(
             "pyforge.mason.cfe.update_recipe_from_github",
@@ -2305,7 +2329,7 @@ def test_update_github_repo_and_pre_are_forwarded_only_with_github():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch(
             "pyforge.mason.cfe.update_recipe_from_github",
             return_value=_UPDATE_RESULT,
@@ -2338,7 +2362,7 @@ def test_update_github_repo_falsy_is_not_forwarded():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch(
             "pyforge.mason.cfe.update_recipe_from_github",
             return_value=_UPDATE_RESULT,
@@ -2372,7 +2396,7 @@ def test_update_repo_and_pre_are_inert_without_github():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch("pyforge.mason.cfe.update_recipe", return_value=_UPDATE_RESULT) as mock_update,
         patch("pyforge.mason.cfe.update_recipe_from_github") as mock_update_gh,
     ):
@@ -2403,7 +2427,7 @@ def test_update_passes_an_explicit_cfe_timeout_arg_straight_through():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch("pyforge.mason.cfe.update_recipe", return_value=_UPDATE_RESULT) as mock_update,
     ):
         update(
@@ -2429,7 +2453,7 @@ def test_update_returns_the_cfe_result_verbatim_no_reinterpretation():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch("pyforge.mason.cfe.update_recipe", return_value=_UPDATE_RESULT),
     ):
         result = update(
@@ -2457,7 +2481,7 @@ def test_update_never_calls_ensure_import_floor():
     with (
         patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT),
         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER),
-        patch("pyforge.mason.cfe.ensure_cfe_root"),
+        patch("pyforge.mason.cfe.ensure_cfe_root", return_value=_ROOT.root),
         patch("pyforge.mason.cfe.update_recipe", return_value=_UPDATE_RESULT),
         patch("pyforge.mason.cfe.ensure_import_floor") as mock_ensure_floor,
         patch("pyforge.mason.cfe.probe_import_floor") as mock_probe_floor,

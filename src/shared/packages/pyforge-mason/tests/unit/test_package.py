@@ -2438,6 +2438,39 @@ def test_ship_a_masonerror_from_one_target_does_not_stop_later_targets(tmp_path)
     assert results[1] == conda_forge_result
 
 
+def test_ship_a_channel_target_with_no_name_fails_that_target_and_never_ships(tmp_path):
+    """`parse_ship_targets` never builds a CHANNEL target without a name, so
+    `ship()` refuses one it is somehow handed with the parser's own
+    `InvalidShipTargetError` (caught into a FAILED result for that target)
+    rather than calling `ship_channel` with a `None` channel."""
+    unnamed = ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name=None)
+    with (
+        patch("pyforge.mason.package.parse_ship_targets", return_value=(unnamed,)),
+        patch(
+            "pyforge.mason.package.ship_channel",
+            side_effect=AssertionError("ship_channel must not be called without a channel name"),
+        ),
+    ):
+        results = ship(
+            "channel:",
+            confirm=True,
+            environ={},
+            cfe_root_arg=None,
+            cfe_python_arg=None,
+            cfe_timeout_arg=None,
+            start_directory=tmp_path,
+        )
+
+    assert results == (
+        ShipTargetResult(
+            target="channel:None",
+            state=ShipState.FAILED,
+            reference=None,
+            message=str(InvalidShipTargetError("channel:")),
+        ),
+    )
+
+
 def test_ship_real_ship_with_only_conda_forge_never_calls_build(tmp_path):
     """spec Always boundary: a project shipping only to `conda-forge` must
     never be forced through `pep517`/`pixi` build engines it may not even

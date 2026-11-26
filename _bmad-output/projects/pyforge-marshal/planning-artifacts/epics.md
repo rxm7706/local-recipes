@@ -11974,6 +11974,29 @@ So that the name says whose plugin it is.
 **And** marshal still selects its plugin by `plugin_id`, and its plugin tests pass
 **Status:** done
 
+## Epic 126: Three open rows close (spec-pyforge-marshal CAP-13, CAP-305)
+
+Minted 2026-11-26 from the station Dream's entry of the same date on the operator ruling of 2026-11-26: "lets fix these - and leave no broken windows" (spec-pyforge-steward:CAP-183 and spec-pyforge-steward:CAP-185 still read ready though their stories landed; mason's hidden mypy errors in cli.py; three marshal deferred rows and DW-mason-37-2), then "should close these too" (remove `--doctor` and `mason doctor` now rather than after a release; regenerate the two compiled station skills).
+**HARD boundaries:**
+- No finding's severity moves: each new verdict member matches the severity the code already emits.
+- CAP-305 moves by its memlog and a render, text only; no flag.
+
+### Story 126.1: Three open rows close: classify is total, the live-path guard holds no dead entry, and CAP-305 names both guard parts
+
+As a reader of marshal's verdicts and guards,
+I want every registered code classified, no dead guard entry, and CAP-305 to name what is built,
+So that the three rows the retros carried are closed.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-13 and pyforge-marshal:AD-31 (no text change); CAP-305 (guard clause amended); no AD moves
+**Flag:** none (a table row, a test, a guard entry and a Spec clause; nothing is switched)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_verdict.py`, `src/shared/packages/pyforge-marshal/tests/meta/test_spec_names_live_paths.py`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/contract.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-126-1-three-open-rows-close-classify-is-total-the-live-path-guard-holds-no-dead-entry-and-cap-305-names-both-guard-parts.md`
+**Given** three emitted codes raise in `classify`, two `ALLOW` entries excuse files that exist, and CAP-305 names one part of a two-part guard
+**When** the codes get members, a test holds the table total, the entries go and CAP-305 is re-rendered
+**Then** `classify` answers every registered code, and the totality test fails by code when one is missing
+**And** the contract's verdict cells read `error` and `warn` for the three codes
+**Status:** done
+
 ## Currency reconciliation — 2026-11-26 (the tag rule reaches station source)
 
 *Chain-currency cascade (arch -> epics).* 2026-11-26: Epic 123 / Story 123.1 minted under `spec-one-chain-per-station` (its capability 9, realized with no text change); no AD moves. The keys go through the Tier-3 feed and `sprint-ledger-sync`. **Content changed:** the Epic, this section and `updated:`.

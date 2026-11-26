@@ -37,7 +37,7 @@ The CLI is the only publisher of the verdict. Relay its status and exit code as 
 pixi run -e pyforge-warden pyforge warden scan --self-check
 ```
 
-`--self-check` is a flag on `scan`, not a separate command (`--doctor` is its old spelling, accepted for one release with a notice). It checks the engines, the offline OSV database and the feed caches, scans no project and uses no network:
+`--self-check` is a flag on `scan`, not a separate command. It checks the engines, the offline OSV database and the feed caches, scans no project and uses no network:
 
 ```text
 warden: doctor status=problem checks=7

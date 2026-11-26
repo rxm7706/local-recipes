@@ -43,7 +43,7 @@ warden scan --self-check
 ```
 
 `--self-check` exits 0 or 2, never 1. Verified: `warden scan --help` lists
-`--self-check` on `scan` (`--doctor` is its old spelling, accepted for one release).
+`--self-check` on `scan`.
 
 ## 2. Probe the engines, and stop there
 

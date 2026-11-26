@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: c58221b2980a0c3d
-story_count: 522
+source_fingerprint: 1e4218dab8ea377a
+story_count: 523
 test_file_count: 171
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 522
-- **Epics parsed:** 146
+- **Stories parsed:** 523
+- **Epics parsed:** 147
 - **Test files inventoried:** 171 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `c58221b2980a0c3d`
+- **Source fingerprint:** `1e4218dab8ea377a`
 
 ## Risk Assessment
 
@@ -168,6 +168,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 144: One way to ask any station for JSON (spec-pyforge-steward:CAP-185)
 - Epic 145: The preflight runs a suite whole when its coverage gate only judges reports (spec-pyforge-steward CAP-159)
 - Epic 146: A plugin's registration name says whose it is (spec-pyforge-unifying-strategy:CAP-18, amended)
+- Epic 147: CAP-183 and CAP-185 read shipped (spec-pyforge-steward CAP-183, CAP-185)
 
 ### Low-risk epics
 
@@ -885,6 +886,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 144.1 | Every station verb that prints JSON accepts both spellings | none observed |
 | 145.1 | The preflight runs a suite whole when its coverage gate only judges reports | none observed |
 | 146.1 | Every plugin registration name starts with its package's token | none observed |
+| 147.1 | CAP-183 and CAP-185 read shipped | none observed |
 
 ## Quality Gates
 

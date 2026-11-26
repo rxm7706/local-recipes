@@ -89,18 +89,3 @@ warn_unused_configs = true
 # Sibling stations and bmad_loop ship no py.typed marker; their imports are checked as untyped, not refused.
 disable_error_code = ["import-untyped"]
 
-[[tool.mypy.overrides]]
-module = "pyforge.mason.cfe"
-disable_error_code = ["attr-defined"]
-
-[[tool.mypy.overrides]]
-module = "pyforge.mason.cli"
-disable_error_code = ["assignment", "attr-defined"]
-
-[[tool.mypy.overrides]]
-module = "pyforge.mason.package"
-disable_error_code = ["arg-type"]
-
-[[tool.mypy.overrides]]
-module = "pyforge.mason.recipe"
-disable_error_code = ["arg-type", "assignment"]

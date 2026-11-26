@@ -117,8 +117,6 @@ ALLOW: tuple[tuple[str, str, str], ...] = (
     ("CAP-298", "installed_plugins.json", "Claude Code's own plugin registry, outside the repository"),
     ("CAP-298", "plugin.json", "the cached EGM plugin's manifest, outside the repository"),
     ("CAP-298", "report.json", "a challenge run's output under implementation-artifacts/egm/<run>/"),
-    ("CAP-305", "tests/_support/tree_read_guard.py", "written by Story 116.4, open while CAP-305 reads ready"),
-    ("CAP-305", "tests/meta/test_tree_read_guard.py", "written by Story 116.4, open while CAP-305 reads ready"),
 )
 
 

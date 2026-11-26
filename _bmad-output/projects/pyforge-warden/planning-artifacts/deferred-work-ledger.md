@@ -1346,7 +1346,8 @@ verified: 2026-11-11 — still-open — DW-FU-5-1: no review of 5-1-actionable-d
   owner: warden
   severity: low
   promoted: 2026-11-26 — Story 33.1
-  status: open
+  resolution: 2026-11-26 — warden Story 33.2 (`33-2-warden-s-doctor-is-gone-and-self-check-is-the-one-spelling`), branch `broken-windows-2026-11-26`, on the operator's ruling of that day: `--doctor` removed now; `warden scan --doctor` exits 2 as an unrecognized argument
+  status: closed
 
 ### DW-warden-33-1-2: The compiled station skill pyforge-warden still documents `scan --doctor`
 
@@ -1359,4 +1360,18 @@ verified: 2026-11-11 — still-open — DW-FU-5-1: no review of 5-1-actionable-d
   owner: warden
   severity: low
   promoted: 2026-11-26 — Story 33.1
+  resolution: 2026-11-26 — warden Story 33.3 (`33-3-the-warden-station-skill-documents-self-check`), branch `broken-windows-2026-11-26`: the skill regenerated with `skf-update-skill` and re-exported; its meta-test pins `scan --self-check`
+  status: closed
+
+### DW-warden-33-3-1: Two citations in the compiled skill pyforge-warden 0.1.2 point a few lines off
+
+- source_spec: `planning-artifacts/specs/spec-33-3-the-warden-station-skill-documents-self-check.md`
+  summary: Two citations in the compiled skill pyforge-warden 0.1.2 point a few lines off
+  evidence: the ComplianceReport schema line cites `cli.py:L31-L33` (the stream-discipline note) and `report.py:L192` (a comment) where the version is `report.py:193` and the urn `data/report-schema.json:3`; "prog is warden" cites `report.py:L193` where `TOOL_NAME` is `report.py:194` and `prog=TOOL_NAME` is `cli.py:446` (the independent skill check of Story 33.3, 2026-11-26)
+  location: .claude/skills/pyforge-warden/active/pyforge-warden/SKILL.md
+  origin: written by Story 33.3 (branch `broken-windows-2026-11-26`); a compiled citation is not hand-edited, because the provenance map holds it
+  fix: at the next `skf-update-skill` run on pyforge-warden, re-point both citations; the verifier checks that a citation resolves, not that it is the right line
+  owner: warden
+  severity: low
+  promoted: 2026-11-26 — Story 33.3
   status: open

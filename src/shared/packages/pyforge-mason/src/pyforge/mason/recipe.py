@@ -300,17 +300,14 @@ def new(
     its own for that case; it simply propagates.
     """
     resolved_root = resolve_cfe_root(cfe_root_arg, environ, start_directory)
-    cfe.ensure_cfe_root(resolved_root)
+    cfe_root = cfe.ensure_cfe_root(resolved_root)
 
     resolved_interpreter = resolve_cfe_interpreter(cfe_python_arg, environ)
     cfe.ensure_import_floor(resolved_interpreter.path)
 
-    # resolved_root.root is guaranteed non-None here: ensure_cfe_root above
-    # already raised CfeUnresolvedError for the only case (STEP_NOT_FOUND)
-    # where it would be None.
     result = cfe.generate_recipe(
         [source, package, "--output", output],
-        root=resolved_root.root,
+        root=cfe_root,
         interpreter=resolved_interpreter.path,
         timeout=cfe_timeout_arg,
     )
@@ -365,13 +362,13 @@ def validate(
     every other verb here and to AD-4's rule.
     """
     resolved_root = resolve_cfe_root(cfe_root_arg, environ, start_directory)
-    cfe.ensure_cfe_root(resolved_root)
+    cfe_root = cfe.ensure_cfe_root(resolved_root)
 
     resolved_interpreter = resolve_cfe_interpreter(cfe_python_arg, environ)
 
     return cfe.validate_recipe(
         ["--json", recipe_path],
-        root=resolved_root.root,
+        root=cfe_root,
         interpreter=resolved_interpreter.path,
         timeout=cfe_timeout_arg,
     )
@@ -399,7 +396,8 @@ def build(
     build-engine plugin's `around` whose `next` is `cfe.build_native`.
     `config` is only meaningful for the Docker path
     (required there by `cli.py`'s own usage check, before this function is
-    ever called); the native path always detects its own platform-variant
+    ever called; a direct caller passing `docker=True` with `config=None`
+    gets a `ValueError` before any subprocess spawns); the native path always detects its own platform-variant
     config via `resolve.detect_native_build_config` inside `cfe.
     build_native` itself, never from this parameter.
 
@@ -410,7 +408,7 @@ def build(
     it is data on the returned `BuildResult`.
     """
     resolved_root = resolve_cfe_root(cfe_root_arg, environ, start_directory)
-    cfe.ensure_cfe_root(resolved_root)
+    cfe_root = cfe.ensure_cfe_root(resolved_root)
 
     foundry_root_arg = environ.get(_ENV_FOUNDRY_ROOT)
     factory_island = resolve_factory_island(
@@ -421,7 +419,7 @@ def build(
     )
     if factory_island is not None:
         recipe_path = str(factory_island.recipe_path)
-        build_env = {
+        build_env: Mapping[str, str] = {
             **environ,
             _ENV_FACTORY_ROOT: str(factory_island.factory_root),
             _ENV_FOUNDRY_ROOT: str(factory_island.foundry_root),
@@ -430,10 +428,15 @@ def build(
         build_env = environ
 
     if docker:
+        if config is None:
+            # `cli.py` refuses `--docker` without `--config` as a usage error
+            # before this function is called; a direct caller that skips that
+            # check gets this refusal instead of a `None` argv entry.
+            raise ValueError("recipe.build(docker=True) requires a non-None config")
         resolved_interpreter = resolve_cfe_interpreter(cfe_python_arg, environ)
         return cfe.build_docker(
             config,
-            root=resolved_root.root,
+            root=cfe_root,
             interpreter=resolved_interpreter.path,
             timeout=cfe_timeout_arg,
             stderr_sink=stderr_sink,
@@ -445,7 +448,7 @@ def build(
     def _native_next(_context: dict) -> BuildResult:
         return cfe.build_native(
             recipe_path,
-            root=resolved_root.root,
+            root=cfe_root,
             timeout=cfe_timeout_arg,
             stderr_sink=stderr_sink,
             env=build_env,
@@ -478,13 +481,13 @@ def diagnose(
     `None`.
     """
     resolved_root = resolve_cfe_root(cfe_root_arg, environ, start_directory)
-    cfe.ensure_cfe_root(resolved_root)
+    cfe_root = cfe.ensure_cfe_root(resolved_root)
 
     resolved_interpreter = resolve_cfe_interpreter(cfe_python_arg, environ)
 
     return cfe.diagnose_failure(
         [log_path],
-        root=resolved_root.root,
+        root=cfe_root,
         interpreter=resolved_interpreter.path,
         timeout=cfe_timeout_arg,
     )
@@ -520,7 +523,7 @@ def optimize(
     `None`.
     """
     resolved_root = resolve_cfe_root(cfe_root_arg, environ, start_directory)
-    cfe.ensure_cfe_root(resolved_root)
+    cfe_root = cfe.ensure_cfe_root(resolved_root)
 
     resolved_interpreter = resolve_cfe_interpreter(cfe_python_arg, environ)
     probe = cfe.probe_import_floor(resolved_interpreter.path)
@@ -530,7 +533,7 @@ def optimize(
 
     return cfe.optimize_recipe(
         [recipe_path],
-        root=resolved_root.root,
+        root=cfe_root,
         interpreter=resolved_interpreter.path,
         timeout=cfe_timeout_arg,
     )
@@ -567,7 +570,7 @@ def scan(
     applies only when this resolves to `None`.
     """
     resolved_root = resolve_cfe_root(cfe_root_arg, environ, start_directory)
-    cfe.ensure_cfe_root(resolved_root)
+    cfe_root = cfe.ensure_cfe_root(resolved_root)
 
     resolved_interpreter = resolve_cfe_interpreter(cfe_python_arg, environ)
     probe = cfe.probe_import_floor(resolved_interpreter.path)
@@ -577,7 +580,7 @@ def scan(
 
     return cfe.scan_for_vulnerabilities(
         ["--json", recipe_path],
-        root=resolved_root.root,
+        root=cfe_root,
         interpreter=resolved_interpreter.path,
         timeout=cfe_timeout_arg,
     )
@@ -654,7 +657,7 @@ def submit(
     of falling through to `cli.py`'s generic `except Exception` handler.
     """
     resolved_root = resolve_cfe_root(cfe_root_arg, environ, start_directory)
-    cfe.ensure_cfe_root(resolved_root)
+    cfe_root = cfe.ensure_cfe_root(resolved_root)
 
     resolved_interpreter = resolve_cfe_interpreter(cfe_python_arg, environ)
 
@@ -677,7 +680,7 @@ def submit(
 
     result = cfe.submit_pr(
         args,
-        root=resolved_root.root,
+        root=cfe_root,
         interpreter=resolved_interpreter.path,
         timeout=cfe_timeout_arg,
         env=env,
@@ -801,7 +804,7 @@ def update(
     this resolves to `None`.
     """
     resolved_root = resolve_cfe_root(cfe_root_arg, environ, start_directory)
-    cfe.ensure_cfe_root(resolved_root)
+    cfe_root = cfe.ensure_cfe_root(resolved_root)
 
     resolved_interpreter = resolve_cfe_interpreter(cfe_python_arg, environ)
 
@@ -816,14 +819,14 @@ def update(
             args.append("--pre")
         return cfe.update_recipe_from_github(
             args,
-            root=resolved_root.root,
+            root=cfe_root,
             interpreter=resolved_interpreter.path,
             timeout=cfe_timeout_arg,
         )
 
     return cfe.update_recipe(
         args,
-        root=resolved_root.root,
+        root=cfe_root,
         interpreter=resolved_interpreter.path,
         timeout=cfe_timeout_arg,
     )

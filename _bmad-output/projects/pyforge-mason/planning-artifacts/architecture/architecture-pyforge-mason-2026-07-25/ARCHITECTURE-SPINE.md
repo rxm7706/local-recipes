@@ -466,7 +466,7 @@ sequenceDiagram
 | Ship targets + receipts (FR-16 – FR-20, FR-23, FR-24) | `package.py`, `engines/twine`, `models.py` | AD-9, AD-10, AD-11, AD-14 |
 | `mason environment` (FR-25 – FR-29) | `environment.py`, `engines/condalock` | AD-6, AD-12 |
 | CLI shell + output (FR-30 – FR-35) | `cli.py`, `render.py`, `errors.py`, `exit_codes.py` | AD-7, AD-8, AD-13 |
-| `mason self-check` (FR-34; `mason doctor` its alias for one release) | `doctor.py` | AD-5, AD-12 |
+| `mason self-check` (FR-34) | `doctor.py` | AD-5, AD-12 |
 | Distribution (FR-36 – FR-41) | `pyproject.toml`, `pixi.toml`, root `pixi.toml` | Stack, AD-12 |
 | Seam enforcement (FR-42 – FR-46) | `tests/meta/` | AD-1, AD-2, AD-3, AD-6, AD-15, AD-16 |
 | Closing retrospective (FR-47) | closeout process, not a module | AD-15 |

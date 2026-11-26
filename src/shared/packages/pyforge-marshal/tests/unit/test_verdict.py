@@ -276,3 +276,16 @@ def test_the_factory_checkpoint_precondition_codes_are_registered_and_classified
     assert verdict.classify(code) is Verdict.ERROR
     finding = Finding(code=code, severity=Severity.ERROR, message="a precondition failed")
     assert verdict.exit_code_for(verdict.compute_verdict([finding])) != 0
+
+
+def test_classify_is_total_over_every_registered_code():
+    """Story 126.1 (DW-marshal-114-3-2): spec-pyforge-marshal:CAP-13 and pyforge-marshal:AD-31 mean ``classify`` to be
+    total. Three emitted codes had no member and raised, so a verdict over any of them raised instead of projecting an
+    exit code; no test held the table to the registry. Every registered code now maps to a lattice member."""
+    missing = []
+    for code in sorted(findings.REGISTERED_CODES):
+        try:
+            verdict.classify(code)
+        except ValueError:
+            missing.append(code)
+    assert missing == []

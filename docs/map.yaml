@@ -255,8 +255,8 @@ pages:
       - scripts/detectors.py
       - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
     stamp:
-      derived_at: '2026-11-18T02:54:00-06:00'
-      tree: e488c0fae251ff51c6a86f7f72897958e1b68d69
+      derived_at: '2026-11-26T11:17:19-06:00'
+      tree: 4c72fc94de16c164a787a908b2f868075042f12a
   - path: reference/developer-guide.md
     quadrant: reference
     owner: fleet
@@ -314,8 +314,8 @@ pages:
     sources:
       - .claude/skills
     stamp:
-      derived_at: '2026-11-25T16:09:11-06:00'
-      tree: 5f22584869704d9fb14aa6f422beaf12e165f039-dirty
+      derived_at: '2026-11-26T11:17:19-06:00'
+      tree: 4c72fc94de16c164a787a908b2f868075042f12a-dirty
   - path: reference/station-cheat-sheet.md
     quadrant: reference
     owner: fleet
@@ -325,8 +325,8 @@ pages:
       - pixi.toml
       - src/shared/packages
     stamp:
-      derived_at: '2026-11-26T11:01:23-06:00'
-      tree: 9dd357308e6f049833e290ee729452ab58001f75-dirty
+      derived_at: '2026-11-26T11:53:51-06:00'
+      tree: 3ff167b249f683e5c1aae5273721b8f8f2019c6b-dirty
   - path: reference/station-verify-commands.md
     quadrant: reference
     owner: fleet

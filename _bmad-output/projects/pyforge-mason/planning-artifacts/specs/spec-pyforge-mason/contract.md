@@ -52,7 +52,6 @@ documented exception is `mason package --ship <targets>` (D-12), an option row o
 | `mason environment lock` | `MANIFEST_PATH` (zero or more) | Locks the manifests (discovered in the current directory when none is given) into `--output` through conda-lock. |
 | `mason environment check` | `MANIFEST_PATH` (zero or more) | Reports whether `--lockfile` is stale against the manifests; stale or a failed check exits 1. |
 | `mason self-check` | — | Reports Mason's version, CFE resolution, the import floor and each engine; always exits 0. |
-| `mason doctor` | — | The old name of `mason self-check` (it is the fleet doctor station's name), accepted for one release: the same report, named `doctor` in the envelope, plus one line on stderr saying it is renamed (Story 46.1). |
 
 ## Global options
 
@@ -214,7 +213,7 @@ Under `--format json` stdout carries exactly one JSON document or nothing, and e
 document has exactly five keys (`render.py`, rendered with sorted keys):
 
 - `schema_version`: `"1"`.
-- `command`: the path without `mason`, e.g. `"recipe build"`, `"package ship"`, `"self-check"` (`"doctor"` when called by its old name); `"mason"` when the
+- `command`: the path without `mason`, e.g. `"recipe build"`, `"package ship"`, `"self-check"`; `"mason"` when the
   failure comes before the arguments are parsed.
 - `status`: `"ok"` when the command ran, whatever the delegated tool did; `"error"` when a `MasonError` was raised.
 - `data`: the command's result object. A delegated tool's return code is data, never an error: it is
@@ -270,8 +269,8 @@ Mason assumes this layout and creates none of it:
 - For a `conda-forge` ship: the recipe at `<cfe-root>/recipes/<name>/`.
 - For a factory-island build (`recipe build factory/recipes/<r>`): `<foundry>/factory/pixi.toml`,
   `<foundry>/factory/pixi.lock` and `<foundry>/factory/recipes/<r>`, with `<foundry>` from `MASON_FOUNDRY_ROOT` or the
-  walk up from the current directory. The island is wired for the native build; `--docker` on an island path is
-  recorded, not built. Island artifacts are reported under `<foundry>/factory/build_artifacts/<config>`, any other
+  walk up from the current directory. The island is wired for the native build; `--docker` on an island path runs CFE's Docker build for `--config`
+  with the island's environment and does not build the island recipe. Island artifacts are reported under `<foundry>/factory/build_artifacts/<config>`, any other
   build's under `build_artifacts/<config>`.
 - Which root a `package ship --to conda-forge` resolves on a foundry checkout is recorded here as layout only; the
   behaviour waits on steward Stories 44.8 and 44.9.

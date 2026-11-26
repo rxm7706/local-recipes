@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: f08a2fa752fb773c
-story_count: 145
+source_fingerprint: 618942e0d0a561be
+story_count: 148
 test_file_count: 48
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 145
-- **Epics parsed:** 46
+- **Stories parsed:** 148
+- **Epics parsed:** 47
 - **Test files inventoried:** 48 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `f08a2fa752fb773c`
+- **Source fingerprint:** `618942e0d0a561be`
 
 ## Risk Assessment
 
@@ -77,6 +77,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 43: Mason's exit codes are held to their declared domain (spec-pyforge-steward:CAP-184; spec-pyforge-mason CAP-5)
 - Epic 44: Mason's verbs take both spellings for JSON (spec-pyforge-steward:CAP-185)
 - Epic 45: Mason's build-engine plugins are registered under mason's name (spec-pyforge-unifying-strategy:CAP-18)
+- Epic 47: Mason's types are checked whole (spec-pyforge-mason CAP-5)
 
 ### Low-risk epics
 
@@ -285,6 +286,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 44.1 | Mason's verbs take both spellings for JSON | none observed |
 | 45.1 | Mason's build-engine plugins are registered under mason's name | none observed |
 | 46.1 | Mason's self-diagnosis is mason self-check, and mason doctor is its old name | none observed |
+| 46.2 | Mason's doctor is gone, and self-check is the one name | none observed |
+| 46.3 | The mason station skill documents mason self-check | none observed |
+| 47.1 | Mason's types are checked whole | none observed |
 
 ## Quality Gates
 

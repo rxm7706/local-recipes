@@ -122,7 +122,7 @@ def test_compiled_skill_is_agentskills_compliant_with_provenance():
     assert "pyforge mason recipe" in body
     assert "pyforge mason package" in body
     assert "pyforge mason environment" in body
-    assert "pyforge mason doctor" in body
+    assert "pyforge mason self-check" in body
     assert "/stations/mason/mcp" in body
     assert "conda-forge-expert" in body
 

@@ -8443,3 +8443,7 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   not reduced when its gate's command carries `--report`; the journal says why. Every station's gate carries it
   today, and a test says so, so the reduction applies again to a gate that stops. **Constraints:** no flag (a fix);
   the reduction code stays for a gate that runs its own tests. Owner `spec-pyforge-steward`.
+- **2026-11-26 (two markers read shipped) — Ruled:** operator ruling of 2026-11-26: "lets fix these - and leave no broken windows" (spec-pyforge-steward:CAP-183 and spec-pyforge-steward:CAP-185 still read ready though their stories landed; mason's hidden mypy errors in cli.py; three marshal deferred rows and DW-mason-37-2), then "should close these too" (remove `--doctor` and `mason doctor` now rather than after a release; regenerate the two compiled station skills). **For steward:** Epic 147, one story (147.1): CAP-183
+  reads (shipped 2026-11-25), Epic 135 having landed through 6db8d6e60f, and CAP-185 (shipped 2026-11-26), Story 144.1
+  and its five relays having landed through 3556bd1f2e; a memlog decision and a render, markers only. **Constraints:**
+  no intent or success moves; no flag. Owner `spec-pyforge-steward`.

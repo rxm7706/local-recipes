@@ -2228,7 +2228,8 @@ status: open
   owner: mason
   severity: low
   promoted: 2026-11-12 — Story 37.4 (mason's station closer), cutover readiness change
-  status: open
+  resolution: 2026-11-26 — mason Story 46.2 (`46-2-mason-s-doctor-is-gone-and-self-check-is-the-one-name`), branch `broken-windows-2026-11-26`: SPEC.md re-rendered; the `companions:` comments read FR-1..FR-64 / NFR-1..NFR-16 / D-1..D-13 and AD-1..AD-16 + AD-25..AD-28 (Presenton AD-17..AD-24)
+  status: closed
 
 ### DW-mason-37-4: 108 open mason deferrals are untriaged against what has shipped since; 72 carry no severity. Counted by the 2026-11-10 audit; the burn-down is a Dream-sized effort of its own, as the 2026-10-01 campaign was.
 
@@ -2292,7 +2293,8 @@ status: open
   owner: mason
   severity: low
   promoted: 2026-11-26 — Story 46.1
-  status: open
+  resolution: 2026-11-26 — mason Story 46.2 (`46-2-mason-s-doctor-is-gone-and-self-check-is-the-one-name`), branch `broken-windows-2026-11-26`, on the operator's ruling of that day: `doctor` removed now; `mason doctor` exits 2 as an invalid choice
+  status: closed
 
 ### DW-mason-46-1-2: The compiled station skill pyforge-mason still documents `mason doctor`
 
@@ -2305,4 +2307,5 @@ status: open
   owner: mason
   severity: low
   promoted: 2026-11-26 — Story 46.1
-  status: open
+  resolution: 2026-11-26 — mason Story 46.3 (`46-3-the-mason-station-skill-documents-mason-self-check`), branch `broken-windows-2026-11-26`: the skill regenerated with `skf-update-skill` and re-exported; its meta-test pins `pyforge mason self-check`
+  status: closed

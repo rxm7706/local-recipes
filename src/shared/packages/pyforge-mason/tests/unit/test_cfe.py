@@ -320,13 +320,22 @@ def test_nonzero_returncode_with_partial_output_still_credits_printed_modules():
 
 
 @pytest.mark.parametrize("step", [STEP_FLAG, STEP_ENVIRONMENT, STEP_CWD_WALK])
-def test_ensure_cfe_root_returns_none_for_every_resolved_step(step, tmp_path):
+def test_ensure_cfe_root_returns_the_proven_root_for_every_resolved_step(step, tmp_path):
     resolved = ResolvedCfeRoot(root=tmp_path, step=step)
-    assert ensure_cfe_root(resolved) is None
+    assert ensure_cfe_root(resolved) == tmp_path
 
 
 def test_ensure_cfe_root_raises_cfe_unresolved_error_when_not_found():
     resolved = ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND)
+    with pytest.raises(CfeUnresolvedError):
+        ensure_cfe_root(resolved)
+
+
+@pytest.mark.parametrize("step", [STEP_FLAG, STEP_ENVIRONMENT, STEP_CWD_WALK])
+def test_ensure_cfe_root_raises_cfe_unresolved_error_for_a_none_root_at_any_step(step):
+    """A hand-built `ResolvedCfeRoot` pairing a matched step with no root is
+    refused too, so the returned value is always a real `Path`."""
+    resolved = ResolvedCfeRoot(root=None, step=step)
     with pytest.raises(CfeUnresolvedError):
         ensure_cfe_root(resolved)
 
