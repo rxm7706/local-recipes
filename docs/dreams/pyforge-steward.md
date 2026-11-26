@@ -8372,3 +8372,12 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   its reason names) and CAP-165 (realized, no text change) and mints none; it decomposes as Epic 139, one story
   (139.1). **Constraints:** no rule is loosened and `session_denials` does not change; a here-document body is text,
   never read as a command line; no flag.
+- **2026-11-25 (the operator lands the push half of the hook patch) — Ruled:** `DW-steward-134-2-1` held two
+  false denials of `.claude/hooks/pre-shell.py`: a redirection after `git push` read as the remote, and any token
+  ending `submit_pr.sh` denied even when the command only reads the file. Removing either loosens the session hook, so
+  no agent story carried it. Probed against `main`, the patch's `submit_pr.sh` half let a process substitution run the
+  script and a redirection copy it past the hook; its push half removed the false denial and still refused every
+  foreign remote. **Ruled** (operator, 2026-11-25, in session: "Push half only" (asked what should happen to the DW-steward-134-2-1 patch; the operator applied it with `git apply DW-steward-134-2-1-push-half.patch`) and "Yes, land it"). **For steward:** this entry binds
+  `spec-pyforge-steward` CAP-5 (realized, no text change) and mints none; it decomposes as Epic 140, one story
+  (140.1): the operator's patch lands unchanged and the row closes, the `submit_pr.sh` half declined.
+  **Constraints:** nothing is loosened beyond the patch; `session_denials` does not change; no flag.

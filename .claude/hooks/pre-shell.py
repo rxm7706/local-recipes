@@ -1890,13 +1890,56 @@ def _parse_git_remote_mutation(args: list[str]) -> Optional[str]:
     return None
 
 
-def _parse_git_push_repository(args: list[str]) -> Optional[str]:
+#: A shell redirection as one token: an optional descriptor or `&`, the operator, then what
+#: the token holds after it -- a duplicated descriptor (`2>&1`), a target written against it
+#: (`>out.log`), or nothing, when the target is the next token (`> out.log`, `>& out.log`).
+#: The operators are tried longest first, so `>&`, `<>`, `<<<` and `<<` are never read as a
+#: shorter operator whose target is the rest of the token (steward Story 140.1 review).
+_REDIRECTION_RE = re.compile(r"^(?:\d*|&)?(?P<op>>>|>&|>\||>|<<<|<<-|<<|<>|<&|<)(?P<rest>.*)$")
+#: The remote a push is judged against when a redirection's target is missing -- the
+#: command was split inside it (`git push >| log <url>` splits at the `|`). Nothing
+#: resolves it, so the push is denied rather than read as a push to the default remote.
+_UNREADABLE_PUSH_TARGET = "<a redirection with no target>"
+
+
+def _redirection_span(args: list[str], i: int, literal: frozenset[str] = frozenset()) -> int:
+    """How many tokens the redirection at `args[i]` takes: 0 when it is not one, 1 when the
+    token holds its own target, 2 when the target is the next token (DW-steward-134-2-1).
+    A token that stood in quotes in the command (`literal`) is a word, never a redirection:
+    a remote may be named `>x`."""
+    tok = args[i]
+    if tok in literal:
+        return 0
+    match = _REDIRECTION_RE.match(tok)
+    if match is None:
+        return 0
+    rest = match.group("rest")
+    if match.group("op") in (">&", "<&") and re.fullmatch(r"\d+|-", rest):
+        return 1  # `2>&1`, `>&-`: a descriptor, no target word
+    return 1 if rest else 2
+
+
+def _quoted_words(command: Optional[str]) -> frozenset[str]:
+    """Every word that stands inside single or double quotes in `command` (Story 140.1)."""
+    if not command:
+        return frozenset()
+    found = re.findall(r"'([^']*)'|\"((?:[^\"\\]|\\.)*)\"", command)
+    return frozenset(single or double for single, double in found)
+
+
+def _parse_git_push_repository(args: list[str], literal: frozenset[str] = frozenset()) -> Optional[str]:
     if not args or args[0] != "push":
         return None
     i = 1
     repository: Optional[str] = None
     while i < len(args):
         tok = args[i]
+        span = _redirection_span(args, i, literal)
+        if span:  # `git push -h 2>&1`: a redirection is never the remote
+            if i + span > len(args):
+                return _UNREADABLE_PUSH_TARGET
+            i += span
+            continue
         if tok.startswith("--repo="):
             repository = tok.split("=", 1)[1]
             i += 1
@@ -1905,6 +1948,9 @@ def _parse_git_push_repository(args: list[str]) -> Optional[str]:
             if i + 1 < len(args):
                 repository = args[i + 1]
             i += 2
+            continue
+        if tok in ("-o", "--push-option", "--receive-pack", "--exec"):
+            i += 2  # these options take the next word as their value, never the remote (Story 140.1)
             continue
         if tok.startswith("-"):
             i += 1
@@ -1916,6 +1962,7 @@ def _parse_git_push_repository(args: list[str]) -> Optional[str]:
 
 def match_outward_git_push(ctx: Context, rule: dict[str, Any]) -> Optional[str]:
     reason = str(rule["reason"])
+    literal = _quoted_words(ctx.command)
     for tokens in ctx.subcommands:
         git_cwd = _git_effective_cwd(tokens, ctx.cwd)
         sub = _git_subcommand_tokens(tokens)
@@ -1930,7 +1977,7 @@ def match_outward_git_push(ctx: Context, rule: dict[str, Any]) -> Optional[str]:
                 return reason
             if slug is None and not _is_local_filesystem_destination(remote_url):
                 return reason
-        push_repo = _parse_git_push_repository(sub)
+        push_repo = _parse_git_push_repository(sub, literal)
         if push_repo is not None or (sub and sub[0] == "push"):
             slug, is_local = _resolve_push_destination(push_repo, git_cwd)
             if is_local:

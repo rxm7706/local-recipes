@@ -2185,3 +2185,52 @@ def test_139_1_substitution_bodies_are_read_and_here_documents_are_not(hook_modu
     assert bodies('echo "it\'s $(x)"') == ["x"]
     assert bodies("echo `a \\`b\\``") == ["a `b`"]
     assert ["c"] in hook_module.normalised_subcommands("a $(b $(c) d)")
+
+
+# --------------------------------------------------------------------------
+# DW-steward-134-2-1: two false denials the operator removed. Each loosening is
+# held to the forms that only read; every form that runs or pushes is still denied.
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git push -h 2>&1",
+        "git push --help 2>/dev/null",
+        "git push --dry-run origin main > push.log 2>&1",
+        "git push 2>&1 origin main",
+    ],
+)
+def test_dw_134_2_1_a_redirection_is_not_the_push_remote(fake_worktree: Path, command: str) -> None:
+    result = _run(_claude_bash(command, fake_worktree), fake_worktree)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "", command
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git push https://github.com/someone/else.git main 2>&1",
+        "git push 2>&1 https://github.com/someone/else.git main",
+        "git push > push.log https://github.com/someone/else.git main",
+        "git push 2> err.log git@github.com:someone/else.git",
+        # Story 140.1's review: an operator written bare takes the next word as its target,
+        "git push >& origin https://github.com/someone/else.git main",
+        "git push <> origin https://github.com/someone/else.git main",
+        "git push <<< origin https://github.com/someone/else.git main",
+        "git push <& origin https://github.com/someone/else.git main",
+        # a `>|` splits the line, so the redirection has no target and the push is not read as `origin`,
+        "git push >| log https://github.com/someone/else.git main",
+        "git push 2>| log https://github.com/someone/else.git main",
+        # and a quoted word is a remote name, never a redirection.
+        "git -c 'remote.>x.url=https://github.com/someone/else.git' push '>x' main",
+        'git push ">x" main',
+        # An option that takes a value is not followed by the remote.
+        "git push -o origin https://github.com/someone/else.git main",
+        "git push --push-option ci.skip https://github.com/someone/else.git main",
+    ],
+)
+def test_dw_134_2_1_a_foreign_push_is_denied_beside_a_redirection(fake_worktree: Path, command: str) -> None:
+    result = _run(_claude_bash(command, fake_worktree), fake_worktree)
+    assert _claude_deny_reason(result) is not None, command

@@ -9598,3 +9598,27 @@ So that wrapping a denied command in a substitution does not get it past the hoo
 **Then** each such form is denied with the reason its plain form gets, a nested substitution is read at every level, and a substitution in single quotes, an escaped `\$(`, an arithmetic `$((...))` or a here-document body (a commit message or PR body that only mentions a command) is still allowed
 **And** every existing case of `tests/scripts/test_pre_shell_hook.py` keeps its result and `session_denials` is unchanged: the change only adds denials
 **Status:** done
+
+## Epic 140: A redirection after git push is not read as its remote (spec-pyforge-steward CAP-5)
+
+Minted 2026-11-25 from the station Dream's entry of the same date (the operator lands the push half of the hook patch) on the operator rulings of 2026-11-25: "Push half only" (asked what should happen to the DW-steward-134-2-1 patch; the operator applied it with `git apply DW-steward-134-2-1-push-half.patch`) and "Yes, land it". `DW-steward-134-2-1` held two false denials that loosening the hook would remove, a governance act an agent does not take; the operator ruled to keep only the push half and applied it, and this Epic lands it.
+**HARD boundaries:**
+- The change is the operator's patch, unchanged: a redirection is skipped when the push remote is read, and nothing else is loosened.
+- The `submit_pr.sh` half is declined and stays denied; `session_denials` does not change.
+- No flag: a gated safety hook is a silent pass.
+
+### Story 140.1: A redirection after git push is not read as its remote
+
+As an agent session that pushes its own branch,
+I want `git push -h 2>&1` and `git push 2>&1 origin HEAD` allowed while a push to a foreign remote stays denied,
+So that a redirection is not mistaken for a remote and a harmless push is not refused.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-5 (the closed `session_denials` list: a denial refuses the command its reason names and nothing else; realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: a false denial is removed, and a gated safety hook is a silent pass)
+**Surface:** `.claude/hooks/pre-shell.py`, `tests/scripts/test_pre_shell_hook.py`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`
+**Spec:** `planning-artifacts/specs/spec-140-1-a-redirection-after-git-push-is-not-read-as-its-remote.md`
+**Given** `DW-steward-134-2-1` reports that the session hook reads a redirection after `git push` (`git push -h 2>&1`, `git push 2>&1 origin HEAD`) as the remote and denies it as an outward push to a foreign remote
+**When** `_parse_git_push_repository` skips each redirection token, and the token after a redirection operator that stands alone, before it reads the remote (the operator's patch, applied by the operator)
+**Then** a redirection after `git push` is no longer read as the remote, and a push to a foreign remote written beside a redirection (`git push 2>&1 https://github.com/someone/else.git main`, `git push > push.log <url> main`) is still denied
+**And** the other half of the row (reading `submit_pr.sh` is denied) is declined by the same ruling and stays denied, `session_denials` is unchanged, and the row reads resolved
+**Status:** done
