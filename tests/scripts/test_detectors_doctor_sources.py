@@ -697,3 +697,25 @@ def test_a_source_row_gathered_in_a_worker_process_equals_the_row_gathered_here(
 
     assert {k: v for k, v in there.items() if k != "secs"} == {k: v for k, v in here.items() if k != "secs"}
     assert here["status"] in {"pass", "FINDINGS", "unmeasured"}
+
+
+def test_real_sources_gathered_through_a_pool_equal_the_serial_rows(monkeypatch):
+    """Story 66.1 AC1 where Doctor imports: the same sources, gathered in turn and through a process pool, give the
+    same rows in the same order. Three sources keep it short; the pool path is the one ``--jobs`` above one takes."""
+    from concurrent.futures import ProcessPoolExecutor
+
+    names = _repo_scope_source_names()
+    chosen = [name for name in ("check-layout", "dreams-hygiene", "chain-sprawl") if name in names] or names[:3]
+    tasks = [(name, task) for name, task in detectors._DOCTOR_SOURCE_TASKS if name in chosen]
+    monkeypatch.setattr(detectors, "_DOCTOR_SOURCE_TASKS", tuple(tasks))
+
+    serial = detectors._run_doctor_sources("repo", jobs=1)
+    with ProcessPoolExecutor(max_workers=2) as pool:
+        pooled = detectors._run_doctor_sources("repo", jobs=2, submit=pool.submit)
+
+    def strip(rows):
+        return [{k: v for k, v in row.items() if k != "secs"} for row in rows]
+
+    assert [row["name"] for row in serial] == [name for name, _task in tasks]
+    assert strip(pooled) == strip(serial)
+    assert all(row["status"] != "unknown" for row in serial), serial
