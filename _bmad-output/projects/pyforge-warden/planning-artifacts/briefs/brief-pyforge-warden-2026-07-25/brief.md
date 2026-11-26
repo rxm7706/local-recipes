@@ -2,7 +2,7 @@
 title: 'Product Brief: Warden (pyforge-warden)'
 status: complete
 created: 2026-07-25
-updated: "2026-11-12"   # RE-STAMPED 2026-11-12 (the cutover readiness close, warden Story 25.2): chain-currency cascade (research -> brief) for research/cutover-readiness-audit-2026-11-10.md; no CAP, FR or AD is minted here. See § Currency reconciliation — 2026-11-10. Prior "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior "2026-11-01"
+updated: "2026-11-26"   # RE-STAMPED 2026-11-26 (the tag rule reaches station source): chain-currency cascade; vision, problem, scope and success criteria unchanged. Prior 2026-11-12: RE-STAMPED 2026-11-12 (the cutover readiness close, warden Story 25.2): chain-currency cascade (research -> brief) for research/cutover-readiness-audit-2026-11-10.md; no CAP, FR or AD is minted here. See § Currency reconciliation — 2026-11-10. Prior "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior "2026-11-01"
 inputs:
   - 'docs/dreams/pyforge-warden.md'
   - 'docs/dreams/pyforge-charter.md § 4 Warden'
@@ -341,3 +341,7 @@ public contract is `contract.md`, with a per-capability `proof-map.md` beside it
 
 **3. This brief's frame does not move.** The product promise, the users and the scope above stand: the change adds
 no rung, status, exit code or product behaviour, and each piece it left unbuilt is a deferred-work row.
+
+## Currency reconciliation — 2026-11-26 (the tag rule reaches station source)
+
+*Chain-currency cascade.* 2026-11-26: the station Spec's memlog gained a surface-reconcile entry for Epic 31 / Story 31.1 (the citation detector reads station source; a tag of another spine is written qualified), under the chain standard of `spec-one-chain-per-station` (its capability 9, realized with no text change). No capability, requirement or decision of this station moves. **Content changed:** this section and `updated:`.

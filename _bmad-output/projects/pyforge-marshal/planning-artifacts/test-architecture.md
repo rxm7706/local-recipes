@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: 3b6dba9c67288cfe
-story_count: 554
+source_fingerprint: 2ec46d861d281f9d
+story_count: 555
 test_file_count: 307
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 554
-- **Epics parsed:** 120
+- **Stories parsed:** 555
+- **Epics parsed:** 121
 - **Test files inventoried:** 307 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `3b6dba9c67288cfe`
+- **Source fingerprint:** `2ec46d861d281f9d`
 
 ## Risk Assessment
 
@@ -141,6 +141,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 120: The dispatch-verification fakes match a command by its words (spec-pyforge-marshal:CAP-170)
 - Epic 121: Teardown, the front door and the required-check read fail closed (spec-pyforge-marshal:CAP-287, CAP-304, CAP-210)
 - Epic 122: Marshal's verdict and seed take their exit codes from the declaration (spec-pyforge-steward:CAP-184, spec-pyforge-marshal:CAP-304)
+- Epic 123: The citation detector reads station source (spec-one-chain-per-station:CAP-3)
 
 ### Low-risk epics
 
@@ -1027,6 +1028,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 120.1 | The dispatch-verification fakes match a command by its words | none observed |
 | 121.1 | Teardown compares tips, a bad environment is a usage error, and a required ch... | none observed |
 | 122.1 | Marshal's verdict and seed take their exit codes from the declaration | none observed |
+| 123.1 | The citation detector holds station source to the tag rule | none observed |
 
 ## Quality Gates
 

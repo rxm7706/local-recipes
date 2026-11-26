@@ -833,6 +833,12 @@ Folded Dreams: [[bmad-drift-new-artifact-shape]], [[bmad-method-version-drift]],
   declared once in `docs/governance/guild-roster.json` and mirrored for in-process code in `pyforge.core.exit_domains`.
   Doctor's `verdict.py` spells `0`, `2` and `130` itself; it takes them from the `doctor` domain, and a meta-test holds its lattice to the declared domain and its subset of warden's. This entry binds `spec-pyforge-steward:CAP-184` and mints no capability; it decomposes as Epic 63, one story.
   **Constraints:** no exit code the station returns changes, the projection stays in its sole-owner module, no flag.
+- **2026-11-26 (a tag of another spine is written qualified) — Found and ruled:** doctor's source cites decisions it judges marshal against as bare `AD-n`: the merge-subject form, configuration provenance and materialized policy are marshal's `AD-24`, `AD-16`, `AD-12` and `AD-35`, and the per-capability freeze rule is the cutover spine's `AD-22`. Doctor's own spine has an unrelated `AD-12`, so one of them read as doctor's. **Ruled** (operator ruling of 2026-11-26 on the four open convention items: "go with your recommendations, start in the suggested order").
+  Marshal's Dream entry of the same date extends `ad-citation-check` to station source. **For doctor:** this entry
+  binds the chain standard of `docs/governance/spec-one-chain-per-station` (its capability 9, the one page that holds the id grammar; realized with no text change)
+  and decomposes as Epic 64, one story: each such tag is written with the prefix of the spine it means (`pyforge-marshal:AD-n` for marshal's, `fnd:AD-22` for the cutover's).
+  **Constraints:** comments, docstrings and message text only; no behaviour, exit code or flag moves; a bare tag that
+  does mean this station's own spine stays bare. Owner `spec-pyforge-doctor`.
 
 ## 2026-10-26 — A spike report is not a corrupt file, and the classifier can't yet tell the difference (folded from bmad-drift-new-artifact-shape)
 

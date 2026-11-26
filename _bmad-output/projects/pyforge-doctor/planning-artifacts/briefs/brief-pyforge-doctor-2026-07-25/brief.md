@@ -2,7 +2,7 @@
 title: 'Product Brief: Doctor (pyforge-doctor)'
 status: complete
 created: 2026-07-25
-updated: '2026-11-12'   # RE-STAMPED 2026-11-12 (cutover readiness, landed; doctor Story 57.3): chain-currency cascade (research -> brief) for research/cutover-readiness-audit-2026-11-10.md; the product scope does not change. See § Currency reconciliation — 2026-11-12 (cutover readiness, landed). Prior '2026-11-05'   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior '2026-11-01'
+updated: '2026-11-26'   # RE-STAMPED 2026-11-26 (the tag rule reaches station source): chain-currency cascade; vision, problem, scope and success criteria unchanged. Prior 2026-11-12: RE-STAMPED 2026-11-12 (cutover readiness, landed; doctor Story 57.3): chain-currency cascade (research -> brief) for research/cutover-readiness-audit-2026-11-10.md; the product scope does not change. See § Currency reconciliation — 2026-11-12 (cutover readiness, landed). Prior '2026-11-05'   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior '2026-11-01'
 inputs:
   - 'docs/dreams/pyforge-doctor.md'
   - 'docs/dreams/ecosystem-crew.md § 6 Doctor'
@@ -355,3 +355,7 @@ spec-pyforge-doctor:CAP-100 read shipped. The audit changed what Doctor's source
 capability ledger, the writer lock, a source that measured nothing read as `unmeasured`, the public contract, the
 package-local half as the rebuild oracle), not this brief's vision, problem, scope or success criteria; Doctor stays
 advisory and adds no second PR gate. **Content changed:** this section and `updated:`.
+
+## Currency reconciliation — 2026-11-26 (the tag rule reaches station source)
+
+*Chain-currency cascade.* 2026-11-26: the station Spec's memlog gained a surface-reconcile entry for Epic 64 / Story 64.1 (the citation detector reads station source; a tag of another spine is written qualified), under the chain standard of `spec-one-chain-per-station` (its capability 9, realized with no text change). No capability, requirement or decision of this station moves. **Content changed:** this section and `updated:`.

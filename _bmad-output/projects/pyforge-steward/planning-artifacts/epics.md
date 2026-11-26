@@ -9672,6 +9672,49 @@ So that what `3` or `70` means on each surface is read from one place, and a num
 **And** no exit number on any surface changes, and `interfaces.py` no longer lists eight duties
 **Status:** done
 
+## Epic 143: A tag of another spine is written qualified, and MCP placement is one rule (spec-one-chain-per-station:CAP-9; spec-pyforge-unifying-strategy:CAP-4)
+
+Minted 2026-11-26 from the station Dream's entry of the same date on the operator ruling of 2026-11-26 on the four open convention items: "go with your recommendations, start in the suggested order". Marshal Story 123.1 extends `ad-citation-check` to station source; this Epic qualifies the tags steward's source cites from other spines.
+**HARD boundaries:**
+- Comments, docstrings and message text only: no behaviour, exit code or flag moves.
+- A bare tag that means steward's own spine stays bare.
+
+### Story 143.1: Steward's source cites other spines' decisions qualified
+
+As a reader of steward's source,
+I want a decision of another spine cited with that spine's prefix,
+So that a bare `AD-n` here always means steward's own spine.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-one-chain-per-station:CAP-9 (the chain standard is one page, and that page holds the id grammar; realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: citations in comments and messages are corrected)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/deploy.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/sprint_ledger_query.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/apps.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/models.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/audit.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/migrations/0001_initial.py`
+**Spec:** `planning-artifacts/specs/spec-143-1-steward-s-source-cites-other-spines-decisions-qualified.md`
+**Given** nine steward modules cite decisions of the jira, platform-library, canopy and marshal spines bare, two of them numbers steward's own spine also defines
+**When** each is written with the prefix of the spine it means (`jira:`, `sld:`, `canopy:` and `pyforge-marshal:`)
+**Then** `ad-citation-check` reports no bare tag in steward's source that steward's spine does not define
+**And** steward's suites pass with no behaviour changed
+**Status:** done
+
+### Story 143.2: Where a station's MCP code lives is one rule, and where each station keeps state is one page
+
+As someone adding a station, or backing one up,
+I want one rule for where MCP code lives and one page for where each station keeps state,
+So that I do not have to read eight packages to learn either.
+
+**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-unifying-strategy:CAP-4 (the service faces; realized, no text change); canopy:AD-5 (amended 2026-11-26: the placement clause)
+**Flag:** none (`spec-feature-flag-governance` Q1: a decision written down, a test that holds it, and a reference page)
+**Surface:** `src/shared/packages/pyforge-steward/tests/meta/test_mcp_placement.py`, `docs/reference/station-state.md`, `docs/map.yaml`, `docs/MAP.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/oracle-map.md`
+**Spec:** `planning-artifacts/specs/spec-143-2-where-a-station-s-mcp-code-lives-is-one-rule-and-where-each-station-keeps-state-is-one-page.md`
+**Given** canopy:AD-5 says each station's MCP app is mounted from its portal, two base packages also hold server code with no rule saying why, and no page says where each station keeps state
+**When** canopy:AD-5 gains a placement clause, a live-tree test holds it, and `docs/reference/station-state.md` is written and registered
+**Then** the test fails when a station has no portal face or two, when a base package outside the declared two ships an `mcp/` package, or when a portal face other than atlas's imports its station; and the page names each station's stores as a record or derived, with what rebuilds or backs each up
+**And** no code moves, and the docs map lists the new page
+**Status:** done
+
 ## Currency reconciliation — 2026-11-26 (CAP-184 amended)
 
 *Chain-currency cascade (arch -> epics), CAP-184 amended.* 2026-11-26: Epic 142 and Story 142.1 are minted under `spec-pyforge-steward` CAP-184 as amended (FR-58); no AD moves. The keys `142-1`, `epic-142` and `epic-142-retrospective` go through the Tier-3 feed and `sprint-ledger-sync`. **Content changed:** Epic 142, this section and `updated:`.
+
+## Currency reconciliation — 2026-11-26 (the tag rule reaches station source)
+
+*Chain-currency cascade (arch -> epics).* 2026-11-26: Epic 143 and Stories 143.1 and 143.2 are minted under `spec-one-chain-per-station` (its capability 9) and `spec-pyforge-unifying-strategy` (its capability 4), each realized with no text change; canopy:AD-5 gains a placement clause. **Content changed:** Epic 143 and this section.
