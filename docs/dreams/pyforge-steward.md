@@ -8359,7 +8359,7 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   exit-code half is CAP-184 (Epic 137). Story 111.1 cites `spec-foundry-regenerate-not-fold CAP-7`, which that Spec
   does not define (its memlog's `CAP-7` entries are spec-one-chain-per-station CAP-7's, about that Spec's CAP-5).
   Story 41.4 keeps a bare `CAP-12`, while broker TLS is `spec-pyforge-unifying-strategy`'s 2026-09-02 red-team
-  Constraint. **Ruled** (operator, 2026-11-25, in session: "Amend CAP-132" (2026-11-25, in session) and "do the CAP-132 amendment and the story re-keys" (2026-11-25)). **For steward:** this entry amends CAP-132 (the Spec
+  Constraint. **Ruled** (operator, 2026-11-25, in session: "Amend CAP-132" and "do the CAP-132 amendment and the story re-keys" (2026-11-25)). **For steward:** this entry amends CAP-132 (the Spec
   ladder is declared, and doctor's detectors read the declaration) and mints none; it decomposes as Epic 138, one
   story (138.1): the amendment, the three re-keys and the row's close. **Constraints:** `SPEC.md` moves only by a
   render; CAP-132 keeps its id and heading; no capability is minted to give a line something to cite; no code moves.

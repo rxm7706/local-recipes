@@ -37,7 +37,7 @@ Type / Effort / Deps: chore / M / —.
 ### Living CAP citations
 
 - **`spec-one-chain-per-station` CAP-5** (amended), **CAP-3** and **CAP-7**: the rule, the fold this story corrects, and the on-ramp this story updates.
-- **`spec-foundry-regenerate-not-fold` CAP-7**: B's starting discipline, now the amended form.
+- **`spec-foundry-regenerate-not-fold` CAP-5**: B's starting five-fields, under which B inherits the amended form (re-keyed 2026-11-25 by Story 138.1 from `CAP-7`, which that Spec never defined; its memlog's `CAP-7` entries are `spec-one-chain-per-station` CAP-7's).
 - **`spec-foundry-capability-ledger` CAP-2**: every minted CAP classified from the extract; three rows added.
 - **Origin.** `docs/dreams/pyforge-steward.md` Realization log, the 2026-10-26 entry.
 
@@ -72,7 +72,7 @@ Type / Effort / Deps: chore / M / —.
 
 ## Binding
 
-- Parent capabilities: `spec-one-chain-per-station` CAP-5 (amended), CAP-3, CAP-7; `spec-foundry-regenerate-not-fold` CAP-7; `spec-foundry-capability-ledger` CAP-2. No steward CAP is minted.
+- Parent capabilities: `spec-one-chain-per-station` CAP-5 (amended), CAP-3, CAP-7; `spec-foundry-regenerate-not-fold` CAP-5; `spec-foundry-capability-ledger` CAP-2. No steward CAP is minted.
 - Dream: `docs/dreams/pyforge-steward.md` § *Realization log*, the 2026-10-26 entry.
 - Epic: Epic 111 (new), minted with this story (draft PR #2274 claims Epic 109; Epic 110 is Story 110.1's). `epic-111` and `epic-111-retrospective` are minted with it.
 - Ledger key: `111-1-the-steward-spec-s-fold-cut-capability-text-is-restored-and-the-foundry-inherits-the-amended-rule`.

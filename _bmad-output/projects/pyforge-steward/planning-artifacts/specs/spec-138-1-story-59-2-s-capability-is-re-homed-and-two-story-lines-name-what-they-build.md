@@ -2,7 +2,7 @@
 title: '138.1: Story 59.2''s capability is re-homed and two Story lines name what they build'
 type: 'chore'
 created: '2026-11-25'
-status: 'ready-for-dev'
+status: 'done'
 story: 138-1-story-59-2-s-capability-is-re-homed-and-two-story-lines-name-what-they-build
 spec: spec-pyforge-steward
 difficulty: 'easy'
@@ -99,3 +99,7 @@ Ledger key: `138-1-story-59-2-s-capability-is-re-homed-and-two-story-lines-name-
 
 - 2026-11-25: minted from the station Dream's 2026-11-25 entry (Story 59.2's capability is re-homed) and the operator's rulings of the same date. Not implemented.
 - 2026-11-25: session lead: AC1 corrected before it ran. As minted it grepped all of `epics.md`, which also matches the file's frontmatter history comment and Story 138.1's own description of the dead ids; it now reads only the FR/AD lines of Stories 59.2, 111.1 and 41.4, the lines this story changes. The criterion is unchanged.
+- 2026-11-25: the trace. Story 59.2: the archived `spec-vocabulary-one-name-one-job` memlog records CAP-2's two halves (operator decision of 2026-09-14, ruling Q7 of 2026-09-15); the 2026-09-17 fold carried CAP-1 as `spec-pyforge-steward` CAP-132 and CAP-2 nowhere; Story 59.2 built the status-set half (commit `fa128090c3`: doctor's `board.py`, `chain.py` and `status_body_consistency.py` read `docs/governance/guild-roster.json`), so CAP-132, amended, is its home; the exit-code half is CAP-184. Story 111.1: `spec-foundry-regenerate-not-fold` defines CAP-1 to CAP-5; its memlog's entries tagged `CAP-7` (2026-09-16, 2026-09-17 and 2026-10-26) are `spec-one-chain-per-station` CAP-7 events, whose intent names the foundry Spec's CAP-5 (Dual-root A/B, B's starting five-fields). Story 41.4: `spec-pyforge-unifying-strategy` CAP-12 is IdP roles and secret delivery, and none of its CAP-1 to CAP-20 states broker TLS; the rule is that Spec's 2026-09-02 red-team Constraint, which names Story 41.4.
+- 2026-11-25: AC1 prints `0` (three FR/AD lines read); AC2 exit 0 each; AC3 exit 0 (15 passed).
+- 2026-11-25: session lead, on the independent review: the story specs of 111.1 (two lines) and 41.4 (its Source section) carry the re-keys too, since the story spec is the source of record; the success clause "no new Spec is written `in-progress`" added to CAP-132 is withdrawn through the memlog and a render, since nothing proves it; CAP-132's oracle-map row names the chain.py test as well; Story 111.1's line no longer says CAP-5 holds the discipline (that is the foundry Spec's Constraint and one-chain CAP-7); the Dream entry's doubled date is removed. That broker TLS is a guarantee with no capability is `DW-steward-138-1-1`, for the operator.
+- 2026-11-25: closed. Implemented, independently reviewed against this spec (a read-only reviewer over the whole diff, every Acceptance Criterion run), its findings applied; the full local `pr-preflight` gates the PR that lands it (branch `cap-132-and-story-rekeys-2026-11-25`).

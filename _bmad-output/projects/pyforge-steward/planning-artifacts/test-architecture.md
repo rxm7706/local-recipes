@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 20760275af859580
-story_count: 512
+source_fingerprint: 42f5301097019815
+story_count: 513
 test_file_count: 169
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 512
-- **Epics parsed:** 137
+- **Stories parsed:** 513
+- **Epics parsed:** 138
 - **Test files inventoried:** 169 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `20760275af859580`
+- **Source fingerprint:** `42f5301097019815`
 
 ## Risk Assessment
 
@@ -159,6 +159,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 135: One verb says whether this machine is ready for desktop, container or pod work (spec-pyforge-steward CAP-183)
 - Epic 136: The rows a lapsed blocker held close (spec-pyforge-steward CAP-5, CAP-166, CAP-175, CAP-179, CAP-182; spec-pyforge-unifying-strategy CAP-15, CAP-16)
 - Epic 137: One declaration names every exit-code domain (spec-pyforge-steward:CAP-184; spec-pyforge-core:CAP-3)
+- Epic 138: Story 59.2's capability is re-homed and the last unresolved Story lines name what they build (spec-pyforge-steward CAP-132)
 
 ### Low-risk epics
 
@@ -864,6 +865,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 136.10 | Six station skills and their briefs cite the persona ids in qualified form | none observed |
 | 136.11 | The Story lines the page did not resolve name their capabilities | none observed |
 | 137.1 | One declaration names every exit-code domain | none observed |
+| 138.1 | Story 59.2's capability is re-homed and two Story lines name what they build | none observed |
 
 ## Quality Gates
 
