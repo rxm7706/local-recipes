@@ -825,7 +825,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "6643f49adb6c491b95a3114efaec5cfe0dc05878"
+  "memlog": "620c3683fd4249fc8bc7b3c1fe8f98edced2ba53"
  },
  "pyforge-herald/spec-pyforge-herald": {
   "files": {
@@ -2719,7 +2719,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "3f486e4a213491e72a933635489b4eb38556ab71"
+  "memlog": "f2dd9f1f36ce42d15e3786ada7254c2780ee0fe2"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -3394,7 +3394,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "cc6d6348fb8e2173346d9d0db8c7ae90d010f12e"
+  "memlog": "801e45bfc77b8930a52287565ac39598a364de58"
  },
  "pyforge-marshal/spec-pyforge-testing-charter": {
   "files": {
@@ -3423,7 +3423,7 @@
    "src/shared/packages/pyforge-testing-kit/tests/unit/test_flags.py": "da09920e85a9d0d07d2f19d684c3e10887d0b56b",
    "src/shared/packages/pyforge-testing-kit/tests/unit/test_station_api_contract.py": "6befcc7505d12533271382a8b3a82b231053793c"
   },
-  "memlog": "e60d9bbbbe9824be1a5ebbb63eb9c9ca93a12800"
+  "memlog": "2169e8457a5d2f260e7027a578fe16eccdc2f918"
  },
  "pyforge-mason/spec-pyforge-mason": {
   "files": {
@@ -3974,7 +3974,7 @@
    "src/shared/packages/pyforge-mason/tests/unit/test_render.py": "d312702d1da3dd0b848414a7ab832d3172bf0d5d",
    "src/shared/packages/pyforge-mason/tests/unit/test_resolve.py": "063aeacbcbc3cbe066e6b35d13baf9624935959f"
   },
-  "memlog": "2846777af7fa64bfd8427dfeda37111e444f6c49"
+  "memlog": "0caa39a1b5719dfd41b2de4a4552fd31245c5ec4"
  },
  "pyforge-scribe/spec-pyforge-scribe": {
   "files": {
@@ -8137,6 +8137,6 @@
    "src/shared/packages/pyforge-warden/tests/unit/test_vuln.py": "b538f20c90b16709694b0dd8391c87f6d80ce7d8",
    "src/shared/packages/pyforge-warden/tests/unit/test_waiver.py": "7fe1a886458dd61ba73fb6c41c51b1eb99df09bd"
   },
-  "memlog": "c401b2b3fefe0f4090e595c2c1405d49ac13c589"
+  "memlog": "e939536cd068acc7b8977da86fc50f6a5fa95034"
  }
 }
