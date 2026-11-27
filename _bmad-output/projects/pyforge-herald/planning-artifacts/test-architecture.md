@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: 6808c290a0d51d5c
-story_count: 170
-test_file_count: 104
+source_fingerprint: f041d61219d53a1c
+story_count: 171
+test_file_count: 105
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-herald`
-- **Stories parsed:** 170
-- **Epics parsed:** 60
-- **Test files inventoried:** 104 under `src/shared/packages/pyforge-herald/tests/`
+- **Stories parsed:** 171
+- **Epics parsed:** 61
+- **Test files inventoried:** 105 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `6808c290a0d51d5c`
+- **Source fingerprint:** `f041d61219d53a1c`
 
 ## Risk Assessment
 
@@ -96,6 +96,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 45: Herald's built-site tests install docs-site first, in preflight and CI (fix under spec-pyforge-herald CAP-61; no CAP)
 - Epic 50: The herald Spec says what is true (cutover readiness; spec-pyforge-herald CAP-62)
 - Epic 59: Herald's site builds run side by side, each worker in its own copy of docs-site (spec-pyforge-steward:CAP-175)
+- Epic 61: Herald's test builds keep the docs pages they already rendered (spec-pyforge-steward:CAP-175)
 
 ## Test Inventory
 
@@ -190,6 +191,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-herald/tests/unit/test_registry.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_reliability_epic11.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_scheduler.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_shelf_docs_loader_reuse.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_site_shell_flag_states.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_smoke.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_stamps.py` | unit | none observed |
@@ -380,6 +382,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 58.1 | Herald's suite runs under xdist, its site builds in one worker | none observed |
 | 59.1 | Herald's site builds run side by side, each worker in its own copy of docs-site | none observed |
 | 60.1 | Herald's build groups hold only the builds their tests share | none observed |
+| 61.1 | Herald's test builds keep the docs pages they already rendered | none observed |
 
 ## Quality Gates
 

@@ -130,6 +130,7 @@ the argument of `envFlagOn('X', …)`. Astro's build constants under `import.met
 | `PYFORGE_SITE_SHELL` | docs-site `src/lib/flags.ts`, `scripts/pages.mts` | `envFlagOn` argument |
 | `PYFORGE_CI_SURFACES_TILE` | docs-site `src/lib/flags.ts` | `envFlagOn` argument |
 | `PYFORGE_MARKETPLACE_PAGES` | docs-site `src/lib/flags.ts`, `scripts/pages.mts` | `envFlagOn` argument |
+| `PAGES_REUSE_RENDERED_DOCS` | docs-site `src/loaders/shelf-docs-loader.ts`, `astro.config.mjs` | `envFlagOn` argument; herald's test builds set it, the Pages build does not (Story 61.1) |
 | `PAGES_BUILD_INPUTS_DIR` | docs-site `src/lib/agent-surface.ts` | `process.env[INPUTS_DIR_ENV]` |
 | `SITE_URL` | docs-site `src/lib/site-url.mjs` | `process.env.X` |
 | `GITHUB_REPOSITORY` | docs-site `src/lib/site-url.mjs`, `src/lib/shelf.mjs`, `scripts/pages.mts`, `src/lib/marketplace.ts` | `process.env.X`; injected `env.X` |

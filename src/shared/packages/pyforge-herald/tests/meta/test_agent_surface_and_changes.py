@@ -28,7 +28,7 @@ from pathlib import Path
 
 import pytest
 import yaml
-from pages_astro import build_astro_bin, build_site_dir, needs_astro, require_astro
+from pages_astro import REUSE_RENDERED_ENV, build_astro_bin, build_site_dir, needs_astro, require_astro
 
 # Story 52.1 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
 # station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
@@ -315,6 +315,7 @@ def _astro(out: Path, *, status: bool, inputs: Path) -> None:
             "PAGES_BUILD_INPUTS_DIR": str(inputs),
             "PYFORGE_STATUS_PAGES": "1" if status else "0",
             "PYFORGE_CI_SURFACES_TILE": "0",
+            REUSE_RENDERED_ENV: "1",  # Story 61.1: as pages_astro.astro_build does
         }
     )
     done = subprocess.run(

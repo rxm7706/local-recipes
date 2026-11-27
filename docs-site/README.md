@@ -48,7 +48,11 @@ These files are maintained in this repository and are **not** byte-identical to 
   `measured:` date)
 - `src/loaders/shelf-docs-loader.ts` — titles from frontmatter or first `#` heading; `README.md` → quadrant index;
   heading deduplication; renders each page's markdown with the project's rehype plugins (Story 44.1: before it, every
-  page body rendered empty)
+  page body rendered empty), and drops a page that is gone from Astro's content store. With
+  `PAGES_REUSE_RENDERED_DOCS` on (herald Story 61.1), a page whose source, path and rendering pipeline match the
+  stored digest keeps its rendering, and `astro.config.mjs` gives each set of redirects its own store. Herald's test
+  builds turn it on; the Pages build leaves it off, because rendering also reads whether the files a page links to
+  exist, which only a test's unchanging tree guarantees
 - `src/lib/shelf.mjs` — the one rule for which `docs/` files are pages, read by the loader and the link plugin
 - `src/rehype-shelf-links.js` — runs before the two vendored link plugins: points `README.md` links at the directory
   index and sends links to repo files the shelf does not publish (`docs/MAP.md`, `docs/governance/**`, anything

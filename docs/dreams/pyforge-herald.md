@@ -964,6 +964,27 @@ Herald rebases to one Dream, one Spec, one PRD, one spine, one epic chain. Folde
   becomes one test per build with the same assertions; the built-from comparison makes both of its builds itself.
   **Constraints:** no assertion is removed or weakened; no test is skipped or re-marked; the coverage reports and
   floors are the same. No flag (a chore). Owner `spec-pyforge-herald`.
+- **2026-11-27 (herald's test builds render every docs page again) — Found and ruled:** `herald-live-test` is the
+  station-tests job that ends a PR's run (91 to 106 s per shard on PR #2423, its test step 51 to 69 s), and about 20
+  Astro builds of 7 s each are most of its time. Of a build's 7 s, 4.3 s is content sync, because
+  `docs-site/src/loaders/shelf-docs-loader.ts` renders all 94 docs pages on every build; Astro's own glob loader keeps
+  a page whose source has not changed, and this loader keeps none. A test process builds many times in one copy of
+  the repository, which no test edits. Kept for a second build in the same copy, the pages cut it from 7.0 to 3.6 s
+  and the site came out byte for byte the same. But Astro empties its content store whenever its config changes, and
+  the tests turn the Kedro-Viz mount, and with it the config's redirects, on and off: 6 of 16 measured test builds
+  emptied it. Measured on four workers, with another session's run on the machine, keeping the pages took herald's
+  live half from 111 to 88 s, then from 96 to 79 s, and its CPU time from 587 to 453 s, then 489 to 414 s.
+  Measured and left: four builds repeat another's inputs, and sharing an output would join tests that each read their
+  own. **Ruled** (operator, 2026-11-27: "herald's Astro builds", then "Keep going"). **For herald:** this entry binds
+  `spec-pyforge-steward:CAP-175` (realized here, no text change in this station's Spec) and decomposes as Epic 61,
+  one story: with `PAGES_REUSE_RENDERED_DOCS` on, the docs loader keeps a page whose source, path and rendering
+  pipeline (the config, the link plugins, the loader, the base path and the repository link) match what the store
+  holds, and each set of redirects keeps its own store; herald's test builds turn it on, the Pages build leaves it
+  off, because rendering also reads whether the files a page links to exist, which only a test's frozen tree
+  guarantees. A page that is gone now leaves the store, which outlives a build in the same tree.
+  **Constraints:** the Pages build renders as before; the site is the same with the pages kept; no assertion is
+  removed or weakened, and no test is skipped or re-marked. No flag (a chore; the variable is a build input, listed
+  in the contract). Owner `spec-pyforge-herald`.
 
 ## 2026-10-26 — The deck family stays current — infographics re-derived from the ledgers, not remembered (folded from deck-family-currency)
 
