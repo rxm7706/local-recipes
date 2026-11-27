@@ -569,7 +569,7 @@
    "docs/how-to/upgrade-bmad-core.md": "34a44d2a4040458da5af104a2681d5ed861d9577",
    "docs/how-to/use-marshal-in-an-air-gapped-site.md": "2484207e364bd8541633d411046e236c0a7ae0e3",
    "docs/how-to/use-steward-duties-that-need-operator-consent.md": "ac7e9f81466783440a5724f0d48b118dd75f850b",
-   "docs/map.yaml": "067f7a147b685f9e2ca3d14394e30f8f0cb7702d",
+   "docs/map.yaml": "3514647e657bfcbd89aef25f6c2df644290fc703",
    "docs/tutorials/README.md": "86e06be35f14e42696e998bb9cc113b5a4da47fb",
    "docs/tutorials/getting-started.md": "a4ab92d5ae89343b1b6d24f53da4c2a761569192",
    "docs/tutorials/local-platform-development.md": "8d948b62b409a4fd09ef47c3fb99815872374b3b",
@@ -825,7 +825,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "620c3683fd4249fc8bc7b3c1fe8f98edced2ba53"
+  "memlog": "7cbb55fb4242d4ec0c9652e8de5196d46ce5af42"
  },
  "pyforge-herald/spec-pyforge-herald": {
   "files": {
