@@ -3,7 +3,7 @@ sources:
   - _bmad/scripts/bmad_tea_playwright.py
   - scripts/tea_playwright_check.py
   - src/shared/packages/pyforge-testing-kit/README.md
-verified: 2026-11-17
+verified: 2026-11-27
 ---
 
 # The Eight Smiths Testing Charter
