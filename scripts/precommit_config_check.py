@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 """``.pre-commit-config.yaml`` exists at the repo root, installs the
-``commit-msg`` and ``pre-push`` hook types by default, and carries the two
-local hooks the repo's policy relies on (steward Story 66.2,
-``spec-pyforge-steward`` CAP-154):
+``pre-commit``, ``commit-msg`` and ``pre-push`` hook types by default, and carries
+the three local hooks the repo's policy relies on (steward Story 66.2,
+``spec-pyforge-steward`` CAP-154; the third added by Story 118.9, CAP-178, on the
+operator's ruling of 2026-11-27):
 
 * ``commit-msg-no-attribution`` -- refuses ``Co-Authored-By:`` and AI-attribution
   trailers (the AGENTS.md policy line, enforced instead of stated)
 * ``pre-push-preflight`` -- runs ``pixi run -e pyforge-guild pr-preflight``
   before a push leaves the machine (the 2026-09-20 PR #1551 coverage-floor
   miss is the observed evidence)
+* ``nic-config-secret-scan`` -- refuses a secret-shaped value in a tracked NIC
+  config under ``src/platform/deploy/nic/`` (the ``steward keys audit --secrets``
+  pattern table)
 
 ``steward setup`` / ``initrepo`` install the file through their existing
 hooks step; this check is what keeps the file from silently disappearing.
@@ -27,10 +31,11 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG = ROOT / ".pre-commit-config.yaml"
-REQUIRED_HOOK_TYPES = {"commit-msg", "pre-push"}
+REQUIRED_HOOK_TYPES = {"pre-commit", "commit-msg", "pre-push"}
 REQUIRED_HOOKS = {
     "commit-msg-no-attribution": ("commit-msg", "scripts/commit_msg_hook.py"),
     "pre-push-preflight": ("pre-push", "scripts/pre_push_preflight.sh"),
+    "nic-config-secret-scan": ("pre-commit", "scripts/nic_config_secret_scan.py"),
 }
 
 
@@ -73,7 +78,7 @@ def main() -> int:
         print(f"[precommit-config] fail -- {f}")
     if found:
         return 1
-    print(f"[precommit-config] ok -- {CONFIG.name} declares {sorted(REQUIRED_HOOK_TYPES)} and both policy hooks")
+    print(f"[precommit-config] ok -- {CONFIG.name} declares {sorted(REQUIRED_HOOK_TYPES)} and all {len(REQUIRED_HOOKS)} policy hooks")
     return 0
 
 

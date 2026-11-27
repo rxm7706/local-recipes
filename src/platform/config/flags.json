@@ -1530,6 +1530,21 @@
         "cleanup_by": "2027-01-29"
       }
     },
+    "pyforge.steward.nkp_gitops_branch": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "steward",
+        "story": "118-9-the-gitops-branch-is-guarded-before-any-cloud-run",
+        "created": "2026-11-27",
+        "on_everywhere": "2026-11-27",
+        "cleanup_by": "2027-02-25"
+      }
+    },
     "pyforge.steward.start_tool_cli": {
       "state": "ENABLED",
       "variants": {

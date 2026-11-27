@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 6f991f8d3aa94402
-story_count: 546
+source_fingerprint: 18bcfde4f334274b
+story_count: 547
 test_file_count: 175
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 546
+- **Stories parsed:** 547
 - **Epics parsed:** 149
 - **Test files inventoried:** 175 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `6f991f8d3aa94402`
+- **Source fingerprint:** `18bcfde4f334274b`
 
 ## Risk Assessment
 
@@ -829,6 +829,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 118.6 | The attended NKP sign-in, spawn and landing probes are tracked commands | none observed |
 | 118.7 | deploy nic finds kubectl and helm in the pyforge-steward environment | none observed |
 | 118.8 | The gitops branch has one named writer, enforced | none observed |
+| 118.9 | The gitops branch is guarded before any cloud run | none observed |
 | 119.1 | A worker runs a station verb from one closed table | none observed |
 | 119.2 | Five read faces run their verb | none observed |
 | 119.3 | start_build builds a tracked recipe on the builds pool | none observed |

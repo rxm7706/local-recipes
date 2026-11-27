@@ -1199,6 +1199,8 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
     ):
         sub = nic_subs.add_parser(action, help=blurb, description=blurb)
         sub.add_argument("-f", "--config", required=True, metavar="PATH", help=config_help)
+        if action == "up":  # Story 118.9 (CAP-176): the operator's consent off local kind
+            sub.add_argument("--yes", action="store_true", help="the operator's consent to a non-local-kind bring-up")
 
 
 def _add_provision_subparsers(provision_parser: argparse.ArgumentParser) -> None:

@@ -4,7 +4,7 @@ sources:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py
   - .claude/memory/feedback/upgrade-bmad-core-and-the-skf-custom-module-only-through-pix.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/failure-modes.md
-verified: 2026-11-26
+verified: 2026-11-27
 ---
 
 # How to upgrade BMAD core

@@ -5,7 +5,7 @@ sources:
   - docs/reference/judgement-vocabulary.md
   - archive/docs/dreams/fidelity-enforcement.md
   - docs/governance/guild-roster.json
-verified: 2026-11-26
+verified: 2026-11-27
 ---
 
 # The Detector Framework

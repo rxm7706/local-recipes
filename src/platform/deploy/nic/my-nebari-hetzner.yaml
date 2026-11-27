@@ -1,0 +1,78 @@
+# Hetzner profile (steward Story 118.9; the attended run is Story 118.3). Shape: NIC 0.17.0's
+# examples/hetzner-config.yaml. No secret lives here: a credential is an environment-variable name
+# that `steward deploy nic` resolves through keys from the untracked .env, and the pre-commit hook
+# nic-config-secret-scan refuses a secret-shaped value in this file.
+#
+# Operator-owned before `deploy nic up --yes` (named here, never invented; docs/how-to/host-nebari.md):
+#   - the domain with DNS: replace every `operator-owned-domain.invalid` below;
+#   - the Let's Encrypt contact: replace `certificate.acme.email`;
+#   - GITOPS_DEPLOY_KEY: nic's write-enabled deploy key on rxm7706/local-recipes (the only one), its
+#     age payload mapped in .env and its issued row in .steward/keys-inventory.yaml;
+#   - the Hetzner API token nic reads from its environment (HETZNER_TOKEN; delivering it through keys
+#     is Story 118.3's, since this config names no env: field for it);
+#   - the live `protected-refs-gitops-branches` ruleset (docs/governance/rulesets/protected-refs.json).
+# steward refuses this config, before nic starts, while GITOPS_DEPLOY_KEY has no inventory row, and
+# refuses its `up` without the operator's --yes.
+project_name: my-nebari-hetzner
+domain: operator-owned-domain.invalid
+
+certificate:
+  type: letsencrypt
+  acme:
+    email: operator-owned-contact@operator-owned-domain.invalid
+
+cluster:
+  hetzner:
+    location: ash
+    kubernetes_version: "1.32"
+    node_groups:
+      master:
+        instance_type: cpx31
+        count: 1
+        master: true
+      workers:
+        instance_type: cpx31
+        count: 2
+
+# The monorepo on nic's own branch, never main (CAP-178). nic alone writes gitops/<project_name>,
+# under its deploy key; the gitops/** ruleset refuses every other writer and any force-push.
+repository:
+  existing:
+    url: "git@github.com:rxm7706/local-recipes.git"
+    branch: gitops/my-nebari-hetzner
+    path: gitops/my-nebari-hetzner
+    auth:
+      ssh:
+        env: GITOPS_DEPLOY_KEY
+
+packs:
+  nebi-pack:
+    chart: nebari-nebi-pack
+    version: "0.1.0"
+    namespace: nebi
+    values:
+      nebariapp:
+        hostname: nebi.operator-owned-domain.invalid
+  data-science-pack:
+    chart: nebari-data-science-pack
+    version: "0.1.7"
+    namespace: data-science
+    values:
+      keycloak:
+        hostname: keycloak.operator-owned-domain.invalid
+      nebariapp:
+        landingPage:
+          # As on kind: chart 0.1.7 renders iconLight/iconDark, which nebari-operator 0.1.0-alpha.20's
+          # NebariApp CRD does not declare; the attended run re-checks the operator NIC 0.17.0 ships.
+          iconLight: null
+          iconDark: null
+      sharedStorage:
+        # /shared on Longhorn (NIC installs it on Hetzner by default), an RWX StorageClass, so the
+        # chart's transitional NFS server stays off.
+        enabled: true
+        storageClass: longhorn
+        nfsServer:
+          enabled: false
+      nebi:
+        remote:
+          enabled: true

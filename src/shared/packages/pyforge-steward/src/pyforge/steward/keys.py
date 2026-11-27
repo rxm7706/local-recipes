@@ -519,10 +519,10 @@ def decrypt_file(input_path: str | Path, *, identity: str | Path, output: str | 
 # ── Plaintext-secret scan primitive ─────────────────────────────────────────
 #
 # A small, fixed, named pattern table — not a pluggable/extensible rule
-# engine (see this story's spec, "Never"). Targets exactly three known
-# secret shapes: an Anthropic API key, a plaintext `age` identity (the exact
+# engine (see this story's spec, "Never"). Targeted three known secret
+# shapes: an Anthropic API key, a plaintext `age` identity (the exact
 # unencrypted shape `encrypt_file` above exists to protect against), and a
-# PEM private-key header. This is `PlaintextSecretFinding`, deliberately a
+# PEM private-key header; Story 118.9 adds four (see the table). This is `PlaintextSecretFinding`, deliberately a
 # distinct type from `DriftFinding` above — a committed plaintext secret and
 # an ungated credential-attachment code path are unrelated defect shapes, and
 # a caller must never conflate them. Story 1.6 wires a CLI verb; this story
@@ -539,11 +539,47 @@ class PlaintextSecretFinding:
     message: str
 
 
+# Story 118.9 (spec-pyforge-steward CAP-178) adds the shapes a cloud GitOps run can leak: a
+# PEM private-key header in any case (a PGP `PRIVATE KEY BLOCK` included); a base64-encoded
+# PEM block (`-----BEGIN` encodes to `LS0tLS1CRUdJ` then `Ti`, written with a one-letter class
+# so this table never matches its own source) unless what follows encodes a public type (a
+# certificate, a public key, a CRL, a certificate request, a PGP public block); GitHub tokens;
+# and a Hetzner API token: exactly 64 alphanumerics with both cases, so a lowercase-hex sha256
+# digest never matches, not bordered by `+`, `/` or a trailing `=`, so a run inside a base64
+# string never matches, and not after an SRI `sha256-`/`sha384-`/`sha512-` (a sha384 is 64).
+# Flags are inline (`(?i)`), never a `flags=` argument: `scripts/nic_config_secret_scan.py`
+# reads this table from source and refuses any argument beyond the pattern.
 _SECRET_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("anthropic-api-key", re.compile(r"sk-ant-[A-Za-z0-9_-]{20,}")),
     ("age-identity", re.compile(r"AGE-SECRET-KEY-1[A-Z0-9]{20,}")),
-    ("pem-private-key-header", re.compile(r"-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----")),
+    ("pem-private-key-header", re.compile(r"(?i)-----BEGIN [A-Z0-9 ]*PRIVATE KEY(?: BLOCK)?-----")),
+    (
+        "pem-block-base64",
+        # The lookahead is the base64 of ` CERTIFICAT`, ` PUBLIC KEY`, ` RSA PUBLIC KE`, ` X509 CR`,
+        # ` TRUSTED CERTIFICATE`, ` NEW CERTIFICATE REQUES` and ` PGP PUBLIC KEY BLOC` after `-----BEGIN`.
+        re.compile(
+            r"LS0tLS1CRUdJ[T]i(?!BDRVJUSUZJQ0FU|BQVUJMSUMgS0VZ|BSU0EgUFVCTElDIEtF|BYNTA5IENS"
+            r"|BUUlVTVEVEIENFUlRJRklDQVRF|BORVcgQ0VSVElGSUNBVEUgUkVRVUVT|BQR1AgUFVCTElDIEtFWSBCTE9D)"
+        ),
+    ),
+    ("github-token", re.compile(r"\bgh[pousr]_[A-Za-z0-9]{36,}\b")),
+    ("github-fine-grained-token", re.compile(r"\bgithub_pat_[A-Za-z0-9_]{22,}\b")),
+    (
+        "hetzner-api-token",
+        re.compile(
+            r"(?<![A-Za-z0-9+/])(?<!sha256-)(?<!sha384-)(?<!sha512-)"
+            r"(?=[A-Za-z0-9]{0,63}[A-Z])(?=[A-Za-z0-9]{0,63}[a-z])[A-Za-z0-9]{64}(?![A-Za-z0-9+/=])"
+        ),
+    ),
 )
+# A match of these opens a key block, so redaction runs from it to the end of the line: a
+# `\n`-escaped PEM printed on one line is masked with its header (Story 118.9).
+_REDACT_TO_LINE_END: frozenset[str] = frozenset({"pem-private-key-header", "pem-block-base64"})
+# A resolved value's own lines this long or longer are masked wherever they appear.
+_MIN_REDACTED_LINE = 8
+# A resolved value shorter than this is not masked literally: a one-character value would mask
+# every occurrence of that character.
+_MIN_REDACTED_VALUE = 4
 
 
 def scan_file_for_secrets(path: str | Path) -> list[PlaintextSecretFinding]:
@@ -561,7 +597,18 @@ def scan_file_for_secrets(path: str | Path) -> list[PlaintextSecretFinding]:
     numbering.
     """
     path = Path(path)
-    text = path.read_bytes().decode("utf-8", errors="replace").replace("\x00", "")
+    return scan_text_for_secrets(path.read_bytes().decode("utf-8", errors="replace"), path)
+
+
+def scan_text_for_secrets(text: str, label: str | Path) -> list[PlaintextSecretFinding]:
+    """`scan_file_for_secrets` over text already in hand, each finding named by `label`.
+
+    Story 118.9 (spec-pyforge-steward CAP-178): `deploy nic` scans the output of
+    `git log -p` over the cloud GitOps range with the same pattern table. A finding
+    names the label, the line and the pattern, never the matched value.
+    """
+    path = Path(label)
+    text = text.replace("\x00", "")
     findings: list[PlaintextSecretFinding] = []
     for lineno, line in enumerate(text.split("\n"), start=1):
         for pattern_name, pattern in _SECRET_PATTERNS:
@@ -575,6 +622,34 @@ def scan_file_for_secrets(path: str | Path) -> list[PlaintextSecretFinding]:
                     )
                 )
     return findings
+
+
+def redact_secret_shapes(text: str, values: tuple[str, ...] = ()) -> str:
+    """`text` with each known secret value and each `_SECRET_PATTERNS` match replaced.
+
+    Story 118.9 (spec-pyforge-steward CAP-178): the `deploy nic` summary carries
+    `nic`'s last output line only through this, so neither a secret the verb
+    resolved nor a secret-shaped value reaches the summary. A PEM-header match is masked to
+    the end of its line first, before any literal mask can hide the header it keys on (a key
+    JSON-dumped with `\\/` escapes matches no literal form). Then a multi-line value is masked
+    whole, in its `\\n`-escaped form, and line by line (each line of at least
+    `_MIN_REDACTED_LINE` characters); a value under `_MIN_REDACTED_VALUE` characters is not
+    masked literally. The remaining patterns run last.
+    """
+    to_line_end = [(name, pattern) for name, pattern in _SECRET_PATTERNS if name in _REDACT_TO_LINE_END]
+    for _name, pattern in to_line_end:
+        text = re.compile(pattern.pattern + r"[^\n]*", pattern.flags).sub(_REDACTED, text)
+    forms: set[str] = set()
+    for value in values:
+        if len(value) >= _MIN_REDACTED_VALUE:
+            forms.update({value, value.replace("\n", "\\n")})
+            forms.update(line.strip() for line in value.splitlines() if len(line.strip()) >= _MIN_REDACTED_LINE)
+    for form in sorted(forms, key=len, reverse=True):
+        text = text.replace(form, _REDACTED)
+    for name, pattern in _SECRET_PATTERNS:
+        if name not in _REDACT_TO_LINE_END:
+            text = pattern.sub(_REDACTED, text)
+    return text
 
 
 def scan_directory_for_secrets(directory: str | Path) -> list[PlaintextSecretFinding]:
@@ -1205,6 +1280,30 @@ def enterprise_credential(
         return None
     _refuse_shared_payloads(entries)
     return HostScopedCredential(hosts=(host,), bearer_token=_read_payload_token(entry))
+
+
+def issued_row_refusal(name: str, inventory_path: str | Path | None = None) -> str | None:
+    """Why `keys` refuses to resolve the credential `name`, or ``None`` when it may (Story 118.9).
+
+    A credential on CAP-164's pattern (``GITOPS_DEPLOY_KEY``, spec-pyforge-steward CAP-178)
+    resolves only while `.steward/keys-inventory.yaml` holds exactly one `issued`, `active`
+    row named `name`; its scope and expiry are the operator's to record. Nothing here
+    writes the inventory, and a message never carries a value.
+    """
+    path = Path(inventory_path) if inventory_path else default_inventory_path()
+    try:
+        entries = load_inventory(path)
+    except (ValueError, yaml.YAMLError, OSError) as exc:
+        return f"the credential inventory {path} cannot be read: {' '.join(str(exc).split())}"
+    rows = [e for e in entries if e.name == name and e.provenance == "issued" and e.status == "active"]
+    if not rows:
+        return (
+            f"{name} has no issued, active row in {path}; the operator records it there "
+            "(scope and expiry theirs) before keys resolves it"
+        )
+    if len(rows) > 1:
+        return f"{name} has {len(rows)} issued, active rows in {path}; exactly one may resolve"
+    return None
 
 
 def _refuse_shared_payloads(entries: tuple[KeyIdentityEntry, ...]) -> None:

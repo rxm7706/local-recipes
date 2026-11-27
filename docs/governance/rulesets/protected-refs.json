@@ -1,6 +1,40 @@
 {
   "rulesets": [
     {
+      "bypass_actors": [
+        {
+          "actor_id": null,
+          "actor_type": "DeployKey",
+          "bypass_mode": "always"
+        }
+      ],
+      "conditions": {
+        "ref_name": {
+          "exclude": [],
+          "include": [
+            "refs/heads/gitops/**"
+          ]
+        }
+      },
+      "enforcement": "active",
+      "name": "protected-refs-gitops-branches",
+      "rules": [
+        {
+          "type": "creation"
+        },
+        {
+          "type": "update"
+        },
+        {
+          "type": "deletion"
+        },
+        {
+          "type": "non_fast_forward"
+        }
+      ],
+      "target": "branch"
+    },
+    {
       "bypass_actors": [],
       "conditions": {
         "ref_name": {

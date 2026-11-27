@@ -1527,6 +1527,15 @@ verify_commands = [
   "scripts/_protected_refs_ruleset_lib.py",  # Story 118.3 AC1 (EGM audit STW-M-F2, 2026-11-05)
   "scripts/protected_refs_ruleset_check.py",
   "tests/scripts/test_protected_refs_ruleset_check.py",
+  "tests/scripts/fixtures/protected_refs_ruleset/**",  # Story 118.9: removed, the tests write to tmp_path (2026-11-27)
+  "tests/scripts/test_pre_shell_hook.py",  # Story 118.9 AC1: the gitops/ deletion denial
+  ".pre-commit-config.yaml",  # Story 118.9 AC4: the nic-config-secret-scan hook
+  "scripts/nic_config_secret_scan.py",
+  "tests/scripts/test_nic_config_secret_scan.py",
+  "tests/scripts/scripts-lib-test.txt",
+  "src/platform/config/flag-overlays.json",  # Story 118.9 AC3: pyforge.steward.nkp_gitops_branch
+  "src/platform/tests/test_openfeature_file_flags.py",
+  "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
   "docs/how-to/host-nebari.md",
   "pixi.toml",
   "pixi.lock",

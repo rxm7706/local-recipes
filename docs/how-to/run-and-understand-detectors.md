@@ -6,7 +6,7 @@ sources:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/verdict.py
   - docs/reference/judgement-vocabulary.md
   - docs/governance/guild-roster.json
-verified: 2026-11-26
+verified: 2026-11-27
 ---
 
 # How to run and understand Detectors

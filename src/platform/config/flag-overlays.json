@@ -102,6 +102,7 @@
     "pyforge.steward.preflight_critical_path": "on",
     "pyforge.steward.nkp_deploy": "on",
     "pyforge.steward.nkp_packs": "on",
+    "pyforge.steward.nkp_gitops_branch": "on",
     "pyforge.steward.start_tool_cli": "on",
     "pyforge.steward.start_loop_dispatch": "off",
     "pyforge.steward.cutover_ledger_write": "on"
@@ -209,6 +210,7 @@
     "pyforge.steward.preflight_critical_path": "on",
     "pyforge.steward.nkp_deploy": "on",
     "pyforge.steward.nkp_packs": "on",
+    "pyforge.steward.nkp_gitops_branch": "on",
     "pyforge.steward.start_tool_cli": "on",
     "pyforge.steward.start_loop_dispatch": "off",
     "pyforge.steward.cutover_ledger_write": "on"
@@ -316,6 +318,7 @@
     "pyforge.steward.preflight_critical_path": "on",
     "pyforge.steward.nkp_deploy": "on",
     "pyforge.steward.nkp_packs": "on",
+    "pyforge.steward.nkp_gitops_branch": "on",
     "pyforge.steward.start_tool_cli": "on",
     "pyforge.steward.start_loop_dispatch": "off",
     "pyforge.steward.cutover_ledger_write": "on"

@@ -84,7 +84,21 @@ def test_precommit_config_missing_hook_type_and_hook_are_named(tmp_path: Path) -
     )
     out = mod.findings(cfg)
     assert any("pre-push" in f and "default_install_hook_types" in f for f in out)
+    assert any("pre-commit" in f and "default_install_hook_types" in f for f in out)
     assert any("hook `pre-push-preflight` is missing" == f for f in out)
+    assert any("hook `nic-config-secret-scan` is missing" == f for f in out)
+
+
+def test_precommit_config_secret_scan_hook_must_run_at_pre_commit(tmp_path: Path) -> None:
+    # Story 118.9 (spec-pyforge-steward CAP-178), operator ruling 2026-11-27: the NIC config
+    # secret scan is a required hook, held at the pre-commit stage.
+    mod = _load("precommit_config_check")
+    live = (ROOT / ".pre-commit-config.yaml").read_text(encoding="utf-8")
+    moved = live.replace("stages: [pre-commit]", "stages: [manual]")
+    assert moved != live
+    cfg = tmp_path / ".pre-commit-config.yaml"
+    cfg.write_text(moved, encoding="utf-8")
+    assert mod.findings(cfg) == ["hook `nic-config-secret-scan` must run at stage `pre-commit` (stages = ['manual'])"]
 
 
 # ---- commit_msg_hook --------------------------------------------------------------

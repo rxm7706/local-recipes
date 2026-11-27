@@ -6,7 +6,7 @@ sources:
   - src/shared/packages/pyforge-steward/pyproject.toml
   - src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py
   - archive/_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-jira-github-projects-sync-2026-08-09/ARCHITECTURE-SPINE.md
-verified: 2026-11-26
+verified: 2026-11-27
 ---
 
 # Steward `sync` — GitHub Projects V2 ↔ Jira Cloud workflow templates

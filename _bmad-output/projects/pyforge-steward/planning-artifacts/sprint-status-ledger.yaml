@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 844
+# stories: 845
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -116,6 +116,7 @@ development_status:
   118-6-the-attended-nkp-sign-in-spawn-and-landing-probes-are-tracked-commands: done
   118-7-deploy-nic-finds-kubectl-and-helm-in-the-pyforge-steward-environment: done
   118-8-the-gitops-branch-has-one-named-writer-enforced: done
+  118-9-the-gitops-branch-is-guarded-before-any-cloud-run: done
   119-1-a-worker-runs-a-station-verb-from-one-closed-table: done
   119-2-five-read-faces-run-their-verb: done
   119-3-start-build-builds-a-tracked-recipe-on-the-builds-pool: done

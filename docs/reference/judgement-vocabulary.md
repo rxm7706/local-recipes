@@ -9,7 +9,7 @@ sources:
   - docs/governance/guild-roster.json
   - src/shared/packages/pyforge-core/src/pyforge/core/exit_domains.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/errors.py
-verified: 2026-11-26
+verified: 2026-11-27
 ---
 
 # The judgement vocabulary — what each word means, positively
@@ -86,7 +86,7 @@ trap, and it has caused at least one real misread:
 | `pyforge-marshal seed` | `{1, 2, 3, 4, 5, 10}` | usage error (`5` is an invalid state file, `10` an internal error) |
 | `pyforge-mason` | `{0, 1, 2, 3, 130}` | usage error (`3` is conda-forge-expert not found) |
 | `pyforge-herald` | `{0, 1, 2, 3, 4, 130}` | usage error, or a verb whose flag is off (`3` is a conflict, `4` a transport failure) |
-| `pyforge-steward` | `{0, 1, 2, 3, 70, 130}` | usage error, or a kill switch that is off (`3` is a documented refusal, which is also how `ci`, `pages` and `estate` answer with their flag off; `70` a crash; `keys exec` and `deploy nic` return their child's own code) |
+| `pyforge-steward` | `{0, 1, 2, 3, 70, 130}` | usage error, or a kill switch that is off (`3` is a documented refusal, which is also how `ci`, `pages` and `estate` answer with their flag off; `70` a crash; `keys exec` and `deploy nic` return their child's own code, except that after a cloud `up` `deploy nic` exits 1 when its range scan finds a secret-shaped value or cannot read the range) |
 | `pyforge-scribe` | `{0, 1, 2}` | usage error or could not run (`1` is `catalog bmad-estate --check` drift) |
 | `pyforge-atlas` | `{0, 1, 2, 130}` | usage error, or a refused flag (`pyforge atlas` itself exits `0`, `1` or `2`; `130` is its other entry points') |
 | argparse, on any of them | `2` | invalid arguments |

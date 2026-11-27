@@ -5,7 +5,7 @@ sources:
   - src/platform/deploy/overlays/eso/externalsecret-platform-secrets.example.yaml
   - src/shared/packages/django-pyforge/src/django_pyforge/assertion/schema.py
   - src/shared/packages/django-pyforge/src/django_pyforge/assertion/verify.py
-verified: 2026-11-25
+verified: 2026-11-27
 ---
 
 # How to rotate platform secrets and age identities

@@ -3,6 +3,13 @@
 Shared by ``protected_refs_ruleset_check.py`` and its tests. The tracked
 ``docs/governance/rulesets/protected-refs.json`` is derived from the roster
 alone (marshal:AD-12) — never hand-edited.
+
+Every ruleset declares no bypass actor except where its roster entry names one in
+``bypass``; the only actor type the roster may name is ``DeployKey``, and only on the
+``refs/heads/gitops/`` entry (steward Story 118.9, spec-pyforge-steward CAP-178:
+``refs/heads/gitops/**`` is written by ``nic``'s deploy key alone). GitHub's ``DeployKey``
+actor admits every deploy key of the repository, so the live check also counts the
+repository's write-enabled deploy keys.
 """
 from __future__ import annotations
 
@@ -27,7 +34,18 @@ RULESET_NAMES = {
     "branch_attempt": "protected-refs-attempt-preserve-branches",
     "tags": "protected-refs-tags",
     "restrict_creation": "protected-refs-restrict-preserve-branch-creation",
+    "branch_gitops": "protected-refs-gitops-branches",
 }
+
+GITOPS_BRANCH_RULES = ("creation", "update", "deletion", "non_fast_forward")
+
+# The one bypass actor type a roster entry may declare, rendered as GitHub's API spells it
+# (``actor_id`` is null for ``DeployKey``).
+BYPASS_ACTORS = {
+    "DeployKey": {"actor_id": None, "actor_type": "DeployKey", "bypass_mode": "always"},
+}
+# The one roster entry a bypass actor may sit on: any other ref with a bypass is a finding.
+GITOPS_BYPASS_REFNAME = "refs/heads/gitops/"
 
 
 def _glob_from_prefix(prefix: str) -> str:
@@ -54,7 +72,23 @@ def expected_rules_for_entry(entry: dict[str, Any]) -> tuple[str, ...]:
     return rules
 
 
+def bypass_actors_for_entry(entry: dict[str, Any]) -> list[dict[str, Any]]:
+    """The bypass actors a roster entry declares; ``[]`` unless it names ``bypass``."""
+    names = entry.get("bypass") or []
+    unknown = [name for name in names if name not in BYPASS_ACTORS]
+    if unknown:
+        raise ValueError(f"{entry.get('refname')!r}: unsupported bypass actor type(s) {unknown!r}")
+    if names and entry.get("refname") != GITOPS_BYPASS_REFNAME:
+        raise ValueError(
+            f"{entry.get('refname')!r}: only {GITOPS_BYPASS_REFNAME!r} may declare a bypass actor (the DeployKey "
+            "bypass admits every deploy key, so it is the gitops branch's alone)"
+        )
+    return [dict(BYPASS_ACTORS[name]) for name in names]
+
+
 def _ruleset_name_for_branch_rules(rules: tuple[str, ...]) -> str:
+    if rules == GITOPS_BRANCH_RULES:
+        return RULESET_NAMES["branch_gitops"]
     if rules == ("deletion", "non_fast_forward"):
         return RULESET_NAMES["branch_loop"]
     if rules == ("deletion",):
@@ -67,11 +101,16 @@ def render_document(roster: dict[str, Any] | None = None) -> dict[str, Any]:
     roster = roster if roster is not None else load_roster()
     entries = roster["protected_refs"]
     branch_groups: dict[tuple[str, ...], list[str]] = {}
+    branch_bypass: dict[tuple[str, ...], list[dict[str, Any]]] = {}
     tag_patterns: list[str] = []
     for entry in entries:
         refname = entry["refname"]
         rules = expected_rules_for_entry(entry)
+        bypass = bypass_actors_for_entry(entry)
         if refname.startswith("refs/heads/"):
+            if rules in branch_bypass and branch_bypass[rules] != bypass:
+                raise ValueError(f"{refname!r}: entries sharing rules {rules!r} declare different bypass actors")
+            branch_bypass[rules] = bypass
             branch_groups.setdefault(rules, []).append(_glob_from_prefix(refname))
         elif refname.startswith("refs/tags/"):
             tag_patterns.append(_glob_from_prefix(refname))
@@ -89,7 +128,7 @@ def render_document(roster: dict[str, Any] | None = None) -> dict[str, Any]:
                     "ref_name": {"include": sorted(patterns), "exclude": []}
                 },
                 "rules": _rule_objects(rules),
-                "bypass_actors": [],
+                "bypass_actors": branch_bypass[rules],
             }
         )
     if tag_patterns:
@@ -142,9 +181,18 @@ def normalize_ruleset(raw: dict[str, Any]) -> dict[str, Any]:
     exclude = sorted(ref_name.get("exclude") or [])
     rules = raw.get("rules") or []
     rule_types = sorted(r.get("type") for r in rules if isinstance(r, dict))
-    bypass = raw.get("bypass_actors")
-    if bypass is None:
-        bypass = []
+    bypass = sorted(
+        (
+            {
+                "actor_id": actor.get("actor_id"),
+                "actor_type": actor.get("actor_type"),
+                "bypass_mode": actor.get("bypass_mode", "always"),
+            }
+            for actor in raw.get("bypass_actors") or []
+            if isinstance(actor, dict)
+        ),
+        key=lambda actor: (str(actor["actor_type"]), str(actor["actor_id"]), str(actor["bypass_mode"])),
+    )
     return {
         "name": raw.get("name"),
         "target": raw.get("target"),
@@ -204,8 +252,10 @@ def compare_ruleset_maps(
             diffs.append(
                 f"{name}: rules {got['rules']!r} != declared {want['rules']!r}"
             )
-        if got["bypass_actors"]:
+        if not want["bypass_actors"] and got["bypass_actors"]:
             diffs.append(f"{name}: bypass_actors must be empty, got {got['bypass_actors']!r}")
+        elif want["bypass_actors"] != got["bypass_actors"]:
+            diffs.append(f"{name}: bypass_actors {got['bypass_actors']!r} != declared {want['bypass_actors']!r}")
         for rule in ("deletion", "update", "non_fast_forward", "creation"):
             if rule in want["rules"] and rule not in got["rules"]:
                 diffs.append(f"{name}: missing rule {rule!r}")
@@ -225,3 +275,31 @@ def roster_all_refnames(roster: dict[str, Any]) -> set[str]:
     return {entry["refname"] for entry in roster.get("protected_refs", [])}
 
 
+def declares_deploy_key_bypass(declared: dict[str, dict[str, Any]]) -> bool:
+    return any(
+        actor.get("actor_type") == "DeployKey" for rs in declared.values() for actor in rs.get("bypass_actors") or []
+    )
+
+
+# The title the operator gives nic's deploy key on the repository (Story 118.9 AC1, 118.3 AC1).
+GITOPS_DEPLOY_KEY_TITLE = "GITOPS_DEPLOY_KEY"
+
+
+def deploy_key_findings(keys: list[dict[str, Any]]) -> list[str]:
+    """A ``DeployKey`` bypass admits every deploy key, so at most one may write, ``GITOPS_DEPLOY_KEY`` (Story 118.9).
+
+    A key counts as write-enabled unless GitHub reports ``read_only: true``: a missing or
+    unexpected value fails closed.
+    """
+    writers = sorted(str(key.get("title", key.get("id"))) for key in keys if key.get("read_only") is not True)
+    if len(writers) > 1:
+        return [
+            f"{len(writers)} write-enabled deploy keys ({', '.join(writers)}); the DeployKey bypass admits each, "
+            f"so {GITOPS_DEPLOY_KEY_TITLE} must be the only one"
+        ]
+    if writers and writers[0] != GITOPS_DEPLOY_KEY_TITLE:
+        return [
+            f"the one write-enabled deploy key is titled {writers[0]!r}, not {GITOPS_DEPLOY_KEY_TITLE!r}; the "
+            "DeployKey bypass admits it, so it must be nic's deploy key, titled so"
+        ]
+    return []

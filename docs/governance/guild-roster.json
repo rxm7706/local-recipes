@@ -403,6 +403,13 @@
       "rules": ["deletion"]
     },
     {
+      "refname": "refs/heads/gitops/",
+      "kind": "operational-branch",
+      "scope": "origin",
+      "rules": ["creation", "update", "deletion", "non_fast_forward"],
+      "bypass": ["DeployKey"]
+    },
+    {
       "refname": "refs/tags/preserve/",
       "kind": "preserve-tag",
       "scope": "both",
