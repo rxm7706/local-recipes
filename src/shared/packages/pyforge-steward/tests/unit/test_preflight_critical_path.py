@@ -570,3 +570,59 @@ def test_a_serial_docs_site_lane_holds_the_cores_the_suite_behind_it_needs(tmp_p
     assert len(beside_install) == 2, beside_install
     # The suite starts when the install ends, long before any of the 0.4 s lanes frees a core.
     assert started["pyforge-herald-test"] - ended["docs-site-install"] < 0.2
+
+
+def test_after_the_install_the_longest_docs_site_lane_goes_first() -> None:
+    """Story 117.22: herald's live half, the chain's longest lane, goes before its package half once the install is
+    done, though the coverage gate needs both; with no seconds known the declared order stands."""
+    install = preflight.Lane("docs-site-install", "site")
+    package = preflight.Lane("pyforge-herald-test", "pyforge-herald")
+    live = preflight.Lane("pyforge-herald-live-test", "pyforge-herald")
+    gate = preflight.Lane(
+        "pyforge-herald-coverage-gate",
+        "pyforge-herald",
+        depends_on=(("pyforge-herald-test", "pyforge-herald"), ("pyforge-herald-live-test", "pyforge-herald")),
+    )
+    lanes = [install, package, live, gate]
+    pending = {(lane.task, lane.environment): lane for lane in (package, live, gate)}
+    expected = {(package.task, package.environment): 55.0, (live.task, live.environment): 350.0}
+    assert preflight._next_lane([package, live], lanes, pending, 1, expected) is live
+    assert preflight._next_lane([package, live], lanes, pending, 1, None) is package
+
+
+def test_the_docs_site_slot_holds_the_share_its_widest_lane_is_planned_to_take(tmp_path: Path) -> None:
+    """Story 117.22: twelve serial lanes would take every core the short install leaves; the slot holds the share
+    herald's live half is planned to take (its work over the target seconds, held to half the machine: 8 of 16), so the
+    suite starts on 8 workers when the install ends, while the serial lanes still run."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    serial = {f"s{n:02d}": f"pytest s{n:02d} -q" for n in range(12)}
+    lanes = {"docs-site-install": "npm ci", "pyforge-herald-live-test": "pytest herald -q -n auto", **serial}
+    (repo / "pixi.toml").write_text(_pixi(lanes), encoding="utf-8")
+    _journal(repo, {"docs-site-install": 10.0, "pyforge-herald-live-test": 300.0, **{name: 20.0 for name in serial}})
+    _budgets(repo, {})
+    path = repo / preflight.BUDGETS_RELATIVE
+    path.write_text(
+        path.read_text(encoding="utf-8") + f'\n[work]\n"pyforge-herald-live-test@{INV}" = 1200\n', encoding="utf-8"
+    )
+    workers: dict[str, int] = {}
+    lock = threading.Lock()
+
+    def run_ctx(ctx: preflight.LaneRunContext) -> int:
+        with lock:
+            workers[ctx.lane.task] = int(ctx.env.get("PYTEST_XDIST_AUTO_NUM_WORKERS", "1"))
+        time.sleep(0.05 if ctx.lane.task == "docs-site-install" else 0.6)
+        return 0
+
+    code = preflight.run_preflight(
+        repo,
+        invoking_env=INV,
+        jobs=16,
+        logical_cores=16,
+        critical_path=True,
+        install_environment=_NOOP_INSTALL,
+        run_lane_ctx=run_ctx,
+        scratch_parent=tmp_path,
+    )
+    assert code == preflight.EXIT_OK
+    assert workers["pyforge-herald-live-test"] == 8, workers

@@ -1337,10 +1337,14 @@ def _next_lane(
         # lane pending docs-site lanes depend on; then declared order. Story 117.2 made the order explicit: the
         # station coverage gates depend on their suites, and herald's suite is itself a docs-site lane, so
         # 'needed by a pending dependent' alone would hand the turn to the suite before the install it reads.
+        # Story 117.22: with expected seconds, the longest docs-site lane goes right after the install, ahead of the
+        # 'needed' rule. Since herald Story 59.1 herald's live half builds side by side and is the chain's longest
+        # lane by far; behind herald's package half it started 78 s in, on the two cores left by then.
         first = min(
             docs,
             key=lambda lane: (
                 lane.task != DOCS_SITE_INSTALL_TASK,
+                -(expected or {}).get(_lane_key(lane), 0.0),
                 not _needed_by_pending_dependent(lane, pending),
                 lanes.index(lane),
             ),
@@ -1704,6 +1708,18 @@ def run_preflight(
         if any(lane.task in DOCS_SITE_TASKS and _lane_key(lane) in xdist_lanes for lane in lanes)
         else 1
     )
+    # Story 117.22: and as wide as the share its widest xdist lane is planned to take (its expected work over the
+    # target seconds), up to half the machine. Two cores held for the slot left herald's live half on two workers for
+    # 350 s, though its builds run side by side since herald Story 59.1; held from the start, the cores it will need are
+    # free when the install before it ends.
+    if target_seconds:
+        planned = [
+            math.ceil(_expected_work(_lane_key(lane), expected, work) / target_seconds)
+            for lane in lanes
+            if lane.task in DOCS_SITE_TASKS and _lane_key(lane) in xdist_lanes
+        ]
+        if planned:
+            docs_slot_cores = max(docs_slot_cores, min(max(planned), max(1, cores // 2)))
 
     mutex_keys = lane_mutex_keys(lanes, preflight_ci.static_service_mutex_keys(repo_root, lanes, pixi_data))
     suite_lane_plan = preflight_suite_reduction.build_suite_lane_overrides(
