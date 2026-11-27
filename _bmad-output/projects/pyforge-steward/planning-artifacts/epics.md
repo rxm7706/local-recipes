@@ -8026,6 +8026,22 @@ So that its suite stops being the longest job of a PR that runs every workflow.
 **And** every step, service and timeout of the job stays, and the local twin runs the suite unsharded
 **Status:** done
 
+### Story 117.24: A new workspace starts with the mypy caches of the last one
+
+As the operator who starts a worktree for each effort,
+I want the first preflight of a new worktree to find mypy's caches warm,
+So that its mypy lanes take seconds, not the 30 to 49 s a cold cache costs.
+
+**Type:** chore • **Effort:** S • **Deps:** 13.1, 117.3 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 and CAP-159 (realized, no text change); CAP-104, CAP-107 (no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py`, `src/shared/packages/pyforge-steward/tests/unit/test_workspace_mypy_caches.py`
+**Spec:** `planning-artifacts/specs/spec-117-24-a-new-workspace-starts-with-the-mypy-caches-of-the-last-one.md`
+**Given** a new worktree has no mypy cache, so its first preflight's mypy lanes took 48.8 and 30.4 s against 3.5 to 4.5 s warm, and the primary checkout holds no per-environment cache to copy
+**When** `workspace clean` removes a worktree, and `workspace start` makes the next one
+**Then** clean first copies the worktree's mypy caches into the checkout it runs from, and start copies that checkout's caches into the new worktree
+**And** a cache is only copied, never shared by two worktrees, and a failed copy never fails `start` or `clean`
+**Status:** done
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

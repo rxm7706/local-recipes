@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 827
+# stories: 828
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -94,6 +94,7 @@ development_status:
   117-21-the-longest-pr-jobs-run-as-parallel-shards-and-jobs: done
   117-22-the-docs-site-slot-holds-the-cores-its-widest-lane-will-take-and-that-lane-goes-first: done
   117-23-platform-ci-s-test-job-runs-as-three-shards: done
+  117-24-a-new-workspace-starts-with-the-mypy-caches-of-the-last-one: done
   117-3-the-preflight-admits-lanes-longest-first-by-the-cores-they-will-use: done
   117-4-each-station-suite-runs-as-its-package-local-and-live-tree-halves: done
   117-5-preflight-budget-names-every-lane-over-its-journal-derived-budget: done

@@ -126,7 +126,7 @@ same change.
 | CAP-101 | — | platform | `src/platform/tests/test_celery_hardening_and_builds_pool.py` | |
 | CAP-102 | — | platform | `src/platform/tests/policy/test_dependency_policy.py` | |
 | CAP-103 | — | script | `tests/scripts/test_build_pixi_mirror.py` | |
-| CAP-104..CAP-108 | `workspace.py`, `cli.py` | package | `unit/test_workspace.py`, `unit/test_workspace_edges.py`, `unit/test_workspace_clean_delete.py` | |
+| CAP-104..CAP-108 | `workspace.py`, `cli.py` | package | `unit/test_workspace.py`, `unit/test_workspace_edges.py`, `unit/test_workspace_clean_delete.py`, `unit/test_workspace_mypy_caches.py` | Story 117.24: `start` and `clean` copy the per-environment mypy caches. |
 | CAP-109 | `dashboard/middleware.py`, `dashboard/declarations.py` | package | `unit/test_dashboard_middleware.py`, `unit/test_dashboard_declarations.py` | |
 | CAP-110 | `dashboard/declarations.py`, `dashboard/filtering.py`, `dashboard/cache.py` | package | `unit/test_dashboard_filtering.py`, `unit/test_dashboard_cache.py`, `unit/test_dashboard_declarations.py` | |
 | CAP-111 | `dashboard/navigation.py`, `dashboard/views.py` | package | `unit/test_dashboard_navigation.py`, `unit/test_dashboard_views.py` | |
