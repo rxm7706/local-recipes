@@ -9,6 +9,10 @@ Exit 0 when the declared document matches the roster render, marshal policy
 branch entries match the roster, and (unless ``--fixture``) live rulesets match
 the document. Exit 1 naming each drift. Exit 2 when GitHub is unauthenticated,
 rate-limited, or any API call fails — never pass on an unobservable read (AD-8).
+
+When a declared ruleset names a ``DeployKey`` bypass actor (``refs/heads/gitops/**``, steward
+Story 118.9), the live read also lists the repository's deploy keys: GitHub's ``DeployKey``
+actor admits every one, so more than one write-enabled deploy key is a drift.
 """
 from __future__ import annotations
 
@@ -82,6 +86,15 @@ def fetch_live_rulesets(repo: str) -> tuple[dict[str, dict[str, Any]] | None, st
     return live, ""
 
 
+def fetch_deploy_keys(repo: str) -> tuple[list[dict[str, Any]] | None, str]:
+    listing, err = _gh_json([f"repos/{repo}/keys"])
+    if listing is None:
+        return None, err
+    if not isinstance(listing, list):
+        return None, "deploy keys response was not an array"
+    return [row for row in listing if isinstance(row, dict)], ""
+
+
 def check_document_freshness(
     roster: dict[str, Any],
     *,
@@ -132,6 +145,11 @@ def run_check(
         return diffs + [f"live ruleset fetch failed: {err}"], 2
 
     diffs.extend(lib.compare_ruleset_maps(declared_map, live_map))
+    if lib.declares_deploy_key_bypass(declared_map):
+        keys, err = fetch_deploy_keys(repo)
+        if keys is None:
+            return diffs + [f"deploy key fetch failed: {err}"], 2
+        diffs.extend(lib.deploy_key_findings(keys))
     return diffs, None
 
 

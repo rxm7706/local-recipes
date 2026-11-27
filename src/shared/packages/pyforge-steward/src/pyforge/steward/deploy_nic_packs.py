@@ -7,7 +7,8 @@ next repo poll, polls until each pack Application exists (``kubectl wait`` on a 
 is not there yet fails at once with ``NotFound``), waits for ``Healthy``, labels pack
 namespaces, and journals OCI chart digests for Warden. Gated by ``pyforge.steward.nkp_packs``;
 a config without ``packs:`` is unchanged. Attended run 2026-10-31 (Story 118.5). Refuses by name,
-before it writes or runs anything, when ``kubectl`` or ``helm`` is not on ``PATH`` (Story 118.7).
+before it writes or runs anything, when ``kubectl`` or ``helm`` is not on ``PATH`` (Story 118.7). Refuses its own GitOps commit when a written Application carries
+a secret-shaped value (Story 118.9, the ``keys audit --secrets`` pattern table).
 """
 
 from __future__ import annotations
@@ -291,6 +292,22 @@ def git_commit_applications(deps: PackDeps, paths: Sequence[Path]) -> DutyResult
         return DutyResult(
             ok=False,
             summary=f"deploy nic packs: refused — GitOps directory {deps.gitops_root} does not exist (run nic deploy first)",
+        )
+    # Story 118.9 AC4 (CAP-178): no secret-shaped value enters the GitOps tree through steward's own commit.
+    # The pattern table is `steward keys audit --secrets`'s; a finding names the file, line and pattern only.
+    from .cli import EXIT_USAGE
+    from .keys import scan_file_for_secrets
+
+    findings = [finding for path in paths for finding in scan_file_for_secrets(path)]
+    if findings:
+        named = "; ".join(
+            f"{finding.path.relative_to(deps.gitops_root)}:{finding.line} {finding.pattern_name}"
+            for finding in findings
+        )
+        return DutyResult(
+            ok=False,
+            summary=f"deploy nic packs: refused — a secret-shaped value would enter the GitOps commit ({named})",
+            details={"exit_code": EXIT_USAGE},
         )
     rel_paths = [str(path.relative_to(deps.gitops_root)) for path in paths]
     add = _run(deps, ["git", "add", *rel_paths], cwd=deps.gitops_root)

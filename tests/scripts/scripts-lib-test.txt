@@ -27,6 +27,7 @@ tests/scripts/test_fleet_picture_ci_pauses.py
 tests/scripts/test_fleet_picture_pages_liveness.py
 tests/scripts/test_json_output_spellings.py
 tests/scripts/test_lint_types_gate.py
+tests/scripts/test_nic_config_secret_scan.py
 tests/scripts/test_pin_policy_check.py
 tests/scripts/test_pin_policy_restore.py
 tests/scripts/test_pixi_env_matrix.py

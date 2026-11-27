@@ -561,7 +561,18 @@ def scan_file_for_secrets(path: str | Path) -> list[PlaintextSecretFinding]:
     numbering.
     """
     path = Path(path)
-    text = path.read_bytes().decode("utf-8", errors="replace").replace("\x00", "")
+    return scan_text_for_secrets(path.read_bytes().decode("utf-8", errors="replace"), path)
+
+
+def scan_text_for_secrets(text: str, label: str | Path) -> list[PlaintextSecretFinding]:
+    """`scan_file_for_secrets` over text already in hand, each finding named by `label`.
+
+    Story 118.9 (spec-pyforge-steward CAP-178): `deploy nic` scans the output of
+    `git log -p` over the cloud GitOps range with the same pattern table. A finding
+    names the label, the line and the pattern, never the matched value.
+    """
+    path = Path(label)
+    text = text.replace("\x00", "")
     findings: list[PlaintextSecretFinding] = []
     for lineno, line in enumerate(text.split("\n"), start=1):
         for pattern_name, pattern in _SECRET_PATTERNS:
@@ -575,6 +586,21 @@ def scan_file_for_secrets(path: str | Path) -> list[PlaintextSecretFinding]:
                     )
                 )
     return findings
+
+
+def redact_secret_shapes(text: str, values: tuple[str, ...] = ()) -> str:
+    """`text` with each known secret value and each `_SECRET_PATTERNS` match replaced.
+
+    Story 118.9 (spec-pyforge-steward CAP-178): the `deploy nic` summary carries
+    `nic`'s last output line only through this, so neither a secret the verb
+    resolved nor a secret-shaped value reaches the summary.
+    """
+    for value in values:
+        if value:
+            text = text.replace(value, _REDACTED)
+    for _name, pattern in _SECRET_PATTERNS:
+        text = pattern.sub(_REDACTED, text)
+    return text
 
 
 def scan_directory_for_secrets(directory: str | Path) -> list[PlaintextSecretFinding]:
@@ -1205,6 +1231,30 @@ def enterprise_credential(
         return None
     _refuse_shared_payloads(entries)
     return HostScopedCredential(hosts=(host,), bearer_token=_read_payload_token(entry))
+
+
+def issued_row_refusal(name: str, inventory_path: str | Path | None = None) -> str | None:
+    """Why `keys` refuses to resolve the credential `name`, or ``None`` when it may (Story 118.9).
+
+    A credential on CAP-164's pattern (``GITOPS_DEPLOY_KEY``, spec-pyforge-steward CAP-178)
+    resolves only while `.steward/keys-inventory.yaml` holds exactly one `issued`, `active`
+    row named `name`; its scope and expiry are the operator's to record. Nothing here
+    writes the inventory, and a message never carries a value.
+    """
+    path = Path(inventory_path) if inventory_path else default_inventory_path()
+    try:
+        entries = load_inventory(path)
+    except (ValueError, yaml.YAMLError, OSError) as exc:
+        return f"the credential inventory {path} cannot be read: {' '.join(str(exc).split())}"
+    rows = [e for e in entries if e.name == name and e.provenance == "issued" and e.status == "active"]
+    if not rows:
+        return (
+            f"{name} has no issued, active row in {path}; the operator records it there "
+            "(scope and expiry theirs) before keys resolves it"
+        )
+    if len(rows) > 1:
+        return f"{name} has {len(rows)} issued, active rows in {path}; exactly one may resolve"
+    return None
 
 
 def _refuse_shared_payloads(entries: tuple[KeyIdentityEntry, ...]) -> None:

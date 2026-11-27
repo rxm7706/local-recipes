@@ -829,6 +829,12 @@ _SHIPPED_BOOLEANS = {
         "staging": True,
         "production": True,
     },
+    # Story 118.9 (CAP-178): the gitops branch guard, a kill switch ON everywhere.
+    "pyforge.steward.nkp_gitops_branch": {
+        "dev": True,
+        "staging": True,
+        "production": True,
+    },
     # Stories 121.1 / 121.2 (fnd:CAP-9): cutover plan's write modes, ON everywhere.
     "pyforge.steward.cutover_ledger_write": {
         "dev": True,

@@ -254,6 +254,8 @@ _SHIPPED_CLOCKS = {
     "pyforge.steward.start_loop_dispatch": ("steward", "119-4-", "2026-11-06", "", ""),
     "pyforge.steward.nkp_deploy": ("steward", "118-1-", "2026-10-31", "2026-10-31", "2027-01-29"),
     "pyforge.steward.nkp_packs": ("steward", "118-2-", "2026-10-31", "2026-10-31", "2027-01-29"),
+    # Story 118.9 (CAP-178): the gitops branch guard; a kill switch ON everywhere from mint day, due 2027-02-25.
+    "pyforge.steward.nkp_gitops_branch": ("steward", "118-9-", "2026-11-27", "2026-11-27", "2027-02-25"),
     # Stories 121.1 / 121.2 (fnd:CAP-9): steward cutover plan's two write modes; registered by Story 124.4.
     "pyforge.steward.cutover_ledger_write": ("steward", "121-2-", "2026-11-10", "2026-11-10", "2027-02-08"),
 }
@@ -301,6 +303,7 @@ _LATER_KILL_SWITCHES = {
     "pyforge.steward.start_tool_cli": "2027-02-04",  # steward Story 119.1
     "pyforge.steward.nkp_deploy": "2027-01-29",  # steward Story 118.1 (CAP-176), minted 2026-10-31
     "pyforge.steward.nkp_packs": "2027-01-29",  # steward Story 118.2 (CAP-177), minted 2026-10-31
+    "pyforge.steward.nkp_gitops_branch": "2027-02-25",  # steward Story 118.9 (CAP-178), minted 2026-11-27
     "pyforge.steward.cutover_ledger_write": "2027-02-08",  # steward Stories 121.1 / 121.2 (fnd:CAP-9), 2026-11-10
     "pyforge.herald.site_shell": "2027-02-20",  # herald Story 53.1 (CAP-63), ON everywhere from mint, 2026-11-22
 }
@@ -407,6 +410,7 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.steward.start_tool_cli": {"dev": True, "staging": True, "production": True},
         "pyforge.steward.nkp_deploy": {"dev": True, "staging": True, "production": True},
         "pyforge.steward.nkp_packs": {"dev": True, "staging": True, "production": True},
+        "pyforge.steward.nkp_gitops_branch": {"dev": True, "staging": True, "production": True},
         "pyforge.steward.cutover_ledger_write": {"dev": True, "staging": True, "production": True},
         "pyforge.marshal.verify_fix_loop": {"dev": True, "staging": True, "production": False},
         "pyforge.marshal.landing_ci_pauses": {"dev": True, "staging": False, "production": False},

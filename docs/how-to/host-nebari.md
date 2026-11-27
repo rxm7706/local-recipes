@@ -1,6 +1,10 @@
 ---
 sources:
   - src/platform/deploy/nic/my-nebari-local.yaml
+  - src/platform/deploy/nic/my-nebari-hetzner.yaml
+  - .pre-commit-config.yaml
+  - scripts/nic_config_secret_scan.py
+  - docs/governance/rulesets/protected-refs.json
   - pixi.toml
   - pixi.lock
   - src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_nic.py
@@ -71,6 +75,44 @@ domain); it works with split-horizon OIDC, which the kind profile carries — th
 same for gateway-enforced apps (the landing page, Nebi): their SecurityPolicy's `issuer` and
 `tokenEndpoint` are the in-cluster URL while `authorizationEndpoint` stays public. A real cluster
 whose CoreDNS resolves the domain can drop the three values.
+
+## Hetzner: the gitops branch is guarded before any cloud run
+
+The Hetzner profile is `src/platform/deploy/nic/my-nebari-hetzner.yaml` (Story 118.9; the attended run
+is Story 118.3). Its GitOps source is this repository on `gitops/my-nebari-hetzner`, never `main`, and
+only `nic` writes that branch, under its own deploy key. What holds before anything reaches Hetzner:
+
+- **The branch.** Every `deploy nic` action (`validate`, `up`, `kubeconfig`, `outputs`, `down`) refuses
+  a `repository.existing` config whose branch is `main` or outside `gitops/`, with usage code 2, before
+  `nic` starts. The kill switch `pyforge.steward.nkp_gitops_branch` (ON everywhere) refuses every
+  `repository.existing` config when OFF; kind's `repository.local` is unaffected.
+- **The consent.** `up` on any provider but local kind refuses without `--yes`. The `--yes` is the
+  operator's: the session hook denies it to an agent (`session_denials` `steward-deploy-nic-up-yes`).
+- **The deploy key.** `GITOPS_DEPLOY_KEY` resolves through keys only while
+  `.steward/keys-inventory.yaml` holds one `issued`, `active` row named `GITOPS_DEPLOY_KEY` (its scope
+  and expiry are the operator's to record); without it every action on the Hetzner profile refuses with
+  usage code 2 before `.env` is read.
+- **The ruleset.** `refs/heads/gitops/` is a `protected_refs` entry in `docs/governance/guild-roster.json`,
+  so the session hook denies its deletion. The declared `protected-refs-gitops-branches` ruleset in
+  `docs/governance/rulesets/protected-refs.json` refuses creation, update, deletion and force-push with
+  one bypass actor, the repository's deploy keys. GitHub's `DeployKey` actor admits every deploy key, so
+  `GITOPS_DEPLOY_KEY` must be the repository's only write-enabled deploy key; the live check
+  (`pixi run -e pyforge-guild protected-refs-ruleset-check`) reports a second one. Until the operator
+  applies the ruleset, that check exits 1 naming the missing `protected-refs-gitops-branches`.
+- **No secret.** The pre-commit hook `nic-config-secret-scan` refuses (exit 1) a staged file under
+  `src/platform/deploy/nic/` that matches the `steward keys audit --secrets` pattern table (an
+  Anthropic API key, an age identity, a PEM private-key header); an `env:` name passes. `up` refuses its
+  own kind GitOps commit on the same table, scans `origin/main..origin/gitops/<project_name>` after a cloud
+  `up` (exit 1 on a finding or an unreadable range), and the verb's summary carries `nic`'s last line only
+  redacted. Run the hook by hand with `python scripts/nic_config_secret_scan.py <file>`; `pre-commit install`
+  (through `steward setup`) installs it on a machine.
+
+Operator-owned before `pixi run -e pyforge-steward pyforge steward deploy nic up -f src/platform/deploy/nic/my-nebari-hetzner.yaml --yes`,
+named here and in the profile's header, never in git: the domain with DNS (replace
+`operator-owned-domain.invalid`) and the Let's Encrypt contact; `GITOPS_DEPLOY_KEY` (created on the
+repository as its only write-enabled deploy key, its age payload mapped in `.env`, its inventory row);
+the Hetzner API token `nic` reads (`HETZNER_TOKEN`); and the live ruleset. `validate` on the tracked
+profile refuses with usage code 2 until the inventory row exists, and reaches no cloud.
 
 ## Check sign-in, spawn and the landing cards
 

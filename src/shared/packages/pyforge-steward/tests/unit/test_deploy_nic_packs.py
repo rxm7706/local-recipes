@@ -52,6 +52,7 @@ def _pack_config(tmp_path: Path) -> Path:
         "project_name": "my-nebari-local",
         "domain": "nebari.local",
         "repository": {"local": {}},
+        "cluster": {"local": {}},
         "packs": {
             "nebi-pack": {
                 "chart": "nebari-nebi-pack",
@@ -737,3 +738,27 @@ def test_run_nic_validate_with_packs_needs_no_pack_cli(tmp_path: Path, monkeypat
 
     deps = NicDeps(root=tmp_path, runner=runner, nic_executable=lambda: "/usr/bin/nic")
     assert run_nic(deps, action="validate", config=config).ok is True
+
+
+def test_git_commit_applications_refuses_a_planted_secret_before_git_runs(tmp_path: Path) -> None:
+    # Story 118.9 AC4 (CAP-178): steward's own GitOps commit (kind) is scanned first, with the
+    # `steward keys audit --secrets` pattern table; the refusal names file, line and pattern, never the value.
+    planted = "AGE-SECRET-KEY-1TEST00FAKE00PLACEHOLDER00NOTREAL00SYNTHETIC"
+    apps = tmp_path / "apps"
+    apps.mkdir()
+    clean = apps / "nebi-pack.yaml"
+    clean.write_text("kind: Application\n", encoding="utf-8")
+    leaked = apps / "data-science-pack.yaml"
+    leaked.write_text(f"kind: Application\nvalues: {planted}\n", encoding="utf-8")
+    calls: list[list[str]] = []
+
+    def runner(argv: list[str], _cwd: Path | None, _env: dict[str, str] | None) -> _Proc:
+        calls.append(argv)
+        return _Proc()
+
+    result = git_commit_applications(PackDeps(gitops_root=tmp_path, runner=runner), [clean, leaked])
+    assert result.ok is False
+    assert result.details is not None and result.details["exit_code"] == 2
+    assert "apps/data-science-pack.yaml:2 age-identity" in result.summary
+    assert planted not in result.summary
+    assert calls == []

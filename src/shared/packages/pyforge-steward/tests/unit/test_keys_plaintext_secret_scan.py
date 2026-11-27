@@ -114,3 +114,25 @@ def test_dangling_symlink_raises_instead_of_silently_reporting_clean(tmp_path):
 
     with pytest.raises(FileNotFoundError):
         scan_directory_for_secrets(tmp_path)
+
+
+# --- Story 118.9 (spec-pyforge-steward CAP-178): the same table over text in hand, and redaction ---
+
+
+def test_scan_text_for_secrets_names_the_label_line_and_pattern_never_the_value():
+    from pyforge.steward.keys import scan_text_for_secrets
+
+    planted = "-----BEGIN OPENSSH PRIVATE KEY-----"
+    findings = scan_text_for_secrets(f"commit abc\n+ok\n+{planted}\n", "origin/main..origin/gitops/x")
+    assert [(f.line, f.pattern_name) for f in findings] == [(3, "pem-private-key-header")]
+    assert str(findings[0].path) == "origin/main..origin/gitops/x"
+    assert planted not in findings[0].message
+    assert scan_text_for_secrets("GITOPS_DEPLOY_KEY\nenv: HETZNER_TOKEN\n", "nic-config.yaml") == []
+
+
+def test_redact_secret_shapes_masks_known_values_and_every_pattern():
+    from pyforge.steward.keys import redact_secret_shapes
+
+    line = "token opaque-1 and AGE-SECRET-KEY-1TEST00FAKE00PLACEHOLDER00NOTREAL00SYNTHETIC end"
+    assert redact_secret_shapes(line, ("opaque-1", "")) == "token *** and *** end"
+    assert redact_secret_shapes("plain error") == "plain error"

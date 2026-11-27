@@ -311,3 +311,327 @@ def test_journal_file_written_under_steward(tmp_path: Path) -> None:
     lines = (tmp_path / JOURNAL_RELATIVE).read_text(encoding="utf-8").splitlines()
     payload = json.loads(lines[-1])
     assert payload["verb"] == "validate"
+
+
+# --- Story 118.9 (spec-pyforge-steward CAP-178, CAP-176): the gitops branch is guarded before any cloud run ---
+
+GITOPS_FLAG = "pyforge.steward.nkp_gitops_branch"
+NIC_VERB = {"validate": "validate", "up": "deploy", "kubeconfig": "kubeconfig", "outputs": "outputs", "down": "destroy"}
+
+
+def _existing_config(
+    tmp_path: Path,
+    branch: str,
+    *,
+    cluster: dict | None = None,
+    auth: dict | None = None,
+) -> Path:
+    existing: dict = {"url": "git@github.com:org/repo.git", "branch": branch, "path": f"gitops/{branch}"}
+    if auth is not None:
+        existing["auth"] = auth
+    document = {
+        "project_name": "my-nebari-hetzner",
+        "domain": "example.invalid",
+        "repository": {"existing": existing},
+        "cluster": cluster if cluster is not None else {"hetzner": {"location": "ash"}},
+    }
+    path = tmp_path / "my-nebari-hetzner.yaml"
+    path.write_text(yaml.safe_dump(document), encoding="utf-8")
+    return path
+
+
+def _recording_deps(tmp_path: Path, calls: list[list[str]], **outputs: _Proc) -> NicDeps:
+    """A runner that records argv and answers ``git log`` / ``git fetch`` / nic from ``outputs``."""
+
+    def runner(argv: list[str], _cwd: Path, _env: dict[str, str]) -> _Proc:
+        calls.append(list(argv))
+        if argv[:2] == ["git", "fetch"]:
+            return outputs.get("fetch", _Proc())
+        if argv[:2] == ["git", "log"]:
+            return outputs.get("log", _Proc(stdout="commit abc\n+kind: Application\n"))
+        return outputs.get("nic", _Proc())
+
+    return NicDeps(root=tmp_path, runner=runner, nic_executable=lambda: "/usr/bin/nic")
+
+
+def _flag_on(monkeypatch: pytest.MonkeyPatch, value: bool = True) -> None:
+    monkeypatch.setattr("pyforge.core.flags.read_boolean", lambda key, default=False, **_kw: value)
+
+
+@pytest.mark.parametrize("branch", ["main", "feature/x", "", "gitops/", "refs/heads/main"])
+@pytest.mark.parametrize("action", ["validate", "up", "kubeconfig", "outputs", "down"])
+def test_every_action_refuses_a_branch_outside_gitops_before_nic_starts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, action: str, branch: str
+) -> None:
+    _flag_on(monkeypatch)
+    calls: list[list[str]] = []
+    deps = _recording_deps(tmp_path, calls)
+    result = run_nic(deps, action=action, config=_existing_config(tmp_path, branch), yes=True)
+    assert result.ok is False
+    assert result.details["exit_code"] == EXIT_USAGE
+    assert "never main" in result.summary
+    assert calls == []
+
+
+def test_up_on_main_is_refused_with_usage_code_two_and_no_subprocess(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _flag_on(monkeypatch)
+    calls: list[list[str]] = []
+    result = run_nic(_recording_deps(tmp_path, calls), action="up", config=_existing_config(tmp_path, "main"), yes=True)
+    assert (result.ok, result.details["exit_code"], calls) == (False, EXIT_USAGE, [])
+
+
+def test_a_gitops_branch_is_accepted(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _flag_on(monkeypatch)
+    calls: list[list[str]] = []
+    config = _existing_config(tmp_path, "gitops/my-nebari-hetzner")
+    result = run_nic(_recording_deps(tmp_path, calls), action="validate", config=config)
+    assert result.ok is True
+    assert calls == [["/usr/bin/nic", "validate", "-f", str(config)]]
+
+
+@flag_states(GITOPS_FLAG)
+def test_the_gitops_branch_flag_in_both_states(
+    flag_provider: dict[str, bool], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Switch the key the way deploy_nic reads it (pyforge.core.flags.read_boolean), never by test order.
+    monkeypatch.setattr(
+        "pyforge.core.flags.read_boolean", lambda key, default=False, **_kw: flag_provider.get(key, default)
+    )
+    existing = _existing_config(tmp_path, "gitops/my-nebari-hetzner")
+    local = _local_config(tmp_path)
+    for action in ("validate", "up", "kubeconfig", "outputs", "down"):
+        calls: list[list[str]] = []
+        result = run_nic(_recording_deps(tmp_path, calls), action=action, config=existing, yes=True)
+        if flag_provider[GITOPS_FLAG]:
+            assert result.ok is True, result.summary
+            assert calls and calls[0][:2] == ["/usr/bin/nic", NIC_VERB[action]]
+        else:
+            assert result.ok is False
+            assert result.details["exit_code"] == EXIT_USAGE
+            assert GITOPS_FLAG in result.summary
+            assert calls == []
+        # kind's repository.local is unaffected in either state.
+        calls = []
+        assert run_nic(_recording_deps(tmp_path, calls), action=action, config=local).ok is True
+        assert calls[0][:2] == ["/usr/bin/nic", NIC_VERB[action]]
+
+
+def test_a_non_local_up_needs_the_operators_yes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _flag_on(monkeypatch)
+    config = _existing_config(tmp_path, "gitops/my-nebari-hetzner")
+    calls: list[list[str]] = []
+    refused = run_nic(_recording_deps(tmp_path, calls), action="up", config=config)
+    assert (refused.ok, refused.details["exit_code"], calls) == (False, EXIT_USAGE, [])
+    assert "--yes" in refused.summary
+    consented = run_nic(_recording_deps(tmp_path, calls), action="up", config=config, yes=True)
+    assert consented.ok is True, consented.summary
+    assert calls[0] == ["/usr/bin/nic", "deploy", "-f", str(config)]
+    # A config with no cluster provider is not local kind either.
+    bare = tmp_path / "bare.yaml"
+    bare.write_text(yaml.safe_dump({"project_name": "x", "repository": {"local": {}}}), encoding="utf-8")
+    calls.clear()
+    assert run_nic(_recording_deps(tmp_path, calls), action="up", config=bare).details["exit_code"] == EXIT_USAGE
+    assert calls == []
+
+
+def test_kind_up_and_every_other_action_need_no_yes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _flag_on(monkeypatch)
+    config = _existing_config(tmp_path, "gitops/my-nebari-hetzner")
+    for action in ("validate", "kubeconfig", "outputs", "down"):
+        calls: list[list[str]] = []
+        assert run_nic(_recording_deps(tmp_path, calls), action=action, config=config).ok is True
+    calls = []
+    assert run_nic(_recording_deps(tmp_path, calls), action="up", config=_local_config(tmp_path)).ok is True
+
+
+def test_the_parser_takes_yes_on_up_only(capsys: pytest.CaptureFixture[str]) -> None:
+    from pyforge.steward.cli import build_parser
+
+    parser = build_parser()
+    assert parser.parse_args(["deploy", "nic", "up", "-f", "c.yaml", "--yes"]).yes is True
+    assert parser.parse_args(["deploy", "nic", "up", "-f", "c.yaml"]).yes is False
+    for action in ("validate", "kubeconfig", "outputs", "down"):
+        with pytest.raises(SystemExit) as exc:
+            parser.parse_args(["deploy", "nic", action, "-f", "c.yaml", "--yes"])
+        assert exc.value.code == EXIT_USAGE
+    capsys.readouterr()
+
+
+def test_run_deploy_nic_hands_yes_to_run_nic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _flag_on(monkeypatch)
+    calls: list[list[str]] = []
+
+    class _Ns:
+        deploy_nic_verb = "up"
+        config = str(_existing_config(tmp_path, "gitops/my-nebari-hetzner"))
+        yes = True
+        _nic_deps = _recording_deps(tmp_path, calls)
+
+    assert run_deploy_nic(_Ns()).ok is True
+    _Ns.yes = False
+    calls.clear()
+    assert run_deploy_nic(_Ns()).details["exit_code"] == EXIT_USAGE
+    assert calls == []
+
+
+def test_the_summary_never_echoes_a_secret_shaped_last_line(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    planted = "AGE-SECRET-KEY-1TEST00FAKE00PLACEHOLDER00NOTREAL00SYNTHETIC"
+    calls: list[list[str]] = []
+    deps = _recording_deps(tmp_path, calls, nic=_Proc(returncode=1, stderr=f"first\nfailed reading {planted}\n"))
+    result = run_nic(deps, action="validate", config=_local_config(tmp_path))
+    assert result.details["exit_code"] == 1
+    assert "nic validate exited 1" in result.summary
+    assert planted not in result.summary
+    assert "***" in result.summary
+
+
+def test_the_summary_never_echoes_a_secret_the_verb_resolved(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    identity = tmp_path / "identity.txt"
+    identity.write_text("AGE-PLACEHOLDER", encoding="utf-8")
+    monkeypatch.setenv("SOPS_AGE_KEY_FILE", str(identity))
+    (tmp_path / "token.age").write_bytes(b"AGE[FAKE]")
+    (tmp_path / DOTENV_RELATIVE).write_text("GIT_TOKEN=token.age\n", encoding="utf-8")
+    calls: list[list[str]] = []
+    deps = _recording_deps(tmp_path, calls, nic=_Proc(returncode=2, stderr="auth failed for opaque-resolved-value\n"))
+    deps.decrypt = lambda _age, _id: "opaque-resolved-value"
+    result = run_nic(deps, action="validate", config=_config_needing_token(tmp_path))
+    assert "opaque-resolved-value" not in result.summary
+    assert "auth failed for ***" in result.summary
+
+
+def test_a_cloud_up_scans_the_pushed_range(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _flag_on(monkeypatch)
+    config = _existing_config(tmp_path, "gitops/my-nebari-hetzner")
+    calls: list[list[str]] = []
+    clean = run_nic(_recording_deps(tmp_path, calls), action="up", config=config, yes=True)
+    assert clean.ok is True, clean.summary
+    assert [
+        "git",
+        "log",
+        "-p",
+        "--no-color",
+        "--format=commit %H",
+        "origin/main..origin/gitops/my-nebari-hetzner",
+    ] in calls
+    fetch = next(argv for argv in calls if argv[:2] == ["git", "fetch"])
+    assert "+refs/heads/gitops/my-nebari-hetzner:refs/remotes/origin/gitops/my-nebari-hetzner" in fetch
+
+
+def test_the_range_scan_refuses_a_planted_secret(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _flag_on(monkeypatch)
+    planted = "-----BEGIN OPENSSH PRIVATE KEY-----"
+    log = _Proc(stdout=f"commit abc\n+values:\n+  key: |\n+    {planted}\n")
+    calls: list[list[str]] = []
+    result = run_nic(
+        _recording_deps(tmp_path, calls, log=log),
+        action="up",
+        config=_existing_config(tmp_path, "gitops/my-nebari-hetzner"),
+        yes=True,
+    )
+    assert result.ok is False
+    assert result.details["exit_code"] == 1
+    assert "pem-private-key-header" in result.summary
+    assert planted not in result.summary
+
+
+@pytest.mark.parametrize("failing", ["fetch", "log"])
+def test_the_range_scan_fails_closed_when_it_cannot_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failing: str
+) -> None:
+    _flag_on(monkeypatch)
+    calls: list[list[str]] = []
+    deps = _recording_deps(tmp_path, calls, **{failing: _Proc(returncode=128, stderr="fatal")})
+    result = run_nic(deps, action="up", config=_existing_config(tmp_path, "gitops/my-nebari-hetzner"), yes=True)
+    assert result.ok is False
+    assert result.details["exit_code"] == 1
+    assert "could not read" in result.summary
+
+
+def test_kind_up_never_runs_the_range_scan(tmp_path: Path) -> None:
+    calls: list[list[str]] = []
+    assert run_nic(_recording_deps(tmp_path, calls), action="up", config=_local_config(tmp_path)).ok is True
+    assert not any(argv[0] == "git" for argv in calls)
+
+
+def _deploy_key_config(tmp_path: Path) -> Path:
+    return _existing_config(tmp_path, "gitops/my-nebari-hetzner", auth={"ssh": {"env": "GITOPS_DEPLOY_KEY"}})
+
+
+def _inventory(tmp_path: Path, rows: list[dict]) -> Path:
+    path = tmp_path / ".steward" / "keys-inventory.yaml"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(yaml.safe_dump({"identities": rows}), encoding="utf-8")
+    return path
+
+
+_DEPLOY_KEY_ROW = {
+    "name": "GITOPS_DEPLOY_KEY",
+    "scope": "operator-owned-scope",
+    "provenance": "issued",
+    "status": "active",
+    "last_rotated": None,
+    "identity_path": None,
+    "secrets": [],
+}
+
+
+@pytest.mark.parametrize(
+    "rows",
+    [
+        [],
+        [{**_DEPLOY_KEY_ROW, "status": "retired"}],
+        [{**_DEPLOY_KEY_ROW, "provenance": "observed"}],
+        [_DEPLOY_KEY_ROW, _DEPLOY_KEY_ROW],
+    ],
+    ids=["no-row", "retired", "observed", "two-rows"],
+)
+def test_keys_refuses_the_deploy_key_without_its_inventory_row(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, rows: list[dict]
+) -> None:
+    _flag_on(monkeypatch)
+    calls: list[list[str]] = []
+    deps = _recording_deps(tmp_path, calls)
+    deps.inventory = _inventory(tmp_path, rows)
+    result = run_nic(deps, action="validate", config=_deploy_key_config(tmp_path))
+    assert result.ok is False
+    assert result.details["exit_code"] == EXIT_USAGE
+    assert "keys will not resolve GITOPS_DEPLOY_KEY" in result.summary
+    assert DOTENV_RELATIVE.as_posix() not in result.summary  # refused before .env is read
+    assert calls == []
+
+
+def test_keys_refuses_an_unreadable_inventory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _flag_on(monkeypatch)
+    inventory = tmp_path / "keys-inventory.yaml"
+    inventory.write_text("- not\n- a mapping\n", encoding="utf-8")
+    deps = _recording_deps(tmp_path, [])
+    deps.inventory = inventory
+    result = run_nic(deps, action="validate", config=_deploy_key_config(tmp_path))
+    assert result.details["exit_code"] == EXIT_USAGE
+    assert "cannot be read" in result.summary
+
+
+def test_the_deploy_key_resolves_through_keys_with_its_row(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _flag_on(monkeypatch)
+    identity = tmp_path / "identity.txt"
+    identity.write_text("AGE-PLACEHOLDER", encoding="utf-8")
+    monkeypatch.setenv("SOPS_AGE_KEY_FILE", str(identity))
+    (tmp_path / "deploy-key.age").write_bytes(b"AGE[FAKE]")
+    (tmp_path / DOTENV_RELATIVE).write_text("GITOPS_DEPLOY_KEY=deploy-key.age\n", encoding="utf-8")
+    seen: list[dict[str, str]] = []
+
+    def runner(argv: list[str], _cwd: Path, env: dict[str, str]) -> _Proc:
+        seen.append(env)
+        return _Proc()
+
+    deps = NicDeps(
+        root=tmp_path,
+        runner=runner,
+        nic_executable=lambda: "/usr/bin/nic",
+        decrypt=lambda _age, _id: "synthetic-deploy-key",
+        inventory=_inventory(tmp_path, [_DEPLOY_KEY_ROW]),
+    )
+    assert run_nic(deps, action="validate", config=_deploy_key_config(tmp_path)).ok is True
+    assert seen[0]["GITOPS_DEPLOY_KEY"] == "synthetic-deploy-key"

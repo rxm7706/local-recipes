@@ -679,9 +679,13 @@ def test_real_roster_protected_refs_shape() -> None:
     data = json.loads(REAL_ROSTER.read_text(encoding="utf-8"))
     assert "protected_ref_prefixes" not in data
     refs = data["protected_refs"]
-    assert len(refs) == 5
+    assert len(refs) == 6
     by_ref = {entry["refname"]: entry for entry in refs}
     assert by_ref["refs/heads/loop/"]["kind"] == "operational-branch"
+    # Story 118.9 (spec-pyforge-steward CAP-178): nic's GitOps branch, written by its deploy key alone.
+    assert by_ref["refs/heads/gitops/"]["kind"] == "operational-branch"
+    assert by_ref["refs/heads/gitops/"]["rules"] == ["creation", "update", "deletion", "non_fast_forward"]
+    assert by_ref["refs/heads/gitops/"]["bypass"] == ["DeployKey"]
     assert by_ref["refs/heads/attempt-preserve/"]["kind"] == "legacy"
     assert by_ref["refs/tags/preserve/"]["kind"] == "preserve-tag"
     assert by_ref["refs/tags/archive/"]["kind"] == "archive-tag"
@@ -695,6 +699,7 @@ def test_protected_branch_prefixes_floor_when_roster_omits_loop(hook_module) -> 
     prefixes = hook_module.load_protected_branch_prefixes(REPO_ROOT)
     assert "refs/heads/loop/" in prefixes
     assert "refs/heads/main" in prefixes
+    assert "refs/heads/gitops/" in prefixes
 
 
 @pytest.mark.parametrize(
@@ -708,6 +713,10 @@ def test_protected_branch_prefixes_floor_when_roster_omits_loop(hook_module) -> 
         "git branch -D attempt-preserve/run-1",
         "gh api -X DELETE repos/o/r/git/refs/heads/loop/x",
         "git -C /tmp/wt push origin --delete loop/pyforge-atlas",
+        # Story 118.9: the hook denies deleting nic's GitOps branch; its force-push is the ruleset's to refuse.
+        "git push origin --delete gitops/x",
+        "git push origin :refs/heads/gitops/my-nebari-hetzner",
+        "gh api -X DELETE repos/o/r/git/refs/heads/gitops/my-nebari-hetzner",
     ],
 )
 def test_protected_ref_deletion_denied(fake_repo: Path, command: str) -> None:

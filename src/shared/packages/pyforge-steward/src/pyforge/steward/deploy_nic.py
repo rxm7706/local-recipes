@@ -10,6 +10,15 @@ parent process. Each run appends ``{verb, config, seconds, exit}`` to
 ``nic destroy --auto-approve``: ``nic destroy`` otherwise asks ``Type 'yes' to confirm`` and
 dies with ``failed to read user input: EOF`` under a subprocess, and the explicit ``down``
 action behind the kill switch is the consent (Story 118.4).
+
+Story 118.9 (spec-pyforge-steward CAP-178, CAP-176) guards the cloud GitOps branch before
+any cloud run: a ``repository.existing`` config is refused, for every action and before
+``nic`` starts, when ``pyforge.steward.nkp_gitops_branch`` is OFF or its branch is ``main``
+or outside ``gitops/``; an ``up`` on any provider but local kind refuses without the
+operator's ``--yes``; ``GITOPS_DEPLOY_KEY`` resolves only with its
+``.steward/keys-inventory.yaml`` row; the summary carries ``nic``'s last line only redacted;
+and after a cloud ``up`` the range ``origin/main..origin/<branch>`` is scanned for a
+secret-shaped value with the ``keys audit --secrets`` pattern table.
 """
 
 from __future__ import annotations
@@ -18,7 +27,7 @@ import json
 import os
 import shutil
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
@@ -28,8 +37,12 @@ import yaml
 from .interfaces import DutyResult
 
 NKP_DEPLOY_FLAG = "pyforge.steward.nkp_deploy"
+NKP_GITOPS_BRANCH_FLAG = "pyforge.steward.nkp_gitops_branch"
+GITOPS_BRANCH_PREFIX = "gitops/"
 JOURNAL_RELATIVE = Path(".steward/nic-deploy.jsonl")
 DOTENV_RELATIVE = Path(".env")
+# Credentials that resolve only with an issued row in the keys inventory (Story 118.9, CAP-178).
+INVENTORIED_CREDENTIALS: frozenset[str] = frozenset({"GITOPS_DEPLOY_KEY"})
 
 NIC_ACTIONS: tuple[str, ...] = ("validate", "up", "kubeconfig", "outputs", "down")
 _NIC_SUBCOMMAND: dict[str, str] = {
@@ -131,12 +144,26 @@ def load_secret_env(
     env_file: Path,
     required: frozenset[str],
     decrypt: DecryptSecret | None = None,
+    inventory: Path | None = None,
 ) -> tuple[dict[str, str] | None, DutyResult | None]:
-    """Resolve ``required`` names from ``env_file`` through age decryption (keys), not the shell."""
+    """Resolve ``required`` names from ``env_file`` through age decryption (keys), not the shell.
+
+    A name in ``INVENTORIED_CREDENTIALS`` is refused first, before ``.env`` is read, unless the
+    keys inventory holds its issued row (Story 118.9, AC5).
+    """
     from .cli import EXIT_USAGE
+    from .keys import issued_row_refusal
 
     if not required:
         return {}, None
+    for name in sorted(required & INVENTORIED_CREDENTIALS):
+        reason = issued_row_refusal(name, inventory)
+        if reason is not None:
+            return None, DutyResult(
+                ok=False,
+                summary=f"deploy nic: refused — keys will not resolve {name}: {reason}",
+                details={"exit_code": EXIT_USAGE},
+            )
     if not env_file.is_file():
         return None, DutyResult(
             ok=False,
@@ -224,6 +251,7 @@ class NicDeps:
     decrypt: DecryptSecret | None = None
     journal: Callable[[dict[str, Any]], None] | None = None
     monotonic: Callable[[], float] = time.monotonic
+    inventory: Path | None = None  # the keys inventory; None reads the repo-root one
 
 
 def _production_deps(root: Path) -> NicDeps:
@@ -260,8 +288,110 @@ def _load_config(config_path: Path) -> tuple[dict[str, Any] | None, DutyResult |
     return document, None
 
 
-def run_nic(deps: NicDeps, *, action: str, config: Path) -> DutyResult:
+def _usage_refusal(summary: str) -> DutyResult:
     from .cli import EXIT_USAGE
+
+    return DutyResult(ok=False, summary=summary, details={"exit_code": EXIT_USAGE})
+
+
+def existing_repository_branch(document: Mapping[str, Any]) -> str | None:
+    """The ``repository.existing.branch`` a config names, ``""`` when it names none, ``None`` off ``existing``."""
+    repository = document.get("repository")
+    if not isinstance(repository, Mapping) or "existing" not in repository:
+        return None
+    existing = repository.get("existing")
+    branch = existing.get("branch") if isinstance(existing, Mapping) else None
+    return branch.strip() if isinstance(branch, str) else ""
+
+
+def refuse_gitops_branch(document: Mapping[str, Any]) -> DutyResult | None:
+    """Story 118.9 AC2/AC3: refuse a ``repository.existing`` config before ``nic`` starts, every action.
+
+    OFF ``pyforge.steward.nkp_gitops_branch`` refuses every such config; ON, its branch must be
+    ``gitops/<name>`` (never ``main``). kind's ``repository.local`` is never refused here.
+    """
+    from pyforge.core.flags import read_boolean
+
+    branch = existing_repository_branch(document)
+    if branch is None:
+        return None
+    if not read_boolean(NKP_GITOPS_BRANCH_FLAG, default=True):
+        return _usage_refusal(
+            f"deploy nic: refused — {NKP_GITOPS_BRANCH_FLAG} is off, so no repository.existing config runs"
+        )
+    if branch == "main" or not branch.startswith(GITOPS_BRANCH_PREFIX) or branch == GITOPS_BRANCH_PREFIX:
+        return _usage_refusal(
+            f"deploy nic: refused — repository.existing.branch {branch!r} is not a {GITOPS_BRANCH_PREFIX}<name> "
+            "branch; the cloud GitOps source is gitops/<project_name>, never main"
+        )
+    return None
+
+
+def is_local_kind(document: Mapping[str, Any]) -> bool:
+    """True when the config's only cluster provider is ``local`` (kind)."""
+    cluster = document.get("cluster")
+    return isinstance(cluster, Mapping) and set(cluster) == {"local"}
+
+
+def refuse_without_consent(document: Mapping[str, Any], *, action: str, yes: bool) -> DutyResult | None:
+    """Story 118.9 AC6: ``up`` on any provider but local kind runs only under the operator's ``--yes``."""
+    if action != "up" or yes or is_local_kind(document):
+        return None
+    return _usage_refusal(
+        "deploy nic: refused — up on a provider other than local kind needs the operator's --yes "
+        "(an agent's --yes is denied by session_denials steward-deploy-nic-up-yes)"
+    )
+
+
+def scan_gitops_range(deps: NicDeps, branch: str) -> DutyResult | None:
+    """Story 118.9 AC4: after a cloud ``up``, scan ``origin/main..origin/<branch>`` for a secret-shaped value.
+
+    ``nic`` commits the cloud tree inside its own clone, so no hook of ours sees it; this reads the
+    pushed range back. A range that cannot be read fails closed. Returns ``None`` when clean.
+    """
+    from .cli import EXIT_FAILED
+    from .keys import scan_text_for_secrets
+
+    tracking = f"refs/remotes/origin/{branch}"
+    span = f"origin/main..origin/{branch}"
+    env = dict(os.environ)
+    fetch = deps.runner(
+        [
+            "git",
+            "fetch",
+            "--no-tags",
+            "origin",
+            "+refs/heads/main:refs/remotes/origin/main",
+            f"+refs/heads/{branch}:{tracking}",
+        ],
+        deps.root,
+        env,
+    )
+    log = (
+        deps.runner(["git", "log", "-p", "--no-color", "--format=commit %H", span], deps.root, env)
+        if fetch.returncode == 0
+        else fetch
+    )
+    if log.returncode != 0:
+        return DutyResult(
+            ok=False,
+            summary=f"deploy nic up: the secret scan could not read {span} (git exited {log.returncode})",
+            details={"exit_code": EXIT_FAILED},
+        )
+    findings = scan_text_for_secrets(log.stdout or "", span)
+    if not findings:
+        return None
+    named = "; ".join(sorted({f"line {f.line}: {f.pattern_name}" for f in findings}))
+    return DutyResult(
+        ok=False,
+        summary=f"deploy nic up: {span} carries a secret-shaped value ({named}); rotate it and rewrite the branch",
+        details={"exit_code": EXIT_FAILED, "secret_findings": len(findings)},
+    )
+
+
+def run_nic(deps: NicDeps, *, action: str, config: Path, yes: bool = False) -> DutyResult:
+    from .cli import EXIT_USAGE
+    from .keys import redact_secret_shapes
 
     if action not in NIC_ACTIONS:
         return DutyResult(
@@ -274,9 +404,14 @@ def run_nic(deps: NicDeps, *, action: str, config: Path) -> DutyResult:
     if failure is not None:
         return failure
     assert document is not None
+    refused = refuse_gitops_branch(document) or refuse_without_consent(document, action=action, yes=yes)
+    if refused is not None:
+        return refused
     required = operator_env_names(document)
     env_file = deps.root / DOTENV_RELATIVE
-    secret_env, failure = load_secret_env(deps.root, env_file=env_file, required=required, decrypt=deps.decrypt)
+    secret_env, failure = load_secret_env(
+        deps.root, env_file=env_file, required=required, decrypt=deps.decrypt, inventory=deps.inventory
+    )
     if failure is not None:
         return failure
     assert secret_env is not None
@@ -315,11 +450,17 @@ def run_nic(deps: NicDeps, *, action: str, config: Path) -> DutyResult:
     tail = (proc.stderr or proc.stdout or "").strip()
     summary = f"deploy nic {action}: nic {subcommand} exited {proc.returncode}"
     if tail:
-        summary = f"{summary}: {tail.splitlines()[-1]}"
+        # Never nic's output unredacted (Story 118.9 AC4): the resolved secrets and every secret shape go first.
+        summary = f"{summary}: {redact_secret_shapes(tail.splitlines()[-1], tuple(secret_env.values()))}"
     details: dict[str, Any] = {"argv": argv, "journal": record}
     if proc.returncode != 0:
         details["exit_code"] = proc.returncode
     result = DutyResult(ok=proc.returncode == 0, summary=summary, details=details)
+    branch = existing_repository_branch(document)
+    if action == "up" and proc.returncode == 0 and branch:
+        leaked = scan_gitops_range(deps, branch)
+        if leaked is not None:
+            return leaked
     if action == "up" and proc.returncode == 0:
         from .deploy_nic_packs import PackDeps, _Completed, apply_nkp_packs
 
@@ -359,4 +500,4 @@ def run_deploy_nic(ns: Any) -> DutyResult:
     deps: NicDeps | None = getattr(ns, "_nic_deps", None)
     if deps is None:
         deps = _production_deps(repo_root())
-    return run_nic(deps, action=action, config=Path(config))
+    return run_nic(deps, action=action, config=Path(config), yes=getattr(ns, "yes", False) is True)
