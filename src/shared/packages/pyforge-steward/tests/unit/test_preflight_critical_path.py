@@ -574,7 +574,8 @@ def test_a_serial_docs_site_lane_holds_the_cores_the_suite_behind_it_needs(tmp_p
 
 def test_after_the_install_the_longest_docs_site_lane_goes_first() -> None:
     """Story 117.22: herald's live half, the chain's longest lane, goes before its package half once the install is
-    done, though the coverage gate needs both; with no seconds known the declared order stands."""
+    done: the coverage gate needs both, so the 'needed' rule ties them and the seconds decide. With no seconds known the
+    declared order stands, and a lane a pending lane needs still goes before one no lane needs, however short."""
     install = preflight.Lane("docs-site-install", "site")
     package = preflight.Lane("pyforge-herald-test", "pyforge-herald")
     live = preflight.Lane("pyforge-herald-live-test", "pyforge-herald")
@@ -588,6 +589,13 @@ def test_after_the_install_the_longest_docs_site_lane_goes_first() -> None:
     expected = {(package.task, package.environment): 55.0, (live.task, live.environment): 350.0}
     assert preflight._next_lane([package, live], lanes, pending, 1, expected) is live
     assert preflight._next_lane([package, live], lanes, pending, 1, None) is package
+    build = preflight.Lane("pages-build", "site")
+    check = preflight.Lane("pages-check", "site", depends_on=(("pages-build", "site"),))
+    lonely = preflight.Lane("pyforge-herald-test", "pyforge-herald")
+    lanes2 = [install, lonely, build, check]
+    pending2 = {(lane.task, lane.environment): lane for lane in (lonely, build, check)}
+    longer = {(lonely.task, lonely.environment): 500.0, (build.task, build.environment): 8.0}
+    assert preflight._next_lane([lonely, build], lanes2, pending2, 1, longer) is build
 
 
 def test_the_docs_site_slot_holds_the_share_its_widest_lane_is_planned_to_take(tmp_path: Path) -> None:

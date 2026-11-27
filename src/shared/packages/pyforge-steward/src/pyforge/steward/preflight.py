@@ -1337,15 +1337,16 @@ def _next_lane(
         # lane pending docs-site lanes depend on; then declared order. Story 117.2 made the order explicit: the
         # station coverage gates depend on their suites, and herald's suite is itself a docs-site lane, so
         # 'needed by a pending dependent' alone would hand the turn to the suite before the install it reads.
-        # Story 117.22: with expected seconds, the longest docs-site lane goes right after the install, ahead of the
-        # 'needed' rule. Since herald Story 59.1 herald's live half builds side by side and is the chain's longest
-        # lane by far; behind herald's package half it started 78 s in, on the two cores left by then.
+        # Story 117.22: among lanes the 'needed' rule ties, the longest expected goes first, then declared order.
+        # herald's coverage gate needs both its halves, and since herald Story 59.1 the live half builds side by side
+        # and is the chain's longest lane by far; in declared order it started behind the package half, 78 s in, on
+        # the two cores left by then.
         first = min(
             docs,
             key=lambda lane: (
                 lane.task != DOCS_SITE_INSTALL_TASK,
-                -(expected or {}).get(_lane_key(lane), 0.0),
                 not _needed_by_pending_dependent(lane, pending),
+                -(expected or {}).get(_lane_key(lane), 0.0),
                 lanes.index(lane),
             ),
         )
