@@ -7,7 +7,8 @@ selects the lanes CI would run for the diff (Story 71.2,
 each needed environment serially, runs selected lanes in a pool bounded by
 ``--jobs``, and appends JSON lines to ``.steward/preflight-runs.jsonl``.
 Lanes that share a CI service container, or the ``docs-site/`` tree, share a mutex and never run at once
-(Stories 71.3, 105.1; :func:`lane_mutex_keys`).
+(Stories 71.3, 105.1; :func:`lane_mutex_keys`). A lane whose task is in :data:`ALONE_TAIL_TASKS` runs its command's
+last ``&&`` segment with no other lane in flight (Story 117.30).
 A lane is its task and its environment wherever the runner keeps per-lane state —
 results, scratch, logs, stop marks, journal extras, worker shares (Story 103.5):
 one task may run in two environments.
@@ -41,7 +42,7 @@ import tomllib
 import uuid
 from collections.abc import Callable, Mapping, Sequence
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
@@ -123,6 +124,19 @@ DOCS_SITE_TASKS = frozenset(
     }
 )
 
+# Story 117.30 (spec-pyforge-steward CAP-175, a fix under CAP-159: a lane's verdict never depends on the other lanes'
+# load): the tasks whose command ends in a segment that measures its own CPU time. Such a lane runs the segments
+# before its last ``&&`` beside the other lanes; its last segment, the "alone tail", runs once no other lane is in
+# flight or ready, and no lane starts while it runs. Doctor's five-second budget test spends more CPU when other lanes
+# share the cores (a median of 5.03 s against 5.0 s at a load average of 13.7, 2026-11-27), and passes alone.
+# tests/meta/test_preflight_alone_tail_tasks.py holds each named task to a command with a serial tail.
+ALONE_TAIL_TASKS = frozenset({"pyforge-doctor-live-test"})
+PART_WHOLE = "whole"
+PART_HEAD = "head"
+PART_TAIL = "tail"
+# A segment is run as one argv through ``pixi run -- <argv>``, so it may hold no shell syntax for a shell to read.
+_SHELL_TOKENS = frozenset({"|", "||", "&", ";", "<", ">", ">>", "2>&1"})
+
 
 LaneKey = tuple[str, str]
 
@@ -169,6 +183,49 @@ class LaneRunContext:
     scratch_dir: Path
     log_path: Path
     env: dict[str, str]
+    # Story 117.30: PART_WHOLE runs the task; an alone-tail lane runs as PART_HEAD, then PART_TAIL.
+    part: str = PART_WHOLE
+
+
+@dataclass(frozen=True)
+class AloneTail:
+    """An :data:`ALONE_TAIL_TASKS` task's command split at ``&&`` (Story 117.30): each segment an argv for
+    ``pixi run -- <argv>``, and the task's own ``env``, which ``pixi run <task>`` would have set."""
+
+    head: tuple[tuple[str, ...], ...]
+    tail: tuple[str, ...]
+    env: Mapping[str, str]
+
+
+def alone_tail_plan(pixi_data: dict[str, Any], task_name: str) -> AloneTail | None:
+    """The head segments and the tail of ``task_name``'s command, or ``None`` when it has none (Story 117.30).
+
+    ``None`` when the task is missing, its ``cmd`` is not one string, it has no ``&&``, a segment is empty or does
+    not parse, a segment holds shell syntax or a ``$`` expansion, or the task's ``env`` does: each segment runs as one
+    argv, with no shell to read them.
+    """
+    task = _find_task(pixi_data, task_name)
+    if not isinstance(task, dict):
+        return None
+    cmd = task.get("cmd")
+    if not isinstance(cmd, str):
+        return None
+    parts = [part.strip() for part in cmd.split("&&")]
+    if len(parts) < 2 or not all(parts):
+        return None
+    try:
+        argvs = [tuple(shlex.split(part)) for part in parts]
+    except ValueError:
+        return None
+    if any(token in _SHELL_TOKENS or "$" in token for argv in argvs for token in argv):
+        return None
+    raw_env = task.get("env", {})
+    if not isinstance(raw_env, dict):
+        return None
+    env = {str(name): str(value) for name, value in raw_env.items()}
+    if any("$" in value for value in env.values()):
+        return None
+    return AloneTail(head=tuple(argvs[:-1]), tail=argvs[-1], env=env)
 
 
 @dataclass(frozen=True)
@@ -915,6 +972,8 @@ class _RunCoordinator:
     xdist_workers: dict[LaneKey, int] = field(default_factory=dict)
     #: Story 117.15: the CPU seconds each lane's processes used, summed over its segments as each is reaped.
     lane_cpu: dict[LaneKey, float] = field(default_factory=dict)
+    #: Story 117.30: each selected alone-tail task's split command, keyed by task as the suite plan is.
+    alone_tails: dict[str, AloneTail] = field(default_factory=dict)
     subprocess_argv_for_lane: Callable[[Lane], list[str]] | None = None
     before_popen: Callable[[LaneRunContext], None] | None = None
     between_segments: Callable[[LaneRunContext, int], None] | None = None
@@ -1180,8 +1239,28 @@ def _subprocess_reduced_suite_lane(
     return lane_exit
 
 
+def _subprocess_alone_tail_part(coord: _RunCoordinator, ctx: LaneRunContext) -> int:
+    """Run an alone-tail lane's head segments in order, or its tail, as ``&&`` would (Story 117.30).
+
+    Each segment is ``pixi run --frozen -e <env> -- <argv>`` with the task's own ``env`` over the lane's; the first
+    non-zero exit ends the part. The tail appends to the head's log, so the lane keeps one log.
+    """
+    plan = coord.alone_tails[ctx.lane.task]
+    segments = plan.head if ctx.part == PART_HEAD else (plan.tail,)
+    run_ctx = replace(ctx, env={**ctx.env, **plan.env})
+    prefix = ["pixi", "run", "--frozen", "-e", ctx.lane.environment, "--"]
+    with ctx.log_path.open("ab" if ctx.part == PART_TAIL else "wb") as log_handle:
+        for argv in segments:
+            code = _run_pixi_argv(coord, run_ctx, [*prefix, *argv], log_handle)
+            if code != 0:
+                return code
+    return 0
+
+
 def _subprocess_lane(coord: _RunCoordinator, ctx: LaneRunContext) -> int:
     ctx.log_path.parent.mkdir(parents=True, exist_ok=True)
+    if ctx.part != PART_WHOLE:
+        return _subprocess_alone_tail_part(coord, ctx)
     plan_entry = coord.suite_lane_plan.get(ctx.lane.task)
     if isinstance(plan_entry, preflight_suite_reduction.SuiteLaneOverride):
         return _subprocess_reduced_suite_lane(coord, ctx, plan_entry)
@@ -1212,10 +1291,14 @@ def _append_journal(repo_root: Path, record: dict[str, Any]) -> None:
         handle.write(json.dumps(record, sort_keys=True) + "\n")
 
 
-def _print_lane_log(log_path: Path) -> None:
+def _print_lane_log(log_path: Path, offset: int = 0) -> None:
+    """Print the lane's log from byte ``offset``: an alone tail prints only what it appended (Story 117.30)."""
     if not log_path.is_file():
         return
-    text = log_path.read_text(encoding="utf-8", errors="replace")
+    with log_path.open("rb") as handle:
+        handle.seek(offset)
+        # Universal newlines, as read_text gave before the offset.
+        text = handle.read().decode("utf-8", errors="replace").replace("\r\n", "\n").replace("\r", "\n")
     if text:
         sys.stdout.write(text)
         if not text.endswith("\n"):
@@ -1317,7 +1400,8 @@ def _next_lane(
     index of the next docs-site lane in declaration order) goes to ``docs-site-install`` when it is ready, else to the
     ready docs-site lane that pending lanes depend on, else the first one declared. So ``docs-site-install``, then ``pages-build``, take the turns of the docs-site
     lanes declared before them, and herald's built-site tests read this run's install, never a stale one or none at
-    all (a fresh worktree). At ``--jobs 1`` every other lane runs at its declared position.
+    all (a fresh worktree). At ``--jobs 1`` every other lane runs at its declared position, except a lane that waits on
+    an alone-tail lane (Story 117.30): that lane's tail runs once nothing else can start, so its dependents run last.
 
     With ``expected`` (Story 117.3, the flag on), the longest-expected ready lane goes first and the declared turn only
     breaks ties: a lane's expected seconds are its journal median, :data:`UNKNOWN_LANE_SECONDS` when
@@ -1404,6 +1488,19 @@ def _blocked_lane_result(lane: Lane, blocker: tuple[str, str | None], *, keep_go
     )
 
 
+def _joined_alone_tail(head: LaneResult, tail: LaneResult) -> LaneResult:
+    """One journal row for an alone-tail lane (Story 117.30): the tail's verdict, the two parts' seconds summed, the
+    head's start, both parts' extras (the tail's CPU total wins), and ``alone_tail`` naming the tail's own run."""
+    extra = {**(head.journal_extra or {}), **(tail.journal_extra or {})}
+    extra["alone_tail"] = {
+        "seconds": tail.seconds,
+        "start_offset": tail.start_offset,
+        "exit_code": tail.exit_code,
+        "status": tail.status,
+    }
+    return replace(tail, seconds=head.seconds + tail.seconds, start_offset=head.start_offset, journal_extra=extra)
+
+
 def _run_lane_in_pool(
     coord: _RunCoordinator,
     lane: Lane,
@@ -1411,6 +1508,7 @@ def _run_lane_in_pool(
     mutex_keys: tuple[str, ...],
     runner: Callable[[LaneRunContext], int],
     use_subprocess: bool,
+    part: str = PART_WHOLE,
 ) -> LaneResult:
     key = _lane_key(lane)
     if coord.cancel.is_set():
@@ -1437,7 +1535,9 @@ def _run_lane_in_pool(
         workers = coord.xdist_workers.get(key)
         if workers is not None:
             env["PYTEST_XDIST_AUTO_NUM_WORKERS"] = str(workers)
-        ctx = LaneRunContext(lane=lane, scratch_dir=lane_dir, log_path=log_path, env=env)
+        ctx = LaneRunContext(lane=lane, scratch_dir=lane_dir, log_path=log_path, env=env, part=part)
+        # Story 117.30: an alone tail appends to its head's log and prints only what it added.
+        log_offset = log_path.stat().st_size if part == PART_TAIL and log_path.is_file() else 0
         start_offset = time.monotonic() - coord.run_start
         lane_start = time.monotonic()
 
@@ -1447,7 +1547,7 @@ def _run_lane_in_pool(
             code = runner(ctx)
 
         elapsed = time.monotonic() - lane_start
-        _print_lane_log(log_path)
+        _print_lane_log(log_path, log_offset)
 
         journal_extra = _lane_journal_extra(coord, lane)
         if workers is not None:
@@ -1505,8 +1605,13 @@ def run_preflight(
     logical_cores: int | None = None,
     expected_seconds: Mapping[LaneKey, float] | None = None,
     reuse: bool = False,
+    alone_tail_tasks: frozenset[str] = ALONE_TAIL_TASKS,
 ) -> int:
     """Run CI-selected lanes; return exit code 0 / 1 / 2 / 130.
+
+    ``alone_tail_tasks`` (Story 117.30, injectable for tests): a selected lane of one of these tasks runs its last
+    ``&&`` segment once no other lane is in flight or ready, and none starts while it runs; a selected lane whose
+    task has no such segment (:func:`alone_tail_plan`) returns ``EXIT_CONFIG`` before any install.
 
     ``reuse`` (Story 117.17): when true, a run whose every selected lane already passed on this same clean tree,
     base and environment (:func:`reusable_run`) starts no lane: it names the run it reuses, journals a ``reuse``
@@ -1634,6 +1739,22 @@ def run_preflight(
         print("preflight: refusing the run before any install or lane starts", file=sys.stderr)
         return EXIT_CONFIG
 
+    # Story 117.30: each selected alone-tail task's split command. A declared task with no tail is refused, never run
+    # whole: run whole, its timing segment would share the cores again and the run would not say so.
+    alone_tails: dict[str, AloneTail] = {}
+    for lane in lanes:
+        if lane.task not in alone_tail_tasks or lane.task in alone_tails:
+            continue
+        plan = alone_tail_plan(pixi_data, lane.task)
+        if plan is None:
+            print(
+                f"preflight: {lane.task!r} is declared to run its last segment alone (ALONE_TAIL_TASKS), but its cmd "
+                "has no '&&' segment that runs as one argv; refusing the run before any install or lane starts",
+                file=sys.stderr,
+            )
+            return EXIT_CONFIG
+        alone_tails[lane.task] = plan
+
     # Story 117.17: the state this run's verdict will be tied to, read before any lane can touch the tree.
     state_at_start = tree_state(repo_root)
     if reuse and lanes:
@@ -1737,6 +1858,10 @@ def run_preflight(
         legacy_run_lane = run_lane
 
         def injected_runner(ctx: LaneRunContext) -> int:
+            # Story 117.30: a runner that takes a lane runs all of it in one call. An alone-tail lane's head call stands
+            # for the whole lane, at the lane's own turn, and its tail runs nothing.
+            if ctx.part == PART_TAIL:
+                return 0
             return legacy_run_lane(ctx.lane)
 
     else:
@@ -1805,6 +1930,7 @@ def run_preflight(
         keep_going=keep_going,
         suite_lane_plan=suite_lane_plan,
         xdist_workers=xdist_workers,
+        alone_tails=alone_tails,
         subprocess_argv_for_lane=subprocess_argv_for_lane,
         before_popen=before_popen,
         between_segments=between_segments,
@@ -1848,10 +1974,29 @@ def run_preflight(
     try:
         with ThreadPoolExecutor(max_workers=worker_count) as pool:
             futures: dict[Future[LaneResult], Lane] = {}
+            # Story 117.30: which part of its lane each future runs, the alone-tail lanes whose head passed and whose
+            # tail waits for the machine to itself (in the order their heads finished), and the head result of a tail
+            # in flight. A lane is completed only when its tail is, so its dependents wait for the tail.
+            parts: dict[Future[LaneResult], str] = {}
+            waiting_tails: dict[LaneKey, tuple[Lane, LaneResult]] = {}
+            tail_heads: dict[LaneKey, LaneResult] = {}
 
             def _record_done(lane: Lane, result: LaneResult) -> None:
                 completed[_lane_key(lane)] = result
                 results_by_key[_lane_key(lane)] = result
+
+            def _settle(fut: Future[LaneResult], lane: Lane) -> None:
+                part = parts.pop(fut, PART_WHOLE)
+                try:
+                    result = fut.result()
+                except Exception:  # noqa: BLE001
+                    result = LaneResult(lane.task, lane.environment, 0.0, 1, "red", 0.0)
+                if part == PART_HEAD and result.status == "ok":
+                    waiting_tails[_lane_key(lane)] = (lane, result)
+                    return
+                if part == PART_TAIL:
+                    result = _joined_alone_tail(tail_heads.pop(_lane_key(lane)), result)
+                _record_done(lane, result)
 
             def _mark_dependency_blocked() -> None:
                 for key in list(pending.keys()):
@@ -1864,7 +2009,7 @@ def run_preflight(
                     _record_done(lane, _blocked_lane_result(lane, blocker, keep_going=keep_going))
                     del pending[key]
 
-            while pending or futures:
+            while pending or futures or waiting_tails:
                 if coord.cancel.is_set() and not futures:
                     break
 
@@ -1940,6 +2085,7 @@ def run_preflight(
                     del pending[key]
                     if ready.task in DOCS_SITE_TASKS:
                         docs_started += 1
+                    part = PART_HEAD if ready.task in alone_tails else PART_WHOLE
                     fut = pool.submit(
                         _run_lane_in_pool,
                         coord,
@@ -1948,10 +2094,33 @@ def run_preflight(
                         mutex_keys[key],
                         runner,
                         use_subprocess,
+                        part,
                     )
                     futures[fut] = ready
+                    parts[fut] = part
 
                 stopped = coord.stop_on_red.is_set() and not coord.keep_going
+
+                # Story 117.30: with nothing in flight after admission, no pending lane can start (one would have, on
+                # an idle machine), so the next waiting tail runs now, alone. No lane starts while it runs: only the
+                # tail can finish, and until it does no lane's dependencies or mutexes change. A stop leaves it
+                # unrun: the lane is journaled cancelled below, as an unstarted lane is.
+                if not futures and waiting_tails and not stopped and not coord.cancel.is_set():
+                    tail_key = next(iter(waiting_tails))
+                    tail_lane, head_result = waiting_tails.pop(tail_key)
+                    tail_heads[tail_key] = head_result
+                    fut = pool.submit(
+                        _run_lane_in_pool,
+                        coord,
+                        tail_lane,
+                        scratch_root,
+                        mutex_keys[tail_key],
+                        runner,
+                        use_subprocess,
+                        PART_TAIL,
+                    )
+                    futures[fut] = tail_lane
+                    parts[fut] = PART_TAIL
 
                 if not futures:
                     if not pending or stopped:
@@ -1960,23 +2129,13 @@ def run_preflight(
 
                 done, _ = wait(futures.keys(), return_when=FIRST_COMPLETED)
                 for fut in done:
-                    lane = futures.pop(fut)
-                    try:
-                        result = fut.result()
-                    except Exception:  # noqa: BLE001
-                        result = LaneResult(lane.task, lane.environment, 0.0, 1, "red", 0.0)
-                    _record_done(lane, result)
+                    _settle(fut, futures.pop(fut))
 
                 if stopped:
                     while futures:
                         done_wait, _ = wait(futures.keys(), return_when=FIRST_COMPLETED)
                         for fut in done_wait:
-                            lane = futures.pop(fut)
-                            try:
-                                result = fut.result()
-                            except Exception:  # noqa: BLE001
-                                result = LaneResult(lane.task, lane.environment, 0.0, 1, "red", 0.0)
-                            _record_done(lane, result)
+                            _settle(fut, futures.pop(fut))
                     _mark_dependency_blocked()
                     break
     finally:

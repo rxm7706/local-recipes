@@ -8685,3 +8685,21 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   types restores main's mypy caches from an older lock when none match this one, and mypy re-checks every module
   against its source's hash. **Constraints:** no check, floor or gate is weakened. No flag (chores). Owner
   `spec-pyforge-steward`.
+- **2026-11-27 (doctor's speed-budget test reds under the preflight's own load) — Found and ruled:** twice on
+  2026-11-27 a full `pr-preflight` with `--keep-going` went red on one test, doctor's
+  `test_doctor_check_completes_within_the_five_second_budget` (a median of 5.05 s of CPU at a load average of 12.5,
+  then 5.03 s at 13.7, against 5.0 s), and both times `pyforge-doctor-live-test` passed when run alone. The test
+  already judges CPU, not wall time, and already runs after its lane's xdist segment, alone inside the lane; what it
+  lacks is time alone from the preflight's other lanes, whose load raises the CPU a run spends (shared SMT cores, a
+  lower clock). The preflight has mutexes, not a run-alone mode. Measured on the 16-core reference laptop: the lane
+  alone takes 47 s (its xdist segment 31 s, the speed test 11.5 s), so running the whole lane alone would add about
+  47 s to every full run that selects it, and running only its last segment alone about 12 s. **Ruled** (operator,
+  2026-11-27: "Do this task here: Preflight runs doctor's CPU speed-budget test alone"; never weaken the assertion).
+  **For steward:** this entry binds `spec-pyforge-steward` CAP-175 (realized, no text change: the serial remainder a
+  task names runs alone) with CAP-159 (concurrent lanes do not decide each other's verdicts) and decomposes as Story
+  117.30 on Epic 117: a lane whose task is declared with an alone tail runs its command's segments before the last
+  `&&` beside the other lanes, then its last segment once no other lane is in flight or ready, and no lane starts
+  while that segment runs; the journal keeps one row for the lane and names the tail's own seconds.
+  **Constraints:** the test, its median and its 5.0 s budget do not change; CI's jobs do not change; a declared task
+  whose command has no tail fails a meta-test, and the preflight refuses to run it (exit 2). No flag (fix). Owner
+  `spec-pyforge-steward`.
