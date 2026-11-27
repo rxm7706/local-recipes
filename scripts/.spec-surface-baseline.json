@@ -2780,7 +2780,7 @@
    "docs/dashboard/README.md": "cb70e19c69f4e5ae6b82a1f72a12672a5d8b49d4",
    "docs/reference/library-llms-full.md": "2e74220f2b8610a7bcc378465f39ffbf0d916b5c",
    "environment.yaml": "c02d2eec030e293458ee6b1f37b90f80f4de39cf",
-   "pixi.toml": "9dc0cac54d637d15bb54065614ba091310f4ba12",
+   "pixi.toml": "b3739cddeee602426159d32df97ae85980bf1c55",
    "scripts/.ad-citation-baseline.json": "685db30063a76e6a36e8ed25a938bd92c3dfa4cf",
    "scripts/ad_citation_check.py": "8a8e6d3025677232d36aac0d3dde6597756e27f4",
    "scripts/bmad-loop-worktree": "87bce267cac861accebffa6e29e7bc1ecaa398ab",
@@ -2841,7 +2841,7 @@
    "src/shared/packages/pyforge-core/tests/unit/test_errors.py": "cb0d234990797d401f15f4b59a247a96537648a9",
    "src/shared/packages/pyforge-core/tests/unit/test_exit_domains.py": "b653b8e73a5e95b4401eb5e848a128670fb78607",
    "src/shared/packages/pyforge-core/tests/unit/test_exit_domains_match_the_guild_roster.py": "7cab7a1860e7d9a663d62f594ab5463e117cd55e",
-   "src/shared/packages/pyforge-core/tests/unit/test_flags.py": "d69ac14db99a757959dcc1b88bd598a19a649343",
+   "src/shared/packages/pyforge-core/tests/unit/test_flags.py": "28f4f61614217f2f1fac0216bac645bc778075f3",
    "src/shared/packages/pyforge-core/tests/unit/test_flags_reader.py": "7c1cd089920a2001d4ce0f42bbc84c953a33ad8c",
    "src/shared/packages/pyforge-core/tests/unit/test_hooks.py": "5ac71315e295d61831cd8b3794e2535cfcf11971",
    "src/shared/packages/pyforge-core/tests/unit/test_landing_evidence.py": "115c10aa12674d205a1d76dc560c0fde5996d098",
@@ -3394,7 +3394,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "95ebf2202751a3fd2043114936ae009e32f3657c"
+  "memlog": "1b96538633422801f77ac80da85f06cd9231798c"
  },
  "pyforge-marshal/spec-pyforge-testing-charter": {
   "files": {
