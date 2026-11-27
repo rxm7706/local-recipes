@@ -82,8 +82,8 @@ SITES: tuple[Site, ...] = (
     # steward Story 133.2 (DW-steward-review-2026-11-24-2): 36 setup-pixi steps carried no pixi-version and
     # installed whatever pixi was newest that day. Each is pinned and registered here, one hit per step;
     # tests/scripts/test_workflows_and_scripts_do_what_they_name.py reds a step with no pin or no site.
-    _site("pyforge-station-tests.yml setup-pixi (29 jobs)", ".github/workflows/pyforge-station-tests.yml",
-          r"pixi-version: v" + _PIXI_VERSION, hits=29, kind="exact"),
+    _site("pyforge-station-tests.yml setup-pixi (21 jobs)", ".github/workflows/pyforge-station-tests.yml",
+          r"pixi-version: v" + _PIXI_VERSION, hits=21, kind="exact"),
     _site("cfe-regression-net.yml setup-pixi (2 jobs)", ".github/workflows/cfe-regression-net.yml",
           r"pixi-version: v" + _PIXI_VERSION, hits=2, kind="exact"),
     _site("ci-canary.yml setup-pixi (2 jobs)", ".github/workflows/ci-canary.yml",

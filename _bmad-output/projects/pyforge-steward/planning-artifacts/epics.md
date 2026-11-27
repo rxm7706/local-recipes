@@ -8074,6 +8074,22 @@ So that the module no longer pins one worker for 37.6 s, and its shard is no lon
 **And** a run without xdist derives as before, no assertion changes, and a test holds that a shared derivation equals one derived in-process
 **Status:** done
 
+### Story 117.27: Each station's coverage gate runs on the runner's Python
+
+As the operator whose PR waits on a station's coverage gate,
+I want each gate job to run the gate script on Python 3.14 set up by `actions/setup-python`, not inside the station's pixi environment,
+So that the 10 to 17 s each gate spends installing an environment it does not use leaves every station's path.
+
+**Type:** chore • **Effort:** S • **Deps:** 117.10, 124.2 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `.github/workflows/pyforge-station-tests.yml`, `scripts/pixi_version_registry.py`
+**Spec:** `planning-artifacts/specs/spec-117-27-each-station-s-coverage-gate-runs-on-the-runner-s-python.md`
+**Given** eight gate jobs each install the station's whole pixi environment (10 to 17 s of a 21 to 28 s job) to run `scripts/coverage_gates_ci.py --report …`, which imports only the standard library and judges the reports the shards uploaded
+**When** each gate job sets up Python 3.14 with `actions/setup-python` and runs the script with it
+**Then** each gate reads the same reports, judges the same floors and exits as before, with no `setup-pixi` step
+**And** the pixi-version registry counts the workflow's remaining setup-pixi steps, and the local gate tasks stay in each station's pixi environment
+**Status:** done
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
