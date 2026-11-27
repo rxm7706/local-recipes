@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: herald
-# stories: 296
+# stories: 302
 development_status:
   1-1-package-scaffold-for-pyforge-herald: done
   1-2-transport-port-primary-mcp-client-adapter-the-transport-spike: done
@@ -175,6 +175,8 @@ development_status:
   60-1-herald-s-build-groups-hold-only-the-builds-their-tests-share: done
   61-1-herald-s-test-builds-keep-the-docs-pages-they-already-rendered: done
   62-1-herald-s-two-builds-test-names-what-differs: done
+  63-1-herald-s-site-shell-group-holds-only-its-own-build: done
+  64-1-herald-s-site-builds-write-pagefind-s-files-whole-under-load: done
   7-1-design-implement-web-layout-header-tabs-sidebar-responsive: done
   7-2-implement-web-tooltips-inline-help: done
   8-1-implement-progress-data-model-database-schema: done
@@ -304,6 +306,10 @@ development_status:
   epic-61-retrospective: optional
   epic-62: done
   epic-62-retrospective: optional
+  epic-63: done
+  epic-63-retrospective: optional
+  epic-64: done
+  epic-64-retrospective: optional
   epic-7: done
   epic-7-retrospective: optional
   epic-8: done

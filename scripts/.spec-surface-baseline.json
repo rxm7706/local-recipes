@@ -833,7 +833,7 @@
    "docs-site/.nvmrc": "1827a420a84fd1b88fff0e1b8e608df1970da3e7",
    "docs-site/README.md": "93690d1be29e703aaab96efacd56ae1e77861e72",
    "docs-site/astro.config.mjs": "88ea447d063288d22b54d97f654af41708d07e36",
-   "docs-site/package-lock.json": "17bc907ed5847fcd143bd4f9b015c36106376951",
+   "docs-site/package-lock.json": "acdf85476cc70348666e46256b39b21d739b5ec6",
    "docs-site/package.json": "41aebfa3eabee8aa1c07b370dd887ef1f9ce2c83",
    "docs-site/redirects.json": "42badc2579d061597f3fad7e240af0a1007fe5f3",
    "docs-site/scripts/fix-doc-links.js": "76dc4fd2f85b02493a83bb9b256aa6dfb591e039",
@@ -1898,8 +1898,8 @@
    "src/shared/packages/pyforge-herald/tests/meta/test_preflight_pages_lane.py": "055508a6d5fd28931a945bbf26de8bfc2a0294fc",
    "src/shared/packages/pyforge-herald/tests/meta/test_public_contract.py": "7b0fe4368088a83dadf1f0108a8cc9f5c57eda97",
    "src/shared/packages/pyforge-herald/tests/meta/test_release_comms_routing.py": "20f6abef9461b4de24fd7150280cfdabeb321044",
-   "src/shared/packages/pyforge-herald/tests/meta/test_site_builders_share_a_worker.py": "9408657d18a70123a5cb75af098a0a969680864a",
-   "src/shared/packages/pyforge-herald/tests/meta/test_site_shell.py": "d865ba62e78fb208d57d2e1593be89a4b2a4ab36",
+   "src/shared/packages/pyforge-herald/tests/meta/test_site_builders_share_a_worker.py": "095c17fe6ccebbb590622088dfedaef8c9c4f803",
+   "src/shared/packages/pyforge-herald/tests/meta/test_site_shell.py": "05d4286d2e05a4efa9627554e9a188753f443750",
    "src/shared/packages/pyforge-herald/tests/meta/test_skf_skill_and_persona.py": "ccf82c078712925eb976f4197596e3093a200066",
    "src/shared/packages/pyforge-herald/tests/meta/test_slides_generator_routing.py": "f0fc149aee4e2e764ba0fe5d4506198cd346ec47",
    "src/shared/packages/pyforge-herald/tests/meta/test_twins_zero_origin.py": "ab418d0e8f0d306f9c725199d4e0348ea87f0806",
@@ -2006,7 +2006,7 @@
    "src/shared/packages/pyforge-herald/web/src/test/setup.js": "1d74541c291183bb6027ebb5bf6de480115262ea",
    "src/shared/packages/pyforge-herald/web/vite.config.js": "bcd53f517a2d51fe2992404dd852b2599b15d84f"
   },
-  "memlog": "c1e303d9552d0cc73bc2ff288abdb700eaec64e6"
+  "memlog": "4423ed7ebcb262ba0e904fdf4b62fae54b9ce02c"
  },
  "pyforge-marshal/spec-pyforge-core": {
   "files": {

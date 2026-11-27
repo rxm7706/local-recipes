@@ -8187,6 +8187,22 @@ So that every job restores a smaller cache.
 **And** the pin policy names the feature that holds each browser package, and no test, job or lane changes
 **Status:** done
 
+### Story 117.33: Herald's live half runs as four shards
+
+As the operator whose PR waits on herald's longest live shard,
+I want herald's live half split four ways on CI,
+So that no shard holds far more of the runner's test time than four workers clear.
+
+**Type:** chore • **Effort:** S • **Deps:** 117.21, herald 63.1 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `.github/workflows/pyforge-station-tests.yml`
+**Spec:** `planning-artifacts/specs/spec-117-33-herald-s-live-half-runs-as-four-shards.md`
+**Given** herald's built-site tests cost two to three times their laptop timings on the runner, so three shards balanced by the laptop file left the third with about 215 s of tests for four workers (66 to 72 s of tests, the job 111 s)
+**When** the `herald-live-test` job runs four shards (`--splits 4`, groups 1 to 4)
+**Then** by the runner's own test times each shard holds at most about 150 s of tests and no xdist group more than 40 s
+**And** the same tests run, each once, and the coverage gate merges every shard's report as before
+**Status:** done
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
