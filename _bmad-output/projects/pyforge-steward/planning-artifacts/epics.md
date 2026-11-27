@@ -8034,7 +8034,7 @@ So that its mypy lanes take seconds, not the 30 to 49 s a cold cache costs.
 
 **Type:** chore • **Effort:** S • **Deps:** 13.1, 117.3 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 and CAP-159 (realized, no text change); CAP-104, CAP-107 (no text change); no AD moves
 **Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
-**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py`, `src/shared/packages/pyforge-steward/tests/unit/test_workspace_mypy_caches.py`
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py`, `src/shared/packages/pyforge-steward/tests/unit/test_workspace_mypy_caches.py`, `docs/how-to/manage-worktrees-with-bmad.md`
 **Spec:** `planning-artifacts/specs/spec-117-24-a-new-workspace-starts-with-the-mypy-caches-of-the-last-one.md`
 **Given** a new worktree has no mypy cache, so its first preflight's mypy lanes took 48.8 and 30.4 s against 3.5 to 4.5 s warm, and the primary checkout holds no per-environment cache to copy
 **When** `workspace clean` removes a worktree, and `workspace start` makes the next one

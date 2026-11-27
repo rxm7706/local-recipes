@@ -12,6 +12,7 @@ declared_low_risk: false
 surface:
   - 'src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py'
   - 'src/shared/packages/pyforge-steward/tests/unit/test_workspace_mypy_caches.py'
+  - 'docs/how-to/manage-worktrees-with-bmad.md'
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
@@ -74,4 +75,5 @@ Ledger key: `117-24-a-new-workspace-starts-with-the-mypy-caches-of-the-last-one`
 - The packages root comes from `root_layout.STATION_PACKAGES`, as `test_portability.py` requires, and `oracle-map.md` names the new test module under CAP-104..CAP-108.
 - AC2, measured in a fresh worktree on this machine: the two mypy lanes took 27.8 s (`pyforge-guild`) and 47.3 s (`pyforge-foundry-full`) cold. With the caches removed and 20 copied from another worktree at a nearby commit (0.5 s), they took 3.4 and 4.2 s; warm, 2.3 and 2.8 s. In a scratch clone seeded the same way, the first touched preflight of a herald-only change ran its mypy lanes in 4.6 and 3.6 s.
 - The primary checkout holds no per-environment cache until the first `workspace clean` after this lands, so the first `start` after landing still begins cold; every later one begins warm.
+- `docs/how-to/manage-worktrees-with-bmad.md`, which declares `workspace.py` as a source, says what `start` and `clean` now do with the caches and is re-verified (`docs-currency` reds a page whose source moved after its `verified` date).
 - AC1: `pyforge-steward-test` and `pyforge-steward-live-test` exit 0.

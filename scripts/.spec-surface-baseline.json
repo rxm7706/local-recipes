@@ -537,7 +537,7 @@
    "docs/how-to/github-actions-recipe-ci.md": "5bc6bc716ce14966f92d0efdaf7703d46621922d",
    "docs/how-to/host-nebari.md": "a211d347d4b96ea9154bda5b95c32ee4c0050292",
    "docs/how-to/launch-a-cost-saving-interactive-session.md": "1f97afadac12b6574f61e05f45316da90e7e743d",
-   "docs/how-to/manage-worktrees-with-bmad.md": "64101ad51a79c7521bb1944358074384e1475cf5",
+   "docs/how-to/manage-worktrees-with-bmad.md": "a30ff6f5caf51c81cabde6820a23904b84f9200f",
    "docs/how-to/manticore-studio.md": "d408d51caa66bec638f2a428ce1fbb0caa174cf2",
    "docs/how-to/monitor-the-fleet.md": "ee0243225ebb87f8c5e6500f30093829e3c09ac2",
    "docs/how-to/move-vendor-extracts-through-the-corridor.md": "f81e1aeb0f65399785ca2fe83ed4f4c00e29e8f6",
@@ -825,7 +825,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "89c2170d3766bb871826f263fc860c666d0657f5"
+  "memlog": "551228a259ed69f004c6118ffffcf8d945cd9ee8"
  },
  "pyforge-herald/spec-pyforge-herald": {
   "files": {
