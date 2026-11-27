@@ -935,7 +935,7 @@ jobs:
       matrix:
         group: [1, 2]
     env:
-      PYTEST_ADDOPTS: --splits 2 --group ${{ matrix.group }} --durations-path tests/durations/pyforge-doctor-live.json
+      PYTEST_ADDOPTS: --splits 2 --group ${{ matrix.group }} --durations-path tests/durations/pyforge-doctor-live.json --durations=0 --durations-min=0
     steps:
       - uses: actions/checkout@v7
         with:
@@ -1231,7 +1231,7 @@ jobs:
       matrix:
         group: [1, 2]
     env:
-      PYTEST_ADDOPTS: --splits 2 --group ${{ matrix.group }} --durations-path tests/durations/pyforge-marshal-live.json
+      PYTEST_ADDOPTS: --splits 2 --group ${{ matrix.group }} --durations-path tests/durations/pyforge-marshal-live.json --durations=0 --durations-min=0
     steps:
       - uses: actions/checkout@v7
         with:
@@ -1589,7 +1589,7 @@ jobs:
       matrix:
         group: [1, 2, 3, 4]
     env:
-      PYTEST_ADDOPTS: --splits 4 --group ${{ matrix.group }} --durations-path tests/durations/pyforge-steward-live.json
+      PYTEST_ADDOPTS: --splits 4 --group ${{ matrix.group }} --durations-path tests/durations/pyforge-steward-live.json --durations=0 --durations-min=0
     steps:
       - uses: actions/checkout@v7
         with:
