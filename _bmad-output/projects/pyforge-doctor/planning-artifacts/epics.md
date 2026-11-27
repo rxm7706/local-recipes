@@ -4355,6 +4355,29 @@ So that the run takes as long as its longest member, not that member plus every 
 **And** a source that raises reads `unknown` for its own row while the others run, and an unimportable `pyforge.doctor` still yields every source row as `unknown`
 **Status:** done
 
+## Epic 67: The contract mutation tests analyse each module once (spec-pyforge-steward:CAP-175)
+
+Minted 2026-11-26 from the station Dream's entry of the same date on the operator ruling of that day ("Approved", on the root-cause breakdown and plan steward's Dream entry of 2026-11-26 records). The contract module is the costliest test module of the eleven heaviest preflight lanes.
+**HARD boundaries:**
+- Every assertion stays; the facts each call returns do not move.
+- No test is deleted, skipped or re-marked. No flag, and no capability text of `spec-pyforge-doctor` moves.
+
+### Story 67.1: The contract mutation tests analyse each module once
+
+As the operator whose preflight runs doctor's live half,
+I want the contract module's mutation tests to analyse each module once, not the whole package again per case,
+So that 81 cases stop parsing every doctor module three seconds at a time.
+
+**Type:** chore • **Effort:** S • **Deps:** doctor 57.2 • **FR/AD:** spec-pyforge-steward:CAP-175 (realized here; no text change in this station's Spec); spec-pyforge-doctor CAP-97 (its test); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `src/shared/packages/pyforge-doctor/tests/meta/test_public_contract.py`
+**Spec:** `planning-artifacts/specs/spec-67-1-the-contract-mutation-tests-analyse-each-module-once.md`
+**Given** `test_public_contract.py` spends 215 single-thread seconds, each of its 81 mutation cases deriving the facts of the whole package again (about 3 s a call)
+**When** the per-module part of `_code_facts` is computed once per module text in a run and reused
+**Then** every test passes with the assertions it had, and the module takes under a quarter of its time alone
+**And** a cached analysis is read, never changed, and the facts each call returns are the facts it returned
+**Status:** backlog
+
 ## Currency reconciliation — 2026-11-26 (the tag rule reaches station source)
 
 *Chain-currency cascade (arch -> epics).* 2026-11-26: Epic 64 / Story 64.1 minted under `spec-one-chain-per-station` (its capability 9, realized with no text change); no AD moves. The keys go through the Tier-3 feed and `sprint-ledger-sync`. **Content changed:** the Epic, this section and `updated:`.

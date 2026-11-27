@@ -7946,6 +7946,54 @@ So that the cache stays under its limit and every station job starts sooner.
 **And** no job, trigger path or CI surface is added or removed, the workflow meta-tests (trigger map, duplicate keys, the CI surfaces registry) pass, and the steward live half's shard durations are re-measured after Story 117.14
 **Status:** done
 
+### Story 117.19: Every preflight lane writes bytecode, whatever its caller says
+
+As the operator whose agents run the preflight,
+I want every lane to write bytecode even when the session that starts it says not to,
+So that no worker compiles every module again on every run.
+
+**Type:** fix • **Effort:** S • **Deps:** 117.15 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix; the lane environment of a gate the kill switch of Story 117.3 does not govern)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py`, `src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/contract.md`, `docs/how-to/run-and-read-pr-preflight.md`
+**Spec:** `planning-artifacts/specs/spec-117-19-every-preflight-lane-writes-bytecode-whatever-its-caller-says.md`
+**Given** an agent session exports `PYTHONDONTWRITEBYTECODE=1` (Claude Code does; the operator's terminal does not), so every xdist worker of every lane rewrites and compiles every module it loads: marshal's collection takes 12.8 s without a bytecode cache and 3.4 s with one, and four lanes rerun with a warm cache used 10% less CPU
+**When** `_lane_scratch_env` removes `PYTHONDONTWRITEBYTECODE` from each lane's environment
+**Then** a lane writes bytecode beside its sources, into gitignored `__pycache__/` directories, as it does from the operator's terminal, and its next run reads it
+**And** every other variable of the caller's environment reaches the lane unchanged, and the contract's environment table and the preflight how-to say so
+**Status:** backlog
+
+### Story 117.20: The platform-ci-local concurrency tests start the second run when the first holds the lock
+
+As the operator whose PR waits on `steward-live-test`,
+I want the overlap tests of `platform-ci-local` to start their second run on the first run's state, not on a clock,
+So that three tests stop sleeping 100 s between them.
+
+**Type:** chore • **Effort:** S • **Deps:** 63.7, 101.1 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); CAP-152 (the platform-ci-local tests the oracle map files under it); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_concurrency.py`
+**Spec:** `planning-artifacts/specs/spec-117-20-the-platform-ci-local-concurrency-tests-start-the-second-run-when-the-first-holds-the-lock.md`
+**Given** three tests take about 33 s each: a slow run's stubbed `python` sleeps 8 s on every call so that it is sure to still run when the second run starts, one or two seconds later on a fixed clock, and their CI shard takes 101 s where the shard beside it takes 21 s
+**When** the second run starts once the first holds the lock (its `.holder` record exists) or, without a lock, has its services up, and the slow stub sleeps a few seconds a call
+**Then** each test asserts what it asserted, and the three take under 40 s together alone
+**And** `scripts/platform-ci-local.sh` does not change, and the module passes five times in a row with four workers
+**Status:** backlog
+
+### Story 117.21: The longest PR jobs run as parallel shards and jobs
+
+As the operator landing a PR,
+I want the jobs that bound a PR's CI to run as parallel shards and jobs,
+So that a PR's CI waits on its slowest shard, not on suites in a row.
+
+**Type:** chore • **Effort:** M • **Deps:** 117.10, 117.18, 117.20, herald 59.1 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); CAP-166 (the CI surfaces registry); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `.github/workflows/pyforge-station-tests.yml`, `.github/workflows/detectors.yml`, `docs/governance/ci-surfaces.yaml`, `tests/durations/pyforge-herald.json`, `tests/durations/pyforge-steward-live.json`, `tests/durations/pyforge-marshal-live.json`
+**Spec:** `planning-artifacts/specs/spec-117-21-the-longest-pr-jobs-run-as-parallel-shards-and-jobs.md`
+**Given** a PR that runs every workflow took 242 s, bound by `herald-live-test`'s two shards (181 and 204 s, 12 to 15 s of each installing `uv`, which herald's pixi environment holds), and a warm PR 168 s, bound by `scripts-suite`'s four suites in a row; `marshal-live-test` is one job of 85 to 103 s of tests and `steward-live-test`'s shards are uneven (101, 86, 23 and 21 s)
+**When** herald's live half runs as three shards without `setup-uv`, `scripts-suite` as two jobs side by side, marshal's live half as two shards whose coverage the gate merges, and the live halves' shard durations are measured again
+**Then** a PR that runs every workflow finishes in under 150 s and no job of a warm PR runs longer than 120 s
+**And** every step, task, environment and trigger path a job had is still run, each new job is a registered CI surface, and the workflow meta-tests pass
+**Status:** backlog
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

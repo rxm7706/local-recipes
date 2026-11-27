@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 8dc5d170bd23ed0f
-story_count: 528
-test_file_count: 171
+source_fingerprint: 05a09560b95840f9
+story_count: 531
+test_file_count: 172
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 528
+- **Stories parsed:** 531
 - **Epics parsed:** 147
-- **Test files inventoried:** 171 under `src/shared/packages/pyforge-steward/tests/`
+- **Test files inventoried:** 172 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `8dc5d170bd23ed0f`
+- **Source fingerprint:** `05a09560b95840f9`
 
 ## Risk Assessment
 
@@ -314,6 +314,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_stranded_lane.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_suite_reduction.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_preflight_verdict_reuse.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_verify_deferred.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_workers.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_provision_env.py` | unit | none observed |
@@ -802,7 +803,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 117.15 | A fresh worktree admits lanes longest-first and an xdist lane's workers follo... | none observed |
 | 117.16 | The scripts-lib lane runs under xdist and builds its flag reports once | none observed |
 | 117.17 | A push reuses the green verdict its tree already has | none observed |
-| 117.18 | The PR workflows write caches from main only and fetch what they read, and th... | none observed |
+| 117.18 | The PR workflows write caches from main only, and the changes job fetches no ... | none observed |
+| 117.19 | Every preflight lane writes bytecode, whatever its caller says | none observed |
+| 117.20 | The platform-ci-local concurrency tests start the second run when the first h... | none observed |
+| 117.21 | The longest PR jobs run as parallel shards and jobs | none observed |
 | 118.1 | steward deploy nic brings up and tears down an NKP cluster on local kind | none observed |
 | 118.2 | nebi-pack and the data-science pack reach Healthy on kind and a notebook spawns | none observed |
 | 118.3 | The gitops branch of the monorepo is the GitOps source and a Hetzner cluster ... | none observed |

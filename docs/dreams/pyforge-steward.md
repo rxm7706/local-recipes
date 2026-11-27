@@ -8496,3 +8496,29 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   state no hash covers, so a green run stands only for the push that follows it. What the measurements did not
   give: a full run of all fifty lanes stays bound by the machine (about 6,500 CPU-seconds on sixteen threads),
   so its gain is the smaller one; the larger ones are each lane alone, CI's jobs, and the push after a green run.
+- **2026-11-26 (the full preflight is still bound by herald's builds, and a PR's CI by its longest jobs) — Found and ruled:**
+  measured on `799ff9e627`, after PR #2405, on the laptop every preflight runs on (8 cores, 16 threads): a full
+  preflight of all 50 lanes takes 543 s cold and 532 s warm, and `pyforge-herald-live-test` holds 465 s of it, its
+  Astro builds running one after another in one xdist worker; with that chain gone the run is bound by about 6,000
+  CPU-seconds on 16 threads. A PR that runs every workflow took 242 s (#2405): herald's two shards 181 and 204 s, of
+  which 12 to 15 s install `uv` with `setup-uv` although `uv` is in herald's pixi environment; a warm PR took 168 s
+  (#2406), bound by `scripts-suite`, which runs four suites one after another. Causes read from measurements: (1) an
+  agent session runs every lane with `PYTHONDONTWRITEBYTECODE=1` (Claude Code exports it; the operator's terminal does
+  not), so every xdist worker rewrites and compiles every test module again: marshal's collection takes 12.8 s
+  without a bytecode cache and 3.4 s with one, and four lanes rerun with a warm cache used 10% less CPU (marshal 19%,
+  atlas's live half 25%); (2) three tests of `test_platform_ci_local_concurrency.py` take about 33 s each, sleeping
+  8 s in every stubbed `python` call of a slow run and starting the second run on a fixed one-second clock, and the
+  CI shard that holds them takes 101 s where the shard beside it takes 21 s; (3) `marshal-live-test` is one 85 to
+  103 s job. **Ruled** (operator, 2026-11-26: "Approved", on the root-cause breakdown and plan of that day, as
+  proposed: the merge bar is not re-tiered, and the full local run is projected at 27 to 33% faster, short of the
+  50% asked; CI and touched runs of the stations named are projected at about 50% and more). **For steward:** this
+  entry binds `spec-pyforge-steward` CAP-175 (realized, no text change) and decomposes as Stories 117.19 to 117.21 on
+  Epic 117: every lane writes bytecode, whatever the caller's `PYTHONDONTWRITEBYTECODE` (117.19); the concurrency
+  tests start the second run when the first holds the lock, and a slow stub sleeps seconds, not eight per call
+  (117.20); herald's live half runs as three CI shards without `setup-uv`, `scripts-suite` as two jobs, marshal's
+  live half as two shards, and the steward live half's shard durations are measured again (117.21). Herald (its
+  builds side by side, each worker in its own copy of `docs-site/`) and doctor (the contract mutation tests analyse
+  each module once) relay under their own Dream entries of this date. **Constraints:** as the entry above: no
+  coverage floor, mypy setting, ruff rule, detector or test is weakened, removed, skipped or re-marked; a parallel
+  run still exits non-zero and names the lane; every number is measured with the harness that measured the
+  baseline; the merge bar stays the full preflight. No flag (fixes and chores). Owner `spec-pyforge-steward`.

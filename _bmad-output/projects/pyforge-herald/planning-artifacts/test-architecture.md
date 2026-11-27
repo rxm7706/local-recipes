@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: 1ee3fe0ae0e586f5
-story_count: 168
-test_file_count: 103
+source_fingerprint: bab714f0545e8f1b
+story_count: 169
+test_file_count: 104
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-herald`
-- **Stories parsed:** 168
-- **Epics parsed:** 58
-- **Test files inventoried:** 103 under `src/shared/packages/pyforge-herald/tests/`
+- **Stories parsed:** 169
+- **Epics parsed:** 59
+- **Test files inventoried:** 104 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `1ee3fe0ae0e586f5`
+- **Source fingerprint:** `bab714f0545e8f1b`
 
 ## Risk Assessment
 
@@ -94,6 +94,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 44: Every docs page renders its body and its links resolve (fix under spec-pyforge-herald CAP-52; no CAP)
 - Epic 45: Herald's built-site tests install docs-site first, in preflight and CI (fix under spec-pyforge-herald CAP-61; no CAP)
 - Epic 50: The herald Spec says what is true (cutover readiness; spec-pyforge-herald CAP-62)
+- Epic 59: Herald's site builds run side by side, each worker in its own copy of docs-site (spec-pyforge-steward:CAP-175)
 
 ## Test Inventory
 
@@ -128,6 +129,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-herald/tests/meta/test_preflight_pages_lane.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_public_contract.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_release_comms_routing.py` | meta | none observed |
+| `src/shared/packages/pyforge-herald/tests/meta/test_site_builders_share_a_worker.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_site_shell.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_skf_skill_and_persona.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_slides_generator_routing.py` | meta | none observed |
@@ -375,6 +377,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 56.1 | Herald's exit codes are held to their declared domain | none observed |
 | 57.1 | Herald's verbs take both spellings for JSON | none observed |
 | 58.1 | Herald's suite runs under xdist, its site builds in one worker | none observed |
+| 59.1 | Herald's site builds run side by side, each worker in its own copy of docs-site | none observed |
 
 ## Quality Gates
 

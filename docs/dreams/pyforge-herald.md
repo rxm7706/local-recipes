@@ -935,6 +935,21 @@ Herald rebases to one Dream, one Spec, one PRD, one spine, one epic chain. Folde
   package half's does. **Constraints:** no two builds run at once in one tree, in a run or across the preflight's
   docs-site lanes (the mutex of steward Story 105.1 is unchanged); no test is deleted, skipped or re-marked; the
   coverage reports and the floors are the same. No flag (a chore). Owner `spec-pyforge-herald`.
+- **2026-11-26 (herald's site builds run side by side, each worker in its own copy of docs-site) — Found and ruled:**
+  measured on `799ff9e627`: `pyforge-herald-live-test` takes 189 s alone and 465 s inside a full preflight, where it
+  is the critical path, and its CI shards take 132 to 148 s of tests. The tests that build the site take 162 s of
+  it alone, all in one xdist worker, because every build writes the one `docs-site/` tree (`public/`, `.astro/` and
+  Astro's cache under `node_modules/`); the modules whose fixtures build are also built again in each worker that
+  runs one of their tests. Three builds in three private copies (every repository entry a link, `docs-site/`'s 1.1 MB
+  of sources copied, `node_modules/` a directory of links) ran side by side in 7.5 s where one build takes 6.4 s, and
+  wrote the same site; a copy's site differs from the real tree's only in Astro's scoped class names, which Astro
+  derives from file paths. **Ruled** (operator, 2026-11-26: "Approved", on the plan steward's Dream entry of the
+  same date records). **For herald:** this entry binds `spec-pyforge-steward:CAP-175` (realized here, no text change
+  in this station's Spec) and decomposes as Epic 59, one story: each xdist worker builds in its own copy of
+  `docs-site/`, and the tests of a module that builds share a worker by the module fixtures they use, not one
+  worker for every build. **Constraints:** no two builds run at once in one tree; the real `docs-site/` is never
+  written by a test's build; no test is deleted, skipped or re-marked; the coverage reports and floors are the
+  same. No flag (a chore). Owner `spec-pyforge-herald`.
 
 ## 2026-10-26 — The deck family stays current — infographics re-derived from the ledgers, not remembered (folded from deck-family-currency)
 
