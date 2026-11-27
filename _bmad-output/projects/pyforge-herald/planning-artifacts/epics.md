@@ -2718,6 +2718,29 @@ So that herald's 25 or so builds run side by side instead of one after another.
 **And** no test's build writes the real `docs-site/`, two builds never share a copy at once, and a test holds that every build helper runs in the worker's copy
 **Status:** done
 
+## Epic 60: Herald's build groups hold only the builds their tests share (spec-pyforge-steward:CAP-175)
+
+Minted 2026-11-26 from the station Dream's entry of the same date on the operator rulings of that day ("rebalance the uneven live-test shards next"; scope "Durations, herald and steward"). Herald's longest live shard on CI is held by its two heaviest xdist build groups, which join builds their tests need not share.
+**HARD boundaries:**
+- No assertion is removed or weakened; no test is skipped or re-marked; the coverage reports and floors are the same.
+- No flag, and no capability text of `spec-pyforge-herald` moves.
+
+### Story 60.1: Herald's build groups hold only the builds their tests share
+
+As the operator whose PR waits on herald's longest live shard,
+I want each build of a builder module to be its own module fixture, and each test to read only the builds it checks,
+So that herald's heaviest xdist groups hold one build each and no longer set the length of a shard.
+
+**Type:** chore • **Effort:** S • **Deps:** herald 59.1 • **FR/AD:** spec-pyforge-steward:CAP-175 (realized here; no text change in this station's Spec); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `src/shared/packages/pyforge-herald/tests/meta/test_agent_surface_and_changes.py`, `src/shared/packages/pyforge-herald/tests/meta/test_one_generator.py`
+**Spec:** `planning-artifacts/specs/spec-60-1-herald-s-build-groups-hold-only-the-builds-their-tests-share.md`
+**Given** the agent-surface module's five builds share one lazy fixture and so run in turn on one worker (52.9 s), and the one-generator module joins two builds through one test and keeps a self-building comparison in `built`'s group (47.5 s)
+**When** each build is its own module fixture, a test that reads two builds becomes one test per build, and the built-from comparison makes both its builds
+**Then** no herald xdist group holds more than one build of its module's fixtures, and the live half passes with every assertion it had
+**And** no test is skipped or re-marked, and the coverage reports and floors are the same
+**Status:** done
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

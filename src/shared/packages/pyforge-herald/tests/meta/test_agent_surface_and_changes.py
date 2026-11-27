@@ -328,31 +328,50 @@ def _astro(out: Path, *, status: bool, inputs: Path) -> None:
     assert done.returncode == 0, done.stdout[-3000:] + done.stderr[-3000:]
 
 
-_BUILDS: dict[str, Path] = {}
+#: Each named build: the status pages' flag, and the inputs written for it.
+_CASES: dict[str, tuple[bool, tuple[str, ...]]] = {
+    "full": (True, ("changes.json", "marshal-status.json", "herald-progress.json", "fleet-status.json")),
+    "one-missing": (True, ("changes.json", "marshal-status.json", "fleet-status.json")),
+    "none": (True, ("fleet-status.json",)),
+    # The status pages' flag off: the runs page's malformed inputs are never read, so none fails the build.
+    "status-off": (False, ("malformed",)),
+    "no-merges": (True, ("empty-merges", "fleet-status.json")),
+}
+
+
+def _build(tmp_path_factory: pytest.TempPathFactory, name: str) -> Path:
+    """The site built for the named case."""
+    status, names = _CASES[name]
+    root = tmp_path_factory.mktemp(f"agent-{name}")
+    _astro(root / "site", status=status, inputs=_write_inputs(root / "inputs", names))
+    return root / "site"
+
+
+# Story 60.1: one module fixture per build. tests/conftest.py puts the tests that share a module fixture in one xdist
+# group (Story 59.1); with the five builds behind one fixture, all five ran in turn on one worker (52.9 s).
+@pytest.fixture(scope="module")
+def full_build(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    return _build(tmp_path_factory, "full")
 
 
 @pytest.fixture(scope="module")
-def build(tmp_path_factory: pytest.TempPathFactory):
-    """``build(name)``: the site built once per module for each named case."""
-    cases = {
-        "full": (True, ("changes.json", "marshal-status.json", "herald-progress.json", "fleet-status.json")),
-        "one-missing": (True, ("changes.json", "marshal-status.json", "fleet-status.json")),
-        "none": (True, ("fleet-status.json",)),
-        # The status pages' flag off: the runs page's malformed inputs are never read, so none fails the build.
-        "status-off": (False, ("malformed",)),
-        "no-merges": (True, ("empty-merges", "fleet-status.json")),
-    }
+def one_missing_build(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    return _build(tmp_path_factory, "one-missing")
 
-    def _get(name: str) -> Path:
-        if name not in _BUILDS:
-            status, names = cases[name]
-            root = tmp_path_factory.mktemp(f"agent-{name}")
-            _astro(root / "site", status=status, inputs=_write_inputs(root / "inputs", names))
-            _BUILDS[name] = root / "site"
-        return _BUILDS[name]
 
-    yield _get
-    _BUILDS.clear()
+@pytest.fixture(scope="module")
+def no_inputs_build(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    return _build(tmp_path_factory, "none")
+
+
+@pytest.fixture(scope="module")
+def status_off_build(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    return _build(tmp_path_factory, "status-off")
+
+
+@pytest.fixture(scope="module")
+def no_merges_build(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    return _build(tmp_path_factory, "no-merges")
 
 
 class _Text(HTMLParser):
@@ -371,20 +390,27 @@ def _text(html: str) -> str:
 
 
 @needs_astro
-def test_ac7_every_surface_on_every_build_and_the_runs_page_with_the_status_flag(build) -> None:
+def test_ac7_every_surface_on_every_build_and_the_runs_page_with_the_status_flag(full_build: Path) -> None:
     """Story 43.7 retired the flag that gated the surfaces: every build emits them; the runs page stays the status
-    pages' flag's, and with it off no runs input is read into the artifact."""
-    for name in ("full", "status-off"):
-        site = build(name)
-        for rel in _AGENT_FILES:
-            assert (site / rel).is_file(), (name, rel)
-        assert (site / _RUNS).is_file() is (name == "full"), name
-    assert not (build("status-off") / "status").exists()
+    pages' flag's. Story 60.1: this test reads the build with the flag on, the next the build with it off."""
+    for rel in _AGENT_FILES:
+        assert (full_build / rel).is_file(), ("full", rel)
+    assert (full_build / _RUNS).is_file()
 
 
 @needs_astro
-def test_ac1_llms_lists_every_map_page_and_every_herald_page(build) -> None:
-    site = build("full")
+def test_ac7_with_the_status_flag_off_every_surface_and_no_runs_input(status_off_build: Path) -> None:
+    """Story 43.7: with the status pages' flag off the build still emits every surface, and no runs input is read
+    into the artifact."""
+    for rel in _AGENT_FILES:
+        assert (status_off_build / rel).is_file(), ("status-off", rel)
+    assert not (status_off_build / _RUNS).is_file()
+    assert not (status_off_build / "status").exists()
+
+
+@needs_astro
+def test_ac1_llms_lists_every_map_page_and_every_herald_page(full_build: Path) -> None:
+    site = full_build
     llms = (site / "llms.txt").read_text(encoding="utf-8")
     document = yaml.safe_load((_repo_root() / "docs" / "map.yaml").read_text(encoding="utf-8"))
     herald = next(section for section in document["sections"] if section["key"] == "herald")["entries"]
@@ -417,8 +443,8 @@ def test_ac1_llms_lists_every_map_page_and_every_herald_page(build) -> None:
 
 
 @needs_astro
-def test_ac2_facts_json_is_one_object_per_facts_yaml(build) -> None:
-    site = build("full")
+def test_ac2_facts_json_is_one_object_per_facts_yaml(full_build: Path) -> None:
+    site = full_build
     document = json.loads((site / "facts.json").read_text(encoding="utf-8"))
     files = sorted((_repo_root() / "presentations").glob("*/facts.yaml"))
     decks = {yaml.safe_load(f.read_text(encoding="utf-8"))["deck"]: f for f in files}
@@ -428,8 +454,8 @@ def test_ac2_facts_json_is_one_object_per_facts_yaml(build) -> None:
 
 
 @needs_astro
-def test_ac3_the_changes_page_lists_five_merges_newest_first(build) -> None:
-    page = (build("full") / "changes" / "index.html").read_text(encoding="utf-8")
+def test_ac3_the_changes_page_lists_five_merges_newest_first(full_build: Path) -> None:
+    page = (full_build / "changes" / "index.html").read_text(encoding="utf-8")
     items = re.findall(r'<li id="merge-[^"]+"[^>]*>\s*<time datetime="([^"]+)">([^<]+)</time>(.*?)</li>', page, re.S)
     assert [(d, _text(rest)) for d, _, rest in items] == [
         (d, f"{s} {subject}") for d, s, subject in _MERGES_NEWEST_FIRST
@@ -442,8 +468,8 @@ def test_ac3_the_changes_page_lists_five_merges_newest_first(build) -> None:
 
 
 @needs_astro
-def test_ac4_the_feed_carries_the_same_items(build) -> None:
-    channel = _rss((build("full") / "changes" / "rss.xml").read_text(encoding="utf-8"))
+def test_ac4_the_feed_carries_the_same_items(full_build: Path) -> None:
+    channel = _rss((full_build / "changes" / "rss.xml").read_text(encoding="utf-8"))
     items = channel.findall("item")
     assert [item.findtext("title") for item in items] == [subject for _, _, subject in _MERGES_NEWEST_FIRST]
     assert all(
@@ -452,8 +478,8 @@ def test_ac4_the_feed_carries_the_same_items(build) -> None:
 
 
 @needs_astro
-def test_ac5_the_runs_page_shows_the_homes_and_the_latest_progress(build) -> None:
-    page = (build("full") / "status" / "runs" / "index.html").read_text(encoding="utf-8")
+def test_ac5_the_runs_page_shows_the_homes_and_the_latest_progress(full_build: Path) -> None:
+    page = (full_build / "status" / "runs" / "index.html").read_text(encoding="utf-8")
     assert re.findall(r'<tr data-home="([^"]+)"', page) == ["pyforge-marshal", "pyforge-doctor"]
     assert re.findall(r'<tr data-station="([^"]+)"', page) == ["pyforge-herald", "pyforge-steward"]
     times = re.findall(r'Snapshot taken <time datetime="([^"]+)"', page)
@@ -465,13 +491,18 @@ def test_ac5_the_runs_page_shows_the_homes_and_the_latest_progress(build) -> Non
 
 
 @needs_astro
-def test_ac6_a_missing_input_is_one_line_and_the_build_passes(build) -> None:
-    one = build("one-missing")
+def test_ac6_a_missing_input_is_one_line_and_the_build_passes(one_missing_build: Path) -> None:
+    one = one_missing_build
     runs = (one / "status" / "runs" / "index.html").read_text(encoding="utf-8")
     assert re.findall(r'data-input-absent="([^"]+)"', runs) == ["herald-progress.json"]
     assert re.findall(r'<tr data-home="', runs)  # the input that is there still renders
     assert 'data-input-absent="' not in (one / "changes" / "index.html").read_text(encoding="utf-8")
-    none = build("none")
+
+
+@needs_astro
+def test_ac6_with_no_inputs_each_page_names_what_is_absent(no_inputs_build: Path) -> None:
+    """Story 60.1: the second half of AC6, over the build with no inputs."""
+    none = no_inputs_build
     absent = {
         rel: re.findall(r'data-input-absent="([^"]+)"', (none / rel).read_text(encoding="utf-8"))
         for rel in ("changes/index.html", _RUNS)
@@ -495,11 +526,11 @@ def _dossier_values(value: object, key: str) -> set[str]:
 
 
 @needs_astro
-def test_the_built_llms_full_publishes_no_dossier_machine_keys(build) -> None:
+def test_the_built_llms_full_publishes_no_dossier_machine_keys(full_build: Path) -> None:
     """Story 51.2 (AC8): ``/llms-full.txt`` carries the dossier's prose, and no ``asserts:`` entry, no line that is only
     a ``check:`` key or a § 10 ``source:`` id. (A scale row's ``section:`` is a station id, and the atlas chips publish
     one of them, ``core``, as text, so the model test above holds that key.)"""
-    full = (build("full") / "llms-full.txt").read_text(encoding="utf-8")
+    full = (full_build / "llms-full.txt").read_text(encoding="utf-8")
     assert "story:steward/" not in full
     assert "flag:pyforge.cutover_root=" not in full
     dossier = next(part for part in full.split("\n---\n\n") if f"URL: {SITE_URL}/herald/dossier/" in part)
@@ -514,8 +545,8 @@ def test_the_built_llms_full_publishes_no_dossier_machine_keys(build) -> None:
 
 
 @needs_astro
-def test_an_empty_merge_list_says_so_and_the_feed_is_an_empty_channel(build) -> None:
-    site = build("no-merges")
+def test_an_empty_merge_list_says_so_and_the_feed_is_an_empty_channel(no_merges_build: Path) -> None:
+    site = no_merges_build
     page = (site / "changes" / "index.html").read_text(encoding="utf-8")
     assert 'class="changes-empty"' in page and "No merges to main in the last 30 days." in _text(page)
     assert 'data-input-absent="' not in page

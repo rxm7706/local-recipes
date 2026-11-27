@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: dc8455e637a39441
-story_count: 169
+source_fingerprint: 6808c290a0d51d5c
+story_count: 170
 test_file_count: 104
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-herald`
-- **Stories parsed:** 169
-- **Epics parsed:** 59
+- **Stories parsed:** 170
+- **Epics parsed:** 60
 - **Test files inventoried:** 104 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `dc8455e637a39441`
+- **Source fingerprint:** `6808c290a0d51d5c`
 
 ## Risk Assessment
 
@@ -81,6 +81,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 56: Herald's exit codes are held to their declared domain (spec-pyforge-steward:CAP-184; spec-pyforge-herald CAP-62, CAP-13)
 - Epic 57: Herald's verbs take both spellings for JSON (spec-pyforge-steward:CAP-185)
 - Epic 58: Herald's suite runs under xdist, its site builds in one worker (spec-pyforge-steward:CAP-175)
+- Epic 60: Herald's build groups hold only the builds their tests share (spec-pyforge-steward:CAP-175)
 
 ### Low-risk epics
 
@@ -378,6 +379,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 57.1 | Herald's verbs take both spellings for JSON | none observed |
 | 58.1 | Herald's suite runs under xdist, its site builds in one worker | none observed |
 | 59.1 | Herald's site builds run side by side, each worker in its own copy of docs-site | none observed |
+| 60.1 | Herald's build groups hold only the builds their tests share | none observed |
 
 ## Quality Gates
 

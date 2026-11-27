@@ -8567,3 +8567,27 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   clone, and dropped. The package half started 9 s in beside the live half, but the runs took 95.0 and 89.9 s against
   90.6 and 90.3 s in turn, because the live half then took 83 to 88 s instead of 67 s. Herald's live half alone keeps
   9.3 cores busy on average (620 CPU-seconds in 67 s) on an 8-core machine, so a lane beside it only takes its CPU.
+- **2026-11-26 (the live halves' CI shards are uneven) — Found and ruled:** measured over four CI runs (PR #2409's
+  three and `main` after it), each shard's test step: herald's live half 76 to 89, 50 to 64 and 37 to 60 s; steward's
+  45 to 56, 29 to 39, 31 to 34 and 51 to 80 s; marshal's 31 to 48 and 58 to 62 s; doctor's 35 to 58 and 17 to 22 s.
+  Herald's longest live shard ends the station path, and its gate runs after it (+170 s on PR #2409's last run). The
+  cause is the same in all four: the durations files no longer hold what pytest-split looks up on CI. Under
+  `--dist loadgroup`, xdist's worker appends `@<group>` to each grouped test's id (`xdist/remote.py`) before
+  pytest-split, which runs last, splits. Steward's 60 trigger-map tests are keyed without the suffix, so on CI they
+  count at the file's 0.39 s average; the file still credits them 532 s, from before Story 117.14 grouped them, though
+  alone they take 37.6 s, 27.6 of it one cache fill. Herald's file holds 481 suffixed keys, some under group names
+  herald Story 59.1 replaced. Doctor's and marshal's values are stale: doctor's contract module went from 69 to 16.5 s
+  in doctor Story 67.1. `--store-durations` merges into the existing file, so a stale key stays. Even
+  durations still leave two shards long, because pytest-split balances a shard's sum while a shard's wall is at least
+  its heaviest xdist group on one worker. Steward's trigger-map module is one group: its derivation of every job's
+  reads takes 27.1 s in one process (20 jobs, the slowest 5.75 s), 37.6 s for the module. Herald's heaviest groups are
+  two build modules: 52.9 s, five separate builds that share one lazy `build(name)` fixture, so they run in turn on one
+  worker; and 47.5 s, joined by a test that reads two builds and by one that compares `built` with a build of its own.
+  **Ruled** (operator, 2026-11-26: "rebalance the uneven live-test shards next", and on the scope, "Durations, herald
+  and steward"). **For steward:** this entry binds `spec-pyforge-steward` CAP-175 (realized, no text change) and
+  decomposes as Stories 117.25 and 117.26 on Epic 117, herald relaying as its Epic 60: each live half's durations
+  file, and herald's, which its package half shares, is measured again from empty, under xdist with four workers as
+  on the runner, so its keys are the ids the CI shards look up (117.25); the workers of one run share the trigger-map
+  derivation, each job derived once by the first worker to claim it, so the module needs no xdist group (117.26).
+  **Constraints:** every test still runs in exactly one shard; the shard counts stay; no test, assertion, floor or
+  gate is weakened or removed. No flag (chores). Owner `spec-pyforge-steward`.

@@ -950,6 +950,20 @@ Herald rebases to one Dream, one Spec, one PRD, one spine, one epic chain. Folde
   worker for every build. **Constraints:** no two builds run at once in one tree; the real `docs-site/` is never
   written by a test's build; no test is deleted, skipped or re-marked; the coverage reports and floors are the
   same. No flag (a chore). Owner `spec-pyforge-herald`.
+- **2026-11-26 (herald's heaviest build groups pin its longest CI shard) — Found and ruled:** steward's Dream entry
+  of the same date measures the live halves' CI shards: herald's take 76 to 89, 50 to 64 and 37 to 60 s of tests,
+  and the longest ends a PR's station path. A shard's wall is at least its heaviest xdist group on one worker, and
+  herald groups a builder module's tests by the module fixtures they share (Story 59.1). Two groups are long because
+  tests join fixtures they need not share: `test_agent_surface_and_changes.py` keeps five separate builds behind one
+  lazy `build(name)` fixture, so all five run in turn on one worker (52.9 s), and `test_one_generator.py` joins
+  `built` and `built_with_marketplace` through a test that reads both, and keeps in `built`'s group a test that
+  compares `built` with a build of its own (47.5 s). **Ruled** (operator, 2026-11-26: "rebalance the uneven live-test
+  shards next", and on the scope, "Durations, herald and steward"). **For herald:** this entry binds
+  `spec-pyforge-steward:CAP-175` (realized here, no text change in this station's Spec) and decomposes as Epic 60,
+  one story: each build of the agent-surface module is its own module fixture, and a test that reads two builds
+  becomes one test per build with the same assertions; the built-from comparison makes both of its builds itself.
+  **Constraints:** no assertion is removed or weakened; no test is skipped or re-marked; the coverage reports and
+  floors are the same. No flag (a chore). Owner `spec-pyforge-herald`.
 
 ## 2026-10-26 — The deck family stays current — infographics re-derived from the ledgers, not remembered (folded from deck-family-currency)
 
