@@ -1,0 +1,24 @@
+name: Set up the estate's Python
+description: >-
+  Sets up the one Python that pixi.toml declares ([feature.interpreter.dependencies] python), for a job that runs
+  Python with no pixi environment. Steward Story 148.3 (spec-pyforge-steward CAP-153): the version is declared once,
+  in pixi.toml; every workflow sets Python up through this action, and target-version-check reds any other
+  actions/setup-python step. The job checks the repository out first.
+
+runs:
+  using: composite
+  steps:
+    - id: version
+      shell: bash
+      run: |
+        set -euo pipefail
+        manifest="${GITHUB_WORKSPACE}/pixi.toml"
+        version="$(sed -n '/^\[feature\.interpreter\.dependencies\]/,/^\[/{s/^python = "\([0-9][0-9.]*\)\.\*".*/\1/p}' "$manifest")"
+        if [ -z "$version" ]; then
+          echo "::error file=pixi.toml::no python = \"<version>.*\" under [feature.interpreter.dependencies]"
+          exit 1
+        fi
+        echo "python=$version" >> "$GITHUB_OUTPUT"
+    - uses: actions/setup-python@v7
+      with:
+        python-version: ${{ steps.version.outputs.python }}

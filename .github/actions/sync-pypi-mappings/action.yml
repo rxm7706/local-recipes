@@ -15,10 +15,6 @@ inputs:
     description: 'Path to custom mappings YAML file (relative to output-dir)'
     required: false
     default: 'custom.yaml'
-  python-version:
-    description: 'Python version to use'
-    required: false
-    default: '3.14'
 
 outputs:
   total-mappings:
@@ -40,9 +36,9 @@ runs:
       # 32 times in a row. This pin is registered in scripts/pixi_version_registry.py --
       # `pixi run -e local-recipes pixi-version-check` fails CI if it drifts from
       # pixi.toml's requires-pixi; use `bump-pixi-version` to change it.
-      uses: prefix-dev/setup-pixi@v0.10.2
+      uses: prefix-dev/setup-pixi@v0.11.3
       with:
-        pixi-version: v0.80.0
+        pixi-version: v0.85.0
         cache: true
 
     - name: Install dependencies

@@ -171,12 +171,13 @@ ENGINE_VERSION_CHECK_TIMEOUT_SECONDS = 10
 # not silently pass).
 DEPTRY_VERSION_RANGE = SpecifierSet(">=0.25.1,<0.26")
 OSV_SCANNER_VERSION_RANGE = SpecifierSet(">=2.4.0,<2.5")
-# Story 14.4: the fix-PR solver's pixi range admits CI's pinned 0.80.x and the
-# workspace's 0.81.x (installed at mint, re-solved end to end by
-# tests/integration/test_fix_solver_real_pixi.py). Its floor is pixi.toml's
+# Story 14.4: the fix-PR solver's pixi range admits the pixi CI pins and the
+# workspace installs, re-solved end to end by
+# tests/integration/test_fix_solver_real_pixi.py. Its floor is pixi.toml's
 # ``requires-pixi`` floor -- tests/meta/test_engine_version_range_sync.py reds the
 # two drifting apart -- and it still closes before the next untested minor.
-PIXI_VERSION_RANGE = SpecifierSet(">=0.80.0,<0.82")
+# Story 34.1: 0.85.x, with the estate's move to pixi 0.85.0 (steward Story 148.2).
+PIXI_VERSION_RANGE = SpecifierSet(">=0.85.0,<0.86")
 OPENGREP_VERSION_RANGE = SpecifierSet(">=1.30.2,<1.31")
 PIXI_VERSION_PATTERN = re.compile(r"pixi (\d+\.\d+\.\d+)")
 # The default per-solve ``pixi lock`` budget; ``run_pixi_lock(timeout=...)``

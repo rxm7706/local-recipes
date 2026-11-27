@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: warden
-source_fingerprint: d9c2291d6c03e149
-story_count: 93
+source_fingerprint: ca702c9e33d8bd4b
+story_count: 94
 test_file_count: 91
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-warden`
-- **Stories parsed:** 93
-- **Epics parsed:** 32
+- **Stories parsed:** 94
+- **Epics parsed:** 33
 - **Test files inventoried:** 91 under `src/shared/packages/pyforge-warden/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `d9c2291d6c03e149`
+- **Source fingerprint:** `ca702c9e33d8bd4b`
 
 ## Risk Assessment
 
@@ -64,6 +64,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 30: Warden's verdict takes its exit codes from the declaration (spec-pyforge-steward:CAP-184)
 - Epic 31: A tag of another spine is written qualified (spec-one-chain-per-station:CAP-9)
 - Epic 32: Warden's verbs take both spellings for JSON (spec-pyforge-steward:CAP-185)
+- Epic 34: The fix-PR solver's pixi range follows the estate to 0.85 (spec-pyforge-warden CAP-12)
 
 ### Low-risk epics
 
@@ -262,6 +263,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 33.2 | Warden's --doctor is gone, and --self-check is the one spelling | none observed |
 | 33.3 | The warden station skill documents --self-check | none observed |
 | 33.4 | The warden station skill cites the schema's urn and the parser's prog | none observed |
+| 34.1 | The fix-PR solver admits pixi 0.85 | none observed |
 
 ## Quality Gates
 

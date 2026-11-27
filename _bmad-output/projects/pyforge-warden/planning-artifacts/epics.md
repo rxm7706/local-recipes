@@ -1911,6 +1911,29 @@ So that a claim can be checked in one step.
 **And** every citation in the skill resolves, warden's meta-tests pass, and the row closes with the corrected evidence
 **Status:** done
 
+## Epic 34: The fix-PR solver's pixi range follows the estate to 0.85 (spec-pyforge-warden CAP-12)
+
+Minted 2026-11-27 from the station Dream's entry of the same date on the operator ruling of 2026-11-27: "update pixi to the latest too everywhere used pixi 0.85.0" (steward Epic 148).
+**HARD boundaries:**
+- The range's floor stays `pixi.toml`'s `requires-pixi` floor, and it still closes before the next untested minor.
+- No capability text moves. No flag.
+
+### Story 34.1: The fix-PR solver admits pixi 0.85
+
+As the operator whose estate moved to pixi 0.85.0,
+I want the fix-PR solver's pixi range to admit it,
+So that the solver does not refuse the pixi CI and the workspace run.
+
+**Type:** chore • **Effort:** S • **Deps:** steward 148.2 • **FR/AD:** spec-pyforge-warden CAP-12 (realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `src/shared/packages/pyforge-warden/src/pyforge/warden/engines.py`, `src/shared/packages/pyforge-warden/tests/meta/test_engine_version_range_sync.py`
+**Spec:** `planning-artifacts/specs/spec-34-1-the-fix-pr-solver-admits-pixi-0-85.md`
+**Given** `PIXI_VERSION_RANGE` is `>=0.80.0,<0.82` and `requires-pixi` moves to `>=0.85.0`
+**When** the range moves to `>=0.85.0,<0.86`
+**Then** 0.85.0 is in range, and 0.84.2 and 0.86.0 are not
+**And** the floor still equals `requires-pixi`'s, and warden's suites pass
+**Status:** done
+
 ## Currency reconciliation — 2026-11-26 (the tag rule reaches station source)
 
 *Chain-currency cascade (arch -> epics).* 2026-11-26: Epic 31 / Story 31.1 minted under `spec-one-chain-per-station` (its capability 9, realized with no text change); no AD moves. The keys go through the Tier-3 feed and `sprint-ledger-sync`. **Content changed:** the Epic, this section and `updated:`.

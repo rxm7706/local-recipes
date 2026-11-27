@@ -26,7 +26,7 @@ Clone this repository, install its pixi environments, and build one recipe on yo
 
 :::note[Prerequisites]
 - A supported OS: Windows, Linux or macOS. The pixi route works on linux-64, osx-arm64 and win-64; there is no Intel macOS platform.
-- [Pixi](https://pixi.sh) at or above the workspace's `requires-pixi` floor in `pixi.toml` (0.80.0 on 2026-11-17; the envs carry the same floor). Or: Conda/Mamba with conda-build and rattler-build.
+- [Pixi](https://pixi.sh) at or above the workspace's `requires-pixi` floor in `pixi.toml` (0.85.0 on 2026-11-27; the envs carry the same floor). Or: Conda/Mamba with conda-build and rattler-build.
 - Network access to conda-forge.
 - For Linux builds on Windows: WSL2 with Ubuntu, or Docker Desktop.
 - On Windows, for the batch-script route: a shell that can run batch scripts and allows PowerShell execution for initial provisioning.

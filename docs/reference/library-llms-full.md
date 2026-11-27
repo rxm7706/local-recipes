@@ -63,10 +63,10 @@ Everything runs through pixi environments. Nothing here is installed globally.
 - **Laptop install: `pyforge-foundry-full`.** Unless an entry names another env,
   libraries marked for Guild/station work resolve there; the catalog's widest
   closure remains **`local-recipes`** when that env is installed.
-- **Python is 3.14.x in every environment except one.** If a library you want to
-  add doesn't support 3.14, it won't resolve here. The sole exception is
-  `python-agent-platform` (CAP-5, Story 10.2), env-scoped to `python = "3.12.*"`
-  only — no other feature/env in `pixi.toml` changes its python floor off 3.14.
+- **Python is 3.14.10 in every environment.** `pixi.toml` declares it once,
+  `[feature.interpreter.dependencies] python = "3.14.10.*"`, every environment composes the `interpreter`
+  feature, and no other feature names python (steward Story 148.1; `target-version-check` reds a second
+  declaration). If a library you want to add doesn't support 3.14, it won't resolve here.
 - Node.js 24 (LTS) is present, so npm-ecosystem CLIs (pnpm, yarn, marp, pptxgenjs, pptxgenjs-plus, yo)
   work inside the env too.
 - The repo also exposes conda-forge recipe tooling as pixi tasks and as the
@@ -96,22 +96,22 @@ Everything runs through pixi environments. Nothing here is installed globally.
 | `pyforge-testing-kit` | pyforge-testing-kit (no-default-feature)         | Lean env for the built `pyforge-testing-kit` package (`src/shared/packages/pyforge-testing-kit` path dep -> conda pkg + pytest/hatchling/python-build). Own-leaf shared test mocks (Story 19.2 / FR-130 / Q-26); stdlib-only; test-time path dep of pyforge-marshal + pyforge-doctor feature envs (not a station runtime run-dep). Spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-19-2-the-shared-test-support-kit.md` |
 | `pyforge-ci` | python + pyforge-ci (no-default-feature; **not** spec-kit) | Lean CI env for wheel/sdist/.conda publish without the fat `local-recipes` download. **Stdlib-only** (steward Story 103.3; the definition is the comment above `pyforge-ci = …` in `pixi.toml`): no runtime library — PyYAML, jsonschema, ruamel.yaml, mcp, pydantic, httpx, openfeature — is importable there, so it does not compose the `spec-kit` feature |
 | `pyforge-container` | eight station features (no-default-feature) | Whole-Guild image env: marshal+steward+atlas+warden+doctor+mason+herald+scribe in one `pixi install` |
-| `dbgpt-sidecar` | dbgpt-sidecar (no-default-feature) | **`python 3.12.*`.** Container-only sidecar: `dbgpt-app` + siblings; NOT composed onto python-agent-platform (disjoint FastAPI ranges) |
-| `platform-ci-test` | platform-ci-test (no-default-feature) | **`python 3.12.*`.** Slim conda-only env for Platform CI's `test` job (psycopg3 vs image psycopg2). No langflow/dbgpt. Install: `pixi install -e platform-ci-test` |
+| `dbgpt-sidecar` | dbgpt-sidecar (no-default-feature) | **`python 3.14.10`, the `interpreter` feature (3.12 until steward Story 43.6).** Container-only sidecar: `dbgpt-app` + siblings; NOT composed onto python-agent-platform (disjoint FastAPI ranges) |
+| `platform-ci-test` | platform-ci-test (no-default-feature) | **`python 3.14.10`, the `interpreter` feature (3.12 until steward Story 43.6).** Slim conda-only env for Platform CI's `test` job (psycopg3 vs image psycopg2). No langflow/dbgpt. Install: `pixi install -e platform-ci-test` |
 | `pyforge-mason`| pyforge-mason (no-default-feature)                    | Lean env for the built `pyforge-mason` package (`src/shared/packages/pyforge-mason` path dep -> conda pkg + pytest/hatchling/python-build). The Artisan Builder's CLI (`mason recipe`/`package`/`environment`); **no CLI-framework dep by contract** (FR-41 forbids click/typer — argparse only). Tasks: `pyforge-mason-build{,-conda,-dist}`, `pyforge-mason-test`. Spec: `_bmad-output/projects/pyforge-mason/planning-artifacts/` |
 | `pyforge-steward`| pyforge-steward (no-default-feature)                | Lean env for the built `pyforge-steward` package (`src/shared/packages/pyforge-steward` path dep -> conda pkg + pytest/hatchling/python-build). The Provisioner's CLI (`steward keys`/`deploy`/`provision`/`budget`); task names mirror `pyforge-warden`'s verbatim. Spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/` |
 | `pyforge-marshal`| pyforge-marshal (no-default-feature)                | Lean env for the built `pyforge-marshal` package (`src/shared/packages/pyforge-marshal` path dep -> conda pkg + **copier** + **mcp** (`>=2.2`, Story 103.1 `marshal-mcp` MCPServer) + pytest/hatchling/python-build + **import-linter**). Marshal is the harness/orchestration station and ships Genesis (`marshal seed` verbs) via **copier** (NFR-C2, `>=9.17,<10`); `import-linter` enforces AD-3/AD-4 as build-breaking contracts. Tasks: `pyforge-marshal-test`, `pyforge-marshal-build{,-conda,-dist}`. Spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/` |
-| `python-agent-platform`| python-agent-platform (no-default-feature)     | **`python 3.12.*` — one of three 3.12 envs (`platform-ci-test`, `dbgpt-sidecar` share the floor).** CAP-5 (Story 10.2, "one factory-sourced environment"): the ONE env that runs the three agentic engines (`langflow`, `dbgpt`, `dbgpt-serve`) alongside `django` on a single conda-forge-sourced interpreter, plus the `fastapi`/`django-health-check`/`psycopg2`/`redis-py` host deps and (Story 11.1) `chromadb`/`langchain-chroma`/`elevenlabs`/`psycopg` — deps `langflow.main.create_app()` hard-imports that the recipe only lists as soft `run_constraints`. `channel-priority = "flexible"` (feature-scoped) lets the solver fall through to a `SelfExplainML`-channel `slowapi` build once conda-forge's own build is ruled out by the `redis-py >=6.0.0` floor. Epic 11's engine-mounting stories and Story 10.3 (container image) both depend on this env existing. Spec: `archive/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-agent-platform/` |
+| `python-agent-platform`| python-agent-platform (no-default-feature)     | **`python 3.14.10`, the `interpreter` feature (3.12, with `platform-ci-test` and `dbgpt-sidecar`, until steward Story 43.6).** CAP-5 (Story 10.2, "one factory-sourced environment"): the ONE env that runs the three agentic engines (`langflow`, `dbgpt`, `dbgpt-serve`) alongside `django` on a single conda-forge-sourced interpreter, plus the `fastapi`/`django-health-check`/`psycopg2`/`redis-py` host deps and (Story 11.1) `chromadb`/`langchain-chroma`/`elevenlabs`/`psycopg` — deps `langflow.main.create_app()` hard-imports that the recipe only lists as soft `run_constraints`. `channel-priority = "flexible"` (feature-scoped) lets the solver fall through to a `SelfExplainML`-channel `slowapi` build once conda-forge's own build is ruled out by the `redis-py >=6.0.0` floor. Epic 11's engine-mounting stories and Story 10.3 (container image) both depend on this env existing. Spec: `archive/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-agent-platform/` |
 | `platform-dev` | python-agent-platform + platform-dev (no-default-feature) | AD-16, Story 11.1 + 56.1: composes `platform-dev` (`postgresql`/`pgvector`/`redis-server`/`kubernetes-helm`/`kubernetes-client`/`django-debug-toolbar`) ONTO `python-agent-platform` — one env for the full local Tier-1 baseline including `config.settings.local`, zero containers or managed services. |
 | `bmad-ui`      | bmad-ui (no-default-feature)                          | **linux-64 only.** BMad Method UI dashboards (`archive/docs/specs/bmad-loop-adoption.md` W4). Consumes the locally-built consume-not-submit mirrors `bmad-dashboard` + `mybmad-dashboard` from `./build_artifacts/linux64` + conda-forge. Tasks: `bmad-dashboard-install` (wires the VS Code extension), `mybmad` (Next.js dashboard + local PostgreSQL on :3002) |
 | `bmad-suite-full`| bmad-suite-full (no-default-feature)                | **linux-64 only.** CAP-4 greenfield one-pin proof env (`spec-bmad-suite-metapackage`, story 39.4): composes only `bmad-suite` (>=2026.9.1, SelfExplainML) + a minimal `python` floor — solver smoke without pulling the fat `local-recipes` graph. Not composed into `local-recipes`, which keeps its own 11 explicit `bmad-*` pins for pipeline-truth / doctor drift granularity. Docs: `install-matrix.md`'s Greenfield one-pin section. |
 
 ### Version pins agents must respect (don't fight the resolver)
 
-- `python = ">=3.14.6,3.14.*"` at the workspace root (3.14.* in each feature) — check
-  3.14 compat before suggesting new deps. **Exception:** `python-agent-platform` pins
-  `python = "3.12.*"`, env-scoped (CAP-5, Story 10.2). The same 3.12 floor also applies
-  to `platform-ci-test` and `dbgpt-sidecar` — do not raise these back to 3.14.
+- `python = "3.14.10.*"`, declared once in `[feature.interpreter.dependencies]` and composed by every
+  environment — check 3.14 compat before suggesting new deps. No environment pins its own Python (steward
+  Story 148.1); `python-agent-platform`, `platform-ci-test` and `dbgpt-sidecar`, once env-scoped to 3.12
+  (CAP-5, Story 10.2), moved to 3.14 with the platform image (steward Story 43.6).
 - `pandas >=1.5.3,<3` and `pyarrow >=13,<22` + `pyarrow-all >=21` → pandas 2.x, pyarrow 21.x.
 - `tomlkit <0.13.3` (dagster-dg-core pin), `structlog >24.2.0,<26` (xorq/BSL pin),
   `sqlglot >26.32.0,<28.7.0`.
@@ -130,8 +130,8 @@ Everything runs through pixi environments. Nothing here is installed globally.
 Available in every environment that composes the `python` feature (+ workspace `[dependencies]`); `spec-kit`
 is in its own `spec-kit` feature, which every one of those environments composes except `pyforge-ci`.
 
-- **python** (>=3.14.6, 3.14.*) — CPython interpreter. All Python libs below target 3.14.
-- **pixi** (>=0.80.0) — the package/environment manager itself, available *inside*
+- **python** (3.14.10.*) — CPython interpreter, from the `interpreter` feature every environment composes. All Python libs below target 3.14.
+- **pixi** (>=0.85.0) — the package/environment manager itself, available *inside*
   envs for nested workspace operations. `pixi-build` preview is enabled (unlocks
   `[package]`/build tables for the **eight** `pyforge` workspace members under
   `src/shared/packages/` — `pyforge-warden`, `pyforge-atlas`, `pyforge-herald`,

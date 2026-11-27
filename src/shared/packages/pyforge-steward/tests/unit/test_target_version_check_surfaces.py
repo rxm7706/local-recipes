@@ -77,11 +77,50 @@ def _write_platform(root: Path, *, ruff: str = "py314", mypy: str = "3.14") -> N
     )
 
 
-def _seed_tree(root: Path, *, pin: str = ">=3.14.7,3.14.*") -> None:
+_ESTATE_ACTION = """runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v7
+      with:
+        python-version: ${{ steps.version.outputs.python }}
+"""
+
+
+def _write_lock(root: Path, pythons: dict[str, str]) -> None:
+    """A pixi.lock whose environments section locks ``env -> python version`` on linux-64."""
+    lines = ["version: 7", "environments:"]
+    for env, version in pythons.items():
+        lines += [
+            f"  {env}:",
+            "    channels:",
+            "    - url: https://conda.anaconda.org/conda-forge/",
+            "    packages:",
+            "      linux-64:",
+            f"      - conda: https://conda.anaconda.org/conda-forge/linux-64/python-{version}-h0_cp3.conda",
+        ]
+    lines.append("packages: []")
+    (root / "pixi.lock").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _write_workflow(root: Path, name: str, body: str) -> None:
+    workflows = root / ".github" / "workflows"
+    workflows.mkdir(parents=True, exist_ok=True)
+    (workflows / name).write_text(body, encoding="utf-8")
+
+
+def _seed_tree(root: Path, *, pin: str = "3.14.10.*") -> None:
     (root / "pixi.toml").write_text(
-        f'[feature.python.dependencies]\npython = "{pin}"\n',
+        f'[feature.interpreter.dependencies]\npython = "{pin}"\n\n'
+        '[feature.tools.dependencies]\ngit = "*"\n\n'
+        '[environments]\ndefault = ["interpreter", "tools"]\n'
+        'guild = { features = ["interpreter"], no-default-feature = true }\n',
         encoding="utf-8",
     )
+    version = pin.removesuffix(".*")
+    _write_lock(root, {"default": version, "guild": version})
+    action = root / ".github" / "actions" / "setup-estate-python"
+    action.mkdir(parents=True, exist_ok=True)
+    (action / "action.yml").write_text(_ESTATE_ACTION, encoding="utf-8")
     for i in range(1, 11):
         _write_pyforge(root, f"pyforge-p{i}")
         _write_manifest(root, f"pyforge-p{i}")
@@ -171,7 +210,7 @@ def test_missing_platform_pyproject_could_not_run(tmp_path: Path) -> None:
 
 def test_pin_315_moves_expected_targets(tmp_path: Path) -> None:
     mod = _load()
-    _seed_tree(tmp_path, pin=">=3.15.0,3.15.*")
+    _seed_tree(tmp_path, pin="3.15.0.*")
     assert _run_main(mod, tmp_path) == 1
     _write_pyforge(tmp_path, "pyforge-p1", ruff="py315", mypy="3.15", req=">=3.15")
     for i in range(2, 11):
@@ -212,7 +251,7 @@ def test_mutation_dropping_platform_check_would_hide_drift(tmp_path: Path, monke
 
 def test_mutation_hard_coding_py314_would_fail_on_315_pin(tmp_path: Path) -> None:
     mod = _load()
-    _seed_tree(tmp_path, pin=">=3.15.0,3.15.*")
+    _seed_tree(tmp_path, pin="3.15.0.*")
     for i in range(1, 11):
         _write_pyforge(tmp_path, f"pyforge-p{i}", ruff="py314", mypy="3.14", req=">=3.14")
     for i in range(1, 10):
@@ -288,4 +327,149 @@ def test_mutation_dropping_manifest_check_would_hide_drift(tmp_path: Path, monke
     _write_manifest(tmp_path, "pyforge-p1", host='">=3.12"', run='">=3.12"')
     assert _run_main(mod, tmp_path) == 1
     monkeypatch.setattr(mod, "findings_for_package_manifest", lambda *a, **k: [])
+    assert _run_main(mod, tmp_path) == 0
+
+
+# --- Story 148.1 / 148.3 (spec-pyforge-steward:CAP-153): python is declared once and used everywhere ------------
+
+
+def test_a_second_python_declaration_drifts(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    mod = _load()
+    _seed_tree(tmp_path)
+    manifest = tmp_path / "pixi.toml"
+    manifest.write_text(manifest.read_text(encoding="utf-8").replace('git = "*"', 'git = "*"\npython = "3.14.*"'))
+    assert _run_main(mod, tmp_path) == 1
+    assert "[feature.tools.dependencies] declares python" in capsys.readouterr().out
+
+
+def test_a_per_target_or_default_python_declaration_drifts(tmp_path: Path) -> None:
+    mod = _load()
+    _seed_tree(tmp_path)
+    manifest = tmp_path / "pixi.toml"
+    base = manifest.read_text(encoding="utf-8")
+    manifest.write_text('[dependencies]\npython = "3.14.*"\n\n' + base, encoding="utf-8")
+    assert _run_main(mod, tmp_path) == 1
+    manifest.write_text(base + '\n[feature.tools.target.win-64.dependencies]\npython = "3.13.*"\n', encoding="utf-8")
+    assert _run_main(mod, tmp_path) == 1
+
+
+def test_an_environment_without_the_interpreter_feature_drifts(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    mod = _load()
+    _seed_tree(tmp_path)
+    manifest = tmp_path / "pixi.toml"
+    manifest.write_text(manifest.read_text(encoding="utf-8").replace('features = ["interpreter"]', "features = []"))
+    assert _run_main(mod, tmp_path) == 1
+    assert "environment 'guild' does not list the 'interpreter' feature" in capsys.readouterr().out
+
+
+def test_a_lock_off_the_declared_python_drifts(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """The case that left pyforge-marshal on 3.15.0 while every other environment locked 3.14.7."""
+    mod = _load()
+    _seed_tree(tmp_path)
+    _write_lock(tmp_path, {"default": "3.14.10", "guild": "3.15.0"})
+    assert _run_main(mod, tmp_path) == 1
+    assert "guild on linux-64 resolves python 3.15.0, pixi.toml declares 3.14.10" in capsys.readouterr().out
+    _write_lock(tmp_path, {"default": "3.14.10"})
+    assert _run_main(mod, tmp_path) == 1
+
+
+def test_a_declaration_without_an_exact_version_could_not_run(tmp_path: Path) -> None:
+    mod = _load()
+    _seed_tree(tmp_path, pin="3.14.*")
+    assert _run_main(mod, tmp_path) == 2
+
+
+def test_a_missing_lock_or_estate_action_could_not_run(tmp_path: Path) -> None:
+    mod = _load()
+    _seed_tree(tmp_path)
+    (tmp_path / ".github" / "actions" / "setup-estate-python" / "action.yml").unlink()
+    assert _run_main(mod, tmp_path) == 2
+    _seed_tree(tmp_path)
+    (tmp_path / "pixi.lock").unlink()
+    assert _run_main(mod, tmp_path) == 2
+
+
+def test_a_workflow_setting_python_up_another_way_drifts(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    mod = _load()
+    _seed_tree(tmp_path)
+    _write_workflow(
+        tmp_path,
+        "lint.yml",
+        "jobs:\n  lint:\n    steps:\n      - uses: actions/checkout@v7\n      - uses: actions/setup-python@v7\n"
+        "        with:\n          python-version: '3.14'\n      - run: python -m lint\n",
+    )
+    assert _run_main(mod, tmp_path) == 1
+    assert ".github/workflows/lint.yml:5 sets Python up with actions/setup-python" in capsys.readouterr().out
+
+
+def test_a_python_step_before_any_interpreter_drifts(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    mod = _load()
+    _seed_tree(tmp_path)
+    _write_workflow(
+        tmp_path,
+        "deploy.yml",
+        "jobs:\n  deploy:\n    steps:\n      - uses: actions/checkout@v7\n"
+        "      - name: Verify\n        run: python scripts/verify.py\n"
+        "      - uses: ./.github/actions/setup-estate-python\n",
+    )
+    assert _run_main(mod, tmp_path) == 1
+    assert "job 'deploy' runs python before it sets up the estate's Python" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    "steps",
+    [
+        "      - uses: ./.github/actions/setup-estate-python\n      - run: python scripts/verify.py\n",
+        "      - uses: prefix-dev/setup-pixi@v0.11.3\n        with:\n          activate-environment: build\n"
+        "      - run: |\n          set -euo pipefail\n          python -m pytest\n",
+        "      - run: |\n          docker run --rm image \\\n            python manage.py migrate\n",
+        "      - run: |\n          podman run --rm image \\\n            python manage.py migrate\n",
+        "      - run: pixi run --frozen -e build python scripts/verify.py\n",
+    ],
+    ids=["estate-action", "activated-pixi", "docker", "continuation", "pixi-run"],
+)
+def test_a_python_step_with_an_interpreter_is_clean(tmp_path: Path, steps: str) -> None:
+    mod = _load()
+    _seed_tree(tmp_path)
+    _write_workflow(tmp_path, "ok.yml", "jobs:\n  ok:\n    steps:\n      - uses: actions/checkout@v7\n" + steps)
+    assert _run_main(mod, tmp_path) == 0
+
+
+def test_a_container_job_may_run_python(tmp_path: Path) -> None:
+    mod = _load()
+    _seed_tree(tmp_path)
+    _write_workflow(
+        tmp_path,
+        "build.yml",
+        "jobs:\n  build:\n    container:\n      image: python:3.14\n    steps:\n      - run: python -V\n",
+    )
+    assert _run_main(mod, tmp_path) == 0
+
+
+def test_a_local_action_that_activates_pixi_provides_the_interpreter(tmp_path: Path) -> None:
+    mod = _load()
+    _seed_tree(tmp_path)
+    setup = tmp_path / ".github" / "actions" / "test-setup"
+    setup.mkdir(parents=True)
+    (setup / "action.yml").write_text(
+        "runs:\n  using: composite\n  steps:\n    - uses: prefix-dev/setup-pixi@v0.11.3\n      with:\n"
+        "        activate-environment: test\n",
+        encoding="utf-8",
+    )
+    _write_workflow(
+        tmp_path,
+        "test.yml",
+        "jobs:\n  test:\n    steps:\n      - uses: ./.github/actions/test-setup\n      - run: python -m pytest\n",
+    )
+    assert _run_main(mod, tmp_path) == 0
+
+
+def test_mutation_dropping_the_lock_check_would_hide_drift(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    mod = _load()
+    _seed_tree(tmp_path)
+    _write_lock(tmp_path, {"default": "3.14.10", "guild": "3.15.0"})
+    assert _run_main(mod, tmp_path) == 1
+    monkeypatch.setattr(mod, "findings_for_lock", lambda *a, **k: [])
     assert _run_main(mod, tmp_path) == 0

@@ -8608,3 +8608,24 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   setup-pixi steps. **Constraints:** each gate reads the same reports, judges the same floors and exits as before;
   the shards, the local preflight's gate tasks (`pyforge-<station>-coverage-gate`, in each station's pixi
   environment) and every floor are unchanged. No flag (chore). Owner `spec-pyforge-steward`.
+- **2026-11-27 (Python and pixi are declared once and used everywhere) — Found and ruled:** surveyed after PR
+  #2413 moved the gates to `actions/setup-python`. The estate's Python was written in twelve places and resolved to
+  three versions. `pixi.toml` named `python` in eleven tables: the root `[dependencies]` and ten features, at
+  `>=3.14.7,3.14.*`, `3.14.*` or `>=3.12`. Fourteen of the 36 environments composed none of them, and
+  `pyforge-marshal` locked Python 3.15.0 where the other 35 locked 3.14.7. Ten `actions/setup-python` steps
+  hard-coded `'3.14'`, so CI's gates ran 3.14.10; `sync-pypi-mappings` carried an unused `python-version` input;
+  `platform-deploy.yml` ran its verify script, and `test-linux.yml` its upload client, on the runner's own Python
+  3.12; and `platform-ci.yml`'s air-gap job ran `scripts/build-pixi-mirror.py` there too. pixi was 0.80.0 at every pin
+  site while 0.85.0 shipped on 2026-11-25, with `setup-pixi` at v0.11.2 or v0.10.2 against v0.11.3.
+  **Ruled** (operator, 2026-11-27: "Exact, from the lock" and "Fix in this change"; "we should update the lock file
+  to use the latest python ... make sure all environments use the same version ... python 3.14.10"; "python version
+  should be declared once - and used everywhere"; "update pixi to the latest too everywhere used pixi 0.85.0";
+  "nodejs needs to stay at >=24.19.0,<27.0,!=25.*"). **For steward:** this entry binds `spec-pyforge-steward`
+  CAP-153 (realized, no text change) and decomposes as Epic 148: Python 3.14.10 is declared once, in an
+  `interpreter` feature every environment composes, and the lock is re-solved (148.1); pixi 0.85.0 at every pin
+  site, `setup-pixi` v0.11.3 everywhere, and the `subdir` key pixi 0.85.0 asks for (148.2); every workflow sets
+  Python up through one action that reads the declaration, and `target-version-check` holds the declaration, the
+  environments, the lock and the workflows to it (148.3). Warden relays as its Epic 34: the fix-PR solver's pixi
+  range moves to 0.85. **Constraints:** nodejs stays at its LTS pin; the recipe lanes' `setup-miniconda`
+  `python-version` is the Python a recipe is built for and stays a per-build choice; no test, floor or gate is
+  weakened. No flag (chores). Owner `spec-pyforge-steward`.

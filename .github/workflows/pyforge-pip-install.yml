@@ -94,13 +94,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v7
-        with:
-          # 3.14 since 2026-09-08 (marshal Story 32.2, spec-fleet-consistency-
-          # standard CAP-5). This lane pip-installs OUTSIDE pixi, so raising the
-          # packages' requires-python to >=3.14 made pip refuse at 3.12 -- see
-          # the header. Keep this in step with the packages' own floor.
-          python-version: '3.14'
+      # This lane pip-installs OUTSIDE pixi, so it needs the interpreter the packages' requires-python floors
+      # name: 3.14 since 2026-09-08 (marshal Story 32.2; pip refused them at 3.12 -- see the header). Since
+      # steward Story 148.3 the version comes from pixi.toml's one declaration, and target-version-check holds
+      # the floors to it.
+      - uses: ./.github/actions/setup-estate-python
 
       # --- venv 1: pyforge-core WITH dependencies -------------------------
       - name: Install pyforge-core (with deps) and pytest

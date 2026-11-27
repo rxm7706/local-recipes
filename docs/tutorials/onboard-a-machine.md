@@ -113,7 +113,7 @@ This is the report from a new macOS laptop (`osx-arm64`) on 2026-11-25, exit cod
 ```text
 steward init: machine readiness on osx-arm64 (docs/governance/machine-readiness.yaml)
 desktop - a clone, the environments, the station CLIs, the tests and the full preflight
-  ok      pixi: pixi 0.81.0 (floor >= 0.80.0)
+  ok      pixi: pixi 0.85.0 (floor >= 0.85.0)
   ok      git: git 2.55.0
   ok      gh: gh 2.102.0
   ok      gh-auth: gh authenticated; 4988 API calls remaining

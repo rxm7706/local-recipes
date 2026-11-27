@@ -10030,6 +10030,62 @@ So that a shipped capability does not read as planned work.
 **And** no other line of the Spec moves
 **Status:** done
 
+## Epic 148: The estate's Python and pixi are declared once and used everywhere (spec-pyforge-steward CAP-153)
+
+Minted 2026-11-27 from the station Dream's entry of the same date on the operator's rulings of 2026-11-27: "python version should be declared once - and used everywhere" at Python 3.14.10, "update pixi to the latest too everywhere used pixi 0.85.0", and "nodejs needs to stay at >=24.19.0,<27.0,!=25.*".
+**HARD boundaries:**
+- One declaration of Python, in `pixi.toml`; every other copy is derived from it or held to it by `target-version-check`.
+- nodejs keeps its LTS pin. The recipe lanes' `setup-miniconda` `python-version` stays a per-build choice.
+- No test, floor or gate is weakened. No flag (chores).
+
+### Story 148.1: Python 3.14.10 is declared once, and every environment locks it
+
+As the operator of the estate,
+I want one Python declaration in `pixi.toml` that every environment composes,
+So that no environment resolves a Python of its own, as `pyforge-marshal` did with 3.15.0.
+
+**Type:** chore • **Effort:** M • **Deps:** 66.1, 124.3 • **FR/AD:** spec-pyforge-steward CAP-153 (realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `pixi.toml`, `pixi.lock`, `environment.yaml`, `docs/reference/library-llms-full.md`
+**Spec:** `planning-artifacts/specs/spec-148-1-python-3-14-10-is-declared-once-and-every-environment-locks-it.md`
+**Given** eleven tables of `pixi.toml` name `python` at four different specs, fourteen environments compose none of them, and `pyforge-marshal` locks 3.15.0 where the rest lock 3.14.7
+**When** `[feature.interpreter.dependencies] python = "3.14.10.*"` is the only declaration, every environment lists the `interpreter` feature first, and the lock is re-solved with pixi 0.85.0
+**Then** every environment locks Python 3.14.10 on every platform
+**And** the only other packages that move are those Python 3.14.10's own build requires, `pyforge-marshal`'s rebuild for cp314, and nodejs inside its LTS pin
+**Status:** done
+
+### Story 148.2: pixi 0.85.0 at every pin site
+
+As the operator of the estate,
+I want every pixi pin and every `setup-pixi` action at the latest release,
+So that CI, the containers and the workspace run the pixi that wrote the lock.
+
+**Type:** chore • **Effort:** S • **Deps:** 148.1 • **FR/AD:** spec-pyforge-steward CAP-153 (realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `pixi.toml`, `src/shared/packages/pyforge-mason/pixi.toml`, `environment.yaml`, `Containerfile`, `src/platform/Containerfile`, `src/platform/compose/dbgpt/Containerfile`, `src/platform/compose/mcp-host/Containerfile`, `.github/workflows/*.yml` (the 13 that set pixi up), `.github/actions/platform-test-setup/action.yml`, `.github/actions/sync-pypi-mappings/action.yml`, `docs/tutorials/getting-started.md`, `docs/reference/container-base-layer-convention.md`, `docs/how-to/bootstrap-a-machine-with-steward.md`, `docs/tutorials/onboard-a-machine.md`
+**Spec:** `planning-artifacts/specs/spec-148-2-pixi-0-85-0-at-every-pin-site.md`
+**Given** every registered pin site holds pixi 0.80.0 and `setup-pixi` is v0.11.2 or v0.10.2, while pixi 0.85.0 and `setup-pixi` v0.11.3 are released
+**When** `bump-pixi-version` rewrites every registered site to 0.85.0, every `setup-pixi` step moves to v0.11.3, and the osx-arm64 platform entry uses the `subdir` key pixi 0.85.0 asks for
+**Then** `pixi-version-check` exits 0 at 0.85.0 and pixi 0.85.0 reads the manifest without a warning
+**And** the docs that name the pixi floor name 0.85.0
+**Status:** done
+
+### Story 148.3: Every workflow sets Python up from the one declaration
+
+As a reader of a workflow,
+I want every job that runs Python outside pixi to take the version from `pixi.toml`,
+So that CI runs the estate's Python and a hard-coded version cannot come back.
+
+**Type:** chore • **Effort:** M • **Deps:** 148.1, 117.27 • **FR/AD:** spec-pyforge-steward CAP-153 (realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `.github/actions/setup-estate-python/action.yml`, `.github/actions/sync-pypi-mappings/action.yml`, `.github/workflows/pyforge-station-tests.yml`, `.github/workflows/detectors.yml`, `.github/workflows/pyforge-pip-install.yml`, `.github/workflows/platform-deploy.yml`, `.github/workflows/platform-ci.yml`, `.github/workflows/test-linux.yml`, `scripts/target_version_check.py`, `src/shared/packages/pyforge-steward/tests/unit/test_target_version_check_surfaces.py`, `tests/scripts/test_coverage_gates_ci_driver.py`
+**Spec:** `planning-artifacts/specs/spec-148-3-every-workflow-sets-python-up-from-the-one-declaration.md`
+**Given** ten `actions/setup-python` steps hard-code `'3.14'`, and three jobs run Python on the runner's own 3.12
+**When** one composite action reads the declaration and sets that Python up, every such step uses it, and the three jobs take an interpreter first
+**Then** `target-version-check` reds a second declaration, an environment without the `interpreter` feature, a lock off the declared version, another `actions/setup-python` step, or a step that starts `python` before its job has an interpreter
+**And** it exits 0 on the tree, and each rule is held by a test
+**Status:** done
+
 ## Currency reconciliation — 2026-11-26 (CAP-184 amended)
 
 *Chain-currency cascade (arch -> epics), CAP-184 amended.* 2026-11-26: Epic 142 and Story 142.1 are minted under `spec-pyforge-steward` CAP-184 as amended (FR-58); no AD moves. The keys `142-1`, `epic-142` and `epic-142-retrospective` go through the Tier-3 feed and `sprint-ledger-sync`. **Content changed:** Epic 142, this section and `updated:`.

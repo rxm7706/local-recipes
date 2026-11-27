@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 271b294606160bcd
-story_count: 537
+source_fingerprint: b2ca746b16db9404
+story_count: 540
 test_file_count: 173
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 537
-- **Epics parsed:** 147
+- **Stories parsed:** 540
+- **Epics parsed:** 148
 - **Test files inventoried:** 173 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `271b294606160bcd`
+- **Source fingerprint:** `b2ca746b16db9404`
 
 ## Risk Assessment
 
@@ -168,6 +168,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 145: The preflight runs a suite whole when its coverage gate only judges reports (spec-pyforge-steward CAP-159)
 - Epic 146: A plugin's registration name says whose it is (spec-pyforge-unifying-strategy:CAP-18, amended)
 - Epic 147: CAP-183 and CAP-185 read shipped (spec-pyforge-steward CAP-183, CAP-185)
+- Epic 148: The estate's Python and pixi are declared once and used everywhere (spec-pyforge-steward CAP-153)
 
 ### Low-risk epics
 
@@ -903,6 +904,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 145.1 | The preflight runs a suite whole when its coverage gate only judges reports | none observed |
 | 146.1 | Every plugin registration name starts with its package's token | none observed |
 | 147.1 | CAP-183 and CAP-185 read shipped | none observed |
+| 148.1 | Python 3.14.10 is declared once, and every environment locks it | none observed |
+| 148.2 | pixi 0.85.0 at every pin site | none observed |
+| 148.3 | Every workflow sets Python up from the one declaration | none observed |
 
 ## Quality Gates
 

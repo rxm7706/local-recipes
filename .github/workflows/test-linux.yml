@@ -300,6 +300,10 @@ jobs:
       # only ever be completed by hand. Deliberately mirrors the Windows step:
       # same input name, same fail-loudly-on-missing-token rule, same `-s`
       # pinned destination.
+      # The host runs pip for the upload client: on the estate's Python, not the runner's own (steward Story 148.3).
+      - if: inputs.upload_channel != ''
+        uses: ./.github/actions/setup-estate-python
+
       - name: Upload to anaconda.org
         if: inputs.upload_channel != ''
         env:
