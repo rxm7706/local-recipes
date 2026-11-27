@@ -40,11 +40,19 @@ platforms = [
 [feature.interpreter.dependencies]
 python = "3.14.10.*"
 
+# The estate's nodejs, declared once (steward Story 149.2): the newest 24.x LTS release. The operator's range is
+# >=24.19.0,<27.0,!=25.* (the 24.x and 26.x LTS lines, never 25.x, Node's odd non-LTS release); marp-cli 4.2.3
+# requires nodejs >=24.4.1,<25, so one version for every environment is on the 24 line.
+# Every environment that carries nodejs lists the `node` feature, and no other feature names nodejs, so they all
+# resolve this one version; docs-site/.nvmrc and docs-site/package.json's engines name it too, and
+# target-version-check holds all of them to this line. To move it: change this line, then re-lock.
+[feature.node.dependencies]
+nodejs = "24.22.3.*"
+
 [feature.python.dependencies]
 pixi = ">=0.85.0"                 # Pixi package & environment manager
 gh = ">=2.102.0"                  # GitHub CLI for PR / issue / repo automation
 gitpython = ">=3.2.0"            # Pythonic Git wrapper for complex repo interactions
-nodejs = ">=24.19.0,<27.0,!=25.*"  # Pin to LTS version -- allows the 24.x and 26.x LTS lines; excludes 25.x (Node's odd/non-LTS release)
 pnpm = ">=12.4.1"                 # Fast disk-efficient Node package manager (moved here from `local-recipes`, Story 67.1: one declaration, reaching the laptop SBOM)
 bmad-method = ">=6.12.2"          # BMAD agent-driven dev framework (planning + dev skills)
 truststore = ">=0.10.5"           # OS trust store for corporate CA / JFrog TLS
@@ -639,7 +647,6 @@ redis-py = ">=8.1.0"              # Story 48.6: browser relay tail-read tests (i
 kubernetes-client = ">=1.37.1"    # Story 118.7 (spec-pyforge-steward CAP-176/CAP-177, pap:AD-16): `deploy nic up`'s pack step shells kubectl; same floor as [feature.platform-dev.dependencies]
 kubernetes-helm = ">=4.3.0"       # Story 118.7: the pack step's `helm pull` chart-digest read; same floor as [feature.platform-dev.dependencies]
 bmad-eval-quality = ">=4.3.0"     # DW-OPS-2026-09-20-1 (2026-09-20): steward WIELDS eval-quality (suite.py's adoption-register live probe, Story 45.1) but the CLI was pinned only in local-recipes + pyforge-guild, so under `-e pyforge-steward` shutil.which never saw it and suite.py fell back to <repo>/.pixi/envs/local-recipes/bin -- present on the primary checkout, absent in every fresh worktree (test_wired_column_agrees_with_live_pipeline_truth failed there, 2026-09-20). Same floor as the Guild/local-recipes pins; keep the three in step.
-nodejs = ">=24.19.0,<27.0,!=25.*"  # Pin to LTS version -- allows the 24.x and 26.x LTS lines; excludes 25.x (Node's odd/non-LTS release). bmad-eval-quality's runtime, unpinned by it; without this the Python 3.14.10 re-lock (steward Story 148.1) took nodejs 22.23.5 here.
 
 [feature.pyforge-steward.target.linux-64.dependencies]
 nebari-infrastructure-core = { version = ">=0.14.0", channel = "SelfExplainML" }  # Story 118.1 (CAP-176): `nic` from the estate SelfExplainML channel (linux-64 only today); floor tracks publish until 0.17.0 lands beside recipes/nebari-infrastructure-core; the <0.18 cap dropped 2026-11-01 (operator ruling: no hold, latest-up)
@@ -1049,7 +1056,6 @@ playwright = ">=1.64.0,<1.65"     # steward Story 131.1: one driver estate-wide;
 [feature.site.dependencies]
 jinja2 = ">=3.1.6"                # no reader since herald Story 43.7 retired docsite/; leaves at the next estate refresh (a lock change)
 pyyaml = ">=6.0.3"                # docs-site/scripts/verify_claims.py reads docs-site/src/content/dossier/dossier.yml
-nodejs = ">=24.19.0,<27.0,!=25.*"  # Story 27.1: Astro/Starlight docs-site build (same pin as [feature.python.dependencies])
 
 # Every depends-on entry of a site task names environment = "site" (steward Story 107.1, DW-steward-45-1-1): pixi
 # looks a bare dependency up in the environment the run was invoked in, where these tasks do not exist, so
@@ -1113,18 +1119,18 @@ findutils = ">=4.10.0"            # GNU find (`-printf`) for the workflow lines 
 # to activate by default when entering this repository. Change the value to any
 # environment name defined below. If omitted, the first environment key is used.
 # linux only needs Python to run build-locally.py. Everything else happens in Docker.
-linux = ["interpreter", "linux", "python", "spec-kit"]
+linux = ["interpreter", "node", "linux", "python", "spec-kit"]
 # osx and win do run natively on the machine, so we need the build deps too
-osx = ["interpreter", "osx", "python", "spec-kit", "build"]
-win = ["interpreter", "win", "python", "spec-kit", "build"]
-build = ["interpreter", "python", "spec-kit", "build"]
-grayskull = ["interpreter", "python", "spec-kit", "grayskull", "crm"]
-conda-smithy = ["interpreter", "python", "spec-kit", "conda-smithy", "shellcheck"]
-local-recipes = ["interpreter", "python", "spec-kit", "build", "grayskull", "conda-smithy", "local-recipes", "guild-tasks"]  # guild-tasks (tasks only, no deps) so every moved Guild task still resolves here (Story 63.1)
-pyforge-guild = { features = ["interpreter", "python", "spec-kit", "pyforge-guild", "guild-tasks", "openfeature-file-eval", "host-tools"], no-default-feature = true }
-default = { features = ["interpreter", "python", "spec-kit", "pyforge-guild", "guild-tasks", "host-tools"], no-default-feature = true }  # ALIAS of pyforge-guild (operator 2026-09-16, Story 63.1): pixi resolves a bare `pixi run <task>` that several envs provide to the env NAMED `default`, and bare `pixi shell` activates it -- so the Guild env is the default by the tool, not by a doc. Keep the two feature lists identical; `pyforge-guild` stays the name every surface uses.  # THE session default for agents/harnesses (steward Story 63.1, CAP-5); python feature = python, pixi, gh, gitpython, nodejs, pnpm, bmad-method, truststore; the spec-kit feature follows it (steward Story 103.3)
-vuln-db = ["interpreter", "python", "spec-kit", "vuln-db"]
-gcloud = ["interpreter", "python", "spec-kit", "gcloud-sdk"]
+osx = ["interpreter", "node", "osx", "python", "spec-kit", "build"]
+win = ["interpreter", "node", "win", "python", "spec-kit", "build"]
+build = ["interpreter", "node", "python", "spec-kit", "build"]
+grayskull = ["interpreter", "node", "python", "spec-kit", "grayskull", "crm"]
+conda-smithy = ["interpreter", "node", "python", "spec-kit", "conda-smithy", "shellcheck"]
+local-recipes = ["interpreter", "node", "python", "spec-kit", "build", "grayskull", "conda-smithy", "local-recipes", "guild-tasks"]  # guild-tasks (tasks only, no deps) so every moved Guild task still resolves here (Story 63.1)
+pyforge-guild = { features = ["interpreter", "node", "python", "spec-kit", "pyforge-guild", "guild-tasks", "openfeature-file-eval", "host-tools"], no-default-feature = true }
+default = { features = ["interpreter", "node", "python", "spec-kit", "pyforge-guild", "guild-tasks", "host-tools"], no-default-feature = true }  # ALIAS of pyforge-guild (operator 2026-09-16, Story 63.1): pixi resolves a bare `pixi run <task>` that several envs provide to the env NAMED `default`, and bare `pixi shell` activates it -- so the Guild env is the default by the tool, not by a doc. Keep the two feature lists identical; `pyforge-guild` stays the name every surface uses.  # THE session default for agents/harnesses (steward Story 63.1, CAP-5); python feature = python, pixi, gh, gitpython, nodejs, pnpm, bmad-method, truststore; the spec-kit feature follows it (steward Story 103.3)
+vuln-db = ["interpreter", "node", "python", "spec-kit", "vuln-db"]
+gcloud = ["interpreter", "node", "python", "spec-kit", "gcloud-sdk"]
 # pyforge-ci — the LEAN CI environment. feature.python gives pixi, bmad-method,
 # nodejs, gh, gitpython + truststore; feature.pyforge-ci adds everything
 # needed to BUILD and PUBLISH: wheel + sdist + .conda, to PyPI and conda-forge.
@@ -1164,7 +1170,7 @@ gcloud = ["interpreter", "python", "spec-kit", "gcloud-sdk"]
 # build/publish surface without the 9.8 GB.
 #
 # Named to match the eight sibling pyforge-* envs so it sorts with the family.
-pyforge-ci = { features = ["interpreter", "python", "pyforge-ci", "host-tools"], no-default-feature = true }
+pyforge-ci = { features = ["interpreter", "node", "python", "pyforge-ci", "host-tools"], no-default-feature = true }
 # Lean standalone-tool env (NFR1/NFR2): no-default-feature excludes the fat
 # default [dependencies] (python 3.14 + pixi + conda + pip + uv), so this env
 # carries only the built pyforge-warden package + its conda run-deps + pytest.
@@ -1172,12 +1178,12 @@ pyforge-warden = { features = ["interpreter", "pyforge-warden", "host-tools"], n
 # Lean atlas env (Story A1, AD-16/§ 2.5): no-default-feature excludes the fat
 # default [dependencies]; loop worktrees materialize THIS env, never the fat
 # local-recipes env — this is the worktree-affordability claim A3 measures.
-pyforge-atlas = { features = ["interpreter", "pyforge-atlas", "host-tools"], no-default-feature = true }
+pyforge-atlas = { features = ["interpreter", "node", "pyforge-atlas", "host-tools"], no-default-feature = true }
 # Lean doctor env (Story 1.1): no-default-feature excludes the fat default
 # [dependencies]; carries only the built pyforge-doctor package + its conda
 # run-deps + pytest — mirrors pyforge-warden's/pyforge-atlas's lean shape.
 pyforge-doctor = { features = ["interpreter", "pyforge-doctor", "host-tools"], no-default-feature = true }
-detectors = { features = ["interpreter", "detectors"], no-default-feature = true }  # the Detectors workflow's locked env (pixi first, pip fallback) -- PR #1043
+detectors = { features = ["interpreter", "node", "detectors"], no-default-feature = true }  # the Detectors workflow's locked env (pixi first, pip fallback) -- PR #1043
 # Lean scribe env (Story 1.1, pyforge-warden mirror): no-default-feature
 # excludes the fat default [dependencies], so this env carries only the
 # built pyforge-scribe package + its runtime deps (typer, pydantic) + pytest.
@@ -1201,22 +1207,22 @@ pyforge-testing-kit = { features = ["interpreter", "pyforge-testing-kit", "host-
 # BMad Method UI dashboards (docs/specs/bmad-loop-adoption.md W4): consumes the
 # LOCALLY-BUILT bmad-dashboard + mybmad-dashboard packages (consume-not-submit
 # mirrors of conda-forge/staged-recipes#33513) from ./build_artifacts/linux64.
-bmad-ui = { features = ["interpreter", "bmad-ui"], no-default-feature = true }
+bmad-ui = { features = ["interpreter", "node", "bmad-ui"], no-default-feature = true }
 # Lean proof env for CAP-4's greenfield one-pin suite install
 # (spec-bmad-suite-metapackage): composes ONLY feature.bmad-suite-full --
 # solver smoke without pulling the fat local-recipes graph. Never composed
 # into local-recipes (see the [feature.bmad-suite-full] comment above).
-bmad-suite-full = { features = ["interpreter", "bmad-suite-full"], no-default-feature = true }
+bmad-suite-full = { features = ["interpreter", "node", "bmad-suite-full"], no-default-feature = true }
 # Lean herald env (Story 1.1, warden/atlas mirror): no-default-feature
 # excludes the fat default [dependencies]; carries only the built
 # pyforge-herald package + pytest. Spec:
 # _bmad-output/projects/pyforge-herald/planning-artifacts/.
-pyforge-herald = { features = ["interpreter", "pyforge-herald", "host-tools"], no-default-feature = true }
+pyforge-herald = { features = ["interpreter", "node", "pyforge-herald", "host-tools"], no-default-feature = true }
 # Lean mason env (Story 1.1): no-default-feature, so it carries only the built
 # pyforge-mason package + pytest + the two build frontends.
 pyforge-mason = { features = ["interpreter", "pyforge-mason", "host-tools"], no-default-feature = true }
 # Lean steward env (Story 1.1, pyforge-warden mirror): same lean shape.
-pyforge-steward = { features = ["interpreter", "pyforge-steward", "openfeature-file-eval", "host-tools"], no-default-feature = true }
+pyforge-steward = { features = ["interpreter", "node", "pyforge-steward", "openfeature-file-eval", "host-tools"], no-default-feature = true }
 # Lean marshal env (Story 1.1, pyforge-warden mirror): no-default-feature,
 # so it carries only the built pyforge-marshal package + its conda
 # run-deps + pytest + import-linter.
@@ -1228,7 +1234,7 @@ pyforge-marshal = { features = ["interpreter", "pyforge-marshal"], no-default-fe
 # `pixi install -e pyforge-container`. Features are referenced BY NAME (not
 # copied pins), so this tracks each station's deps automatically; it does
 # not curate or split any feature -- it only composes what already exists.
-pyforge-container = { features = ["interpreter", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe", "host-tools"], no-default-feature = true }
+pyforge-container = { features = ["interpreter", "node", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe", "host-tools"], no-default-feature = true }
 # pyforge-foundry-full (steward Story 63.5, 2026-09-20, operator ruling): the UNION of every PyForge
 # feature -- the eight stations, pyforge-core, pyforge-testing-kit, the Guild default and its tasks.
 # Not a runtime env (that is pyforge-guild, the bare minimum every harness gets) and not the recipe
@@ -1243,13 +1249,13 @@ pyforge-container = { features = ["interpreter", "pyforge-marshal", "pyforge-ste
 # conda-smithy capping py-rattler <0.26 / conda <26.3. grayskull's own unversioned dependency still
 # brings conda-recipe-manager in, resolved to 0.5.0 (the last with no click cap); current crm and
 # feedrattler stay in the `grayskull` env.
-pyforge-foundry-full = { features = ["interpreter", "python", "spec-kit", "pyforge-guild", "guild-tasks", "pyforge-core", "pyforge-testing-kit", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe", "build", "grayskull", "host-tools"], no-default-feature = true }
+pyforge-foundry-full = { features = ["interpreter", "node", "python", "spec-kit", "pyforge-guild", "guild-tasks", "pyforge-core", "pyforge-testing-kit", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe", "build", "grayskull", "host-tools"], no-default-feature = true }
 # pyforge-foundry-full-stack (Story 67.1): the SBOM plus the platform's local stack -- the
 # platform-limited pieces (`platform-dev`'s PostgreSQL 17 / pgvector / redis-server,
 # `platform-object-storage`) layered on top, the way `pyforge-scribe-pg` layers `scribe-pg`. It
 # solves on linux-64 only, the one platform `platform-object-storage` declares (macOS laptops get
 # no layer env yet); the SBOM itself keeps osx-arm64 and win-64.
-pyforge-foundry-full-stack = { features = ["interpreter", "python", "spec-kit", "pyforge-guild", "guild-tasks", "pyforge-core", "pyforge-testing-kit", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe", "build", "grayskull", "platform-dev", "platform-object-storage", "host-tools"], no-default-feature = true }
+pyforge-foundry-full-stack = { features = ["interpreter", "node", "python", "spec-kit", "pyforge-guild", "guild-tasks", "pyforge-core", "pyforge-testing-kit", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe", "build", "grayskull", "platform-dev", "platform-object-storage", "host-tools"], no-default-feature = true }
 # platform-dev (AD-16, Story 11.1): composes `platform-dev` (postgresql/
 # pgvector/redis-server/k8s CLIs) ONTO `python-agent-platform` (langflow/
 # dbgpt/django) so this ONE env is the full local Tier-1 dev baseline --
@@ -1263,13 +1269,13 @@ platform-dev = { features = ["interpreter", "python-agent-platform", "platform-d
 # fastapi ranges). Materialized exclusively inside the sidecar Containerfile's
 # builder stage; not part of any developer's local dev baseline.
 dbgpt-sidecar = { features = ["interpreter", "dbgpt-sidecar"], no-default-feature = true }
-mcp-host = { features = ["interpreter", "mcp-host"], no-default-feature = true }
+mcp-host = { features = ["interpreter", "node", "mcp-host"], no-default-feature = true }
 # platform-ci-test: slim conda env for Platform CI's `test` job only --
 # mirrors the retired requirements/{base,production,local}.txt pin set.
 # (Story 16.1: legacy pip backend removed — pixi platform-ci-test only.)
-platform-ci-test = { features = ["interpreter", "platform-ci-test", "host-tools"], no-default-feature = true }  # host-tools (Story 128.1): git for the station-CLI tests on macOS, where /usr/bin/git is the Xcode stub
+platform-ci-test = { features = ["interpreter", "node", "platform-ci-test", "host-tools"], no-default-feature = true }  # host-tools (Story 128.1): git for the station-CLI tests on macOS, where /usr/bin/git is the Xcode stub
 # site — the doc-site build loop: python + jinja2 + pyyaml, nothing else.
-site = ["interpreter", "site"]
+site = ["interpreter", "node", "site"]
 
 [environments.python-agent-platform]
 features = ["interpreter", "python-agent-platform"]
@@ -3246,7 +3252,6 @@ playwright = ">=1.64.0,<1.65"     # CLI + browser driver; steward Story 131.1: o
 playwright-python = ">=1.62.0"    # the `import playwright` bindings
 pillow = ">=12.3.0"               # Pillow -- render_gate's contact-sheet compositing
 python-pptx = ">=1.0.2"           # Story 15.1: pptx_pipeline.py's template-parse-then-fill CAP-1 (never hand-written OOXML)
-nodejs = ">=24.19.0,<27.0,!=25.*"  # Story 32.1 (CAP-57): pptx_native.mjs driver (same pin as [feature.python.dependencies])
 pptxgenjs-plus = { version = "4.2.1.*", channel = "SelfExplainML" }  # Story 32.1 (CAP-57): SelfExplainML build matched to pyforge-guild (node 24)
 boto3 = ">=1.43.111"               # Story 29.1 (CAP-54): deck_store's S3 adapter (env-only; same floor as platform object_storage)
 fastapi = ">=0.143.0"             # Story 29.2 (CAP-54): deck_exports route registration on herald v1 sub-app (package run-dep)

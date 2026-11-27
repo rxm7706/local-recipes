@@ -369,17 +369,14 @@ holds:
   owner: pyforge-steward
   until: unknown
 - package: nodejs
-  hold: cap
-  cap: <27.0
+  hold: exact
+  exact: 24.22.3.*
   features:
-  - pyforge-herald
-  - pyforge-steward
-  - python
-  - site
-  reason: Cap preserved across pixi upgrade
-  authority: spec-100-1
+  - node
+  reason: The estate's one nodejs, the newest 24.x LTS release (marp-cli 4.2.3 requires the 24 line; the operator's range is >=24.19.0,<27.0,!=25.*); every environment that carries nodejs composes the node feature (steward Story 149.2)
+  authority: spec-149-2
   owner: pyforge-steward
-  until: unknown
+  until: estate refresh policy
 - package: pgvector
   hold: cap
   cap: <0.8.2

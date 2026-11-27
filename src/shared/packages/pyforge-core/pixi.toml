@@ -25,7 +25,7 @@ name = "pixi-build-python"
 version = "0.*"
 
 [package.host-dependencies]
-python = ">=3.14"          # decision D6: the floor is 3.14, matching pyproject.toml's requires-python (core uses 3.14-only syntax)
+python = "3.14.10.*"    # steward Story 149.1: the build host runs the estate's one Python, pixi.toml's [feature.interpreter.dependencies]; target-version-check holds the two equal
 hatchling = "*"
 
 [package.run-dependencies]

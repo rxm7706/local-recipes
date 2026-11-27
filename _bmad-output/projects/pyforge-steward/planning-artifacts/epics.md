@@ -10086,6 +10086,62 @@ So that CI runs the estate's Python and a hard-coded version cannot come back.
 **And** it exits 0 on the tree, and each rule is held by a test
 **Status:** done
 
+## Epic 149: The platform runs one pixi, one Python and one nodejs (spec-pyforge-steward CAP-153)
+
+Minted 2026-11-27 from the station Dream's entry of the same date on the operator's ruling of 2026-11-27: "check and confirm - every env is now python 3.14.10, there are no other versions of python installed or used", then "Yes, fix them".
+**Amended 2026-11-27:** on the operator's rulings "do the same check and confirmation for pixi and nodejs" and "the entire platform should use a single version of pixi, python, and nodejs" (the station Dream's second entry of that date), Stories 149.2 and 149.3 hold nodejs and pixi to one version each, and the epic's title says so.
+**HARD boundaries:**
+- The declaration in `pixi.toml` stays the one place the version is chosen; every other copy is held to it.
+- No environment's other packages move. No flag (chore).
+
+### Story 149.1: The station packages build on the declared Python, and the lock holds no other
+
+As the operator of the estate,
+I want every Python in the lock, the station packages' build hosts included, to be the declared one,
+So that no other Python is installed or used when pixi builds or installs an environment.
+
+**Type:** chore • **Effort:** S • **Deps:** 148.1, 148.3 • **FR/AD:** spec-pyforge-steward CAP-153 (realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `src/shared/packages/pyforge-*/pixi.toml` (the ten station packages), `pixi.lock`, `scripts/target_version_check.py`, `src/shared/packages/pyforge-steward/tests/unit/test_target_version_check_surfaces.py`
+**Spec:** `planning-artifacts/specs/spec-149-1-the-station-packages-build-on-the-declared-python-and-the-lock-holds-no-other.md`
+**Given** the lock keeps the ten station packages' 43 build hosts at Python 3.14.7, 3.14.8, 3.15.0 and 3.15.2, and `cpython` and `python-gil` at 3.14.7 in 76 environment-platform pairs
+**When** each package's build host pins `python = "3.14.10.*"`, and `cpython` and `python-gil` are locked once pinned and once without
+**Then** every Python record in the lock is 3.14.10, and only `cpython` and `python-gil` move in the environments
+**And** `target-version-check` reds a build host pin off the declaration, a build host off the declared version, or a `libpython`, `cpython` or `python-gil` entry off it
+**Status:** done
+
+### Story 149.2: nodejs is declared once, and every environment that carries it locks that version
+
+As the operator of the estate,
+I want one nodejs declaration that every environment carrying nodejs composes,
+So that the platform runs one nodejs, as it runs one Python.
+
+**Type:** chore • **Effort:** S • **Deps:** 149.1 • **FR/AD:** spec-pyforge-steward CAP-153 (realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `pixi.toml`, `pixi.lock`, `environment.yaml`, `docs/governance/pin-policy.yaml`, `docs/reference/library-llms-full.md`, `docs-site/.nvmrc`, `docs-site/package.json`, `docs-site/package-lock.json`, `docs-site/README.md`, `.github/workflows/pyforge-station-tests.yml`, `scripts/target_version_check.py`, `src/shared/packages/pyforge-steward/tests/unit/test_target_version_check_surfaces.py`, `src/shared/packages/pyforge-herald/tests/meta/test_docs_site.py`, `tests/packaging/test_bmad_suite_full_feature.py`
+**Spec:** `planning-artifacts/specs/spec-149-2-nodejs-is-declared-once-and-every-environment-that-carries-it-locks-that-version.md`
+**Given** four features declare the range `>=24.19.0,<27.0,!=25.*`, six environments carry nodejs unpinned, the lock holds 24.21.0, 26.10.0 and 26.13.1, CI's atlas job sets Node 22 up, and `docs-site` names 24 and `>=24`
+**When** `[feature.node.dependencies] nodejs = "24.22.3.*"` is the one declaration, every environment that carries nodejs lists `node`, and `.nvmrc`, `engines` and the pin policy name 24.22.3
+**Then** every environment that carries nodejs locks 24.22.3 on every platform, and no workflow sets nodejs up
+**And** `target-version-check` reds a second declaration, an environment that locks nodejs without the `node` feature, a lock on another nodejs, a docs-site file naming another, or an `actions/setup-node` step
+**Status:** done
+
+### Story 149.3: Every environment that carries pixi locks the requires-pixi version
+
+As the operator of the estate,
+I want the pixi in every environment to be the one every pin site holds,
+So that the platform runs one pixi, in CI, in the containers and inside its environments.
+
+**Type:** chore • **Effort:** S • **Deps:** 148.2 • **FR/AD:** spec-pyforge-steward CAP-153 (realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `scripts/target_version_check.py`, `src/shared/packages/pyforge-steward/tests/unit/test_target_version_check_surfaces.py`
+**Spec:** `planning-artifacts/specs/spec-149-3-every-environment-that-carries-pixi-locks-the-requires-pixi-version.md`
+**Given** `pixi-version-check` holds every pin site to `requires-pixi`, but nothing reads the pixi each environment locks, whose features name only a floor
+**When** `target-version-check` reads the pixi of every environment in the lock
+**Then** it reds any environment whose pixi is not the `requires-pixi` version
+**And** on this tree every one of the 44 environment-platform pairs that carry pixi locks 0.85.0
+**Status:** done
+
 ## Currency reconciliation — 2026-11-26 (CAP-184 amended)
 
 *Chain-currency cascade (arch -> epics), CAP-184 amended.* 2026-11-26: Epic 142 and Story 142.1 are minted under `spec-pyforge-steward` CAP-184 as amended (FR-58); no AD moves. The keys `142-1`, `epic-142` and `epic-142-retrospective` go through the Tier-3 feed and `sprint-ledger-sync`. **Content changed:** Epic 142, this section and `updated:`.

@@ -15,7 +15,7 @@ Vendored byte-identically from [bmad-code-org/BMAD-METHOD](https://github.com/bm
 
 | File | sha256 |
 |------|--------|
-| `.nvmrc` | `68ca3fba3b7e864770cb61aeb306d4bd4354b68ab4dd38450860c5d823e42a53` |
+| `.nvmrc` | `584f19ccde29925286e32f566a2aa06c89efb4e2eb2bb2fc9ea5d56e2d190ac4` |
 | `scripts/fix-doc-links.js` | `137086840431f3026352609cd59922483d3a36375df3bb5bbce5f44b45c0eef8` |
 | `scripts/validate-doc-links.js` | `116a18e8f8cfbd9695acb07eb1d0833680000aba0de60a312a1f2d46817d2642` |
 | `scripts/validate-sidebar-order.js` | `fddb0234166b72340ce994add14ad75cd0fef1824504c6af214563da0d7e4db5` |
