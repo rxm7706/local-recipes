@@ -27,7 +27,10 @@ The reasons for each step:
   without the install the built-site tests skip and record nothing.
 
 **What a file cannot fix.** A shard's wall time is at least its heaviest xdist group on one worker, its longest
-single test, and its start-up. pytest-split balances a shard's summed durations, not those. Each file here was
+single test, and its start-up. pytest-split balances a shard's summed durations, not those. A CI run that printed
+every live test's time (2026-11-27, `--durations=0 --durations-min=0`) showed it for three lanes: a split from the
+runner's own times left each one's longest shard unchanged. Steward's trigger-map module is more than a quarter of its
+lane, so it always spans two shards, and marshal's and doctor's longest single tests set their shards. Each file here was
 written on 2026-11-26 (steward Story 117.25). Refresh a file the same way after a suite gains or loses many tests,
 one task at a time with nothing else running. `tests/scripts/test_durations_files.py` fails when the workflow names a
 file that is missing or empty, or when a file is left here that no job names.
