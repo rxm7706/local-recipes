@@ -5,10 +5,11 @@ Shared by ``protected_refs_ruleset_check.py`` and its tests. The tracked
 alone (marshal:AD-12) — never hand-edited.
 
 Every ruleset declares no bypass actor except where its roster entry names one in
-``bypass``; the only actor type the roster may name is ``DeployKey`` (steward Story 118.9,
-spec-pyforge-steward CAP-178: ``refs/heads/gitops/**`` is written by ``nic``'s deploy key
-alone). GitHub's ``DeployKey`` actor admits every deploy key of the repository, so the live
-check also counts the repository's write-enabled deploy keys.
+``bypass``; the only actor type the roster may name is ``DeployKey``, and only on the
+``refs/heads/gitops/`` entry (steward Story 118.9, spec-pyforge-steward CAP-178:
+``refs/heads/gitops/**`` is written by ``nic``'s deploy key alone). GitHub's ``DeployKey``
+actor admits every deploy key of the repository, so the live check also counts the
+repository's write-enabled deploy keys.
 """
 from __future__ import annotations
 
@@ -43,6 +44,8 @@ GITOPS_BRANCH_RULES = ("creation", "update", "deletion", "non_fast_forward")
 BYPASS_ACTORS = {
     "DeployKey": {"actor_id": None, "actor_type": "DeployKey", "bypass_mode": "always"},
 }
+# The one roster entry a bypass actor may sit on: any other ref with a bypass is a finding.
+GITOPS_BYPASS_REFNAME = "refs/heads/gitops/"
 
 
 def _glob_from_prefix(prefix: str) -> str:
@@ -75,8 +78,11 @@ def bypass_actors_for_entry(entry: dict[str, Any]) -> list[dict[str, Any]]:
     unknown = [name for name in names if name not in BYPASS_ACTORS]
     if unknown:
         raise ValueError(f"{entry.get('refname')!r}: unsupported bypass actor type(s) {unknown!r}")
-    if names and not str(entry.get("refname", "")).startswith("refs/heads/"):
-        raise ValueError(f"{entry.get('refname')!r}: only a branch ruleset may declare a bypass actor")
+    if names and entry.get("refname") != GITOPS_BYPASS_REFNAME:
+        raise ValueError(
+            f"{entry.get('refname')!r}: only {GITOPS_BYPASS_REFNAME!r} may declare a bypass actor (the DeployKey "
+            "bypass admits every deploy key, so it is the gitops branch's alone)"
+        )
     return [dict(BYPASS_ACTORS[name]) for name in names]
 
 

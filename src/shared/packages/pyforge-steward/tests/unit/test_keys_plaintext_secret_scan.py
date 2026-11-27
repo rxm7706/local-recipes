@@ -136,3 +136,67 @@ def test_redact_secret_shapes_masks_known_values_and_every_pattern():
     line = "token opaque-1 and AGE-SECRET-KEY-1TEST00FAKE00PLACEHOLDER00NOTREAL00SYNTHETIC end"
     assert redact_secret_shapes(line, ("opaque-1", "")) == "token *** and *** end"
     assert redact_secret_shapes("plain error") == "plain error"
+
+
+# --- Story 118.9 review: the shapes a cloud GitOps run can leak, and multi-line redaction ---
+
+# Synthetic, word-marked values: none is a real credential.
+_HETZNER_SHAPED = "SyntheticHetznerToken0000FAKE0000placeholder0000NOTREAL0000Test0"
+_KEY_BODY = "b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW"
+_MULTILINE_KEY = f"-----BEGIN OPENSSH PRIVATE KEY-----\n{_KEY_BODY}\n-----END OPENSSH PRIVATE KEY-----"
+
+
+@pytest.mark.parametrize(
+    ("line", "pattern_name"),
+    [
+        ("-----begin openssh private key-----", "pem-private-key-header"),
+        ("client-key-data: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQo=", "pem-block-base64"),
+        ("token: ghp_" + "A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8", "github-token"),
+        ("GH=ghs_" + "Z" * 36, "github-token"),
+        ("github_pat_" + "11SYNTHETIC0000FAKE_placeholder", "github-fine-grained-token"),
+        (f'hcloud_token: "{_HETZNER_SHAPED}"', "hetzner-api-token"),
+        (f"HCLOUD_TOKEN={_HETZNER_SHAPED}", "hetzner-api-token"),
+    ],
+)
+def test_the_table_finds_each_shape_a_cloud_run_can_leak(line: str, pattern_name: str) -> None:
+    from pyforge.steward.keys import scan_text_for_secrets
+
+    assert len(_HETZNER_SHAPED) == 64
+    assert [f.pattern_name for f in scan_text_for_secrets(line, "x")] == [pattern_name]
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "image: ghcr.io/nebari/x@sha256:" + "0123456789abcdef" * 4,
+        "digest: " + "0123456789ABCDEF" * 4,
+        _HETZNER_SHAPED + "x",  # 65 alphanumerics
+        "x" + _HETZNER_SHAPED[1:].lower(),  # 64, no uppercase
+        "integrity: sha512-+" + _HETZNER_SHAPED + "/",  # a run inside a base64 string
+        "env: GITOPS_DEPLOY_KEY",
+        "ghp_short",
+    ],
+)
+def test_a_digest_a_base64_run_and_an_env_name_are_not_secret_shaped(line: str) -> None:
+    from pyforge.steward.keys import scan_text_for_secrets
+
+    assert scan_text_for_secrets(line, "x") == []
+
+
+def test_redaction_masks_a_pem_header_to_the_end_of_its_line():
+    from pyforge.steward.keys import redact_secret_shapes
+
+    escaped = _MULTILINE_KEY.replace("\n", "\\n")
+    out = redact_secret_shapes(f'parse key: "{escaped}"')
+    assert out == 'parse key: "***'
+    assert _KEY_BODY[:12] not in out
+
+
+def test_redaction_masks_a_resolved_multiline_value_whole_escaped_and_line_by_line():
+    from pyforge.steward.keys import redact_secret_shapes
+
+    escaped = _MULTILINE_KEY.replace("\n", "\\n")
+    assert redact_secret_shapes(f"x {escaped} y", (_MULTILINE_KEY,)) == "x *** y"
+    assert redact_secret_shapes(f"bad line {_KEY_BODY}", (_MULTILINE_KEY,)) == "bad line ***"
+    # A line shorter than eight characters is not masked on its own (it would mask ordinary words).
+    assert redact_secret_shapes("ok short", ("ab\nshort",)) == "ok short"

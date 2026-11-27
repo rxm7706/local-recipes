@@ -357,3 +357,53 @@ def test_the_live_check_reads_the_deploy_keys_and_fails_closed() -> None:
             assert detector.fetch_deploy_keys("o/r") == (None, "deploy keys response was not an array")
         with mock.patch.object(detector, "_gh_json", return_value=([{"title": "k", "read_only": True}, "x"], "")):
             assert detector.fetch_deploy_keys("o/r") == ([{"title": "k", "read_only": True}], "")
+
+
+def test_a_deploy_key_bypass_on_any_ref_but_the_gitops_entry_is_a_finding() -> None:
+    import pytest
+
+    lib = _load_lib()
+    detector = _load_detector()
+    roster = lib.load_roster()
+    for refname in ("refs/heads/loop/", "refs/heads/attempt-preserve/", "refs/heads/gitops-other/"):
+        entries = [
+            {**entry, "bypass": ["DeployKey"]} if entry["refname"] == refname else entry
+            for entry in roster["protected_refs"]
+        ]
+        if refname not in {entry["refname"] for entry in entries}:
+            entries.append(
+                {"refname": refname, "kind": "operational-branch", "scope": "origin", "bypass": ["DeployKey"]}
+            )
+        bad = {**roster, "protected_refs": entries}
+        with pytest.raises(ValueError, match="only 'refs/heads/gitops/' may declare a bypass actor"):
+            lib.render_document(bad)
+        diffs, override = detector.run_check(roster=bad, fixture_live=None, repo="o/r", skip_live=True)
+        assert override is None and len(diffs) == 1 and "refs/heads/gitops/" in diffs[0], diffs
+    # Live: a DeployKey bypass on any other ruleset drifts from its declared empty bypass.
+    declared = lib.rulesets_by_name(lib.render_document(roster))
+    live_doc = lib.render_document(roster)
+    loop = next(r for r in live_doc["rulesets"] if r["name"] == "protected-refs-loop-branches")
+    loop["bypass_actors"] = [dict(lib.BYPASS_ACTORS["DeployKey"])]
+    diffs = lib.compare_ruleset_maps(declared, lib.rulesets_by_name(live_doc))
+    assert len(diffs) == 1 and "protected-refs-loop-branches: bypass_actors must be empty" in diffs[0]
+
+
+def test_the_deploy_key_read_pages_through_every_key() -> None:
+    detector = _load_detector()
+    page_one = [{"title": f"ro-{n}", "read_only": True} for n in range(100)]
+    page_two = [{"title": "late-writer", "read_only": False}, {"title": "GITOPS_DEPLOY_KEY", "read_only": False}]
+    stdout = json.dumps(page_one) + "\n" + json.dumps(page_two) + "\n"
+    with mock.patch.object(
+        detector.subprocess, "run", return_value=subprocess.CompletedProcess(["gh"], 0, stdout, "")
+    ) as run:
+        keys, err = detector.fetch_deploy_keys("o/r")
+    argv = run.call_args.args[0]
+    assert argv[:3] == ["gh", "api", "--paginate"] and argv[3].startswith("repos/o/r/keys")
+    assert err == "" and keys is not None and len(keys) == 102
+    lib = _load_lib()
+    (finding,) = lib.deploy_key_findings(keys)
+    assert "late-writer" in finding
+    # A page that is not JSON, or pages that are not arrays, fail closed.
+    assert detector._concatenated_pages("[1] {")[0] is None
+    assert detector._concatenated_pages('{"a": 1}{"b": 2}') == (None, "paginated response was not arrays")
+    assert detector._concatenated_pages("") == (None, "gh api returned no page")

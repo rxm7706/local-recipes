@@ -33,10 +33,32 @@ import _protected_refs_ruleset_lib as lib  # noqa: E402
 DEFAULT_REPO = "rxm7706/local-recipes"
 
 
-def _gh_json(args: list[str], *, timeout: int = 60) -> tuple[Any | None, str]:
+def _concatenated_pages(text: str) -> tuple[Any | None, str]:
+    """``gh api --paginate`` prints one JSON array per page back to back; join them into one list."""
+    decoder = json.JSONDecoder()
+    pages: list[Any] = []
+    index = 0
+    try:
+        while True:
+            while index < len(text) and text[index].isspace():
+                index += 1
+            if index >= len(text):
+                break
+            page, index = decoder.raw_decode(text, index)
+            pages.append(page)
+    except json.JSONDecodeError as exc:
+        return None, f"invalid JSON from gh api: {exc}"
+    if not pages:
+        return None, "gh api returned no page"
+    if not all(isinstance(page, list) for page in pages):
+        return (pages[0], "") if len(pages) == 1 else (None, "paginated response was not arrays")
+    return [row for page in pages for row in page], ""
+
+
+def _gh_json(args: list[str], *, timeout: int = 60, paginate: bool = False) -> tuple[Any | None, str]:
     try:
         proc = subprocess.run(
-            ["gh", "api", *args],
+            ["gh", "api", *(["--paginate"] if paginate else []), *args],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -47,6 +69,8 @@ def _gh_json(args: list[str], *, timeout: int = 60) -> tuple[Any | None, str]:
     if proc.returncode != 0:
         err = proc.stderr.strip() or proc.stdout.strip() or f"exit {proc.returncode}"
         return None, err
+    if paginate:
+        return _concatenated_pages(proc.stdout)
     try:
         return json.loads(proc.stdout), ""
     except json.JSONDecodeError as exc:
@@ -87,7 +111,8 @@ def fetch_live_rulesets(repo: str) -> tuple[dict[str, dict[str, Any]] | None, st
 
 
 def fetch_deploy_keys(repo: str) -> tuple[list[dict[str, Any]] | None, str]:
-    listing, err = _gh_json([f"repos/{repo}/keys"])
+    # Every page: a write-enabled deploy key on page two is still admitted by the DeployKey bypass.
+    listing, err = _gh_json([f"repos/{repo}/keys?per_page=100"], paginate=True)
     if listing is None:
         return None, err
     if not isinstance(listing, list):
@@ -124,9 +149,13 @@ def run_check(
 ) -> tuple[list[str], int | None]:
     """Return (findings, exit_code_override). exit_code_override 2 = could not observe live."""
     diffs: list[str] = []
+    try:
+        declared_doc = lib.render_document(roster)
+    except ValueError as exc:
+        # A roster the lib refuses to render (a bypass actor off the gitops entry) is a finding.
+        return [f"docs/governance/guild-roster.json: {exc}"], None
     diffs.extend(check_document_freshness(roster))
 
-    declared_doc = lib.render_document(roster)
     declared_map = lib.rulesets_by_name(declared_doc)
 
     if fixture_live is not None:

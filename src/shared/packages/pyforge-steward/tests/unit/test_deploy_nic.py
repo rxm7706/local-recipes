@@ -45,14 +45,16 @@ def _local_config(tmp_path: Path) -> Path:
 
 
 def _config_needing_token(tmp_path: Path) -> Path:
+    """A cloud config whose one operator-owned input is nic's deploy key (Story 118.9: no ``auth.token``)."""
     document = {
         "project_name": "needs-token",
-        "domain": "example.com",
+        "domain": "example.invalid",
+        "cluster": {"hetzner": {"location": "ash"}},
         "repository": {
             "existing": {
                 "url": "https://github.com/org/repo.git",
                 "branch": "gitops/needs-token",
-                "auth": {"token": {"env": "GIT_TOKEN"}},
+                "auth": {"ssh": {"env": "GITOPS_DEPLOY_KEY"}},
             }
         },
     }
@@ -220,9 +222,16 @@ def test_each_action_runs_one_nic_subprocess_and_journals(
         assert "seconds" in journal[-1]
 
 
-def test_validate_refuses_config_missing_operator_owned_input(tmp_path: Path) -> None:
+def test_validate_refuses_config_missing_operator_owned_input(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _flag_on(monkeypatch)
     config = _config_needing_token(tmp_path)
-    deps = NicDeps(root=tmp_path, runner=lambda *_a, **_k: _Proc(), nic_executable=lambda: "/usr/bin/nic")
+    deps = NicDeps(
+        root=tmp_path,
+        runner=lambda *_a, **_k: _Proc(),
+        nic_executable=lambda: "/usr/bin/nic",
+        inventory=_inventory(tmp_path, [_DEPLOY_KEY_ROW]),
+        origin_url=_origin,
+    )
     result = run_nic(deps, action="validate", config=config)
     assert result.ok is False
     assert result.details.get("exit_code") == EXIT_USAGE
@@ -319,14 +328,23 @@ GITOPS_FLAG = "pyforge.steward.nkp_gitops_branch"
 NIC_VERB = {"validate": "validate", "up": "deploy", "kubeconfig": "kubeconfig", "outputs": "outputs", "down": "destroy"}
 
 
+ORIGIN = "git@github.com:org/repo.git"
+DEPLOY_KEY_AUTH = {"ssh": {"env": "GITOPS_DEPLOY_KEY"}}
+
+
+def _origin(_root: Path) -> str:
+    return ORIGIN
+
+
 def _existing_config(
     tmp_path: Path,
     branch: str,
     *,
     cluster: dict | None = None,
-    auth: dict | None = None,
+    auth: dict | None = DEPLOY_KEY_AUTH,
+    url: str = ORIGIN,
 ) -> Path:
-    existing: dict = {"url": "git@github.com:org/repo.git", "branch": branch, "path": f"gitops/{branch}"}
+    existing: dict = {"url": url, "branch": branch, "path": f"gitops/{branch}"}
     if auth is not None:
         existing["auth"] = auth
     document = {
@@ -351,14 +369,54 @@ def _recording_deps(tmp_path: Path, calls: list[list[str]], **outputs: _Proc) ->
             return outputs.get("log", _Proc(stdout="commit abc\n+kind: Application\n"))
         return outputs.get("nic", _Proc())
 
-    return NicDeps(root=tmp_path, runner=runner, nic_executable=lambda: "/usr/bin/nic")
+    return NicDeps(
+        root=tmp_path,
+        runner=runner,
+        nic_executable=lambda: "/usr/bin/nic",
+        decrypt=lambda _age, _id: "synthetic-deploy-key",
+        inventory=_inventory(tmp_path, [_DEPLOY_KEY_ROW]),
+        origin_url=_origin,
+    )
 
 
 def _flag_on(monkeypatch: pytest.MonkeyPatch, value: bool = True) -> None:
     monkeypatch.setattr("pyforge.core.flags.read_boolean", lambda key, default=False, **_kw: value)
 
 
-@pytest.mark.parametrize("branch", ["main", "feature/x", "", "gitops/", "refs/heads/main"])
+@pytest.fixture
+def gitops_ready(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Flag ON and the deploy key resolvable through keys: an age identity, ``.env`` and its payload.
+
+    ``_recording_deps`` supplies the inventory row, the decryption and ``origin``.
+    """
+    _flag_on(monkeypatch)
+    identity = tmp_path / "identity.txt"
+    identity.write_text("AGE-PLACEHOLDER", encoding="utf-8")
+    monkeypatch.setenv("SOPS_AGE_KEY_FILE", str(identity))
+    (tmp_path / "deploy-key.age").write_bytes(b"AGE[FAKE]")
+    (tmp_path / DOTENV_RELATIVE).write_text("GITOPS_DEPLOY_KEY=deploy-key.age\n", encoding="utf-8")
+
+
+@pytest.mark.parametrize(
+    "branch",
+    [
+        "main",
+        "feature/x",
+        "",
+        "gitops/",
+        "refs/heads/main",
+        # Story 118.9 review: the raw value is checked, whole, against gitops/<project_name>.
+        "gitops/../main",
+        "gitops/x:refs/heads/main",
+        "gitops//",
+        "gitops/x\nmain",
+        " gitops/x ",
+        "gitops/my-nebari-hetzner ",
+        "gitops/.hidden",
+        "gitops/x.lock",
+        "gitops/other-name",
+    ],
+)
 @pytest.mark.parametrize("action", ["validate", "up", "kubeconfig", "outputs", "down"])
 def test_every_action_refuses_a_branch_outside_gitops_before_nic_starts(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, action: str, branch: str
@@ -382,8 +440,7 @@ def test_up_on_main_is_refused_with_usage_code_two_and_no_subprocess(
     assert (result.ok, result.details["exit_code"], calls) == (False, EXIT_USAGE, [])
 
 
-def test_a_gitops_branch_is_accepted(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    _flag_on(monkeypatch)
+def test_a_gitops_branch_is_accepted(tmp_path: Path, gitops_ready: None) -> None:
     calls: list[list[str]] = []
     config = _existing_config(tmp_path, "gitops/my-nebari-hetzner")
     result = run_nic(_recording_deps(tmp_path, calls), action="validate", config=config)
@@ -393,7 +450,7 @@ def test_a_gitops_branch_is_accepted(tmp_path: Path, monkeypatch: pytest.MonkeyP
 
 @flag_states(GITOPS_FLAG)
 def test_the_gitops_branch_flag_in_both_states(
-    flag_provider: dict[str, bool], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    flag_provider: dict[str, bool], tmp_path: Path, monkeypatch: pytest.MonkeyPatch, gitops_ready: None
 ) -> None:
     # Switch the key the way deploy_nic reads it (pyforge.core.flags.read_boolean), never by test order.
     monkeypatch.setattr(
@@ -418,8 +475,7 @@ def test_the_gitops_branch_flag_in_both_states(
         assert calls[0][:2] == ["/usr/bin/nic", NIC_VERB[action]]
 
 
-def test_a_non_local_up_needs_the_operators_yes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    _flag_on(monkeypatch)
+def test_a_non_local_up_needs_the_operators_yes(tmp_path: Path, gitops_ready: None) -> None:
     config = _existing_config(tmp_path, "gitops/my-nebari-hetzner")
     calls: list[list[str]] = []
     refused = run_nic(_recording_deps(tmp_path, calls), action="up", config=config)
@@ -428,7 +484,8 @@ def test_a_non_local_up_needs_the_operators_yes(tmp_path: Path, monkeypatch: pyt
     consented = run_nic(_recording_deps(tmp_path, calls), action="up", config=config, yes=True)
     assert consented.ok is True, consented.summary
     assert calls[0] == ["/usr/bin/nic", "deploy", "-f", str(config)]
-    # A config with no cluster provider is not local kind either.
+    # A config with no cluster provider is not local kind either (and, with no repository.existing, is refused
+    # for every action before the consent gate is reached).
     bare = tmp_path / "bare.yaml"
     bare.write_text(yaml.safe_dump({"project_name": "x", "repository": {"local": {}}}), encoding="utf-8")
     calls.clear()
@@ -436,8 +493,7 @@ def test_a_non_local_up_needs_the_operators_yes(tmp_path: Path, monkeypatch: pyt
     assert calls == []
 
 
-def test_kind_up_and_every_other_action_need_no_yes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    _flag_on(monkeypatch)
+def test_kind_up_and_every_other_action_need_no_yes(tmp_path: Path, gitops_ready: None) -> None:
     config = _existing_config(tmp_path, "gitops/my-nebari-hetzner")
     for action in ("validate", "kubeconfig", "outputs", "down"):
         calls: list[list[str]] = []
@@ -459,8 +515,7 @@ def test_the_parser_takes_yes_on_up_only(capsys: pytest.CaptureFixture[str]) -> 
     capsys.readouterr()
 
 
-def test_run_deploy_nic_hands_yes_to_run_nic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    _flag_on(monkeypatch)
+def test_run_deploy_nic_hands_yes_to_run_nic(tmp_path: Path, gitops_ready: None) -> None:
     calls: list[list[str]] = []
 
     class _Ns:
@@ -487,12 +542,7 @@ def test_the_summary_never_echoes_a_secret_shaped_last_line(tmp_path: Path, monk
     assert "***" in result.summary
 
 
-def test_the_summary_never_echoes_a_secret_the_verb_resolved(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    identity = tmp_path / "identity.txt"
-    identity.write_text("AGE-PLACEHOLDER", encoding="utf-8")
-    monkeypatch.setenv("SOPS_AGE_KEY_FILE", str(identity))
-    (tmp_path / "token.age").write_bytes(b"AGE[FAKE]")
-    (tmp_path / DOTENV_RELATIVE).write_text("GIT_TOKEN=token.age\n", encoding="utf-8")
+def test_the_summary_never_echoes_a_secret_the_verb_resolved(tmp_path: Path, gitops_ready: None) -> None:
     calls: list[list[str]] = []
     deps = _recording_deps(tmp_path, calls, nic=_Proc(returncode=2, stderr="auth failed for opaque-resolved-value\n"))
     deps.decrypt = lambda _age, _id: "opaque-resolved-value"
@@ -501,16 +551,49 @@ def test_the_summary_never_echoes_a_secret_the_verb_resolved(tmp_path: Path, mon
     assert "auth failed for ***" in result.summary
 
 
-def test_a_cloud_up_scans_the_pushed_range(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    _flag_on(monkeypatch)
+# Synthetic, word-marked key material: never a real key.
+_KEY_BODY = "b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW"
+_MULTILINE_KEY = (
+    f"-----BEGIN OPENSSH PRIVATE KEY-----\n{_KEY_BODY}\nSYNTHETICBODYLINE2\n-----END OPENSSH PRIVATE KEY-----"
+)
+
+
+@pytest.mark.parametrize(
+    "last_line",
+    [
+        "parse key: " + json.dumps(_MULTILINE_KEY),  # the key escaped onto one line (literal backslash-n)
+        f"bad line {_KEY_BODY}",  # one body line alone
+        "bad line SYNTHETICBODYLINE2",
+    ],
+    ids=["escaped-pem", "body-line", "second-body-line"],
+)
+def test_the_summary_never_echoes_a_multiline_key_the_verb_resolved(
+    tmp_path: Path, gitops_ready: None, last_line: str
+) -> None:
+    calls: list[list[str]] = []
+    deps = _recording_deps(tmp_path, calls, nic=_Proc(returncode=1, stderr=f"first\n{last_line}\n"))
+    deps.decrypt = lambda _age, _id: _MULTILINE_KEY
+    result = run_nic(deps, action="validate", config=_deploy_key_config(tmp_path))
+    assert result.details["exit_code"] == 1
+    for fragment in (_KEY_BODY, _KEY_BODY[:16], "SYNTHETICBODYLINE2", "PRIVATE KEY"):
+        assert fragment not in result.summary
+    assert "***" in result.summary
+
+
+def test_a_cloud_up_scans_the_pushed_range(tmp_path: Path, gitops_ready: None) -> None:
     config = _existing_config(tmp_path, "gitops/my-nebari-hetzner")
     calls: list[list[str]] = []
     clean = run_nic(_recording_deps(tmp_path, calls), action="up", config=config, yes=True)
     assert clean.ok is True, clean.summary
+    # Every commit's whole diff: binary as text, no external diff or textconv, merges vs their first parent.
     assert [
         "git",
         "log",
         "-p",
+        "--text",
+        "--no-ext-diff",
+        "--no-textconv",
+        "--diff-merges=first-parent",
         "--no-color",
         "--format=commit %H",
         "origin/main..origin/gitops/my-nebari-hetzner",
@@ -519,8 +602,7 @@ def test_a_cloud_up_scans_the_pushed_range(tmp_path: Path, monkeypatch: pytest.M
     assert "+refs/heads/gitops/my-nebari-hetzner:refs/remotes/origin/gitops/my-nebari-hetzner" in fetch
 
 
-def test_the_range_scan_refuses_a_planted_secret(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    _flag_on(monkeypatch)
+def test_the_range_scan_refuses_a_planted_secret(tmp_path: Path, gitops_ready: None) -> None:
     planted = "-----BEGIN OPENSSH PRIVATE KEY-----"
     log = _Proc(stdout=f"commit abc\n+values:\n+  key: |\n+    {planted}\n")
     calls: list[list[str]] = []
@@ -537,10 +619,7 @@ def test_the_range_scan_refuses_a_planted_secret(tmp_path: Path, monkeypatch: py
 
 
 @pytest.mark.parametrize("failing", ["fetch", "log"])
-def test_the_range_scan_fails_closed_when_it_cannot_read(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failing: str
-) -> None:
-    _flag_on(monkeypatch)
+def test_the_range_scan_fails_closed_when_it_cannot_read(tmp_path: Path, gitops_ready: None, failing: str) -> None:
     calls: list[list[str]] = []
     deps = _recording_deps(tmp_path, calls, **{failing: _Proc(returncode=128, stderr="fatal")})
     result = run_nic(deps, action="up", config=_existing_config(tmp_path, "gitops/my-nebari-hetzner"), yes=True)
@@ -556,7 +635,7 @@ def test_kind_up_never_runs_the_range_scan(tmp_path: Path) -> None:
 
 
 def _deploy_key_config(tmp_path: Path) -> Path:
-    return _existing_config(tmp_path, "gitops/my-nebari-hetzner", auth={"ssh": {"env": "GITOPS_DEPLOY_KEY"}})
+    return _existing_config(tmp_path, "gitops/my-nebari-hetzner", auth=DEPLOY_KEY_AUTH)
 
 
 def _inventory(tmp_path: Path, rows: list[dict]) -> Path:
@@ -632,6 +711,117 @@ def test_the_deploy_key_resolves_through_keys_with_its_row(tmp_path: Path, monke
         nic_executable=lambda: "/usr/bin/nic",
         decrypt=lambda _age, _id: "synthetic-deploy-key",
         inventory=_inventory(tmp_path, [_DEPLOY_KEY_ROW]),
+        origin_url=_origin,
     )
     assert run_nic(deps, action="validate", config=_deploy_key_config(tmp_path)).ok is True
     assert seen[0]["GITOPS_DEPLOY_KEY"] == "synthetic-deploy-key"
+
+
+# --- Story 118.9 review: the deploy key is the only auth, origin is the only repository, a cloud config needs both ---
+
+
+@pytest.mark.parametrize(
+    "auth",
+    [
+        {"ssh": {"env": "OTHER_DEPLOY_KEY"}},
+        {"token": {"env": "GIT_TOKEN"}},
+        {"token": {"env": "GITOPS_DEPLOY_KEY"}},
+        {"ssh": {"env": "GITOPS_DEPLOY_KEY"}, "token": {"env": "GIT_TOKEN"}},
+        None,
+    ],
+    ids=["other-ssh-env", "token", "token-named-like-the-key", "ssh-and-token", "no-auth"],
+)
+@pytest.mark.parametrize("action", ["validate", "up"])
+def test_a_repository_existing_auth_other_than_the_deploy_key_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, auth: dict | None, action: str
+) -> None:
+    _flag_on(monkeypatch)
+    calls: list[list[str]] = []
+    config = _existing_config(tmp_path, "gitops/my-nebari-hetzner", auth=auth)
+    result = run_nic(_recording_deps(tmp_path, calls), action=action, config=config, yes=True)
+    assert (result.ok, result.details["exit_code"], calls) == (False, EXIT_USAGE, [])
+    assert "auth.ssh.env: GITOPS_DEPLOY_KEY" in result.summary
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "git@github.com:org/repo.git",
+        "https://github.com/org/repo",
+        "https://github.com/org/repo.git",
+        "ssh://git@github.com/org/repo.git",
+        "git@GitHub.com:ORG/Repo.git",
+    ],
+)
+def test_every_github_spelling_of_origins_repository_is_accepted(tmp_path: Path, gitops_ready: None, url: str) -> None:
+    calls: list[list[str]] = []
+    config = _existing_config(tmp_path, "gitops/my-nebari-hetzner", url=url)
+    result = run_nic(_recording_deps(tmp_path, calls), action="validate", config=config)
+    assert result.ok is True, result.summary
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "git@github.com:other/repo.git",
+        "https://github.com/org/other",
+        "https://gitlab.com/org/repo.git",
+        "file:///tmp/repo.git",
+    ],
+)
+@pytest.mark.parametrize("action", ["validate", "up", "down"])
+def test_a_repository_existing_url_other_than_origin_is_refused_before_nic_starts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, url: str, action: str
+) -> None:
+    _flag_on(monkeypatch)
+    calls: list[list[str]] = []
+    config = _existing_config(tmp_path, "gitops/my-nebari-hetzner", url=url)
+    result = run_nic(_recording_deps(tmp_path, calls), action=action, config=config, yes=True)
+    assert (result.ok, result.details["exit_code"], calls) == (False, EXIT_USAGE, [])
+    assert "repository.existing.url" in result.summary
+
+
+@pytest.mark.parametrize("origin", [None, "/srv/mirror/repo.git"])
+def test_an_origin_steward_cannot_compare_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, origin: str | None
+) -> None:
+    _flag_on(monkeypatch)
+    calls: list[list[str]] = []
+    deps = _recording_deps(tmp_path, calls)
+    deps.origin_url = lambda _root: origin
+    result = run_nic(deps, action="validate", config=_existing_config(tmp_path, "gitops/my-nebari-hetzner"))
+    assert (result.ok, result.details["exit_code"], calls) == (False, EXIT_USAGE, [])
+    assert "origin" in result.summary
+
+
+def test_the_default_origin_reader_reads_the_checkout_remote(tmp_path: Path) -> None:
+    import subprocess
+
+    from pyforge.steward.deploy_nic import _origin_url
+
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    assert _origin_url(tmp_path) is None
+    subprocess.run(["git", "-C", str(tmp_path), "remote", "add", "origin", ORIGIN], check=True)
+    assert _origin_url(tmp_path) == ORIGIN
+    assert _origin_url(tmp_path / "not-a-checkout") is None
+
+
+@pytest.mark.parametrize(
+    "repository",
+    [{"local": {}}, None],
+    ids=["repository-local", "no-repository"],
+)
+@pytest.mark.parametrize("action", ["validate", "up", "kubeconfig", "outputs", "down"])
+def test_a_cloud_config_without_repository_existing_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, repository: dict | None, action: str
+) -> None:
+    _flag_on(monkeypatch)
+    document: dict = {"project_name": "my-nebari-hetzner", "cluster": {"hetzner": {"location": "ash"}}}
+    if repository is not None:
+        document["repository"] = repository
+    config = tmp_path / "cloud.yaml"
+    config.write_text(yaml.safe_dump(document), encoding="utf-8")
+    calls: list[list[str]] = []
+    result = run_nic(_recording_deps(tmp_path, calls), action=action, config=config, yes=True)
+    assert (result.ok, result.details["exit_code"], calls) == (False, EXIT_USAGE, [])
+    assert "needs repository.existing" in result.summary

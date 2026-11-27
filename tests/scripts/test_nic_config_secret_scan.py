@@ -34,9 +34,45 @@ def _load():
 
 def test_the_pattern_table_is_the_one_keys_audit_uses() -> None:
     names = [name for name, _pattern in _load().load_patterns()]
-    keys_source = _load().KEYS_MODULE.read_text(encoding="utf-8")
-    assert names == ["anthropic-api-key", "age-identity", "pem-private-key-header"]
-    assert all(f'("{name}", re.compile(' in keys_source for name in names)
+    assert names == [
+        "anthropic-api-key",
+        "age-identity",
+        "pem-private-key-header",
+        "pem-block-base64",
+        "github-token",
+        "github-fine-grained-token",
+        "hetzner-api-token",
+    ]
+    # Parity with the table keys itself compiles: the same pattern text and the same flags, so an
+    # argument the source reader would drop cannot leave this hook scanning a different table.
+    from pyforge.steward.keys import _SECRET_PATTERNS
+
+    loaded = [(name, pattern.pattern, pattern.flags) for name, pattern in _load().load_patterns()]
+    assert loaded == [(name, pattern.pattern, pattern.flags) for name, pattern in _SECRET_PATTERNS]
+
+
+@pytest.mark.parametrize(
+    "entry",
+    [
+        're.compile("a", flags=re.IGNORECASE)',
+        're.compile("a", re.IGNORECASE)',
+        're.compile(pattern="a")',
+        're.match("a")',
+    ],
+)
+def test_a_table_entry_with_an_argument_the_reader_would_drop_cannot_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], entry: str
+) -> None:
+    mod = _load()
+    keys = tmp_path / "keys.py"
+    keys.write_text(f'import re\n_SECRET_PATTERNS = (("x", {entry}),)\n', encoding="utf-8")
+    with pytest.raises(ValueError):
+        mod.load_patterns(keys)
+    clean = tmp_path / "clean.yaml"
+    clean.write_text("env: GITOPS_DEPLOY_KEY\n", encoding="utf-8")
+    monkeypatch.setattr(mod, "KEYS_MODULE", keys)
+    assert mod.main([str(clean)]) == 2
+    assert "could not run" in capsys.readouterr().out
 
 
 def test_a_planted_secret_is_refused_by_name_not_value(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

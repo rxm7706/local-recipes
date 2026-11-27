@@ -727,7 +727,7 @@ def _everything_present(
         marker.write_text("{}", encoding="utf-8")
     hooks = tmp_path / ".git" / "hooks"
     hooks.mkdir(parents=True)
-    for kind in ("commit-msg", "pre-push"):
+    for kind in ("pre-commit", "commit-msg", "pre-push"):
         (hooks / kind).write_text("#!/bin/sh\n", encoding="utf-8")
     pull = tmp_path / "home" / ".config" / "openshift" / "pull-secret.json"
     pull.parent.mkdir(parents=True)

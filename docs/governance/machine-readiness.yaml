@@ -112,8 +112,8 @@ checks:
     class: configuration
     severity: required
     needs: [git]
-    what: the commit-msg and pre-push hooks are installed in the shared hooks directory.
-    probe: {kind: git-hooks, types: [commit-msg, pre-push]}
+    what: the pre-commit, commit-msg and pre-push hooks are installed in the shared hooks directory.
+    probe: {kind: git-hooks, types: [pre-commit, commit-msg, pre-push]}
     declared_in: scripts/precommit_config_check.py
     remedy:
       command: pixi run -e pyforge-guild pyforge steward setup --env pyforge-guild

@@ -50,11 +50,21 @@ def load_patterns(module: Path = KEYS_MODULE) -> tuple[tuple[str, re.Pattern[str
                 isinstance(name, ast.Constant)
                 and isinstance(name.value, str)
                 and isinstance(call, ast.Call)
-                and len(call.args) == 1
-                and isinstance(call.args[0], ast.Constant)
-                and isinstance(call.args[0].value, str)
+                and isinstance(call.func, ast.Attribute)
+                and call.func.attr == "compile"
+                and isinstance(call.func.value, ast.Name)
+                and call.func.value.id == "re"
             ):
                 raise ValueError(f"{TABLE_NAME} entry is not a (name, re.compile(...)) pair")
+            # Only the pattern is read here, so a flag or any other argument would be dropped
+            # silently and this hook would scan with a different table than keys does.
+            if call.keywords or len(call.args) != 1:
+                raise ValueError(
+                    f"{TABLE_NAME} entry {name.value!r}: re.compile takes the pattern alone here "
+                    "(inline flags such as (?i), never a flags= or second argument)"
+                )
+            if not (isinstance(call.args[0], ast.Constant) and isinstance(call.args[0].value, str)):
+                raise ValueError(f"{TABLE_NAME} entry {name.value!r}: the pattern is not a string literal")
             table.append((name.value, re.compile(call.args[0].value)))
         if table:
             return tuple(table)
@@ -75,7 +85,7 @@ def scan(path: Path, patterns: tuple[tuple[str, re.Pattern[str]], ...]) -> list[
 def main(argv: list[str] | None = None) -> int:
     paths = [Path(arg) for arg in (sys.argv[1:] if argv is None else argv)]
     try:
-        patterns = load_patterns()
+        patterns = load_patterns(KEYS_MODULE)
         findings = [finding for path in paths for finding in scan(path, patterns)]
     except (OSError, SyntaxError, ValueError, re.error) as exc:
         print(f"[nic-config-secret-scan] could not run -- {exc}")

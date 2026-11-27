@@ -82,9 +82,13 @@ The Hetzner profile is `src/platform/deploy/nic/my-nebari-hetzner.yaml` (Story 1
 is Story 118.3). Its GitOps source is this repository on `gitops/my-nebari-hetzner`, never `main`, and
 only `nic` writes that branch, under its own deploy key. What holds before anything reaches Hetzner:
 
-- **The branch.** Every `deploy nic` action (`validate`, `up`, `kubeconfig`, `outputs`, `down`) refuses
-  a `repository.existing` config whose branch is `main` or outside `gitops/`, with usage code 2, before
-  `nic` starts. The kill switch `pyforge.steward.nkp_gitops_branch` (ON everywhere) refuses every
+- **The branch.** Every `deploy nic` action (`validate`, `up`, `kubeconfig`, `outputs`, `down`) refuses,
+  with usage code 2 and before `nic` starts: a config on any provider but local kind with no
+  `repository.existing`; a `repository.existing` whose branch, read as written, is not exactly
+  `gitops/<project_name>` (`main`, `feature/x`, a `..`, a space, a `:` or another project's name
+  included); one whose auth is anything but `auth.ssh.env: GITOPS_DEPLOY_KEY` (another env name or a
+  token); and one whose `url` names another GitHub repository than `origin` (the post-`up` scan reads
+  `origin`). The kill switch `pyforge.steward.nkp_gitops_branch` (ON everywhere) refuses every
   `repository.existing` config when OFF; kind's `repository.local` is unaffected.
 - **The consent.** `up` on any provider but local kind refuses without `--yes`. The `--yes` is the
   operator's: the session hook denies it to an agent (`session_denials` `steward-deploy-nic-up-yes`).
@@ -100,12 +104,15 @@ only `nic` writes that branch, under its own deploy key. What holds before anyth
   (`pixi run -e pyforge-guild protected-refs-ruleset-check`) reports a second one. Until the operator
   applies the ruleset, that check exits 1 naming the missing `protected-refs-gitops-branches`.
 - **No secret.** The pre-commit hook `nic-config-secret-scan` refuses (exit 1) a staged file under
-  `src/platform/deploy/nic/` that matches the `steward keys audit --secrets` pattern table (an
-  Anthropic API key, an age identity, a PEM private-key header); an `env:` name passes. `up` refuses its
-  own kind GitOps commit on the same table, scans `origin/main..origin/gitops/<project_name>` after a cloud
-  `up` (exit 1 on a finding or an unreadable range), and the verb's summary carries `nic`'s last line only
-  redacted. Run the hook by hand with `python scripts/nic_config_secret_scan.py <file>`; `pre-commit install`
-  (through `steward setup`) installs it on a machine.
+  `src/platform/deploy/nic/` that matches the `steward keys audit --secrets` pattern table: an
+  Anthropic API key, an age identity, a PEM private-key header in any case, a base64-encoded PEM
+  block, a GitHub classic or fine-grained token, or a Hetzner-shaped 64-character mixed-case token.
+  An `env:` name and a lowercase `sha256:` digest pass. `up` refuses its own kind GitOps commit on
+  the same table, scans `origin/main..origin/gitops/<project_name>` after a cloud `up` (exit 1 on a
+  finding or an unreadable range), and the verb's summary carries `nic`'s last line only redacted.
+  Run the hook by hand with `pixi run -e pyforge-guild python scripts/nic_config_secret_scan.py
+  <file>`; `pre-commit install` (through `steward setup`) installs it on a machine, and `steward
+  init` reports a machine without it.
 
 Operator-owned before `pixi run -e pyforge-steward pyforge steward deploy nic up -f src/platform/deploy/nic/my-nebari-hetzner.yaml --yes`,
 named here and in the profile's header, never in git: the domain with DNS (replace

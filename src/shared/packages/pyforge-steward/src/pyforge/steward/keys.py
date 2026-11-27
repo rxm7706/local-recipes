@@ -519,10 +519,10 @@ def decrypt_file(input_path: str | Path, *, identity: str | Path, output: str | 
 # ── Plaintext-secret scan primitive ─────────────────────────────────────────
 #
 # A small, fixed, named pattern table — not a pluggable/extensible rule
-# engine (see this story's spec, "Never"). Targets exactly three known
-# secret shapes: an Anthropic API key, a plaintext `age` identity (the exact
+# engine (see this story's spec, "Never"). Targeted three known secret
+# shapes: an Anthropic API key, a plaintext `age` identity (the exact
 # unencrypted shape `encrypt_file` above exists to protect against), and a
-# PEM private-key header. This is `PlaintextSecretFinding`, deliberately a
+# PEM private-key header; Story 118.9 adds four (see the table). This is `PlaintextSecretFinding`, deliberately a
 # distinct type from `DriftFinding` above — a committed plaintext secret and
 # an ungated credential-attachment code path are unrelated defect shapes, and
 # a caller must never conflate them. Story 1.6 wires a CLI verb; this story
@@ -539,11 +539,33 @@ class PlaintextSecretFinding:
     message: str
 
 
+# Story 118.9 (spec-pyforge-steward CAP-178) adds the shapes a cloud GitOps run can leak: a
+# PEM header in any case; a base64-encoded PEM block (`-----BEGIN` encodes to `LS0tLS1CRUdJ`
+# then `Ti`, written with a one-letter class so this table never matches its own source);
+# GitHub tokens; and a Hetzner API token: exactly 64 alphanumerics with both cases, so a
+# lowercase-hex sha256 digest never matches, and not bordered by `+`, `/` or a trailing `=`,
+# so a run inside a base64 string (a lock file's sha512 integrity) never matches either.
+# Flags are inline (`(?i)`), never a `flags=` argument: `scripts/nic_config_secret_scan.py`
+# reads this table from source and refuses any argument beyond the pattern.
 _SECRET_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("anthropic-api-key", re.compile(r"sk-ant-[A-Za-z0-9_-]{20,}")),
     ("age-identity", re.compile(r"AGE-SECRET-KEY-1[A-Z0-9]{20,}")),
-    ("pem-private-key-header", re.compile(r"-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----")),
+    ("pem-private-key-header", re.compile(r"(?i)-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----")),
+    ("pem-block-base64", re.compile(r"LS0tLS1CRUdJ[T]i")),
+    ("github-token", re.compile(r"\bgh[pousr]_[A-Za-z0-9]{36,}\b")),
+    ("github-fine-grained-token", re.compile(r"\bgithub_pat_[A-Za-z0-9_]{22,}\b")),
+    (
+        "hetzner-api-token",
+        re.compile(
+            r"(?<![A-Za-z0-9+/])(?=[A-Za-z0-9]{0,63}[A-Z])(?=[A-Za-z0-9]{0,63}[a-z])[A-Za-z0-9]{64}(?![A-Za-z0-9+/=])"
+        ),
+    ),
 )
+# A match of these opens a key block, so redaction runs from it to the end of the line: a
+# `\n`-escaped PEM printed on one line is masked with its header (Story 118.9).
+_REDACT_TO_LINE_END: frozenset[str] = frozenset({"pem-private-key-header", "pem-block-base64"})
+# A resolved value's own lines this long or longer are masked wherever they appear.
+_MIN_REDACTED_LINE = 8
 
 
 def scan_file_for_secrets(path: str | Path) -> list[PlaintextSecretFinding]:
@@ -593,12 +615,21 @@ def redact_secret_shapes(text: str, values: tuple[str, ...] = ()) -> str:
 
     Story 118.9 (spec-pyforge-steward CAP-178): the `deploy nic` summary carries
     `nic`'s last output line only through this, so neither a secret the verb
-    resolved nor a secret-shaped value reaches the summary.
+    resolved nor a secret-shaped value reaches the summary. A multi-line value is masked
+    whole, in its `\\n`-escaped form, and line by line (each line of at least
+    `_MIN_REDACTED_LINE` characters), so a key body printed on its own line or escaped onto
+    one line does not survive; a PEM-header match is masked to the end of its line.
     """
+    forms: set[str] = set()
     for value in values:
         if value:
-            text = text.replace(value, _REDACTED)
-    for _name, pattern in _SECRET_PATTERNS:
+            forms.update({value, value.replace("\n", "\\n")})
+            forms.update(line.strip() for line in value.splitlines() if len(line.strip()) >= _MIN_REDACTED_LINE)
+    for form in sorted(forms, key=len, reverse=True):
+        text = text.replace(form, _REDACTED)
+    for name, pattern in _SECRET_PATTERNS:
+        if name in _REDACT_TO_LINE_END:
+            pattern = re.compile(pattern.pattern + r"[^\n]*", pattern.flags)
         text = pattern.sub(_REDACTED, text)
     return text
 
