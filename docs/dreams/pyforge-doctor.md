@@ -878,6 +878,17 @@ Folded Dreams: [[bmad-drift-new-artifact-shape]], [[bmad-method-version-drift]],
   `spec-pyforge-steward:CAP-175` (realized here, no text change to the station's Spec) and decomposes as Epic 68, one
   story: a project's greps run side by side into the same cache before its symbols are counted. **Constraints:**
   every finding stays as it is; each grep runs exactly as before. No flag (a chore). Owner `spec-pyforge-doctor`.
+- **2026-11-27 (the chain-currency sweep scans the fleet eight times) — Found and ruled:**
+  `scripts/chain_currency_sweep_check.py` takes 86 s of the 132 s Detectors job on a PR, the longest job a PR
+  waits on, and 43 s alone here. It calls `board.gather_chain_layers_audit` once per station, and each call loads
+  `scripts/fleet_scan.py` again and runs `scan_fleet()` over every chain, git blames included: 98 subprocesses, 29 s
+  of the run. The fleet table depends only on the tree being judged, never on the station. **Ruled** (operator,
+  2026-11-27: "Chain-currency sweep", on the ranked list of the test, CI and preflight levers that remained). **For
+  doctor:** this entry binds `spec-pyforge-steward:CAP-175` (realized here, no text change to the station's Spec) and
+  decomposes as Epic 69, one story: `board.gather_chain_layers_audits` audits several projects over one load of
+  `fleet_scan.py`, one `scan_fleet()` and one Dream orphan index, and the sweep makes that one call. **Constraints:**
+  each project's findings stay exactly what the one-project audit returns; a project whose audit raises degrades
+  alone; a station the batch leaves out is could-not-run, never green. No flag (a chore). Owner `spec-pyforge-doctor`.
 
 ## 2026-10-26 — A spike report is not a corrupt file, and the classifier can't yet tell the difference (folded from bmad-drift-new-artifact-shape)
 

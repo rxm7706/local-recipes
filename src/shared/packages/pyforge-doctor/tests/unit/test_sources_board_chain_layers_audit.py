@@ -32,6 +32,77 @@ def test_missing_generate_is_unevaluable(tmp_path: Path) -> None:
     assert findings[0].status is DoctorStatus.WARN
 
 
+# --- the batch form (doctor Story 69.1) ---------------------------------------------------
+
+
+def test_batch_without_a_checkout_script_is_unevaluable_per_project(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def _no_checkout(name: str) -> Path:
+        raise FileNotFoundError(f"scripts/{name} not found above /nowhere")
+
+    monkeypatch.setattr(board, "locate_checkout_script", _no_checkout)
+    batch = board.gather_chain_layers_audits(tmp_path, ("pyforge-marshal", "pyforge-doctor"))
+    assert list(batch) == ["pyforge-marshal", "pyforge-doctor"]
+    for project, findings in batch.items():
+        assert [f.check for f in findings] == ["chain-layers-audit-unevaluable"]
+        assert findings[0].status is DoctorStatus.WARN
+        assert findings[0].evidence["project"] == project
+
+
+def test_batch_degrades_a_raising_project_alone(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    ok = (
+        Finding(
+            source=Source.CHAIN_LAYERS_AUDIT,
+            check="chain-audit-verdict",
+            status=DoctorStatus.OK,
+            message="ok",
+            evidence={},
+        ),
+    )
+
+    def gather(target: Path, project: str, scan: object) -> tuple[Finding, ...]:
+        if project == "pyforge-doctor":
+            raise RuntimeError("boom")
+        return ok
+
+    monkeypatch.setattr(board, "_gather_chain_layers_audit", gather)
+    batch = board.gather_chain_layers_audits(tmp_path, ("pyforge-marshal", "pyforge-doctor", "pyforge-herald"))
+    assert batch["pyforge-marshal"] == ok
+    assert batch["pyforge-herald"] == ok
+    (degraded,) = batch["pyforge-doctor"]
+    assert degraded.status is DoctorStatus.WARN
+    assert "boom" in degraded.message
+
+
+def test_fleet_scan_memo_keeps_only_a_success(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A failed load is retried by the next project; a successful load and scan run once."""
+    loads: list[Path] = []
+    scans: list[tuple] = []
+
+    class _Gen:
+        def scan_fleet(self, *args: object) -> dict:
+            scans.append(args)
+            return {"rows": []}
+
+    def load(target: Path) -> _Gen:
+        loads.append(target)
+        if len(loads) == 1:
+            raise FileNotFoundError("first load fails")
+        return _Gen()
+
+    monkeypatch.setattr(board, "_load_dashboard_generate", load)
+    scan = board._FleetScan(tmp_path)
+    with pytest.raises(FileNotFoundError):
+        scan.module()
+    first = scan.module()
+    assert scan.module() is first
+    assert scan.fleet() == {"rows": []}
+    assert scan.fleet() == {"rows": []}
+    assert len(loads) == 2
+    assert scans == [({}, None)]
+
+
 def test_layers_cli_invokes_audit(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
     ok = (
         Finding(

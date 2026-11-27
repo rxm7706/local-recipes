@@ -56,41 +56,60 @@ CURRENCY_CHECKS = frozenset(
 def _load_gatherer():
     """The in-process gatherer the subprocess used to call (doctor Story 55.2, AD-1:
     a Doctor source is a library call, never a subprocess reimplementation).
-    Returns ``None`` when ``pyforge.doctor`` is not importable here."""
+    Since doctor Story 69.1 it is the batch form, which audits every station over
+    one fleet scan. Returns ``None`` when ``pyforge.doctor`` is not importable
+    here."""
     try:
         from pyforge.doctor.sources import board
     except Exception:  # noqa: BLE001 -- unimportable == COULD NOT RUN, reported per station
         return None
-    return board.gather_chain_layers_audit
+    return board.gather_chain_layers_audits
 
 
-def _audit(slug: str) -> tuple[list[dict], str | None]:
-    """(currency findings, error) for one station. error means COULD NOT RUN.
+def _audit_all(slugs: tuple[str, ...]) -> dict[str, tuple[list[dict], str | None]]:
+    """{station: (currency findings, error)}. An error means COULD NOT RUN.
 
-    Story 55.2: one process for the eight stations. ``gather_chain_layers_audit``
-    saves and restores ``fleet_scan``'s module globals per call, so sequential
-    calls are independent; its human ``[fleet]`` preamble is swallowed so the
-    script's own ``--json`` stays parseable.
+    Story 55.2 made the eight stations one process; Story 69.1 makes them one
+    library call, so ``scripts/fleet_scan.py`` loads once and scans the fleet once
+    rather than once per station. The gatherer degrades a station whose audit
+    raises on its own; a call that raises as a whole is COULD NOT RUN for every
+    station. Its human ``[fleet]`` preamble is swallowed so the script's own
+    ``--json`` stays parseable.
     """
     gather = _load_gatherer()
     if gather is None:
-        return (
-            [],
-            f"{slug}: pyforge.doctor is not importable here (run under pixi run -e pyforge-guild)",
-        )
+        return {
+            slug: (
+                [],
+                f"{slug}: pyforge.doctor is not importable here (run under pixi run -e pyforge-guild)",
+            )
+            for slug in slugs
+        }
     sink = io.StringIO()
     try:
         with contextlib.redirect_stdout(sink):
-            findings = gather(REPO_ROOT, slug)
+            by_slug = gather(REPO_ROOT, slugs)
     except Exception as exc:  # noqa: BLE001 -- an audit that raises is COULD NOT RUN, never a crash
-        return [], f"{slug}: audit raised {type(exc).__name__}: {exc}"
-    rows = [f.to_json_dict() for f in findings]
-    hits = [
-        {**f, "project": slug}
-        for f in rows
-        if f.get("check") in CURRENCY_CHECKS and f.get("status") == "fail"
-    ]
-    return hits, None
+        return {
+            slug: ([], f"{slug}: audit raised {type(exc).__name__}: {exc}")
+            for slug in slugs
+        }
+    out: dict[str, tuple[list[dict], str | None]] = {}
+    for slug in slugs:
+        if slug not in by_slug:
+            # Never green by omission: a station the gatherer did not answer for was not audited.
+            out[slug] = ([], f"{slug}: the audit returned no result for this station")
+            continue
+        rows = [f.to_json_dict() for f in by_slug[slug]]
+        out[slug] = (
+            [
+                {**f, "project": slug}
+                for f in rows
+                if f.get("check") in CURRENCY_CHECKS and f.get("status") == "fail"
+            ],
+            None,
+        )
+    return out
 
 
 def main() -> int:
@@ -107,8 +126,9 @@ def main() -> int:
     slugs = (args.project,) if args.project else STATIONS
     all_hits: list[dict] = []
     errors: list[str] = []
+    audits = _audit_all(slugs)
     for slug in slugs:
-        hits, err = _audit(slug)
+        hits, err = audits[slug]
         if err:
             errors.append(err)
             if not args.json:

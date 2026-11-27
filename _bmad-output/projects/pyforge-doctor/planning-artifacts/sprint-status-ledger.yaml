@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: doctor
-# stories: 338
+# stories: 341
 development_status:
   1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
   1-2-wrap-warden-s-engine-availability-self-check-fr-1: done
@@ -203,6 +203,7 @@ development_status:
   66-1-the-detector-run-measures-the-doctor-sources-beside-the-script-detectors: done
   67-1-the-contract-mutation-tests-analyse-each-module-once: done
   68-1-capability-effect-runs-a-project-s-git-greps-side-by-side: done
+  69-1-the-chain-currency-sweep-scans-the-fleet-once: done
   7-1-the-emitter-mints-identity-at-defer-time: done
   7-2-grandfather-the-470-at-a-dated-cut-off: done
   7-3-the-detector-sees-anonymous-tier-3-entries: done
@@ -346,6 +347,8 @@ development_status:
   epic-67-retrospective: optional
   epic-68: done
   epic-68-retrospective: optional
+  epic-69: done
+  epic-69-retrospective: optional
   epic-7: done
   epic-7-retrospective: optional
   epic-8: done

@@ -49,6 +49,8 @@ import importlib.util
 import json
 import re
 import sys
+from collections.abc import Iterable
+from functools import partial
 from pathlib import Path
 
 from ..models import UNEVALUABLE_EVIDENCE_KEY, DoctorStatus, Finding, Source
@@ -57,6 +59,7 @@ from . import degrade_on_exception, locate_checkout_script
 __all__ = (
     "gather_chain_completeness",
     "gather_chain_layers_audit",
+    "gather_chain_layers_audits",
     "gather_check_layout",
     "gather_dashboard_drift",
 )
@@ -1217,13 +1220,69 @@ def gather_chain_layers_audit(target: Path, project: str) -> tuple[Finding, ...]
     return degrade_on_exception(
         Source.CHAIN_LAYERS_AUDIT,
         "chain-layers-audit",
-        lambda: _gather_chain_layers_audit(target, project),
+        lambda: _gather_chain_layers_audit(target, project, _FleetScan(target)),
     )
 
 
-def _gather_chain_layers_audit(target: Path, project: str) -> tuple[Finding, ...]:
+def gather_chain_layers_audits(target: Path, projects: Iterable[str]) -> dict[str, tuple[Finding, ...]]:
+    """CAP-3 chain audit for several projects over ONE fleet scan (doctor Story 69.1).
+
+    Each project's findings are exactly what ``gather_chain_layers_audit``
+    returns for it alone: the fleet table is a function of ``target``, never of
+    the project, so the projects share one load of ``scripts/fleet_scan.py``,
+    one ``scan_fleet`` and one Dream orphan index instead of repeating them per
+    project (the chain-currency sweep's eight stations each repeated the whole
+    scan, git blames included). A project whose audit raises degrades alone.
+    """
+    scan = _FleetScan(target)
+    return {
+        project: degrade_on_exception(
+            Source.CHAIN_LAYERS_AUDIT,
+            "chain-layers-audit",
+            partial(_gather_chain_layers_audit, target, project, scan),
+        )
+        for project in projects
+    }
+
+
+class _FleetScan:
+    """The per-target work every project's chain audit reads, done once (Story 69.1).
+
+    Each piece is computed on first use and kept only when it succeeds, so a
+    failure is retried by the next project and reported per project, as the
+    one-project gather always did.
+    """
+
+    def __init__(self, target: Path) -> None:
+        self._target = target
+        self._gen = None
+        self._fleet: dict | None = None
+        self._orphans: dict | None = None
+
+    def module(self):
+        if self._gen is None:
+            self._gen = _load_dashboard_generate(self._target)
+        return self._gen
+
+    def fleet(self) -> dict:
+        if self._fleet is None:
+            # Named `gen`, as every holder of the loaded script is, so
+            # tests/scripts/test_fleet_scan_consumers.py reads this reach.
+            gen = self.module()
+            self._fleet = gen.scan_fleet({}, None)
+        return self._fleet
+
+    def orphans(self) -> dict:
+        if self._orphans is None:
+            from . import chain as chain_sources
+
+            self._orphans = chain_sources.dream_chain_orphan_index(self._target.resolve())
+        return self._orphans
+
+
+def _gather_chain_layers_audit(target: Path, project: str, scan: _FleetScan) -> tuple[Finding, ...]:
     try:
-        gen = _load_dashboard_generate(target)
+        gen = scan.module()
     except Exception as exc:  # noqa: BLE001 -- unevaluable, never crash
         return (
             Finding(
@@ -1316,7 +1375,7 @@ def _gather_chain_layers_audit(target: Path, project: str) -> tuple[Finding, ...
     missing = [s for s in applicable if not layers[s]]
 
     # CAP-3 coherence/staleness: reuse scan_fleet's live row for this project.
-    fleet = gen.scan_fleet({}, None)
+    fleet = scan.fleet()
     fleet_row = next(
         (r for r in fleet.get("rows", []) if r.get("project") == project and r.get("slug") == project),
         None,
@@ -1342,9 +1401,7 @@ def _gather_chain_layers_audit(target: Path, project: str) -> tuple[Finding, ...
             ),
         )
 
-    from . import chain as chain_sources
-
-    orphan_kinds = chain_sources.dream_chain_orphan_index(root).get(project, [])
+    orphan_kinds = scan.orphans().get(project, [])
     chain_audit = gen._chain_audit_verdict(fleet_row, orphan_kinds)
 
     findings: list[Finding] = []
