@@ -8122,6 +8122,23 @@ So that a lock change does not cost a cold mypy run.
 **And** main still saves a cache only under the full key
 **Status:** done
 
+### Story 117.30: The preflight runs doctor's CPU speed-budget test with no other lane
+
+As the operator whose full preflight reds on a timing test that passes alone,
+I want that test to run once every other lane has finished,
+So that the preflight's own load never decides its verdict.
+
+**Type:** fix • **Effort:** M • **Deps:** 117.3 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change), a fix under CAP-159 (FR-32); no AD moves • Dream 2026-11-27 (doctor's speed-budget test reds under the preflight's own load) • operator ruling 2026-11-27 "Do this task here: Preflight runs doctor's CPU speed-budget test alone"
+**Flag:** none (`type: fix`, `spec-feature-flag-governance` Q1)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py`; `src/shared/packages/pyforge-steward/tests/unit/test_preflight_alone_tail.py` (new); `src/shared/packages/pyforge-steward/tests/meta/test_preflight_alone_tail_tasks.py` (new); `planning-artifacts/test-architecture.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-117-30-the-preflight-runs-doctor-s-cpu-speed-budget-test-with-no-other-lane.md`
+**Given** a full `pr-preflight --keep-going` that went red twice on 2026-11-27 on doctor's `test_doctor_check_completes_within_the_five_second_budget` alone (a median of 5.05 s of CPU at a load average of 12.5, then 5.03 s at 13.7, against 5.0 s), while `pyforge-doctor-live-test` passed when run alone both times
+**When** a lane's task is in the preflight's declared alone-tail set
+**Then** the lane runs its command's segments before the last `&&` beside the other lanes, and its last segment only once no other lane is in flight or ready to start, and no lane starts while that segment runs; a lane whose earlier segment fails never runs its last, as `&&` would not
+**And** the journal keeps one row for the lane, its seconds the two parts' sum and its `alone_tail` naming the last segment's own seconds, start and exit code; a stop or an interrupt before the last segment runs records the lane cancelled
+**And** `pyforge-doctor-live-test` is the one declared task; a meta-test fails when a declared task's command has no `&&` or its last segment runs pytest under xdist, and the preflight refuses (exit 2) to run a selected lane whose declared task has no tail; the test, its median and its 5.0 s budget, and CI's jobs, are unchanged
+**Status:** done
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
