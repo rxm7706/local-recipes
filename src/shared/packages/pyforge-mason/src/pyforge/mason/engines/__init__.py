@@ -244,7 +244,7 @@ def _floor(floor: str) -> SpecifierSet:
 # now tracks the root `requires-pixi` as a registered site of
 # `scripts/pixi_version_registry.py`. These constants exist for the sync guard
 # alone -- `require_engine` below does NOT consult them; see its own docstring.
-PIXI_VERSION_RANGE = _floor("0.80.0")
+PIXI_VERSION_RANGE = _floor("0.85.0")
 TWINE_VERSION_RANGE = _floor("7.0.0")
 CONDA_LOCK_VERSION_RANGE = _floor("4.0.2")
 PYTHON_BUILD_VERSION_RANGE = _floor("1.6.0")

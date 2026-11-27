@@ -9,7 +9,7 @@ sources:
   - src/shared/packages/pyforge-warden/src/pyforge/warden/models.py
   - docs/dreams/pyforge-warden.md
   - src/platform/deploy/charts/platform/templates
-verified: 2026-11-26
+verified: 2026-11-27
 ---
 
 # PyForge Estate Overview

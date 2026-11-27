@@ -584,21 +584,20 @@ def _gate_jobs() -> dict[str, list[str]]:
     return {name: lines for name, lines in jobs.items() if name.endswith("-gate")}
 
 
-def test_each_station_gate_runs_the_driver_on_setup_python_with_no_pixi_environment():
+def test_each_station_gate_runs_the_driver_on_the_estate_python_with_no_pixi_environment():
     """A gate only judges the reports its shards uploaded, so it sets up the estate's Python, not the station's
-    pixi environment (10 to 17 s of a 21 to 28 s job before Story 117.27)."""
+    pixi environment (10 to 17 s of a 21 to 28 s job before Story 117.27). Story 148.3: the version comes from
+    pixi.toml's one declaration, through ./.github/actions/setup-estate-python (target-version-check holds the rest)."""
     driver_mod = _load_driver()
     gates = _gate_jobs()
     assert set(gates) == {f"{station}-gate" for station in driver_mod.STATIONS}
-    estate_python = f"'{sys.version_info.major}.{sys.version_info.minor}'"
     for name, lines in gates.items():
         text = "\n".join(lines)
         assert "prefix-dev/setup-pixi@" not in text, f"{name} installs a pixi environment it does not use"
         assert "pixi run" not in text, f"{name} runs the gate through pixi"
-        setups = [i for i, line in enumerate(lines) if "uses: actions/setup-python@" in line]
-        assert len(setups) == 1, f"{name} has {len(setups)} setup-python steps"
-        version = next(line for line in lines[setups[0] :] if "python-version:" in line)
-        assert version.split("python-version:", 1)[1].strip() == estate_python, f"{name}: {version.strip()}"
+        setups = [line for line in lines if "uses: ./.github/actions/setup-estate-python" in line]
+        assert len(setups) == 1, f"{name} has {len(setups)} estate-Python steps"
+        assert "actions/setup-python@" not in text, f"{name} sets Python up around the declaration"
         commands = [line.strip() for line in lines if "scripts/coverage_gates_ci.py" in line and "#" not in line]
         assert len(commands) == 1 and commands[0].startswith("python scripts/coverage_gates_ci.py --base"), name
 

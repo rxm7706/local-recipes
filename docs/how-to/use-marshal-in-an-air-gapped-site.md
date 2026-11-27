@@ -5,7 +5,7 @@ sources:
   - src/shared/packages/pyforge-marshal/tests/meta/test_ad65_no_network_stack_imports.py
   - src/shared/packages/pyforge-marshal/tests/meta/test_ad65_default_template_never_remote.py
   - .github/workflows/substrate-nightly.yml
-verified: 2026-11-24
+verified: 2026-11-27
 ---
 
 # How to use Marshal's seed and substrate bootstrap in an air-gapped site

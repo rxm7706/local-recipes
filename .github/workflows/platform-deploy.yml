@@ -73,6 +73,10 @@ jobs:
           run-id: ${{ inputs.ci_run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      # The verify script takes only the standard library; it runs on the estate's Python, not the runner's
+      # own 3.12 (steward Story 148.3).
+      - uses: ./.github/actions/setup-estate-python
+
       - name: Refuse digest without a clean Warden verdict in the promotion artifact
         id: verify
         env:
@@ -84,9 +88,9 @@ jobs:
           MCP_HOST_IMAGE_ID: ${{ inputs.mcp_host_image_id }}
         run: python scripts/platform-deploy-verify-promotion.py
 
-      - uses: prefix-dev/setup-pixi@v0.11.2
+      - uses: prefix-dev/setup-pixi@v0.11.3
         with:
-          pixi-version: v0.80.0
+          pixi-version: v0.85.0
           environments: platform-dev
           locked: true
           cache: true

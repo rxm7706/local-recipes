@@ -120,12 +120,12 @@ def test_ranges_do_not_widen_to_the_next_untested_minor():
 
 
 def test_pixi_range_admits_the_tested_pixi_and_no_untested_minor():
-    """Story 14.4: 0.80.0 (CI's setup-pixi pin) and 0.81.0 (the workspace pixi
-    the real ``pixi lock`` integration test ran on at mint) are in range; the
-    next minor is not."""
+    """Story 14.4, moved by Story 34.1: 0.85.0 (CI's setup-pixi pin and the
+    workspace pixi since steward Story 148.2) is in range; the minor below the
+    requires-pixi floor and the next minor are not."""
     from packaging.version import Version
 
     assert len(PIXI_VERSION_RANGE) >= 2
-    assert Version("0.80.0") in PIXI_VERSION_RANGE
-    assert Version("0.81.0") in PIXI_VERSION_RANGE
-    assert Version("0.82.0") not in PIXI_VERSION_RANGE
+    assert Version("0.85.0") in PIXI_VERSION_RANGE
+    assert Version("0.84.2") not in PIXI_VERSION_RANGE
+    assert Version("0.86.0") not in PIXI_VERSION_RANGE

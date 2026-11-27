@@ -59,4 +59,5 @@ def test_root_env_pyforge_marshal_is_lean_no_default_feature():
     assert env.get("no-default-feature") is True, (
         "pyforge-marshal env must stay lean (no-default-feature = true) for air-gap installs"
     )
-    assert env.get("features") == ["pyforge-marshal"]
+    # steward Story 148.1: every environment composes the one Python declaration first.
+    assert env.get("features") == ["interpreter", "pyforge-marshal"]

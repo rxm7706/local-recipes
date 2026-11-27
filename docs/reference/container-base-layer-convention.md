@@ -40,7 +40,7 @@ an untagged `FROM` to `:latest`), and never `:latest` literally. All eight
 `FROM` lines across the four files pin a real, explicit version today
 (each also carries `--platform=linux/amd64`):
 
-- `ghcr.io/prefix-dev/pixi:0.80.0 AS builder` (all four files' builder
+- `ghcr.io/prefix-dev/pixi:0.85.0 AS builder` (all four files' builder
   stage).
 - `ubuntu:24.04` (root `Containerfile`'s runtime stage).
 - `registry.access.redhat.com/ubi9/ubi-minimal:9.6 AS runtime`

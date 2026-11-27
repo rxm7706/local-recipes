@@ -7,7 +7,7 @@ sources:
   - archive/docs/specs
   - docs/reference/library-llms-full.md
   - scripts/llms_full_check.py
-verified: 2026-11-24
+verified: 2026-11-27
 ---
 
 # Agent instruction notes

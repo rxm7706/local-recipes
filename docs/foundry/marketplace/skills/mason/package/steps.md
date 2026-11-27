@@ -18,7 +18,7 @@ on those packages. Steps 0, 2, and 3 run today.
   `[build-system] requires` in `pyproject.toml` (for example `hatchling` or
   `setuptools`), in the same environment. `pyproject-build --no-isolation`
   does not install it and stops with `BackendUnavailable` when it is missing.
-- `pixi` 0.81.0 (re-read 2026-10-28), for step 3 only:
+- `pixi` 0.85.0 (re-read 2026-11-27), for step 3 only:
   `conda install -c conda-forge pixi`, or the installer at https://pixi.sh.
 
 ## 1. See the station command (waits on `pyforge-mason`)

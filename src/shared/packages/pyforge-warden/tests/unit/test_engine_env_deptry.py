@@ -992,7 +992,7 @@ def test_run_pixi_lock_success_returns_exit_code(monkeypatch, tmp_path):
     def fake_run(argv, **kwargs):
         calls.append(list(argv))
         if argv[:2] == ["pixi", "--version"]:
-            return types.SimpleNamespace(returncode=0, stdout=b"pixi 0.80.1\n", stderr=b"")
+            return types.SimpleNamespace(returncode=0, stdout=b"pixi 0.85.0\n", stderr=b"")
         return types.SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
 
     monkeypatch.setattr(subprocess, "run", fake_run)
@@ -1008,7 +1008,7 @@ def test_run_pixi_lock_passes_its_timeout_to_the_engine_seam(monkeypatch, tmp_pa
     """Story 14.4: the lock timeout is a parameter (default PIXI_LOCK_TIMEOUT_SECONDS)."""
     from pyforge.warden.engines import PIXI_LOCK_TIMEOUT_SECONDS
 
-    monkeypatch.setattr(subprocess, "run", _fake_run_version(b"pixi 0.81.0\n"))
+    monkeypatch.setattr(subprocess, "run", _fake_run_version(b"pixi 0.85.1\n"))
     seen: list[float] = []
 
     def fake_engine_env(_build_argv, *, owner, cwd, timeout, **_kwargs):
@@ -1022,7 +1022,7 @@ def test_run_pixi_lock_passes_its_timeout_to_the_engine_seam(monkeypatch, tmp_pa
 
 
 def test_run_pixi_lock_engine_env_error(monkeypatch, tmp_path):
-    monkeypatch.setattr(subprocess, "run", _fake_run_version(b"pixi 0.80.1\n"))
+    monkeypatch.setattr(subprocess, "run", _fake_run_version(b"pixi 0.85.0\n"))
 
     def fake_engine_env(*_args, **_kwargs):
         return "", ErrorRecord(kind=ErrorKind.ENGINE_TIMEOUT, owner="pixi", message="timed out"), None

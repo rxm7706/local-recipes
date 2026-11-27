@@ -5,7 +5,7 @@ sources:
   - src/platform/compose/dbgpt/Containerfile
   - pixi.toml
   - pixi.lock
-verified: 2026-11-26
+verified: 2026-11-27
 ---
 
 # AI Engine Operations

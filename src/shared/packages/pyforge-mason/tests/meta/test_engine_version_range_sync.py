@@ -131,12 +131,13 @@ def test_ranges_are_ranges_not_exact_pins():
 
 def test_evidence_backed_versions_are_in_range():
     """The exact versions this codebase has live-verified evidence for (spec
-    Always boundary: pixi 0.80.0 — 2026-09-11, build+ship self-hosting
-    integration green against it — twine 7.0.0, conda-lock 4.0.2, build
+    Always boundary: pixi 0.85.0 — 2026-11-27, `pyforge-mason-test-slow`'s
+    build+ship self-hosting integration green against it when steward Story
+    148.2 moved the estate there; 0.80.0 before it, 2026-09-11 — twine 7.0.0, conda-lock 4.0.2, build
     1.6.0 (the floor the fleet's other features pin; 2026-09-20), gh 2.97.0)
     must be inside their own range — a vacuous guard (a range that excludes
     its own evidence) would be worse than no guard at all."""
-    assert Version("0.80.0") in PIXI_VERSION_RANGE
+    assert Version("0.85.0") in PIXI_VERSION_RANGE
     assert Version("7.0.0") in TWINE_VERSION_RANGE
     assert Version("4.0.2") in CONDA_LOCK_VERSION_RANGE
     assert Version("1.6.0") in PYTHON_BUILD_VERSION_RANGE
@@ -165,5 +166,5 @@ def test_floors_carry_no_ceiling():
         assert [spec.operator for spec in rng] == [">="], f"ceiling in {rng}"
     assert Version("7.1.0") in TWINE_VERSION_RANGE
     assert Version("1.7.0") in PYTHON_BUILD_VERSION_RANGE
-    assert Version("0.81.0") in PIXI_VERSION_RANGE
-    assert Version("0.82.0") in PIXI_VERSION_RANGE
+    assert Version("0.85.1") in PIXI_VERSION_RANGE
+    assert Version("0.86.0") in PIXI_VERSION_RANGE

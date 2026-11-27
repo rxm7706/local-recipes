@@ -63,6 +63,11 @@ SITES: tuple[Site, ...] = (
     _site("pyforge-mason [package.run-dependencies] pixi floor",
           "src/shared/packages/pyforge-mason/pixi.toml",
           r'^pixi = ">=' + _PIXI_VERSION + r'"', kind="floor"),
+    # steward Story 148.2: mason's engine range mirrors that run-dependency floor (its sync test reds a
+    # drift), so the bump moves both; until then the 0.85.0 bump left this one at 0.80.0.
+    _site("pyforge-mason engines PIXI_VERSION_RANGE floor",
+          "src/shared/packages/pyforge-mason/src/pyforge/mason/engines/__init__.py",
+          r'^PIXI_VERSION_RANGE = _floor\("' + _PIXI_VERSION + r'"\)$', kind="floor"),
     _site("environment.yaml", "environment.yaml",
           r"^- pixi >=" + _PIXI_VERSION + r"$", kind="floor", derived=True),
     _site("pages.yml setup-pixi", ".github/workflows/pages.yml",

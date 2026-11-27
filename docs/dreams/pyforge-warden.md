@@ -348,6 +348,12 @@ One-chain fold: satellite Dreams archived in place with `Consolidated into [[pyf
   `prog=TOOL_NAME` (`cli.py:446`); the story adds both and closes the row with the corrected evidence. The provenance map
   holds the API exports only, not prose citations, so the edit does not touch it. No behaviour moves; no flag. Owner
   `spec-pyforge-warden`.
+- **2026-11-27 (the fix-PR solver's pixi range follows the estate to 0.85) — Ruled:** operator ruling of 2026-11-27:
+  "update pixi to the latest too everywhere used pixi 0.85.0" (steward's Dream entry of the same date, Epic 148).
+  **For warden:** the fix-PR solver's `PIXI_VERSION_RANGE` is `>=0.80.0,<0.82`, its floor held to `pixi.toml`'s
+  `requires-pixi` by `test_pixi_range_floor_matches_workspace.py`; with the floor at 0.85.0 the range moves to
+  `>=0.85.0,<0.86` (Story 34.1), still closing before the next untested minor. This entry binds `spec-pyforge-warden`
+  CAP-12 (realized, no text change). No flag. Owner `spec-pyforge-warden`.
 
 ## 2026-10-26 — A web face for the compliance factory — upload a manifest, watch warden and atlas analyze it (folded from compliance-factory-web-face)
 
