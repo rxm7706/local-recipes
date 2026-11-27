@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: 5e19f91937d990b8
-story_count: 205
+source_fingerprint: 10f1881b183e52ac
+story_count: 206
 test_file_count: 132
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 205
-- **Epics parsed:** 68
+- **Stories parsed:** 206
+- **Epics parsed:** 69
 - **Test files inventoried:** 132 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `5e19f91937d990b8`
+- **Source fingerprint:** `10f1881b183e52ac`
 
 ## Risk Assessment
 
@@ -58,6 +58,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 67: The contract mutation tests analyse each module once (spec-pyforge-steward:CAP-175)
 - Epic 68: Capability-effect runs a project's git greps side by side (spec-pyforge-steward:CAP-175)
 - Epic 69: The chain-currency sweep scans the fleet once (spec-pyforge-steward:CAP-175)
+- Epic 70: The flag scripts read each story spec once and each path without walking its parents (spec-pyforge-steward:CAP-175)
 
 ### Low-risk epics
 
@@ -451,6 +452,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 67.1 | The contract mutation tests analyse each module once | none observed |
 | 68.1 | Capability-effect runs a project's git greps side by side | none observed |
 | 69.1 | The chain-currency sweep scans the fleet once | none observed |
+| 70.1 | The flag scripts read each story spec once and each path without walking its ... | none observed |
 
 ## Quality Gates
 

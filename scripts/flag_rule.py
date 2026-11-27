@@ -23,6 +23,8 @@ and no station import.
 
 from __future__ import annotations
 
+import copy
+import functools
 import json
 import os
 import re
@@ -91,6 +93,22 @@ def is_story_spec(rel: str) -> bool:
     return bool(_STORY_SPEC_RE.match(rel)) and not rel.endswith(".memlog.md")
 
 
+def lexical_tail(path: Path, base: Path) -> tuple[str, ...] | None:
+    """The parts of ``path`` below ``base`` (``()`` when they are equal), or None when ``base`` is neither ``path`` nor
+    one of its parents: ``path.relative_to(base).parts``, decided lexically as ``PurePath.relative_to`` decides it.
+
+    ``relative_to`` tests ``base`` against each of ``path``'s parents in turn, building every one of them; this
+    compares ``base`` once with the path made of ``path``'s first ``len(base.parts)`` parts, under the same path
+    equality (doctor Story 70.1: the flag inventory asks it of every path a story's ``Surface:`` names).
+    """
+    if path.is_absolute() != base.is_absolute():
+        return None  # as relative_to: an absolute path is never below a relative base, nor the reverse
+    parts, n = path.parts, len(base.parts)
+    if len(parts) < n or path.with_segments(*parts[:n]) != base:
+        return None
+    return parts[n:]
+
+
 def repo_relative(path: str | os.PathLike[str], repo_root: Path | None = None) -> str:
     """The repo-relative posix form of `path` (the form git and the baseline use).
 
@@ -101,15 +119,15 @@ def repo_relative(path: str | os.PathLike[str], repo_root: Path | None = None) -
     p = Path(path)
     if not p.is_absolute():
         return Path(os.path.normpath(p)).as_posix()
-    for candidate, base in (
-        (Path(os.path.normpath(p)), root),
-        (p.resolve(), root.resolve()),
-    ):
-        try:
-            return candidate.relative_to(base).as_posix()
-        except ValueError:
-            continue
-    return p.as_posix()
+    tail = lexical_tail(Path(os.path.normpath(p)), root)
+    if tail is not None:
+        return "/".join(tail) or "."
+    # Resolved only when the lexical form is not under the root: two `resolve()` calls per path were most of the
+    # flag inventory's run, which asks this of every path a Surface names (doctor Story 70.1).
+    try:
+        return p.resolve().relative_to(root.resolve()).as_posix()
+    except ValueError:
+        return p.as_posix()
 
 
 def _read_json(rel: Path, repo_root: Path | None, error: type[FlagRuleError]) -> Any:
@@ -185,8 +203,20 @@ def _frontmatter(path: Path) -> tuple[dict[str, Any] | None, str]:
     end = next((i for i in range(1, len(lines)) if lines[i].rstrip() == "---"), None)
     if end is None:
         return None, "no frontmatter (the opening `---` fence is never closed)"
+    data, why = _parse_frontmatter_block("\n".join(lines[1:end]))
+    # Each caller gets its own copy, so one that changes its mapping cannot change another's.
+    return (copy.deepcopy(data), "") if data is not None else (None, why)
+
+
+@functools.lru_cache(maxsize=8192)
+def _parse_frontmatter_block(block: str) -> tuple[dict[str, Any] | None, str]:
+    """The frontmatter block's mapping, or (None, why), parsed once per distinct text (doctor Story 70.1).
+
+    The flag gate's three readers and the inventory each read every story spec's frontmatter, so one run parsed
+    each block four times; the result is a function of the text alone, so it is kept by the text.
+    """
     try:
-        data = yaml.safe_load("\n".join(lines[1:end]))
+        data = yaml.safe_load(block)
     except (yaml.YAMLError, ValueError, OverflowError) as exc:
         # ValueError/OverflowError: safe_load builds dates eagerly, so `created: 2026-02-30` raises.
         return (

@@ -4422,6 +4422,28 @@ So that the sweep stops repeating the same fleet scan, git blames included, once
 **And** tests hold that the batch loads and scans once, degrades a raising project alone, and that a station the batch leaves out is could-not-run
 **Status:** done
 
+## Epic 70: The flag scripts read each story spec once and each path without walking its parents (spec-pyforge-steward:CAP-175)
+
+Minted 2026-11-27 from the station Dream's entry of the same date on the operator ruling of that day ("Detectors library part").
+**HARD boundaries:**
+- Every report, judgment, finding and frontmatter read stays exactly as before. No flag (a chore).
+
+### Story 70.1: The flag scripts read each story spec once and each path without walking its parents
+
+As the operator whose PRs wait on the Detectors job's library part,
+I want the flag inventory and the flag gate to stop re-parsing the same frontmatter and re-walking the same paths,
+So that the suite's two live inventory runs, its floor, take half the time.
+
+**Type:** chore • **Effort:** S • **Deps:** 34.4 • **FR/AD:** spec-pyforge-steward:CAP-175 (realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `scripts/flag_rule.py`, `scripts/flag_inventory.py`, `tests/scripts/test_flag_rule.py`
+**Spec:** `planning-artifacts/specs/spec-70-1-the-flag-scripts-read-each-story-spec-once-and-each-path-without-walking-its-parents.md`
+**Given** a live inventory run takes 17.0 s, most of it YAML-parsing each story spec's frontmatter four times and testing each of 105,354 paths against the root by resolving it and walking its parents
+**When** the frontmatter parse is kept by its text (each caller gets a copy), `repo_relative` resolves only when the lexical form is not under the root, and `flag_rule.lexical_tail` decides `relative_to` in one comparison
+**Then** the inventory runs in 7.8 s and the gate in 2.9 s (from 4.75 s), and their eight reports, outputs, judgments and frontmatter reads are identical to `origin/main`'s
+**And** tests hold `lexical_tail` to `relative_to` on every edge case, `repo_relative`'s answers, each caller's own mapping, and each refusal on a second read
+**Status:** done
+
 ## Currency reconciliation — 2026-11-26 (the tag rule reaches station source)
 
 *Chain-currency cascade (arch -> epics).* 2026-11-26: Epic 64 / Story 64.1 minted under `spec-one-chain-per-station` (its capability 9, realized with no text change); no AD moves. The keys go through the Tier-3 feed and `sprint-ledger-sync`. **Content changed:** the Epic, this section and `updated:`.

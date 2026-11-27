@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: doctor
-# stories: 341
+# stories: 344
 development_status:
   1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
   1-2-wrap-warden-s-engine-availability-self-check-fr-1: done
@@ -208,6 +208,7 @@ development_status:
   7-2-grandfather-the-470-at-a-dated-cut-off: done
   7-3-the-detector-sees-anonymous-tier-3-entries: done
   7-4-one-severity-both-sides: done
+  70-1-the-flag-scripts-read-each-story-spec-once-and-each-path-without-walking-its-parents: done
   8-1-the-parser-reads-every-legacy-tier-3-shape: done
   8-2-minting-picks-the-next-free-suffix-per-station-convention: done
   8-3-the-fix-mode-promotes-the-backlog-and-refuses-on-collision: done
@@ -351,6 +352,8 @@ development_status:
   epic-69-retrospective: optional
   epic-7: done
   epic-7-retrospective: optional
+  epic-70: done
+  epic-70-retrospective: optional
   epic-8: done
   epic-8-retrospective: optional
   epic-9: done
