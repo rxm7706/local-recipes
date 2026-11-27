@@ -48,12 +48,14 @@ def test_docs_site_symlink_targets_repo_docs() -> None:
     assert (target / "map.yaml").is_file()
 
 
-def test_nodejs_pin_matches_feature_python() -> None:
+def test_the_site_environment_takes_the_estate_nodejs() -> None:
+    """Steward Story 149.2: nodejs is declared once, in the node feature, and the site environment composes it; the
+    site feature no longer carries a copy of the pin to keep in step with the python feature's."""
     root = _repo_root()
     pixi = tomllib.loads((root / "pixi.toml").read_text(encoding="utf-8"))
-    site_node = pixi["feature"]["site"]["dependencies"]["nodejs"]
-    python_node = pixi["feature"]["python"]["dependencies"]["nodejs"]
-    assert site_node == python_node
+    assert "nodejs" not in pixi["feature"]["site"]["dependencies"]
+    assert "nodejs" not in pixi["feature"]["python"]["dependencies"]
+    assert "node" in pixi["environments"]["site"]
 
 
 def test_docs_site_pixi_tasks() -> None:
@@ -72,14 +74,14 @@ def test_docs_site_pixi_tasks() -> None:
     assert "docs-site-sidebar" not in tasks
 
 
-def test_nvmrc_major_within_nodejs_pin() -> None:
+def test_nvmrc_names_the_estate_nodejs() -> None:
+    """Steward Story 149.2: pixi.toml declares the estate's one nodejs in its node feature, and .nvmrc names it."""
     root = _repo_root()
-    major = int((root / "docs-site" / ".nvmrc").read_text(encoding="utf-8").strip())
+    nvmrc = (root / "docs-site" / ".nvmrc").read_text(encoding="utf-8").strip()
     pixi = tomllib.loads((root / "pixi.toml").read_text(encoding="utf-8"))
-    pin: str = pixi["feature"]["python"]["dependencies"]["nodejs"]
-    assert pin.startswith(">=")
-    floor = int(pin.split(",")[0].removeprefix(">=").split(".")[0])
-    assert major >= floor
+    pin: str = pixi["feature"]["node"]["dependencies"]["nodejs"]
+    assert pin.endswith(".*")
+    assert nvmrc == pin.removesuffix(".*")
 
 
 def test_landing_and_404_pages_exist() -> None:

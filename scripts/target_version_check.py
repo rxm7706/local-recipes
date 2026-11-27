@@ -33,6 +33,12 @@ Then, against the declared ``X.Y`` (the minor version):
   floor ``pixi-build-python`` builds and installs each package against; Story
   124.3, decision D6). A drift names the file.
 
+And the platform's other two runtimes, the same way (Stories 149.2 and 149.3): ``[feature.node.dependencies]
+nodejs = "X.Y.Z.*"`` is the one nodejs declaration, every environment that locks nodejs lists the ``node``
+feature and locks that version, ``docs-site/.nvmrc`` and ``docs-site/package.json``'s ``engines.node`` name it,
+and no workflow uses ``actions/setup-node``; every environment that locks pixi locks the ``requires-pixi``
+version, the one ``pixi-version-check`` holds every pin site to.
+
 Expected values are derived from the pin, never hard-coded here.
 
 EXIT  0 clean · 1 drift · 2 could-not-run
@@ -42,6 +48,7 @@ from __future__ import annotations
 # Registry declaration -- see scripts/detectors.py. Tracked files only.
 DETECTOR = {"scope": "repo"}
 
+import json
 import re
 import sys
 import tomllib
@@ -55,6 +62,8 @@ _REQ_RE = re.compile(r">=?(\d+)\.(\d+)")
 
 
 INTERPRETER_FEATURE = "interpreter"
+NODE_FEATURE = "node"
+_REQUIRES_PIXI_RE = re.compile(r"^>=(\d+\.\d+\.\d+)$")
 ESTATE_PYTHON_ACTION = "./.github/actions/setup-estate-python"
 _DECLARED_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)\.\*$")
 _LOCK_ENV_RE = re.compile(r"^  ([A-Za-z0-9_-]+):$")
@@ -363,6 +372,11 @@ def findings_for_workflow(path: Path, rel: str, activating: set[str]) -> list[st
     out: list[str] = []
     for number, line in enumerate(lines, 1):
         stripped = line.strip().removeprefix("- ")
+        if stripped.startswith("uses: actions/setup-node@"):
+            out.append(
+                f"{rel}:{number} sets nodejs up with actions/setup-node; the estate's nodejs comes from its pixi "
+                f"environment ([feature.{NODE_FEATURE}.dependencies])"
+            )
         if stripped.startswith("uses: actions/setup-python@"):
             out.append(f"{rel}:{number} sets Python up with actions/setup-python; use {ESTATE_PYTHON_ACTION}")
     if path.name == "action.yml":
@@ -388,6 +402,90 @@ def findings_for_workflow(path: Path, rel: str, activating: set[str]) -> list[st
                     continue
                 if any(_RUNS_PYTHON_RE.match(c) for c in _run_lines(step)):
                     out.append(f"{rel}: job {job!r} runs python before it sets up the estate's Python")
+    return out
+
+
+def declared_node(data: dict) -> str | None:
+    """``X.Y.Z`` from ``[feature.node.dependencies] nodejs = "X.Y.Z.*"``, or ``None`` (Story 149.2)."""
+    feature = data.get("feature", {}).get(NODE_FEATURE, {})
+    deps = feature.get("dependencies") if isinstance(feature, dict) else None
+    spec = deps.get("nodejs") if isinstance(deps, dict) else None
+    m = _DECLARED_RE.match(str(spec) if spec is not None else "")
+    return ".".join(m.groups()) if m else None
+
+
+def declared_pixi(data: dict) -> str | None:
+    """``X.Y.Z`` from ``[workspace] requires-pixi = ">=X.Y.Z"``, the pixi every pin site holds (Story 149.3)."""
+    m = _REQUIRES_PIXI_RE.match(str(data.get("workspace", {}).get("requires-pixi", "")))
+    return m.group(1) if m else None
+
+
+def lock_versions(lock_text: str, package: str) -> dict[tuple[str, str], str]:
+    """``(environment, platform) -> version`` of one conda package in ``pixi.lock``'s environments section."""
+    pattern = re.compile(r"/" + re.escape(package) + r"-(\d+\.\d+\.\d+)-[^/]*\.(?:conda|tar\.bz2)$")
+    out: dict[tuple[str, str], str] = {}
+    env = platform = None
+    inside = False
+    for line in lock_text.splitlines():
+        if line.startswith("environments:"):
+            inside = True
+            continue
+        if line.startswith("packages:"):
+            break
+        if not inside:
+            continue
+        if m := _LOCK_ENV_RE.match(line):
+            env, platform = m.group(1), None
+        elif m := _LOCK_PLATFORM_RE.match(line):
+            platform = m.group(1)
+        elif env and platform and (m := pattern.search(line.strip())):
+            out[(env, platform)] = m.group(1)
+    return out
+
+
+def findings_for_runtimes(data: dict, lock_text: str, root: Path) -> list[str]:
+    """One nodejs and one pixi across the platform, as one Python is (Stories 149.2 and 149.3)."""
+    out: list[str] = []
+    node = declared_node(data)
+    if node is None:
+        out.append(f'pixi.toml has no nodejs = "X.Y.Z.*" under [feature.{NODE_FEATURE}.dependencies]')
+    else:
+        tables = _dependency_tables("", data)
+        for feature, body in data.get("feature", {}).items():
+            if feature != NODE_FEATURE and isinstance(body, dict):
+                tables.extend(_dependency_tables(f"feature.{feature}.", body))
+        for label, table in tables:
+            if isinstance(table, dict) and "nodejs" in table:
+                out.append(f"pixi.toml: {label} declares nodejs; only [feature.{NODE_FEATURE}.dependencies] may")
+        locked = lock_versions(lock_text, "nodejs")
+        out.extend(
+            f"pixi.lock: {env} on {platform} resolves nodejs {got}, pixi.toml declares {node}"
+            for (env, platform), got in sorted(locked.items())
+            if got != node
+        )
+        environments = data.get("environments", {})
+        for env in sorted({env for env, _ in locked}):
+            body = environments.get(env)
+            features = body if isinstance(body, list) else body.get("features", []) if isinstance(body, dict) else []
+            if NODE_FEATURE not in features:
+                out.append(f"pixi.toml: environment {env!r} locks nodejs but does not list the {NODE_FEATURE!r} feature")
+        nvmrc = root / "docs-site" / ".nvmrc"
+        if nvmrc.is_file() and nvmrc.read_text(encoding="utf-8").strip() != node:
+            out.append(f"docs-site/.nvmrc names {nvmrc.read_text(encoding='utf-8').strip()!r}, pixi.toml declares {node}")
+        package_json = root / "docs-site" / "package.json"
+        if package_json.is_file():
+            engines = json.loads(package_json.read_text(encoding="utf-8")).get("engines", {})
+            if engines.get("node") != node:
+                out.append(f"docs-site/package.json engines.node is {engines.get('node')!r}, pixi.toml declares {node}")
+    pixi = declared_pixi(data)
+    if pixi is None:
+        out.append('pixi.toml has no [workspace] requires-pixi = ">=X.Y.Z"')
+    else:
+        out.extend(
+            f"pixi.lock: {env} on {platform} resolves pixi {got}, requires-pixi is {pixi}"
+            for (env, platform), got in sorted(lock_versions(lock_text, "pixi").items())
+            if got != pixi
+        )
     return out
 
 
@@ -456,6 +554,9 @@ def main() -> int:
     for f in findings_for_lock(lock.read_text(encoding="utf-8"), version, environments):
         print(f"[target-version] drift -- pixi.lock: {f}")
         total += 1
+    for f in findings_for_runtimes(workspace, lock.read_text(encoding="utf-8"), ROOT):
+        print(f"[target-version] drift -- {f}")
+        total += 1
     activating = _activating_actions(github / "actions")
     for path in workflow_files:
         if path == estate_action:
@@ -474,7 +575,8 @@ def main() -> int:
         return 1
     print(
         f"[target-version] ok -- python {version} is declared once and every one of {len(environments)} "
-        f"environments locks it; {len(workflow_files)} workflow and action files set Python up only through "
+        f"environments locks it, as it does nodejs {declared_node(workspace)} and pixi {declared_pixi(workspace)}; "
+        f"{len(workflow_files)} workflow and action files set Python up only through "
         f"{ESTATE_PYTHON_ACTION}; {len(pyforge_pkgs)} pyforge-*, {len(django_pkgs)} django-*, "
         f"and src/platform target py{minor[0]}{minor[1]} / {minor[0]}.{minor[1]}, and "
         f"{len(pyforge_manifests)} package pixi.toml files hold python >={minor[0]}.{minor[1]}"

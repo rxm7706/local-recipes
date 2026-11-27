@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: eb638ce8595c511f
-story_count: 541
+source_fingerprint: ebcbe4c950697fa7
+story_count: 543
 test_file_count: 173
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 541
+- **Stories parsed:** 543
 - **Epics parsed:** 149
 - **Test files inventoried:** 173 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `eb638ce8595c511f`
+- **Source fingerprint:** `ebcbe4c950697fa7`
 
 ## Risk Assessment
 
@@ -169,7 +169,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 146: A plugin's registration name says whose it is (spec-pyforge-unifying-strategy:CAP-18, amended)
 - Epic 147: CAP-183 and CAP-185 read shipped (spec-pyforge-steward CAP-183, CAP-185)
 - Epic 148: The estate's Python and pixi are declared once and used everywhere (spec-pyforge-steward CAP-153)
-- Epic 149: The station packages build on the estate's Python (spec-pyforge-steward CAP-153)
+- Epic 149: The platform runs one pixi, one Python and one nodejs (spec-pyforge-steward CAP-153)
 
 ### Low-risk epics
 
@@ -909,6 +909,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 148.2 | pixi 0.85.0 at every pin site | none observed |
 | 148.3 | Every workflow sets Python up from the one declaration | none observed |
 | 149.1 | The station packages build on the declared Python, and the lock holds no other | none observed |
+| 149.2 | nodejs is declared once, and every environment that carries it locks that ver... | none observed |
+| 149.3 | Every environment that carries pixi locks the requires-pixi version | none observed |
 
 ## Quality Gates
 

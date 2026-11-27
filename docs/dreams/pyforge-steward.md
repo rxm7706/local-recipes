@@ -8645,3 +8645,19 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   pinned and once without. After the merge the main checkout's environments are installed again and its build
   cache cleared. **Constraints:** the declaration stays the one place the version is chosen; no environment's
   other packages move. No flag (chore). Owner `spec-pyforge-steward`.
+- **2026-11-27 (one pixi, one Python and one nodejs across the platform) — Found and ruled:** the same check for pixi
+  and nodejs. pixi was one version: 0.85.0 in all 44 environment-platform pairs that carry it, at every pin site
+  and in CI; only installs in the main checkout made before PR #2415 lag. nodejs was not. Four features declared
+  the range `>=24.19.0,<27.0,!=25.*`, six environments carried nodejs only because a package pulled it in, and the
+  lock held 24.21.0 (17 pairs), 26.10.0 (36) and 26.13.1 (5). CI's atlas job set Node 22 up beside pyforge-atlas's
+  own nodejs, `docs-site/.nvmrc` named 24, its `engines` `>=24`, and the operator's global nodejs tool is 25.7.0,
+  the non-LTS line the range excludes. **Ruled** (operator, 2026-11-27: "do the same check and confirmation for
+  pixi and nodejs", then "the entire platform should use a single version of pixi, python, and nodejs").
+  **For steward:** this entry binds `spec-pyforge-steward` CAP-153 (realized, no text change) and extends Epic 149:
+  nodejs is declared once, in a `node` feature every environment that carries it composes, at 24.22.3, the newest
+  24.x LTS release, because marp-cli 4.2.3 requires `nodejs >=24.4.1,<25` (a 26.13.1 declaration did not solve);
+  `.nvmrc`, `engines` and the pin policy name it, and the atlas job uses pyforge-atlas's nodejs (149.2); every
+  environment that carries pixi locks the `requires-pixi` version (149.3); `target-version-check` holds both.
+  **Constraints:** nodejs stays inside the operator's LTS range; no environment's other packages move except
+  nodejs's own libraries (a lock that took `bmad-module-skill-forge` 12.0.0, `playwright` 1.65.1 or `pnpm`
+  12.24.0 with it was locked again with each held, then released). No flag (chore). Owner `spec-pyforge-steward`.

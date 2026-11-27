@@ -116,7 +116,7 @@ Everything runs through pixi environments. Nothing here is installed globally.
 - `tomlkit <0.13.3` (dagster-dg-core pin), `structlog >24.2.0,<26` (xorq/BSL pin),
   `sqlglot >26.32.0,<28.7.0`.
 - LTS pins: `django 5.2.x`, `wagtail 7.4.x`, `coderedcms 6.x`, `channels 4.x`,
-  `daphne 4.x`, `nodejs 24.x or 26.x`.
+  `daphne 4.x`, `nodejs 24.22.3` (one version, the `node` feature).
 - `pydantic` is not pinned directly in root `pixi.toml` — it is present transitively in
   `local-recipes` (pydantic-ai, fastmcp, agno, etc. all pull pydantic v2) **and** is a
   direct run-dep of `pyforge-atlas`'s and `pyforge-scribe`'s own nested `pixi.toml`
@@ -146,7 +146,7 @@ is in its own `spec-kit` feature, which every one of those environments composes
   (moved from `local-recipes`, one declaration), so it reaches the laptop SBOM.
 - **uv** (>=0.13.0) — Rust-based, very fast pip/pip-tools replacement: `uv pip install`,
   `uv venv`, `uv pip compile` for lock-style resolution.
-- **nodejs** (>=24.19.0,<27.0,!=25.*; 24.x or 26.x LTS, 25.x excluded as Node's non-LTS release) — `node` / `npm` / `npx`; runtime for the JS tools below.
+- **nodejs** (24.22.3.*) — `node` / `npm` / `npx`; runtime for the JS tools below. Declared once, in the `node` feature every environment that carries nodejs composes (steward Story 149.2): the newest 24.x LTS release, inside the operator's range `>=24.19.0,<27.0,!=25.*`, because marp-cli 4.2.3 requires the 24 line.
 - **gh** (>=2.102.0) — GitHub CLI: PRs, issues, releases, `gh api` for raw REST/GraphQL,
   `gh pr checks`, workflow dispatch. The repo's primary GitHub automation surface.
 - **gitpython** (>=3.2.0) — `import git`; programmatic Git (repos, diffs, commits,
