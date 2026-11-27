@@ -144,3 +144,13 @@ def test_the_tracked_hetzner_config_uses_nics_branch_and_names_no_secret() -> No
     # Operator-owned values are named placeholders on a reserved TLD, never invented.
     assert document["domain"].endswith(".invalid")
     assert document["certificate"]["acme"]["email"].endswith(".invalid")
+
+
+def test_every_hook_type_is_named_where_a_reader_learns_the_hooks() -> None:
+    text = (ROOT / ".pre-commit-config.yaml").read_text(encoding="utf-8")
+    types = yaml.safe_load(text)["default_install_hook_types"]
+    assert types == ["pre-commit", "commit-msg", "pre-push"]
+    assert "either policy hook" not in text  # three hook types, not two
+    tutorial = (ROOT / "docs" / "tutorials" / "onboard-a-machine.md").read_text(encoding="utf-8")
+    samples = re.findall(r"git-hooks: installed in the shared hooks directory: (.+)", tutorial)
+    assert samples and all(sample.split(", ") == types for sample in samples)

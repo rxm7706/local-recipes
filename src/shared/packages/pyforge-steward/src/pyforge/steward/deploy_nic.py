@@ -48,9 +48,16 @@ _GITOPS_BRANCH_SHAPE = re.compile(r"gitops/[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*"
 GITOPS_DEPLOY_KEY = "GITOPS_DEPLOY_KEY"
 # The one auth a repository.existing config may name: nic's deploy key, which keys gates on its row.
 GITOPS_AUTH: dict[str, Any] = {"ssh": {"env": GITOPS_DEPLOY_KEY}}
-# The GitHub remote spellings compared with origin (owner and repository, case-insensitive).
+# A remote URL's scheme and userinfo (``user[:password]@``, a token included), stripped before
+# any comparison and never printed.
+_URL_SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*://")
+_URL_USERINFO = re.compile(r"^(?P<scheme>[A-Za-z][A-Za-z0-9+.-]*://)?[^/@\s]*@")
+# A scheme-less remote's host, an optional port, then its path (``host:path`` scp form included).
+_URL_HOST_PATH = re.compile(r"(?P<host>[^/:]*)(?::\d+(?=/))?[:/]?(?P<path>.*)")
+# The GitHub remote spellings compared with origin, userinfo stripped (owner and repository,
+# case-insensitive): ``github.com:o/r`` (scp form), ``ssh://github.com/o/r``, ``https://github.com/o/r``.
 _GITHUB_REMOTE = re.compile(
-    r"(?i)(?:git@github\.com:|ssh://git@github\.com/|https://github\.com/)([^/\s]+)/([^/\s]+?)(?:\.git)?/?"
+    r"(?i)(?:github\.com:|ssh://github\.com/|https://github\.com/)([^/\s?#]+)/([^/\s?#]+?)(?:\.git)?/?"
 )
 JOURNAL_RELATIVE = Path(".steward/nic-deploy.jsonl")
 DOTENV_RELATIVE = Path(".env")
@@ -343,24 +350,20 @@ def existing_repository_branch(document: Mapping[str, Any]) -> str | None:
     return branch if isinstance(branch, str) else ""
 
 
-def _project_name(document: Mapping[str, Any]) -> str | None:
-    """The config's ``project_name``, as ``gitops_root_for`` reads it, or ``None`` when it names none."""
-    project = document.get("project_name")
-    return project.strip() if isinstance(project, str) and project.strip() else None
-
-
-def gitops_branch_problem(branch: str, project_name: str | None) -> str | None:
+def gitops_branch_problem(branch: str, project_name: str) -> str | None:
     """Why ``branch`` is not the cloud GitOps branch, or ``None`` when it is (Story 118.9 AC2).
 
     The raw value must be ``gitops/`` and ref-safe segments (no whitespace, ``:``, empty segment,
-    ``..``, leading-``.`` segment or ``.lock`` suffix), and ``gitops/<project_name>`` exactly when
-    the config names a project.
+    ``..``, segment starting or ending with ``.``, or ``.lock`` suffix), and exactly
+    ``gitops/<project_name>``.
     """
     if not _GITOPS_BRANCH_SHAPE.fullmatch(branch):
         return f"is not a {GITOPS_BRANCH_PREFIX}<name> ref name"
-    if ".." in branch or any(part.startswith(".") or part.endswith(".lock") for part in branch.split("/")):
+    if ".." in branch or any(
+        part.startswith(".") or part.endswith(".") or part.endswith(".lock") for part in branch.split("/")
+    ):
         return "is not a valid ref name"
-    if project_name is not None and branch != f"{GITOPS_BRANCH_PREFIX}{project_name}":
+    if branch != f"{GITOPS_BRANCH_PREFIX}{project_name}":
         return f"is not {GITOPS_BRANCH_PREFIX}{project_name}, the branch project_name {project_name!r} names"
     return None
 
@@ -388,8 +391,14 @@ def refuse_gitops_branch(document: Mapping[str, Any]) -> DutyResult | None:
         return _usage_refusal(
             f"deploy nic: refused — {NKP_GITOPS_BRANCH_FLAG} is off, so no repository.existing config runs"
         )
+    project = document.get("project_name")
+    if not isinstance(project, str) or not project or project != project.strip():
+        return _usage_refusal(
+            "deploy nic: refused — a repository.existing config needs project_name, a non-empty string with no "
+            "surrounding whitespace; its branch is exactly gitops/<project_name>"
+        )
     branch = existing_repository_branch(document) or ""
-    problem = gitops_branch_problem(branch, _project_name(document))
+    problem = gitops_branch_problem(branch, project)
     if problem is not None:
         return _usage_refusal(
             f"deploy nic: refused — repository.existing.branch {branch!r} {problem}; "
@@ -404,10 +413,30 @@ def refuse_gitops_branch(document: Mapping[str, Any]) -> DutyResult | None:
     return None
 
 
+def _without_userinfo(url: str) -> str:
+    """``url`` with any ``user[:password]@`` removed (a token-bearing remote included)."""
+    return _URL_USERINFO.sub(lambda match: match["scheme"] or "", url.strip(), count=1)
+
+
 def github_owner_repo(url: str) -> tuple[str, str] | None:
-    """``(owner, repo)`` lower-cased from a GitHub remote URL, ``None`` for any other URL."""
-    match = _GITHUB_REMOTE.fullmatch(url.strip())
+    """``(owner, repo)`` lower-cased from a GitHub remote URL (userinfo ignored), ``None`` for any other URL."""
+    match = _GITHUB_REMOTE.fullmatch(_without_userinfo(url))
     return (match[1].lower(), match[2].lower()) if match else None
+
+
+def shown_remote(url: object) -> str:
+    """What a refusal may print of a remote URL: host/owner/repo only, never userinfo, a query or a raw URL."""
+    from .keys import redact_secret_shapes
+
+    if not isinstance(url, str) or not url.strip():
+        return "(none)"
+    bare = re.split(r"[?#]", _URL_SCHEME.sub("", _without_userinfo(url)), maxsplit=1)[0]
+    split = _URL_HOST_PATH.match(bare)
+    host, path = (split["host"], split["path"]) if split else ("", bare)
+    parts = [part for part in [host, *path.split("/")] if part][:3]
+    if parts:
+        parts[-1] = parts[-1].removesuffix(".git")
+    return redact_secret_shapes("/".join(parts)) or "(none)"
 
 
 def refuse_foreign_repository(deps: NicDeps, document: Mapping[str, Any]) -> DutyResult | None:
@@ -423,20 +452,21 @@ def refuse_foreign_repository(deps: NicDeps, document: Mapping[str, Any]) -> Dut
     named = github_owner_repo(url) if isinstance(url, str) else None
     if named is None:
         return _usage_refusal(
-            f"deploy nic: refused — repository.existing.url {url!r} is not a GitHub repository URL steward can "
-            "compare with origin"
+            f"deploy nic: refused — repository.existing.url ({shown_remote(url)}) is not a GitHub repository URL "
+            "steward can compare with origin"
         )
     origin = deps.origin_url(deps.root)
     ours = github_owner_repo(origin) if origin else None
     if ours is None:
         return _usage_refusal(
-            f"deploy nic: refused — origin's URL {origin!r} is not a GitHub repository steward can compare with "
-            "repository.existing.url, so the post-up scan could not read the branch nic pushes"
+            f"deploy nic: refused — origin ({shown_remote(origin)}) is not a GitHub repository steward can compare "
+            "with repository.existing.url, so the post-up scan could not read the branch nic pushes"
         )
     if named != ours:
         return _usage_refusal(
-            f"deploy nic: refused — repository.existing.url names {'/'.join(named)}, but origin is "
-            f"{'/'.join(ours)}; the post-up scan reads origin, so the cloud GitOps source must be origin's repository"
+            f"deploy nic: refused — repository.existing.url names {shown_remote('github.com/' + '/'.join(named))}, "
+            f"but origin is {shown_remote('github.com/' + '/'.join(ours))}; the post-up scan reads origin, so the "
+            "cloud GitOps source must be origin's repository"
         )
     return None
 
@@ -461,7 +491,8 @@ def scan_gitops_range(deps: NicDeps, branch: str) -> DutyResult | None:
     """Story 118.9 AC4: after a cloud ``up``, scan ``origin/main..origin/<branch>`` for a secret-shaped value.
 
     ``nic`` commits the cloud tree inside its own clone, so no hook of ours sees it; this reads the
-    pushed range back. A range that cannot be read fails closed. Returns ``None`` when clean.
+    pushed range back. A range that cannot be read fails closed (``details["range_unreadable"]``).
+    Returns ``None`` when clean.
     """
     from .cli import EXIT_FAILED
     from .keys import scan_text_for_secrets
@@ -507,7 +538,7 @@ def scan_gitops_range(deps: NicDeps, branch: str) -> DutyResult | None:
         return DutyResult(
             ok=False,
             summary=f"deploy nic up: the secret scan could not read {span} (git exited {log.returncode})",
-            details={"exit_code": EXIT_FAILED},
+            details={"exit_code": EXIT_FAILED, "range_unreadable": True},
         )
     findings = scan_text_for_secrets(log.stdout or "", span)
     if not findings:
@@ -592,10 +623,15 @@ def run_nic(deps: NicDeps, *, action: str, config: Path, yes: bool = False) -> D
         details["exit_code"] = proc.returncode
     result = DutyResult(ok=proc.returncode == 0, summary=summary, details=details)
     branch = existing_repository_branch(document)
-    if action == "up" and proc.returncode == 0 and branch:
+    if action == "up" and branch:
+        # Whatever nic exited: a failed up may still have pushed part of the branch. A finding is
+        # exit 1 either way; a range nic never pushed cannot be read, and then nic's own code stands.
         leaked = scan_gitops_range(deps, branch)
         if leaked is not None:
-            return leaked
+            leaked_details = dict(leaked.details or {})
+            if proc.returncode != 0 and leaked_details.get("range_unreadable"):
+                leaked_details["exit_code"] = proc.returncode
+            return DutyResult(ok=False, summary=f"{summary}; {leaked.summary}", details={**details, **leaked_details})
     if action == "up" and proc.returncode == 0:
         from .deploy_nic_packs import PackDeps, _Completed, apply_nkp_packs
 

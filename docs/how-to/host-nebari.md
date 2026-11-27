@@ -84,11 +84,12 @@ only `nic` writes that branch, under its own deploy key. What holds before anyth
 
 - **The branch.** Every `deploy nic` action (`validate`, `up`, `kubeconfig`, `outputs`, `down`) refuses,
   with usage code 2 and before `nic` starts: a config on any provider but local kind with no
-  `repository.existing`; a `repository.existing` whose branch, read as written, is not exactly
-  `gitops/<project_name>` (`main`, `feature/x`, a `..`, a space, a `:` or another project's name
+  `repository.existing`; a `repository.existing` with no `project_name` (or an empty one, or one with
+  surrounding whitespace); one whose branch, read as written, is not exactly `gitops/<project_name>`
+  (`main`, `feature/x`, a `..`, a space, a `:`, a segment ending in `.` or another project's name
   included); one whose auth is anything but `auth.ssh.env: GITOPS_DEPLOY_KEY` (another env name or a
   token); and one whose `url` names another GitHub repository than `origin` (the post-`up` scan reads
-  `origin`). The kill switch `pyforge.steward.nkp_gitops_branch` (ON everywhere) refuses every
+  `origin`; a `user:token@` in either URL is ignored for the comparison and never printed). The kill switch `pyforge.steward.nkp_gitops_branch` (ON everywhere) refuses every
   `repository.existing` config when OFF; kind's `repository.local` is unaffected.
 - **The consent.** `up` on any provider but local kind refuses without `--yes`. The `--yes` is the
   operator's: the session hook denies it to an agent (`session_denials` `steward-deploy-nic-up-yes`).
@@ -100,16 +101,21 @@ only `nic` writes that branch, under its own deploy key. What holds before anyth
   so the session hook denies its deletion. The declared `protected-refs-gitops-branches` ruleset in
   `docs/governance/rulesets/protected-refs.json` refuses creation, update, deletion and force-push with
   one bypass actor, the repository's deploy keys. GitHub's `DeployKey` actor admits every deploy key, so
-  `GITOPS_DEPLOY_KEY` must be the repository's only write-enabled deploy key; the live check
-  (`pixi run -e pyforge-guild protected-refs-ruleset-check`) reports a second one. Until the operator
+  `GITOPS_DEPLOY_KEY` must be the repository's only write-enabled deploy key, and the operator titles it
+  `GITOPS_DEPLOY_KEY` on the repository; the live check
+  (`pixi run -e pyforge-guild protected-refs-ruleset-check`) reports a second one, or a sole one titled
+  otherwise (a key GitHub does not report as `read_only` counts as write-enabled). Until the operator
   applies the ruleset, that check exits 1 naming the missing `protected-refs-gitops-branches`.
 - **No secret.** The pre-commit hook `nic-config-secret-scan` refuses (exit 1) a staged file under
   `src/platform/deploy/nic/` that matches the `steward keys audit --secrets` pattern table: an
-  Anthropic API key, an age identity, a PEM private-key header in any case, a base64-encoded PEM
-  block, a GitHub classic or fine-grained token, or a Hetzner-shaped 64-character mixed-case token.
-  An `env:` name and a lowercase `sha256:` digest pass. `up` refuses its own kind GitOps commit on
-  the same table, scans `origin/main..origin/gitops/<project_name>` after a cloud `up` (exit 1 on a
-  finding or an unreadable range), and the verb's summary carries `nic`'s last line only redacted.
+  Anthropic API key, an age identity, a PEM private-key header in any case (a PGP private key block
+  included), a base64-encoded PEM block that is not public (a certificate, public key, CRL or
+  certificate request passes), a GitHub classic or fine-grained token, or a Hetzner-shaped
+  64-character mixed-case token. An `env:` name, a lowercase `sha256:` digest and an SRI
+  `sha256-`/`sha384-`/`sha512-` value pass. `up` refuses its own kind GitOps commit on the same
+  table, and scans `origin/main..origin/gitops/<project_name>` after every cloud `up`, whatever `nic`
+  exited: exit 1 on a finding; an unreadable range is exit 1 after a successful `nic deploy` and keeps
+  `nic`'s own code after a failed one. The verb's summary carries `nic`'s last line only redacted.
   Run the hook by hand with `pixi run -e pyforge-guild python scripts/nic_config_secret_scan.py
   <file>`; `pre-commit install` (through `steward setup`) installs it on a machine, and `steward
   init` reports a machine without it.
@@ -117,7 +123,7 @@ only `nic` writes that branch, under its own deploy key. What holds before anyth
 Operator-owned before `pixi run -e pyforge-steward pyforge steward deploy nic up -f src/platform/deploy/nic/my-nebari-hetzner.yaml --yes`,
 named here and in the profile's header, never in git: the domain with DNS (replace
 `operator-owned-domain.invalid`) and the Let's Encrypt contact; `GITOPS_DEPLOY_KEY` (created on the
-repository as its only write-enabled deploy key, its age payload mapped in `.env`, its inventory row);
+repository as its only write-enabled deploy key, titled `GITOPS_DEPLOY_KEY`, its age payload mapped in `.env`, its inventory row);
 the Hetzner API token `nic` reads (`HETZNER_TOKEN`); and the live ruleset. `validate` on the tracked
 profile refuses with usage code 2 until the inventory row exists, and reaches no cloud.
 

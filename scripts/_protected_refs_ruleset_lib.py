@@ -281,12 +281,25 @@ def declares_deploy_key_bypass(declared: dict[str, dict[str, Any]]) -> bool:
     )
 
 
+# The title the operator gives nic's deploy key on the repository (Story 118.9 AC1, 118.3 AC1).
+GITOPS_DEPLOY_KEY_TITLE = "GITOPS_DEPLOY_KEY"
+
+
 def deploy_key_findings(keys: list[dict[str, Any]]) -> list[str]:
-    """A ``DeployKey`` bypass admits every deploy key, so at most one may write (Story 118.9)."""
-    writers = sorted(str(key.get("title", key.get("id"))) for key in keys if key.get("read_only") is False)
-    if len(writers) <= 1:
-        return []
-    return [
-        f"{len(writers)} write-enabled deploy keys ({', '.join(writers)}); the DeployKey bypass admits each, "
-        "so GITOPS_DEPLOY_KEY must be the only one"
-    ]
+    """A ``DeployKey`` bypass admits every deploy key, so at most one may write, ``GITOPS_DEPLOY_KEY`` (Story 118.9).
+
+    A key counts as write-enabled unless GitHub reports ``read_only: true``: a missing or
+    unexpected value fails closed.
+    """
+    writers = sorted(str(key.get("title", key.get("id"))) for key in keys if key.get("read_only") is not True)
+    if len(writers) > 1:
+        return [
+            f"{len(writers)} write-enabled deploy keys ({', '.join(writers)}); the DeployKey bypass admits each, "
+            f"so {GITOPS_DEPLOY_KEY_TITLE} must be the only one"
+        ]
+    if writers and writers[0] != GITOPS_DEPLOY_KEY_TITLE:
+        return [
+            f"the one write-enabled deploy key is titled {writers[0]!r}, not {GITOPS_DEPLOY_KEY_TITLE!r}; the "
+            "DeployKey bypass admits it, so it must be nic's deploy key, titled so"
+        ]
+    return []

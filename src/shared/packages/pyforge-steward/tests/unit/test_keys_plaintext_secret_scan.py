@@ -195,8 +195,94 @@ def test_redaction_masks_a_pem_header_to_the_end_of_its_line():
 def test_redaction_masks_a_resolved_multiline_value_whole_escaped_and_line_by_line():
     from pyforge.steward.keys import redact_secret_shapes
 
+    # A PEM key escaped onto one line is masked from its header to the end of the line.
     escaped = _MULTILINE_KEY.replace("\n", "\\n")
-    assert redact_secret_shapes(f"x {escaped} y", (_MULTILINE_KEY,)) == "x *** y"
+    assert redact_secret_shapes(f"x {escaped} y", (_MULTILINE_KEY,)) == "x ***"
+    # A multi-line value with no PEM header is masked whole in its escaped form, and nothing more.
+    opaque = "synthetic-line-one\nsynthetic-line-two"
+    assert redact_secret_shapes(f"x {opaque.replace(chr(10), chr(92) + 'n')} y", (opaque,)) == "x *** y"
     assert redact_secret_shapes(f"bad line {_KEY_BODY}", (_MULTILINE_KEY,)) == "bad line ***"
     # A line shorter than eight characters is not masked on its own (it would mask ordinary words).
     assert redact_secret_shapes("ok short", ("ab\nshort",)) == "ok short"
+
+
+# --- Story 118.9 second review: redaction order, short values, public PEM and SRI values ---
+
+
+def test_redaction_masks_a_json_dumped_key_with_escaped_slashes_before_any_literal_mask():
+    import json
+
+    from pyforge.steward.keys import redact_secret_shapes
+
+    body = "b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQ/AAAAAAAAABAAAAMwAAAA+tzc2gt/ZW"
+    key = f"-----BEGIN OPENSSH PRIVATE KEY-----\n{body}\n-----END OPENSSH PRIVATE KEY-----\n"
+    line = "error " + json.dumps({"key": key}).replace("/", "\\/")
+    out = redact_secret_shapes(line, (key,))
+    assert out == 'error {"key": "***'
+    for fragment in ("b3BlbnNzaC1rZXkt", "tzc2gt", "AAAAMwAAAA"):
+        assert fragment not in out
+
+
+def test_a_resolved_value_under_four_characters_is_not_masked_literally():
+    from pyforge.steward.keys import redact_secret_shapes
+
+    assert redact_secret_shapes("a banana at noon", ("a",)) == "a banana at noon"
+    assert redact_secret_shapes("pin 1234 ok", ("1234",)) == "pin *** ok"
+
+
+def _b64(text: str) -> str:
+    import base64
+
+    return base64.b64encode(text.encode()).decode()
+
+
+@pytest.mark.parametrize(
+    "header",
+    [
+        "RSA PRIVATE KEY",
+        "OPENSSH PRIVATE KEY",
+        "EC PRIVATE KEY",
+        "PRIVATE KEY",
+        "ENCRYPTED PRIVATE KEY",
+        "PGP PRIVATE KEY BLOCK",
+    ],
+)
+def test_a_base64_private_key_block_is_found(header: str):
+    from pyforge.steward.keys import scan_text_for_secrets
+
+    encoded = _b64(f"-----BEGIN {header}-----\nSYNTHETIC\n-----END {header}-----\n")
+    assert [f.pattern_name for f in scan_text_for_secrets(f"client-key-data: {encoded}", "x")] == ["pem-block-base64"]
+
+
+@pytest.mark.parametrize(
+    "header",
+    [
+        "CERTIFICATE",
+        "PUBLIC KEY",
+        "RSA PUBLIC KEY",
+        "X509 CRL",
+        "TRUSTED CERTIFICATE",
+        "NEW CERTIFICATE REQUEST",
+        "CERTIFICATE REQUEST",
+        "PGP PUBLIC KEY BLOCK",
+    ],
+)
+def test_a_base64_public_block_is_not_secret_shaped(header: str):
+    from pyforge.steward.keys import scan_text_for_secrets
+
+    encoded = _b64(f"-----BEGIN {header}-----\nSYNTHETIC\n-----END {header}-----\n")
+    assert scan_text_for_secrets(f"certificate-authority-data: {encoded}", "x") == []
+
+
+def test_a_pgp_private_key_block_header_is_found():
+    from pyforge.steward.keys import scan_text_for_secrets
+
+    found = scan_text_for_secrets("-----BEGIN PGP PRIVATE KEY BLOCK-----", "x")
+    assert [f.pattern_name for f in found] == ["pem-private-key-header"]
+
+
+@pytest.mark.parametrize("algorithm", ["sha256", "sha384", "sha512"])
+def test_an_sri_value_is_not_hetzner_shaped(algorithm: str):
+    from pyforge.steward.keys import scan_text_for_secrets
+
+    assert scan_text_for_secrets(f'"integrity": "{algorithm}-{_HETZNER_SHAPED}"', "x") == []

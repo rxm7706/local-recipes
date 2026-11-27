@@ -118,7 +118,7 @@ desktop - a clone, the environments, the station CLIs, the tests and the full pr
   ok      gh: gh 2.102.0
   ok      gh-auth: gh authenticated; 4988 API calls remaining
   ok      git-identity: set: user.name, user.email
-  ok      git-hooks: installed in the shared hooks directory: commit-msg, pre-push
+  ok      git-hooks: installed in the shared hooks directory: pre-commit, commit-msg, pre-push
   WARN    locale-utf8: the locale does not name UTF-8 (LC_ALL=unset, LC_CTYPE=C.UTF-8, LANG=unset)
           remedy (operator): export LANG=en_US.UTF-8
           note: add the line to the shell profile so every new shell has it

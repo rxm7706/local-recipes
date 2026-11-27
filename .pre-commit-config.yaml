@@ -2,7 +2,7 @@
 # `steward setup` / `initrepo` install them through `pre-commit install`;
 # `default_install_hook_types` makes that bare call install the stages
 # below. `pixi run -e pyforge-guild precommit-config-check` (detectors-ci)
-# reds this file going missing or losing either policy hook. Every hook is `language: script` on
+# reds this file going missing or losing any policy hook. Every hook is `language: script` on
 # purpose: pre-commit stashes unstaged changes while a hook runs, so a hook that invoked pixi
 # could re-sync an env against a momentarily reverted pixi.lock (seen 2026-09-20).
 # The pre-commit stage carries one hook (steward Story 118.9, spec-pyforge-steward CAP-178): no

@@ -407,3 +407,20 @@ def test_the_deploy_key_read_pages_through_every_key() -> None:
     assert detector._concatenated_pages("[1] {")[0] is None
     assert detector._concatenated_pages('{"a": 1}{"b": 2}') == (None, "paginated response was not arrays")
     assert detector._concatenated_pages("") == (None, "gh api returned no page")
+
+
+def test_a_deploy_key_counts_as_write_enabled_unless_github_says_read_only() -> None:
+    lib = _load_lib()
+    writer = {"title": "GITOPS_DEPLOY_KEY", "read_only": False}
+    assert lib.deploy_key_findings([writer]) == []
+    for unknown in ({"title": "no-flag"}, {"title": "null-flag", "read_only": None}, {"title": "odd", "read_only": "no"}):
+        (finding,) = lib.deploy_key_findings([writer, unknown])
+        assert "2 write-enabled deploy keys" in finding and unknown["title"] in finding
+
+
+def test_the_one_write_enabled_deploy_key_must_be_titled_gitops_deploy_key() -> None:
+    lib = _load_lib()
+    (finding,) = lib.deploy_key_findings([{"title": "laptop", "read_only": False}, {"title": "ro", "read_only": True}])
+    assert "'laptop'" in finding and "'GITOPS_DEPLOY_KEY'" in finding
+    assert lib.deploy_key_findings([{"title": "GITOPS_DEPLOY_KEY", "read_only": False}]) == []
+    assert lib.deploy_key_findings([{"title": "ro", "read_only": True}]) == []

@@ -336,6 +336,9 @@ def _origin(_root: Path) -> str:
     return ORIGIN
 
 
+_NO_PROJECT = object()
+
+
 def _existing_config(
     tmp_path: Path,
     branch: str,
@@ -343,16 +346,18 @@ def _existing_config(
     cluster: dict | None = None,
     auth: dict | None = DEPLOY_KEY_AUTH,
     url: str = ORIGIN,
+    project_name: object = "my-nebari-hetzner",
 ) -> Path:
     existing: dict = {"url": url, "branch": branch, "path": f"gitops/{branch}"}
     if auth is not None:
         existing["auth"] = auth
-    document = {
-        "project_name": "my-nebari-hetzner",
+    document: dict = {
         "domain": "example.invalid",
         "repository": {"existing": existing},
         "cluster": cluster if cluster is not None else {"hetzner": {"location": "ash"}},
     }
+    if project_name is not _NO_PROJECT:
+        document["project_name"] = project_name
     path = tmp_path / "my-nebari-hetzner.yaml"
     path.write_text(yaml.safe_dump(document), encoding="utf-8")
     return path
@@ -825,3 +830,128 @@ def test_a_cloud_config_without_repository_existing_is_refused(
     result = run_nic(_recording_deps(tmp_path, calls), action=action, config=config, yes=True)
     assert (result.ok, result.details["exit_code"], calls) == (False, EXIT_USAGE, [])
     assert "needs repository.existing" in result.summary
+
+
+# --- Story 118.9 second review ---------------------------------------------------------------------
+
+# Synthetic, word-marked credentials, assembled at run time: never a real token.
+_GH_TOKEN = "ghp_" + "Synthetic0Fake0Placeholder0NotReal00"
+_PASSWORD = "hunter2-not-a-real-password"
+
+
+def test_a_token_bearing_origin_of_the_right_repository_is_accepted(tmp_path: Path, gitops_ready: None) -> None:
+    deps = _recording_deps(tmp_path, [])
+    deps.origin_url = lambda _root: f"https://x-access-token:{_GH_TOKEN}@github.com/org/repo.git"
+    result = run_nic(deps, action="validate", config=_existing_config(tmp_path, "gitops/my-nebari-hetzner"))
+    assert result.ok is True, result.summary
+
+
+@pytest.mark.parametrize(
+    ("origin", "url"),
+    [
+        (f"https://x-access-token:{_GH_TOKEN}@github.com/other/repo.git", ORIGIN),
+        (f"https://oauth2:{_PASSWORD}@gitlab.com/org/repo.git", ORIGIN),
+        (ORIGIN, f"https://deploy:{_PASSWORD}@gitlab.com/org/repo.git"),
+        (ORIGIN, f"https://x-access-token:{_GH_TOKEN}@github.com/org/other.git?access_token={_PASSWORD}"),
+    ],
+    ids=["origin-token-other-repo", "origin-token-not-github", "url-password-not-github", "url-token-other-repo"],
+)
+def test_a_url_refusal_never_prints_a_credential(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, origin: str, url: str
+) -> None:
+    _flag_on(monkeypatch)
+    calls: list[list[str]] = []
+    deps = _recording_deps(tmp_path, calls)
+    deps.origin_url = lambda _root: origin
+    result = run_nic(deps, action="validate", config=_existing_config(tmp_path, "gitops/my-nebari-hetzner", url=url))
+    assert (result.ok, result.details["exit_code"], calls) == (False, EXIT_USAGE, [])
+    for secret in (_GH_TOKEN, _PASSWORD, "x-access-token", "oauth2:", "@"):
+        assert secret not in result.summary
+
+
+@pytest.mark.parametrize("nic_exit", [1, 3])
+def test_a_failed_cloud_up_is_still_scanned_and_a_finding_is_exit_one(
+    tmp_path: Path, gitops_ready: None, nic_exit: int
+) -> None:
+    calls: list[list[str]] = []
+    log = _Proc(stdout="commit abc\n+key: -----BEGIN OPENSSH PRIVATE KEY-----\n")
+    deps = _recording_deps(tmp_path, calls, nic=_Proc(returncode=nic_exit, stderr="apply failed\n"), log=log)
+    result = run_nic(deps, action="up", config=_existing_config(tmp_path, "gitops/my-nebari-hetzner"), yes=True)
+    assert result.ok is False
+    assert result.details["exit_code"] == 1
+    assert f"nic deploy exited {nic_exit}" in result.summary and "pem-private-key-header" in result.summary
+
+
+def test_an_unreadable_range_after_a_failed_up_keeps_nics_code(tmp_path: Path, gitops_ready: None) -> None:
+    calls: list[list[str]] = []
+    deps = _recording_deps(
+        tmp_path, calls, nic=_Proc(returncode=3, stderr="push failed\n"), fetch=_Proc(returncode=128, stderr="fatal")
+    )
+    result = run_nic(deps, action="up", config=_existing_config(tmp_path, "gitops/my-nebari-hetzner"), yes=True)
+    assert result.ok is False
+    assert result.details["exit_code"] == 3
+    assert "nic deploy exited 3" in result.summary and "could not read" in result.summary
+    assert any(argv[:2] == ["git", "fetch"] for argv in calls)
+
+
+def test_a_clean_range_after_a_failed_up_keeps_nics_code(tmp_path: Path, gitops_ready: None) -> None:
+    calls: list[list[str]] = []
+    deps = _recording_deps(tmp_path, calls, nic=_Proc(returncode=3, stderr="apply failed\n"))
+    result = run_nic(deps, action="up", config=_existing_config(tmp_path, "gitops/my-nebari-hetzner"), yes=True)
+    assert (result.ok, result.details["exit_code"]) == (False, 3)
+    assert any(argv[:2] == ["git", "log"] for argv in calls)
+
+
+_SLASHED_BODY = "b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQ/AAAAAAAAABAAAAMwAAAA+tzc2gt/ZW"
+_SLASHED_KEY = f"-----BEGIN OPENSSH PRIVATE KEY-----\n{_SLASHED_BODY}\n-----END OPENSSH PRIVATE KEY-----\n"
+
+
+def test_a_json_dumped_key_with_escaped_slashes_leaves_no_body_in_the_summary(
+    tmp_path: Path, gitops_ready: None
+) -> None:
+    escaped = json.dumps({"key": _SLASHED_KEY}).replace("/", "\\/")
+    calls: list[list[str]] = []
+    deps = _recording_deps(tmp_path, calls, nic=_Proc(returncode=1, stderr=f"first\nbad config {escaped}\n"))
+    deps.decrypt = lambda _age, _id: _SLASHED_KEY
+    result = run_nic(deps, action="validate", config=_deploy_key_config(tmp_path))
+    for fragment in ("b3BlbnNzaC1rZXkt", "tzc2gt", "AAAAMwAAAA", "PRIVATE KEY"):
+        assert fragment not in result.summary
+    assert "bad config" in result.summary
+
+
+@pytest.mark.parametrize(
+    "project_name",
+    [_NO_PROJECT, "", 5, None, " my-nebari-hetzner ", "my-nebari-hetzner "],
+    ids=["missing", "empty", "not-a-string", "null", "surrounding-whitespace", "trailing-whitespace"],
+)
+@pytest.mark.parametrize("action", ["validate", "up"])
+def test_a_repository_existing_config_needs_a_project_name_as_written(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, project_name: object, action: str
+) -> None:
+    _flag_on(monkeypatch)
+    calls: list[list[str]] = []
+    config = _existing_config(tmp_path, "gitops/my-nebari-hetzner", project_name=project_name)
+    result = run_nic(_recording_deps(tmp_path, calls), action=action, config=config, yes=True)
+    assert (result.ok, result.details["exit_code"], calls) == (False, EXIT_USAGE, [])
+    assert "project_name" in result.summary
+
+
+def test_a_branch_segment_ending_in_a_dot_is_refused(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _flag_on(monkeypatch)
+    calls: list[list[str]] = []
+    config = _existing_config(tmp_path, "gitops/my-nebari-hetzner.", project_name="my-nebari-hetzner.")
+    result = run_nic(_recording_deps(tmp_path, calls), action="validate", config=config)
+    assert (result.ok, result.details["exit_code"], calls) == (False, EXIT_USAGE, [])
+    assert "is not a valid ref name" in result.summary
+
+
+def test_a_url_with_a_query_is_not_a_github_repository_url() -> None:
+    from pyforge.steward.deploy_nic import github_owner_repo, shown_remote
+
+    assert github_owner_repo("https://github.com/org/repo.git?ref=x") is None
+    assert github_owner_repo(f"https://user:{_PASSWORD}@github.com/Org/Repo") == ("org", "repo")
+    assert github_owner_repo("git@github.com:org/repo.git") == ("org", "repo")
+    assert shown_remote(f"https://user:{_PASSWORD}@gitlab.com:8443/o/r.git?t={_PASSWORD}#x") == "gitlab.com/o/r"
+    assert shown_remote(None) == "(none)"
+    assert shown_remote("git@github.com:org/repo.git") == "github.com/org/repo"
+    assert shown_remote("/srv/mirror/repo.git") == "srv/mirror/repo"

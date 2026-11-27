@@ -540,24 +540,35 @@ class PlaintextSecretFinding:
 
 
 # Story 118.9 (spec-pyforge-steward CAP-178) adds the shapes a cloud GitOps run can leak: a
-# PEM header in any case; a base64-encoded PEM block (`-----BEGIN` encodes to `LS0tLS1CRUdJ`
-# then `Ti`, written with a one-letter class so this table never matches its own source);
-# GitHub tokens; and a Hetzner API token: exactly 64 alphanumerics with both cases, so a
-# lowercase-hex sha256 digest never matches, and not bordered by `+`, `/` or a trailing `=`,
-# so a run inside a base64 string (a lock file's sha512 integrity) never matches either.
+# PEM private-key header in any case (a PGP `PRIVATE KEY BLOCK` included); a base64-encoded
+# PEM block (`-----BEGIN` encodes to `LS0tLS1CRUdJ` then `Ti`, written with a one-letter class
+# so this table never matches its own source) unless what follows encodes a public type (a
+# certificate, a public key, a CRL, a certificate request, a PGP public block); GitHub tokens;
+# and a Hetzner API token: exactly 64 alphanumerics with both cases, so a lowercase-hex sha256
+# digest never matches, not bordered by `+`, `/` or a trailing `=`, so a run inside a base64
+# string never matches, and not after an SRI `sha256-`/`sha384-`/`sha512-` (a sha384 is 64).
 # Flags are inline (`(?i)`), never a `flags=` argument: `scripts/nic_config_secret_scan.py`
 # reads this table from source and refuses any argument beyond the pattern.
 _SECRET_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("anthropic-api-key", re.compile(r"sk-ant-[A-Za-z0-9_-]{20,}")),
     ("age-identity", re.compile(r"AGE-SECRET-KEY-1[A-Z0-9]{20,}")),
-    ("pem-private-key-header", re.compile(r"(?i)-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----")),
-    ("pem-block-base64", re.compile(r"LS0tLS1CRUdJ[T]i")),
+    ("pem-private-key-header", re.compile(r"(?i)-----BEGIN [A-Z0-9 ]*PRIVATE KEY(?: BLOCK)?-----")),
+    (
+        "pem-block-base64",
+        # The lookahead is the base64 of ` CERTIFICAT`, ` PUBLIC KEY`, ` RSA PUBLIC KE`, ` X509 CR`,
+        # ` TRUSTED CERTIFICATE`, ` NEW CERTIFICATE REQUES` and ` PGP PUBLIC KEY BLOC` after `-----BEGIN`.
+        re.compile(
+            r"LS0tLS1CRUdJ[T]i(?!BDRVJUSUZJQ0FU|BQVUJMSUMgS0VZ|BSU0EgUFVCTElDIEtF|BYNTA5IENS"
+            r"|BUUlVTVEVEIENFUlRJRklDQVRF|BORVcgQ0VSVElGSUNBVEUgUkVRVUVT|BQR1AgUFVCTElDIEtFWSBCTE9D)"
+        ),
+    ),
     ("github-token", re.compile(r"\bgh[pousr]_[A-Za-z0-9]{36,}\b")),
     ("github-fine-grained-token", re.compile(r"\bgithub_pat_[A-Za-z0-9_]{22,}\b")),
     (
         "hetzner-api-token",
         re.compile(
-            r"(?<![A-Za-z0-9+/])(?=[A-Za-z0-9]{0,63}[A-Z])(?=[A-Za-z0-9]{0,63}[a-z])[A-Za-z0-9]{64}(?![A-Za-z0-9+/=])"
+            r"(?<![A-Za-z0-9+/])(?<!sha256-)(?<!sha384-)(?<!sha512-)"
+            r"(?=[A-Za-z0-9]{0,63}[A-Z])(?=[A-Za-z0-9]{0,63}[a-z])[A-Za-z0-9]{64}(?![A-Za-z0-9+/=])"
         ),
     ),
 )
@@ -566,6 +577,9 @@ _SECRET_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
 _REDACT_TO_LINE_END: frozenset[str] = frozenset({"pem-private-key-header", "pem-block-base64"})
 # A resolved value's own lines this long or longer are masked wherever they appear.
 _MIN_REDACTED_LINE = 8
+# A resolved value shorter than this is not masked literally: a one-character value would mask
+# every occurrence of that character.
+_MIN_REDACTED_VALUE = 4
 
 
 def scan_file_for_secrets(path: str | Path) -> list[PlaintextSecretFinding]:
@@ -615,22 +629,26 @@ def redact_secret_shapes(text: str, values: tuple[str, ...] = ()) -> str:
 
     Story 118.9 (spec-pyforge-steward CAP-178): the `deploy nic` summary carries
     `nic`'s last output line only through this, so neither a secret the verb
-    resolved nor a secret-shaped value reaches the summary. A multi-line value is masked
+    resolved nor a secret-shaped value reaches the summary. A PEM-header match is masked to
+    the end of its line first, before any literal mask can hide the header it keys on (a key
+    JSON-dumped with `\\/` escapes matches no literal form). Then a multi-line value is masked
     whole, in its `\\n`-escaped form, and line by line (each line of at least
-    `_MIN_REDACTED_LINE` characters), so a key body printed on its own line or escaped onto
-    one line does not survive; a PEM-header match is masked to the end of its line.
+    `_MIN_REDACTED_LINE` characters); a value under `_MIN_REDACTED_VALUE` characters is not
+    masked literally. The remaining patterns run last.
     """
+    to_line_end = [(name, pattern) for name, pattern in _SECRET_PATTERNS if name in _REDACT_TO_LINE_END]
+    for _name, pattern in to_line_end:
+        text = re.compile(pattern.pattern + r"[^\n]*", pattern.flags).sub(_REDACTED, text)
     forms: set[str] = set()
     for value in values:
-        if value:
+        if len(value) >= _MIN_REDACTED_VALUE:
             forms.update({value, value.replace("\n", "\\n")})
             forms.update(line.strip() for line in value.splitlines() if len(line.strip()) >= _MIN_REDACTED_LINE)
     for form in sorted(forms, key=len, reverse=True):
         text = text.replace(form, _REDACTED)
     for name, pattern in _SECRET_PATTERNS:
-        if name in _REDACT_TO_LINE_END:
-            pattern = re.compile(pattern.pattern + r"[^\n]*", pattern.flags)
-        text = pattern.sub(_REDACTED, text)
+        if name not in _REDACT_TO_LINE_END:
+            text = pattern.sub(_REDACTED, text)
     return text
 
 
