@@ -8090,6 +8090,22 @@ So that the 10 to 17 s each gate spends installing an environment it does not us
 **And** the pixi-version registry counts the workflow's remaining setup-pixi steps, and the local gate tasks stay in each station's pixi environment
 **Status:** done
 
+### Story 117.28: Atlas's live half runs as two shards
+
+As the operator whose PR waits on atlas's live half,
+I want it to run as two pytest-split shards like steward's,
+So that atlas's longest station-test job is shorter.
+
+**Type:** chore • **Effort:** S • **Deps:** 117.10, 117.25 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `.github/workflows/pyforge-station-tests.yml`, `tests/durations/pyforge-atlas-live.json`, `tests/durations/README.md`
+**Spec:** `planning-artifacts/specs/spec-117-28-atlas-s-live-half-runs-as-two-shards.md`
+**Given** `atlas-live-test` runs as one job of 97 to 126 s (its test step 65 to 84 s), the longest unsharded station-test job
+**When** it runs as two shards, each taking its pytest-split group of the task's three pytest runs from a durations file written under xdist with four workers, and uploading its own coverage report
+**Then** every live test runs in exactly one shard, no shard's run is left empty, and `atlas-gate` merges both shards' reports with the package half's
+**And** the local preflight still runs the task unsharded
+**Status:** done
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

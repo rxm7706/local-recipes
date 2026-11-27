@@ -8661,3 +8661,12 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   **Constraints:** nodejs stays inside the operator's LTS range; no environment's other packages move except
   nodejs's own libraries (a lock that took `bmad-module-skill-forge` 12.0.0, `playwright` 1.65.1 or `pnpm`
   12.24.0 with it was locked again with each held, then released). No flag (chore). Owner `spec-pyforge-steward`.
+- **2026-11-27 (atlas's live half runs as one job) — Ruled:** operator ruling of 2026-11-27: "shard atlas's live half
+  next", after the measurement in this Dream's entry on the coverage gates: `atlas-live-test` is the longest unsharded
+  station-test job (97 to 126 s, its test step 65 to 84 s), its three pytest runs spend most of their time starting,
+  and a second shard was estimated to save about 10 s on CI. **For steward:** this entry binds `spec-pyforge-steward`
+  CAP-175 (realized, no text change) and decomposes as Story 117.28 on Epic 117: the job runs as two pytest-split
+  shards, as steward's live half runs four, from a durations file written from empty under xdist with four workers;
+  each shard uploads its own coverage report, which `atlas-gate` already merges. **Constraints:** every live test runs
+  in exactly one shard and no shard's run is left empty; the local preflight runs the task unsharded; no test, floor
+  or gate is weakened. No flag (chore). Owner `spec-pyforge-steward`.

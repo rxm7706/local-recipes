@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: ebcbe4c950697fa7
-story_count: 543
+source_fingerprint: e5dfee4ee14ba917
+story_count: 544
 test_file_count: 173
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 543
+- **Stories parsed:** 544
 - **Epics parsed:** 149
 - **Test files inventoried:** 173 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `ebcbe4c950697fa7`
+- **Source fingerprint:** `e5dfee4ee14ba917`
 
 ## Risk Assessment
 
@@ -816,6 +816,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 117.25 | The live halves' shard durations hold the ids CI looks up | none observed |
 | 117.26 | The workers of one run share the trigger-map derivation | none observed |
 | 117.27 | Each station's coverage gate runs on the runner's Python | none observed |
+| 117.28 | Atlas's live half runs as two shards | none observed |
 | 118.1 | steward deploy nic brings up and tears down an NKP cluster on local kind | none observed |
 | 118.2 | nebi-pack and the data-science pack reach Healthy on kind and a notebook spawns | none observed |
 | 118.3 | The gitops branch of the monorepo is the GitOps source and a Hetzner cluster ... | none observed |

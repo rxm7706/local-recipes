@@ -4,8 +4,8 @@
 (`PYTEST_ADDOPTS="--splits N --group K --durations-path tests/durations/<station>.json"` in the
 `pyforge-station-tests.yml` matrix). Without a file it splits by test count and says so; the shards still
 cover every test. There is one file per task: `pyforge-steward.json` for the package half, `pyforge-steward-live.json`
-for the live half, and likewise for doctor's live half, marshal, atlas and herald. Herald's file serves both its
-halves. The local preflight runs every suite unsharded and never reads these files.
+for the live half, and likewise for doctor's live half, marshal, atlas, atlas's live half (Story 117.28) and herald.
+Herald's file serves both its halves. The local preflight runs every suite unsharded and never reads these files.
 
 **Write a file the way the CI shards read it** (steward Story 117.25). Write it from empty, under xdist with four
 workers, as the CI runner runs the task, into a new path, then copy it here:

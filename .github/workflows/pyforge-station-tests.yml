@@ -826,6 +826,15 @@ jobs:
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Story 117.28 (spec-pyforge-steward CAP-175): 2 shards, as steward's live half runs 4; each of the task's three
+    # pytest runs takes its pytest-split group, and each shard uploads its own coverage report for atlas-gate to merge.
+    # The local preflight runs the task unsharded.
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [1, 2]
+    env:
+      PYTEST_ADDOPTS: --splits 2 --group ${{ matrix.group }} --durations-path=tests/durations/pyforge-atlas-live.json
     steps:
       - uses: actions/checkout@v7
         with:
@@ -838,10 +847,12 @@ jobs:
           cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       - run: pixi run --frozen -e pyforge-atlas pyforge-atlas-live-test
       # The live-tree half's report, merged with the package half's by the gate job.
+      - name: Name this shard's coverage report
+        run: mv .steward/coverage/atlas-live.json .steward/coverage/atlas-live-${{ matrix.group }}.json
       - uses: actions/upload-artifact@v7
         with:
-          name: coverage-atlas-live
-          path: .steward/coverage/atlas-live.json
+          name: coverage-atlas-live-${{ matrix.group }}
+          path: .steward/coverage/atlas-live-${{ matrix.group }}.json
           if-no-files-found: error
           retention-days: 3
 
