@@ -2810,6 +2810,29 @@ So that its build runs on a free worker instead of after its group's build on th
 **And** every assertion holds as before, and no test is skipped or re-marked
 **Status:** done
 
+## Epic 64: Herald's site builds write Pagefind's files whole under load (spec-pyforge-steward:CAP-175)
+
+Minted 2026-11-27 from the station Dream's entry of the same date on the operator ruling of that day ("Do this task here: Root-cause herald's two-builds Pagefind flake"). Pagefind 1.5.2's service mode can answer before its writes reach disk, and Starlight then kills it, so a build under load can leave a Pagefind file empty.
+**HARD boundaries:**
+- No test changes; nothing in the lock moves but Pagefind's packages.
+- No flag, and no capability text of `spec-pyforge-herald` moves.
+
+### Story 64.1: Herald's site builds write Pagefind's files whole under load
+
+As the operator reading a red herald shard or preflight,
+I want the site build's search index written whole however busy the machine is,
+So that the two-builds test fails only when two builds really differ.
+
+**Type:** chore • **Effort:** S • **Deps:** herald 62.1 • **FR/AD:** spec-pyforge-steward:CAP-175 (realized here; no text change in this station's Spec); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `docs-site/package-lock.json`
+**Spec:** `planning-artifacts/specs/spec-64-1-herald-s-site-builds-write-pagefind-s-files-whole-under-load.md`
+**Given** Starlight runs Pagefind's service with `writeFiles` then `close()`, and Pagefind 1.5.2 under load left `pagefind-entry.json` or `wasm.unknown.pagefind` empty in 6 of 192 probe runs
+**When** the lock moves `pagefind`, `@pagefind/default-ui` and the seven platform binaries to 1.6.0, which fixed truncated service-mode output
+**Then** the probe writes every file whole in 768 runs, and the two-builds test passes 16 times out of 16 with every core busy
+**And** no test changes, and nothing else in the lock moves
+**Status:** done
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

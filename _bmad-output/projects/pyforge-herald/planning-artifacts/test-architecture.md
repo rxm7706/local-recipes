@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: dc60e7e008283266
-story_count: 173
+source_fingerprint: 46ae74f657f2ffe7
+story_count: 174
 test_file_count: 106
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-herald`
-- **Stories parsed:** 173
-- **Epics parsed:** 63
+- **Stories parsed:** 174
+- **Epics parsed:** 64
 - **Test files inventoried:** 106 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `dc60e7e008283266`
+- **Source fingerprint:** `46ae74f657f2ffe7`
 
 ## Risk Assessment
 
@@ -84,6 +84,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 60: Herald's build groups hold only the builds their tests share (spec-pyforge-steward:CAP-175)
 - Epic 62: Herald's two-builds test names what differs (spec-pyforge-steward:CAP-175)
 - Epic 63: Herald's site-shell group holds only its own build (spec-pyforge-steward:CAP-175)
+- Epic 64: Herald's site builds write Pagefind's files whole under load (spec-pyforge-steward:CAP-175)
 
 ### Low-risk epics
 
@@ -388,6 +389,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 61.1 | Herald's test builds keep the docs pages they already rendered | none observed |
 | 62.1 | Herald's two-builds test names what differs | none observed |
 | 63.1 | Herald's site-shell group holds only its own build | none observed |
+| 64.1 | Herald's site builds write Pagefind's files whole under load | none observed |
 
 ## Quality Gates
 
