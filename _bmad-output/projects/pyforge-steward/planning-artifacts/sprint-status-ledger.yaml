@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 842
+# stories: 843
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -99,6 +99,7 @@ development_status:
   117-26-the-workers-of-one-run-share-the-trigger-map-derivation: done
   117-27-each-station-s-coverage-gate-runs-on-the-runner-s-python: done
   117-28-atlas-s-live-half-runs-as-two-shards: done
+  117-29-lint-and-types-restores-mypy-caches-from-an-older-lock: done
   117-3-the-preflight-admits-lanes-longest-first-by-the-cores-they-will-use: done
   117-4-each-station-suite-runs-as-its-package-local-and-live-tree-halves: done
   117-5-preflight-budget-names-every-lane-over-its-journal-derived-budget: done

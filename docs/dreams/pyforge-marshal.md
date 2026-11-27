@@ -14020,6 +14020,18 @@ row; the `steward setup` read rules) · [[pyforge-scribe]] (the
   (DW-marshal-114-3-2); the live-path guard drops two `ALLOW` entries whose files exist (DW-marshal-114-2-3);
   CAP-305's guard clause names both parts of the package-half guard (DW-marshal-116-4-1). **Constraints:** no finding's
   severity moves; the CAP-305 amendment is text only; no flag. Owner `spec-pyforge-marshal`.
+- **2026-11-27 (the TEA generator compiles a pattern per story and test file) — Found and ruled:** marshal's live
+  half's longest test, `test_fleet_smoke_all_eight_paths_exist_without_tbd`, took 37.9 s on CI (27.8 s here), and
+  `test_herald_marshal_dry_run_regenerable_without_tbd[pyforge-marshal]` 24 s; together they set marshal's second
+  live shard. A profile puts 95% of `_bmad/scripts/bmad_tea_playwright.py`'s render in `_stories_linked_to_test`: it
+  builds one bounded regex per story and calls `re.search` once per story and test file, 342,612 times for marshal
+  (558 stories, 307 test files), which overflows `re`'s 512-entry cache, so nearly every call compiles. Rendering
+  all eight stations took 12.5 s, marshal 7.96 s and steward 4.28 s. **Ruled** (operator, 2026-11-27: "shorten
+  marshal's tea-architecture smoke test next", then "lets do everything as one pr now"). **For marshal:** this
+  entry binds `spec-pyforge-testing-charter:CAP-2` (realized, no text change) and decomposes as Epic 127, one
+  story: a story's token matches whole `_`-separated parts of the stem, the same rule the bounded regex held,
+  without compiling a pattern. **Constraints:** every station's generated document stays byte-identical; no test
+  is weakened. No flag (a chore). Owner `spec-pyforge-testing-charter`.
 
 ## 2026-11-10 — The Spec says what marshal is, and its roots come from one place
 

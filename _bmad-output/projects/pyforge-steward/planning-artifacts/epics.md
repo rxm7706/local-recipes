@@ -8106,6 +8106,22 @@ So that atlas's longest station-test job is shorter.
 **And** the local preflight still runs the task unsharded
 **Status:** done
 
+### Story 117.29: Lint and types restores mypy caches from an older lock
+
+As the operator whose PR moves `pixi.lock`,
+I want Lint and types to start mypy from main's cache even when the lock changed,
+So that a lock change does not cost a cold mypy run.
+
+**Type:** chore • **Effort:** S • **Deps:** 117.24 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `.github/workflows/lint-types.yml`
+**Spec:** `planning-artifacts/specs/spec-117-29-lint-and-types-restores-mypy-caches-from-an-older-lock.md`
+**Given** the mypy cache's key and its one restore key both carry `pixi.lock`'s hash, so a PR that moves the lock runs mypy cold (58 s for `pyforge-foundry-full`; the workflow took 157 to 178 s on PRs #2415 and #2417 against 77 to 102 s otherwise)
+**When** a last restore key takes main's newest cache whatever its lock
+**Then** such a PR's mypy starts warm, and mypy re-checks every module against its source's hash
+**And** main still saves a cache only under the full key
+**Status:** done
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

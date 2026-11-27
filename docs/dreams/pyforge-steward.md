@@ -8670,3 +8670,18 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   each shard uploads its own coverage report, which `atlas-gate` already merges. **Constraints:** every live test runs
   in exactly one shard and no shard's run is left empty; the local preflight runs the task unsharded; no test, floor
   or gate is weakened. No flag (chore). Owner `spec-pyforge-steward`.
+- **2026-11-27 (the remaining test, CI and preflight levers, in one change) — Found and ruled:** asked "what all
+  remains for tests / ci / pre flight build optimization", the levers were measured: marshal's TEA smoke tests
+  (37.9 s and 24 s on CI) compile a regex per story and test file (marshal Epic 127); doctor's `capability-effect`
+  detector runs 45 `git grep`s in turn (15.6 s alone, 76.7 s inside `detectors-ci`; doctor Epic 68); and Lint and
+  types, the slowest workflow on a PR that moves `pixi.lock` (157 to 178 s against 77 to 102 s otherwise), starts
+  mypy cold because its cache key and its one restore key both carry the lock's hash (58 s for
+  `pyforge-foundry-full`). Measured and left: `atlas-test`'s uneven shards (a fresh durations file differs by 4
+  tests and 3 s; a few long integration tests set the floor), Detectors' full-history checkout (its landing
+  evidence needs it), steward's trigger-map module (a thousand fixture diffs already in a thread pool), and
+  doctor's CPU speed-budget test under the preflight's own load (the preflight has mutexes, not a run-alone mode).
+  **Ruled** (operator, 2026-11-27: "lets do everything as one pr now"). **For steward:** this entry binds
+  `spec-pyforge-steward` CAP-175 (realized, no text change) and decomposes as Story 117.29 on Epic 117: Lint and
+  types restores main's mypy caches from an older lock when none match this one, and mypy re-checks every module
+  against its source's hash. **Constraints:** no check, floor or gate is weakened. No flag (chores). Owner
+  `spec-pyforge-steward`.

@@ -17,7 +17,8 @@ never authors a ``verified:`` line (doctor NFR-1).
 from __future__ import annotations
 
 import re
-from collections.abc import Collection, Iterator
+from collections.abc import Collection, Iterator, Sequence
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -457,6 +458,26 @@ def _git_grep_symbol_lines(
         hits.append((file_part.strip(), content))
     grep_cache[symbol] = hits
     return hits
+
+
+def _prefetch_symbol_greps(
+    target: Path,
+    symbols: Sequence[str],
+    *,
+    grep_cache: dict[str, list[tuple[str, str]] | None],
+) -> None:
+    """Run the ``git grep`` of every symbol not yet in ``grep_cache`` side by side (doctor Story 68.1).
+
+    Each symbol's grep is its own subprocess over the whole tree; run in turn, the fleet's 45 took 14 of this
+    detector's 15.6 s. Each runs exactly as ``_git_grep_symbol_lines`` would, into a cache of its own, and the
+    results then fill the shared cache, so every later lookup reads the same hits it would have read before.
+    """
+    todo = [symbol for symbol in dict.fromkeys(symbols) if symbol not in grep_cache]
+    if len(todo) < 2:
+        return
+    with ThreadPoolExecutor(max_workers=min(8, len(todo))) as pool:
+        results = list(pool.map(lambda symbol: _git_grep_symbol_lines(target, symbol, grep_cache={}), todo))
+    grep_cache.update(zip(todo, results, strict=True))
 
 
 def _external_reference_count(
@@ -976,6 +997,7 @@ def _caller_reach_findings_for_project(
                     )
                 )
 
+            _prefetch_symbol_greps(target, sorted(symbol_to_defining), grep_cache=grep_cache)
             for symbol, defining_paths in sorted(symbol_to_defining.items()):
                 external = _external_reference_count(
                     target,
