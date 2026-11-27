@@ -8532,3 +8532,15 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   the reason their names give (an older defect, fixed here), and herald's integration step would have inherited
   a shard's split; each story spec records it. The tracked budgets are measured again (a governance act, made
   on "Approved").
+- **2026-11-26 (Platform CI's test job is the longest of a PR's jobs) — Found and ruled:** measured on PR #2407
+  (`465c6ab4a3`), a PR that runs every workflow: CI took 196 s, and Platform CI's `test` job was the longest job, 196 s,
+  of which 141 s is the platform suite under `pytest -n 4` on one runner (89 s on PR #2405; the suite varies). The
+  station suites run as `pytest-split` shards (Stories 117.10 and 117.21); this job does not, because `pytest-split` is
+  not in the `platform-ci-test` environment. The 53 jobs of that PR peaked at 40 running at once, and the two created
+  last waited 33 and 38 s for a runner, so the station path (`marshal-live-test`, then its gate) ends at about 180 s
+  once this job is shorter. **Ruled** (operator, 2026-11-26: "shard the Platform CI test job next"). **For steward:**
+  this entry binds `spec-pyforge-steward` CAP-175 (realized, no text change) and CAP-166 (a matrix adds no CI surface)
+  and decomposes as Story 117.23 on Epic 117: `pytest-split` joins `platform-ci-test`, locked with the pinned pixi, and
+  the job runs as three shards over durations measured from the suite. **Constraints:** every test still runs in
+  exactly one shard; the job's steps, services and timeout stay; the local twin runs the suite unsharded; no test,
+  floor or gate is weakened. No flag (a chore). Owner `spec-pyforge-steward`.

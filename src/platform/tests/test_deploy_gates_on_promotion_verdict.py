@@ -27,6 +27,11 @@ from tests.test_golden_path_promotion_verdict import _PROMOTION_PAYLOAD_SNIPPET
 from tests.test_golden_path_promotion_verdict import _ambient_warden_env
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
+
+# Steward Story 117.23: this module runs ``pixi run -e pyforge-warden``. The
+# fixture installs that environment once, under a lock, so two xdist workers
+# never install it at the same time.
+pytestmark = pytest.mark.usefixtures("pyforge_warden_env")
 _VERIFY_SCRIPT = _REPO_ROOT / "scripts" / "platform-deploy-verify-promotion.py"
 _PROMOTION_SCRIPT = _REPO_ROOT / "scripts" / "platform-golden-path-promotion.sh"
 _DEPLOY_WORKFLOW = _REPO_ROOT / ".github" / "workflows" / "platform-deploy.yml"

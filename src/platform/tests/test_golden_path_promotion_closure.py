@@ -19,6 +19,11 @@ import pytest
 import yaml
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
+
+# Steward Story 117.23: this module runs ``pixi run -e pyforge-warden``. The
+# fixture installs that environment once, under a lock, so two xdist workers
+# never install it at the same time.
+pytestmark = pytest.mark.usefixtures("pyforge_warden_env")
 _ROOT_PIXI_LOCK = _REPO_ROOT / "pixi.lock"
 _ENVIRONMENT = "python-agent-platform"
 _PLATFORM = "linux-64"

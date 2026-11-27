@@ -207,9 +207,21 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+    # Steward Story 117.23 (spec-pyforge-steward CAP-175): three shards, each a runner with its own PostgreSQL and
+    # Redis services, each running its pytest-split group of the suite on top of xdist, as the station suites run
+    # (Story 117.10). The durations file is measured from the suite; the path is from src/platform, the job's working
+    # directory, and is written with "=": a bare option value that names an existing path moves pytest's rootdir to the
+    # repository root, and the suite then loses src/platform's pytest settings. The local twin (platform-ci-local --
+    # --test) runs the suite unsharded.
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [1, 2, 3]
+
     env:
       DATABASE_URL: postgres://postgres:platform@localhost:5432/platform
       REDIS_URL: redis://localhost:6379/0
+      PYTEST_ADDOPTS: --splits 3 --group ${{ matrix.group }} --durations-path=../../tests/durations/platform.json
 
     steps:
       - uses: actions/checkout@v7

@@ -7,7 +7,10 @@ so deployed-only startup refusals do not fire under ``--ds=config.settings.test`
 
 from __future__ import annotations
 
+import fcntl
 import os
+import subprocess
+from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
 
@@ -125,3 +128,36 @@ def real_gh_attempts(monkeypatch):
     from tests.gh_guard import refuse_real_gh  # noqa: PLC0415
 
     yield from refuse_real_gh(monkeypatch)
+
+
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+@pytest.fixture(scope="session")
+def pyforge_warden_env(tmp_path_factory: pytest.TempPathFactory) -> None:
+    """Install the ``pyforge-warden`` environment once, before a test runs it.
+
+    Steward Story 117.23. The first ``pixi run -e pyforge-warden`` of a checkout
+    builds the environment's path packages (pyforge-core, pyforge-testing-kit,
+    pyforge-warden) and reinstalls them. Two of them at once let one process
+    uninstall ``pyforge-warden`` while the other is running it, which exits 1
+    with no output (Platform CI's test shard 2, PR #2409). xdist workers share
+    the parent of the base temporary directory, so an exclusive lock there makes
+    one worker install while the others wait; ``pixi install`` of an installed
+    environment returns at once.
+    """
+    lock_path = tmp_path_factory.getbasetemp().parent / "pyforge-warden-install.lock"
+    with lock_path.open("w", encoding="utf-8") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        done = subprocess.run(
+            ["pixi", "install", "-e", "pyforge-warden"],  # noqa: S607 -- resolved via PATH like every other pixi invocation in this suite
+            cwd=_REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    if done.returncode != 0:
+        pytest.fail(
+            f"pixi install -e pyforge-warden exited {done.returncode}:\n"
+            f"{done.stderr[-4000:]}"
+        )
