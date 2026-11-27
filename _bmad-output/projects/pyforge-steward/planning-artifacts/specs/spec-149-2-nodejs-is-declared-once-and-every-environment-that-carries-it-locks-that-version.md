@@ -23,6 +23,7 @@ surface:
   - 'scripts/target_version_check.py'
   - 'src/shared/packages/pyforge-steward/tests/unit/test_target_version_check_surfaces.py'
   - 'src/shared/packages/pyforge-herald/tests/meta/test_docs_site.py'
+  - 'tests/packaging/test_bmad_suite_full_feature.py'
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md

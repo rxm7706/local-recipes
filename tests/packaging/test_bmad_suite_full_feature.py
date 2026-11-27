@@ -130,8 +130,9 @@ def test_bmad_ui_feature_is_untouched() -> None:
 
 def test_bmad_suite_full_environment_composes_only_its_own_feature() -> None:
     env = _data()["environments"]["bmad-suite-full"]
-    # steward Story 148.1: every environment composes the one Python declaration first.
-    assert env["features"] == ["interpreter", "bmad-suite-full"]
+    # steward Story 148.1: every environment composes the one Python declaration first; Story 149.2: an
+    # environment that carries nodejs composes the one nodejs declaration next.
+    assert env["features"] == ["interpreter", "node", "bmad-suite-full"]
     assert env.get("no-default-feature") is True
 
 
