@@ -689,3 +689,30 @@ def test_caller_reach_resolves_a_cap_through_its_story_spec(tmp_path: Path) -> N
 
     assert [f.check for f in findings] == ["capability-effect-absent-surface-path"]
     assert "src/pkg/nowhere.py" in findings[0].message
+
+
+def test_prefetched_greps_fill_the_cache_as_serial_lookups_would(monkeypatch, tmp_path: Path) -> None:
+    """Doctor Story 68.1: the greps run side by side, once per symbol not yet cached, and the cache ends up holding
+    what one lookup after another would have put there."""
+    calls: list[str] = []
+
+    def fake_run_git(target, args, *, ok_exit_codes=frozenset({0})):
+        symbol = args[args.index("--") + 1]
+        calls.append(symbol)
+        if symbol == "broken":
+            raise capability_effect.CliBridgeError("git grep failed")
+        return f"src/a.py:1:{symbol}()\nsrc/b.py:7:x = {symbol}\n"
+
+    monkeypatch.setattr(capability_effect, "run_git", fake_run_git)
+    serial: dict[str, list[tuple[str, str]] | None] = {}
+    for symbol in ("alpha", "beta", "broken"):
+        capability_effect._git_grep_symbol_lines(tmp_path, symbol, grep_cache=serial)
+    calls.clear()
+
+    cache: dict[str, list[tuple[str, str]] | None] = {"cached": [("src/c.py", "cached")]}
+    capability_effect._prefetch_symbol_greps(tmp_path, ["alpha", "beta", "alpha", "broken", "cached"], grep_cache=cache)
+    assert sorted(calls) == ["alpha", "beta", "broken"]
+    assert cache == {**serial, "cached": [("src/c.py", "cached")]}
+    calls.clear()
+    capability_effect._prefetch_symbol_greps(tmp_path, ["alpha", "beta"], grep_cache=cache)
+    assert calls == []

@@ -869,6 +869,15 @@ Folded Dreams: [[bmad-drift-new-artifact-shape]], [[bmad-method-version-drift]],
   module text in a run, so a mutation analyses its one synthetic module and reuses the rest. **Constraints:** every
   assertion stays as it is; the analysis of a module is a pure function of its text, so the facts are the same; no
   test is deleted, skipped or re-marked. No flag (a chore). Owner `spec-pyforge-doctor`.
+- **2026-11-27 (capability-effect runs its git greps one after another) — Found and ruled:** the `capability-effect`
+  detector took 15.6 s alone here and 76.7 s inside `detectors-ci`; its live test,
+  `test_live_fleet_proves_capability_effect_no_caller_finding`, took 22.7 s here and 17.5 s on CI and set doctor's
+  first live shard. 14 of the detector's 15.6 s are 45 `git grep` subprocesses, one per symbol on a cited CAP
+  surface, each over the whole tree, run in turn. **Ruled** (operator, 2026-11-27: "lets do everything as one pr
+  now", on the remaining test, CI and preflight levers). **For doctor:** this entry binds
+  `spec-pyforge-steward:CAP-175` (realized here, no text change to the station's Spec) and decomposes as Epic 68, one
+  story: a project's greps run side by side into the same cache before its symbols are counted. **Constraints:**
+  every finding stays as it is; each grep runs exactly as before. No flag (a chore). Owner `spec-pyforge-doctor`.
 
 ## 2026-10-26 — A spike report is not a corrupt file, and the classifier can't yet tell the difference (folded from bmad-drift-new-artifact-shape)
 

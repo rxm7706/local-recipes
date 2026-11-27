@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: 2be49e4ea4fd5a92
-story_count: 203
+source_fingerprint: cd16d2f3cf07ee54
+story_count: 204
 test_file_count: 132
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 203
-- **Epics parsed:** 66
+- **Stories parsed:** 204
+- **Epics parsed:** 67
 - **Test files inventoried:** 132 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `2be49e4ea4fd5a92`
+- **Source fingerprint:** `cd16d2f3cf07ee54`
 
 ## Risk Assessment
 
@@ -56,6 +56,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 36: A fold is proven complete before its file moves, and the sibling check follows the archive (spec-one-chain-per-station CAP-11)
 - Epic 41: Phases 4 and 5 of the deferral burn-down: doctor's medium and low deferrals
 - Epic 67: The contract mutation tests analyse each module once (spec-pyforge-steward:CAP-175)
+- Epic 68: Capability-effect runs a project's git greps side by side (spec-pyforge-steward:CAP-175)
 
 ### Low-risk epics
 
@@ -447,6 +448,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 65.1 | Doctor's verbs take both spellings for JSON | none observed |
 | 66.1 | The detector run measures the doctor sources beside the script detectors | none observed |
 | 67.1 | The contract mutation tests analyse each module once | none observed |
+| 68.1 | Capability-effect runs a project's git greps side by side | none observed |
 
 ## Quality Gates
 

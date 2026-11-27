@@ -4378,6 +4378,28 @@ So that 81 cases stop parsing every doctor module three seconds at a time.
 **And** a cached analysis is read, never changed, and the facts each call returns are the facts it returned
 **Status:** done
 
+## Epic 68: Capability-effect runs a project's git greps side by side (spec-pyforge-steward:CAP-175)
+
+Minted 2026-11-27 from the station Dream's entry of the same date on the operator ruling of 2026-11-27: "lets do everything as one pr now".
+**HARD boundaries:**
+- Every finding stays as it is, and each grep runs exactly as before. No flag (a chore).
+
+### Story 68.1: Capability-effect runs a project's git greps side by side
+
+As the operator whose preflight and CI wait on `detectors-ci`,
+I want the capability-effect detector's per-symbol greps to run at once,
+So that the detector and doctor's longest live test stop waiting on 45 greps in turn.
+
+**Type:** chore • **Effort:** S • **Deps:** 21.9 • **FR/AD:** spec-pyforge-steward:CAP-175 (realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/capability_effect.py`, `src/shared/packages/pyforge-doctor/tests/unit/test_sources_capability_effect_caller_reach.py`
+**Spec:** `planning-artifacts/specs/spec-68-1-capability-effect-runs-a-project-s-git-greps-side-by-side.md`
+**Given** the detector runs one `git grep` per symbol over the whole tree, 45 of them in turn, 14 of its 15.6 s
+**When** each project's symbols not yet cached are grepped side by side and fill the same cache
+**Then** the detector's findings are line for line the same, and it and its live test run in under half the time
+**And** a test holds that the prefetch fills the cache as serial lookups would, once per uncached symbol
+**Status:** done
+
 ## Currency reconciliation — 2026-11-26 (the tag rule reaches station source)
 
 *Chain-currency cascade (arch -> epics).* 2026-11-26: Epic 64 / Story 64.1 minted under `spec-one-chain-per-station` (its capability 9, realized with no text change); no AD moves. The keys go through the Tier-3 feed and `sprint-ledger-sync`. **Content changed:** the Epic, this section and `updated:`.

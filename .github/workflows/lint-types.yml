@@ -77,8 +77,11 @@ jobs:
         with:
           path: src/shared/packages/*/.mypy_cache
           key: mypy-${{ runner.os }}-${{ hashFiles('pixi.lock') }}-${{ hashFiles('src/shared/packages/*/src/**/*.py', 'src/shared/packages/*/src/**/*.pyi') }}
+          # Story 117.29: the last fallback takes main's cache from an older lock, so a PR that moves pixi.lock does
+          # not start mypy cold (58 s on PRs #2415 and #2417); mypy re-checks each module against its source's hash.
           restore-keys: |
             mypy-${{ runner.os }}-${{ hashFiles('pixi.lock') }}-
+            mypy-${{ runner.os }}-
       - name: lint-types (ruff, ruff-format, mypy, target-version-check, precommit-config-check)
         run: pixi run --frozen -e pyforge-guild lint-types
       - name: mypy (pyforge-foundry-full — real atlas runtime libraries)

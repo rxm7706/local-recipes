@@ -261,13 +261,22 @@ def _level_for_test(path: Path) -> str:
 
 
 def _stories_linked_to_test(path: Path, stories: Sequence[Story]) -> list[str]:
-    """Heuristic: story id appears in the filename (e.g. test_1_2_*, test_story_19_1_*)."""
-    stem = path.stem.lower().replace("-", "_")
+    """Heuristic: story id appears in the filename (e.g. test_1_2_*, test_story_19_1_*).
+
+    A story's token (``1.2`` -> ``1_2``) counts only as whole ``_``-separated parts of the stem, so ``1_1`` does not
+    match ``11_1``. Matching contiguous parts gives the same answer as the bounded regex
+    ``(?:^|_)(?:story_)?<token>(?:_|$)`` without compiling one pattern per story and file: for marshal (558 stories,
+    307 test files) those 342,612 compilations overflowed ``re``'s cache and were 95% of the render.
+    """
+    parts = path.stem.lower().replace("-", "_").split("_")
     linked: list[str] = []
+    windows: dict[int, set[tuple[str, ...]]] = {}
     for story in stories:
-        token = story.id.lower().replace(".", "_")
-        # Require a bounded token so "1_1" does not match "11_1"
-        if re.search(rf"(?:^|_)(?:story_)?{re.escape(token)}(?:_|$)", stem):
+        token = tuple(story.id.lower().replace(".", "_").split("_"))
+        width = len(token)
+        if width not in windows:
+            windows[width] = {tuple(parts[i : i + width]) for i in range(len(parts) - width + 1)}
+        if token in windows[width]:
             linked.append(story.id)
     return linked
 

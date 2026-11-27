@@ -141,5 +141,43 @@ def test_fleet_smoke_all_eight_paths_exist_without_tbd(tea):
                 assert "TBD" not in text
 
 
+def test_story_links_keep_the_bounded_token_rule(tea):
+    """Marshal Story 127.1 (spec-pyforge-testing-charter:CAP-2): story links are matched on whole ``_``-separated
+    parts of the stem, not by one compiled pattern per story and file (342,612 for marshal, 95% of its render).
+    Every case gives what the old bounded regex gave."""
+    import itertools
+    import re
+
+    stories = [tea.Story(id=sid, title="t") for sid in ("1.1", "1.2", "11.1", "19.1", "2", "117.25", "3.4a")]
+    stems = [
+        "test_1_2_wiring",
+        "test_story_19_1_scope",
+        "test_11_1_only",
+        "test_x_1_1",
+        "test_1_1",
+        "test-1-2-hyphens",
+        "test_2",
+        "test_21_x",
+        "test_117_25_durations",
+        "test_1_17_25",
+        "test_3_4a_letter",
+        "test__1_1__double",
+        "conftest",
+    ]
+
+    def old_rule(stem: str) -> list[str]:
+        stem = stem.lower().replace("-", "_")
+        return [
+            s.id
+            for s in stories
+            if re.search(rf"(?:^|_)(?:story_)?{re.escape(s.id.lower().replace('.', '_'))}(?:_|$)", stem)
+        ]
+
+    for stem in stems:
+        assert tea._stories_linked_to_test(Path(f"{stem}.py"), stories) == old_rule(stem), stem
+    assert tea._stories_linked_to_test(Path("test_11_1_only.py"), stories) == ["11.1"]
+    assert list(itertools.chain.from_iterable(old_rule(s) for s in stems))  # the table links something
+
+
 def test_stations_constant_is_the_eight_smiths(tea):
     assert tea.STATIONS == STATIONS

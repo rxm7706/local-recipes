@@ -11997,6 +11997,28 @@ So that the three rows the retros carried are closed.
 **And** the contract's verdict cells read `error` and `warn` for the three codes
 **Status:** done
 
+## Epic 127: The TEA generator links stories to tests without a pattern per pair (spec-pyforge-testing-charter:CAP-2)
+
+Minted 2026-11-27 from the station Dream's entry of the same date on the operator's rulings of 2026-11-27: "shorten marshal's tea-architecture smoke test next", then "lets do everything as one pr now".
+**HARD boundaries:**
+- Every station's generated `test-architecture.md` stays byte-identical. No test is weakened. No flag (a chore).
+
+### Story 127.1: The TEA generator links a story to a test file by whole name parts
+
+As the operator whose PR waits on marshal's live half,
+I want the TEA generator to link stories to test files without compiling a pattern for each pair,
+So that its two live smoke tests, and every regeneration of the matrices, take under a second.
+
+**Type:** chore • **Effort:** S • **Deps:** 19.1 • **FR/AD:** spec-pyforge-testing-charter:CAP-2 (realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `_bmad/scripts/bmad_tea_playwright.py`, `src/shared/packages/pyforge-marshal/tests/meta/test_tea_architecture_generator.py`
+**Spec:** `planning-artifacts/specs/spec-127-1-the-tea-generator-links-a-story-to-a-test-file-by-whole-name-parts.md`
+**Given** `_stories_linked_to_test` compiles one bounded regex per story and test file, 342,612 for marshal, overflowing `re`'s cache, and rendering the eight stations takes 12.5 s
+**When** a story's token is matched against the stem's contiguous `_`-separated parts
+**Then** every station's document is byte-identical and the eight render in under a second
+**And** a test holds the new matcher to the bounded regex's answer on a table of stems
+**Status:** done
+
 ## Currency reconciliation — 2026-11-26 (the tag rule reaches station source)
 
 *Chain-currency cascade (arch -> epics).* 2026-11-26: Epic 123 / Story 123.1 minted under `spec-one-chain-per-station` (its capability 9, realized with no text change); no AD moves. The keys go through the Tier-3 feed and `sprint-ledger-sync`. **Content changed:** the Epic, this section and `updated:`.
