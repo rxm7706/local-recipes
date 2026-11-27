@@ -2,7 +2,7 @@
 title: "118.9: The gitops branch is guarded before any cloud run"
 type: 'feature'
 created: '2026-11-27'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -99,7 +99,7 @@ Parent: `spec-pyforge-steward` CAP-178
 
 ## Auto Run Result
 
-Status: in-review
+Status: done (two independent reviews, every finding fixed; 2026-11-27)
 
 Summary (2026-11-27, hand-built in the landing worktree `gitops-guard-2026-11-27`, cut from `origin/main` d9d94514c7; nothing committed):
 
