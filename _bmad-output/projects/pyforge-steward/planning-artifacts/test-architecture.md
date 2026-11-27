@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: b2ca746b16db9404
-story_count: 540
+source_fingerprint: eb638ce8595c511f
+story_count: 541
 test_file_count: 173
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 540
-- **Epics parsed:** 148
+- **Stories parsed:** 541
+- **Epics parsed:** 149
 - **Test files inventoried:** 173 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `b2ca746b16db9404`
+- **Source fingerprint:** `eb638ce8595c511f`
 
 ## Risk Assessment
 
@@ -169,6 +169,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 146: A plugin's registration name says whose it is (spec-pyforge-unifying-strategy:CAP-18, amended)
 - Epic 147: CAP-183 and CAP-185 read shipped (spec-pyforge-steward CAP-183, CAP-185)
 - Epic 148: The estate's Python and pixi are declared once and used everywhere (spec-pyforge-steward CAP-153)
+- Epic 149: The station packages build on the estate's Python (spec-pyforge-steward CAP-153)
 
 ### Low-risk epics
 
@@ -907,6 +908,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 148.1 | Python 3.14.10 is declared once, and every environment locks it | none observed |
 | 148.2 | pixi 0.85.0 at every pin site | none observed |
 | 148.3 | Every workflow sets Python up from the one declaration | none observed |
+| 149.1 | The station packages build on the declared Python, and the lock holds no other | none observed |
 
 ## Quality Gates
 

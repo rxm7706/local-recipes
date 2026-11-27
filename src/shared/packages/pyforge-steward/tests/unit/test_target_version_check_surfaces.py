@@ -41,7 +41,7 @@ def _write_pyforge(root: Path, name: str, *, ruff: str = "py314", mypy: str = "3
     )
 
 
-def _write_manifest(root: Path, name: str, *, host: str | None = '">=3.14"', run: str | None = '">=3.14"') -> Path:
+def _write_manifest(root: Path, name: str, *, host: str | None = '"3.14.10.*"', run: str | None = '">=3.14"') -> Path:
     """A package pixi.toml in the members' shape; ``None`` leaves that table's ``python`` line out."""
     pkg = root / "src" / "shared" / "packages" / name
     pkg.mkdir(parents=True, exist_ok=True)
@@ -86,8 +86,16 @@ _ESTATE_ACTION = """runs:
 """
 
 
-def _write_lock(root: Path, pythons: dict[str, str]) -> None:
-    """A pixi.lock whose environments section locks ``env -> python version`` on linux-64."""
+def _write_lock(
+    root: Path,
+    pythons: dict[str, str],
+    *,
+    family: dict[str, str] | None = None,
+    hosts: dict[str, str] | None = None,
+) -> None:
+    """A pixi.lock whose environments section locks ``env -> python version`` on linux-64, with ``libpython``,
+    ``cpython`` and ``python-gil`` at the same version unless ``family`` names another, and one pixi-build source
+    record per ``hosts`` entry (``record -> its host python``)."""
     lines = ["version: 7", "environments:"]
     for env, version in pythons.items():
         lines += [
@@ -98,7 +106,16 @@ def _write_lock(root: Path, pythons: dict[str, str]) -> None:
             "      linux-64:",
             f"      - conda: https://conda.anaconda.org/conda-forge/linux-64/python-{version}-h0_cp3.conda",
         ]
-    lines.append("packages: []")
+        for package in ("libpython", "cpython", "python-gil"):
+            got = (family or {}).get(package, version)
+            lines.append(f"      - conda: https://conda.anaconda.org/conda-forge/noarch/{package}-{got}-h0_cp3.conda")
+    lines.append("packages:")
+    for record, version in (hosts or {}).items():
+        lines += [
+            f"- conda_source: {record} @ src/shared/packages/{record.split('[')[0]}",
+            "  host_packages:",
+            f"  - conda: https://conda.anaconda.org/conda-forge/linux-64/python-{version}-h0_cp3.conda",
+        ]
     (root / "pixi.lock").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -221,7 +238,7 @@ def test_pin_315_moves_expected_targets(tmp_path: Path) -> None:
     # Story 124.3: the package manifests are still at 3.14, so the 3.15 pin reds them alone.
     assert _run_main(mod, tmp_path) == 1
     for i in range(1, 11):
-        _write_manifest(tmp_path, f"pyforge-p{i}", host='">=3.15"', run='">=3.15"')
+        _write_manifest(tmp_path, f"pyforge-p{i}", host='"3.15.0.*"', run='">=3.15"')
     assert _run_main(mod, tmp_path) == 0
 
 
@@ -280,7 +297,7 @@ def test_package_manifest_python_312_drifts_and_names_the_file(
 ) -> None:
     mod = _load()
     _seed_tree(tmp_path)
-    floors = {"host": '">=3.14"', "run": '">=3.14"'}
+    floors = {"host": '"3.14.10.*"', "run": '">=3.14"'}
     floors[table] = '">=3.12"'
     _write_manifest(tmp_path, "pyforge-p3", **floors)
     assert _run_main(mod, tmp_path) == 1
@@ -472,4 +489,54 @@ def test_mutation_dropping_the_lock_check_would_hide_drift(tmp_path: Path, monke
     _write_lock(tmp_path, {"default": "3.14.10", "guild": "3.15.0"})
     assert _run_main(mod, tmp_path) == 1
     monkeypatch.setattr(mod, "findings_for_lock", lambda *a, **k: [])
+    assert _run_main(mod, tmp_path) == 0
+
+
+# --- Story 149.1 (spec-pyforge-steward:CAP-153): the station builds and the Python family run the declared Python ---
+
+
+def test_a_build_host_on_another_python_drifts(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """The case that left the station packages building on 3.14.7, 3.14.8, 3.15.0 and 3.15.2."""
+    mod = _load()
+    _seed_tree(tmp_path)
+    _write_lock(
+        tmp_path,
+        {"default": "3.14.10", "guild": "3.14.10"},
+        hosts={"pyforge-p1[aa]": "3.14.10", "pyforge-p2[bb]": "3.15.0"},
+    )
+    assert _run_main(mod, tmp_path) == 1
+    out = capsys.readouterr().out
+    assert "the build host of pyforge-p2[bb] runs python 3.15.0, pixi.toml declares 3.14.10" in out
+    assert "pyforge-p1[aa]" not in out
+
+
+def test_a_python_family_package_off_the_declaration_drifts(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """cpython and python-gil stayed at 3.14.7 beside python 3.14.10, since nothing made the lock move them."""
+    mod = _load()
+    _seed_tree(tmp_path)
+    _write_lock(tmp_path, {"default": "3.14.10", "guild": "3.14.10"}, family={"cpython": "3.14.7"})
+    assert _run_main(mod, tmp_path) == 1
+    out = capsys.readouterr().out
+    assert "default on linux-64 locks cpython 3.14.7, not 3.14.10" in out
+    assert 'lock once with cpython = "3.14.10.*"' in out
+
+
+@pytest.mark.parametrize("host", ['">=3.14"', '"*"', '"3.14.7.*"'])
+def test_a_build_host_not_pinned_to_the_declaration_drifts(tmp_path: Path, host: str) -> None:
+    """A floor or a star leaves the locked build host where it is when the declaration moves; only the exact pin
+    makes pixi lock solve it again."""
+    mod = _load()
+    _seed_tree(tmp_path)
+    _write_manifest(tmp_path, "pyforge-p6", host=host)
+    assert _run_main(mod, tmp_path) == 1
+
+
+def test_mutation_dropping_the_build_host_check_would_hide_drift(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    mod = _load()
+    _seed_tree(tmp_path)
+    _write_lock(tmp_path, {"default": "3.14.10", "guild": "3.14.10"}, hosts={"pyforge-p1[aa]": "3.15.2"})
+    assert _run_main(mod, tmp_path) == 1
+    monkeypatch.setattr(mod, "lock_build_hosts", lambda *a, **k: {})
     assert _run_main(mod, tmp_path) == 0

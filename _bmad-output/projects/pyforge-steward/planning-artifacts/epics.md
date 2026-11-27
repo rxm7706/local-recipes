@@ -10086,6 +10086,29 @@ So that CI runs the estate's Python and a hard-coded version cannot come back.
 **And** it exits 0 on the tree, and each rule is held by a test
 **Status:** done
 
+## Epic 149: The station packages build on the estate's Python (spec-pyforge-steward CAP-153)
+
+Minted 2026-11-27 from the station Dream's entry of the same date on the operator's ruling of 2026-11-27: "check and confirm - every env is now python 3.14.10, there are no other versions of python installed or used", then "Yes, fix them".
+**HARD boundaries:**
+- The declaration in `pixi.toml` stays the one place the version is chosen; every other copy is held to it.
+- No environment's other packages move. No flag (chore).
+
+### Story 149.1: The station packages build on the declared Python, and the lock holds no other
+
+As the operator of the estate,
+I want every Python in the lock, the station packages' build hosts included, to be the declared one,
+So that no other Python is installed or used when pixi builds or installs an environment.
+
+**Type:** chore • **Effort:** S • **Deps:** 148.1, 148.3 • **FR/AD:** spec-pyforge-steward CAP-153 (realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `src/shared/packages/pyforge-*/pixi.toml` (the ten station packages), `pixi.lock`, `scripts/target_version_check.py`, `src/shared/packages/pyforge-steward/tests/unit/test_target_version_check_surfaces.py`
+**Spec:** `planning-artifacts/specs/spec-149-1-the-station-packages-build-on-the-declared-python-and-the-lock-holds-no-other.md`
+**Given** the lock keeps the ten station packages' 43 build hosts at Python 3.14.7, 3.14.8, 3.15.0 and 3.15.2, and `cpython` and `python-gil` at 3.14.7 in 76 environment-platform pairs
+**When** each package's build host pins `python = "3.14.10.*"`, and `cpython` and `python-gil` are locked once pinned and once without
+**Then** every Python record in the lock is 3.14.10, and only `cpython` and `python-gil` move in the environments
+**And** `target-version-check` reds a build host pin off the declaration, a build host off the declared version, or a `libpython`, `cpython` or `python-gil` entry off it
+**Status:** done
+
 ## Currency reconciliation — 2026-11-26 (CAP-184 amended)
 
 *Chain-currency cascade (arch -> epics), CAP-184 amended.* 2026-11-26: Epic 142 and Story 142.1 are minted under `spec-pyforge-steward` CAP-184 as amended (FR-58); no AD moves. The keys `142-1`, `epic-142` and `epic-142-retrospective` go through the Tier-3 feed and `sprint-ledger-sync`. **Content changed:** Epic 142, this section and `updated:`.

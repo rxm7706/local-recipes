@@ -8629,3 +8629,19 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   range moves to 0.85. **Constraints:** nodejs stays at its LTS pin; the recipe lanes' `setup-miniconda`
   `python-version` is the Python a recipe is built for and stays a per-build choice; no test, floor or gate is
   weakened. No flag (chores). Owner `spec-pyforge-steward`.
+- **2026-11-27 (the station packages build on other Pythons) — Found and ruled:** a check after PR #2415 asked
+  whether every environment is on Python 3.14.10 with no other Python installed or used. The environments were,
+  but three things were not. pixi-build solves a host environment for each station package it builds, and the lock
+  kept those 43 records at Python 3.14.7 (33), 3.14.8 (3), 3.15.0 (3) and 3.15.2 (4): their host spec,
+  `python = ">=3.14"`, was still satisfied, so the re-lock never solved them again. Neither a workspace build variant
+  nor a host spec of `*` moved them; only an exact host pin did. The `cpython` and `python-gil` metapackages stayed
+  at 3.14.7 in 76 of 87 environment-platform pairs for the same reason. And 32 of the 34 environments installed in
+  the main checkout still ran 3.14.7, or 3.15.0 for `pyforge-marshal`. **Ruled** (operator, 2026-11-27: "check and
+  confirm - every env is now python 3.14.10, there are no other versions of python installed or used", then "Yes,
+  fix them"). **For steward:** this entry binds `spec-pyforge-steward` CAP-153 (realized, no text change) and
+  decomposes as Story 149.1 on Epic 149: each station package's build host pins `python = "3.14.10.*"`, held equal
+  to the declaration by `target-version-check`, which also reds a build host or a `libpython`, `cpython` or
+  `python-gil` entry off the declared version; `cpython` and `python-gil` are re-solved by locking once with them
+  pinned and once without. After the merge the main checkout's environments are installed again and its build
+  cache cleared. **Constraints:** the declaration stays the one place the version is chosen; no environment's
+  other packages move. No flag (chore). Owner `spec-pyforge-steward`.

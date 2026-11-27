@@ -20,7 +20,7 @@ name = "pixi-build-python"
 version = "0.*"
 
 [package.host-dependencies]
-python = ">=3.14"          # decision D6: the floor is 3.14, matching pyproject.toml's requires-python (Mason wraps the CFE craft, which runs on the factory interpreter)
+python = "3.14.10.*"    # steward Story 149.1: the build host runs the estate's one Python, pixi.toml's [feature.interpreter.dependencies]; target-version-check holds the two equal
 hatchling = "*"
 
 # Story 3.1 (+ Story 3.7's fifth): the five engines Mason drives

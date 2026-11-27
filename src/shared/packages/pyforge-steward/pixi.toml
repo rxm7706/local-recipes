@@ -17,7 +17,7 @@ name = "pixi-build-python"
 version = "0.*"
 
 [package.host-dependencies]
-python = ">=3.14"
+python = "3.14.10.*"    # steward Story 149.1: the build host runs the estate's one Python, pixi.toml's [feature.interpreter.dependencies]; target-version-check holds the two equal
 hatchling = "*"
 
 # `age` (Story 1.3): the real encrypt/decrypt engine `keys.py`'s
