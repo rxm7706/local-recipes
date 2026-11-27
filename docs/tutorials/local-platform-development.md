@@ -13,7 +13,7 @@ sources:
   - scripts/platform-ci-local.sh
   - pixi.toml
   - pixi.lock
-verified: 2026-11-26
+verified: 2026-11-27
 ---
 
 # Local Platform Development
