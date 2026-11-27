@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 import shutil
 import signal
@@ -315,3 +316,26 @@ def test_sigint_keeps_scratch_root(tmp_path: Path, capsys) -> None:
     assert code == preflight.EXIT_INTERRUPT
     assert roots and roots[0].is_dir()
     assert "lane logs and scratch kept at" in capsys.readouterr().err
+
+
+def test_a_lane_writes_bytecode_whatever_its_caller_says(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story 117.19: ``PYTHONDONTWRITEBYTECODE`` never reaches a lane, and nothing else the caller set is dropped."""
+    monkeypatch.setenv(preflight.NO_BYTECODE_ENV, "1")
+    monkeypatch.setenv("PYFORGE_SOME_SETTING", "kept")
+    env = preflight._lane_scratch_env(tmp_path / "lane")  # noqa: SLF001
+    assert preflight.NO_BYTECODE_ENV not in env
+    assert env["PYFORGE_SOME_SETTING"] == "kept"
+    assert preflight.NO_BYTECODE_ENV in os.environ, "the caller's own environment is left as it was"
+
+
+def test_a_lane_s_python_writes_and_then_reads_its_bytecode(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Observable, not only a missing key: a module a lane imports is compiled once, and the next import reads it."""
+    monkeypatch.setenv(preflight.NO_BYTECODE_ENV, "1")
+    pkg = tmp_path / "src"
+    _write(pkg / "probe_mod.py", "VALUE = 1\n")
+    env = preflight._lane_scratch_env(tmp_path / "lane")  # noqa: SLF001
+    env["PYTHONPATH"] = str(pkg)
+    for _ in range(2):
+        done = subprocess.run([sys.executable, "-c", "import probe_mod"], env=env, capture_output=True, text=True)
+        assert done.returncode == 0, done.stderr
+    assert list((pkg / "__pycache__").glob("probe_mod.*.pyc")), "the lane wrote the module's bytecode"

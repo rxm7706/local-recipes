@@ -844,12 +844,21 @@ def _announce_scratch_kept(scratch_root: Path) -> None:
     print(f"preflight: lane logs and scratch kept at {scratch_root}", file=sys.stderr)
 
 
+#: Story 117.19: a variable no lane inherits. An agent session exports it (Claude Code does; the operator's terminal does
+#: not), and with it no ``.pyc`` is written, so every xdist worker of every lane rewrites and compiles each module it
+#: loads, on every run: marshal's collection takes 12.8 s that way and 3.4 s with the bytecode a run before wrote.
+#: Without it a lane writes bytecode beside its sources, into ``__pycache__/`` directories, which ``.gitignore`` ignores
+#: at every depth -- as a run from the operator's terminal does.
+NO_BYTECODE_ENV = "PYTHONDONTWRITEBYTECODE"
+
+
 def _lane_scratch_env(scratch_dir: Path) -> dict[str, str]:
     scratch_dir.mkdir(parents=True, exist_ok=True)
     basetemp = scratch_dir / "pytest-basetemp"
     cache_dir = scratch_dir / "pytest-cache"
     coverage = scratch_dir / ".coverage"
     env = os.environ.copy()
+    env.pop(NO_BYTECODE_ENV, None)
     env["TMPDIR"] = str(scratch_dir)
     env["COVERAGE_FILE"] = str(coverage)
     prior = env.get("PYTEST_ADDOPTS", "").strip()
