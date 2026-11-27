@@ -118,3 +118,52 @@ def test_a_step_that_is_not_a_named_task_is_named() -> None:
     problems = unmirrored_steps(workflow, pixi)
     assert len(problems) == 1
     assert problems[0].startswith("scripts-suite step 'raw'")
+
+
+_PART = re.compile(r"^matrix\.part == '(?P<part>[^']+)'$")
+
+
+def unrouted_steps(workflow: dict[str, Any]) -> list[str]:
+    """Steward Story 117.21: since ``scripts-suite`` runs as a matrix of parts, each ``run:`` step names, in its
+    ``if:``, exactly one part the matrix declares, and that part installs the environment the step runs in. A step
+    whose ``if:`` names no declared part would run on no runner and stay green."""
+    job = workflow["jobs"]["scripts-suite"]
+    parts = {
+        entry["part"]: set(str(entry.get("environments", "")).split())
+        for entry in (job.get("strategy", {}).get("matrix", {}).get("include") or [])
+    }
+    problems: list[str] = []
+    for step in job["steps"]:
+        run = step.get("run")
+        if run is None:
+            continue
+        name = step.get("name", run)
+        match = _PIXI_RUN.fullmatch(run.strip())
+        if not parts:
+            if "if" in step:
+                problems.append(f"scripts-suite step {name!r} has an if: but the job has no parts")
+            continue
+        routed = _PART.fullmatch(str(step.get("if", "")).strip())
+        if routed is None or routed["part"] not in parts:
+            problems.append(f"scripts-suite step {name!r} names no declared part in its if: ({step.get('if')!r})")
+        elif match is not None and match["env"] not in parts[routed["part"]]:
+            problems.append(
+                f"scripts-suite step {name!r} runs in {match['env']!r}, which part {routed['part']!r} does not install"
+            )
+    return problems
+
+
+def test_every_scripts_suite_step_runs_on_one_part_that_installs_its_environment() -> None:
+    workflow, _pixi = _live()
+    assert unrouted_steps(workflow) == []
+    assert len(workflow["jobs"]["scripts-suite"]["strategy"]["matrix"]["include"]) >= 2
+
+
+def test_a_step_routed_to_no_part_is_named() -> None:
+    workflow, _pixi = _live()
+    step = workflow["jobs"]["scripts-suite"]["steps"][-1]
+    step["if"] = "matrix.part == 'stdllb'"
+    assert any("names no declared part" in p for p in unrouted_steps(workflow))
+    step["if"] = "matrix.part == 'library'"
+    step["run"] = "pixi run --frozen -e pyforge-ci pyforge-deps-test"
+    assert any("does not install" in p for p in unrouted_steps(workflow))

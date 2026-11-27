@@ -158,6 +158,7 @@ Both are gitignored and local to the checkout.
 
 - `pr-preflight` does not cover the container lanes, atlas's browser gate, herald's browser check or scribe's Postgres bring-up. Run those by hand when your diff touches them.
 - When a scribe lane is red while another preflight is running, rerun it alone before you treat it as a real failure: `pixi run -e pyforge-scribe pyforge-scribe-live-test`, the half that holds the Postgres tests, after `pixi run -e pyforge-scribe-pg scribe-pg-up`.
+- Every lane writes Python bytecode into `__pycache__/` beside its sources, which git ignores, even when the shell that starts the run sets `PYTHONDONTWRITEBYTECODE` (an agent session does). Without it, every test worker compiled every module again on every run.
 - The run starts the longest lanes first and gives an xdist lane workers in proportion to its expected work. It reads each lane's time from the journal; in a worktree with no journal yet it reads `docs/governance/preflight-budgets.toml`, so the first run in a fresh worktree is ordered like the later ones.
 - `pixi run -e pyforge-guild preflight-budget` reads the journal and reports lanes whose median time is over 1.5 times their budget in `docs/governance/preflight-budgets.toml`. It is a warning, never the preflight's verdict.
 - `steward preflight verify-deferred` was not executed for this page, because it runs the full preflight; its behaviour is taken from `--help`, the module and the station contract.

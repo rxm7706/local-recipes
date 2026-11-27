@@ -28,7 +28,7 @@ import sys
 import textwrap
 import threading
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
@@ -216,13 +216,19 @@ def _prepare_stub_root(root: Path) -> Path:
           pg_ctl)
             if [ "$action" = stop ]; then
               echo "stop pg $$" >> "$log"
+              # Story 117.20: every start and stop of the shared work directory's services, in the order they
+              # happened, for the tests to read whether two runs' services were ever up at once.
+              if [ -n "$work" ]; then echo "stop $log" >> "$work/.events"; fi
               if [ -n "$pgdata" ] && [ -f "$pgdata/postmaster.pid" ]; then
                 kill "$(head -1 "$pgdata/postmaster.pid")" 2>/dev/null || true
               fi
+              # Story 117.20: the run that started the services is named in .active by its stub log, one per run;
+              # a stop by another run is a cross-stop. (Before, .active held the stand-in's pid and was compared with
+              # this stub's own, which always differ: every stop read as a cross-stop.)
               if [ "${PLATFORM_CI_LOCAL_NO_LOCK:-0}" = 1 ] && [ -n "$work" ] && [ -f "$work/.active" ]; then
                 active="$(cat "$work/.active")"
-                if [ "$active" != "$$" ]; then
-                  echo "cross-stop $$ vs active $active" >> "$log"
+                if [ "$active" != "$log" ]; then
+                  echo "cross-stop $log vs active $active" >> "$log"
                   touch "$work/.broken"
                 fi
               fi
@@ -238,7 +244,7 @@ def _prepare_stub_root(root: Path) -> Path:
                 new_session "$pgdata/postgres" -D "$pgdata" >> "$log" 2>&1 &
                 echo $! > "$pgdata/postmaster.pid"
                 echo "spawned postgres pid=$! marker=${PLATFORM_CI_STUB_MARKER:-none}" >> "$log"
-                if [ -n "$work" ]; then echo "$!" > "$work/.active"; fi
+                if [ -n "$work" ]; then echo "$log" > "$work/.active"; echo "start $log" >> "$work/.events"; fi
               fi
             fi
             ;;
@@ -293,7 +299,7 @@ def _prepare_stub_root(root: Path) -> Path:
         """\
         #!/usr/bin/env bash
         log="${PLATFORM_CI_STUB_LOG:-/dev/null}"
-        if [ "${PLATFORM_CI_STUB_SLOW:-0}" = 1 ]; then sleep 8; fi
+        if [ "${PLATFORM_CI_STUB_SLOW:-0}" = 1 ]; then sleep "${PLATFORM_CI_STUB_SLOW_S:-2}"; fi
         echo "python $@ $$" >> "$log"
         exit 0
         """
@@ -457,6 +463,45 @@ def _log_has_cross_stop(log_text: str) -> bool:
     return "cross-stop" in log_text
 
 
+def _services_overlapped(work: Path) -> bool:
+    """Story 117.20: were two runs' services up at once in the shared work directory? Read from the stub's ordered
+    ``.events`` (``start <run>`` and ``stop <run>``, a run named by its stub log): a start while another run's
+    services are up is an overlap. A stop of a run whose services are not up (another run's, or a clean-up) changes
+    nothing."""
+    events = (work / ".events").read_text(encoding="utf-8").splitlines() if (work / ".events").is_file() else []
+    up: set[str] = set()
+    for line in events:
+        action, _, run = line.partition(" ")
+        if action == "start":
+            if up - {run}:
+                return True
+            up.add(run)
+        elif action == "stop":
+            up.discard(run)
+    return False
+
+
+def _wait_until(ready: Callable[[], bool], what: str, timeout: float = 60.0) -> None:
+    """Story 117.20: start a second run on the first run's state, not on a clock. Before, the second run started one or
+    two seconds after the first, and the first was kept slow (8 s on each stubbed ``python`` call, about 33 s a test) so
+    that it was sure to still hold the lock, or still run, when the second arrived."""
+    deadline = time.monotonic() + timeout
+    while not ready():
+        if time.monotonic() > deadline:
+            raise AssertionError(f"timed out after {timeout:.0f} s waiting for {what}")
+        time.sleep(0.05)
+
+
+def _holds_the_lock(lock: Path) -> Callable[[], bool]:
+    """The first run holds the lock: ``acquire_run_lock`` writes ``<lock>.holder`` once ``flock`` is taken."""
+    return lambda: Path(f"{lock}.holder").is_file()
+
+
+def _services_up(stub_log: Path) -> Callable[[], bool]:
+    """The first run, without a lock, has started its services: its stub log names the spawned postgres."""
+    return lambda: stub_log.is_file() and "spawned postgres" in stub_log.read_text(encoding="utf-8")
+
+
 def test_two_overlapping_runs_with_lock_both_pass(tmp_path: Path) -> None:
     lock = tmp_path / "platform-ci-local.lock"
     work = tmp_path / "work"
@@ -481,7 +526,7 @@ def test_two_overlapping_runs_with_lock_both_pass(tmp_path: Path) -> None:
     t1 = threading.Thread(target=runner, args=(tmp_path / "run1.log",), kwargs={"slow": True})
     t2 = threading.Thread(target=runner, args=(tmp_path / "run2.log",), kwargs={"slow": False})
     t1.start()
-    time.sleep(1)
+    _wait_until(_holds_the_lock(lock), "the first run to take the lock")
     t2.start()
     t1.join(timeout=90)
     t2.join(timeout=90)
@@ -495,6 +540,9 @@ def test_two_overlapping_runs_with_lock_both_pass(tmp_path: Path) -> None:
     log2 = (tmp_path / "run2.log").read_text()
     assert not _log_has_cross_stop(log1), log1
     assert not _log_has_cross_stop(log2), log2
+    # Story 117.20: the lock is what kept them apart: both runs started services, and never at once.
+    assert "start pg" in log1 and "start pg" in log2
+    assert not _services_overlapped(work), (work / ".events").read_text(encoding="utf-8")
 
 
 def test_one_run_fails_other_passes_under_lock(tmp_path: Path) -> None:
@@ -530,7 +578,7 @@ def test_one_run_fails_other_passes_under_lock(tmp_path: Path) -> None:
         kwargs={"fail_ruff": False, "slow": False},
     )
     t1.start()
-    time.sleep(1)
+    _wait_until(_holds_the_lock(lock), "the failing run to take the lock")
     t2.start()
     t1.join(timeout=90)
     t2.join(timeout=90)
@@ -567,7 +615,7 @@ def test_lock_wait_timeout_names_holder(tmp_path: Path) -> None:
     _write_recording_fuser(bin_dir)  # Story 101.1: counts the report's scans
     t = threading.Thread(target=hold)
     t.start()
-    time.sleep(1)
+    _wait_until(_holds_the_lock(lock), "the holder to take the lock")
     waiter = _run_platform_ci_local(
         tmp_path,
         bin_dir,
@@ -613,7 +661,10 @@ def test_sigkilled_holder_does_not_block_next_run(tmp_path: Path) -> None:
         env=env,
         start_new_session=True,
     )
-    time.sleep(1)
+    # Killed once its services are up: they lead sessions of their own (setsid) and outlive it, and the next run must
+    # still take the lock and pass.
+    events = work / ".events"
+    _wait_until(lambda: events.is_file() and "start " in events.read_text(encoding="utf-8"), "the holder's services")
     os.killpg(holder.pid, signal.SIGKILL)
     holder.wait(timeout=10)
     time.sleep(0.5)
@@ -653,13 +704,15 @@ def test_without_lock_overlapping_runs_do_not_both_pass(tmp_path: Path) -> None:
     t1 = threading.Thread(target=runner, args=(tmp_path / "run1.log",), kwargs={"slow": True})
     t2 = threading.Thread(target=runner, args=(tmp_path / "run2.log",), kwargs={"slow": False})
     t1.start()
-    time.sleep(2)
+    _wait_until(_services_up(tmp_path / "run1.log"), "the first run's services to start")
     t2.start()
     t1.join(timeout=90)
     t2.join(timeout=90)
 
     assert len(results) == 2
     logs = (tmp_path / "run1.log").read_text() + (tmp_path / "run2.log").read_text()
+    # Story 117.20: the runs did overlap, so what follows is about overlap, not about two runs one after the other.
+    assert _services_overlapped(work), (work / ".events").read_text(encoding="utf-8")
     pass_count = sum(p.returncode == 0 and "RESULT: PASS" in p.stdout for p in results)
     assert pass_count < 2 or _log_has_cross_stop(logs), (
         f"without a lock, overlapping runs must cross-stop or fail; logs:\n{logs}"
@@ -1128,3 +1181,20 @@ def test_context_tar_with_gnu_tar_keeps_the_gnu_command(tmp_path: Path) -> None:
     proc = _run(tmp_path, _function("_tar_listed_paths") + "_tar_listed_paths\n", path=tools, stdin=listing)
     assert proc.returncode == 0, proc.stderr
     assert (tmp_path / "tar.log").read_text(encoding="utf-8") == "tar --null -T - -cf - --ignore-failed-read\n"
+
+
+@pytest.mark.parametrize(
+    ("events", "overlapped"),
+    [
+        (["start a", "start b"], True),
+        (["start a", "stop a", "start b", "stop b"], False),
+        (["start a", "stop b", "stop a", "start b"], False),  # a clean-up stop of another run changes nothing
+        (["start a", "start a"], False),  # one run starting its own services again is no overlap
+        ([], False),
+    ],
+)
+def test_the_overlap_reading_of_the_ordered_events(tmp_path: Path, events: list[str], overlapped: bool) -> None:
+    """Story 117.20: the reading the lock tests rest on, on events written by hand."""
+    if events:
+        (tmp_path / ".events").write_text("\n".join(events) + "\n", encoding="utf-8")
+    assert _services_overlapped(tmp_path) is overlapped

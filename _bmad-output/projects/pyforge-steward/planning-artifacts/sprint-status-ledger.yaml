@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 822
+# stories: 826
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -88,7 +88,11 @@ development_status:
   117-16-the-scripts-lib-lane-runs-under-xdist-and-builds-its-flag-reports-once: done
   117-17-a-push-reuses-the-green-verdict-its-tree-already-has: done
   117-18-the-pr-workflows-write-caches-from-main-only-and-the-changes-job-fetches-no-file-contents: done
+  117-19-every-preflight-lane-writes-bytecode-whatever-its-caller-says: done
   117-2-a-station-s-coverage-floor-is-judged-from-its-own-suite-s-run-and-coverage-gates-yml-retires: done
+  117-20-the-platform-ci-local-concurrency-tests-start-the-second-run-when-the-first-holds-the-lock: done
+  117-21-the-longest-pr-jobs-run-as-parallel-shards-and-jobs: done
+  117-22-the-docs-site-slot-holds-the-cores-its-widest-lane-will-take-and-that-lane-goes-first: done
   117-3-the-preflight-admits-lanes-longest-first-by-the-cores-they-will-use: done
   117-4-each-station-suite-runs-as-its-package-local-and-live-tree-halves: done
   117-5-preflight-budget-names-every-lane-over-its-journal-derived-budget: done

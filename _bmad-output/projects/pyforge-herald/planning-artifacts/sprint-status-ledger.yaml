@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: herald
-# stories: 284
+# stories: 287
 development_status:
   1-1-package-scaffold-for-pyforge-herald: done
   1-2-transport-port-primary-mcp-client-adapter-the-transport-spike: done
@@ -166,6 +166,7 @@ development_status:
   56-1-herald-s-exit-codes-are-held-to-their-declared-domain: done
   57-1-herald-s-verbs-take-both-spellings-for-json: done
   58-1-herald-s-suite-runs-under-xdist-its-site-builds-in-one-worker: done
+  59-1-herald-s-site-builds-run-side-by-side-each-worker-in-its-own-copy-of-docs-site: done
   6-1-implement-herald-cli-dispatcher: done
   6-2-implement-shared-argument-conventions: done
   6-3-implement-cli-authentication-authorization: done
@@ -290,6 +291,8 @@ development_status:
   epic-57-retrospective: optional
   epic-58: done
   epic-58-retrospective: optional
+  epic-59: done
+  epic-59-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional
   epic-7: done

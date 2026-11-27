@@ -858,6 +858,17 @@ Folded Dreams: [[bmad-drift-new-artifact-shape]], [[bmad-method-version-drift]],
   code do not move; `--jobs 1` runs every detector and source one at a time, as before; a source that raises reads
   `unknown` for its own row and the others still run; an unimportable `pyforge.doctor` still yields every row as
   `unknown`. No flag (a chore: the same measurements, side by side). Owner `spec-pyforge-doctor`.
+- **2026-11-26 (the contract mutation tests analyse each module once) — Found and ruled:** measured on
+  `799ff9e627`: `tests/meta/test_public_contract.py` spends 215 single-thread seconds of `pyforge-doctor-live-test`,
+  the most of any module across the eleven heaviest lanes. Each of its 22 mutation tests (81 cases with their
+  parameters) adds one synthetic module and derives the facts of the whole package again, parsing and walking every
+  module of `pyforge.doctor` for about 3 s; the module fixture that derives them once is also derived again in each
+  of 11 xdist workers. **Ruled** (operator, 2026-11-26: "Approved", on the plan steward's Dream entry of the same date
+  records). **For doctor:** this entry binds `spec-pyforge-steward:CAP-175` (realized here, no text change in this
+  station's Spec) and decomposes as Epic 67, one story: the per-module part of the analysis is computed once per
+  module text in a run, so a mutation analyses its one synthetic module and reuses the rest. **Constraints:** every
+  assertion stays as it is; the analysis of a module is a pure function of its text, so the facts are the same; no
+  test is deleted, skipped or re-marked. No flag (a chore). Owner `spec-pyforge-doctor`.
 
 ## 2026-10-26 — A spike report is not a corrupt file, and the classifier can't yet tell the difference (folded from bmad-drift-new-artifact-shape)
 

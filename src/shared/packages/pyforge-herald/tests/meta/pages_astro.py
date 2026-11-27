@@ -4,12 +4,14 @@ test module; the meta tests import it by name.
 
 Building Astro needs docs-site's ``node_modules`` (``pixi run -e site docs-site-install``), which
 ``pyforge-herald-test-built`` installs first (Story 45.1); without them ``needs_astro`` skips a test, naming that
-command, or fails it under ``HERALD_DOCS_SITE_REQUIRED``. Each build rewrites ``docs-site/public/`` from scratch, as
-every build does (Story 43.3). ``pages-check`` (``docs-site/scripts/pages.mts``) needs only node: its herald tests run
-wherever node does."""
+command, or fails it under ``HERALD_DOCS_SITE_REQUIRED``. Each build rewrites ``public/`` from scratch, as every build
+does (Story 43.3), so a build never runs in the real ``docs-site/``: each test process builds in its own copy
+(:func:`build_site_dir`, Story 59.1), and builds in different processes run side by side. ``pages-check``
+(``docs-site/scripts/pages.mts``) needs only node: its herald tests run wherever node does."""
 
 from __future__ import annotations
 
+import atexit
 import difflib
 import functools
 import json
@@ -18,6 +20,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from collections.abc import Callable
 from html.parser import HTMLParser
 from pathlib import Path
@@ -83,6 +86,65 @@ def requires_astro(*, ready: bool, required: bool) -> Callable[[Callable[..., An
 
 
 needs_astro = requires_astro(ready=RENDER_READY, required=os.environ.get(DOCS_SITE_REQUIRED_ENV) == "1")
+
+
+#: Story 59.1: what a copy of ``docs-site/`` leaves out. Each is written by a build or the install and read back by the
+#: next build, so a copy that shared one would let two builds see each other's files.
+_NOT_COPIED = frozenset({"node_modules", "public", "build", ".astro"})
+#: The caches inside ``node_modules/`` a build writes; a copy gets its own (empty) place for each.
+_NOT_LINKED = frozenset({".astro", ".vite", ".cache"})
+_BUILD_TREE: Path | None = None
+
+
+def make_build_tree(dest: Path, repo: Path) -> Path:
+    """A copy of ``repo`` an Astro build can write to without touching ``repo`` (Story 59.1); returns ``dest``.
+
+    Every top-level entry of ``repo`` is a link to the real one, so the build reads the repository it reads from the
+    real tree, except ``docs-site/``: its sources are copied, without what a build or the install writes
+    (:data:`_NOT_COPIED`), and its ``node_modules/`` is a directory of links to the real install's entries, without the
+    caches a build writes there (:data:`_NOT_LINKED`). A build in the copy writes only the copy. Astro derives its
+    scoped class names from file paths, so a copy's site differs from the real tree's in those names alone.
+    """
+    dest.mkdir(parents=True)
+    for entry in sorted(repo.iterdir()):
+        if entry.name != "docs-site":
+            (dest / entry.name).symlink_to(entry)
+    site = repo / "docs-site"
+    # Links stay links: ``src/content/docs`` links to ``../../../docs``, which in the copy is the link to the real
+    # ``docs/``, so the copy reads the repository's docs as the real tree does and the shelf finds the same root.
+    shutil.copytree(
+        site,
+        dest / "docs-site",
+        symlinks=True,
+        ignore=lambda d, names: [n for n in names if Path(d) == site and n in _NOT_COPIED],
+    )
+    modules = dest / "docs-site" / "node_modules"
+    modules.mkdir()
+    if (site / "node_modules").is_dir():
+        for entry in sorted((site / "node_modules").iterdir()):
+            if entry.name not in _NOT_LINKED:
+                (modules / entry.name).symlink_to(entry)
+    return dest
+
+
+def build_site_dir() -> Path:
+    """The ``docs-site/`` this process builds in: its own copy, made on first use and removed when the process exits.
+
+    Under pytest-xdist each worker is a process, so each has its own copy and their builds run side by side; within a
+    process the builds run in turn, as a test's ``subprocess.run`` does. The copy sits under ``TMPDIR``, beside the
+    tests' temporary directories, so Astro's renames between the two never cross a filesystem (Story 117.13).
+    """
+    global _BUILD_TREE
+    if _BUILD_TREE is None:
+        tree = make_build_tree(Path(tempfile.mkdtemp(prefix="herald-site-")) / "repo", repo=REPO_ROOT)
+        atexit.register(shutil.rmtree, tree.parent, True)
+        _BUILD_TREE = tree
+    return _BUILD_TREE / "docs-site"
+
+
+def build_astro_bin() -> Path:
+    """Astro's bin in this process's copy of ``docs-site/`` (:func:`build_site_dir`)."""
+    return build_site_dir() / "node_modules" / "astro" / "bin" / "astro.mjs"
 
 
 def write(path: Path, text: str | bytes) -> Path:
@@ -324,8 +386,8 @@ def astro_build(
     if inputs is not None:
         env["PAGES_BUILD_INPUTS_DIR"] = str(inputs)
     done = subprocess.run(
-        [NODE or "node", str(ASTRO_BIN), "build", "--outDir", str(out)],
-        cwd=DOCS_SITE,
+        [NODE or "node", str(build_astro_bin()), "build", "--outDir", str(out)],
+        cwd=build_site_dir(),
         env=env,
         capture_output=True,
         text=True,

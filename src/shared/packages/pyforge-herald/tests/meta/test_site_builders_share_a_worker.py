@@ -1,9 +1,12 @@
-"""Story 58.1 (spec-pyforge-steward:CAP-175): herald's suite runs under pytest-xdist, and no two Astro builds overlap.
+"""Stories 58.1 and 59.1 (spec-pyforge-steward:CAP-175): herald's suite runs under pytest-xdist, and its site builds
+run side by side without seeing each other's files.
 
-Every Astro build runs with ``docs-site/`` as its working directory and rewrites ``docs-site/public`` from scratch, so
-the modules that build must share one xdist worker. ``tests/conftest.py`` puts a module in that group when it names the
-build helper ``pages_astro``. This module holds the two halves of that rule: nothing starts Astro without the helper,
-and the conftest marks exactly the modules that name it.
+Every Astro build rewrites ``public/`` and Astro's caches under the ``docs-site/`` it runs in. Story 58.1 kept every
+build in one xdist worker, in the one real ``docs-site/``. Since Story 59.1 each test process builds in its own copy
+(``pages_astro.build_site_dir``), and ``tests/conftest.py`` keeps on one worker only the tests of a builder module that
+share a module-scoped fixture, so that fixture builds once. This module holds the rules: nothing starts Astro without
+the build helper, every build runs in the process's copy, a copy writes nothing of the real tree, and the conftest
+groups exactly the tests that share a module fixture of a module that builds.
 """
 
 from __future__ import annotations
@@ -11,9 +14,15 @@ from __future__ import annotations
 import ast
 import importlib.util
 import re
+import tempfile
 from pathlib import Path
 
+import pages_astro
 import pytest
+
+# Story 59.1: this module imports the build helper, which reads the repository's docs-site/ and hands its root to the
+# build, so it runs in the live-tree half, beside the modules whose builds it governs (steward Story 124.2).
+pytestmark = pytest.mark.live_tree
 
 TESTS = Path(__file__).resolve().parents[1]
 BUILD_HELPER = TESTS / "meta" / "pages_astro.py"
@@ -35,57 +44,237 @@ def _test_modules() -> list[Path]:
     return sorted(TESTS.rglob("test_*.py"))
 
 
-def _argv_strings(path: Path) -> list[str]:
-    """The string constants a module hands to ``subprocess`` calls as a literal argument list."""
+def _subprocess_calls(path: Path) -> list[ast.Call]:
     tree = ast.parse(path.read_text(encoding="utf-8"))
-    found: list[str] = []
+    calls = []
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
             continue
         func = node.func
         owner = func.value.id if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name) else ""
-        if owner != "subprocess":
-            continue
-        for arg in node.args[:1]:
-            if isinstance(arg, ast.List | ast.Tuple):
-                found.extend(e.value for e in arg.elts if isinstance(e, ast.Constant) and isinstance(e.value, str))
+        if owner == "subprocess":
+            calls.append(node)
+    return calls
+
+
+def _argv_strings(call: ast.Call) -> list[str]:
+    """The string constants a ``subprocess`` call hands over as a literal argument list."""
+    found: list[str] = []
+    for arg in call.args[:1]:
+        if isinstance(arg, ast.List | ast.Tuple):
+            found.extend(e.value for e in arg.elts if isinstance(e, ast.Constant) and isinstance(e.value, str))
     return found
+
+
+def _is_astro_build(call: ast.Call) -> bool:
+    argv = _argv_strings(call)
+    return "build" in argv and "--outDir" in argv
+
+
+def _cwd_is_the_copy(call: ast.Call) -> bool:
+    for keyword in call.keywords:
+        if keyword.arg == "cwd" and isinstance(keyword.value, ast.Call):
+            func = keyword.value.func
+            name = func.id if isinstance(func, ast.Name) else func.attr if isinstance(func, ast.Attribute) else ""
+            return name == "build_site_dir"
+    return False
 
 
 def test_the_build_helper_is_the_module_that_runs_astro() -> None:
     source = BUILD_HELPER.read_text(encoding="utf-8")
-    assert "def astro_build(" in source and "cwd=DOCS_SITE" in source
+    assert "def astro_build(" in source and "cwd=build_site_dir()" in source
 
 
 def test_no_test_module_starts_a_build_without_the_helper() -> None:
-    """A module that ran Astro or a node package runner itself would build outside the group, beside another build."""
+    """A module that ran Astro or a node package runner itself, without naming the helper, would build in the real
+    tree, beside another build."""
     conftest = _conftest()
     offenders = []
     for path in _test_modules():
         if conftest.module_builds_the_site(str(path)):
             continue
-        argv = _argv_strings(path)
+        argv = [a for call in _subprocess_calls(path) for a in _argv_strings(call)]
         if any(a in _BUILD_COMMANDS or _STARTS_A_BUILD.search(a) for a in argv):
             offenders.append(str(path.relative_to(TESTS)))
     assert not offenders, f"these modules start a build without tests/meta/pages_astro.py: {offenders}"
 
 
-def test_the_conftest_groups_the_modules_that_name_the_helper() -> None:
+def test_every_astro_build_runs_in_the_process_s_copy() -> None:
+    """Story 59.1: each ``astro build`` a test module or the helper starts has the process's copy as its working
+    directory, never the real ``docs-site/``. Non-vacuous: the helper and the agent-surface module each start one."""
+    builders = {}
+    for path in [BUILD_HELPER, *_test_modules()]:
+        calls = [call for call in _subprocess_calls(path) if _is_astro_build(call)]
+        if calls:
+            builders[path.name] = all(_cwd_is_the_copy(call) for call in calls)
+    assert {"pages_astro.py", "test_agent_surface_and_changes.py"} <= set(builders)
+    assert [name for name, in_copy in builders.items() if not in_copy] == []
+
+
+#: The site directory's name, read from the helper rather than written out (a fixture tree below uses it).
+SITE = pages_astro.DOCS_SITE.name
+
+
+def _fake_repo(root: Path) -> Path:
+    """A repository shaped as the real one is around its site: two entries beside it, and in it sources, an install,
+    and what a build writes."""
+    for rel in (
+        "notes/a.md",
+        "top.toml",
+        f"{SITE}/src/x.ts",
+        f"{SITE}/package.json",
+        f"{SITE}/public/old.html",
+        f"{SITE}/build/site/index.html",
+        f"{SITE}/.astro/data-store.json",
+        f"{SITE}/node_modules/astro/bin/astro.mjs",
+        f"{SITE}/node_modules/.astro/cache",
+        f"{SITE}/node_modules/.vite/deps",
+        f"{SITE}/node_modules/.bin/astro",
+    ):
+        pages_astro.write(root / rel, "x")
+    # A link inside the site, as ``src/content/docs`` links to the repository's ``docs/``.
+    (root / SITE / "src" / "shelf").symlink_to(Path("..") / ".." / "notes")
+    return root
+
+
+#: What a build writes in the tree it runs in. A test reading one of these under the real ``docs-site/`` reads what no
+#: test's build writes any more (Story 59.1): in a fresh checkout nothing, on a laptop whatever an old build left.
+_BUILD_OUTPUTS = frozenset({"public", "build", ".astro"})
+
+
+def _reads_a_real_build_output(path: Path) -> list[int]:
+    """The lines of ``path`` that join ``DOCS_SITE`` (or the agent-surface module's ``_docs_site()``) with a build
+    output's name."""
+    found = []
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+        if not (isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div)):
+            continue
+        left, right = node.left, node.right
+        real = (
+            (isinstance(left, ast.Name) and left.id == "DOCS_SITE")
+            or (isinstance(left, ast.Attribute) and left.attr == "DOCS_SITE")
+            or (isinstance(left, ast.Call) and isinstance(left.func, ast.Name) and left.func.id == "_docs_site")
+        )
+        if real and isinstance(right, ast.Constant) and right.value in _BUILD_OUTPUTS:
+            found.append(node.lineno)
+    return found
+
+
+def test_no_test_reads_a_build_output_of_the_real_tree() -> None:
+    """Story 59.1: a test reads what its build wrote in this process's copy (``build_site_dir()``), never the real
+    ``docs-site/public``, ``build`` or ``.astro``."""
+    offenders = {
+        str(path.relative_to(TESTS)): lines
+        for path in [BUILD_HELPER, *_test_modules()]
+        if (lines := _reads_a_real_build_output(path))
+    }
+    assert offenders == {}
+
+
+def test_the_build_output_rule_sees_a_real_read(tmp_path: Path) -> None:
+    probe = tmp_path / "test_probe.py"
+    probe.write_text("from pages_astro import DOCS_SITE\n\npublic = DOCS_SITE / 'public'\nsrc = DOCS_SITE / 'src'\n")
+    assert _reads_a_real_build_output(probe) == [3]
+
+
+def test_a_build_tree_links_the_repository_and_copies_the_site(tmp_path: Path) -> None:
+    repo = _fake_repo(tmp_path / "repo")
+    tree = pages_astro.make_build_tree(tmp_path / "copy", repo=repo)
+
+    assert (tree / "notes").is_symlink() and (tree / "notes").resolve() == (repo / "notes").resolve()
+    assert (tree / "top.toml").is_symlink()
+    site = tree / SITE
+    assert site.is_dir() and not site.is_symlink()
+    assert (site / "src" / "x.ts").is_file() and not (site / "src").is_symlink()
+    # A link stays a link, and resolves through the copy's own link to the real entry.
+    assert (site / "src" / "shelf").is_symlink() and (site / "src" / "shelf" / "a.md").resolve() == (
+        repo / "notes" / "a.md"
+    ).resolve()
+    # What a build or the install writes is not copied, and the build's caches are its own.
+    assert not (site / "public").exists() and not (site / "build").exists() and not (site / ".astro").exists()
+    modules = site / "node_modules"
+    assert modules.is_dir() and not modules.is_symlink()
+    assert (modules / "astro").is_symlink() and (modules / ".bin").is_symlink()
+    assert not (modules / ".astro").exists() and not (modules / ".vite").exists()
+    # A write in the copy, as a build makes, leaves the real tree as it was.
+    pages_astro.write(site / "public" / "new.html", "y")
+    pages_astro.write(modules / ".astro" / "cache", "z")
+    assert not (repo / SITE / "public" / "new.html").exists()
+    assert (repo / SITE / "node_modules" / ".astro" / "cache").read_text(encoding="utf-8") == "x"
+
+
+def test_this_process_builds_in_a_copy_of_its_own(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The copy is made on first use from the repository the helper builds, kept for the process, and placed under
+    ``TMPDIR``, never in the tree it copies."""
+    repo = _fake_repo(tmp_path / "repo")
+    monkeypatch.setattr(pages_astro, "REPO_ROOT", repo)
+    monkeypatch.setattr(pages_astro, "_BUILD_TREE", None)
+    site = pages_astro.build_site_dir()
+    assert site == pages_astro.build_site_dir(), "one copy per process"
+    assert site.name == SITE and (site / "src" / "x.ts").is_file()
+    assert repo.resolve() not in site.resolve().parents
+    assert Path(tempfile.gettempdir()).resolve() in site.resolve().parents
+    assert pages_astro.build_astro_bin() == site / "node_modules" / "astro" / "bin" / "astro.mjs"
+
+
+def test_the_conftest_marks_the_modules_that_name_the_helper() -> None:
     conftest = _conftest()
     names = {p.name for p in _test_modules() if conftest.module_builds_the_site(str(p))}
     assert {"test_one_generator.py", "test_site_shell.py", "test_pages_artifact.py", "test_docs_site_nav.py"} <= names
-    # A module that only names the docs-site pixi tasks builds nothing and must stay out of the one worker.
+    # A module that only names the docs-site pixi tasks builds nothing.
     assert "test_preflight_pages_lane.py" not in names
     assert conftest.DOCS_SITE_XDIST_GROUP
 
 
-def test_every_test_of_a_builder_carries_the_group(request: pytest.FixtureRequest) -> None:
-    """The hook ran on this session's own collection: each collected item of a builder module carries the mark, and
-    no other herald item does."""
+def test_a_builder_s_tests_share_a_worker_by_the_module_fixtures_they_use(request: pytest.FixtureRequest) -> None:
+    """The hook ran on this session's own collection. A test of a builder module that uses a module fixture of its
+    module carries a group of that module; two such tests that share a fixture carry the same group; every other herald
+    test carries none. Checked on what this run selected, which pytest-split may have cut to one shard."""
     conftest = _conftest()
+    by_fixture: dict[tuple[str, str], set[str]] = {}
+    grouped = ungrouped_builders = 0
     for item in request.session.items:
         if TESTS not in Path(str(item.path)).parents:
             continue
         mark = item.get_closest_marker("xdist_group")
-        grouped = mark is not None and mark.args == (conftest.DOCS_SITE_XDIST_GROUP,)
-        assert grouped == conftest.module_builds_the_site(str(item.path)), item.nodeid
+        fixtures = conftest.module_fixtures_of(item) if conftest.module_builds_the_site(str(item.path)) else ()
+        if not fixtures:
+            assert mark is None, item.nodeid
+            ungrouped_builders += conftest.module_builds_the_site(str(item.path))
+            continue
+        assert mark is not None, item.nodeid
+        (group,) = mark.args
+        assert group.startswith(f"{conftest.DOCS_SITE_XDIST_GROUP}:{Path(str(item.path)).name}:"), (item.nodeid, group)
+        assert set(fixtures) <= set(group.rsplit(":", 1)[1].split("+")), (item.nodeid, group)
+        grouped += 1
+        for name in fixtures:
+            by_fixture.setdefault((str(item.path), name), set()).add(group)
+    assert all(len(found) == 1 for found in by_fixture.values()), by_fixture
+    if not any(Path(str(i.path)).name == "test_agent_surface_and_changes.py" for i in request.session.items):
+        pytest.skip("the agent-surface module is not in this run")
+    assert grouped >= 5 and ungrouped_builders > 0
+
+
+def test_tests_that_share_any_module_fixture_share_one_group() -> None:
+    """A test using fixtures ``a`` and ``b`` joins the tests that use only ``a`` and only ``b`` in one group."""
+    conftest = _conftest()
+
+    class Fake:
+        def __init__(self, nodeid: str, fixtures: tuple[str, ...]) -> None:
+            self.nodeid, self.path, self._fixtures = nodeid, BUILD_HELPER.parent / "test_probe.py", fixtures
+
+    items = [
+        Fake("a", ("built",)),
+        Fake("b", ("built", "marketplace")),
+        Fake("c", ("marketplace",)),
+        Fake("d", ("other",)),
+    ]
+    original_builds, original_fixtures = conftest.module_builds_the_site, conftest.module_fixtures_of
+    conftest.module_builds_the_site = lambda path: True
+    conftest.module_fixtures_of = lambda item: item._fixtures
+    try:
+        groups = conftest.docs_site_groups(items)
+    finally:
+        conftest.module_builds_the_site, conftest.module_fixtures_of = original_builds, original_fixtures
+    assert groups["a"] == groups["b"] == groups["c"] == "docs-site:test_probe.py:built+marketplace"
+    assert groups["d"] == "docs-site:test_probe.py:other"

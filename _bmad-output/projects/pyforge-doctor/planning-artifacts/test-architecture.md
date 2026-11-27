@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: efebb6a0bb243b76
-story_count: 202
+source_fingerprint: 2be49e4ea4fd5a92
+story_count: 203
 test_file_count: 132
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 202
-- **Epics parsed:** 65
+- **Stories parsed:** 203
+- **Epics parsed:** 66
 - **Test files inventoried:** 132 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `efebb6a0bb243b76`
+- **Source fingerprint:** `2be49e4ea4fd5a92`
 
 ## Risk Assessment
 
@@ -55,6 +55,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 34: Every capability ships behind a flag — the rule, the gate outside every station, and the retrofit inventory (spec-feature-flag-governance CAP-1, CAP-2, CAP-7; CAP-4's gate clause)
 - Epic 36: A fold is proven complete before its file moves, and the sibling check follows the archive (spec-one-chain-per-station CAP-11)
 - Epic 41: Phases 4 and 5 of the deferral burn-down: doctor's medium and low deferrals
+- Epic 67: The contract mutation tests analyse each module once (spec-pyforge-steward:CAP-175)
 
 ### Low-risk epics
 
@@ -445,6 +446,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 64.1 | Doctor's source cites marshal's and the cutover's decisions qualified | none observed |
 | 65.1 | Doctor's verbs take both spellings for JSON | none observed |
 | 66.1 | The detector run measures the doctor sources beside the script detectors | none observed |
+| 67.1 | The contract mutation tests analyse each module once | none observed |
 
 ## Quality Gates
 

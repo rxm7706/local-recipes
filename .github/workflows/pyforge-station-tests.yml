@@ -1090,15 +1090,15 @@ jobs:
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    # Herald Story 58.1 (spec-pyforge-steward:CAP-175): 2 shards, as the package half has. Every Astro build runs in
-    # the one docs-site tree, so within a shard the builds run in turn (one xdist group); two shards put half of them
-    # on each runner. Each shard uploads its own coverage report and the gate merges them.
+    # Herald Story 58.1 (spec-pyforge-steward:CAP-175): sharded as the package half is; each shard uploads its own
+    # coverage report and the gate merges them. Steward Story 117.21: three shards, since herald Story 59.1 lets the
+    # builds of one shard run side by side, each xdist worker in its own copy of docs-site/.
     strategy:
       fail-fast: false
       matrix:
-        group: [1, 2]
+        group: [1, 2, 3]
     env:
-      PYTEST_ADDOPTS: --splits 2 --group ${{ matrix.group }} --durations-path tests/durations/pyforge-herald.json
+      PYTEST_ADDOPTS: --splits 3 --group ${{ matrix.group }} --durations-path tests/durations/pyforge-herald.json
     steps:
       - uses: actions/checkout@v7
         with:
@@ -1109,10 +1109,8 @@ jobs:
           environments: pyforge-herald site
           cache: true
           cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
-      # test_skf_validators_pass invokes `uv run` directly (not a pixi
-      # dependency -- this station's own skf-frontmatter validator script
-      # is meant to be runnable standalone via uv).
-      - uses: astral-sh/setup-uv@v7
+      # Steward Story 117.21: no setup-uv. test_skf_validators_pass runs `uv run`, and uv is a dependency of herald's
+      # pixi environment (steward Story 126.2), on PATH inside `pixi run`; installing it again cost 12 to 15 s here.
       - run: pixi run --frozen -e site docs-site-install
       - run: pixi run --frozen -e pyforge-herald pyforge-herald-live-test
         env:
@@ -1226,6 +1224,14 @@ jobs:
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Steward Story 117.21 (spec-pyforge-steward CAP-175): 2 shards, as the steward live half has; each uploads its own
+    # coverage report and the marshal gate merges them. The local preflight runs the task unsharded.
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [1, 2]
+    env:
+      PYTEST_ADDOPTS: --splits 2 --group ${{ matrix.group }} --durations-path tests/durations/pyforge-marshal-live.json
     steps:
       - uses: actions/checkout@v7
         with:
@@ -1242,11 +1248,13 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
       - run: pixi run --frozen -e pyforge-marshal pyforge-marshal-live-test
-      # The live-tree half's report, merged with the package half's by the gate job.
+      # This shard's report of the live-tree half; the gate job merges every shard's with the package half's.
+      - name: Name this shard's coverage report
+        run: mv .steward/coverage/marshal-live.json .steward/coverage/marshal-live-${{ matrix.group }}.json
       - uses: actions/upload-artifact@v7
         with:
-          name: coverage-marshal-live
-          path: .steward/coverage/marshal-live.json
+          name: coverage-marshal-live-${{ matrix.group }}
+          path: .steward/coverage/marshal-live-${{ matrix.group }}.json
           if-no-files-found: error
           retention-days: 3
 

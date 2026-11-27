@@ -844,12 +844,21 @@ def _announce_scratch_kept(scratch_root: Path) -> None:
     print(f"preflight: lane logs and scratch kept at {scratch_root}", file=sys.stderr)
 
 
+#: Story 117.19: a variable no lane inherits. An agent session exports it (Claude Code does; the operator's terminal does
+#: not), and with it no ``.pyc`` is written, so every xdist worker of every lane rewrites and compiles each module it
+#: loads, on every run: marshal's collection takes 12.8 s that way and 3.4 s with the bytecode a run before wrote.
+#: Without it a lane writes bytecode beside its sources, into ``__pycache__/`` directories, which ``.gitignore`` ignores
+#: at every depth -- as a run from the operator's terminal does.
+NO_BYTECODE_ENV = "PYTHONDONTWRITEBYTECODE"
+
+
 def _lane_scratch_env(scratch_dir: Path) -> dict[str, str]:
     scratch_dir.mkdir(parents=True, exist_ok=True)
     basetemp = scratch_dir / "pytest-basetemp"
     cache_dir = scratch_dir / "pytest-cache"
     coverage = scratch_dir / ".coverage"
     env = os.environ.copy()
+    env.pop(NO_BYTECODE_ENV, None)
     env["TMPDIR"] = str(scratch_dir)
     env["COVERAGE_FILE"] = str(coverage)
     prior = env.get("PYTEST_ADDOPTS", "").strip()
@@ -1328,11 +1337,16 @@ def _next_lane(
         # lane pending docs-site lanes depend on; then declared order. Story 117.2 made the order explicit: the
         # station coverage gates depend on their suites, and herald's suite is itself a docs-site lane, so
         # 'needed by a pending dependent' alone would hand the turn to the suite before the install it reads.
+        # Story 117.22: among lanes the 'needed' rule ties, the longest expected goes first, then declared order.
+        # herald's coverage gate needs both its halves, and since herald Story 59.1 the live half builds side by side
+        # and is the chain's longest lane by far; in declared order it started behind the package half, 78 s in, on
+        # the two cores left by then.
         first = min(
             docs,
             key=lambda lane: (
                 lane.task != DOCS_SITE_INSTALL_TASK,
                 not _needed_by_pending_dependent(lane, pending),
+                -(expected or {}).get(_lane_key(lane), 0.0),
                 lanes.index(lane),
             ),
         )
@@ -1695,6 +1709,18 @@ def run_preflight(
         if any(lane.task in DOCS_SITE_TASKS and _lane_key(lane) in xdist_lanes for lane in lanes)
         else 1
     )
+    # Story 117.22: and as wide as the share its widest xdist lane is planned to take (its expected work over the
+    # target seconds), up to half the machine. Two cores held for the slot left herald's live half on two workers for
+    # 350 s, though its builds run side by side since herald Story 59.1; held from the start, the cores it will need are
+    # free when the install before it ends.
+    if target_seconds:
+        planned = [
+            math.ceil(_expected_work(_lane_key(lane), expected, work) / target_seconds)
+            for lane in lanes
+            if lane.task in DOCS_SITE_TASKS and _lane_key(lane) in xdist_lanes
+        ]
+        if planned:
+            docs_slot_cores = max(docs_slot_cores, min(max(planned), max(1, cores // 2)))
 
     mutex_keys = lane_mutex_keys(lanes, preflight_ci.static_service_mutex_keys(repo_root, lanes, pixi_data))
     suite_lane_plan = preflight_suite_reduction.build_suite_lane_overrides(

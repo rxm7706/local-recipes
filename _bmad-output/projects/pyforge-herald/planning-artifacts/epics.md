@@ -2695,6 +2695,29 @@ So that 650 tests stop waiting on one core behind the site builds.
 **And** a test holds that no herald test module starts Astro or a node package runner without the build helper, and that every test of a module naming the helper carries the group
 **Status:** done
 
+## Epic 59: Herald's site builds run side by side, each worker in its own copy of docs-site (spec-pyforge-steward:CAP-175)
+
+Minted 2026-11-26 from the station Dream's entry of the same date on the operator ruling of that day ("Approved", on the root-cause breakdown and plan steward's Dream entry of 2026-11-26 records). Herald's live half is the critical path of a full preflight because its site builds run one after another in one worker.
+**HARD boundaries:**
+- No two Astro builds run at once in one tree, and no test's build writes the real `docs-site/`.
+- No test is deleted, skipped or re-marked; the coverage reports and floors are the same. No flag, and no capability text of `spec-pyforge-herald` moves.
+
+### Story 59.1: Herald's site builds run side by side, each worker in its own copy of docs-site
+
+As the operator whose preflight and PR wait on herald's live half,
+I want each xdist worker to build the site in its own copy of `docs-site/`, and the tests of a module that builds to share a worker by the module fixtures they use,
+So that herald's 25 or so builds run side by side instead of one after another.
+
+**Type:** chore • **Effort:** M • **Deps:** herald 58.1 • **FR/AD:** spec-pyforge-steward:CAP-175 (realized here; no text change in this station's Spec); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `src/shared/packages/pyforge-herald/tests/meta/pages_astro.py`, `src/shared/packages/pyforge-herald/tests/conftest.py`, `src/shared/packages/pyforge-herald/tests/meta/test_agent_surface_and_changes.py`, `src/shared/packages/pyforge-herald/tests/meta/test_site_builders_share_a_worker.py`
+**Spec:** `planning-artifacts/specs/spec-59-1-herald-s-site-builds-run-side-by-side-each-worker-in-its-own-copy-of-docs-site.md`
+**Given** `pyforge-herald-live-test` takes 189 s alone and 465 s in a full preflight, its builds (162 s alone) in one worker because each writes the one `docs-site/` tree; three builds in private copies ran side by side in 7.5 s where one takes 6.4 s, and wrote identical sites
+**When** `pages_astro` gives each worker a copy of the repository for building (links, `docs-site/`'s sources copied, `node_modules/` a directory of links), every build helper runs Astro there, and `tests/conftest.py` groups a builder module's tests by the module-scoped fixtures they use
+**Then** the live half passes with the counts it had and takes under 90 s alone on 16 threads
+**And** no test's build writes the real `docs-site/`, two builds never share a copy at once, and a test holds that every build helper runs in the worker's copy
+**Status:** done
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
