@@ -100,8 +100,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-11-27T13:18:37-06:00'
-      tree: 76b75c64efa5dc980ee01d089cb33dda73f3c81f-dirty
+      derived_at: '2026-11-27T14:32:58-06:00'
+      tree: 27834f7ba419b576d8b1de423ebce5ccb92b9f1c-dirty
   - path: how-to/pause-ci.md
     quadrant: how-to
     owner: pyforge-steward
@@ -269,8 +269,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-11-27T13:18:37-06:00'
-      tree: 76b75c64efa5dc980ee01d089cb33dda73f3c81f-dirty
+      derived_at: '2026-11-27T14:32:58-06:00'
+      tree: 27834f7ba419b576d8b1de423ebce5ccb92b9f1c-dirty
   - path: reference/github-workflows.md
     quadrant: reference
     owner: fleet
@@ -279,8 +279,8 @@ pages:
     sources:
       - .github/workflows
     stamp:
-      derived_at: '2026-11-25T14:12:58-06:00'
-      tree: 2e2ceaba9809ba22c85886c75c13a3ad54076a6b-dirty
+      derived_at: '2026-11-27T14:39:04-06:00'
+      tree: 8a6493a9e6ec591668358cb46de79d77c91ec4ef-dirty
   - path: reference/judgement-vocabulary.md
     quadrant: reference
     owner: doctor

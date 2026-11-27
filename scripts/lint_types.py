@@ -33,6 +33,13 @@ describes rather than after all of it.
 Django packages not yet clean for a verb are listed in ``NOT_YET_CLEAN``; that
 map only shrinks as each station's fix story lands (Story 93.1).
 
+The ruff verbs also cover the repository's own scripts in ``_bmad/scripts/`` (steward Story 93.2): every
+``*.py`` there that the BMAD installer's ``_bmad/_config/files-manifest.csv`` does not list, today the TEA
+generator ``bmad_tea_playwright.py``. The installer's own scripts are left alone: an upgrade rewrites them to the
+hashes the manifest records. They are checked with ``pyforge-marshal``'s ``[tool.ruff]``, the rules all ten
+``pyforge-*`` packages share; the TEA generator's tests live in that package. A manifest that cannot be read is a
+could-not-run (2), never a silent skip.
+
 ``src/platform`` is NOT in scope: it has its own ``platform-ci`` lane and a
 step-for-step local twin (``platform-ci-local -- --test``).
 
@@ -41,6 +48,7 @@ EXIT  0 clean · 1 findings (the tool's own non-zero) · 2 could-not-run
 from __future__ import annotations
 
 import argparse
+import csv
 import os
 import shutil
 import subprocess
@@ -51,6 +59,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 PACKAGES_DIR = ROOT / "src" / "shared" / "packages"
+#: Steward Story 93.2: the repository's own scripts beside the BMAD installer's, and the manifest that names the
+#: installer's; the TEA generator's package holds the [tool.ruff] they are checked with.
+BMAD_DIR = ROOT / "_bmad"
+BMAD_MANIFEST = BMAD_DIR / "_config" / "files-manifest.csv"
+BMAD_SCRIPTS_LABEL = "_bmad/scripts"
+BMAD_SCRIPTS_RUFF_CONFIG = PACKAGES_DIR / "pyforge-marshal" / "pyproject.toml"
 
 # Seeded from measurement on Story 93.1's base (2026-10-11). Only shrinks — each
 # station's fix story removes its own entry; never re-add a package or verb.
@@ -99,6 +113,17 @@ def mypy_cache_env(environ: Mapping[str, str] | None = None) -> str:
 def mypy_cache_dir(pkg: Path, environ: Mapping[str, str] | None = None) -> Path:
     """``<package>/.mypy_cache/<environment>``: one mypy cache per package per environment."""
     return pkg / ".mypy_cache" / mypy_cache_env(environ)
+
+
+def bmad_scripts(bmad_dir: Path | None = None) -> list[Path]:
+    """The repository's own ``*.py`` files in ``_bmad/scripts/``: those the installer's manifest does not list.
+
+    Raises ``OSError`` or ``KeyError`` when the manifest cannot be read, so the caller reports could-not-run.
+    """
+    root = BMAD_DIR if bmad_dir is None else bmad_dir
+    with (root / "_config" / "files-manifest.csv").open(encoding="utf-8", newline="") as handle:
+        installer = {row["path"] for row in csv.DictReader(handle)}
+    return sorted(p for p in (root / "scripts").glob("*.py") if p.relative_to(root).as_posix() not in installer)
 
 
 def has_ruff_table(pkg: Path) -> bool:
@@ -222,6 +247,23 @@ def main(argv: list[str] | None = None) -> int:
 
         print(_status_line(args.verb, pkg_name, rc), flush=True)
         worst = _record_worst(worst, pkg_name, args.verb, rc)
+
+    if args.verb in RUFF_VERBS:
+        # Steward Story 93.2: the repository's own scripts in _bmad/scripts/, with the shared pyforge-* rules.
+        try:
+            scripts = bmad_scripts()
+        except (OSError, KeyError) as exc:
+            print(f"[lint-types] could-not-run -- cannot read {BMAD_MANIFEST.relative_to(ROOT)}: {exc}")
+            return 2
+        if scripts:
+            files = [str(p.relative_to(ROOT)) for p in scripts]
+            config = ["--config", str(BMAD_SCRIPTS_RUFF_CONFIG)]
+            if args.verb == "ruff":
+                rc = _run(["ruff", "check", *config, *files], cwd=ROOT)
+            else:
+                rc = _run(["ruff", "format", *config, *([] if args.fix else ["--check"]), *files], cwd=ROOT)
+            print(_status_line(args.verb, BMAD_SCRIPTS_LABEL, rc), flush=True)
+            worst = _record_worst(worst, BMAD_SCRIPTS_LABEL, args.verb, rc)
     return worst
 
 

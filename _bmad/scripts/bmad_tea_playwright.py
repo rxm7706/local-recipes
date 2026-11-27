@@ -127,9 +127,7 @@ def resolve_repo_root(start: Path | None = None) -> Path:
     for candidate in (cur, *cur.parents):
         if (candidate / "_bmad-output" / "projects").is_dir():
             return candidate
-    raise FileNotFoundError(
-        f"Could not locate repo root from {cur} (missing _bmad-output/projects)"
-    )
+    raise FileNotFoundError(f"Could not locate repo root from {cur} (missing _bmad-output/projects)")
 
 
 def project_name(slug: str) -> str:
@@ -236,11 +234,7 @@ def assess_risk(epics: Sequence[Epic]) -> dict[str, list[str]]:
     for epic in epics:
         if epic.number == 0:
             continue
-        text = (
-            epic.title
-            + " "
-            + " ".join(s.title for s in epic.stories)
-        ).lower()
+        text = (epic.title + " " + " ".join(s.title for s in epic.stories)).lower()
         placed = False
         for level in ("high", "medium", "low"):
             if any(k in text for k in keywords[level]):
@@ -301,9 +295,7 @@ def load_station(repo_root: Path, project: str) -> StationInputs:
     test_files = inventory_test_files(package_tests)
     stories = parse_stories(epics_text)
     if not stories:
-        raise ValueError(
-            f"No stories parsed for {project} — refusing to emit a placeholder document"
-        )
+        raise ValueError(f"No stories parsed for {project} — refusing to emit a placeholder document")
     epics = parse_epics(epics_text, stories)
     fp = _fingerprint(epics_text, test_files, repo_root)
     return StationInputs(
@@ -348,8 +340,7 @@ def render_document(station: StationInputs, repo_root: Path) -> str:
         f"- **Station:** `{station.project}`",
         f"- **Stories parsed:** {len(station.stories)}",
         f"- **Epics parsed:** {sum(1 for e in station.epics if e.number != 0)}",
-        f"- **Test files inventoried:** {len(station.test_files)} "
-        f"under `src/shared/packages/{station.project}/tests/`",
+        f"- **Test files inventoried:** {len(station.test_files)} under `src/shared/packages/{station.project}/tests/`",
         "- **Frameworks:** pytest (unit/integration/meta) + Playwright where present",
         "- **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)",
         f"- **Source fingerprint:** `{station.fingerprint}`",
@@ -450,9 +441,7 @@ def sanitize_tbd(text: str) -> str:
 
 def assert_no_tbd(document: str, *, project: str) -> None:
     if TBD_TOKEN in document:
-        raise ValueError(
-            f"Failed run for {project}: output contains forbidden token {TBD_TOKEN!r}"
-        )
+        raise ValueError(f"Failed run for {project}: output contains forbidden token {TBD_TOKEN!r}")
 
 
 def write_document(path: Path, document: str) -> int:
@@ -611,14 +600,7 @@ def check_all(
         try:
             results.append(check_station(repo_root, project))
         except (FileNotFoundError, ValueError, OSError) as exc:
-            out = (
-                repo_root
-                / "_bmad-output"
-                / "projects"
-                / project
-                / "planning-artifacts"
-                / OUTPUT_NAME
-            )
+            out = repo_root / "_bmad-output" / "projects" / project / "planning-artifacts" / OUTPUT_NAME
             results.append(
                 CheckResult(
                     project=project,
@@ -683,11 +665,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(list(argv) if argv is not None else None)
     try:
-        repo_root = (
-            args.repo_root.resolve()
-            if args.repo_root
-            else resolve_repo_root()
-        )
+        repo_root = args.repo_root.resolve() if args.repo_root else resolve_repo_root()
         if args.check:
             if args.all:
                 check_results = check_all(repo_root)
@@ -704,9 +682,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             return exit_code
 
         if args.all:
-            results = generate_all(
-                repo_root, scaffold=args.scaffold, dry_run=args.dry_run
-            )
+            results = generate_all(repo_root, scaffold=args.scaffold, dry_run=args.dry_run)
         else:
             project = project_name(station_slug(args.project))
             results = [

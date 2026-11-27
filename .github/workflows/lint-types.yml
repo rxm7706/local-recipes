@@ -1,5 +1,6 @@
 # The ten pyforge-* and nine django-* portal packages' ruff gate, pyforge-* mypy, and the
-# pre-commit set's existence check (steward Stories 66.1–66.2 / 93.1, CAP-153 / CAP-154).
+# pre-commit set's existence check (steward Stories 66.1–66.2 / 93.1, CAP-153 / CAP-154). Story 93.2: the ruff gate
+# also checks the repository's own scripts in _bmad/scripts/ (not the BMAD installer's).
 # Django packages on NOT_YET_CLEAN in scripts/lint_types.py only shrink per-station fix stories.
 #
 # ONE invocation, shared with the local twin: this job runs `pixi run --frozen -e pyforge-guild
@@ -29,6 +30,10 @@ on:
       - "pixi.toml"
       - "pixi.lock"
       - "scripts/lint_types.py"
+      # Steward Story 93.2: the ruff verbs also check the repository's own scripts in _bmad/scripts/, picked by the
+      # installer's manifest.
+      - "_bmad/scripts/**"
+      - "_bmad/_config/files-manifest.csv"
       - "scripts/target_version_check.py"
       - "scripts/precommit_config_check.py"
       - "scripts/run_named_tests.py"

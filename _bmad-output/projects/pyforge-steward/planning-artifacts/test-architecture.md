@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 87051611f057fb40
-story_count: 549
-test_file_count: 175
+source_fingerprint: bcd5d6c062ef0b66
+story_count: 550
+test_file_count: 176
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 549
+- **Stories parsed:** 550
 - **Epics parsed:** 149
-- **Test files inventoried:** 175 under `src/shared/packages/pyforge-steward/tests/`
+- **Test files inventoried:** 176 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `87051611f057fb40`
+- **Source fingerprint:** `bcd5d6c062ef0b66`
 
 ## Risk Assessment
 
@@ -204,6 +204,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/meta/test_five_tier_check.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_guild_environment_stations.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_invariants.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_lint_types_bmad_scripts.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_lint_types_django_tables.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_lint_types_mypy_cache_per_environment.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_machine_readiness_data.py` | meta | none observed |
@@ -729,6 +730,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 91.1 | The stations index lists each station portal as mounted or absent, and why | none observed |
 | 92.1 | The unsplit-Redis eviction guard proves broker loss on every run | none observed |
 | 93.1 | The lint gate covers the nine django portal packages, and its not-yet-clean l... | none observed |
+| 93.2 | The lint gate covers the repository's own scripts in `_bmad/scripts/` | none observed |
 | 94.1 | No platform test leaves structlog configured differently | none observed |
 | 95.1 | The portal packages and the platform target Python 3.14 | none observed |
 | 96.1 | `platform-ci-local` never runs a stage on a stale env | none observed |

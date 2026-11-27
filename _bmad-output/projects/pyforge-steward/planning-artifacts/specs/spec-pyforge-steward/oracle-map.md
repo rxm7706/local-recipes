@@ -162,7 +162,7 @@ same change.
 | CAP-150 | `sprint_ledger_query.py`, `cli.py` | live-tree | `unit/test_sprint_ledger_query.py` | |
 | CAP-151 | — | script | `tests/scripts/test_sbom_laptop_gate.py` | The `pyforge-foundry-full` environment itself is `pixi.toml`. |
 | CAP-152 | `provision.py`, `upgrade.py`, `suite.py`, `bootstrap.py` | package, live-tree | `meta/test_no_station_assumes_local_recipes.py`, `unit/test_platform_ci_local_concurrency.py`, `unit/test_platform_ci_local_env_sync.py`, `unit/test_platform_ci_local_killed_holder.py` | |
-| CAP-153 | — | live-tree, script | `meta/test_lint_types_django_tables.py`, `unit/test_lint_types_not_yet_clean.py`, `unit/test_target_version_check_surfaces.py`, `tests/scripts/test_lint_types_gate.py` | The gate is `scripts/lint_types.py`. |
+| CAP-153 | — | live-tree, script | `meta/test_lint_types_django_tables.py`, `meta/test_lint_types_bmad_scripts.py`, `unit/test_lint_types_not_yet_clean.py`, `unit/test_target_version_check_surfaces.py`, `tests/scripts/test_lint_types_gate.py` | The gate is `scripts/lint_types.py`. |
 | CAP-154 | `bootstrap.py`, `cli.py` | live-tree, script | `unit/test_bootstrap_setup.py`, `tests/scripts/test_commit_msg_hook.py`, `tests/scripts/test_lint_types_gate.py` | |
 | CAP-155 | `workspace.py` | package | `unit/test_workspace.py` | |
 | CAP-156 | `workspace.py` | package, script | `unit/test_workspace.py`, `tests/scripts/test_lint_types_gate.py` | The journal is written by `scripts/pre_push_preflight.sh`. |
