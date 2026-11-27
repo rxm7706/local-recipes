@@ -2650,7 +2650,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py": "ed0aa191a3089c710b4de22710493ebf016f8fd7",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/pages_duty.py": "782142b699528425c3d093175cf220f942e8449f",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/passport.py": "c2075d1666e102c94bd9a58560756bfcf6bbc195",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py": "2d28dcebd1ac0f3932b70edc9e5d13a9b5a4303f",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py": "93bff756322c80f263ccf768a8306dafc965fcca",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_budget.py": "d431fe91d49c1ceb0cf2c2b1c1c567f3122c8dbd",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_ci.py": "ea36985c4196df001744ece14644d00ac6fd3d5b",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_suite_reduction.py": "cfb83a522cdfdb7fbfd652e6ea66f3f6532b49d2",
@@ -2719,7 +2719,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "32bb51e6fc3b61fde0eac0072cdf4790fbb29172"
+  "memlog": "2860695bdb85e2c08316256171392426cc80b35a"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -4321,7 +4321,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py": "ed0aa191a3089c710b4de22710493ebf016f8fd7",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/pages_duty.py": "782142b699528425c3d093175cf220f942e8449f",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/passport.py": "c2075d1666e102c94bd9a58560756bfcf6bbc195",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py": "2d28dcebd1ac0f3932b70edc9e5d13a9b5a4303f",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py": "93bff756322c80f263ccf768a8306dafc965fcca",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_budget.py": "d431fe91d49c1ceb0cf2c2b1c1c567f3122c8dbd",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_ci.py": "ea36985c4196df001744ece14644d00ac6fd3d5b",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_suite_reduction.py": "cfb83a522cdfdb7fbfd652e6ea66f3f6532b49d2",
@@ -4467,7 +4467,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_env_sync.py": "da23eec4c817ced948f755a0727c024fbb6721a8",
    "src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_killed_holder.py": "c771a3b43a767b2a13ba04b165974e119948eefa",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight.py": "2e41545b21918ca122d50f776fbd65565e0a0828",
-   "src/shared/packages/pyforge-steward/tests/unit/test_preflight_alone_tail.py": "3fca33be104955ed5aec73343bd278d2459bbf01",
+   "src/shared/packages/pyforge-steward/tests/unit/test_preflight_alone_tail.py": "9f361e21785050222201621fb9b490a52d3cb92a",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_budget.py": "2b383b6bb8c3ec6a942b531b74dfce3d671f8486",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_ci.py": "115dc86088a552537a06ed9d6380f02514301ef4",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py": "7e928bdd3cac428b3b3e55eb03b3368c8c960b0f",
@@ -4477,7 +4477,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_lane_identity.py": "ce49d67e7e1bb1e8597aaf59e5b2aef947301881",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_scope.py": "a9512ffa69f30c5f2e57571e0b7457d30ae54898",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py": "1ef261d4735715999550c86213c27285761bca0c",
-   "src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py": "ac13045f49badf9809779d3ec0071189f7e2dc24",
+   "src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py": "6df972ae8ad8850cb8a99e116530c28bcdbc9188",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_stranded_lane.py": "86c87c202288f6c5a5ab2c2035489691b6e09835",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_suite_reduction.py": "90d257dc1aabbf89c588a599dc97a2f36a175cb6",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_verdict_reuse.py": "09d46556fba222dc262e8c459161a430b857bc80",
@@ -4538,7 +4538,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "51d22ab9b230e698e9474df2091ea143ad64a811"
+  "memlog": "74758de6d54383610820128ef29ebea4c62a26cf"
  },
  "pyforge-steward/spec-pyforge-unifying-strategy": {
   "files": {

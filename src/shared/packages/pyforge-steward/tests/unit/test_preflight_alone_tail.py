@@ -310,6 +310,23 @@ def test_a_declared_task_with_no_tail_is_refused_before_any_install(tmp_path: Pa
     assert runs.rows == {}
 
 
+def test_a_runner_that_takes_a_lane_is_called_once_for_an_alone_tail_lane(tmp_path: Path) -> None:
+    """``run_lane`` (a runner that takes a lane, not a part) runs a lane in one call: the head's call stands for it."""
+    _write_pixi(tmp_path, _pixi(["lane-a", TIMED], cmds={TIMED: f"{HEAD_CMD} && {TAIL_CMD}"}))
+    ran: list[str] = []
+    code = preflight.run_preflight(
+        tmp_path,
+        invoking_env=INV,
+        jobs=1,
+        install_environment=lambda _env: 0,
+        run_lane=lambda lane: ran.append(lane.task) or 0,
+        alone_tail_tasks=frozenset({TIMED}),
+        critical_path=False,
+    )
+    assert code == preflight.EXIT_OK
+    assert ran == ["lane-a", TIMED]
+
+
 def test_a_lane_outside_the_set_runs_whole(tmp_path: Path) -> None:
     _write_pixi(tmp_path, _pixi(["lane-a", "two-step"], cmds={"two-step": "a && b"}))
     runs = _Parts()

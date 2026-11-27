@@ -13,6 +13,8 @@ surface:
   - 'src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py'
   - 'src/shared/packages/pyforge-steward/tests/unit/test_preflight_alone_tail.py'
   - 'src/shared/packages/pyforge-steward/tests/meta/test_preflight_alone_tail_tasks.py'
+  - 'src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py'
+  - '_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/oracle-map.md'
   - 'docs/how-to/run-and-read-pr-preflight.md'
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -54,6 +56,10 @@ alone. Today it names only `pyforge-doctor-live-test`.
 
 The journal keeps one row per lane. Its seconds are the head and tail summed. Its `alone_tail`
 entry gives the tail's own seconds, start offset, exit code and status.
+
+Because the tail runs once nothing else can start, a lane that waits on an alone-tail lane runs after its tail. At
+`--jobs 1` that lane runs last instead of at its declared position. A runner injected as `run_lane`, which takes a
+lane and not a part, is called once, at the head's turn, for the whole lane.
 
 If the head fails, the tail never runs, as `&&` would not run it. If a stop or an interrupt comes
 before the tail starts, the lane is recorded `cancelled`, like any unstarted lane.

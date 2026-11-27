@@ -52,6 +52,21 @@ _NOOP_INSTALL = lambda _env: 0  # noqa: E731
 _SERIAL = {"jobs": 1, "install_environment": _NOOP_INSTALL}
 
 
+def _depends_on_closure(lanes: Sequence[preflight.Lane], tasks: frozenset[str]) -> set[str]:
+    """The tasks of every lane that waits, directly or through other lanes, on a lane of one of ``tasks``."""
+    by_key = {(lane.task, lane.environment): lane for lane in lanes}
+
+    def waits(lane: preflight.Lane, seen: frozenset[tuple[str, str]]) -> bool:
+        for dep in lane.depends_on:
+            if dep[0] in tasks:
+                return True
+            if dep in by_key and dep not in seen and waits(by_key[dep], seen | {dep}):
+                return True
+        return False
+
+    return {lane.task for lane in lanes if waits(lane, frozenset())}
+
+
 def _run_journal_record(repo: Path) -> dict:
     lines = (repo / preflight.JOURNAL_RELATIVE).read_text(encoding="utf-8").strip().splitlines()
     records = [json.loads(line) for line in lines if line.strip()]
@@ -856,11 +871,18 @@ def test_run_preflight_with_no_base_ref_runs_every_lane(tmp_path: Path) -> None:
     assert code == preflight.EXIT_OK
     declared = [lane.task for lane in lanes]
     assert sorted(ran) == sorted(declared)
-    # Story 105.1's review and re-review: every lane outside the docs-site set runs at its declared position, and the
-    # docs-site lanes trade turns among themselves, docs-site-install first.
-    for position, task in enumerate(declared):
+    # Story 117.30: a lane that waits on an alone-tail lane runs after that lane's tail, which runs once nothing else
+    # can start, so those lanes run last.
+    after_tail = _depends_on_closure(lanes, preflight.ALONE_TAIL_TASKS)
+    assert after_tail, "the declared lane list has a lane that waits on an alone tail (doctor's coverage gate)"
+    assert set(ran[-len(after_tail) :]) == after_tail, (after_tail, ran)
+    # Story 105.1's review and re-review: every other lane outside the docs-site set runs at its declared position
+    # among them, and the docs-site lanes trade turns among themselves, docs-site-install first.
+    kept = [task for task in declared if task not in after_tail]
+    ran_kept = [task for task in ran if task not in after_tail]
+    for position, task in enumerate(kept):
         if task not in preflight.DOCS_SITE_TASKS:
-            assert ran[position] == task, (position, task, ran)
+            assert ran_kept[position] == task, (position, task, ran)
     docs_site = [task for task in ran if task in preflight.DOCS_SITE_TASKS]
     assert docs_site[0] == "docs-site-install", docs_site
     record = _run_journal_record(repo)

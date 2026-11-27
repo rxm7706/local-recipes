@@ -1400,7 +1400,8 @@ def _next_lane(
     index of the next docs-site lane in declaration order) goes to ``docs-site-install`` when it is ready, else to the
     ready docs-site lane that pending lanes depend on, else the first one declared. So ``docs-site-install``, then ``pages-build``, take the turns of the docs-site
     lanes declared before them, and herald's built-site tests read this run's install, never a stale one or none at
-    all (a fresh worktree). At ``--jobs 1`` every other lane runs at its declared position.
+    all (a fresh worktree). At ``--jobs 1`` every other lane runs at its declared position, except a lane that waits on
+    an alone-tail lane (Story 117.30): that lane's tail runs once nothing else can start, so its dependents run last.
 
     With ``expected`` (Story 117.3, the flag on), the longest-expected ready lane goes first and the declared turn only
     breaks ties: a lane's expected seconds are its journal median, :data:`UNKNOWN_LANE_SECONDS` when
@@ -1857,6 +1858,10 @@ def run_preflight(
         legacy_run_lane = run_lane
 
         def injected_runner(ctx: LaneRunContext) -> int:
+            # Story 117.30: a runner that takes a lane runs all of it in one call. An alone-tail lane's head call stands
+            # for the whole lane, at the lane's own turn, and its tail runs nothing.
+            if ctx.part == PART_TAIL:
+                return 0
             return legacy_run_lane(ctx.lane)
 
     else:
