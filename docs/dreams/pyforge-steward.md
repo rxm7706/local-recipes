@@ -8591,3 +8591,20 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   derivation, each job derived once by the first worker to claim it, so the module needs no xdist group (117.26).
   **Constraints:** every test still runs in exactly one shard; the shard counts stay; no test, assertion, floor or
   gate is weakened or removed. No flag (chores). Owner `spec-pyforge-steward`.
+- **2026-11-27 (each station's coverage gate installs an environment it does not use) — Found and ruled:** measured
+  on PR #2412's three CI runs, after the live halves' shards were rebalanced. The station path ends on a gate job:
+  herald's at +153 and +166 s, atlas's at +169 s. Each of the eight gate jobs takes 21 to 28 s: checkout 6 s,
+  `setup-pixi` installing the station's whole environment 10 to 17 s, and the gate itself 1 s. The gate runs
+  `scripts/coverage_gates_ci.py --report …`, which, with every shard's report present, judges the reports and runs
+  no test; it and `scripts/coverage_gate.py` import only the standard library (checked with `python3 -I` on 3.14.4)
+  and call `git`. Sharding atlas's live half was measured first and set aside. Its three pytest runs spend most of
+  their time starting: the first collects 3,396 tests to keep 370 (8.8 s in one process on this machine, repeated by
+  every xdist worker), and the tests take about 17 s of wall time across the three runs. A second shard would save
+  about 10 s of a 97 to 126 s job, and the station path would gain only on a diff that touches atlas's package, whose
+  gate also waits for `atlas-test` (104 to 112 s). **Ruled** (operator, 2026-11-27: "Cheaper gates"). **For
+  steward:** this entry binds `spec-pyforge-steward` CAP-175 (realized, no text change) and decomposes as Story
+  117.27 on Epic 117: each gate job sets up Python 3.14 with `actions/setup-python` instead of `setup-pixi`, and runs
+  the gate script with that interpreter; `scripts/pixi_version_registry.py` counts the workflow's remaining
+  setup-pixi steps. **Constraints:** each gate reads the same reports, judges the same floors and exits as before;
+  the shards, the local preflight's gate tasks (`pyforge-<station>-coverage-gate`, in each station's pixi
+  environment) and every floor are unchanged. No flag (chore). Owner `spec-pyforge-steward`.

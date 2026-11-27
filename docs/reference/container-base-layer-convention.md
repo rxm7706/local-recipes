@@ -6,7 +6,7 @@ sources:
   - src/platform/compose/mcp-host/Containerfile
   - tests/packaging/test_containerfile_base_layer_convention.py
   - scripts/pixi_version_registry.py
-verified: 2026-11-25
+verified: 2026-11-27
 ---
 
 # Container base-layer convention
