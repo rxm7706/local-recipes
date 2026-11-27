@@ -222,13 +222,13 @@ def credentials_file(tmp_path: Path):
 
 
 # ---------------------------------------------------------------------------
-# Story 58.1: under pytest-xdist, every module that builds the site shares one worker
+# Stories 58.1 and 59.1: under pytest-xdist, a module fixture that builds the site is built in one worker
 # ---------------------------------------------------------------------------
 
-#: The xdist group of the modules that build the site or read a build. An Astro build runs with ``docs-site/`` as its
-#: working directory and rewrites ``docs-site/.astro`` and ``docs-site/public`` from scratch, so two builds at once
-#: would see each other's files. One group is one worker: these modules run in turn, as they did on one process,
-#: while every other test runs on the other workers.
+#: The prefix of the xdist groups of the modules that build the site or read a build. Story 58.1 put every such test
+#: in one group, because every Astro build wrote the one ``docs-site/``. Since Story 59.1 each worker builds in its
+#: own copy (``pages_astro.build_site_dir``), so builds in different workers run side by side, and a group only keeps
+#: the tests that share a module-scoped fixture on one worker, so that fixture's build runs once.
 DOCS_SITE_XDIST_GROUP = "docs-site"
 
 #: What marks a test module as one that builds: it names the build helper, ``tests/meta/pages_astro.py``, the one
@@ -246,13 +246,46 @@ def module_builds_the_site(path: str) -> bool:
         return False
 
 
+def module_fixtures_of(item: pytest.Item) -> tuple[str, ...]:
+    """The module-scoped fixtures ``item`` uses that its own module defines, sorted (Story 59.1).
+
+    Those are what a test of a builder module shares with its neighbours: a fixture of that scope builds once per
+    worker that runs one of its tests. A fixture from a conftest, or of function scope, is no reason to share a worker.
+    """
+    info = getattr(item, "_fixtureinfo", None)
+    module = getattr(getattr(item, "module", None), "__name__", None)
+    if info is None or module is None:
+        return ()
+    shared = set()
+    for name, defs in info.name2fixturedefs.items():
+        definition = defs[-1]
+        if definition.scope == "module" and getattr(definition.func, "__module__", None) == module:
+            shared.add(name)
+    return tuple(sorted(shared))
+
+
+def docs_site_group(item: pytest.Item) -> str | None:
+    """The xdist group of ``item``, or ``None`` (Story 59.1): a test of a builder module that uses a module fixture of
+    its module shares a group with the tests that use the same ones; any other test has no group and goes where a
+    worker is free."""
+    if not module_builds_the_site(str(item.path)):
+        return None
+    fixtures = module_fixtures_of(item)
+    if not fixtures:
+        return None
+    return f"{DOCS_SITE_XDIST_GROUP}:{Path(str(item.path)).name}:{'+'.join(fixtures)}"
+
+
 @pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
-    """Put every test of a site-building module in :data:`DOCS_SITE_XDIST_GROUP` (``--dist loadgroup`` reads the mark).
+    """Put each test of a site-building module that shares a module fixture in that fixture's group
+    (:func:`docs_site_group`; ``--dist loadgroup`` reads the mark).
 
     ``tryfirst``: xdist appends the group to each node id in its own collection hook, so the mark must be there first.
-    Decided from the module's text, not a hand-kept list, so a new built-site test joins the group by being written.
+    Decided from the module's text and the test's fixtures, not a hand-kept list, so a new built-site test is placed by
+    being written.
     """
     for item in items:
-        if module_builds_the_site(str(item.path)):
-            item.add_marker(pytest.mark.xdist_group(DOCS_SITE_XDIST_GROUP))
+        group = docs_site_group(item)
+        if group is not None:
+            item.add_marker(pytest.mark.xdist_group(group))

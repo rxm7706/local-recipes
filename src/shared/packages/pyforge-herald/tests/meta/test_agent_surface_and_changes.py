@@ -28,7 +28,7 @@ from pathlib import Path
 
 import pytest
 import yaml
-from pages_astro import ASTRO_BIN, needs_astro, require_astro
+from pages_astro import build_astro_bin, build_site_dir, needs_astro, require_astro
 
 # Story 52.1 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
 # station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
@@ -318,8 +318,8 @@ def _astro(out: Path, *, status: bool, inputs: Path) -> None:
         }
     )
     done = subprocess.run(
-        [_NODE or "node", str(ASTRO_BIN), "build", "--outDir", str(out)],
-        cwd=_docs_site(),
+        [_NODE or "node", str(build_astro_bin()), "build", "--outDir", str(out)],
+        cwd=build_site_dir(),  # Story 59.1: this process's own copy, never the real docs-site/
         env=env,
         capture_output=True,
         text=True,
