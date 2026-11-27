@@ -1523,11 +1523,11 @@ cmd = "python scripts/claude_instruction_mode_check.py"
 # only shrink. `src/platform` keeps its own platform-ci lane.
 [feature.guild-tasks.tasks.ruff]
 cmd = "python scripts/lint_types.py ruff"
-description = "Stories 66.1 / 93.1 (spec-pyforge-steward CAP-153): `ruff check` over the ten pyforge-* and nine django-* packages under src/shared/packages/ (src + tests), each read with its own [tool.ruff]. NOT_YET_CLEAN django entries only shrink. The CI lane and pr-preflight call this task verbatim."
+description = "Stories 66.1 / 93.1 / 93.2 (spec-pyforge-steward CAP-153): `ruff check` over the ten pyforge-* and nine django-* packages under src/shared/packages/ (src + tests), each read with its own [tool.ruff], and over the repository's own scripts in _bmad/scripts/ (those the BMAD installer's manifest does not list) with pyforge-marshal's. NOT_YET_CLEAN django entries only shrink. The CI lane and pr-preflight call this task verbatim."
 
 [feature.guild-tasks.tasks.ruff-format]
 cmd = "python scripts/lint_types.py ruff-format"
-description = "Stories 66.1 / 93.1 (spec-pyforge-steward CAP-153): `ruff format --check` over the ten pyforge-* and nine django-* packages; NOT_YET_CLEAN django entries only shrink. Fix with `pixi run -e pyforge-guild ruff-format-fix`."
+description = "Stories 66.1 / 93.1 / 93.2 (spec-pyforge-steward CAP-153): `ruff format --check` over the ten pyforge-* and nine django-* packages and the repository's own scripts in _bmad/scripts/; NOT_YET_CLEAN django entries only shrink. Fix with `pixi run -e pyforge-guild ruff-format-fix`."
 
 [feature.guild-tasks.tasks.ruff-format-fix]
 cmd = "python scripts/lint_types.py ruff-format --fix"

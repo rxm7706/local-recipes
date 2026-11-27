@@ -8737,3 +8737,15 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   environment, which had it. **Constraints:** re-locked with the pinned pixi and no update, the lock change only
   removes records; every Chromium launch still passes; no test, job or lane changes. No flag (chore). Owner
   `spec-pyforge-steward`.
+- **2026-11-27 (no lane lints `_bmad/scripts/`) — Found and ruled:** `lint-types` checks the ten `pyforge-*` and
+  nine `django-*` packages, and nothing checks the six scripts in `_bmad/scripts/`. Five of them are the BMAD
+  installer's, named with their hashes in `_bmad/_config/files-manifest.csv`, and an upgrade rewrites them; the sixth,
+  the TEA generator `bmad_tea_playwright.py`, is the repository's own, and marshal's tests cover it. Under the rules
+  every `pyforge-*` package shares (py314, E, F, W and I, E501 ignored), the generator passes `ruff check` and fails
+  `ruff format --check` on line wrapping alone. **Ruled** (operator, 2026-11-27: "lint _bmad/scripts next"). **For
+  steward:** this entry binds `spec-pyforge-steward` CAP-153 (realized, no text change) and decomposes as Story 93.2 on
+  Epic 93: `lint_types.py`'s ruff verbs also check every `_bmad/scripts/*.py` the manifest does not list, with
+  `pyforge-marshal`'s `[tool.ruff]`; an unreadable manifest is a could-not-run; the Lint and types workflow fires on
+  `_bmad/scripts/**` and the manifest; the generator is formatted, and writes the same eight documents.
+  **Constraints:** the installer's scripts are never edited or linted; no rule is relaxed. No flag (the lint gate,
+  as Story 93.1). Owner `spec-pyforge-steward`.

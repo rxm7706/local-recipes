@@ -6272,6 +6272,22 @@ So that a new finding anywhere fails the gate, and the list only shrinks as each
 **And** a test pins the seeded map as a ceiling, so an entry can leave and never return; the ten-package count check counts `pyforge-*` alone; `ruff-format --fix` skips listed packages; `mypy` is unchanged; `lint-types` exits 0 on the story's tree; the lines that say "the ten `pyforge-*` packages" for ruff are corrected; removing the stale-entry check, failing a listed package's findings, letting a listed package's exit 2 pass, dropping `django-*` from the glob or counting it toward the ten each fails a named test (mutation); `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run --frozen -e pyforge-guild lint-types` are green, and every Spec `spec-surface-check` names gets a memlog entry and one scoped stamp
 **Status:** done
 
+### Story 93.2: The lint gate covers the repository's own scripts in `_bmad/scripts/`
+
+As the operator whose lint gate skips the TEA generator,
+I want `lint-types` to check and format-check the scripts in `_bmad/scripts/` that the repository owns,
+So that the TEA generator meets the rules every station's code meets, and the installer's scripts stay as the installer writes them.
+
+**Type:** feature • **Effort:** S • **Deps:** 93.1 • **FR/AD:** spec-pyforge-steward CAP-153 (realized, no text change) • Dream 2026-11-27 (no lane lints `_bmad/scripts/`) • operator ruling 2026-11-27 "lint _bmad/scripts next"
+**Flag:** exempt, `detector-or-gate` (the story changes the lint gate, as Story 93.1)
+**Surface:** `scripts/lint_types.py` (`bmad_scripts()`, the ruff verbs' last target, the docstring), `_bmad/scripts/bmad_tea_playwright.py` (formatted only), `.github/workflows/lint-types.yml` (two path triggers and the header comment), `src/shared/packages/pyforge-steward/tests/meta/test_lint_types_bmad_scripts.py` (new), `pixi.toml` (the `ruff` and `ruff-format` descriptions), `AGENTS.md` (the *Lint and types* line), what `steward estate reconcile` regenerates, `planning-artifacts/specs/spec-pyforge-steward/oracle-map.md` (the CAP-153 row), the TEA matrices
+**Spec:** `planning-artifacts/specs/spec-93-2-the-lint-gate-covers-the-repository-s-own-scripts-in-bmad-scripts.md`
+**Given** nothing lints `_bmad/scripts/`, whose six scripts are five the BMAD installer's manifest lists with their hashes and the TEA generator, which passes `ruff check` under the shared `pyforge-*` rules and fails `ruff format --check`
+**When** `pixi run -e pyforge-guild lint-types` runs
+**Then** its `ruff` and `ruff-format` verbs check every `_bmad/scripts/*.py` that `_bmad/_config/files-manifest.csv` does not list, with `pyforge-marshal`'s `[tool.ruff]`, and report it as `_bmad/scripts`; an unreadable manifest is a could-not-run (2); the installer's scripts are neither checked nor edited
+**And** the TEA generator is formatted and writes the same eight documents as before; the Lint and types workflow fires on `_bmad/scripts/**` and the manifest; a meta-test holds the set, the exclusion, the shared rules and the triggers
+**Status:** done
+
 ## Epic 94: No platform test leaks its structlog configuration into the next (fix under CAP-87)
 
 Minted 2026-10-11 from the station Dream's entry of that date (structlog configuration leak) and the operator's ask
