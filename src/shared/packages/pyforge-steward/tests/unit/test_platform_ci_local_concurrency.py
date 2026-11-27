@@ -28,7 +28,7 @@ import sys
 import textwrap
 import threading
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
@@ -293,7 +293,7 @@ def _prepare_stub_root(root: Path) -> Path:
         """\
         #!/usr/bin/env bash
         log="${PLATFORM_CI_STUB_LOG:-/dev/null}"
-        if [ "${PLATFORM_CI_STUB_SLOW:-0}" = 1 ]; then sleep 8; fi
+        if [ "${PLATFORM_CI_STUB_SLOW:-0}" = 1 ]; then sleep "${PLATFORM_CI_STUB_SLOW_S:-2}"; fi
         echo "python $@ $$" >> "$log"
         exit 0
         """
@@ -457,6 +457,27 @@ def _log_has_cross_stop(log_text: str) -> bool:
     return "cross-stop" in log_text
 
 
+def _wait_until(ready: Callable[[], bool], what: str, timeout: float = 60.0) -> None:
+    """Story 117.20: start a second run on the first run's state, not on a clock. Before, the second run started one or
+    two seconds after the first, and the first was kept slow (8 s on each stubbed ``python`` call, about 33 s a test) so
+    that it was sure to still hold the lock, or still run, when the second arrived."""
+    deadline = time.monotonic() + timeout
+    while not ready():
+        if time.monotonic() > deadline:
+            raise AssertionError(f"timed out after {timeout:.0f} s waiting for {what}")
+        time.sleep(0.05)
+
+
+def _holds_the_lock(lock: Path) -> Callable[[], bool]:
+    """The first run holds the lock: ``acquire_run_lock`` writes ``<lock>.holder`` once ``flock`` is taken."""
+    return lambda: Path(f"{lock}.holder").is_file()
+
+
+def _services_up(stub_log: Path) -> Callable[[], bool]:
+    """The first run, without a lock, has started its services: its stub log names the spawned postgres."""
+    return lambda: stub_log.is_file() and "spawned postgres" in stub_log.read_text(encoding="utf-8")
+
+
 def test_two_overlapping_runs_with_lock_both_pass(tmp_path: Path) -> None:
     lock = tmp_path / "platform-ci-local.lock"
     work = tmp_path / "work"
@@ -481,7 +502,7 @@ def test_two_overlapping_runs_with_lock_both_pass(tmp_path: Path) -> None:
     t1 = threading.Thread(target=runner, args=(tmp_path / "run1.log",), kwargs={"slow": True})
     t2 = threading.Thread(target=runner, args=(tmp_path / "run2.log",), kwargs={"slow": False})
     t1.start()
-    time.sleep(1)
+    _wait_until(_holds_the_lock(lock), "the first run to take the lock")
     t2.start()
     t1.join(timeout=90)
     t2.join(timeout=90)
@@ -530,7 +551,7 @@ def test_one_run_fails_other_passes_under_lock(tmp_path: Path) -> None:
         kwargs={"fail_ruff": False, "slow": False},
     )
     t1.start()
-    time.sleep(1)
+    _wait_until(_holds_the_lock(lock), "the failing run to take the lock")
     t2.start()
     t1.join(timeout=90)
     t2.join(timeout=90)
@@ -567,7 +588,7 @@ def test_lock_wait_timeout_names_holder(tmp_path: Path) -> None:
     _write_recording_fuser(bin_dir)  # Story 101.1: counts the report's scans
     t = threading.Thread(target=hold)
     t.start()
-    time.sleep(1)
+    _wait_until(_holds_the_lock(lock), "the holder to take the lock")
     waiter = _run_platform_ci_local(
         tmp_path,
         bin_dir,
@@ -613,7 +634,7 @@ def test_sigkilled_holder_does_not_block_next_run(tmp_path: Path) -> None:
         env=env,
         start_new_session=True,
     )
-    time.sleep(1)
+    _wait_until(_holds_the_lock(lock), "the holder to take the lock")
     os.killpg(holder.pid, signal.SIGKILL)
     holder.wait(timeout=10)
     time.sleep(0.5)
@@ -653,7 +674,7 @@ def test_without_lock_overlapping_runs_do_not_both_pass(tmp_path: Path) -> None:
     t1 = threading.Thread(target=runner, args=(tmp_path / "run1.log",), kwargs={"slow": True})
     t2 = threading.Thread(target=runner, args=(tmp_path / "run2.log",), kwargs={"slow": False})
     t1.start()
-    time.sleep(2)
+    _wait_until(_services_up(tmp_path / "run1.log"), "the first run's services to start")
     t2.start()
     t1.join(timeout=90)
     t2.join(timeout=90)
