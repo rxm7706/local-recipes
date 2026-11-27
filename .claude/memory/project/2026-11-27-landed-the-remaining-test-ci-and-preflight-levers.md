@@ -1,0 +1,8 @@
+---
+name: "2026-11-27-landed-the-remaining-test-ci-and-preflight-levers"
+description: "2026-11-27 LANDED: the remaining test, CI and preflight levers. PR #2421 merged as a4be14494f (Merge pyforge-steward/11…"
+metadata:
+  type: project
+---
+
+2026-11-27 LANDED: the remaining test, CI and preflight levers. PR #2421 merged as a4be14494f (Merge pyforge-steward/117-29 into main; marshal Story 127.1, doctor Story 68.1, steward Story 117.29). The TEA generator links a story to a test file by whole name parts: the eight-station render takes 0.27 s, from 12.49 s, every document byte-identical, and marshal's tea smoke test takes 0.54 s locally, from 27.8 s. Doctor's capability-effect runs a project's git greps side by side: 6.8 s alone and 10.1 s inside detectors-ci, from 15.6 and 76.7 s; doctor's live caller-reach test takes 5.77 s, from 22.7 s. Lint and types restores main's mypy cache from an older lock. CI, PR #2419 against PR #2421: marshal-live-test's shards took 80 and 116 s, now 64 and 47 s; doctor-live-test's shards took 77 and 59 s, now 52 and 46 s. Measured and left: atlas-test's uneven shards (a fresh durations file differs by 4 tests and 3 s), detectors' full-history checkout (its landing evidence needs the merge history), and steward's trigger-map test (already thread-pooled; batching would weaken it). Open: the mypy fallback key is unproven until a PR moves pixi.lock; doctor's speed-budget test needs a run-alone slot in the preflight; herald's Astro builds, Platform CI's fixed cost per shard and every job's checkout plus setup-pixi (30 to 40 s) are larger designs; no lane lints _bmad/scripts/.
