@@ -1926,7 +1926,7 @@ So that the solver does not refuse the pixi CI and the workspace run.
 
 **Type:** chore • **Effort:** S • **Deps:** steward 148.2 • **FR/AD:** spec-pyforge-warden CAP-12 (realized, no text change); no AD moves
 **Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
-**Surface:** `src/shared/packages/pyforge-warden/src/pyforge/warden/engines.py`, `src/shared/packages/pyforge-warden/tests/meta/test_engine_version_range_sync.py`
+**Surface:** `src/shared/packages/pyforge-warden/src/pyforge/warden/engines.py`, `src/shared/packages/pyforge-warden/tests/meta/test_engine_version_range_sync.py`, `src/shared/packages/pyforge-warden/tests/unit/test_engine_env_deptry.py`, `_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/contract.md`
 **Spec:** `planning-artifacts/specs/spec-34-1-the-fix-pr-solver-admits-pixi-0-85.md`
 **Given** `PIXI_VERSION_RANGE` is `>=0.80.0,<0.82` and `requires-pixi` moves to `>=0.85.0`
 **When** the range moves to `>=0.85.0,<0.86`

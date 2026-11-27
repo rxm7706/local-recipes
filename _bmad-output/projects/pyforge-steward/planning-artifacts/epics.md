@@ -10046,7 +10046,7 @@ So that no environment resolves a Python of its own, as `pyforge-marshal` did wi
 
 **Type:** chore • **Effort:** M • **Deps:** 66.1, 124.3 • **FR/AD:** spec-pyforge-steward CAP-153 (realized, no text change); no AD moves
 **Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
-**Surface:** `pixi.toml`, `pixi.lock`, `environment.yaml`, `docs/reference/library-llms-full.md`, `docs/governance/pin-policy.yaml`
+**Surface:** `pixi.toml`, `pixi.lock`, `environment.yaml`, `docs/reference/library-llms-full.md`, `docs/governance/pin-policy.yaml`, `tests/packaging/test_bmad_suite_full_feature.py`, `src/shared/packages/pyforge-marshal/tests/meta/test_ad65_lean_env_conda_forge.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_promote_sprint_status_regressions.py`
 **Spec:** `planning-artifacts/specs/spec-148-1-python-3-14-10-is-declared-once-and-every-environment-locks-it.md`
 **Given** eleven tables of `pixi.toml` name `python` at four different specs, fourteen environments compose none of them, and `pyforge-marshal` locks 3.15.0 where the rest lock 3.14.7
 **When** `[feature.interpreter.dependencies] python = "3.14.10.*"` is the only declaration, every environment lists the `interpreter` feature first, and the lock is re-solved with pixi 0.85.0
@@ -10062,7 +10062,7 @@ So that CI, the containers and the workspace run the pixi that wrote the lock.
 
 **Type:** chore • **Effort:** S • **Deps:** 148.1 • **FR/AD:** spec-pyforge-steward CAP-153 (realized, no text change); no AD moves
 **Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
-**Surface:** `pixi.toml`, `src/shared/packages/pyforge-mason/pixi.toml`, `environment.yaml`, `Containerfile`, `src/platform/Containerfile`, `src/platform/compose/dbgpt/Containerfile`, `src/platform/compose/mcp-host/Containerfile`, `.github/workflows/*.yml` (the 13 that set pixi up), `.github/actions/platform-test-setup/action.yml`, `.github/actions/sync-pypi-mappings/action.yml`, `docs/tutorials/getting-started.md`, `docs/reference/container-base-layer-convention.md`, `docs/how-to/bootstrap-a-machine-with-steward.md`, `docs/tutorials/onboard-a-machine.md`
+**Surface:** `pixi.toml`, `src/shared/packages/pyforge-mason/pixi.toml`, `environment.yaml`, `Containerfile`, `src/platform/Containerfile`, `src/platform/compose/dbgpt/Containerfile`, `src/platform/compose/mcp-host/Containerfile`, `.github/workflows/*.yml` (the 13 that set pixi up), `.github/actions/platform-test-setup/action.yml`, `.github/actions/sync-pypi-mappings/action.yml`, `docs/tutorials/getting-started.md`, `docs/reference/container-base-layer-convention.md`, `docs/how-to/bootstrap-a-machine-with-steward.md`, `docs/tutorials/onboard-a-machine.md`, `scripts/pixi_version_registry.py`, `src/shared/packages/pyforge-mason/src/pyforge/mason/engines/__init__.py`, `src/shared/packages/pyforge-mason/tests/meta/test_engine_version_range_sync.py`, `docs/foundry/marketplace/skills/mason/package/steps.md`, `docs/foundry/marketplace/site/skills/mason/package.html`
 **Spec:** `planning-artifacts/specs/spec-148-2-pixi-0-85-0-at-every-pin-site.md`
 **Given** every registered pin site holds pixi 0.80.0 and `setup-pixi` is v0.11.2 or v0.10.2, while pixi 0.85.0 and `setup-pixi` v0.11.3 are released
 **When** `bump-pixi-version` rewrites every registered site to 0.85.0, every `setup-pixi` step moves to v0.11.3, and the osx-arm64 platform entry uses the `subdir` key pixi 0.85.0 asks for

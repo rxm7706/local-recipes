@@ -15,6 +15,9 @@ surface:
   - 'environment.yaml'
   - 'docs/reference/library-llms-full.md'
   - 'docs/governance/pin-policy.yaml'
+  - 'tests/packaging/test_bmad_suite_full_feature.py'
+  - 'src/shared/packages/pyforge-marshal/tests/meta/test_ad65_lean_env_conda_forge.py'
+  - 'src/shared/packages/pyforge-marshal/tests/unit/test_promote_sprint_status_regressions.py'
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
@@ -74,4 +77,5 @@ Ledger key: `148-1-python-3-14-10-is-declared-once-and-every-environment-locks-i
 - The first solve took nodejs 22.23.5 in `pyforge-steward`, where `bmad-eval-quality` pulls nodejs in unpinned. The steward feature now carries the estate's LTS pin, `nodejs = ">=24.19.0,<27.0,!=25.*"`, with its comment, and the second solve keeps 26.13.1.
 - `environment.yaml` is exported again by pixi 0.85.0: `python 3.14.10.*` and `pixi >=0.85.0`. `docs/reference/library-llms-full.md` names the declaration, and its table no longer says three platform environments are on 3.12 (they moved to 3.14 in Story 43.6).
 - `docs/governance/pin-policy.yaml` held python in eight per-feature `3.14.*` rows, which `pin_policy_check` read as dangling holds once those features stopped declaring python. One exact `3.14.10.*` hold on the `interpreter` feature replaces them, and nodejs's `<27.0` cap row adds `pyforge-steward`.
+- What followed from it in the full preflight: two tests that pinned an environment's feature list (`bmad-suite-full`, `pyforge-marshal`) now expect `interpreter` first; and marshal's live half, which had run on 3.15, met Python 3.14's dataclasses resolving string annotations through `sys.modules[cls.__module__]`. The two loaders in `test_promote_sprint_status_regressions.py` that run `scripts/promote_sprint_status.py` and `scripts/fleet_scan.py` from a file now register the module first, and the 16 errors in its eight tests are gone.
 - AC1: `target-version-check` exits 0. AC2: `llms-full-check` exits 0.

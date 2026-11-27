@@ -12,6 +12,8 @@ declared_low_risk: false
 surface:
   - 'src/shared/packages/pyforge-warden/src/pyforge/warden/engines.py'
   - 'src/shared/packages/pyforge-warden/tests/meta/test_engine_version_range_sync.py'
+  - 'src/shared/packages/pyforge-warden/tests/unit/test_engine_env_deptry.py'
+  - '_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/contract.md'
 context:
   - _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
   - _bmad-output/projects/pyforge-warden/planning-artifacts/epics.md
@@ -61,4 +63,5 @@ Ledger key: `34-1-the-fix-pr-solver-admits-pixi-0-85`.
 
 - `PIXI_VERSION_RANGE` is `>=0.85.0,<0.86`, with a comment naming this story and steward Story 148.2.
 - `test_pixi_range_admits_the_tested_pixi_and_no_untested_minor` checks 0.85.0 in range, and 0.84.2 and 0.86.0 out.
-- AC1 is read from warden's suites in the full preflight.
+- The contract's engine table names `>=0.85.0,<0.86` for `pixi`, as `test_contract_surface.py` holds it to the code, and the three `run_pixi_lock` tests in `test_engine_env_deptry.py` fake a pixi inside the range (0.85.0, 0.85.1) where they faked 0.80.1 and 0.81.0.
+- AC1: the range, contract and deptry tests pass (111).

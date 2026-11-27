@@ -347,7 +347,7 @@ tested range, not a pin (NFR-C1): an engine outside it is `engine-unavailable` (
 |---|---|---|---|
 | `deptry` | `>=0.25.1,<0.26` | conda-forge, a run-dependency of the package's own `pixi.toml` at the same range (`tests/meta/test_engine_version_range_sync.py`). | CAP-4 |
 | `osv-scanner` | `>=2.4.0,<2.5` | conda-forge, a run-dependency of the package's own `pixi.toml` at the same range; reads the offline database (section 5). | CAP-4, CAP-11 |
-| `pixi` | `>=0.80.0,<0.82` | The workspace's pixi; the floor is the root `pixi.toml`'s `requires-pixi`. The fix-target solver runs `pixi lock` on a throwaway copy. | CAP-24 |
+| `pixi` | `>=0.85.0,<0.86` | The workspace's pixi; the floor is the root `pixi.toml`'s `requires-pixi`. The fix-target solver runs `pixi lock` on a throwaway copy. | CAP-24 |
 | `opengrep` | `>=1.30.2,<1.31` | The estate `SelfExplainML` channel, linux-64 only, a run-dependency of the package's `pixi.toml` at the same range. | CAP-25 |
 | `tea-test-review` | none | BMAD TEA's headless CLI, run as `tea-test-review --base refs/remotes/origin/main --agent claude` under an 1800 s budget, so it needs the `tea` roster entry and an agent CLI on `PATH` (`--agent claude`); provisioned under `spec-pyforge-steward:CAP-33`. | CAP-23 |
 

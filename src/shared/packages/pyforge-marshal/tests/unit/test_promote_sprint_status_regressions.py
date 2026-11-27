@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import functools
 import importlib.util
+import sys
 from pathlib import Path
 
 import pytest
@@ -33,6 +34,9 @@ def _load_promote():
     spec = importlib.util.spec_from_file_location("_promote_sprint_status_test", path)
     assert spec and spec.loader
     mod = importlib.util.module_from_spec(spec)
+    # On Python 3.14 a dataclass resolves its string annotations through sys.modules[cls.__module__], so the
+    # module is registered before it runs (steward Story 148.1 moved this env off 3.15, which did not need it).
+    sys.modules[spec.name] = mod
     spec.loader.exec_module(mod)
     return mod
 
@@ -63,6 +67,9 @@ def _real_parse_sprint_status():
     spec = importlib.util.spec_from_file_location("_fleet_scan_promote_test", path)
     assert spec and spec.loader
     mod = importlib.util.module_from_spec(spec)
+    # On Python 3.14 a dataclass resolves its string annotations through sys.modules[cls.__module__], so the
+    # module is registered before it runs (steward Story 148.1 moved this env off 3.15, which did not need it).
+    sys.modules[spec.name] = mod
     spec.loader.exec_module(mod)
     return mod.parse_sprint_status
 

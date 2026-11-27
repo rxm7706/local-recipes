@@ -24,6 +24,11 @@ surface:
   - 'docs/reference/container-base-layer-convention.md'
   - 'docs/how-to/bootstrap-a-machine-with-steward.md'
   - 'docs/tutorials/onboard-a-machine.md'
+  - 'scripts/pixi_version_registry.py'
+  - 'src/shared/packages/pyforge-mason/src/pyforge/mason/engines/__init__.py'
+  - 'src/shared/packages/pyforge-mason/tests/meta/test_engine_version_range_sync.py'
+  - 'docs/foundry/marketplace/skills/mason/package/steps.md'
+  - 'docs/foundry/marketplace/site/skills/mason/package.html'
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - scripts/pixi_version_registry.py
@@ -80,4 +85,5 @@ Ledger key: `148-2-pixi-0-85-0-at-every-pin-site`.
 - `bump-pixi-version` rewrote 22 sites to 0.85.0: `pixi.toml`'s `$schema` URL, `requires-pixi` and three feature floors; `pyforge-mason`'s run-dependency floor; the `pixi-version` of 13 workflows and two composite actions; and the four Containerfiles' builder stage. It exported `environment.yaml` (`pixi >=0.85.0`).
 - All 41 `setup-pixi` steps are v0.11.3. The `osx-arm64-min` entry uses `subdir`, and pixi 0.85.0 reads the manifest with no warning; the lock it writes records `subdir: osx-arm64`.
 - `docs/tutorials/getting-started.md`, `docs/reference/container-base-layer-convention.md`, `docs/how-to/bootstrap-a-machine-with-steward.md` and `docs/tutorials/onboard-a-machine.md` state the 0.85.0 floor.
-- AC1: `pixi-version-check` exits 0 (23 sites). AC2: no step is off v0.11.3.
+- Two sites the registry did not hold were found by the full preflight. Mason's `PIXI_VERSION_RANGE` mirrors its run-dependency floor and stayed at 0.80.0; it is `_floor("0.85.0")` now and is a registered floor site, so the next bump moves it. Its evidence test names pixi 0.85.0: `pyforge-mason-test-slow`, the build+ship self-hosting proof (dry run, no upload), passes 3 of 3 on it. The mason `package` pilot skill's steps state `pixi` 0.85.0 (re-read 2026-11-27), as `test_pilot_skills.py` reads it from the lock, in `steps.md` and its catalog page.
+- AC1: `pixi-version-check` exits 0 (24 sites). AC2: no step is off v0.11.3.
