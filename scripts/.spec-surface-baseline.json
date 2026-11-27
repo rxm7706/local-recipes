@@ -559,7 +559,7 @@
    "docs/how-to/run-and-understand-detectors.md": "97397ca45491f4917a817790fce215ec62f924b5",
    "docs/how-to/run-atlas-pipelines-and-read-datasets.md": "2d01a1b8d8c495aa3a7c4ebcd6cd405320ff4426",
    "docs/how-to/run-herald-live-backend-locally.md": "c118f1df71a7e3a4a698ccbabab449bb6de50f1d",
-   "docs/how-to/scan-for-compliance-with-warden.md": "a0ae49039c902f8d4cc7473de5a94e197a711641",
+   "docs/how-to/scan-for-compliance-with-warden.md": "ad6e3e879b943d5ae79a00211265fbed47f188de",
    "docs/how-to/schedule-the-scribe-nightly-compile.md": "56db7842260ba4ce748450680b21e1f3bfa9545c",
    "docs/how-to/station-cli-operations.md": "6bcc62c83cf57d5d6187a18382c2e52086eb8647",
    "docs/how-to/track-upstream-todos.md": "3afeac8ca50ad5af666745dad89cd6f66597a6fa",
@@ -825,7 +825,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "3cfb46df9d163df0bf69c4943a738d04920c7bac"
+  "memlog": "70ac235d8c6de78b5642ce9afcd345cb98c7b468"
  },
  "pyforge-herald/spec-pyforge-herald": {
   "files": {
