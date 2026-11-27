@@ -93,7 +93,7 @@ development_status:
   117-20-the-platform-ci-local-concurrency-tests-start-the-second-run-when-the-first-holds-the-lock: done
   117-21-the-longest-pr-jobs-run-as-parallel-shards-and-jobs: done
   117-22-the-docs-site-slot-holds-the-cores-its-widest-lane-will-take-and-that-lane-goes-first: done
-  117-23-platform-ci-s-test-job-runs-as-three-shards: backlog
+  117-23-platform-ci-s-test-job-runs-as-three-shards: done
   117-3-the-preflight-admits-lanes-longest-first-by-the-cores-they-will-use: done
   117-4-each-station-suite-runs-as-its-package-local-and-live-tree-halves: done
   117-5-preflight-budget-names-every-lane-over-its-journal-derived-budget: done

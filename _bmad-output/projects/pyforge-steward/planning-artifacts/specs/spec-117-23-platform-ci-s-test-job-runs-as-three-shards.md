@@ -2,7 +2,7 @@
 title: '117.23: Platform CI''s test job runs as three shards'
 type: 'chore'
 created: '2026-11-26'
-status: 'ready-for-dev'
+status: 'done'
 story: 117-23-platform-ci-s-test-job-runs-as-three-shards
 spec: spec-pyforge-steward
 difficulty: 'easy'
@@ -12,9 +12,9 @@ declared_low_risk: false
 surface:
   - 'pixi.toml'
   - 'pixi.lock'
-  - 'environment.yaml'
   - '.github/workflows/platform-ci.yml'
   - 'tests/durations/platform.json'
+  - 'tests/scripts/test_durations_files.py'
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
@@ -73,3 +73,13 @@ Ledger key: `117-23-platform-ci-s-test-job-runs-as-three-shards`.
 ## Evidence (2026-11-26)
 
 PR #2407's `test` job: Initialize containers 26 s, checkout 6 s, Install test dependencies 18 s, Full test suite 141 s (196 s). PR #2405's: 25, 4, 16 and 89 s (140 s). The 53 jobs of #2407 peaked at 40 running at once, and the two jobs created last waited 33 and 38 s for a runner.
+
+## Result (2026-11-26)
+
+- `pytest-split >=0.11.0` is in the `platform-ci-test` feature only. `pixi.lock` gains that one package (0.11.0) in that environment, written with pixi 0.80.0. AC1: `pixi exec --spec pixi=0.80.0 pixi install -e platform-ci-test --locked` exits 0 in a clean clone. `environment.yaml` does not move: the `build` environment it exports does not carry the package. The estate reconcile regenerated the environment matrix of `docs/dreams/pyforge-unifying-strategy.md` (384 packages for `platform-ci-test`) and restamped two generated pages.
+- Platform CI's `test` job is a matrix of three groups. `PYTEST_ADDOPTS` gives every pytest run of the job its group: `--splits 3 --group K --durations-path=../../tests/durations/platform.json`. Every step, service and timeout of the job stays.
+- Trap: the path must follow `=`. Written as a separate value, an option value that names an existing path moves pytest's rootdir to the repository root. The suite then loses `src/platform`'s pytest settings (`--ds`, `--import-mode=importlib`, the `--ignore` of the dlt test): 15 errors with `AppRegistryNotReady`, or an import error.
+- `tests/durations/platform.json` is measured from the full suite through the local twin: 1,590 tests, 348 s of test time, keys relative to `src/platform`. The three groups hold 607, 383 and 600 tests, about 116 s of test time each, and no test is in two groups.
+- `tests/scripts/test_durations_files.py` reads the durations path from Platform CI's workflow too, in both spellings, so the file is held to exist and is not reported as orphaned.
+- AC2: `pyforge-steward-live-test` exits 0 (1,904 passed). `pyforge-doctor-scripts-test` exits 0 (1,400 passed) and `scripts-lib-test` exits 0 (1,074 passed). The local twin still runs the suite unsharded (`platform-ci-local -- --test`: 1,570 passed, 23 skipped).
+- The 120 s bound on the longest shard is read from the PR's own CI run.

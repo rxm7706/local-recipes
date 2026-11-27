@@ -2211,17 +2211,17 @@
           "build"
         ],
         "exit": 0,
-        "seconds": 0.016
+        "seconds": 0.017
       },
       {
         "label": "library-catalog-floors",
         "argv": [
-          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes-wt-wave3-build/.pixi/envs/pyforge-steward/bin/python3.14",
+          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes-wt-platform-ci-shards-2026-11-26/.pixi/envs/pyforge-steward/bin/python3.14",
           "scripts/llms_full_check.py",
           "--fix-floors"
         ],
         "exit": 0,
-        "seconds": 0.28
+        "seconds": 0.283
       },
       {
         "label": "bmad-estate-catalog",
@@ -2240,49 +2240,49 @@
           "--write"
         ],
         "exit": 0,
-        "seconds": 0.735
+        "seconds": 0.762
       },
       {
         "label": "env-matrix",
         "argv": [
-          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes-wt-wave3-build/.pixi/envs/pyforge-steward/bin/python3.14",
+          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes-wt-platform-ci-shards-2026-11-26/.pixi/envs/pyforge-steward/bin/python3.14",
           "scripts/pixi_env_matrix.py",
           "--update",
           "--dream",
           "docs/dreams/pyforge-unifying-strategy.md"
         ],
         "exit": 0,
-        "seconds": 5.116
+        "seconds": 5.227
       },
       {
         "label": "docs-environments",
         "argv": [
-          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes-wt-wave3-build/.pixi/envs/pyforge-steward/bin/python3.14",
+          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes-wt-platform-ci-shards-2026-11-26/.pixi/envs/pyforge-steward/bin/python3.14",
           "scripts/docs_environments.py"
         ],
         "exit": 0,
-        "seconds": 0.137
+        "seconds": 0.133
       },
       {
         "label": "docs-pixi-tasks",
         "argv": [
-          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes-wt-wave3-build/.pixi/envs/pyforge-steward/bin/python3.14",
+          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes-wt-platform-ci-shards-2026-11-26/.pixi/envs/pyforge-steward/bin/python3.14",
           "scripts/docs_pixi_tasks.py"
         ],
         "exit": 0,
-        "seconds": 0.131
+        "seconds": 0.139
       },
       {
         "label": "generate-bmad-suite",
         "argv": [
-          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes-wt-wave3-build/.pixi/envs/pyforge-steward/bin/python3.14",
+          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes-wt-platform-ci-shards-2026-11-26/.pixi/envs/pyforge-steward/bin/python3.14",
           ".claude/scripts/conda-forge-expert/bmad_suite_metapackage.py",
           "--journal",
-          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes-wt-wave3-build/.steward/estate-refresh/2026-10-14.json",
+          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes-wt-platform-ci-shards-2026-11-26/.steward/estate-refresh/2026-10-14.json",
           "--json"
         ],
         "exit": 0,
-        "seconds": 0.195,
+        "seconds": 0.171,
         "bmad_suite": {
           "version_before": "2026.10.13",
           "version": "2026.10.13",
@@ -2435,8 +2435,8 @@
           "python",
           "scripts/llms_full_check.py"
         ],
-        "exit": 1,
-        "seconds": 0.472,
+        "exit": 0,
+        "seconds": 0.479,
         "warn_only": false
       },
       {
@@ -2452,7 +2452,7 @@
           "scripts/bmad_estate_check.py"
         ],
         "exit": 0,
-        "seconds": 0.814,
+        "seconds": 0.808,
         "warn_only": false
       },
       {
@@ -2471,7 +2471,7 @@
           "docs/dreams/pyforge-unifying-strategy.md"
         ],
         "exit": 0,
-        "seconds": 2.766,
+        "seconds": 2.921,
         "warn_only": false
       },
       {
@@ -2487,7 +2487,7 @@
           "scripts/pixi_version_check.py"
         ],
         "exit": 0,
-        "seconds": 0.262,
+        "seconds": 0.265,
         "warn_only": false
       },
       {
@@ -2503,7 +2503,7 @@
           "scripts/target_version_check.py"
         ],
         "exit": 0,
-        "seconds": 0.236,
+        "seconds": 0.242,
         "warn_only": false
       },
       {
@@ -2519,7 +2519,7 @@
           "scripts/sbom_gap_derive.py"
         ],
         "exit": 0,
-        "seconds": 0.262,
+        "seconds": 0.269,
         "warn_only": false
       },
       {
@@ -2537,7 +2537,7 @@
           "platform-policy-suite"
         ],
         "exit": 0,
-        "seconds": 0.505,
+        "seconds": 6.297,
         "warn_only": false
       },
       {
@@ -2554,7 +2554,7 @@
           "--check"
         ],
         "exit": 0,
-        "seconds": 0.4,
+        "seconds": 0.406,
         "warn_only": false
       },
       {
@@ -2565,7 +2565,7 @@
           "--check"
         ],
         "exit": 0,
-        "seconds": 0.479,
+        "seconds": 0.484,
         "warn_only": false
       },
       {
@@ -2583,7 +2583,7 @@
           "pixi-currency-ledger"
         ],
         "exit": 0,
-        "seconds": 0.743,
+        "seconds": 0.735,
         "warn_only": true
       },
       {
@@ -2605,7 +2605,7 @@
           "deck.dc.html"
         ],
         "exit": 0,
-        "seconds": 0.359,
+        "seconds": 0.357,
         "warn_only": true
       }
     ],
@@ -2796,7 +2796,7 @@
           "spec-surface"
         ],
         "exit": 0,
-        "seconds": 1.813
+        "seconds": 1.935
       }
     },
     "recommended_commit": "estate reconcile: regenerate derived surfaces and reconcile spec-surface\n\nJournal: .steward/estate-refresh/2026-10-14.json"
