@@ -184,6 +184,10 @@ jobs:
 
     # Infra stays exactly PostgreSQL + Redis (spec's own Boundaries &
     # Constraints) -- no third backing service.
+    # Steward Story 117.31 (spec-pyforge-steward CAP-175): Docker probes a service every second for its first 30 s
+    # (--health-start-interval, inside --health-start-period, whose failures do not count), so it reads healthy within
+    # a second or so of starting. At the 10 s interval alone its first probe came 10 s after start, and the runner,
+    # backing off 2, 3 and 7 s between its own checks, waited 13 s on every job before the first step.
     services:
       postgres:
         image: postgres:17
@@ -197,6 +201,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+          --health-start-period 30s
+          --health-start-interval 1s
       redis:
         image: redis:7
         ports:
@@ -206,6 +212,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+          --health-start-period 30s
+          --health-start-interval 1s
 
     # Steward Story 117.23 (spec-pyforge-steward CAP-175): three shards, each a runner with its own PostgreSQL and
     # Redis services, each running its pytest-split group of the suite on top of xdist, as the station suites run
@@ -291,6 +299,7 @@ jobs:
     # Story 117.12 (spec-pyforge-steward CAP-175): the checks that ran inside `test` before — the Django system
     # checks, ruff, ruff format, mypy, the policy suite and the sqlmigrate extraction — in a job beside the suite,
     # so neither waits for the other. Same services (PostgreSQL + Redis, nothing else) and the same slim env.
+    # Story 117.31: the same health probes as `test`'s, every second while a service starts.
     timeout-minutes: 15
     defaults:
       run:
@@ -309,6 +318,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+          --health-start-period 30s
+          --health-start-interval 1s
       redis:
         image: redis:7
         ports:
@@ -318,6 +329,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+          --health-start-period 30s
+          --health-start-interval 1s
 
     env:
       DATABASE_URL: postgres://postgres:platform@localhost:5432/platform

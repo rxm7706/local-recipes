@@ -8703,3 +8703,19 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   **Constraints:** the test, its median and its 5.0 s budget do not change; CI's jobs do not change; a declared task
   whose command has no tail fails a meta-test, and the preflight refuses to run it (exit 2). No flag (fix). Owner
   `spec-pyforge-steward`.
+- **2026-11-27 (Platform CI's jobs wait 13 s for their services) — Found and ruled:** a Platform CI test shard takes
+  117 to 146 s, and only 47 to 70 s of it is the suite. Read from the step logs of PR #2425's run, start-up costs:
+  "Initialize containers" 21 to 27 s, checkout 5 to 11 s, the pixi environment's 835 MB cache 13 to 24 s, and
+  stopping the containers 6 to 8 s. Inside the container start-up, 13.4 s goes to waiting for the services:
+  PostgreSQL and Redis are probed every 10 s, so their first probe comes 10 s after start, and the runner, backing
+  off 2, 3 and 7 s between its own checks, saw healthy 13 s after start. Docker 25 added a start interval: probes
+  every second during a start period whose failures do not count. A local container that becomes ready 3 s after
+  start read healthy after 10.5 s at the 10 s interval and after 3.3 s with a 1 s start interval. The checks job and
+  scribe's live job run the same kind of service. Measured and left: the environment's cache is 835 MB because it
+  carries Playwright's full Chromium (403 MB) beside the headless shell the suite launches (273 MB), the set steward
+  Story 131.1 chose to lock, so dropping it reopens that ruling. **Ruled** (operator, 2026-11-27: "Platform CI's fixed
+  cost per shard next"). **For steward:** this entry binds `spec-pyforge-steward` CAP-175 (realized, no text change)
+  and decomposes as Story 117.31 on Epic 117: every PostgreSQL and Redis service in Platform CI's `test` and
+  `checks` jobs and in `scribe-live-test` is probed every second for its first 30 s. **Constraints:** the services,
+  their images and their steady health checks stay as they are; no test, job or lane changes. No flag (chore). Owner
+  `spec-pyforge-steward`.
