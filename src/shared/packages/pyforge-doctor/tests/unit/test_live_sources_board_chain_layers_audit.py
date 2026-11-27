@@ -194,6 +194,51 @@ def test_unknown_project_is_unevaluable(tmp_path: Path) -> None:
     assert findings[0].check == "chain-layers-audit-unevaluable"
 
 
+# --- several projects over one fleet scan (doctor Story 69.1) ---------------------------
+#
+# The chain-currency sweep audits eight stations. Each one-project audit loaded
+# scripts/fleet_scan.py and ran scan_fleet() again, git blames included, though the fleet
+# table depends only on the target. The batch form loads and scans once.
+
+
+def test_batch_audit_equals_each_project_alone_and_scans_the_fleet_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _install_generate(tmp_path)
+    _write_project_skeleton(tmp_path, "pyforge-marshal", dream=True, spec=True, brief=True)
+    _write_project_skeleton(
+        tmp_path, "pyforge-doctor", dream=True, spec=True, brief=True, prd=True, arch=True, epics=True
+    )
+    projects = ("pyforge-marshal", "pyforge-doctor", "pyforge-no-such-station")
+    alone = {p: [f.to_json_dict() for f in board.gather_chain_layers_audit(tmp_path, p)] for p in projects}
+
+    loads: list[Path] = []
+    scans: list[tuple] = []
+    real_load = board._load_dashboard_generate
+
+    def counting_load(target: Path):
+        gen = real_load(target)
+        loads.append(target)
+        real_scan = gen.scan_fleet
+
+        def counting_scan(*args, **kwargs):
+            scans.append(args)
+            return real_scan(*args, **kwargs)
+
+        gen.scan_fleet = counting_scan
+        return gen
+
+    monkeypatch.setattr(board, "_load_dashboard_generate", counting_load)
+    batch = board.gather_chain_layers_audits(tmp_path, projects)
+
+    assert list(batch) == list(projects)
+    assert {p: [f.to_json_dict() for f in fs] for p, fs in batch.items()} == alone
+    # marshal's missing layers fail a checkpoint, so the equality covers a FAIL path too.
+    assert any(f["status"] == "fail" for f in alone["pyforge-marshal"])
+    assert len(loads) == 1, "scripts/fleet_scan.py loaded once per project, not once per batch"
+    assert len(scans) == 1, "scan_fleet ran once per project, not once per batch"
+
+
 # --- the audit executes Doctor's own checkout's script, never the judged tree's -------
 #
 # `target` is the tree being JUDGED, so its `scripts/fleet_scan.py` is data. Resolving the

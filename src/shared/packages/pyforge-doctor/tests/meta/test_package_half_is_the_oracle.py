@@ -69,9 +69,6 @@ _UNNAMED_CHECK_CODES: Mapping[str, str] = {
     "chain-audit-checkpoint-staleness": (
         "named only in the live half (test_live_sources_board_chain_layers_audit.py), as for the coherence checkpoint"
     ),
-    "chain-audit-verdict": (
-        "named only in the live half (test_live_sources_board_chain_layers_audit.py), as for the coherence checkpoint"
-    ),
     "console-bar-layout": (
         "check-layout's one code (board._LAYOUT_CHECK); test_sources_board_check_layout.py and "
         "test_sources_unmeasured.py produce it and assert the status and the message, never the code"

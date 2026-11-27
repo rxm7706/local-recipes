@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: cd16d2f3cf07ee54
-story_count: 204
+source_fingerprint: 5e19f91937d990b8
+story_count: 205
 test_file_count: 132
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 204
-- **Epics parsed:** 67
+- **Stories parsed:** 205
+- **Epics parsed:** 68
 - **Test files inventoried:** 132 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `cd16d2f3cf07ee54`
+- **Source fingerprint:** `5e19f91937d990b8`
 
 ## Risk Assessment
 
@@ -57,6 +57,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 41: Phases 4 and 5 of the deferral burn-down: doctor's medium and low deferrals
 - Epic 67: The contract mutation tests analyse each module once (spec-pyforge-steward:CAP-175)
 - Epic 68: Capability-effect runs a project's git greps side by side (spec-pyforge-steward:CAP-175)
+- Epic 69: The chain-currency sweep scans the fleet once (spec-pyforge-steward:CAP-175)
 
 ### Low-risk epics
 
@@ -449,6 +450,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 66.1 | The detector run measures the doctor sources beside the script detectors | none observed |
 | 67.1 | The contract mutation tests analyse each module once | none observed |
 | 68.1 | Capability-effect runs a project's git greps side by side | none observed |
+| 69.1 | The chain-currency sweep scans the fleet once | none observed |
 
 ## Quality Gates
 

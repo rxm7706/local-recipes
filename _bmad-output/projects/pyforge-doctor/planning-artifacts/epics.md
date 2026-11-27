@@ -4400,6 +4400,28 @@ So that the detector and doctor's longest live test stop waiting on 45 greps in 
 **And** a test holds that the prefetch fills the cache as serial lookups would, once per uncached symbol
 **Status:** done
 
+## Epic 69: The chain-currency sweep scans the fleet once (spec-pyforge-steward:CAP-175)
+
+Minted 2026-11-27 from the station Dream's entry of the same date on the operator ruling of 2026-11-27: "Chain-currency sweep".
+**HARD boundaries:**
+- Each project's findings stay exactly what the one-project audit returns. No flag (a chore).
+
+### Story 69.1: The chain-currency sweep scans the fleet once
+
+As the operator whose PRs wait on the Detectors job,
+I want the chain-currency sweep to load `fleet_scan.py` and scan the fleet once for all eight stations,
+So that the sweep stops repeating the same fleet scan, git blames included, once per station.
+
+**Type:** chore • **Effort:** S • **Deps:** 55.2 • **FR/AD:** spec-pyforge-steward:CAP-175 (realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py`, `scripts/chain_currency_sweep_check.py`, `src/shared/packages/pyforge-doctor/tests/unit/test_sources_board_chain_layers_audit.py`, `src/shared/packages/pyforge-doctor/tests/unit/test_live_sources_board_chain_layers_audit.py`, `src/shared/packages/pyforge-doctor/tests/unit/test_sources_registry.py`, `src/shared/packages/pyforge-doctor/tests/meta/test_package_half_is_the_oracle.py`, `tests/scripts/test_chain_currency_sweep_check.py`
+**Spec:** `planning-artifacts/specs/spec-69-1-the-chain-currency-sweep-scans-the-fleet-once.md`
+**Given** the sweep audits eight stations, each audit loads `fleet_scan.py` and runs `scan_fleet()` again, and the sweep takes 43 s alone here and 86 s of the 132 s Detectors job
+**When** `board.gather_chain_layers_audits` audits the stations over one load, one fleet scan and one Dream orphan index, and the sweep makes that one call
+**Then** every station's findings equal the one-project audit's, and the sweep runs in under a quarter of the time
+**And** tests hold that the batch loads and scans once, degrades a raising project alone, and that a station the batch leaves out is could-not-run
+**Status:** done
+
 ## Currency reconciliation — 2026-11-26 (the tag rule reaches station source)
 
 *Chain-currency cascade (arch -> epics).* 2026-11-26: Epic 64 / Story 64.1 minted under `spec-one-chain-per-station` (its capability 9, realized with no text change); no AD moves. The keys go through the Tier-3 feed and `sprint-ledger-sync`. **Content changed:** the Epic, this section and `updated:`.

@@ -307,7 +307,7 @@ def test_a_real_degrade_on_exception_warn_grades_its_axis_incomplete() -> None:
 _DEGRADE_CALL_SITES = {
     "bmad_config": 1,
     "bmad_method": 1,
-    "board": 3,
+    "board": 4,  # Story 69.1: gather_chain_layers_audits degrades each project of a batch alone
     "capability_effect": 1,
     "capability_ledger": 1,
     "chain": 5,
