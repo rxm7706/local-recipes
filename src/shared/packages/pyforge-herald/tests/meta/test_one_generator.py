@@ -38,6 +38,7 @@ from pages_astro import (
     STATIONS,
     astro_build,
     build_site_dir,
+    differences_report,
     fixture_tree,
     font_vendoring_only,
     needs_astro,
@@ -408,7 +409,8 @@ def test_43_5_two_builds_two_days_runs_and_commits_apart_differ_only_in_the_buil
 
     one, two = tree(built), tree(second)
     assert one.keys() == two.keys()
-    assert [rel for rel in one if one[rel] != two[rel]] == []
+    # Herald Story 62.1: a failure shows how each differing file differs, not only its name.
+    assert [rel for rel in one if one[rel] != two[rel]] == [], differences_report(one, two)
     assert "Built from fedcba9 · 2026-10-17 21:30 UTC · run 222" in (second / "status/index.html").read_text("utf-8")
 
 

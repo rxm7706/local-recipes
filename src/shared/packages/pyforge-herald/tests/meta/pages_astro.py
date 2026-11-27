@@ -14,6 +14,7 @@ from __future__ import annotations
 import atexit
 import difflib
 import functools
+import hashlib
 import json
 import os
 import re
@@ -230,6 +231,35 @@ def font_vendoring_only(published: bytes, tracked: bytes) -> list[str]:
             elif line.strip():
                 changes.append(f"gained {line!r}")
     return [*changes, *([f"gained {links} vendored font links, not one"] if links > 1 else [])]
+
+
+def differences_report(one: dict[str, bytes], two: dict[str, bytes], *, files: int = 3, lines: int = 40) -> str:
+    """What differs between two built trees (each a path -> bytes map), for an assertion message (herald Story 62.1).
+
+    The paths whose bytes differ, then for the first ``files`` of them a unified diff of up to ``lines`` lines when both
+    sides decode as UTF-8, else each side's size and sha256. On 2026-11-27 a CI run of the two-builds test failed
+    naming only ``pagefind/pagefind-entry.json``, and nothing said how it differed."""
+    differing = sorted(rel for rel in one.keys() & two.keys() if one[rel] != two[rel])
+    out = [f"{len(differing)} file(s) differ: {differing}"]
+    for rel in differing[:files]:
+        try:
+            a, b = one[rel].decode("utf-8"), two[rel].decode("utf-8")
+        except UnicodeDecodeError:
+            out += [
+                f"--- {rel}: binary",
+                *(
+                    f"  {side}: {len(data)} bytes, sha256 {hashlib.sha256(data).hexdigest()[:16]}"
+                    for side, data in (("first", one[rel]), ("second", two[rel]))
+                ),
+            ]
+            continue
+        diff = list(
+            difflib.unified_diff(
+                a.splitlines(), b.splitlines(), fromfile=f"first/{rel}", tofile=f"second/{rel}", lineterm="", n=1
+            )
+        )
+        out += diff[:lines] + ([f"... {len(diff) - lines} more diff lines"] if len(diff) > lines else [])
+    return "\n".join(out)
 
 
 #: Shaped as the tracked Design exports are: ``<head>`` on its own line, the Google Fonts links one per line.

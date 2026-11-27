@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: f041d61219d53a1c
-story_count: 171
-test_file_count: 105
+source_fingerprint: e7f649721b67ce5d
+story_count: 172
+test_file_count: 106
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-herald`
-- **Stories parsed:** 171
-- **Epics parsed:** 61
-- **Test files inventoried:** 105 under `src/shared/packages/pyforge-herald/tests/`
+- **Stories parsed:** 172
+- **Epics parsed:** 62
+- **Test files inventoried:** 106 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `f041d61219d53a1c`
+- **Source fingerprint:** `e7f649721b67ce5d`
 
 ## Risk Assessment
 
@@ -82,6 +82,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 57: Herald's verbs take both spellings for JSON (spec-pyforge-steward:CAP-185)
 - Epic 58: Herald's suite runs under xdist, its site builds in one worker (spec-pyforge-steward:CAP-175)
 - Epic 60: Herald's build groups hold only the builds their tests share (spec-pyforge-steward:CAP-175)
+- Epic 62: Herald's two-builds test names what differs (spec-pyforge-steward:CAP-175)
 
 ### Low-risk epics
 
@@ -183,6 +184,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-herald/tests/unit/test_locking.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_mcp_transport.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_notices.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_pages_astro_differences_report.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_performance_epic11.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_pptx_native.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_pptx_native_flag.py` | unit | none observed |
@@ -383,6 +385,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 59.1 | Herald's site builds run side by side, each worker in its own copy of docs-site | none observed |
 | 60.1 | Herald's build groups hold only the builds their tests share | none observed |
 | 61.1 | Herald's test builds keep the docs pages they already rendered | none observed |
+| 62.1 | Herald's two-builds test names what differs | none observed |
 
 ## Quality Gates
 

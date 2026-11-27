@@ -985,6 +985,20 @@ Herald rebases to one Dream, one Spec, one PRD, one spine, one epic chain. Folde
   **Constraints:** the Pages build renders as before; the site is the same with the pages kept; no assertion is
   removed or weakened, and no test is skipped or re-marked. No flag (a chore; the variable is a build input, listed
   in the contract). Owner `spec-pyforge-herald`.
+- **2026-11-27 (the two-builds test failed once and did not say how) — Found and ruled:** on PR #2431's CI run (job
+  140707620970), `test_43_5_two_builds_two_days_runs_and_commits_apart_differ_only_in_the_built_from_line` failed
+  naming one path, `pagefind/pagefind-entry.json`, as differing between its two builds; every other file was
+  byte-identical, Pagefind's content-hashed index, fragment and meta files among them, and the re-run passed. The
+  entry file holds Pagefind's version, the language's index hash (also in the meta file's name, which matched), its
+  page count and its fixed character list, so something other than the hash moved, and the test's message did not
+  say what. Locally it did not recur in 23 builds: the test alone three times, its module in one process, herald's
+  live shard 2 three times as CI runs it, and eight two-build pairs in one process, some after a build with the
+  exports mounted, all writing one entry file. **Ruled** (operator, 2026-11-27: "Do this task here: Herald's
+  two-builds test names what differs"). **For herald:** this entry binds `spec-pyforge-steward:CAP-175` (realized
+  here, no text change in this station's Spec: the gates stay readable when they fail) and decomposes as Epic 62, one
+  story: `pages_astro.differences_report` names every differing path and shows a unified diff of the first few (a
+  binary file's size and sha256), and the two-builds test's assertion carries it. **Constraints:** the assertion is
+  the same; no test is skipped or re-marked. No flag (a chore). Owner `spec-pyforge-herald`.
 
 ## 2026-10-26 — The deck family stays current — infographics re-derived from the ledgers, not remembered (folded from deck-family-currency)
 

@@ -1869,7 +1869,7 @@
    "src/shared/packages/pyforge-herald/tests/fixtures/jinja-theme-2026-10-15.json": "1a77a2b3785f7f7b2bcc2924863c03e408c4f3d0",
    "src/shared/packages/pyforge-herald/tests/fixtures/marshal-status-two-homes.json": "1aaa011443782237c0a8267e3e9b192a10479645",
    "src/shared/packages/pyforge-herald/tests/integration/test_pptx_native_render.py": "fd2f7834be41124078293219b1c429b4701b8c99",
-   "src/shared/packages/pyforge-herald/tests/meta/pages_astro.py": "7bd4f7c06031db2d47daf48b279ea369ded5951c",
+   "src/shared/packages/pyforge-herald/tests/meta/pages_astro.py": "d3d733f9cc83bcd675f88e450d1e51c13561f032",
    "src/shared/packages/pyforge-herald/tests/meta/test_agent_surface_and_changes.py": "bd409e127f8fe4661827e79289ac4531b0b56a1a",
    "src/shared/packages/pyforge-herald/tests/meta/test_built_site_tests_install_first.py": "c209c50529878ce16f639cfa4052291faeefb12d",
    "src/shared/packages/pyforge-herald/tests/meta/test_deck_lockfiles_current.py": "0e99a15402fc2baa97450fbcb837413978233de6",
@@ -1887,7 +1887,7 @@
    "src/shared/packages/pyforge-herald/tests/meta/test_exit_codes_match_the_exit_declaration.py": "56a2fc5dbcb81fa6d88328407d6f1305c9bad340",
    "src/shared/packages/pyforge-herald/tests/meta/test_herald_pages_model.py": "80b35cf9c2bef48ebb07415fc10524589bdef861",
    "src/shared/packages/pyforge-herald/tests/meta/test_marketplace_mount.py": "38d323f1fe641156a911488899ae06b47ddd5006",
-   "src/shared/packages/pyforge-herald/tests/meta/test_one_generator.py": "1433562fee98a0f33717763585ce1fcd5bd7904f",
+   "src/shared/packages/pyforge-herald/tests/meta/test_one_generator.py": "9122b6f631939516434318b2b11a1d2eaaec5afa",
    "src/shared/packages/pyforge-herald/tests/meta/test_pages_artifact.py": "00a2cdae08228dbe4972b4ceeb4d68753a32e5c8",
    "src/shared/packages/pyforge-herald/tests/meta/test_pages_site_url.py": "45b1dd90365829a190be073898755b67e3299d91",
    "src/shared/packages/pyforge-herald/tests/meta/test_portal_deck_status.py": "900e8b8a90c4cee21d2236e1333f78ee031c87d6",
@@ -1950,6 +1950,7 @@
    "src/shared/packages/pyforge-herald/tests/unit/test_locking.py": "f91848c12e842b641b252f12dfbf64010d72e3d5",
    "src/shared/packages/pyforge-herald/tests/unit/test_mcp_transport.py": "d6403c1c137102a7bffaf782ccc5be287eb94ab2",
    "src/shared/packages/pyforge-herald/tests/unit/test_notices.py": "f89925b50773714cb3b5445c1702b7b0c0812ebd",
+   "src/shared/packages/pyforge-herald/tests/unit/test_pages_astro_differences_report.py": "a9478cf6d3001505d0ffea1b11bc460ccc566305",
    "src/shared/packages/pyforge-herald/tests/unit/test_performance_epic11.py": "1321b91df21e785ae8582e9213a32f0f6b6f9077",
    "src/shared/packages/pyforge-herald/tests/unit/test_pptx_native.py": "67e46118cc3f4d3584e9ad1527b3cc1eaaac47ff",
    "src/shared/packages/pyforge-herald/tests/unit/test_pptx_native_flag.py": "09ddf75f7e72eab98ccc5a01a7e5bfa529d678e8",
@@ -2005,7 +2006,7 @@
    "src/shared/packages/pyforge-herald/web/src/test/setup.js": "1d74541c291183bb6027ebb5bf6de480115262ea",
    "src/shared/packages/pyforge-herald/web/vite.config.js": "bcd53f517a2d51fe2992404dd852b2599b15d84f"
   },
-  "memlog": "3b8142ea49af37aa42c0257d8a3a96d5f1d54e45"
+  "memlog": "c1e303d9552d0cc73bc2ff288abdb700eaec64e6"
  },
  "pyforge-marshal/spec-pyforge-core": {
   "files": {
