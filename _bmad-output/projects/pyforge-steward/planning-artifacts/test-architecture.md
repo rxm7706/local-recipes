@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 95e0b982cd8cfa2c
-story_count: 532
+source_fingerprint: 16efc80ce35b588e
+story_count: 533
 test_file_count: 172
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 532
+- **Stories parsed:** 533
 - **Epics parsed:** 147
 - **Test files inventoried:** 172 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `95e0b982cd8cfa2c`
+- **Source fingerprint:** `16efc80ce35b588e`
 
 ## Risk Assessment
 
@@ -808,6 +808,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 117.20 | The platform-ci-local concurrency tests start the second run when the first h... | none observed |
 | 117.21 | The longest PR jobs run as parallel shards and jobs | none observed |
 | 117.22 | The docs-site slot holds the cores its widest lane will take, and that lane g... | none observed |
+| 117.23 | Platform CI's test job runs as three shards | none observed |
 | 118.1 | steward deploy nic brings up and tears down an NKP cluster on local kind | none observed |
 | 118.2 | nebi-pack and the data-science pack reach Healthy on kind and a notebook spawns | none observed |
 | 118.3 | The gitops branch of the monorepo is the GitOps source and a Hetzner cluster ... | none observed |
