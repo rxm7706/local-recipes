@@ -8544,3 +8544,26 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   the job runs as three shards over durations measured from the suite. **Constraints:** every test still runs in
   exactly one shard; the job's steps, services and timeout stay; the local twin runs the suite unsharded; no test,
   floor or gate is weakened. No flag (a chore). Owner `spec-pyforge-steward`.
+- **2026-11-26 (a touched preflight pays for a cold mypy cache) — Found and ruled:** measured on `main` `708f5fb293`
+  with the touched-scope preflight a push runs, two passes each: a steward code change took 109.5 s, then 69.0 s; a
+  herald test change 90.6 s, then 90.3 s; a marshal code change 111.9 s, then 91.8 s; a docs-only change about 3 s,
+  and a push of a commit already green about 2 s. The 40 s between the steward passes is a cold mypy cache: a new
+  worktree has none, and its mypy lanes took 48.8 s (`pyforge-foundry-full`) and 30.4 s (`pyforge-guild`) against
+  3.5 to 4.5 s warm. `scripts/lint_types.py` keeps one cache per package per environment
+  (`src/shared/packages/<package>/.mypy_cache/<environment>/`), and the primary checkout, where no lane runs, holds
+  none of those, so a new worktree has nothing to copy from it. **Ruled** (operator, 2026-11-26: "Yes, levers 1–3",
+  on three levers proposed for the local preflight). **For steward:** this entry binds `spec-pyforge-steward` CAP-175
+  (realized, no text change), CAP-159 (the preflight answers in under a minute; no text change) and CAP-104 and
+  CAP-107 (the workspace duty's `start` and `clean`; no text change), and decomposes as Story 117.24 on Epic 117:
+  `workspace clean` keeps a worktree's mypy caches in the checkout it runs from, and `workspace start` copies them
+  into the new worktree. **Constraints:** a cache is only ever copied, never shared by two worktrees, and a failed copy
+  never fails `start` or `clean`; no test, floor or gate is weakened. No flag (a chore). Owner `spec-pyforge-steward`.
+  **Measured and not built, the other two levers:** (2) starting the serial lanes (mypy, ruff, the five fast
+  detectors) before the xdist lanes take every core: in every warm touched run measured, those lanes start when the
+  first xdist lane ends and end before the second does, so they cost nothing, and the one run they lengthened was the
+  cold mypy cache that Story 117.24 removes; holding a core for them would slow every xdist lane for the whole run.
+  (3) letting herald's two suites run side by side (they hold the docs-site mutex, and since herald Story 59.1 each
+  test process builds in its own copy, so they could share it): built, measured on a herald-only change in a scratch
+  clone, and dropped. The package half started 9 s in beside the live half, but the runs took 95.0 and 89.9 s against
+  90.6 and 90.3 s in turn, because the live half then took 83 to 88 s instead of 67 s. Herald's live half alone keeps
+  9.3 cores busy on average (620 CPU-seconds in 67 s) on an 8-core machine, so a lane beside it only takes its CPU.

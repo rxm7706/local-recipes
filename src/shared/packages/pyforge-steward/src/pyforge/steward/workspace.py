@@ -47,6 +47,7 @@ from pyforge.core.preserve_refs import (
 )
 
 from .interfaces import DutyResult
+from .root_layout import STATION_PACKAGES
 
 WORKSPACE_PRESERVE_TAG_FLAG = "pyforge.steward.workspace_preserve_tag"
 _STATION_TOKENS = ("atlas", "doctor", "herald", "marshal", "mason", "scribe", "steward", "warden")
@@ -59,6 +60,10 @@ _CODE_WORKSPACE_RELATIVE_DIR = Path(".steward/workspaces")
 _DEFAULT_FROM = "origin/main"  # recorded as written; git reads it through _source_ref
 _FEATURE_BRANCH_PREFIX = "f-"
 _SLUG_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
+# Story 117.24: ``scripts/lint_types.py`` keeps one mypy cache per package per pixi environment, at
+# ``<package>/.mypy_cache/<environment>/`` (its ``--cache-dir``), and mypy writes a Python-version directory inside it.
+_MYPY_CACHE_PARENTS = f"{STATION_PACKAGES}/*/.mypy_cache"
+_PYTHON_VERSION_DIR = re.compile(r"^\d+\.\d+$")
 
 
 class WorkspaceError(RuntimeError):
@@ -478,6 +483,66 @@ def scratch_path_for(slug: str, *, root: Path | None = None) -> Path:
     return root.parent / f"{root.name}-wt-{safe}"
 
 
+def mypy_cache_dirs(tree: Path) -> list[Path]:
+    """The per-environment mypy caches under ``tree``, relative to it (Story 117.24).
+
+    Each is a child of a package's ``.mypy_cache/`` that holds a Python-version directory, as mypy writes under the
+    ``--cache-dir`` ``scripts/lint_types.py`` passes. The version directories of mypy's default layout, directly under
+    ``.mypy_cache/``, are not caches of this kind and are left alone.
+    """
+    found: list[Path] = []
+    for parent in sorted(tree.glob(_MYPY_CACHE_PARENTS)):
+        if not parent.is_dir() or parent.is_symlink():
+            continue
+        for child in sorted(parent.iterdir()):
+            if (
+                child.is_dir()
+                and not child.is_symlink()
+                and not _PYTHON_VERSION_DIR.match(child.name)
+                and any(grand.is_dir() and _PYTHON_VERSION_DIR.match(grand.name) for grand in child.iterdir())
+            ):
+                found.append(child.relative_to(tree))
+    return found
+
+
+def copy_mypy_caches(source: Path, dest: Path) -> tuple[int, list[str]]:
+    """Copy each per-environment mypy cache of ``source`` into ``dest``, replacing the one there (Story 117.24).
+
+    A copy, never a link: mypy's cache takes one writer, so two worktrees never share one. mypy checks a cached module
+    against its source's hash when the path or the mtime differ, so a copied entry is reused only where the source is
+    the same. Each cache is copied beside its target and renamed into place, so a failed copy never leaves half a
+    cache, and a package ``dest`` does not have is skipped. Returns the number copied and one line per failure: a
+    failure never raises, since a cache only saves time.
+    """
+    copied = 0
+    failures: list[str] = []
+    for rel in mypy_cache_dirs(source):
+        target = dest / rel
+        if not target.parent.parent.is_dir():
+            continue
+        staging = target.with_name(f".{target.name}.copying-{os.getpid()}")
+        try:
+            target.parent.mkdir(exist_ok=True)
+            shutil.rmtree(staging, ignore_errors=True)
+            shutil.copytree(source / rel, staging, symlinks=True)
+            if target.exists():
+                shutil.rmtree(target)
+            staging.rename(target)
+            copied += 1
+        except OSError as exc:
+            shutil.rmtree(staging, ignore_errors=True)
+            failures.append(f"{rel}: {exc}")
+    return copied, failures
+
+
+def _copy_mypy_caches_noting_failures(source: Path, dest: Path, *, verb: str) -> int:
+    """:func:`copy_mypy_caches`, each failure printed to stderr: the verb goes on whatever the copy does."""
+    copied, failures = copy_mypy_caches(source, dest)
+    for line in failures:
+        print(f"workspace {verb}: mypy cache not copied: {line}", file=sys.stderr)
+    return copied
+
+
 def _validate_slug(slug: str) -> None:
     if not _SLUG_PATTERN.match(slug):
         raise WorkspaceError(f"invalid slug {slug!r}: expected [A-Za-z0-9][A-Za-z0-9._/-]*")
@@ -591,6 +656,8 @@ def start_workspace(
         # CAP-104: never leave an orphan worktree outside bookkeeping.
         _git_ok("worktree", "remove", "--force", str(dest), cwd=root)
         raise
+    # Story 117.24: the new worktree's first mypy run reads the caches the last cleaned one left in this checkout.
+    _copy_mypy_caches_noting_failures(root, dest, verb="start")
     return record
 
 
@@ -1441,6 +1508,9 @@ def _archive_worktree(
                 errors="surrogateescape",
             )
 
+        if wt.is_dir():
+            # Story 117.24: the next ``start`` copies these into its new worktree.
+            _copy_mypy_caches_noting_failures(wt, root, verb="clean")
         if wt.exists():
             result = _git_ok("worktree", "remove", "--force", str(wt), cwd=root)
             if result.returncode != 0:
@@ -1688,6 +1758,8 @@ def _execute_delete(record: WorkspaceRecord, *, root: Path) -> tuple[Path, int] 
                 _move_no_clobber(src, dest)
             if moves:
                 moved = (main, len(moves))
+        # Story 117.24: the next ``start`` copies these into its new worktree.
+        _copy_mypy_caches_noting_failures(wt, root, verb="clean")
         result = _git_ok("worktree", "remove", "--force", str(wt), cwd=root)
         if result.returncode != 0:
             detail = (result.stderr or result.stdout or "").strip()

@@ -5,7 +5,7 @@ sources:
   - scripts/worktree_sweep.py
   - scripts/bmad-switch
   - _bmad/scripts/resolve_config.py
-verified: 2026-11-18
+verified: 2026-11-26
 ---
 
 # How to Manage Worktrees with BMAD
@@ -21,7 +21,7 @@ A raw `git worktree add` creates an isolated filesystem space, but it does not k
 Two wrappers exist, for two different kinds of worktree:
 
 1. **Story dispatch worktrees** — `marshal factory dispatch <slug> <key>` provisions a fresh isolated worktree from `origin/main` and launches exactly one detached `bmad-build-auto` story session with `BMAD_ACTIVE_PROJECT` set per-invocation and physical artifact paths; `marshal factory spin` launches a multi-story `bmad-loop` run in the station's loop home under `~/.bmad-loops/<station>` (bmad-loop stamps each story's `task.baseline_commit` when its worktree opens). Both journal the launch, and `marshal land` is how their waves land.
-2. **Scratch worktrees** — `steward workspace start <slug>` creates a branch `<slug>` off `origin/main` (override with `--from BRANCH`) in a tool-owned scratch worktree and records it in steward's bookkeeping; `steward workspace ls` / `status` / `clean` manage only worktrees the tool created.
+2. **Scratch worktrees** — `steward workspace start <slug>` creates a branch `<slug>` off `origin/main` (override with `--from BRANCH`) in a tool-owned scratch worktree and records it in steward's bookkeeping; `steward workspace ls` / `status` / `clean` manage only worktrees the tool created. `start` also copies the mypy caches the last `clean` kept in the checkout it runs from (one per package per pixi environment, `src/shared/packages/<package>/.mypy_cache/<environment>/`), so the new worktree's first preflight runs its mypy lanes in seconds rather than the 30 to 50 s of a cold cache.
 
 ```bash
 pixi run -e pyforge-guild marshal factory dispatch <slug> <story-key>
@@ -52,4 +52,4 @@ The sweep is dry-run by default. It classifies every registered worktree (`KEEP`
 
 **Explicit retirement (`--retire <branch>…`).** Retires only the branch names given on the command line (never globs or patterns), with the same manifest-before-delete and archive-twin rules. Ruleset-protected names are refused with a finding; use this for operator-approved retirement of other protected prefixes (for example legacy `recover/` branches) after review.
 
-Per-story loop-home branch retirement remains `marshal retire` (dry-run by default, `--execute` to delete). The sweeper is the permanent home for worktree and remote branch hygiene (2026-10-03 ruling). Scratch worktrees made by steward are archived by default with `steward workspace clean` (a clean worktree that git proves already landed gets a `.landed.txt` note, not a tarball); use `steward workspace clean --delete` to drop gone or proven-landed workspaces without an archive.
+Per-story loop-home branch retirement remains `marshal retire` (dry-run by default, `--execute` to delete). The sweeper is the permanent home for worktree and remote branch hygiene (2026-10-03 ruling). Scratch worktrees made by steward are archived by default with `steward workspace clean` (a clean worktree that git proves already landed gets a `.landed.txt` note, not a tarball); use `steward workspace clean --delete` to drop gone or proven-landed workspaces without an archive. Either way, `clean` first copies the worktree's mypy caches into the checkout it runs from, for the next `start`; a cache is only ever copied, never shared between worktrees, and a failed copy is reported without stopping the clean.

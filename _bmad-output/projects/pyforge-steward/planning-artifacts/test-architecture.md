@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 16efc80ce35b588e
-story_count: 533
-test_file_count: 172
+source_fingerprint: b9a6a5e9a30c0ddf
+story_count: 534
+test_file_count: 173
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 533
+- **Stories parsed:** 534
 - **Epics parsed:** 147
-- **Test files inventoried:** 172 under `src/shared/packages/pyforge-steward/tests/`
+- **Test files inventoried:** 173 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `16efc80ce35b588e`
+- **Source fingerprint:** `b9a6a5e9a30c0ddf`
 
 ## Risk Assessment
 
@@ -356,6 +356,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_delete_tier3.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_edges.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_full_refs.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_workspace_mypy_caches.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_preserve_tag.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set_status_teardown.py` | unit | none observed |
@@ -809,6 +810,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 117.21 | The longest PR jobs run as parallel shards and jobs | none observed |
 | 117.22 | The docs-site slot holds the cores its widest lane will take, and that lane g... | none observed |
 | 117.23 | Platform CI's test job runs as three shards | none observed |
+| 117.24 | A new workspace starts with the mypy caches of the last one | none observed |
 | 118.1 | steward deploy nic brings up and tears down an NKP cluster on local kind | none observed |
 | 118.2 | nebi-pack and the data-science pack reach Healthy on kind and a notebook spawns | none observed |
 | 118.3 | The gitops branch of the monorepo is the GitOps source and a Hetzner cluster ... | none observed |
