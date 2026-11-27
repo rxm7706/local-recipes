@@ -1,0 +1,8 @@
+---
+name: "2026-11-27-landed-the-lint-gate-covers-the-repository-s-own"
+description: "2026-11-27 LANDED: the lint gate covers the repository's own scripts in _bmad/scripts/. PR #2434 merged as d8cfc954cf (…"
+metadata:
+  type: project
+---
+
+2026-11-27 LANDED: the lint gate covers the repository's own scripts in _bmad/scripts/. PR #2434 merged as d8cfc954cf (Merge pyforge-steward/93-2 into main; steward Story 93.2, spec-pyforge-steward CAP-153 realized with no text change), with 56 checks passed. lint_types.py's ruff and ruff-format verbs check every _bmad/scripts/*.py the BMAD installer's manifest does not list, with pyforge-marshal's [tool.ruff], and report it as _bmad/scripts. Today that is only the TEA generator, which is formatted and writes the same eight documents. An unreadable manifest is a could-not-run (2). The Lint and types workflow fires on _bmad/scripts/** and the manifest. A steward meta-test, test_lint_types_bmad_scripts.py, holds all of it. This closes the 2026-11-27 survey of test, CI and preflight levers. Landed that day: PRs #2412 to #2434 (live-shard durations, cheaper gates, one Python, pixi and nodejs, atlas live shards, the TEA generator, capability-effect, the mypy cache fallback, doctor's speed test alone, herald's page reuse, Platform CI's service probes, headless-only Chromium in CI, herald's two-builds diff and this lint lane). Measured and left, each with its reason recorded: atlas-test's shard balance, the Detectors full-history checkout (a blob-less clone timed out chain_currency_sweep_check), steward's trigger-map test, and the depth-2 checkout's 8 to 9 s fetch.
