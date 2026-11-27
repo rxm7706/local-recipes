@@ -65,7 +65,7 @@ from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass, field, fields
 from enum import StrEnum
 from pathlib import Path
-from types import SimpleNamespace
+from types import MappingProxyType, SimpleNamespace
 from typing import Any
 
 import pytest
@@ -609,15 +609,61 @@ def _flag_reads(module: str, tree: ast.Module, consts: Mapping[str, str]) -> set
     return items
 
 
+@dataclass(frozen=True)
+class _Analysis:
+    """The part of :func:`_code_facts` that reads one module alone: a pure function of the module's text."""
+
+    tree: ast.Module
+    consts: Mapping[str, str]
+    literals: Mapping[str, object]
+    walked: tuple[tuple[ast.AST, Function | None], ...]
+    methods: frozenset[int]
+    environ: EnvironNames
+    copies: Mapping[int | None, frozenset[str]]
+    findings: frozenset[str]
+    flag_reads: frozenset[Item]
+
+
+#: Story 67.1: each module's analysis, by its name and text, for the run. A mutation case adds one synthetic module to
+#: the package and derives the facts again; without this, every case parsed and walked every module of the package
+#: (about 3 s a case, 81 cases). What it holds is read, never changed: the mappings are read-only views, the walk a
+#: tuple. The facts that read across modules are derived on every call.
+_ANALYSES: dict[tuple[str, str], _Analysis] = {}
+
+
+def _analyse(module: str, text: str) -> _Analysis:
+    held = _ANALYSES.get((module, text))
+    if held is None:
+        tree = ast.parse(text)
+        walked = list(_walk(tree))
+        environ = _environ_names(tree)
+        consts = _module_constants(tree)
+        held = _Analysis(
+            tree=tree,
+            consts=MappingProxyType(consts),
+            literals=MappingProxyType(_module_literals(tree)),
+            walked=tuple(walked),
+            methods=frozenset(_methods(tree)),
+            environ=environ,
+            copies=MappingProxyType(_environ_copies(walked, environ)),
+            findings=_finding_names(tree),
+            # The flag readers a module calls are read from the module alone: the costliest per-module part.
+            flag_reads=frozenset(_flag_reads(module, tree, consts)),
+        )
+        _ANALYSES[module, text] = held
+    return held
+
+
 def _code_facts(modules: Mapping[str, str]) -> CodeFacts:
     facts = CodeFacts()
-    trees = {module: ast.parse(text) for module, text in modules.items()}
-    consts = {module: _module_constants(tree) for module, tree in trees.items()}
-    literals = {module: _module_literals(tree) for module, tree in trees.items()}
-    walked = {module: list(_walk(tree)) for module, tree in trees.items()}
-    methods = {module: _methods(tree) for module, tree in trees.items()}
-    environ = {module: _environ_names(tree) for module, tree in trees.items()}
-    copies = {module: _environ_copies(walked[module], environ[module]) for module in trees}
+    analyses = {module: _analyse(module, text) for module, text in modules.items()}
+    trees = {module: each.tree for module, each in analyses.items()}
+    consts = {module: each.consts for module, each in analyses.items()}
+    literals = {module: each.literals for module, each in analyses.items()}
+    walked = {module: each.walked for module, each in analyses.items()}
+    methods = {module: each.methods for module, each in analyses.items()}
+    environ = {module: each.environ for module, each in analyses.items()}
+    copies = {module: each.copies for module, each in analyses.items()}
     scoped: dict[tuple[str, int | None], EnvironNames] = {}
 
     def environ_in(module: str, function: Function | None) -> EnvironNames:
@@ -628,7 +674,7 @@ def _code_facts(modules: Mapping[str, str]) -> CodeFacts:
             scoped[module, scope] = EnvironNames(environ[module].environ | extra, environ[module].getenv)
         return scoped[module, scope]
 
-    findings = {module: _finding_names(tree) for module, tree in trees.items()}
+    findings = {module: each.findings for module, each in analyses.items()}
     dotted = {module: _dotted(module) for module in trees}
     kind_modules: set[str] = set()
     helpers: list[tuple[str, Function, str]] = []  # (module, function, parameter)
@@ -718,7 +764,7 @@ def _code_facts(modules: Mapping[str, str]) -> CodeFacts:
             ):
                 facts.source_modules.setdefault(node.attr, set()).add(module)
         _children(module, nodes, consts[module], environ[module], facts)
-        facts.flag_keys |= _flag_reads(module, trees[module], consts[module])
+        facts.flag_keys |= analyses[module].flag_reads
 
     # A helper's parameter carries the code its callers pass: resolve each call site until no new helper
     # appears. A public helper's calls are read in every module; a private helper's in its own module and
@@ -1241,6 +1287,19 @@ def modules(root: Path) -> dict[str, str]:
 @pytest.fixture(scope="module")
 def code(modules: dict[str, str]) -> CodeFacts:
     return _code_facts(modules)
+
+
+def test_a_module_s_analysis_is_reused_only_for_the_same_text(modules: dict[str, str]) -> None:
+    """Story 67.1: the per-module cache changes no fact. Derived with an empty cache and again from it, the facts are
+    equal; a module whose text changed is analysed again; an unchanged one is not."""
+    _ANALYSES.clear()
+    cold = _code_facts(modules)
+    warm = _code_facts(modules)
+    assert warm == cold and cold.check_codes and cold.environment_read and cold.imports
+    name = sorted(modules)[0]
+    changed = modules[name] + "\n\ndef _story_67_1_probe():\n    return None\n"
+    assert _analyse(name, changed) is not _analyse(name, modules[name])
+    assert _analyse(name, modules[name]) is _analyse(name, modules[name])
 
 
 def _parsers() -> list[argparse.ArgumentParser]:
