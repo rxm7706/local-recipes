@@ -8042,6 +8042,38 @@ So that its mypy lanes take seconds, not the 30 to 49 s a cold cache costs.
 **And** a cache is only copied, never shared by two worktrees, and a failed copy never fails `start` or `clean`
 **Status:** done
 
+### Story 117.25: The live halves' shard durations hold the ids CI looks up
+
+As the operator whose PR runs the station suites,
+I want each live half's CI shards to take about the same time,
+So that the longest shard, and the gate behind it, no longer set the end of a PR's CI.
+
+**Type:** chore • **Effort:** S • **Deps:** 117.10, 117.14, 117.21 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `tests/durations/pyforge-herald.json`, `tests/durations/pyforge-steward-live.json`, `tests/durations/pyforge-marshal-live.json`, `tests/durations/pyforge-doctor-live.json`, `tests/durations/README.md`
+**Spec:** `planning-artifacts/specs/spec-117-25-the-live-halves-shard-durations-hold-the-ids-ci-looks-up.md`
+**Given** the live halves' CI shards are uneven (steward's 29 to 80 s, herald's 37 to 89 s), because under `--dist loadgroup` xdist appends `@<group>` to a grouped test's id before pytest-split splits, and the durations files hold plain ids, stale group names and stale values
+**When** each file is measured again from empty under xdist with four workers, as the CI shards run
+**Then** every test of a lane finds its own duration on CI, and the shards of each lane take about the same time
+**And** every test still runs in exactly one shard, the shard counts stay, and no test, floor or gate is weakened
+**Status:** done
+
+### Story 117.26: The workers of one run share the trigger-map derivation
+
+As the operator whose PR runs steward's live half,
+I want the trigger-map module's derivation of every job's reads shared by the run's xdist workers,
+So that the module no longer pins one worker for 37.6 s, and its shard is no longer the longest.
+
+**Type:** chore • **Effort:** S • **Deps:** 117.14, 124.2 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py`
+**Spec:** `planning-artifacts/specs/spec-117-26-the-workers-of-one-run-share-the-trigger-map-derivation.md`
+**Given** the module is one xdist group because `real_derivation()`'s cache is per process (Story 117.14), and the derivation takes 27.1 s in one process over 20 independent jobs, the slowest 5.75 s
+**When** each job's reads are derived once by the first worker to claim the job, under a lock, and written for the run's other workers to read, each worker taking the jobs in its own order
+**Then** the module needs no xdist group, its tests spread over the workers, and every worker reads the same derivation
+**And** a run without xdist derives as before, no assertion changes, and a test holds that a shared derivation equals one derived in-process
+**Status:** done
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

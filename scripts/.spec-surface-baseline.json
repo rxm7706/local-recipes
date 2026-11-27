@@ -549,7 +549,7 @@
    "docs/how-to/purge-preserved-refs.md": "1f548463a94af87266c527f10fb30597750d8649",
    "docs/how-to/reach-a-station-mcp-endpoint.md": "1366daf1c2c9b20c5cc7e1889f8257ba47cf3397",
    "docs/how-to/read-steward-registers.md": "bfa5d65baf727e8a287f1d84fed5e4e1cdc9ff1e",
-   "docs/how-to/recipe-testing-and-builds.md": "5bed4c828154479591bc61117afe4d217bd5a4ac",
+   "docs/how-to/recipe-testing-and-builds.md": "05e4efe7f05fbb2ccb6530b73815a9de042a2fe1",
    "docs/how-to/reconcile-spec-surface.md": "d1b9d7ef67b3f52a8eecd2dc7345b1d054be27ae",
    "docs/how-to/record-progress-claims-and-notices-with-herald.md": "c1fc8473d51b63e8de75d669db8762bd5e3a777f",
    "docs/how-to/refresh-the-estate.md": "7c78e0685d4d26880385fb7adf7d458f97c04585",
@@ -825,7 +825,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "551228a259ed69f004c6118ffffcf8d945cd9ee8"
+  "memlog": "651931555f9d9615cefe4f20c518ba368c285d7b"
  },
  "pyforge-herald/spec-pyforge-herald": {
   "files": {
@@ -4384,7 +4384,7 @@
    "src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py": "122bb0dfe334fac10aff358f3a520a35d33f2762",
    "src/shared/packages/pyforge-steward/tests/meta/test_skf_steward_skill.py": "59b81655874ec6092a48ffba2a36782ebcefb3e3",
    "src/shared/packages/pyforge-steward/tests/meta/test_station_persona.py": "5569f2520aeb3799fd20f75f64444b350e026dda",
-   "src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py": "592cda0c8c2a2cc36c3b9a9dd6d69c173f0057d4",
+   "src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py": "bad5df725e5bae804e2247db10fc02820eab8ae4",
    "src/shared/packages/pyforge-steward/tests/meta/test_stations_index_boundaries.py": "e8a07719b7390dc55507eadc5b93c9da4745dbd0",
    "src/shared/packages/pyforge-steward/tests/meta/test_steward_persona.py": "b6460351d368c841b069015f3dca7f2dde587f38",
    "src/shared/packages/pyforge-steward/tests/meta/test_steward_single_flag_tree.py": "5d8d08af8b2208cfa79006a39233a49a91a090f6",
@@ -4536,7 +4536,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "ae689e89495c83ab35ea235591b7f596011496ae"
+  "memlog": "07ea629875b01e59aa745ff1e51dfc2462b4f252"
  },
  "pyforge-steward/spec-pyforge-unifying-strategy": {
   "files": {

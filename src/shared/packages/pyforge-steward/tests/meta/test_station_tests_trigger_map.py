@@ -35,6 +35,7 @@ from __future__ import annotations
 import ast
 import fnmatch
 import functools
+import json
 import os
 import re
 import shlex
@@ -53,13 +54,20 @@ import yaml
 
 from pyforge.steward import preflight_ci
 
+try:
+    import fcntl
+except ImportError:  # Windows: no shared derivation; each process derives in-process (Story 117.26)
+    fcntl = None  # type: ignore[assignment]
+
 # Story 124.2 (spec-pyforge-steward:CAP-175): this module reads every suite's tests, the workflow and pixi.toml, so it
 # runs in steward's live-tree half (pyforge-steward-live-test), whose job fires on what it reads: a station PR that adds
 # an outside read to its package half runs this guard in that PR. A live_tree module derives no repository path at
 # import time, so the root and the files under it are functions.
-# Story 117.14: one xdist group, so every test of this module runs in one worker and ``real_derivation()``'s cache,
-# which is per process, is filled once in a run instead of once per worker (fifteen workers computed it, 1,324 s summed).
-pytestmark = [pytest.mark.live_tree, pytest.mark.xdist_group("station-tests-trigger-map")]
+# Story 117.26: the run's xdist workers share ``real_derivation()``: each job's reads are derived once, by the first
+# worker to claim the job, and read by the others (``_derive_shared``). So the module needs no xdist group, which Story
+# 117.14 gave it when the cache was per process: one worker then ran every test, 37.6 s alone, and that worker set the
+# length of a CI shard.
+pytestmark = [pytest.mark.live_tree]
 
 WORKFLOW_REL = ".github/workflows/pyforge-station-tests.yml"
 PACKAGES = "src/shared/packages"
@@ -1399,11 +1407,86 @@ def derive_reads(job: Job, pixi: Mapping) -> JobReads:
 STEWARD_OWN = "steward-live-test (this meta-test reads every suite's tests)"
 
 
+def reads_to_json(reads: JobReads) -> str:
+    """A job's reads as JSON: each path pattern with its sorted reading files, and the sorted handoff files."""
+    return json.dumps(
+        {
+            "reads": [[list(key), sorted(files)] for key, files in reads.reads.items()],
+            "handoffs": sorted(reads.handoffs),
+        }
+    )
+
+
+def reads_from_json(text: str) -> JobReads:
+    data = json.loads(text)
+    return JobReads({tuple(key): set(files) for key, files in data["reads"]}, set(data["handoffs"]))
+
+
+def _shared_dir() -> Path | None:
+    """Story 117.26: the directory the run's xdist workers share the derivation in, or None outside xdist.
+
+    ``PYTEST_XDIST_TESTRUNUID`` is one value for every worker of a run and a new one for each run, so two runs never
+    read each other's derivation. The workers inherit one ``TMPDIR``.
+    """
+    run = os.environ.get("PYTEST_XDIST_TESTRUNUID")
+    if not run or fcntl is None:
+        return None
+    shared = Path(tempfile.gettempdir()) / f"station-tests-trigger-map-{run}"
+    shared.mkdir(exist_ok=True)
+    return shared
+
+
+def _worker_order(jobs: Sequence[Job]) -> list[Job]:
+    """The jobs from an offset that differs per worker, so the workers start on different jobs and derive them at once."""
+    worker = os.environ.get("PYTEST_XDIST_WORKER", "")
+    count = max(int(os.environ.get("PYTEST_XDIST_WORKER_COUNT", "1") or "1"), 1)
+    index = int(worker[2:]) if worker.startswith("gw") and worker[2:].isdigit() else 0
+    start = (index * len(jobs)) // count
+    return [*jobs[start:], *jobs[:start]]
+
+
+def derive_shared(job: Job, pixi: Mapping, shared: Path, *, wait: bool = True) -> JobReads | None:
+    """A job's reads, derived once in the run: the first worker to take the job's lock derives and writes them, and a
+    worker that takes it later reads the file. The write is renamed into place, so a reader never sees half a file.
+    With ``wait=False`` a job another worker holds is skipped (None), so the caller can take a free one meanwhile."""
+    target = shared / f"{job.output}.json"
+    with (shared / f"{job.output}.lock").open("w", encoding="utf-8") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX if wait else fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return None
+        if target.is_file():
+            return reads_from_json(target.read_text(encoding="utf-8"))
+        reads = derive_reads(job, pixi)
+        staging = target.with_name(f"{target.name}.{os.getpid()}.tmp")
+        staging.write_text(reads_to_json(reads), encoding="utf-8")
+        staging.replace(target)
+        return reads
+
+
+def derive_all(jobs: Sequence[Job], pixi: Mapping) -> dict[str, JobReads]:
+    """Every job's reads: shared by the run's xdist workers when there are any (Story 117.26), else derived here."""
+    shared = _shared_dir()
+    if shared is None:
+        return {job.output: derive_reads(job, pixi) for job in jobs}
+    # A first pass derives every job no other worker holds and skips the rest; a second waits for those to be written.
+    order = _worker_order(jobs)
+    by_output: dict[str, JobReads] = {}
+    for job in order:
+        reads = derive_shared(job, pixi, shared, wait=False)
+        if reads is not None:
+            by_output[job.output] = reads
+    for job in order:
+        if job.output not in by_output:
+            by_output[job.output] = derive_shared(job, pixi, shared)  # type: ignore[assignment]
+    return {job.output: by_output[job.output] for job in jobs}
+
+
 @functools.cache
 def real_derivation() -> dict[str, JobReads]:
     pixi = tomllib.loads(pixi_toml_file().read_text(encoding="utf-8"))
     jobs = load_jobs(workflow_file().read_text(encoding="utf-8"))
-    derived = {job.output: derive_reads(job, pixi) for job in jobs}
+    derived = derive_all(jobs, pixi)
     # Its own reads: this meta-test reads every suite's tests, so steward's live-tree list carries them -- a
     # station PR that adds an outside read runs steward-live-test, which runs this module (marked live_tree), and is
     # caught in that PR.
@@ -2528,3 +2611,58 @@ def test_no_trigger_the_workflow_had_before_is_lost(workflow_text: str) -> None:
         if not preflight_ci.filter_matches(patterns, path)
     ]
     assert not lost, "\n".join(lost)
+
+
+# ---------------------------------------------------------------------------
+# Story 117.26: the run's xdist workers share the derivation
+# ---------------------------------------------------------------------------
+
+
+def _cheapest_job() -> Job:
+    jobs = load_jobs(workflow_file().read_text(encoding="utf-8"))
+    return next(job for job in jobs if job.output == "testing_kit")
+
+
+@pytest.mark.skipif(fcntl is None, reason="the shared derivation takes an fcntl lock; without it each process derives")
+def test_a_shared_derivation_equals_the_one_derived_here(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    pixi = tomllib.loads(pixi_toml_file().read_text(encoding="utf-8"))
+    job = _cheapest_job()
+    here = derive_reads(job, pixi)
+    assert reads_from_json(reads_to_json(here)) == here
+
+    first = derive_shared(job, pixi, tmp_path)
+    assert first == here and (tmp_path / f"{job.output}.json").is_file()
+
+    def refuse(*_args: object) -> JobReads:
+        raise AssertionError("a job written by another worker was derived again")
+
+    monkeypatch.setattr(f"{__name__}.derive_reads", refuse)
+    assert derive_shared(job, pixi, tmp_path) == here
+
+
+@pytest.mark.skipif(fcntl is None, reason="the shared derivation takes an fcntl lock; without it each process derives")
+def test_a_job_another_worker_holds_is_skipped_and_then_read(tmp_path: Path) -> None:
+    pixi = tomllib.loads(pixi_toml_file().read_text(encoding="utf-8"))
+    job = _cheapest_job()
+    with (tmp_path / f"{job.output}.lock").open("w", encoding="utf-8") as held:
+        fcntl.flock(held, fcntl.LOCK_EX)
+        assert derive_shared(job, pixi, tmp_path, wait=False) is None
+        assert not (tmp_path / f"{job.output}.json").exists()
+    assert derive_shared(job, pixi, tmp_path, wait=False) == derive_reads(job, pixi)
+
+
+def test_each_worker_starts_on_a_different_job_and_takes_every_job(monkeypatch: pytest.MonkeyPatch) -> None:
+    jobs = load_jobs(workflow_file().read_text(encoding="utf-8"))
+    monkeypatch.setenv("PYTEST_XDIST_WORKER_COUNT", "4")
+    starts = []
+    for index in range(4):
+        monkeypatch.setenv("PYTEST_XDIST_WORKER", f"gw{index}")
+        order = _worker_order(jobs)
+        assert sorted(job.output for job in order) == sorted(job.output for job in jobs)
+        starts.append(order[0].output)
+    assert len(set(starts)) == 4, starts
+
+
+def test_outside_xdist_the_derivation_is_not_shared(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("PYTEST_XDIST_TESTRUNUID", raising=False)
+    assert _shared_dir() is None

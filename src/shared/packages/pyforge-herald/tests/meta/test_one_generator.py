@@ -330,12 +330,11 @@ def built_with_marketplace(tmp_path_factory: pytest.TempPathFactory) -> Path:
 
 
 @needs_astro
-def test_109_3_the_marketplace_mounts_and_is_linked_only_with_its_flag(
-    built: Path, built_with_marketplace: Path
-) -> None:
+def test_109_3_the_marketplace_mounts_and_is_linked_only_with_its_flag(built_with_marketplace: Path) -> None:
     """With ``PYFORGE_MARKETPLACE_PAGES=1`` the build mounts ``docs/foundry/marketplace/`` at ``marketplace/`` (the
     generated site, the shipped skill files), the menu carries the section, ``llms.txt`` lists the two surfaces and
-    ``pages-check`` passes; without it none of that is in the artifact."""
+    ``pages-check`` passes. Story 60.1: the next test reads the build without the flag, so the two builds need not
+    share a worker."""
     on = built_with_marketplace
     for rel in (
         "marketplace/index.html",
@@ -353,6 +352,11 @@ def test_109_3_the_marketplace_mounts_and_is_linked_only_with_its_flag(
     llms = (on / "llms.txt").read_text(encoding="utf-8")
     assert "(https://rxm7706.github.io/local-recipes/marketplace/)" in llms
     assert "(https://rxm7706.github.io/local-recipes/marketplace/listings.json)" in llms
+
+
+@needs_astro
+def test_109_3_without_its_flag_no_marketplace_is_in_the_artifact(built: Path) -> None:
+    """Story 109.3: without ``PYFORGE_MARKETPLACE_PAGES`` none of the marketplace is in the artifact."""
     assert not (built / "marketplace").exists()
     assert "marketplace/" not in (built / "index.html").read_text(encoding="utf-8")
     assert "/marketplace/" not in (built / "llms.txt").read_text(encoding="utf-8")
@@ -373,13 +377,15 @@ def test_llms_txt_lists_every_gallery_and_family_page_with_its_text(built: Path)
 
 
 @needs_astro
-def test_43_5_two_builds_two_days_runs_and_commits_apart_differ_only_in_the_built_from_line(
-    built: Path, tmp_path: Path
-) -> None:
+def test_43_5_two_builds_two_days_runs_and_commits_apart_differ_only_in_the_built_from_line(tmp_path: Path) -> None:
     """Story 43.5's proof over the whole artifact (its carry-in to 43.7): with the status pages on, the herald pages,
     the shelf, the status pages and the machine surfaces hold no date or commit of their own -- the build's time,
     run and commit live only in the built-from line, whose text steward's tree hash drops -- so a build of the same
-    tree two days, two runs and two commits later is byte-identical once that text is dropped."""
+    tree two days, two runs and two commits later is byte-identical once that text is dropped. Story 60.1: it makes the
+    first build itself, as ``built`` is made, so it does not join ``built``'s worker with a build of its own."""
+    built = tmp_path / "first"
+    first = astro_build(built, status=True, tile=True, inputs=_inputs(tmp_path / "first-inputs"), extra_env=_CI)
+    assert first.returncode == 0, first.stdout[-3000:] + first.stderr[-3000:]
     later = write(tmp_path / "later.mjs", _TWO_DAYS_LATER)
     second = tmp_path / "second"
     env = {
