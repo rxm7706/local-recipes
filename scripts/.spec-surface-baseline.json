@@ -831,8 +831,8 @@
   "files": {
    ".gitignore": "b6400bf0ea5a08882ea378bc39b92d37bce546bb",
    "docs-site/.nvmrc": "1827a420a84fd1b88fff0e1b8e608df1970da3e7",
-   "docs-site/README.md": "6d9754e5094a7b91a4cd0adbde32e69d1dadb3b6",
-   "docs-site/astro.config.mjs": "7dc1e753e1769793fb3b8738b6cfde0da0610162",
+   "docs-site/README.md": "93690d1be29e703aaab96efacd56ae1e77861e72",
+   "docs-site/astro.config.mjs": "88ea447d063288d22b54d97f654af41708d07e36",
    "docs-site/package-lock.json": "17bc907ed5847fcd143bd4f9b015c36106376951",
    "docs-site/package.json": "41aebfa3eabee8aa1c07b370dd887ef1f9ce2c83",
    "docs-site/redirects.json": "42badc2579d061597f3fad7e240af0a1007fe5f3",
@@ -896,7 +896,7 @@
    "docs-site/src/lib/status.ts": "0c6c3f8871757d75ee14a59973d4a1cfc2f4166d",
    "docs-site/src/loaders/dossier-loader.ts": "636d8850317493049e17fea02b17eb0175d41de6",
    "docs-site/src/loaders/herald-pages-loader.ts": "165727dc4f8d4e82c3e2fa361afd6a9b3228e233",
-   "docs-site/src/loaders/shelf-docs-loader.ts": "b42336ae384f4e5c4b8a85a2afd85c6018056a10",
+   "docs-site/src/loaders/shelf-docs-loader.ts": "b4625ef8cf928df24a0edb130e23b278cd4c8fa9",
    "docs-site/src/pages/[facts].json.ts": "f79e8860a16b957f66c5feee1a29ab15fe51604e",
    "docs-site/src/pages/[llms].txt.ts": "3829f7068e04559d9cd785b5fc01b80e69d969e2",
    "docs-site/src/pages/[shell].js.ts": "3a8b30a8f548961c750ef6c7fe553ee4e5b349c8",
@@ -1869,8 +1869,8 @@
    "src/shared/packages/pyforge-herald/tests/fixtures/jinja-theme-2026-10-15.json": "1a77a2b3785f7f7b2bcc2924863c03e408c4f3d0",
    "src/shared/packages/pyforge-herald/tests/fixtures/marshal-status-two-homes.json": "1aaa011443782237c0a8267e3e9b192a10479645",
    "src/shared/packages/pyforge-herald/tests/integration/test_pptx_native_render.py": "fd2f7834be41124078293219b1c429b4701b8c99",
-   "src/shared/packages/pyforge-herald/tests/meta/pages_astro.py": "b8724ece9eb1badb5244b0a556f01505ebc7d63f",
-   "src/shared/packages/pyforge-herald/tests/meta/test_agent_surface_and_changes.py": "766b1d3b0ea1b67d4d446c0d0ce2e36dfb374924",
+   "src/shared/packages/pyforge-herald/tests/meta/pages_astro.py": "7bd4f7c06031db2d47daf48b279ea369ded5951c",
+   "src/shared/packages/pyforge-herald/tests/meta/test_agent_surface_and_changes.py": "bd409e127f8fe4661827e79289ac4531b0b56a1a",
    "src/shared/packages/pyforge-herald/tests/meta/test_built_site_tests_install_first.py": "c209c50529878ce16f639cfa4052291faeefb12d",
    "src/shared/packages/pyforge-herald/tests/meta/test_deck_lockfiles_current.py": "0e99a15402fc2baa97450fbcb837413978233de6",
    "src/shared/packages/pyforge-herald/tests/meta/test_deck_qa_pixi_task.py": "878ea83e994aa9cbb02ccf7960dd501fba2b5dc6",
@@ -1958,6 +1958,7 @@
    "src/shared/packages/pyforge-herald/tests/unit/test_registry.py": "d8266a0382c29900c82e13fea4ea6d9a4575920d",
    "src/shared/packages/pyforge-herald/tests/unit/test_reliability_epic11.py": "17854a47c72e1f14307ebbeb8bda8698c6fdc4a6",
    "src/shared/packages/pyforge-herald/tests/unit/test_scheduler.py": "872ddd85670f90d2c892b8a74bbdcdcc20f1ab41",
+   "src/shared/packages/pyforge-herald/tests/unit/test_shelf_docs_loader_reuse.py": "756994ed5befa3fc59eac2e9670b4b2e107f99d2",
    "src/shared/packages/pyforge-herald/tests/unit/test_site_shell_flag_states.py": "d612e093b76a34ceead6d330fca21dbf3f578367",
    "src/shared/packages/pyforge-herald/tests/unit/test_smoke.py": "4346dcd4cb5dc0d47c2c5fa7f24d400a7b8de90d",
    "src/shared/packages/pyforge-herald/tests/unit/test_stamps.py": "2e2bd98f3b717519754cd3e377f0bc8ac67608a7",
@@ -2004,7 +2005,7 @@
    "src/shared/packages/pyforge-herald/web/src/test/setup.js": "1d74541c291183bb6027ebb5bf6de480115262ea",
    "src/shared/packages/pyforge-herald/web/vite.config.js": "bcd53f517a2d51fe2992404dd852b2599b15d84f"
   },
-  "memlog": "848595e626d961fae413f9ee89cd737c138c8d10"
+  "memlog": "3b8142ea49af37aa42c0257d8a3a96d5f1d54e45"
  },
  "pyforge-marshal/spec-pyforge-core": {
   "files": {

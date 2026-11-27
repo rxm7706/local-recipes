@@ -5,7 +5,44 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import type { Loader, LoaderContext } from 'astro/loaders';
 
-import { isPublished } from '../lib/shelf.mjs';
+import { envFlagOn } from '../lib/flags.ts';
+import { isPublished, repositoryUrl } from '../lib/shelf.mjs';
+
+/**
+ * Herald Story 61.1: `PAGES_REUSE_RENDERED_DOCS` on, a page whose source, path and rendering pipeline are what an
+ * earlier build in this tree rendered keeps that rendering (Astro's content store, `node_modules/.astro/`), as Astro's
+ * own glob loader does. Rendering also reads whether the files a page links to exist, and which are folders
+ * (`rehype-shelf-links.js`), and nothing here sees those change, so only a caller whose tree cannot change between its
+ * builds turns it on: herald's tests, which build many times in one copy of the repository per process
+ * (`tests/meta/pages_astro.py`). The Pages build leaves it off and renders every page, as before.
+ */
+function reuseRendered(): boolean {
+  return envFlagOn('PAGES_REUSE_RENDERED_DOCS');
+}
+
+/** The code and the config a page's rendering runs through besides the page itself; any change renders every page. */
+const PIPELINE_SOURCES = [
+  '../../astro.config.mjs',
+  '../rehype-shelf-links.js',
+  '../rehype-markdown-links.js',
+  '../rehype-base-paths.js',
+  '../lib/shelf.mjs',
+  '../lib/reader-text.ts',
+  './shelf-docs-loader.ts',
+];
+
+async function pipelineFingerprint(base: string): Promise<string> {
+  const sources = await Promise.all(PIPELINE_SOURCES.map((rel) => fs.readFile(new URL(rel, import.meta.url), 'utf8')));
+  // The base path the link plugins write, and the repository page a link to an unpublished file goes to.
+  return [base, repositoryUrl(''), ...sources].join('\0');
+}
+
+type Reuse = {
+  fingerprint: string;
+  digest: LoaderContext['generateDigest'];
+  get: LoaderContext['store']['get'];
+  reused: number;
+};
 
 // Which files are pages: one rule, shared with the link plugin (src/lib/shelf.mjs).
 function isIncluded(relativePath: string): boolean {
@@ -76,6 +113,8 @@ async function walkDocs(
   },
   siteRoot: string,
   renderMarkdown: LoaderContext['renderMarkdown'],
+  seen: Set<string>,
+  reuse: Reuse | null,
   prefix = '',
 ): Promise<void> {
   const entries = await fs.readdir(root, { withFileTypes: true });
@@ -83,13 +122,23 @@ async function walkDocs(
     const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
     const full = path.join(root, entry.name);
     if (entry.isDirectory()) {
-      await walkDocs(full, store, siteRoot, renderMarkdown, rel);
+      await walkDocs(full, store, siteRoot, renderMarkdown, seen, reuse, rel);
       continue;
     }
     if (!isIncluded(rel)) {
       continue;
     }
     const raw = await fs.readFile(full, 'utf8');
+    const id = generateId(rel);
+    seen.add(id);
+    const digest = reuse ? reuse.digest(`${reuse.fingerprint}\0${rel}\0${raw}`) : undefined;
+    if (reuse && digest !== undefined) {
+      const kept = reuse.get(id);
+      if (kept && kept.digest === digest && kept.rendered) {
+        reuse.reused += 1;
+        continue;
+      }
+    }
     let { data, body } = parseFrontmatter(raw);
     let title = typeof data.title === 'string' ? data.title : undefined;
     if (!title) {
@@ -103,7 +152,6 @@ async function walkDocs(
     // Story 53.2 (CAP-63): the published title drops the story id a page was filed under, and a page that states no
     // description takes its first paragraph.
     title = readerTitle(title);
-    const id = generateId(rel);
     const entryData: Record<string, unknown> = { ...data, title, draft: false };
     if (typeof entryData.description !== 'string' || !entryData.description.trim()) {
       const about = firstParagraph(body);
@@ -127,6 +175,7 @@ async function walkDocs(
       // resolve relative links against the page's own location.
       rendered: await renderMarkdown(body, { fileURL: pathToFileURL(full) }),
       filePath: path.relative(siteRoot, full).replace(/\\/g, '/'),
+      digest,
     });
   }
 }
@@ -134,10 +183,28 @@ async function walkDocs(
 export function shelfDocsLoader(): Loader {
   return {
     name: 'shelf-docs-loader',
-    async load({ store, config, renderMarkdown }) {
+    async load({ store, config, renderMarkdown, generateDigest, logger }) {
       const root = fileURLToPath(new URL('../content/docs', import.meta.url));
       const siteRoot = fileURLToPath(config.root);
-      await walkDocs(root, store, siteRoot, renderMarkdown);
+      const reuse: Reuse | null = reuseRendered()
+        ? {
+            fingerprint: await pipelineFingerprint(config.base),
+            digest: generateDigest,
+            get: (id) => store.get(id),
+            reused: 0,
+          }
+        : null;
+      const seen = new Set<string>();
+      await walkDocs(root, store, siteRoot, renderMarkdown, seen, reuse);
+      // Story 61.1: the store outlives a build in the same tree, so a page that is gone leaves it too.
+      for (const id of store.keys()) {
+        if (!seen.has(id)) {
+          store.delete(id);
+        }
+      }
+      if (reuse) {
+        logger.info(`kept ${reuse.reused} of ${seen.size} rendered pages (PAGES_REUSE_RENDERED_DOCS)`);
+      }
     },
   };
 }

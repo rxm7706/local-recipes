@@ -361,6 +361,12 @@ def fixture_tree(root: Path, *, second_pptx: bool = False, exports: bool = False
 #: The environment a build reads its built-from line from (Story 43.5): a test sets it only through ``extra_env``,
 #: so a build under CI's ``GITHUB_SHA`` renders what a local one does.
 BUILT_FROM_ENV = ("GITHUB_SHA", "GITHUB_RUN_ID", "PAGES_BUILT_AT")
+#: Story 61.1: every test build turns this on (``docs-site/src/loaders/shelf-docs-loader.ts``), so a docs page this
+#: process's copy already rendered, from the same source and the same pipeline, keeps its rendering instead of taking
+#: the markdown pipeline again (about 3 s of each build after a process's first). The copy links the real repository,
+#: which no test edits, so what a page's links point at cannot change between a process's builds; the Pages build
+#: leaves it off.
+REUSE_RENDERED_ENV = "PAGES_REUSE_RENDERED_DOCS"
 
 
 def astro_build(
@@ -380,6 +386,7 @@ def astro_build(
     env = {k: v for k, v in node_env().items() if k not in BUILT_FROM_ENV}
     env.update({"PYFORGE_STATUS_PAGES": "1" if status else "0", "PYFORGE_CI_SURFACES_TILE": "1" if tile else "0"})
     env["SITE_URL"] = SITE_URL
+    env[REUSE_RENDERED_ENV] = "1"
     env.update(extra_env or {})
     if root is not None:
         env["HERALD_PAGES_REPO_ROOT"] = str(root)

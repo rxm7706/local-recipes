@@ -1,4 +1,5 @@
 // @ts-check
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -12,7 +13,7 @@ import { getSiteUrl } from './src/lib/site-url.mjs';
 import { readRedirects, refusePublicCollisions, writeLegacyRedirects } from './src/lib/redirects.ts';
 import { addCsp, writeArtifactDossier } from './src/lib/artifact.ts';
 import { addShell } from './src/lib/shell.ts';
-import { siteShell } from './src/lib/flags.ts';
+import { envFlagOn, siteShell } from './src/lib/flags.ts';
 import { holdsAFile } from './src/lib/nav.ts';
 import { siteNav } from './src/lib/site-nav.ts';
 import { heraldPagesRoot } from './src/loaders/herald-pages-loader.ts';
@@ -38,11 +39,27 @@ const basePath =
       ? urlParts.pathname
       : `${urlParts.pathname}/`;
 
+// The destination carries the host's base path: Astro writes it into the stub verbatim, and a bare
+// '/dashboard/kedro-viz/' sent the project site's /kedro-viz/ to the host's root (live until 2026-10-15).
+const redirects = kedroVizMounted
+  ? Object.fromEntries(
+      Object.entries(siteRedirects['kedro-viz']).map(([from, to]) => [from, `${basePath}${to.replace(/^\//, '')}`]),
+    )
+  : {};
+
+// Herald Story 61.1: with PAGES_REUSE_RENDERED_DOCS on (herald's test builds; src/loaders/shelf-docs-loader.ts), each
+// set of redirects keeps its own content store. Astro empties its store whenever this config changes, and the tests'
+// builds turn the Kedro-Viz mount, and with it the redirects, on and off. The Pages build keeps Astro's default.
+const cacheDir = envFlagOn('PAGES_REUSE_RENDERED_DOCS')
+  ? `./node_modules/.astro-${createHash('sha256').update(JSON.stringify(redirects)).digest('hex').slice(0, 12)}/`
+  : undefined;
+
 export default defineConfig({
   compressHTML: true,
   site: `${urlParts.origin}${basePath}`,
   base: basePath,
   outDir: './build/site',
+  ...(cacheDir ? { cacheDir } : {}),
   // The shelf's links: the local plugin points README.md at the directory index and sends links to
   // repo files the shelf does not publish to their repository page; then upstream's .md -> route and
   // base-path plugins (vendored byte-identical, docs-site/README.md).
@@ -55,13 +72,7 @@ export default defineConfig({
       ],
     }),
   },
-  // The destination carries the host's base path: Astro writes it into the stub verbatim, and a bare
-  // '/dashboard/kedro-viz/' sent the project site's /kedro-viz/ to the host's root (live until 2026-10-15).
-  redirects: kedroVizMounted
-    ? Object.fromEntries(
-        Object.entries(siteRedirects['kedro-viz']).map(([from, to]) => [from, `${basePath}${to.replace(/^\//, '')}`]),
-      )
-    : {},
+  redirects,
   integrations: [
     starlight({
       title: 'PyForge documentation',

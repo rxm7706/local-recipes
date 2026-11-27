@@ -2741,6 +2741,29 @@ So that herald's heaviest xdist groups hold one build each and no longer set the
 **And** no test is skipped or re-marked, and the coverage reports and floors are the same
 **Status:** done
 
+## Epic 61: Herald's test builds keep the docs pages they already rendered (spec-pyforge-steward:CAP-175)
+
+Minted 2026-11-27 from the station Dream's entry of the same date on the operator rulings of that day ("herald's Astro builds", then "Keep going"). Each of herald's test builds renders all 94 docs pages again, and the Kedro-Viz mount empties Astro's content store whenever the tests switch it.
+**HARD boundaries:**
+- The Pages build renders every page as before, and a build that keeps pages writes the same site.
+- No assertion is removed or weakened; no test is skipped or re-marked. No flag, and no capability text of `spec-pyforge-herald` moves.
+
+### Story 61.1: Herald's test builds keep the docs pages they already rendered
+
+As the operator whose PR waits on herald's live half,
+I want a test build to keep each docs page an earlier build in the same copy already rendered from the same source and pipeline,
+So that herald's 20 or so test builds stop rendering all 94 docs pages each time.
+
+**Type:** chore • **Effort:** S • **Deps:** herald 59.1 • **FR/AD:** spec-pyforge-steward:CAP-175 (realized here; no text change in this station's Spec); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `docs-site/src/loaders/shelf-docs-loader.ts`, `docs-site/astro.config.mjs`, `src/shared/packages/pyforge-herald/tests/meta/pages_astro.py`, `src/shared/packages/pyforge-herald/tests/meta/test_agent_surface_and_changes.py`, `src/shared/packages/pyforge-herald/tests/unit/test_shelf_docs_loader_reuse.py` (new), `planning-artifacts/specs/spec-pyforge-herald/contract.md` (the new variable), `docs-site/README.md` (the loader's entry), `planning-artifacts/test-architecture.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-61-1-herald-s-test-builds-keep-the-docs-pages-they-already-rendered.md`
+**Given** each of herald's test builds spends 4.3 of its 7 s rendering all 94 docs pages, and 6 of 16 measured test builds emptied Astro's content store because the Kedro-Viz mount changed the config's redirects
+**When** `PAGES_REUSE_RENDERED_DOCS` is on: the docs loader keeps a page whose source, path and rendering pipeline (the config, the link plugins, the loader, the base path and the repository link) match the stored digest, each set of redirects keeps its own content store, and herald's test builds turn it on
+**Then** a second build in the same copy keeps all 94 pages and writes the same site, and herald's live half takes less time and CPU than with the variable off
+**And** with the variable off, as in the Pages build, every page renders; either way a page that is gone leaves the store; the contract lists the variable
+**Status:** done
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
