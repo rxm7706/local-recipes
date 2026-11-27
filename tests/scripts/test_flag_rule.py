@@ -780,3 +780,60 @@ def test_the_reference_pages_yaml_examples_classify_as_written(tmp_path: Path):
     )
     assert retiring is not None
     assert str(retiring.get("retires-flag", "")).startswith("pyforge.")
+
+
+# --- doctor Story 70.1: the readers the gate and the inventory call thousands of times ------------------------------
+
+_LEXICAL_CASES = ["/", "/a", "/a/b", "/a/b/c", "/a/bc", "/ab", "a", "a/b", ".", "/a/b/../c", "a/../b", "//a"]
+
+
+@pytest.mark.parametrize("path", _LEXICAL_CASES)
+@pytest.mark.parametrize("base", _LEXICAL_CASES)
+def test_lexical_tail_agrees_with_relative_to(path: str, base: str):
+    def reference(p: Path, b: Path) -> tuple[str, ...] | None:
+        try:
+            return p.relative_to(b).parts
+        except ValueError:
+            return None
+
+    assert flag_rule.lexical_tail(Path(path), Path(base)) == reference(Path(path), Path(base))
+
+
+def test_repo_relative_keeps_its_answers(tmp_path: Path):
+    root = tmp_path / "repo"
+    (root / "a").mkdir(parents=True)
+    (tmp_path / "link").symlink_to(root, target_is_directory=True)
+    assert flag_rule.repo_relative(root / "a" / "b.md", root) == "a/b.md"
+    assert flag_rule.repo_relative(root / "x" / ".." / "a" / "b.md", root) == "a/b.md"
+    assert flag_rule.repo_relative(root, root) == "."
+    assert flag_rule.repo_relative("a/./b.md", root) == "a/b.md"
+    # Under the root only once resolved: the fallback still answers.
+    assert flag_rule.repo_relative(tmp_path / "link" / "a" / "b.md", root) == "a/b.md"
+    outside = tmp_path / "elsewhere" / "c.md"
+    assert flag_rule.repo_relative(outside, root) == outside.as_posix()
+
+
+def test_read_frontmatter_gives_each_caller_its_own_mapping(tmp_path: Path):
+    spec = tmp_path / "spec.md"
+    spec.write_text("---\ntype: feature\nflag:\n  key: pyforge.atlas.x\n---\nbody\n", encoding="utf-8")
+    first, why = flag_rule.read_frontmatter(spec)
+    assert why == "" and first == {"type": "feature", "flag": {"key": "pyforge.atlas.x"}}
+    first["flag"]["key"] = "changed"
+    second, _ = flag_rule.read_frontmatter(spec)
+    assert second == {"type": "feature", "flag": {"key": "pyforge.atlas.x"}}
+    # A changed file is read as it now is: the parse is kept by the block's text, not by the path.
+    spec.write_text("---\ntype: chore\n---\nbody\n", encoding="utf-8")
+    assert flag_rule.read_frontmatter(spec) == ({"type": "chore"}, "")
+
+
+def test_read_frontmatter_keeps_each_refusal(tmp_path: Path):
+    bad = tmp_path / "bad.md"
+    for text, why in (
+        ("---\ncreated: 2026-02-30\n---\n", "frontmatter is not valid YAML"),
+        ("---\n---\n", "frontmatter is empty"),
+        ("---\n- a\n---\n", "frontmatter is not a mapping"),
+    ):
+        bad.write_text(text, encoding="utf-8")
+        for _ in range(2):  # the second read comes from the kept parse
+            mapping, reason = flag_rule.read_frontmatter(bad)
+            assert mapping is None and reason.startswith(why), reason

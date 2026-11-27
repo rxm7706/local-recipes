@@ -889,6 +889,20 @@ Folded Dreams: [[bmad-drift-new-artifact-shape]], [[bmad-method-version-drift]],
   `fleet_scan.py`, one `scan_fleet()` and one Dream orphan index, and the sweep makes that one call. **Constraints:**
   each project's findings stay exactly what the one-project audit returns; a project whose audit raises degrades
   alone; a station the batch leaves out is could-not-run, never green. No flag (a chore). Owner `spec-pyforge-doctor`.
+- **2026-11-27 (the flag scripts parse each story spec four times and walk every path's parents) — Found and
+  ruled:** the Detectors job's library part is the longest job on a PR (124 s: a 24 s checkout, 31 s of pixi setup,
+  58 s of `scripts-lib-test`), and that suite's floor is two runs of `scripts/flag_inventory.py` over the live tree,
+  17.5 s each here. Profiled, a run spends most of its time in two readers of `scripts/flag_rule.py` that it and the
+  flag gate call thousands of times: `read_frontmatter` YAML-parses each of the 1,983 story specs four times (the
+  inventory and the gate's three readers each read every one), and `repo_relative`, asked of each of 105,354 paths
+  the stories' `Surface:` lines name, resolves both paths every call and tests the root against each of the path's
+  parents, as `PurePath.relative_to` and `is_relative_to` do. **Ruled** (operator, 2026-11-27: "Detectors library
+  part", on the ranked list of what remains). **For doctor:** this entry binds `spec-pyforge-steward:CAP-175`
+  (realized here, no text change in this station's Spec) and decomposes as Epic 70, one story: the frontmatter block's
+  parse is kept by its text and each caller gets its own copy; `repo_relative` resolves only when the lexical form is
+  not under the root; `flag_rule.lexical_tail` decides `relative_to` with one comparison, and the inventory uses it.
+  **Constraints:** every report, judgment, finding and frontmatter read stays exactly as before; no test changes
+  what it asserts. No flag (a chore). Owner `spec-pyforge-doctor`.
 
 ## 2026-10-26 — A spike report is not a corrupt file, and the classifier can't yet tell the difference (folded from bmad-drift-new-artifact-shape)
 

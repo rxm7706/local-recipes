@@ -466,8 +466,9 @@ def _classify_surface(join: Join, root: Path, station: str, project: str, surfac
     for path in sorted(resolved):
         kind: str | None = None
         parts: tuple[str, ...] = ()
-        if path.is_relative_to(package):
-            parts = path.relative_to(package).parts
+        tail = flag_rule.lexical_tail(path, package)
+        if tail is not None:
+            parts = tail
             kind = entry_kind(parts)
         if kind is None:
             others.append(flag_rule.repo_relative(path, root))
