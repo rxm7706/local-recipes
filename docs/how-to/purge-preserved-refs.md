@@ -4,7 +4,7 @@ sources:
   - docs/governance/rulesets/protected-refs.json
   - src/shared/packages/pyforge-core/src/pyforge/core/preserve_refs.py
   - scripts/legacy_preserve_promote.py
-verified: 2026-11-18
+verified: 2026-11-27
 ---
 
 # Purge preserved refs

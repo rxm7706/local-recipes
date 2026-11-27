@@ -6,7 +6,7 @@ sources:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/track.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/deck_integrity.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py
-verified: 2026-11-26
+verified: 2026-11-27
 ---
 
 # How to read steward's registers
