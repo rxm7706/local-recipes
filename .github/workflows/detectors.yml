@@ -83,6 +83,17 @@ jobs:
     # 25, not 15 (doctor Story 47.1): GitHub cancelled this job at 15 minutes on main 8d04520770
     # (run 38523258032: tests/scripts 8m00s, then the aggregate step cancelled 6m41s in) and on PRs #2204 and #2205.
     timeout-minutes: 25
+    # Steward Story 117.21 (spec-pyforge-steward CAP-175): two runners side by side, each with the steps of its part.
+    # The steps below are the job's whole list, as before; each runs on the runner whose part its `if:` names, with the
+    # environments that part needs. The four suites ran one after another, 168 s on a warm PR (#2406).
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - part: stdlib
+            environments: pyforge-ci
+          - part: library
+            environments: pyforge-doctor pyforge-guild
     steps:
       - uses: actions/checkout@v7
         with:
@@ -96,10 +107,11 @@ jobs:
       - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           pixi-version: v0.80.0
-          environments: pyforge-ci pyforge-doctor pyforge-guild
+          environments: ${{ matrix.environments }}
           cache: true
           cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       - name: tests/scripts (pyforge-doctor-scripts-test)
+        if: matrix.part == 'stdlib'
         run: pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test
       # The detector-aggregate tests that load Doctor's dispatch table, and the
       # verdict-writer tests that import its citation predicate (doctor Story 41.1),
@@ -112,16 +124,19 @@ jobs:
       # `pixi run --frozen -e <env> <task>` that pr-preflight also runs, or
       # doctor's test_preflight_mirrors_scripts_suite.py reds.
       - name: tests/scripts/test_detectors_doctor_sources.py + test_apply_verification_verdicts.py (pyforge-doctor-aggregate-scripts-test)
+        if: matrix.part == 'library'
         run: pixi run --frozen -e pyforge-doctor pyforge-doctor-aggregate-scripts-test
       # The other tests/scripts files that need PyYAML, jsonschema or ruamel.yaml,
       # which skip in the first step, run here in pyforge-guild, which declares them
       # (steward Story 103.3). pr-preflight runs the same task.
       - name: tests/scripts files that need a library (scripts-lib-test)
+        if: matrix.part == 'library'
         run: pixi run --frozen -e pyforge-guild scripts-lib-test
       # Every pyforge-* package declares what it imports, in both manifests (AUD-ATLAS-010): the
       # dependency-completeness test ran on no PR until steward Story 71.14, so atlas 37.7's undeclared
       # numpy reached main. pr-preflight runs the same task, in the same env.
       - name: tests/packaging (pyforge-deps-test)
+        if: matrix.part == 'stdlib'
         run: pixi run --frozen -e pyforge-ci pyforge-deps-test
 
   detectors:
