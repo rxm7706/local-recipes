@@ -132,7 +132,49 @@ def _fake_repo(root: Path) -> Path:
         f"{SITE}/node_modules/.bin/astro",
     ):
         pages_astro.write(root / rel, "x")
+    # A link inside the site, as ``src/content/docs`` links to the repository's ``docs/``.
+    (root / SITE / "src" / "shelf").symlink_to(Path("..") / ".." / "notes")
     return root
+
+
+#: What a build writes in the tree it runs in. A test reading one of these under the real ``docs-site/`` reads what no
+#: test's build writes any more (Story 59.1): in a fresh checkout nothing, on a laptop whatever an old build left.
+_BUILD_OUTPUTS = frozenset({"public", "build", ".astro"})
+
+
+def _reads_a_real_build_output(path: Path) -> list[int]:
+    """The lines of ``path`` that join ``DOCS_SITE`` (or the agent-surface module's ``_docs_site()``) with a build
+    output's name."""
+    found = []
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+        if not (isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div)):
+            continue
+        left, right = node.left, node.right
+        real = (
+            (isinstance(left, ast.Name) and left.id == "DOCS_SITE")
+            or (isinstance(left, ast.Attribute) and left.attr == "DOCS_SITE")
+            or (isinstance(left, ast.Call) and isinstance(left.func, ast.Name) and left.func.id == "_docs_site")
+        )
+        if real and isinstance(right, ast.Constant) and right.value in _BUILD_OUTPUTS:
+            found.append(node.lineno)
+    return found
+
+
+def test_no_test_reads_a_build_output_of_the_real_tree() -> None:
+    """Story 59.1: a test reads what its build wrote in this process's copy (``build_site_dir()``), never the real
+    ``docs-site/public``, ``build`` or ``.astro``."""
+    offenders = {
+        str(path.relative_to(TESTS)): lines
+        for path in [BUILD_HELPER, *_test_modules()]
+        if (lines := _reads_a_real_build_output(path))
+    }
+    assert offenders == {}
+
+
+def test_the_build_output_rule_sees_a_real_read(tmp_path: Path) -> None:
+    probe = tmp_path / "test_probe.py"
+    probe.write_text("from pages_astro import DOCS_SITE\n\npublic = DOCS_SITE / 'public'\nsrc = DOCS_SITE / 'src'\n")
+    assert _reads_a_real_build_output(probe) == [3]
 
 
 def test_a_build_tree_links_the_repository_and_copies_the_site(tmp_path: Path) -> None:
@@ -144,6 +186,10 @@ def test_a_build_tree_links_the_repository_and_copies_the_site(tmp_path: Path) -
     site = tree / SITE
     assert site.is_dir() and not site.is_symlink()
     assert (site / "src" / "x.ts").is_file() and not (site / "src").is_symlink()
+    # A link stays a link, and resolves through the copy's own link to the real entry.
+    assert (site / "src" / "shelf").is_symlink() and (site / "src" / "shelf" / "a.md").resolve() == (
+        repo / "notes" / "a.md"
+    ).resolve()
     # What a build or the install writes is not copied, and the build's caches are its own.
     assert not (site / "public").exists() and not (site / "build").exists() and not (site / ".astro").exists()
     modules = site / "node_modules"
@@ -181,23 +227,54 @@ def test_the_conftest_marks_the_modules_that_name_the_helper() -> None:
 
 
 def test_a_builder_s_tests_share_a_worker_by_the_module_fixtures_they_use(request: pytest.FixtureRequest) -> None:
-    """The hook ran on this session's own collection: a test of a builder module that uses a module fixture of its
-    module carries that fixture's group; every other herald test carries none. Non-vacuous: the agent-surface tests
-    that use its ``build`` fixture share one group, and some builder tests carry none."""
+    """The hook ran on this session's own collection. A test of a builder module that uses a module fixture of its
+    module carries a group of that module; two such tests that share a fixture carry the same group; every other herald
+    test carries none. Checked on what this run selected, which pytest-split may have cut to one shard."""
     conftest = _conftest()
-    groups: dict[str, set[str]] = {}
-    ungrouped_builders = 0
+    by_fixture: dict[tuple[str, str], set[str]] = {}
+    grouped = ungrouped_builders = 0
     for item in request.session.items:
         if TESTS not in Path(str(item.path)).parents:
             continue
         mark = item.get_closest_marker("xdist_group")
-        expected = conftest.docs_site_group(item)
-        assert (mark.args if mark is not None else None) == ((expected,) if expected else None), item.nodeid
-        if expected:
-            groups.setdefault(expected, set()).add(item.name)
-        elif conftest.module_builds_the_site(str(item.path)):
-            ungrouped_builders += 1
+        fixtures = conftest.module_fixtures_of(item) if conftest.module_builds_the_site(str(item.path)) else ()
+        if not fixtures:
+            assert mark is None, item.nodeid
+            ungrouped_builders += conftest.module_builds_the_site(str(item.path))
+            continue
+        assert mark is not None, item.nodeid
+        (group,) = mark.args
+        assert group.startswith(f"{conftest.DOCS_SITE_XDIST_GROUP}:{Path(str(item.path)).name}:"), (item.nodeid, group)
+        assert set(fixtures) <= set(group.rsplit(":", 1)[1].split("+")), (item.nodeid, group)
+        grouped += 1
+        for name in fixtures:
+            by_fixture.setdefault((str(item.path), name), set()).add(group)
+    assert all(len(found) == 1 for found in by_fixture.values()), by_fixture
     if not any(Path(str(i.path)).name == "test_agent_surface_and_changes.py" for i in request.session.items):
         pytest.skip("the agent-surface module is not in this run")
-    assert len(groups.get("docs-site:test_agent_surface_and_changes.py:build", ())) >= 5
-    assert ungrouped_builders > 0
+    assert grouped >= 5 and ungrouped_builders > 0
+
+
+def test_tests_that_share_any_module_fixture_share_one_group() -> None:
+    """A test using fixtures ``a`` and ``b`` joins the tests that use only ``a`` and only ``b`` in one group."""
+    conftest = _conftest()
+
+    class Fake:
+        def __init__(self, nodeid: str, fixtures: tuple[str, ...]) -> None:
+            self.nodeid, self.path, self._fixtures = nodeid, BUILD_HELPER.parent / "test_probe.py", fixtures
+
+    items = [
+        Fake("a", ("built",)),
+        Fake("b", ("built", "marketplace")),
+        Fake("c", ("marketplace",)),
+        Fake("d", ("other",)),
+    ]
+    original_builds, original_fixtures = conftest.module_builds_the_site, conftest.module_fixtures_of
+    conftest.module_builds_the_site = lambda path: True
+    conftest.module_fixtures_of = lambda item: item._fixtures
+    try:
+        groups = conftest.docs_site_groups(items)
+    finally:
+        conftest.module_builds_the_site, conftest.module_fixtures_of = original_builds, original_fixtures
+    assert groups["a"] == groups["b"] == groups["c"] == "docs-site:test_probe.py:built+marketplace"
+    assert groups["d"] == "docs-site:test_probe.py:other"

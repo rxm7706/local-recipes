@@ -110,8 +110,13 @@ def make_build_tree(dest: Path, repo: Path) -> Path:
         if entry.name != "docs-site":
             (dest / entry.name).symlink_to(entry)
     site = repo / "docs-site"
+    # Links stay links: ``src/content/docs`` links to ``../../../docs``, which in the copy is the link to the real
+    # ``docs/``, so the copy reads the repository's docs as the real tree does and the shelf finds the same root.
     shutil.copytree(
-        site, dest / "docs-site", ignore=lambda d, names: [n for n in names if Path(d) == site and n in _NOT_COPIED]
+        site,
+        dest / "docs-site",
+        symlinks=True,
+        ignore=lambda d, names: [n for n in names if Path(d) == site and n in _NOT_COPIED],
     )
     modules = dest / "docs-site" / "node_modules"
     modules.mkdir()

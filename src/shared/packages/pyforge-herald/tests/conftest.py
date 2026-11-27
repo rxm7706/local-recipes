@@ -264,28 +264,53 @@ def module_fixtures_of(item: pytest.Item) -> tuple[str, ...]:
     return tuple(sorted(shared))
 
 
-def docs_site_group(item: pytest.Item) -> str | None:
-    """The xdist group of ``item``, or ``None`` (Story 59.1): a test of a builder module that uses a module fixture of
-    its module shares a group with the tests that use the same ones; any other test has no group and goes where a
-    worker is free."""
-    if not module_builds_the_site(str(item.path)):
-        return None
-    fixtures = module_fixtures_of(item)
-    if not fixtures:
-        return None
-    return f"{DOCS_SITE_XDIST_GROUP}:{Path(str(item.path)).name}:{'+'.join(fixtures)}"
+def docs_site_groups(items: list[pytest.Item]) -> dict[str, str]:
+    """The xdist group of each test that has one, by node id (Story 59.1).
+
+    In a module that builds, the tests that share a module fixture of that module share a group, and so, through them,
+    do the tests that share any fixture with those: the groups are the connected parts of the module's tests joined by
+    the module fixtures they use, so each such fixture is built in one worker. A test that uses none has no group and
+    goes where a worker is free. A group is named ``docs-site:<module file>:<its fixtures, sorted, joined by +>``.
+    """
+    by_module: dict[str, list[tuple[pytest.Item, tuple[str, ...]]]] = {}
+    for item in items:
+        if module_builds_the_site(str(item.path)):
+            fixtures = module_fixtures_of(item)
+            if fixtures:
+                by_module.setdefault(str(item.path), []).append((item, fixtures))
+    groups: dict[str, str] = {}
+    for path, members in by_module.items():
+        parent: dict[str, str] = {}
+
+        def find(name: str) -> str:
+            while parent.setdefault(name, name) != name:
+                name = parent[name]
+            return name
+
+        for _item, fixtures in members:
+            for other in fixtures[1:]:
+                parent[find(other)] = find(fixtures[0])
+        components: dict[str, set[str]] = {}
+        for _item, fixtures in members:
+            for name in fixtures:
+                components.setdefault(find(name), set()).add(name)
+        for item, fixtures in members:
+            joined = "+".join(sorted(components[find(fixtures[0])]))
+            groups[item.nodeid] = f"{DOCS_SITE_XDIST_GROUP}:{Path(path).name}:{joined}"
+    return groups
 
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
-    """Put each test of a site-building module that shares a module fixture in that fixture's group
-    (:func:`docs_site_group`; ``--dist loadgroup`` reads the mark).
+    """Put each test of a site-building module that shares a module fixture in its group (:func:`docs_site_groups`;
+    ``--dist loadgroup`` reads the mark).
 
-    ``tryfirst``: xdist appends the group to each node id in its own collection hook, so the mark must be there first.
-    Decided from the module's text and the test's fixtures, not a hand-kept list, so a new built-site test is placed by
-    being written.
+    ``tryfirst``: xdist appends the group to each node id in its own collection hook, so the mark must be there first,
+    and pytest-split's deselection comes later, so the groups are those of the whole collection. Decided from the
+    module's text and the tests' fixtures, not a hand-kept list, so a new built-site test is placed by being written.
     """
+    groups = docs_site_groups(items)
     for item in items:
-        group = docs_site_group(item)
+        group = groups.get(item.nodeid)
         if group is not None:
             item.add_marker(pytest.mark.xdist_group(group))

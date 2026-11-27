@@ -37,6 +37,7 @@ from pages_astro import (
     REPO_ROOT,
     STATIONS,
     astro_build,
+    build_site_dir,
     fixture_tree,
     font_vendoring_only,
     needs_astro,
@@ -719,7 +720,7 @@ def test_43_3_ac3_public_serves_the_twins_downloads_exports_and_licences(tmp_pat
     out = tmp_path / "site"
     done = astro_build(out, root=root)
     assert done.returncode == 0, done.stdout[-3000:] + done.stderr[-3000:]
-    public = DOCS_SITE / "public"
+    public = build_site_dir() / "public"  # Story 59.1: the build wrote this process's copy, never the real tree
     files = sorted(p.relative_to(public).as_posix() for p in public.rglob("*") if p.is_file())
     project = "presentations/{}/project/{}"
     twins = {
