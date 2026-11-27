@@ -10046,7 +10046,7 @@ So that no environment resolves a Python of its own, as `pyforge-marshal` did wi
 
 **Type:** chore • **Effort:** M • **Deps:** 66.1, 124.3 • **FR/AD:** spec-pyforge-steward CAP-153 (realized, no text change); no AD moves
 **Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
-**Surface:** `pixi.toml`, `pixi.lock`, `environment.yaml`, `docs/reference/library-llms-full.md`
+**Surface:** `pixi.toml`, `pixi.lock`, `environment.yaml`, `docs/reference/library-llms-full.md`, `docs/governance/pin-policy.yaml`
 **Spec:** `planning-artifacts/specs/spec-148-1-python-3-14-10-is-declared-once-and-every-environment-locks-it.md`
 **Given** eleven tables of `pixi.toml` name `python` at four different specs, fourteen environments compose none of them, and `pyforge-marshal` locks 3.15.0 where the rest lock 3.14.7
 **When** `[feature.interpreter.dependencies] python = "3.14.10.*"` is the only declaration, every environment lists the `interpreter` feature first, and the lock is re-solved with pixi 0.85.0

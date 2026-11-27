@@ -14,6 +14,7 @@ surface:
   - 'pixi.lock'
   - 'environment.yaml'
   - 'docs/reference/library-llms-full.md'
+  - 'docs/governance/pin-policy.yaml'
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
@@ -72,4 +73,5 @@ Ledger key: `148-1-python-3-14-10-is-declared-once-and-every-environment-locks-i
 - The lock, re-solved by pixi 0.85.0 in 11 s, holds Python 3.14.10 in all 87 environment-platform pairs. What else moved, counted in environment-platform pairs: `libsqlite` 3.53.4 to 3.54.1 (82), `libexpat` 2.8.5 to 2.11.0 (21), `zstd` 1.5.7 to 1.6.0 (19), `icu` 78.3 to 79.1 (13), `apsw` and `sqlite` with `libsqlite`; nodejs 26.10.0 to 26.13.1 where it moved with `icu`, and with it `c-ares`, `libabseil`, `libbrotli*` and `libnghttp2` in `detectors` and `pyforge-steward`, plus `grpcio` in `pyforge-steward`. `pyforge-marshal` left 3.15.0 and rebuilt for cp314 (`grimp`, `regex`, `watchfiles`, `websockets`; `uv` 0.12.19 to 0.13.10 on win-64).
 - The first solve took nodejs 22.23.5 in `pyforge-steward`, where `bmad-eval-quality` pulls nodejs in unpinned. The steward feature now carries the estate's LTS pin, `nodejs = ">=24.19.0,<27.0,!=25.*"`, with its comment, and the second solve keeps 26.13.1.
 - `environment.yaml` is exported again by pixi 0.85.0: `python 3.14.10.*` and `pixi >=0.85.0`. `docs/reference/library-llms-full.md` names the declaration, and its table no longer says three platform environments are on 3.12 (they moved to 3.14 in Story 43.6).
+- `docs/governance/pin-policy.yaml` held python in eight per-feature `3.14.*` rows, which `pin_policy_check` read as dangling holds once those features stopped declaring python. One exact `3.14.10.*` hold on the `interpreter` feature replaces them, and nodejs's `<27.0` cap row adds `pyforge-steward`.
 - AC1: `target-version-check` exits 0. AC2: `llms-full-check` exits 0.
