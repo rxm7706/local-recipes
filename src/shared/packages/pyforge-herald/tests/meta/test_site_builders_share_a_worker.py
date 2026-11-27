@@ -20,6 +20,10 @@ from pathlib import Path
 import pages_astro
 import pytest
 
+# Story 59.1: this module imports the build helper, which reads the repository's docs-site/ and hands its root to the
+# build, so it runs in the live-tree half, beside the modules whose builds it governs (steward Story 124.2).
+pytestmark = pytest.mark.live_tree
+
 TESTS = Path(__file__).resolve().parents[1]
 BUILD_HELPER = TESTS / "meta" / "pages_astro.py"
 

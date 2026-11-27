@@ -1638,6 +1638,11 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
     "herald_live": {
         "src/shared/packages/pyforge-herald/tests/meta/test_deck_working_set.py": _H["PRESENTATIONS"],
         "src/shared/packages/pyforge-herald/tests/meta/test_docs_site_imports_tracked.py": _H["DOCS_SITE"],
+        "src/shared/packages/pyforge-herald/tests/meta/pages_astro.py": (
+            ("docs-site/**",),
+            "herald Story 59.1 (spec-pyforge-steward CAP-175): the build helper copies docs-site/'s sources from the "
+            "root it is handed into each worker's build tree, and links the root's other entries for the build to read",
+        ),
         "src/shared/packages/pyforge-herald/tests/meta/test_one_generator.py": (
             ("docs-site/**", "docs/**", "presentations/**", ".github/workflows/**"),
             "Story 43.7: the one generator builds the tracked tree (the shelf, the herald pages over presentations/) "
