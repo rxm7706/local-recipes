@@ -1,0 +1,8 @@
+---
+name: "2026-11-27-landed-the-platform-runs-one-pixi-one-python-and"
+description: "2026-11-27 LANDED: the platform runs one pixi, one Python and one nodejs. PR #2417 merged as 84c67e47de (Merge pyforge-…"
+metadata:
+  type: project
+---
+
+2026-11-27 LANDED: the platform runs one pixi, one Python and one nodejs. PR #2417 merged as 84c67e47de (Merge pyforge-steward/149-1 into main; steward Stories 149.1 to 149.3). Python 3.14.10 is the one interpreter in every environment and now in all 40 station-package build hosts, whose [package.host-dependencies] pin python = "3.14.10.*"; cpython and python-gil match it. nodejs is declared once, [feature.node.dependencies] nodejs = "24.22.3.*", and all 24 environments that carry it compose node; docs-site/.nvmrc, engines and the pin policy name 24.22.3, and CI's atlas job no longer sets Node up. pixi is 0.85.0 in every environment and at every pin site. target-version-check holds all three: each declared once, every environment and build host locking that version, the docs-site files and the workflows following. After the merge the main checkout's 34 environments were installed again (all on 3.14.10, nodejs 24.22.3, pixi 0.85.0), its .pixi/bld build cache (25 GB) and 2,924 old conda-bld work directories were deleted, and the operator's global nodejs moved from 25.7.0 to 24.22.3. Left, by design: the Python bundled inside google-cloud-sdk (3.14.7, never run: the wrapper sets CLOUDSDK_PYTHON to the environment's), the system python3 and the global pixi-skills tool (not used by the repository), and the eight bmad-loop homes, which move when they next sync to main. To move nodejs: change the node feature's line (within >=24.19.0,<27.0,!=25.*; marp-cli holds it to the 24 line), .nvmrc and engines, then re-lock.
