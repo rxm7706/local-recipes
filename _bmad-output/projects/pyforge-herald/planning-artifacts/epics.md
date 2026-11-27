@@ -2764,6 +2764,29 @@ So that herald's 20 or so test builds stop rendering all 94 docs pages each time
 **And** with the variable off, as in the Pages build, every page renders; either way a page that is gone leaves the store; the contract lists the variable
 **Status:** done
 
+## Epic 62: Herald's two-builds test names what differs (spec-pyforge-steward:CAP-175)
+
+Minted 2026-11-27 from the station Dream's entry of the same date on the operator ruling of that day ("Do this task here: Herald's two-builds test names what differs"). The test that holds two builds byte-identical failed once on CI naming only `pagefind/pagefind-entry.json`, and its message did not say how the file differed.
+**HARD boundaries:**
+- The assertion is the same; no test is skipped or re-marked.
+- No flag, and no capability text of `spec-pyforge-herald` moves.
+
+### Story 62.1: Herald's two-builds test names what differs
+
+As the operator reading a red herald shard,
+I want the two-builds test's failure to show how each differing file differs,
+So that a one-off difference can be traced from the log that recorded it.
+
+**Type:** chore • **Effort:** S • **Deps:** herald 61.1 • **FR/AD:** spec-pyforge-steward:CAP-175 (realized here; no text change in this station's Spec); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `src/shared/packages/pyforge-herald/tests/meta/pages_astro.py`, `src/shared/packages/pyforge-herald/tests/meta/test_one_generator.py`, `src/shared/packages/pyforge-herald/tests/unit/test_pages_astro_differences_report.py` (new), `planning-artifacts/test-architecture.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-62-1-herald-s-two-builds-test-names-what-differs.md`
+**Given** the two-builds test failed once on CI (PR #2431, job 140707620970) naming only `pagefind/pagefind-entry.json`, passed on re-run, and did not recur in 23 local builds
+**When** `pages_astro.differences_report` names every differing path and shows a unified diff of the first few (a binary file's size and sha256), and the test's assertion carries it as its message
+**Then** a failure shows how each differing file differs, and the assertion holds exactly what it held
+**And** no test is skipped or re-marked
+**Status:** done
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
