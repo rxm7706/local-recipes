@@ -8512,11 +8512,13 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   103 s job. **Ruled** (operator, 2026-11-26: "Approved", on the root-cause breakdown and plan of that day, as
   proposed: the merge bar is not re-tiered, and the full local run is projected at 27 to 33% faster, short of the
   50% asked; CI and touched runs of the stations named are projected at about 50% and more). **For steward:** this
-  entry binds `spec-pyforge-steward` CAP-175 (realized, no text change) and decomposes as Stories 117.19 to 117.21 on
+  entry binds `spec-pyforge-steward` CAP-175 (realized, no text change) and decomposes as Stories 117.19 to 117.22 on
   Epic 117: every lane writes bytecode, whatever the caller's `PYTHONDONTWRITEBYTECODE` (117.19); the concurrency
   tests start the second run when the first holds the lock, and a slow stub sleeps seconds, not eight per call
   (117.20); herald's live half runs as three CI shards without `setup-uv`, `scripts-suite` as two jobs, marshal's
-  live half as two shards, and the steward live half's shard durations are measured again (117.21). Herald (its
+  live half as two shards, and the steward live half's shard durations are measured again (117.21); and, found by
+  measuring the first three with herald's, the docs-site slot holds the cores its widest lane will take and that
+  lane runs first after the install (117.22), since herald's live half still ended the run on 2 workers. Herald (its
   builds side by side, each worker in its own copy of `docs-site/`) and doctor (the contract mutation tests analyse
   each module once) relay under their own Dream entries of this date. **Constraints:** as the entry above: no
   coverage floor, mypy setting, ruff rule, detector or test is weakened, removed, skipped or re-marked; a parallel

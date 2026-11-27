@@ -7994,6 +7994,22 @@ So that a PR's CI waits on its slowest shard, not on suites in a row.
 **And** every step, task, environment and trigger path a job had is still run, each new job is a registered CI surface, and the workflow meta-tests pass
 **Status:** backlog
 
+### Story 117.22: The docs-site slot holds the cores its widest lane will take, and that lane goes first
+
+As the operator whose full preflight herald's live half ends,
+I want the docs-site slot to hold the cores its widest lane will take, and that lane to run first after the install,
+So that herald's live half starts on the workers its side-by-side builds can use.
+
+**Type:** fix • **Effort:** S • **Deps:** 117.15, herald 59.1 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix; under Story 117.3's kill switch `pyforge.steward.preflight_critical_path`, as the slot of Story 117.15 is)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py`, `src/shared/packages/pyforge-steward/tests/unit/test_preflight_critical_path.py`
+**Spec:** `planning-artifacts/specs/spec-117-22-the-docs-site-slot-holds-the-cores-its-widest-lane-will-take-and-that-lane-goes-first.md`
+**Given** after herald Story 59.1 the full preflight took 421 s cold and 439 s warm, and herald's live half still ended it: started 55 to 78 s in, behind the install and its package half, on the 2 cores the docs-site slot holds, it ran 347 to 352 s, where it takes 58 s alone on 16
+**When** the slot holds the share its widest xdist lane is planned to take (expected work over the target seconds, at most half the machine), and after the install the docs-site lanes go longest first
+**Then** herald's live half starts on that share when the install ends and no longer ends the run
+**And** the install still goes first, the docs-site mutex is unchanged, and with no seconds known the declared order stands
+**Status:** backlog
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

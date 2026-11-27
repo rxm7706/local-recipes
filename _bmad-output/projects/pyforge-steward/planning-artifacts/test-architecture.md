@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 05a09560b95840f9
-story_count: 531
+source_fingerprint: 884f721413869d11
+story_count: 532
 test_file_count: 172
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 531
+- **Stories parsed:** 532
 - **Epics parsed:** 147
 - **Test files inventoried:** 172 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `05a09560b95840f9`
+- **Source fingerprint:** `884f721413869d11`
 
 ## Risk Assessment
 
@@ -142,7 +142,6 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 115: The archived steward Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 - Epic 114: Every pre-rule steward runtime capability sits behind a kill switch (8 flags, one per CAP; the Guild flag rule's retrofit capability, Q6)
 - Epic 116: The absorbed steward Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
-- Epic 117: The preflight and a PR's CI answer within a measured budget, and a station suite runs once (spec-pyforge-steward CAP-175 / FR-49)
 - Epic 118: An NKP cluster with the data-science pack runs from one tracked config (spec-pyforge-steward CAP-176..CAP-178 / FR-50..FR-52)
 - Epic 119: A start tool does the work it names (spec-pyforge-unifying-strategy CAP-20 / canopy:FR-51)
 - Epic 120: The cutover contract says what the operator ruled on 2026-11-10 (spec-python-foundry-cutover fnd:CAP-2..5 fnd:CAP-8 fnd:CAP-9 fnd:CAP-11 fnd:CAP-14 / spec-foundry-regenerate-not-fold fnr:CAP-1..5 / spec-foundry-capability-ledger fcl:CAP-1..3)
@@ -179,6 +178,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 64: Frame draft re-grounding at frame-spec#28 `d7213c1` / #29 `4596579` (spec-pyforge-steward CAP-6)
 - Epic 99: Every CI surface the operator can pause is declared once, switched by one convention, visible in one place and judged (spec-pyforge-steward CAP-166)
 - Epic 105: The preflight never runs two docs-site lanes at once (fix under spec-pyforge-steward CAP-159; no CAP)
+- Epic 117: The preflight and a PR's CI answer within a measured budget, and a station suite runs once (spec-pyforge-steward CAP-175 / FR-49)
 - Epic 122: The steward Spec says what the code does (spec-pyforge-steward CAP-179, CAP-180; the markers and text of existing capabilities)
 - Epic 123: The steward suite is an oracle a second root can run (spec-pyforge-steward CAP-181, CAP-182)
 - Epic 125: The preflight answers on the laptop it is documented for (spec-pyforge-steward CAP-175)
@@ -807,6 +807,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 117.19 | Every preflight lane writes bytecode, whatever its caller says | none observed |
 | 117.20 | The platform-ci-local concurrency tests start the second run when the first h... | none observed |
 | 117.21 | The longest PR jobs run as parallel shards and jobs | none observed |
+| 117.22 | The docs-site slot holds the cores its widest lane will take, and that lane g... | none observed |
 | 118.1 | steward deploy nic brings up and tears down an NKP cluster on local kind | none observed |
 | 118.2 | nebi-pack and the data-science pack reach Healthy on kind and a notebook spawns | none observed |
 | 118.3 | The gitops branch of the monorepo is the GitOps source and a Hetzner cluster ... | none observed |
