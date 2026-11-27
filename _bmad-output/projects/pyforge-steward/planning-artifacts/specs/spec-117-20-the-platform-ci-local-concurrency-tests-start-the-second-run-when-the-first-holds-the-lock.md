@@ -2,7 +2,7 @@
 title: '117.20: The platform-ci-local concurrency tests start the second run when the first holds the lock'
 type: 'chore'
 created: '2026-11-26'
-status: 'ready-for-dev'
+status: 'done'
 story: 117-20-the-platform-ci-local-concurrency-tests-start-the-second-run-when-the-first-holds-the-lock
 spec: spec-pyforge-steward
 difficulty: 'easy'
@@ -11,6 +11,7 @@ followup_review_recommended: false
 declared_low_risk: false
 surface:
   - 'src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_concurrency.py'
+  - 'src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_killed_holder.py'
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
@@ -68,3 +69,11 @@ Ledger key: `117-20-the-platform-ci-local-concurrency-tests-start-the-second-run
 ## Evidence (2026-11-26)
 
 `pyforge-steward-live-test` alone on 16 threads, `--durations`: `test_two_overlapping_runs_with_lock_both_pass` 33.60 s, `test_lock_wait_timeout_names_holder` 33.06 s, `test_without_lock_overlapping_runs_do_not_both_pass` 32.80 s. PR #2406's `steward-live-test` shards: 101, 21, 23 and 86 s of tests.
+
+## Review round (2026-11-26)
+
+The independent review found two of the three overlap tests unable to fail for the reason their names give, a defect older than this story: the service stub wrote the postgres stand-in's pid to `.active` and compared it with its own, which always differ, so every stop read as a cross-stop, and only under `PLATFORM_CI_LOCAL_NO_LOCK`. `.active` now names the run that started the services (its stub log), a cross-stop is a stop by another run, the stub writes every start and stop to an ordered `.events` file, the lock test asserts from it that two runs' services were never up at once and the no-lock test that they were. The SIGKILL test kills the holder once its services are up, as its name intends. A parametrized test holds the overlap reading on events written by hand. Measured: the three tests take 8.4 to 9.0 s each (33 s before); the module passed five times in a row with four workers beside 12 busy cores.
+
+## Result (2026-11-26)
+
+A full preflight of all 50 lanes, measured with the harness that measured the baseline on the same machine: 312.5 s cold and 319.1 s warm, against 543.2 s and 532.1 s after PR #2405 (42% and 40% less); about 3,900 CPU-seconds against 6,100. `pyforge-herald-live-test` starts 13 to 17 s in on 6 workers and takes 105 to 118 s; the run is bound by the machine. The only red lanes are `detectors-ci` and `test-ci-meta`, reading the measurement's own uncommitted probe lines, as in the baseline.

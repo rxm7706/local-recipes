@@ -2,7 +2,7 @@
 title: '59.1: Herald''s site builds run side by side, each worker in its own copy of docs-site'
 type: 'chore'
 created: '2026-11-26'
-status: 'ready-for-dev'
+status: 'done'
 story: 59-1-herald-s-site-builds-run-side-by-side-each-worker-in-its-own-copy-of-docs-site
 spec: spec-pyforge-herald
 difficulty: 'medium'
@@ -14,6 +14,8 @@ surface:
   - 'src/shared/packages/pyforge-herald/tests/conftest.py'
   - 'src/shared/packages/pyforge-herald/tests/meta/test_agent_surface_and_changes.py'
   - 'src/shared/packages/pyforge-herald/tests/meta/test_site_builders_share_a_worker.py'
+  - 'src/shared/packages/pyforge-herald/tests/meta/test_one_generator.py'
+  - 'src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py'
 context:
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
   - _bmad-output/projects/pyforge-herald/planning-artifacts/epics.md
@@ -73,3 +75,9 @@ Ledger key: `59-1-herald-s-site-builds-run-side-by-side-each-worker-in-its-own-c
 ## Evidence (2026-11-26)
 
 Three builds in three private copies ran side by side in 7.5 s where one build in the real tree takes 6.4 s (`astro build`, 109 pages, 461 files). The three copies wrote identical sites; against the real tree's build, 95 HTML files differ only in Astro's scoped class names (`astro-g5ptsecz` against `astro-ck64acg7`), which Astro derives from file paths. Single-process module times: `test_one_generator.py` 57 s, `test_site_shell.py` 37 s, `test_agent_surface_and_changes.py` 36 s, `test_pages_artifact.py` 25 s, `test_docs_site_nav.py` 7 s.
+
+## Review round (2026-11-26)
+
+The independent review found a blocker: `test_43_3_ac3_public_serves_the_twins_downloads_exports_and_licences` built in its copy and then read the real `docs-site/public/`, which no test's build writes any more. In a fresh CI checkout that directory does not exist, and on a laptop it held an old build's output, so the test passed without checking anything; a full preflight then reddened it once `pages-build` had rewritten the real tree. It now reads `build_site_dir() / "public"`, and `test_no_test_reads_a_build_output_of_the_real_tree` reds any test that joins `DOCS_SITE` with `public`, `build` or `.astro`. Also from the review: the copy keeps links (`src/content/docs` links to `docs/` as in the real tree); the tests sharing any module fixture form one group (the connected parts), so a fixture used with another is built once; the build-isolation module imports the helper, so it runs in the live half, and the trigger map declares the helper's root handoff.
+
+Measured: `pyforge-herald-live-test` alone 52 to 58 s on 16 threads, 822 passed (189 s before); in a full preflight 105 to 118 s on 6 workers.

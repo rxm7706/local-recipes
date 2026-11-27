@@ -2,7 +2,7 @@
 title: '67.1: The contract mutation tests analyse each module once'
 type: 'chore'
 created: '2026-11-26'
-status: 'ready-for-dev'
+status: 'done'
 story: 67-1-the-contract-mutation-tests-analyse-each-module-once
 spec: spec-pyforge-doctor
 difficulty: 'easy'
@@ -69,3 +69,7 @@ Ledger key: `67-1-the-contract-mutation-tests-analyse-each-module-once`.
 ## Evidence (2026-11-26)
 
 `pyforge-doctor-live-test` alone on 16 threads with `--durations`: 81 entries of `test_public_contract.py` of about 3 s each (215 s in all), its module fixture derived again in 11 workers at 3.2 s each.
+
+## Result (2026-11-26)
+
+`test_public_contract.py` alone: 69.0 s before, 16.5 s after (24%), 100 passed with the new test that holds the cache changes no fact. The per-module part now includes each module's flag reads, the costliest per-module step (87 of 139 s under the profiler). `pyforge-doctor-live-test` alone: 50.6 s before, 25.3 s after.

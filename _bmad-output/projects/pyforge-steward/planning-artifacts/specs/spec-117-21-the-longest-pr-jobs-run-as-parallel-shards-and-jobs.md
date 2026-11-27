@@ -2,7 +2,7 @@
 title: '117.21: The longest PR jobs run as parallel shards and jobs'
 type: 'chore'
 created: '2026-11-26'
-status: 'ready-for-dev'
+status: 'done'
 story: 117-21-the-longest-pr-jobs-run-as-parallel-shards-and-jobs
 spec: spec-pyforge-steward
 difficulty: 'medium'
@@ -16,6 +16,8 @@ surface:
   - 'tests/durations/pyforge-herald.json'
   - 'tests/durations/pyforge-steward-live.json'
   - 'tests/durations/pyforge-marshal-live.json'
+  - 'pixi.toml'
+  - 'src/shared/packages/pyforge-doctor/tests/meta/test_preflight_mirrors_scripts_suite.py'
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
@@ -74,3 +76,9 @@ Ledger key: `117-21-the-longest-pr-jobs-run-as-parallel-shards-and-jobs`.
 ## Evidence (2026-11-26)
 
 PR #2405 job steps: `herald-live-test (2)` checkout 12, setup-pixi 14, setup-uv 15, docs-site install 8, tests 148 s; `scripts-suite` (#2406, warm) checkout 24, setup-pixi 27, `pyforge-doctor-scripts-test` 45, aggregate 5, `scripts-lib-test` 54, `pyforge-deps-test` 10 s; `marshal-live-test` tests 85 to 103 s.
+
+## Review round (2026-11-26)
+
+The independent review found that herald's live task runs a second pytest over `tests/integration`, which a shard's `--splits 3` would split too: five tests, and `duration_based_chunks` can leave a group none, which exits 5. That step now passes `--splits 1 --group 1`. It also found nothing checks the `scripts-suite` matrix routing: doctor's mirror test now holds that every step's `if:` names one declared part and that part installs the step's environment, and a mutation case shows it reds a misspelt part.
+
+CI is measured on this story's own PR run (its description records it).

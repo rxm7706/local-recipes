@@ -2716,7 +2716,7 @@ So that herald's 25 or so builds run side by side instead of one after another.
 **When** `pages_astro` gives each worker a copy of the repository for building (links, `docs-site/`'s sources copied, `node_modules/` a directory of links), every build helper runs Astro there, and `tests/conftest.py` groups a builder module's tests by the module-scoped fixtures they use
 **Then** the live half passes with the counts it had and takes under 90 s alone on 16 threads
 **And** no test's build writes the real `docs-site/`, two builds never share a copy at once, and a test holds that every build helper runs in the worker's copy
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

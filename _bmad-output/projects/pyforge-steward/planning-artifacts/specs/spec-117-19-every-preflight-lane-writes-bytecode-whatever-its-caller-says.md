@@ -2,7 +2,7 @@
 title: '117.19: Every preflight lane writes bytecode, whatever its caller says'
 type: 'fix'
 created: '2026-11-26'
-status: 'ready-for-dev'
+status: 'done'
 story: 117-19-every-preflight-lane-writes-bytecode-whatever-its-caller-says
 spec: spec-pyforge-steward
 difficulty: 'medium'
@@ -71,3 +71,7 @@ Ledger key: `117-19-every-preflight-lane-writes-bytecode-whatever-its-caller-say
 ## Evidence (2026-11-26)
 
 Four lanes, each run alone on 16 threads, with and without bytecode writing (the second run with a warm cache): `pyforge-marshal-test` 461.7 to 375.4 CPU-seconds, `pyforge-atlas-live-test` 433.3 to 325.5, `pyforge-steward-live-test` 477.6 to 434.6, `pyforge-doctor-live-test` 443.2 to 498.3 (no gain). Collection alone, without and with a warm cache: marshal 12.8 and 3.4 s, atlas 14.4 and 8.2 s, steward 5.4 and 1.5 s.
+
+## Result (2026-11-26)
+
+A full preflight of all 50 lanes, measured with the harness that measured the baseline on the same machine: 312.5 s cold and 319.1 s warm, against 543.2 s and 532.1 s after PR #2405 (42% and 40% less); about 3,900 CPU-seconds against 6,100. `pyforge-herald-live-test` starts 13 to 17 s in on 6 workers and takes 105 to 118 s; the run is bound by the machine. The only red lanes are `detectors-ci` and `test-ci-meta`, reading the measurement's own uncommitted probe lines, as in the baseline.

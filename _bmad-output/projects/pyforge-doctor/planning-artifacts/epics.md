@@ -4376,7 +4376,7 @@ So that 81 cases stop parsing every doctor module three seconds at a time.
 **When** the per-module part of `_code_facts` is computed once per module text in a run and reused
 **Then** every test passes with the assertions it had, and the module takes under a quarter of its time alone
 **And** a cached analysis is read, never changed, and the facts each call returns are the facts it returned
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-11-26 (the tag rule reaches station source)
 

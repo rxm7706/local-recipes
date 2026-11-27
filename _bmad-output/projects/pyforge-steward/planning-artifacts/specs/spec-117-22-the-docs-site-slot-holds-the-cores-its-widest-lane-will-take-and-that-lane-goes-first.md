@@ -2,7 +2,7 @@
 title: '117.22: The docs-site slot holds the cores its widest lane will take, and that lane goes first'
 type: 'fix'
 created: '2026-11-26'
-status: 'ready-for-dev'
+status: 'done'
 story: 117-22-the-docs-site-slot-holds-the-cores-its-widest-lane-will-take-and-that-lane-goes-first
 spec: spec-pyforge-steward
 difficulty: 'easy'
@@ -12,6 +12,7 @@ declared_low_risk: false
 surface:
   - 'src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py'
   - 'src/shared/packages/pyforge-steward/tests/unit/test_preflight_critical_path.py'
+  - 'docs/governance/preflight-budgets.toml'
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
@@ -69,3 +70,11 @@ Ledger key: `117-22-the-docs-site-slot-holds-the-cores-its-widest-lane-will-take
 ## Evidence (2026-11-26)
 
 Cold run after Stories 117.19 to 117.21, 59.1 and 67.1: 421.3 s, `pyforge-herald-live-test` start 55 s, 352 s on 2 workers, 789 CPU-seconds; warm run 438.8 s, start 78 s (behind `pyforge-herald-test`, 20 to 78 s), 347 s on 2 workers.
+
+## Review round (2026-11-26)
+
+The first ordering put the longest docs-site lane ahead of the 'needed' rule, and `test_preflight_docs_site_mutex.py::test_the_install_starts_before_herald_s_suite` went red once in a full run: two 0.1 s lanes, and the shorter-by-noise one a pending lane needs went second. The 'needed' rule now comes first and the expected seconds break its ties (herald's gate needs both its halves, so the live half still goes first). The tracked budgets are measured again from the final runs (a governance act, made on the operator's "Approved").
+
+## Result (2026-11-26)
+
+A full preflight of all 50 lanes, measured with the harness that measured the baseline on the same machine: 312.5 s cold and 319.1 s warm, against 543.2 s and 532.1 s after PR #2405 (42% and 40% less); about 3,900 CPU-seconds against 6,100. `pyforge-herald-live-test` starts 13 to 17 s in on 6 workers and takes 105 to 118 s; the run is bound by the machine. The only red lanes are `detectors-ci` and `test-ci-meta`, reading the measurement's own uncommitted probe lines, as in the baseline.

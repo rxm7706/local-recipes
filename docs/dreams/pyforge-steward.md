@@ -8524,3 +8524,11 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   coverage floor, mypy setting, ruff rule, detector or test is weakened, removed, skipped or re-marked; a parallel
   run still exits non-zero and names the lane; every number is measured with the harness that measured the
   baseline; the merge bar stays the full preflight. No flag (fixes and chores). Owner `spec-pyforge-steward`.
+  **Realization (2026-11-26, same change):** measured with the same harness, a full preflight of all 50 lanes
+  takes 312.5 s cold and 319.1 s warm (543.2 and 532.1 s before: 42% and 40% less), on about 3,900 CPU-seconds
+  (6,100 before); herald's live half starts 13 to 17 s in on 6 workers and takes 105 to 118 s, and the run is
+  bound by the machine. The independent review sent herald 59.1, steward 117.20 and 117.21 back once: a test
+  read the real tree's `public/` that no test's build writes any more, two overlap tests could not fail for
+  the reason their names give (an older defect, fixed here), and herald's integration step would have inherited
+  a shard's split; each story spec records it. The tracked budgets are measured again (a governance act, made
+  on "Approved").

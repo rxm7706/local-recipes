@@ -7960,7 +7960,7 @@ So that no worker compiles every module again on every run.
 **When** `_lane_scratch_env` removes `PYTHONDONTWRITEBYTECODE` from each lane's environment
 **Then** a lane writes bytecode beside its sources, into gitignored `__pycache__/` directories, as it does from the operator's terminal, and its next run reads it
 **And** every other variable of the caller's environment reaches the lane unchanged, and the contract's environment table and the preflight how-to say so
-**Status:** backlog
+**Status:** done
 
 ### Story 117.20: The platform-ci-local concurrency tests start the second run when the first holds the lock
 
@@ -7976,7 +7976,7 @@ So that three tests stop sleeping 100 s between them.
 **When** the second run starts once the first holds the lock (its `.holder` record exists) or, without a lock, has its services up, and the slow stub sleeps a few seconds a call
 **Then** each test asserts what it asserted, and the three take under 40 s together alone
 **And** `scripts/platform-ci-local.sh` does not change, and the module passes five times in a row with four workers
-**Status:** backlog
+**Status:** done
 
 ### Story 117.21: The longest PR jobs run as parallel shards and jobs
 
@@ -7992,7 +7992,7 @@ So that a PR's CI waits on its slowest shard, not on suites in a row.
 **When** herald's live half runs as three shards without `setup-uv`, `scripts-suite` as two jobs side by side, marshal's live half as two shards whose coverage the gate merges, and the live halves' shard durations are measured again
 **Then** a PR that runs every workflow finishes in under 150 s and no job of a warm PR runs longer than 120 s
 **And** every step, task, environment and trigger path a job had is still run, each new job is a registered CI surface, and the workflow meta-tests pass
-**Status:** backlog
+**Status:** done
 
 ### Story 117.22: The docs-site slot holds the cores its widest lane will take, and that lane goes first
 
@@ -8008,7 +8008,7 @@ So that herald's live half starts on the workers its side-by-side builds can use
 **When** the slot holds the share its widest xdist lane is planned to take (expected work over the target seconds, at most half the machine), and after the install the docs-site lanes go longest first
 **Then** herald's live half starts on that share when the install ends and no longer ends the run
 **And** the install still goes first, the docs-site mutex is unchanged, and with no seconds known the declared order stands
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
