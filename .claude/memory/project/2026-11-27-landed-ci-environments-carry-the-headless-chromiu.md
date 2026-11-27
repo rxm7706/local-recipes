@@ -1,0 +1,8 @@
+---
+name: "2026-11-27-landed-ci-environments-carry-the-headless-chromiu"
+description: "2026-11-27 LANDED: CI environments carry the headless Chromium they launch, and herald's two-builds test names what dif…"
+metadata:
+  type: project
+---
+
+2026-11-27 LANDED: CI environments carry the headless Chromium they launch, and herald's two-builds test names what differs. PR #2431 merged as 729cbcb20b (Merge pyforge-steward/117-32 into main; steward Story 117.32, spec-pyforge-steward CAP-175 realized with no text change; operator ruling "Drop full Chromium", narrowing steward Story 131.1's browser set). platform-ci-test, pyforge-atlas and pyforge-herald keep the headless shell and ffmpeg, detectors carries no browser, and a playwright-full-chromium feature keeps the full Chromium in pyforge-container, pyforge-foundry-full and pyforge-foundry-full-stack. The four environments went from 2,198 to 1,753 MB, 2,530 to 2,046 MB, 1,537 to 1,124 MB and 1,087 to 407 MB; the lock only lost records. The full preflight passed all 50 lanes in 374 s, and atlas's browser tests passed from the shell. The PR's own CI missed every pixi cache, so the faster restores show once main writes its caches. PR #2432 merged as 296b7b0cbf (Merge pyforge-herald/62-1 into main; herald Story 62.1, Epic 62): pages_astro.differences_report is the two-builds test's assertion message, after that test failed once on PR #2431 naming only pagefind/pagefind-entry.json; the cause is not found. Measured and left: a blob-less clone for the Detectors jobs (chain_currency_sweep_check timed out at 300 s fetching about 8,000 blobs on demand), and the depth-2 checkout's 8 to 9 s fetch, which is the 276 MB tree itself. Still open from the 2026-11-27 lever survey: no lane lints _bmad/scripts/.
