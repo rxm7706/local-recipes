@@ -8139,6 +8139,22 @@ So that the preflight's own load never decides its verdict.
 **And** `pyforge-doctor-live-test` is the one declared task; a meta-test fails when a declared task's command has no `&&` or its last segment runs pytest under xdist, and the preflight refuses (exit 2) to run a selected lane whose declared task has no tail; the test, its median and its 5.0 s budget, and CI's jobs, are unchanged
 **Status:** done
 
+### Story 117.31: Platform CI's services read healthy within seconds of starting
+
+As the operator whose PR waits on Platform CI's test shards,
+I want PostgreSQL and Redis probed every second while they start,
+So that no job waits 13 s for its first health check.
+
+**Type:** chore • **Effort:** S • **Deps:** 117.23 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `.github/workflows/platform-ci.yml`, `.github/workflows/pyforge-station-tests.yml`
+**Spec:** `planning-artifacts/specs/spec-117-31-platform-ci-s-services-read-healthy-within-seconds-of-starting.md`
+**Given** a Platform CI test shard spends 21 to 27 s initializing its containers, 13.4 s of it waiting for services whose first probe comes 10 s after they start
+**When** every PostgreSQL and Redis service of Platform CI's `test` and `checks` jobs, and of `scribe-live-test`, adds `--health-start-period 30s --health-start-interval 1s`
+**Then** Docker probes each service every second while it starts, and the runner reads it healthy within seconds; a container that becomes ready 3 s after start reads healthy after 3.3 s, against 10.5 s before
+**And** the services, their images and their steady health checks are unchanged, and no test, job or lane changes
+**Status:** done
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

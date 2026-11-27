@@ -1448,7 +1448,8 @@ jobs:
       # PostgreSQL + pgvector; the test suite's own conftest.py fails loudly
       # (does not silently skip) when it can't reach one. Port/user/password/
       # db match tests/unit/conftest.py's _DEFAULT_PG_DSN verbatim, so
-      # SCRIBE_GRAPH_DSN does not need to be set.
+      # SCRIBE_GRAPH_DSN does not need to be set. Steward Story 117.31: probed every second while it starts, as
+      # Platform CI's services are, so the job no longer waits 13 s for its first health check.
       postgres:
         image: pgvector/pgvector:pg17  # PostgreSQL 17, like every pin in the estate (steward Story 67.1)
         env:
@@ -1462,6 +1463,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+          --health-start-period 30s
+          --health-start-interval 1s
     steps:
       - uses: actions/checkout@v7
         with:
