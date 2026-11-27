@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: f14e5af49e7e5598
-story_count: 548
+source_fingerprint: 87051611f057fb40
+story_count: 549
 test_file_count: 175
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 548
+- **Stories parsed:** 549
 - **Epics parsed:** 149
 - **Test files inventoried:** 175 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `f14e5af49e7e5598`
+- **Source fingerprint:** `87051611f057fb40`
 
 ## Risk Assessment
 
@@ -822,6 +822,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 117.29 | Lint and types restores mypy caches from an older lock | none observed |
 | 117.30 | The preflight runs doctor's CPU speed-budget test with no other lane | none observed |
 | 117.31 | Platform CI's services read healthy within seconds of starting | none observed |
+| 117.32 | CI environments carry the headless Chromium they launch, not the full one | none observed |
 | 118.1 | steward deploy nic brings up and tears down an NKP cluster on local kind | none observed |
 | 118.2 | nebi-pack and the data-science pack reach Healthy on kind and a notebook spawns | none observed |
 | 118.3 | The gitops branch of the monorepo is the GitOps source and a Hetzner cluster ... | none observed |

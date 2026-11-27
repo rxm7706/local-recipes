@@ -219,11 +219,8 @@ holds:
   hold: cap
   cap: <157
   features:
-  - detectors
-  - platform-ci-test
-  - pyforge-atlas
-  - pyforge-herald
-  reason: Chrome for Testing 156 is chromium r1248, the revision playwright 1.64 drives; a newer build needs a newer driver
+  - playwright-full-chromium
+  reason: Chrome for Testing 156 is chromium r1248, the revision playwright 1.64 drives; a newer build needs a newer driver (steward Story 117.32 kept it only where a person drives a browser)
   authority: spec-131-1
   owner: pyforge-steward
   until: the playwright cap moves
@@ -231,7 +228,6 @@ holds:
   hold: cap
   cap: <157
   features:
-  - detectors
   - platform-ci-test
   - pyforge-atlas
   - pyforge-herald

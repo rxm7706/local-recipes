@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 846
+# stories: 847
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -103,6 +103,7 @@ development_status:
   117-3-the-preflight-admits-lanes-longest-first-by-the-cores-they-will-use: done
   117-30-the-preflight-runs-doctor-s-cpu-speed-budget-test-with-no-other-lane: done
   117-31-platform-ci-s-services-read-healthy-within-seconds-of-starting: done
+  117-32-ci-environments-carry-the-headless-chromium-they-launch-not-the-full-one: done
   117-4-each-station-suite-runs-as-its-package-local-and-live-tree-halves: done
   117-5-preflight-budget-names-every-lane-over-its-journal-derived-budget: done
   117-6-image-builds-leave-the-pull-request-path-for-main-and-the-nightly-canary: done
