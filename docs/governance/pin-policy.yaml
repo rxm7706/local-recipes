@@ -373,6 +373,7 @@ holds:
   cap: <27.0
   features:
   - pyforge-herald
+  - pyforge-steward
   - python
   - site
   reason: Cap preserved across pixi upgrade
@@ -502,40 +503,13 @@ holds:
   until: unknown
 - package: python
   hold: exact
-  exact: 3.14.*
+  exact: 3.14.10.*
   features:
-  - python-agent-platform
-  reason: Exact pin (python-agent-platform)
-  authority: spec-100-1
+  - interpreter
+  reason: The estate's one Python declaration; every environment composes the interpreter feature (steward Story 148.1)
+  authority: spec-148-1
   owner: pyforge-steward
-  until: unknown
-- package: python
-  hold: exact
-  exact: 3.14.*
-  features:
-  - dbgpt-sidecar
-  reason: Exact pin (dbgpt-sidecar)
-  authority: spec-100-1
-  owner: pyforge-steward
-  until: unknown
-- package: python
-  hold: exact
-  exact: 3.14.*
-  features:
-  - mcp-host
-  reason: Exact pin (mcp-host)
-  authority: spec-100-1
-  owner: pyforge-steward
-  until: unknown
-- package: python
-  hold: exact
-  exact: 3.14.*
-  features:
-  - platform-ci-test
-  reason: Exact pin (platform-ci-test)
-  authority: spec-100-1
-  owner: pyforge-steward
-  until: unknown
+  until: estate refresh policy
 - package: pptxgenjs-plus
   hold: exact
   exact: 4.2.1.*
@@ -545,48 +519,12 @@ holds:
   authority: spec-100-1
   owner: pyforge-steward
   until: unknown
-- package: python
-  hold: exact
-  exact: 3.14.*
-  features:
-  - local-recipes
-  reason: Exact pin (local-recipes)
-  authority: spec-100-1
-  owner: pyforge-steward
-  until: unknown
-- package: python
-  hold: exact
-  exact: 3.14.*
-  features:
-  - vuln-db
-  reason: Exact pin (vuln-db)
-  authority: spec-100-1
-  owner: pyforge-steward
-  until: unknown
-- package: python
-  hold: exact
-  exact: 3.14.*
-  features:
-  - platform-object-storage
-  reason: Exact pin (platform-object-storage)
-  authority: spec-100-1
-  owner: pyforge-steward
-  until: unknown
 - package: pptxgenjs-plus
   hold: exact
   exact: 4.2.1.*
   features:
   - pyforge-herald
   reason: Exact pin (pyforge-herald)
-  authority: spec-100-1
-  owner: pyforge-steward
-  until: unknown
-- package: python
-  hold: exact
-  exact: 3.14.*
-  features:
-  - workspace
-  reason: Exact pin (workspace)
   authority: spec-100-1
   owner: pyforge-steward
   until: unknown
