@@ -1898,8 +1898,8 @@
    "src/shared/packages/pyforge-herald/tests/meta/test_preflight_pages_lane.py": "055508a6d5fd28931a945bbf26de8bfc2a0294fc",
    "src/shared/packages/pyforge-herald/tests/meta/test_public_contract.py": "7b0fe4368088a83dadf1f0108a8cc9f5c57eda97",
    "src/shared/packages/pyforge-herald/tests/meta/test_release_comms_routing.py": "20f6abef9461b4de24fd7150280cfdabeb321044",
-   "src/shared/packages/pyforge-herald/tests/meta/test_site_builders_share_a_worker.py": "9408657d18a70123a5cb75af098a0a969680864a",
-   "src/shared/packages/pyforge-herald/tests/meta/test_site_shell.py": "d865ba62e78fb208d57d2e1593be89a4b2a4ab36",
+   "src/shared/packages/pyforge-herald/tests/meta/test_site_builders_share_a_worker.py": "095c17fe6ccebbb590622088dfedaef8c9c4f803",
+   "src/shared/packages/pyforge-herald/tests/meta/test_site_shell.py": "05d4286d2e05a4efa9627554e9a188753f443750",
    "src/shared/packages/pyforge-herald/tests/meta/test_skf_skill_and_persona.py": "ccf82c078712925eb976f4197596e3093a200066",
    "src/shared/packages/pyforge-herald/tests/meta/test_slides_generator_routing.py": "f0fc149aee4e2e764ba0fe5d4506198cd346ec47",
    "src/shared/packages/pyforge-herald/tests/meta/test_twins_zero_origin.py": "ab418d0e8f0d306f9c725199d4e0348ea87f0806",
@@ -2006,7 +2006,7 @@
    "src/shared/packages/pyforge-herald/web/src/test/setup.js": "1d74541c291183bb6027ebb5bf6de480115262ea",
    "src/shared/packages/pyforge-herald/web/vite.config.js": "bcd53f517a2d51fe2992404dd852b2599b15d84f"
   },
-  "memlog": "c1e303d9552d0cc73bc2ff288abdb700eaec64e6"
+  "memlog": "d2659d11c820009c7f8050528b187247ea6b3a5f"
  },
  "pyforge-marshal/spec-pyforge-core": {
   "files": {

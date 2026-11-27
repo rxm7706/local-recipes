@@ -5,8 +5,9 @@ Every Astro build rewrites ``public/`` and Astro's caches under the ``docs-site/
 build in one xdist worker, in the one real ``docs-site/``. Since Story 59.1 each test process builds in its own copy
 (``pages_astro.build_site_dir``), and ``tests/conftest.py`` keeps on one worker only the tests of a builder module that
 share a module-scoped fixture, so that fixture builds once. This module holds the rules: nothing starts Astro without
-the build helper, every build runs in the process's copy, a copy writes nothing of the real tree, and the conftest
-groups exactly the tests that share a module fixture of a module that builds.
+the build helper, every build runs in the process's copy, a copy writes nothing of the real tree, the conftest
+groups exactly the tests that share a module fixture of a module that builds, and a test in such a group starts no
+build of its own (Story 63.1).
 """
 
 from __future__ import annotations
@@ -278,3 +279,97 @@ def test_tests_that_share_any_module_fixture_share_one_group() -> None:
         conftest.module_builds_the_site, conftest.module_fixtures_of = original_builds, original_fixtures
     assert groups["a"] == groups["b"] == groups["c"] == "docs-site:test_probe.py:built+marketplace"
     assert groups["d"] == "docs-site:test_probe.py:other"
+
+
+# --- Herald Story 63.1: a grouped test builds nothing of its own ----------------------------------------------------
+#
+# A test that takes a module fixture of a builder module runs in that fixture's xdist group, on the worker that built
+# it. A build the test starts itself then runs after the group's, on the same worker, and lengthens the group: on CI,
+# test_site_shell.py's `shell` group held its fixture's build, a test's own build and two pages-check runs in turn, most
+# of its shard's 66 s. A test that builds a site of its own takes no module fixture, so it runs on any free worker.
+
+#: The build helper's entry point; a module function that calls it, directly or through another, builds too.
+_BUILD_ENTRY = "astro_build"
+
+
+def _called_names(node: ast.AST) -> set[str]:
+    names: set[str] = set()
+    for call in ast.walk(node):
+        if isinstance(call, ast.Call):
+            func = call.func
+            names.add(func.attr if isinstance(func, ast.Attribute) else func.id if isinstance(func, ast.Name) else "")
+    return names
+
+
+def _is_module_fixture(function: ast.FunctionDef) -> bool:
+    for decorator in function.decorator_list:
+        if not isinstance(decorator, ast.Call):
+            continue
+        func = decorator.func
+        name = func.attr if isinstance(func, ast.Attribute) else func.id if isinstance(func, ast.Name) else ""
+        if name == "fixture" and any(
+            keyword.arg == "scope" and isinstance(keyword.value, ast.Constant) and keyword.value.value == "module"
+            for keyword in decorator.keywords
+        ):
+            return True
+    return False
+
+
+def grouped_tests_that_build(source: str) -> list[str]:
+    """The tests in ``source`` that take one of its module fixtures and also start a build: a call to the helper's
+    ``astro_build``, or to a module function that reaches it."""
+    functions = {node.name: node for node in ast.parse(source).body if isinstance(node, ast.FunctionDef)}
+    fixtures = {name for name, node in functions.items() if _is_module_fixture(node)}
+    builders = {_BUILD_ENTRY}
+    grew = True
+    while grew:
+        grew = False
+        for name, node in functions.items():
+            if name in builders or name in fixtures or name.startswith("test_"):
+                continue
+            if _called_names(node) & builders:
+                builders.add(name)
+                grew = True
+    found = []
+    for name, node in functions.items():
+        if not name.startswith("test_"):
+            continue
+        takes = {arg.arg for arg in node.args.args} & fixtures
+        if takes and _called_names(node) & builders:
+            found.append(f"{name} takes {sorted(takes)} and builds")
+    return found
+
+
+def test_no_grouped_test_starts_a_build_of_its_own() -> None:
+    conftest = _conftest()
+    offenders = {
+        path.name: found
+        for path in _test_modules()
+        if conftest.module_builds_the_site(str(path))
+        and (found := grouped_tests_that_build(path.read_text(encoding="utf-8")))
+    }
+    assert offenders == {}, offenders
+
+
+def test_the_grouped_build_rule_fires() -> None:
+    source = (
+        "import pytest\n"
+        "from pages_astro import astro_build\n"
+        "@pytest.fixture(scope='module')\n"
+        "def built(tmp_path_factory):\n"
+        "    return astro_build(tmp_path_factory.mktemp('a'))\n"
+        "def _rebuild(out):\n"
+        "    return astro_build(out)\n"
+        "def test_reads(built):\n"
+        "    assert built\n"
+        "def test_builds_alone(tmp_path):\n"
+        "    assert _rebuild(tmp_path)\n"
+        "def test_builds_in_the_group(built, tmp_path):\n"
+        "    assert built and astro_build(tmp_path)\n"
+        "def test_builds_through_a_helper(built, tmp_path):\n"
+        "    assert built and _rebuild(tmp_path)\n"
+    )
+    assert grouped_tests_that_build(source) == [
+        "test_builds_in_the_group takes ['built'] and builds",
+        "test_builds_through_a_helper takes ['built'] and builds",
+    ]

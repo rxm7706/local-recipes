@@ -2787,6 +2787,29 @@ So that a one-off difference can be traced from the log that recorded it.
 **And** no test is skipped or re-marked
 **Status:** done
 
+## Epic 63: Herald's site-shell group holds only its own build (spec-pyforge-steward:CAP-175)
+
+Minted 2026-11-27 from the station Dream's entry of the same date on the operator ruling of that day ("Herald shards"). On the runner, `test_site_shell.py`'s `shell` xdist group held its fixture's build, a test's own build and two pages-check runs in turn, about 55 s of herald's longest live shard.
+**HARD boundaries:**
+- No assertion is removed or weakened; no test is skipped or re-marked.
+- No flag, and no capability text of `spec-pyforge-herald` moves.
+
+### Story 63.1: Herald's site-shell group holds only its own build
+
+As the operator whose PR waits on herald's longest live shard,
+I want a test that builds a site of its own to take no module fixture of its module,
+So that its build runs on a free worker instead of after its group's build on the same one.
+
+**Type:** chore • **Effort:** S • **Deps:** herald 60.1 • **FR/AD:** spec-pyforge-steward:CAP-175 (realized here; no text change in this station's Spec); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `src/shared/packages/pyforge-herald/tests/meta/test_site_shell.py`, `src/shared/packages/pyforge-herald/tests/meta/test_site_builders_share_a_worker.py`, `tests/durations/pyforge-herald.json`, `planning-artifacts/specs/spec-53-3-kedro-viz-opens-under-the-site-header-with-a-way-back.md` (the test's new name), `planning-artifacts/test-architecture.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-63-1-herald-s-site-shell-group-holds-only-its-own-build.md`
+**Given** `test_53_3_no_framed_page_without_the_export_or_without_the_shell` reads `shell` for one check and then builds a site of its own, so on the runner its 16.0 s build ran after the group's 25.6 s build, on the same worker
+**When** it becomes `test_53_3_no_framed_page_without_the_export` (the check on `shell`) and `test_53_3_no_framed_page_without_the_shell` (the build, with no module fixture), and the durations file names both
+**Then** the `shell` group holds one build, and a guard reds any test of a builder module that takes one of its module fixtures and starts a build of its own
+**And** every assertion holds as before, and no test is skipped or re-marked
+**Status:** done
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

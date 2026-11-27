@@ -1095,13 +1095,16 @@ jobs:
     timeout-minutes: 30
     # Herald Story 58.1 (spec-pyforge-steward:CAP-175): sharded as the package half is; each shard uploads its own
     # coverage report and the gate merges them. Steward Story 117.21: three shards, since herald Story 59.1 lets the
-    # builds of one shard run side by side, each xdist worker in its own copy of docs-site/.
+    # builds of one shard run side by side, each xdist worker in its own copy of docs-site/. Steward Story 117.33: four
+    # shards. On the runner the built-site tests cost two to three times their laptop timings, so three shards left the
+    # heaviest one about 54 s of tests for four workers (66 to 72 s with start-up); four leave each under 40 s, once herald
+    # Story 63.1 keeps a self-building test out of test_site_shell.py's `shell` group.
     strategy:
       fail-fast: false
       matrix:
-        group: [1, 2, 3]
+        group: [1, 2, 3, 4]
     env:
-      PYTEST_ADDOPTS: --splits 3 --group ${{ matrix.group }} --durations-path tests/durations/pyforge-herald.json
+      PYTEST_ADDOPTS: --splits 4 --group ${{ matrix.group }} --durations-path tests/durations/pyforge-herald.json
     steps:
       - uses: actions/checkout@v7
         with:

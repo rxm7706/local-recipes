@@ -432,8 +432,14 @@ def test_53_3_pages_check_names_a_mounted_kedro_viz_with_no_framed_page(
 
 
 @needs_astro
-def test_53_3_no_framed_page_without_the_export_or_without_the_shell(shell: Path, tmp_path: Path) -> None:
+def test_53_3_no_framed_page_without_the_export(shell: Path) -> None:
     assert not (shell / KEDRO_FRAME).exists(), "the tracked tree mounts no Kedro-Viz export"
+
+
+# Herald Story 63.1: the build below is this test's own, so the test takes no module fixture. Reading `shell` would put
+# it in that fixture's xdist group and run its build after the group's, on the same worker.
+@needs_astro
+def test_53_3_no_framed_page_without_the_shell(tmp_path: Path) -> None:
     root = fixture_tree(tmp_path / "tree", exports=True)
     out = tmp_path / "site"
     done = astro_build(out, root=root)

@@ -84,7 +84,8 @@ Ledger key: `53-3-kedro-viz-opens-under-the-site-header-with-a-way-back`.
 **Both flag states:** `src/shared/packages/pyforge-herald/tests/unit/test_site_shell_flag_states.py` runs the flag in both
 states (`flag_states`). The built pages: `src/shared/packages/pyforge-herald/tests/meta/test_site_shell.py` builds a
 tree holding a Kedro-Viz export with the flag on (the framed page, the links, the untouched export, `pages-check`) and
-off (`test_53_3_no_framed_page_without_the_export_or_without_the_shell`).
+off (`test_53_3_no_framed_page_without_the_shell`; herald Story 63.1 split it from the check on the tracked tree,
+`test_53_3_no_framed_page_without_the_export`).
 
 **Not verified here:** the framed page against a real Kedro-Viz export in a browser (the export is not in a local
 build; the tests use a fixture export). Upstream's own first-run popup still shows inside the frame. The app keeps its

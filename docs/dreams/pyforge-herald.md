@@ -999,6 +999,19 @@ Herald rebases to one Dream, one Spec, one PRD, one spine, one epic chain. Folde
   story: `pages_astro.differences_report` names every differing path and shows a unified diff of the first few (a
   binary file's size and sha256), and the two-builds test's assertion carries it. **Constraints:** the assertion is
   the same; no test is skipped or re-marked. No flag (a chore). Owner `spec-pyforge-herald`.
+- **2026-11-27 (a site-shell test builds inside the `shell` group) — Found and ruled:** herald's third live shard is
+  the longest job on a PR that runs herald's live half (111 s, 72 s of tests; the other two 38 to 53 s). Every test's
+  time on the runner, printed by a probe run never merged (run 46072884555), shows the shard's `shell` xdist group in
+  `test_site_shell.py` running in turn on one worker: the fixture's build (25.6 s), then
+  `test_53_3_no_framed_page_without_the_export_or_without_the_shell`, which reads `shell` for one check and then makes
+  a build of its own (16.0 s), then two pages-check runs (12.1 s), about 55 s of the shard's 66 s. Story 60.1 took
+  this shape out of two other builder modules; it is the one test left that both takes a module fixture and builds.
+  **Ruled** (operator, 2026-11-27: "Herald shards", on the ranked list of what remains). **For herald:** this entry
+  binds `spec-pyforge-steward:CAP-175` (realized here, no text change in this station's Spec) and decomposes as Epic
+  63, one story: the test becomes two, the check on `shell` and the build without the shell, each with its
+  assertions; a guard in `test_site_builders_share_a_worker.py` reds a test that takes a module fixture of a builder
+  module and starts a build of its own; the durations file names the two new tests. **Constraints:** no assertion is
+  removed or weakened, and no test is skipped or re-marked. No flag (a chore). Owner `spec-pyforge-herald`.
 
 ## 2026-10-26 — The deck family stays current — infographics re-derived from the ledgers, not remembered (folded from deck-family-currency)
 

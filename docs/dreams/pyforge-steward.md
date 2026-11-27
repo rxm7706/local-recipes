@@ -8749,3 +8749,14 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   `_bmad/scripts/**` and the manifest; the generator is formatted, and writes the same eight documents.
   **Constraints:** the installer's scripts are never edited or linted; no rule is relaxed. No flag (the lint gate,
   as Story 93.1). Owner `spec-pyforge-steward`.
+- **2026-11-27 (herald's live half outgrew three shards) — Found and ruled:** on the runner, herald's built-site
+  tests cost two to three times their laptop timings, which the durations file holds, so pytest-split's three equal
+  shards are equal only on a laptop: run on PR #2436, the third held about 215 s of tests for four xdist workers
+  against 184 s and 137 s (by every test's runner time from probe run 46072884555), and took 66 to 72 s of tests where
+  the others took 38 to 53 s; the job took 111 s, the longest on that PR. **Ruled** (operator, 2026-11-27: "Herald
+  shards", on the ranked list of what remains). **For steward:** this entry binds `spec-pyforge-steward` CAP-175
+  (realized, no text change) and decomposes as Story 117.33 on Epic 117: the `herald-live-test` job runs four shards
+  (`--splits 4`), with herald Story 63.1 keeping a self-building test out of the `shell` group, which alone held 55 s.
+  By the runner times, each of the four shards holds at most about 150 s of tests, and no xdist group more than 40 s.
+  **Constraints:** the same tests run, each once; the coverage gate merges every shard's report as before. No flag
+  (chore). Owner `spec-pyforge-steward`.
