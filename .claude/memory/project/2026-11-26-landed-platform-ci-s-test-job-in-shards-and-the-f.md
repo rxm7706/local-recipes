@@ -1,0 +1,8 @@
+---
+name: "2026-11-26-landed-platform-ci-s-test-job-in-shards-and-the-f"
+description: "2026-11-26 LANDED: Platform CI's test job in shards and the first local preflight lever. PR #2409 merged as 4331dcd78c…"
+metadata:
+  type: project
+---
+
+2026-11-26 LANDED: Platform CI's test job in shards and the first local preflight lever. PR #2409 merged as 4331dcd78c (Merge pyforge-steward/117-23 into main; operator rulings "shard the Platform CI test job next" and "Merge #2409"): Platform CI's test job runs as three pytest-split shards over durations measured on CI (tests/durations/platform.json). Its shards took 119, 108 and 98 s (suites 57, 43 and 44 s), and a PR that runs every workflow went from 196 to 170 s of CI. A pyforge-warden first-install race the sharding exposed is fixed with a locked session fixture. PR #2410 merged as a622408d52 (Merge pyforge-steward/117-24 into main; operator rulings "Yes, levers 1-3" and "Merge it"): workspace clean keeps a worktree's per-environment mypy caches in the checkout it runs from, and workspace start copies them into the new worktree. The two mypy lanes went from 27.8 and 47.3 s cold to 3.4 and 4.2 s; the first clean after landing left 20 caches in the primary checkout. Measured and not built, both recorded on steward's Dream: starting the serial lanes first (they cost nothing in warm runs), and running herald's two suites side by side (89.9 to 95.0 s against 90.3 to 90.6 s in turn). Open next: a PR's CI now ends at herald's gate (+170 s); jobs wait for runners at 40 at once; the live-test shards of herald, steward and marshal are uneven; each gate job adds 20 to 30 s to the longest path; and local touched runs are bound by CPU (herald's live half keeps 9.3 cores busy).
