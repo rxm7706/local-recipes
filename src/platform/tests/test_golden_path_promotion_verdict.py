@@ -23,6 +23,11 @@ from tests.test_golden_path_promotion_osv_db import _golden_path_job_block
 from tests.test_golden_path_promotion_osv_db import _load_osv_db_builder
 
 _REPO_ROOT = readers.REPO_ROOT
+
+# Steward Story 117.23: this module runs ``pixi run -e pyforge-warden``. The
+# fixture installs that environment once, under a lock, so two xdist workers
+# never install it at the same time.
+pytestmark = pytest.mark.usefixtures("pyforge_warden_env")
 _PROMOTION_SCRIPT = _REPO_ROOT / "scripts" / "platform-golden-path-promotion.sh"
 _VULN_CRITICAL = (
     _REPO_ROOT

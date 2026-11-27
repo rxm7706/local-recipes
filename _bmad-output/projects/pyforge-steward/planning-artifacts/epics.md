@@ -8018,7 +8018,7 @@ So that its suite stops being the longest job of a PR that runs every workflow.
 
 **Type:** chore • **Effort:** S • **Deps:** 117.10, 117.12, 117.21 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); no AD moves; CAP-166 (a matrix adds no CI surface)
 **Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
-**Surface:** `pixi.toml`, `pixi.lock`, `.github/workflows/platform-ci.yml`, `tests/durations/platform.json`, `tests/scripts/test_durations_files.py`
+**Surface:** `pixi.toml`, `pixi.lock`, `.github/workflows/platform-ci.yml`, `tests/durations/platform.json`, `tests/scripts/test_durations_files.py`, `src/platform/conftest.py`, `src/platform/tests/` (three modules that run `pyforge-warden`, one new test)
 **Spec:** `planning-artifacts/specs/spec-117-23-platform-ci-s-test-job-runs-as-three-shards.md`
 **Given** after PR #2407 a PR that runs every workflow took 196 s of CI, and Platform CI's `test` job was its longest: 141 s of suite under `pytest -n 4` on one runner, because `pytest-split` is not in the `platform-ci-test` environment
 **When** `pytest-split` joins that environment, locked with the pinned pixi, and the job runs as three shards over durations measured from the suite

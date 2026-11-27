@@ -15,6 +15,11 @@ surface:
   - '.github/workflows/platform-ci.yml'
   - 'tests/durations/platform.json'
   - 'tests/scripts/test_durations_files.py'
+  - 'src/platform/conftest.py'
+  - 'src/platform/tests/test_golden_path_promotion_verdict.py'
+  - 'src/platform/tests/test_deploy_gates_on_promotion_verdict.py'
+  - 'src/platform/tests/test_golden_path_promotion_closure.py'
+  - 'src/platform/tests/test_pixi_environment_first_use.py'
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
@@ -82,4 +87,6 @@ PR #2407's `test` job: Initialize containers 26 s, checkout 6 s, Install test de
 - `tests/durations/platform.json` is measured from the full suite through the local twin: 1,590 tests, 348 s of test time, keys relative to `src/platform`. The three groups hold 607, 383 and 600 tests, about 116 s of test time each, and no test is in two groups.
 - `tests/scripts/test_durations_files.py` reads the durations path from Platform CI's workflow too, in both spellings, so the file is held to exist and is not reported as orphaned.
 - AC2: `pyforge-steward-live-test` exits 0 (1,904 passed). `pyforge-doctor-scripts-test` exits 0 (1,400 passed) and `scripts-lib-test` exits 0 (1,074 passed). The local twin still runs the suite unsharded (`platform-ci-local -- --test`: 1,570 passed, 23 skipped).
-- The 120 s bound on the longest shard is read from the PR's own CI run.
+- First CI run (PR #2409, run 45929563925): the three shards took 93, 99 and 119 s, each under the 120 s bound, with 37 to 51 s of suite. Shard 2 failed one test, `test_honest_non_clean_promotion_record_is_refused_by_deploy`: its `warden scan` exited 1 with no output.
+- Cause, a race the old single job hid: the runner installs only `platform-ci-test`, so the first `pixi run -e pyforge-warden` installs that environment, and that install builds and reinstalls its path packages (`pyforge-core`, `pyforge-testing-kit`, `pyforge-warden`). In the single job one test happened to run it alone first (22 s). In shard 2, two workers started it in the same millisecond, and one process uninstalled `pyforge-warden` while the other ran it. A local check showed the mechanism: of three concurrent first runs, two uninstalled `pyforge-warden`; on an installed environment, none did.
+- Fix: a session fixture in `src/platform/conftest.py`, `pyforge_warden_env`, runs `pixi install -e pyforge-warden` once, under an exclusive lock in the parent of the base temporary directory (shared by the xdist workers). The three modules that run the environment use it. `tests/test_pixi_environment_first_use.py` reds a module that runs a pixi environment without its install fixture. From a fresh `pyforge-warden` environment, the three modules passed 3 runs of 3 under `-n 4`. `platform-ci-local -- --test` passes (1,573 passed, 23 skipped).
