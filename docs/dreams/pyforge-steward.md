@@ -8719,3 +8719,21 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   `checks` jobs and in `scribe-live-test` is probed every second for its first 30 s. **Constraints:** the services,
   their images and their steady health checks stay as they are; no test, job or lane changes. No flag (chore). Owner
   `spec-pyforge-steward`.
+- **2026-11-27 (every CI job's checkout and pixi setup) — Found and ruled:** across the 51 jobs of PR #2429's run, a
+  checkout takes 5 to 13 s and a pixi setup 5 to 21 s. Checkout: a depth-2 fetch is the tree itself (27,393 files,
+  276 MB), and the three Detectors jobs that fetch all history take 19 to 29 s. A blob-less clone of `main` is 145 MB
+  against 224 MB, but `detectors-ci` in one fetched about 8,000 blobs on demand and `chain_currency_sweep_check` timed
+  out at 300 s, so history stays whole. Pixi setup: the cache restore is most of it and grows with the environment
+  (286 MB in 3 s, 962 MB in 17 s). Four CI environments carry Playwright's full Chromium (403 MB) beside its headless
+  shell (273 MB): `pyforge-atlas` (2.5 GB), `platform-ci-test` (2.2 GB), `pyforge-herald` (1.5 GB) and `detectors`
+  (1.1 GB). Every launch in the code is headless, which runs the shell; deck QA and the deck trio ask for the
+  system's Chrome first and fall back to the same headless launch. `detectors` launches no browser at all: check-layout
+  retired with the Guildhall console and only refuses its blob's return. **Ruled** (operator, 2026-11-27: "every job's
+  checkout plus setup-pixi next", then "Drop full Chromium", reopening steward Story 131.1's set for these
+  environments). **For steward:** this entry binds `spec-pyforge-steward` CAP-175 (realized, no text change) and
+  decomposes as Story 117.32 on Epic 117: `platform-ci-test`, `pyforge-atlas` and `pyforge-herald` keep the headless
+  shell and ffmpeg and drop the full Chromium; `detectors` drops all three browser packages; a
+  `playwright-full-chromium` feature keeps the full Chromium in the laptop SBOM environments and the container
+  environment, which had it. **Constraints:** re-locked with the pinned pixi and no update, the lock change only
+  removes records; every Chromium launch still passes; no test, job or lane changes. No flag (chore). Owner
+  `spec-pyforge-steward`.

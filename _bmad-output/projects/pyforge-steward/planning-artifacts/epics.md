@@ -8155,6 +8155,22 @@ So that no job waits 13 s for its first health check.
 **And** the services, their images and their steady health checks are unchanged, and no test, job or lane changes
 **Status:** done
 
+### Story 117.32: CI environments carry the headless Chromium they launch, not the full one
+
+As the operator whose PR waits on each job's pixi setup,
+I want the CI environments to carry only the browser their tests launch,
+So that every job restores a smaller cache.
+
+**Type:** chore • **Effort:** S • **Deps:** 131.1 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change), with Story 131.1's browser set (spec-131-1) narrowed for these environments; no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `pixi.toml`, `pixi.lock`, `docs/governance/pin-policy.yaml`, `docs/governance/realization-register.yaml`, `docs/how-to/run-and-read-pr-preflight.md`, and what `steward estate reconcile` regenerates (`docs/reference/environments.md`, `docs/how-to/pixi-tasks.md`, `docs/map.yaml`, the Dream's pixi environment matrix)
+**Spec:** `planning-artifacts/specs/spec-117-32-ci-environments-carry-the-headless-chromium-they-launch-not-the-full-one.md`
+**Given** `pyforge-atlas`, `platform-ci-test`, `pyforge-herald` and `detectors` each carry Playwright's full Chromium (403 MB) beside its headless shell (273 MB), every Chromium launch in the code is headless, which runs the shell, and no detector launches a browser
+**When** the first three features keep the headless shell and ffmpeg and drop the full Chromium, `detectors` drops all three browser packages, and a `playwright-full-chromium` feature keeps the full Chromium in `pyforge-foundry-full`, `pyforge-foundry-full-stack` and `pyforge-container`
+**Then** the four environments shrink (2,198 to 1,753 MB, 2,530 to 2,046 MB, 1,537 to 1,124 MB and 1,087 to 407 MB), Chromium launches from the headless shell in the first three, and the lock change only removes records
+**And** the pin policy names the feature that holds each browser package, and no test, job or lane changes
+**Status:** done
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

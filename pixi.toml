@@ -429,8 +429,10 @@ platforms = ["linux-64", "osx-arm64-min"]
 [feature.platform-ci-test.dependencies]
 pytest-split = ">=0.11.0"         # steward Story 117.23 (spec-pyforge-steward CAP-175): --splits 3 --group K shards Platform CI's test job, as the station suites are sharded (Story 117.10)
 # steward Story 131.1: the browsers Playwright drives come from the lock (channel SelfExplainML, recipes/playwright-*),
-# not from a `playwright install` download at run time; the same set `playwright install chromium` fetches.
-playwright-chromium = ">=156.0.8078.4,<157"
+# not from a `playwright install` download at run time. Steward Story 117.32: the headless shell alone, as
+# `playwright install --only-shell chromium` fetches -- every launch here is headless, which runs the shell, never
+# the full Chromium (403 MB of every CI job's cache); the laptop and container environments add it back through the
+# `playwright-full-chromium` feature.
 playwright-chromium-headless-shell = ">=156.0.8078.4,<157"
 playwright-ffmpeg = ">=1013"
 playwright = ">=1.64.0,<1.65"     # steward Story 131.1: one driver estate-wide (it arrives transitively here; the pin keeps it on the line the playwright-* browser packages carry)
@@ -1037,11 +1039,9 @@ caveman-installer = ">=4.0.0"     # Claude Code output-token compression skill i
 # pip fallback list in the workflow mirrors this table and exists only for a runner
 # where pixi cannot be set up.
 [feature.detectors.dependencies]
-# steward Story 131.1: the browsers Playwright drives come from the lock (channel SelfExplainML, recipes/playwright-*),
-# not from a `playwright install` download at run time; the same set `playwright install chromium` fetches.
-playwright-chromium = ">=156.0.8078.4,<157"
-playwright-chromium-headless-shell = ">=156.0.8078.4,<157"
-playwright-ffmpeg = ">=1013"
+# steward Story 117.32: no browser. check-layout, the one detector that launched Chromium, retired with the Guildhall
+# console and now only refuses its blob's return (pyforge.doctor.sources.board.gather_check_layout); the browsers were
+# 680 MB of this environment's 1.1 GB.
 pyforge-doctor = { path = "src/shared/packages/pyforge-doctor" }  # -> built conda pkg; its run-deps bring python, jsonschema, pyyaml, mcp, pyforge-core
 pyforge-scribe = { path = "src/shared/packages/pyforge-scribe" }  # scribe Story 24.2 (spec-pyforge-scribe CAP-32): bmad_estate_check.py shells `python -m pyforge.scribe.cli catalog bmad-estate --check`; without the package here the detector reads could-not-run (2) in CI, never a false green -- the review caught it as a false drift (run 2026-09-29)
 "ruamel.yaml" = ">=0.19.1"        # failure_catalog_generator.py, the subprocess behind failure_catalog_check (missing -> UNKNOWN, run 33906009816)
@@ -1234,7 +1234,7 @@ pyforge-marshal = { features = ["interpreter", "pyforge-marshal"], no-default-fe
 # `pixi install -e pyforge-container`. Features are referenced BY NAME (not
 # copied pins), so this tracks each station's deps automatically; it does
 # not curate or split any feature -- it only composes what already exists.
-pyforge-container = { features = ["interpreter", "node", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe", "host-tools"], no-default-feature = true }
+pyforge-container = { features = ["interpreter", "node", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "playwright-full-chromium", "pyforge-scribe", "host-tools"], no-default-feature = true }
 # pyforge-foundry-full (steward Story 63.5, 2026-09-20, operator ruling): the UNION of every PyForge
 # feature -- the eight stations, pyforge-core, pyforge-testing-kit, the Guild default and its tasks.
 # Not a runtime env (that is pyforge-guild, the bare minimum every harness gets) and not the recipe
@@ -1249,13 +1249,13 @@ pyforge-container = { features = ["interpreter", "node", "pyforge-marshal", "pyf
 # conda-smithy capping py-rattler <0.26 / conda <26.3. grayskull's own unversioned dependency still
 # brings conda-recipe-manager in, resolved to 0.5.0 (the last with no click cap); current crm and
 # feedrattler stay in the `grayskull` env.
-pyforge-foundry-full = { features = ["interpreter", "node", "python", "spec-kit", "pyforge-guild", "guild-tasks", "pyforge-core", "pyforge-testing-kit", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe", "build", "grayskull", "host-tools"], no-default-feature = true }
+pyforge-foundry-full = { features = ["interpreter", "node", "python", "spec-kit", "pyforge-guild", "guild-tasks", "pyforge-core", "pyforge-testing-kit", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "playwright-full-chromium", "pyforge-scribe", "build", "grayskull", "host-tools"], no-default-feature = true }
 # pyforge-foundry-full-stack (Story 67.1): the SBOM plus the platform's local stack -- the
 # platform-limited pieces (`platform-dev`'s PostgreSQL 17 / pgvector / redis-server,
 # `platform-object-storage`) layered on top, the way `pyforge-scribe-pg` layers `scribe-pg`. It
 # solves on linux-64 only, the one platform `platform-object-storage` declares (macOS laptops get
 # no layer env yet); the SBOM itself keeps osx-arm64 and win-64.
-pyforge-foundry-full-stack = { features = ["interpreter", "node", "python", "spec-kit", "pyforge-guild", "guild-tasks", "pyforge-core", "pyforge-testing-kit", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe", "build", "grayskull", "platform-dev", "platform-object-storage", "host-tools"], no-default-feature = true }
+pyforge-foundry-full-stack = { features = ["interpreter", "node", "python", "spec-kit", "pyforge-guild", "guild-tasks", "pyforge-core", "pyforge-testing-kit", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "playwright-full-chromium", "pyforge-scribe", "build", "grayskull", "platform-dev", "platform-object-storage", "host-tools"], no-default-feature = true }
 # platform-dev (AD-16, Story 11.1): composes `platform-dev` (postgresql/
 # pgvector/redis-server/k8s CLIs) ONTO `python-agent-platform` (langflow/
 # dbgpt/django) so this ONE env is the full local Tier-1 dev baseline --
@@ -2873,8 +2873,10 @@ depends-on = ["pyforge-warden-build-conda", "pyforge-warden-build-dist"]
 # Spec: docs/specs/cfe-atlas-datapipeline-kedro-migration.md § 9 Story A1.
 [feature.pyforge-atlas.dependencies]
 # steward Story 131.1: the browsers Playwright drives come from the lock (channel SelfExplainML, recipes/playwright-*),
-# not from a `playwright install` download at run time; the same set `playwright install chromium` fetches.
-playwright-chromium = ">=156.0.8078.4,<157"
+# not from a `playwright install` download at run time. Steward Story 117.32: the headless shell alone, as
+# `playwright install --only-shell chromium` fetches -- every launch here is headless, which runs the shell, never
+# the full Chromium (403 MB of every CI job's cache); the laptop and container environments add it back through the
+# `playwright-full-chromium` feature.
 playwright-chromium-headless-shell = ">=156.0.8078.4,<157"
 playwright-ffmpeg = ">=1013"
 pyforge-atlas = { path = "src/shared/packages/pyforge-atlas" }  # -> built conda pkg
@@ -3221,10 +3223,18 @@ cmd = "python scripts/platform_object_storage.py down"
 description = "Report whether the selected backend's local object-storage server is listening on 127.0.0.1:9000. Read-only; always exits 0 (except Garage's clean Windows refusal)."
 cmd = "python scripts/platform_object_storage.py status"
 
+# steward Story 117.32: the full Chromium (steward Story 131.1's set, `playwright install chromium`) for the
+# environments a person drives a browser in -- headed debugging, codegen -- beside the headless shell the atlas and
+# herald features carry: the laptop SBOM (fnd:CAP-12) and the container image keep the set they had.
+[feature.playwright-full-chromium.dependencies]
+playwright-chromium = ">=156.0.8078.4,<157"
+
 [feature.pyforge-herald.dependencies]
 # steward Story 131.1: the browsers Playwright drives come from the lock (channel SelfExplainML, recipes/playwright-*),
-# not from a `playwright install` download at run time; the same set `playwright install chromium` fetches.
-playwright-chromium = ">=156.0.8078.4,<157"
+# not from a `playwright install` download at run time. Steward Story 117.32: the headless shell alone, as
+# `playwright install --only-shell chromium` fetches -- every launch here is headless, which runs the shell, never
+# the full Chromium (403 MB of every CI job's cache); the laptop and container environments add it back through the
+# `playwright-full-chromium` feature.
 playwright-chromium-headless-shell = ">=156.0.8078.4,<157"
 playwright-ffmpeg = ">=1013"
 uv = ">=0.13.0"                  # the SKF validators herald's skill meta-test runs call `uv` (steward Story 126.2)
