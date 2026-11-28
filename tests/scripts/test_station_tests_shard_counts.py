@@ -3,7 +3,9 @@
 Steward Story 117.41 (spec-pyforge-steward CAP-175): the ``changes`` job's filter step holds one table of every sharded
 suite's shard count, normal and crowded, sums the normal job count of the jobs the run will start, and writes each
 suite's group list as an output its job's matrix reads. These tests run that section of the step as the runner does,
-against stated outputs, and hold every sharded job to the output and to ``--splits ${{ strategy.job-total }}``.
+against stated outputs, and hold every sharded job to the output and to pytest-split options read from its matrix,
+passed only when the job has more than one shard: at ``--splits 1`` pytest-split 0.11.0's chunking can step past its
+one group (``IndexError``) once the summed durations reach the whole, as ``warden-test`` did on dispatch 46144823146.
 Story 117.42 is held here too: ``kedro-catalog-check`` runs once, on a live-half shard that exists in both modes.
 """
 
@@ -92,7 +94,8 @@ def test_every_sharded_job_reads_its_group_list_and_splits_by_its_matrix() -> No
     for suite, job_id in _sharded_jobs().items():
         assert declared[f"{suite}_groups"] == f"${{{{ steps.filter.outputs.{suite}_groups }}}}"
         addopts = workflow["jobs"][job_id]["env"]["PYTEST_ADDOPTS"]
-        assert "--splits ${{ strategy.job-total }} --group ${{ matrix.group }}" in addopts, job_id
+        assert addopts.startswith("${{ strategy.job-total > 1 && format('--splits {0} --group {1} --durations-path"), job_id
+        assert addopts.endswith("', strategy.job-total, matrix.group) || '' }}"), job_id
         assert suite in _start_outputs(), f"{suite} starts no job"
 
 

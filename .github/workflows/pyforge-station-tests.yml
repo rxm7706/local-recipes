@@ -790,7 +790,9 @@ jobs:
     # uploads its own coverage report, which the gate job merges with the others' (minutes are free on this public
     # repository; the wall is one shard). The local preflight runs the task unsharded.
     # Story 117.41 (spec-pyforge-steward CAP-175): the changes job's shard table sets the count (fewer on a crowded
-    # run), and --splits reads strategy.job-total, so the split always matches the matrix.
+    # run), and --splits reads strategy.job-total, so the split always matches the matrix. A one-shard job runs the
+    # suite with no pytest-split options: at --splits 1, pytest-split 0.11.0's chunking can step past its one group
+    # (IndexError) once the summed durations reach the whole, as warden-test did on dispatch 46144823146.
     strategy:
       fail-fast: false
       matrix:
@@ -800,7 +802,7 @@ jobs:
       # $CONDA_PREFIX/share/ms-playwright, where playwright-chromium* put the browser, and it never overrides a
       # value already set -- a job-level value would send Playwright and test_wasm_smoke.py's
       # _chromium_executable() to an empty directory.
-      PYTEST_ADDOPTS: --splits ${{ strategy.job-total }} --group ${{ matrix.group }} --durations-path tests/durations/pyforge-atlas.json
+      PYTEST_ADDOPTS: ${{ strategy.job-total > 1 && format('--splits {0} --group {1} --durations-path tests/durations/pyforge-atlas.json', strategy.job-total, matrix.group) || '' }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -876,13 +878,15 @@ jobs:
     # pytest runs takes its pytest-split group, and each shard uploads its own coverage report for atlas-gate to merge.
     # The local preflight runs the task unsharded.
     # Story 117.41 (spec-pyforge-steward CAP-175): the changes job's shard table sets the count (fewer on a crowded
-    # run), and --splits reads strategy.job-total, so the split always matches the matrix.
+    # run), and --splits reads strategy.job-total, so the split always matches the matrix. A one-shard job runs the
+    # suite with no pytest-split options: at --splits 1, pytest-split 0.11.0's chunking can step past its one group
+    # (IndexError) once the summed durations reach the whole, as warden-test did on dispatch 46144823146.
     strategy:
       fail-fast: false
       matrix:
         group: ${{ fromJSON(needs.changes.outputs.atlas_live_groups) }}
     env:
-      PYTEST_ADDOPTS: --splits ${{ strategy.job-total }} --group ${{ matrix.group }} --durations-path=tests/durations/pyforge-atlas-live.json
+      PYTEST_ADDOPTS: ${{ strategy.job-total > 1 && format('--splits {0} --group {1} --durations-path=tests/durations/pyforge-atlas-live.json', strategy.job-total, matrix.group) || '' }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -991,13 +995,15 @@ jobs:
     # uploads its own coverage report, which the gate job merges with the others' (minutes are free on this public
     # repository; the wall is one shard). The local preflight runs the task unsharded.
     # Story 117.41 (spec-pyforge-steward CAP-175): the changes job's shard table sets the count (fewer on a crowded
-    # run), and --splits reads strategy.job-total, so the split always matches the matrix.
+    # run), and --splits reads strategy.job-total, so the split always matches the matrix. A one-shard job runs the
+    # suite with no pytest-split options: at --splits 1, pytest-split 0.11.0's chunking can step past its one group
+    # (IndexError) once the summed durations reach the whole, as warden-test did on dispatch 46144823146.
     strategy:
       fail-fast: false
       matrix:
         group: ${{ fromJSON(needs.changes.outputs.doctor_live_groups) }}
     env:
-      PYTEST_ADDOPTS: --splits ${{ strategy.job-total }} --group ${{ matrix.group }} --durations-path tests/durations/pyforge-doctor-live.json
+      PYTEST_ADDOPTS: ${{ strategy.job-total > 1 && format('--splits {0} --group {1} --durations-path tests/durations/pyforge-doctor-live.json', strategy.job-total, matrix.group) || '' }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -1096,13 +1102,15 @@ jobs:
     # uploads its own coverage report, which the gate job merges with the others' (minutes are free on this public
     # repository; the wall is one shard). The local preflight runs the task unsharded.
     # Story 117.41 (spec-pyforge-steward CAP-175): the changes job's shard table sets the count (fewer on a crowded
-    # run), and --splits reads strategy.job-total, so the split always matches the matrix.
+    # run), and --splits reads strategy.job-total, so the split always matches the matrix. A one-shard job runs the
+    # suite with no pytest-split options: at --splits 1, pytest-split 0.11.0's chunking can step past its one group
+    # (IndexError) once the summed durations reach the whole, as warden-test did on dispatch 46144823146.
     strategy:
       fail-fast: false
       matrix:
         group: ${{ fromJSON(needs.changes.outputs.herald_groups) }}
     env:
-      PYTEST_ADDOPTS: --splits ${{ strategy.job-total }} --group ${{ matrix.group }} --durations-path tests/durations/pyforge-herald.json
+      PYTEST_ADDOPTS: ${{ strategy.job-total > 1 && format('--splits {0} --group {1} --durations-path tests/durations/pyforge-herald.json', strategy.job-total, matrix.group) || '' }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -1174,13 +1182,15 @@ jobs:
     # heaviest one about 54 s of tests for four workers (66 to 72 s with start-up); four leave each under 40 s, once herald
     # Story 63.1 keeps a self-building test out of test_site_shell.py's `shell` group.
     # Story 117.41 (spec-pyforge-steward CAP-175): the changes job's shard table sets the count (fewer on a crowded
-    # run), and --splits reads strategy.job-total, so the split always matches the matrix.
+    # run), and --splits reads strategy.job-total, so the split always matches the matrix. A one-shard job runs the
+    # suite with no pytest-split options: at --splits 1, pytest-split 0.11.0's chunking can step past its one group
+    # (IndexError) once the summed durations reach the whole, as warden-test did on dispatch 46144823146.
     strategy:
       fail-fast: false
       matrix:
         group: ${{ fromJSON(needs.changes.outputs.herald_live_groups) }}
     env:
-      PYTEST_ADDOPTS: --splits ${{ strategy.job-total }} --group ${{ matrix.group }} --durations-path tests/durations/pyforge-herald.json
+      PYTEST_ADDOPTS: ${{ strategy.job-total > 1 && format('--splits {0} --group {1} --durations-path tests/durations/pyforge-herald.json', strategy.job-total, matrix.group) || '' }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -1262,13 +1272,15 @@ jobs:
     # uploads its own coverage report, which the gate job merges with the others' (minutes are free on this public
     # repository; the wall is one shard). The local preflight runs the task unsharded.
     # Story 117.41 (spec-pyforge-steward CAP-175): the changes job's shard table sets the count (fewer on a crowded
-    # run), and --splits reads strategy.job-total, so the split always matches the matrix.
+    # run), and --splits reads strategy.job-total, so the split always matches the matrix. A one-shard job runs the
+    # suite with no pytest-split options: at --splits 1, pytest-split 0.11.0's chunking can step past its one group
+    # (IndexError) once the summed durations reach the whole, as warden-test did on dispatch 46144823146.
     strategy:
       fail-fast: false
       matrix:
         group: ${{ fromJSON(needs.changes.outputs.marshal_groups) }}
     env:
-      PYTEST_ADDOPTS: --splits ${{ strategy.job-total }} --group ${{ matrix.group }} --durations-path tests/durations/pyforge-marshal.json
+      PYTEST_ADDOPTS: ${{ strategy.job-total > 1 && format('--splits {0} --group {1} --durations-path tests/durations/pyforge-marshal.json', strategy.job-total, matrix.group) || '' }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -1308,13 +1320,15 @@ jobs:
     # Steward Story 117.21 (spec-pyforge-steward CAP-175): 2 shards, as the steward live half has; each uploads its own
     # coverage report and the marshal gate merges them. The local preflight runs the task unsharded.
     # Story 117.41 (spec-pyforge-steward CAP-175): the changes job's shard table sets the count (fewer on a crowded
-    # run), and --splits reads strategy.job-total, so the split always matches the matrix.
+    # run), and --splits reads strategy.job-total, so the split always matches the matrix. A one-shard job runs the
+    # suite with no pytest-split options: at --splits 1, pytest-split 0.11.0's chunking can step past its one group
+    # (IndexError) once the summed durations reach the whole, as warden-test did on dispatch 46144823146.
     strategy:
       fail-fast: false
       matrix:
         group: ${{ fromJSON(needs.changes.outputs.marshal_live_groups) }}
     env:
-      PYTEST_ADDOPTS: --splits ${{ strategy.job-total }} --group ${{ matrix.group }} --durations-path tests/durations/pyforge-marshal-live.json
+      PYTEST_ADDOPTS: ${{ strategy.job-total > 1 && format('--splits {0} --group {1} --durations-path tests/durations/pyforge-marshal-live.json', strategy.job-total, matrix.group) || '' }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -1622,13 +1636,15 @@ jobs:
     # uploads its own coverage report, which the gate job merges with the others' (minutes are free on this public
     # repository; the wall is one shard). The local preflight runs the task unsharded.
     # Story 117.41 (spec-pyforge-steward CAP-175): the changes job's shard table sets the count (fewer on a crowded
-    # run), and --splits reads strategy.job-total, so the split always matches the matrix.
+    # run), and --splits reads strategy.job-total, so the split always matches the matrix. A one-shard job runs the
+    # suite with no pytest-split options: at --splits 1, pytest-split 0.11.0's chunking can step past its one group
+    # (IndexError) once the summed durations reach the whole, as warden-test did on dispatch 46144823146.
     strategy:
       fail-fast: false
       matrix:
         group: ${{ fromJSON(needs.changes.outputs.steward_groups) }}
     env:
-      PYTEST_ADDOPTS: --splits ${{ strategy.job-total }} --group ${{ matrix.group }} --durations-path tests/durations/pyforge-steward.json
+      PYTEST_ADDOPTS: ${{ strategy.job-total > 1 && format('--splits {0} --group {1} --durations-path tests/durations/pyforge-steward.json', strategy.job-total, matrix.group) || '' }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -1664,13 +1680,15 @@ jobs:
     # uploads its own coverage report, which the gate job merges with the others' (minutes are free on this public
     # repository; the wall is one shard). The local preflight runs the task unsharded.
     # Story 117.41 (spec-pyforge-steward CAP-175): the changes job's shard table sets the count (fewer on a crowded
-    # run), and --splits reads strategy.job-total, so the split always matches the matrix.
+    # run), and --splits reads strategy.job-total, so the split always matches the matrix. A one-shard job runs the
+    # suite with no pytest-split options: at --splits 1, pytest-split 0.11.0's chunking can step past its one group
+    # (IndexError) once the summed durations reach the whole, as warden-test did on dispatch 46144823146.
     strategy:
       fail-fast: false
       matrix:
         group: ${{ fromJSON(needs.changes.outputs.steward_live_groups) }}
     env:
-      PYTEST_ADDOPTS: --splits ${{ strategy.job-total }} --group ${{ matrix.group }} --durations-path tests/durations/pyforge-steward-live.json
+      PYTEST_ADDOPTS: ${{ strategy.job-total > 1 && format('--splits {0} --group {1} --durations-path tests/durations/pyforge-steward-live.json', strategy.job-total, matrix.group) || '' }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -1743,13 +1761,15 @@ jobs:
     # 92 s, 55 to 65 s of it the suite. Each shard runs its pytest-split group on top of xdist and uploads its own
     # coverage report, which warden-gate merges with the others'. The local preflight runs the task unsharded.
     # Story 117.41 (spec-pyforge-steward CAP-175): the changes job's shard table sets the count (fewer on a crowded
-    # run), and --splits reads strategy.job-total, so the split always matches the matrix.
+    # run), and --splits reads strategy.job-total, so the split always matches the matrix. A one-shard job runs the
+    # suite with no pytest-split options: at --splits 1, pytest-split 0.11.0's chunking can step past its one group
+    # (IndexError) once the summed durations reach the whole, as warden-test did on dispatch 46144823146.
     strategy:
       fail-fast: false
       matrix:
         group: ${{ fromJSON(needs.changes.outputs.warden_groups) }}
     env:
-      PYTEST_ADDOPTS: --splits ${{ strategy.job-total }} --group ${{ matrix.group }} --durations-path tests/durations/pyforge-warden.json
+      PYTEST_ADDOPTS: ${{ strategy.job-total > 1 && format('--splits {0} --group {1} --durations-path tests/durations/pyforge-warden.json', strategy.job-total, matrix.group) || '' }}
     steps:
       - uses: actions/checkout@v7
         with:

@@ -28,7 +28,7 @@ deferred: []
 
 **Problem:** the account runs at most 40 GitHub Actions jobs at once. A pull request that runs every station (15 of the last 40 station-tests runs on pull requests) starts 37 station test jobs beside about 11 from the other workflows (Platform CI 4, Detectors 3, and four single jobs). The jobs past the limit wait for a slot: the longest wait in each of those 15 runs was 3 to 109 s, median 39 s. On PR #2446's last commit, 40 jobs ran at the peak and the station-tests run took 178 s where its longest job took 105 s. A pull request that runs one or two stations starts 7 to 21 jobs and never waits.
 
-**Approach:** the `changes` job already decides which jobs run. Its filter step now also holds one table of every sharded suite's shard count, normal and crowded. It sums the normal job count of every job the run will start (on a dispatch, every job), and when that sum is over 29 (40 less the other workflows' 11) it uses the crowded counts. It writes each sharded suite's group list as an output (`<suite>_groups`, a JSON list), each sharded job's matrix reads it (`group: ${{ fromJSON(needs.changes.outputs.<suite>_groups) }}`), and `--splits` reads `strategy.job-total`, so the split always matches the matrix. Crowded, eight suites run one shard fewer:
+**Approach:** the `changes` job already decides which jobs run. Its filter step now also holds one table of every sharded suite's shard count, normal and crowded. It sums the normal job count of every job the run will start (on a dispatch, every job), and when that sum is over 29 (40 less the other workflows' 11) it uses the crowded counts. It writes each sharded suite's group list as an output (`<suite>_groups`, a JSON list), each sharded job's matrix reads it (`group: ${{ fromJSON(needs.changes.outputs.<suite>_groups) }}`), and `--splits` reads `strategy.job-total`, so the split always matches the matrix. A one-shard job passes no pytest-split options: at `--splits 1`, pytest-split 0.11.0's `duration_based_chunks` steps past its one group (`IndexError`) once the summed durations reach the whole and a zero-second test follows, as `warden-test` did on dispatch 46144823146. Crowded, eight suites run one shard fewer:
 
 | Job | Normal | Crowded | Estimated crowded job (s) |
 |---|---|---|---|
@@ -55,7 +55,7 @@ Ledger key: `117-41-a-crowded-station-tests-run-gives-eight-suites-one-shard-few
 ## Boundaries & Constraints
 
 **Always:**
-- Every test still runs exactly once: `--splits` equals the matrix's job count in every run.
+- Every test still runs exactly once: `--splits` equals the matrix's job count in every multi-shard run, and a one-shard job runs the whole suite.
 - A run of 29 or fewer test jobs keeps today's shard counts.
 - The table is the one place a sharded suite's shard counts are declared.
 
