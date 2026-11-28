@@ -8299,6 +8299,22 @@ So that each build stops spending 136 to 163 s on space it does not need.
 **And** both builds pass on a dispatched run
 **Status:** done
 
+### Story 117.40: Platform CI's opt-in jobs run on a dispatch only when its inputs ask
+
+As the operator who dispatches Platform CI on a branch to prove a change,
+I want the opt-in portability and air-gap jobs, and the image build they share, to honour their dispatch inputs,
+So that a bare dispatch is red only for a real failure.
+
+**Type:** fix • **Effort:** S • **Deps:** 117.39 • **FR/AD:** spec-pyforge-steward CAP-166 and CAP-175 / FR-49 (realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: CI wiring)
+**Surface:** `docs/governance/ci-surfaces.yaml` (six rows gain `dispatch: pause-only`), `.github/workflows/platform-ci.yml` (the four jobs' rendered conditions), `tests/scripts/test_ci_surface_gates.py`
+**Spec:** `planning-artifacts/specs/spec-117-40-platform-ci-s-opt-in-jobs-run-on-a-dispatch-only-when-its-inputs-ask.md`
+**Given** a bare dispatch of Platform CI runs `gke-portability-smoke` and `ocp-portability-smoke` (which fail at `helm install` with no image digest), `air-gap-parity` and `build-platform-image`, because the rendered fragment `dispatch || (pause switches && inner)` lets every dispatch past the inner condition that reads their inputs
+**When** their six registry rows are `dispatch: pause-only` (Story 102.3's shape) and `ci_surface_gates.py --render` re-renders the four conditions as `(dispatch || pause switches) && inner`
+**Then** a dispatch runs each job only when its input asks, and a push or pull request evaluates each condition exactly as before
+**And** `ci_surface_gates.py --check` exits 0, and `test_the_live_pages_deploy_row_renders_pause_only` pins the exact set of pause-only jobs and each opt-in job's input in its condition
+**Status:** done
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

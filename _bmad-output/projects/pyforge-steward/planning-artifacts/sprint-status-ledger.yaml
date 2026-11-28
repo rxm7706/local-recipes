@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 856
+# stories: 857
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -112,6 +112,7 @@ development_status:
   117-38-warden-s-package-half-runs-as-two-shards: done
   117-39-the-image-builds-delete-the-runner-s-toolchains-only-when-the-disk-is-short: done
   117-4-each-station-suite-runs-as-its-package-local-and-live-tree-halves: done
+  117-40-platform-ci-s-opt-in-jobs-run-on-a-dispatch-only-when-its-inputs-ask: done
   117-5-preflight-budget-names-every-lane-over-its-journal-derived-budget: done
   117-6-image-builds-leave-the-pull-request-path-for-main-and-the-nightly-canary: done
   117-7-the-ci-workflows-run-what-the-diff-touches-with-pinned-tools-and-parallel-detectors: done

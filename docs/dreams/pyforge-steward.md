@@ -8811,3 +8811,15 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   for PRs over the 40-job cap only); a smaller lint environment (mypy needs the full one, and the job is rarely a PR's
   longest). **Constraints:** every test still runs, once; no assertion is weakened; outputs stay byte-identical where
   a script changes. No flag (chore). Owner `spec-pyforge-steward`.
+- **2026-11-27 (a bare dispatch of Platform CI runs its opt-in jobs) — Found and ruled:** dispatching `Platform CI`
+  with no inputs, as the runner-times probe and PR #2446's proof runs did, ran `gke-portability-smoke` and
+  `ocp-portability-smoke`, which failed at `helm install` ("sidecar.image.digest or sidecar.image.tag is required"),
+  and `air-gap-parity` with the image build they share. Each job's own condition reads its dispatch input (default
+  off), but the rendered pause fragment, `dispatch || (pause switches && inner)`, lets every dispatch past it. The
+  registry already has the other shape for this: `dispatch: pause-only` (Story 102.3, `pages.deploy`) renders
+  `(dispatch || pause switches) && inner`. **Ruled** (operator, 2026-11-27: "Yes. Here", on the recommendation to fix
+  it in PR #2446). **For steward:** this entry binds `spec-pyforge-steward` CAP-166 and CAP-175 (realized, no text
+  change) and decomposes as Story 117.40 on Epic 117: the six registry rows of the three opt-in jobs and of
+  `build-platform-image` are `dispatch: pause-only`, and the four jobs' conditions are re-rendered. **Constraints:** a
+  push or pull request evaluates every condition exactly as before; a dispatch still bypasses the pause switches; the
+  `jobs` choice input is left as it is. No flag (fix). Owner `spec-pyforge-steward`.

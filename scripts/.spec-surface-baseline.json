@@ -4120,7 +4120,7 @@
    "docs/foundry/upstream-drafts/staged-recipes-lfx-bundles-superseded.md": "13f01aad093a1d8e3ae282785f679225289cac51",
    "docs/foundry/upstream-todos.yaml": "5f9d1b0af2b84639baae7c6d1810d4603ee976d7",
    "docs/governance/ci-surfaces.schema.json": "f5739b053157098b48ebf81527e7fd4e65383c93",
-   "docs/governance/ci-surfaces.yaml": "4c168ba53bae34a83380fb0c07b2afc95a27da1e",
+   "docs/governance/ci-surfaces.yaml": "6f1d458c3d74920d2eb8c2599fce223d7c6906d6",
    "docs/governance/pin-policy.schema.json": "83074dd072cd25ed665ec7b7e73178414a207186",
    "docs/governance/pin-policy.yaml": "0a5448dbad17491b89eac879f68ce4b8e940bd33",
    "docs/governance/realization-register.schema.json": "24d9758de8984c2ce6bc39da1d71f3d449f25be1",
@@ -4534,7 +4534,7 @@
    "tests/scripts/fixtures/pin_policy/pin-policy.yaml": "0a1e842e817fb4c853531b0b3932f77bed9d14c8",
    "tests/scripts/fixtures/pin_policy/pixi.toml.after": "de2f979701008c09e465977e94faab891b85398c",
    "tests/scripts/fixtures/pin_policy/pixi.toml.base": "95d98b47795403125f52f41ab46fd46853c471c1",
-   "tests/scripts/test_ci_surface_gates.py": "bf8e9b0081a19dc2c4688f25eee16f42562b088f",
+   "tests/scripts/test_ci_surface_gates.py": "3b015aedeeafa28668e721fb266fed137fbe97d3",
    "tests/scripts/test_pin_policy_check.py": "ecac6794f2474ef883f539428db581d09847af88",
    "tests/scripts/test_pin_policy_restore.py": "4f378b147848fecb24dbd5d5686b1273a1f0f530",
    "tests/scripts/test_realization_register_check.py": "f3ce0fb510983068b6510aafb5cef0cfe1deedb6",
@@ -4542,7 +4542,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "70a74e014ac30ff3104d4d9f20bfab17bf11ec7c"
+  "memlog": "53257ab0e56e063fce35d0dc1d7ac39a6f7b1f6f"
  },
  "pyforge-steward/spec-pyforge-unifying-strategy": {
   "files": {
