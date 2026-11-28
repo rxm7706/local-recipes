@@ -8315,6 +8315,70 @@ So that a bare dispatch is red only for a real failure.
 **And** `ci_surface_gates.py --check` exits 0, and `test_the_live_pages_deploy_row_renders_pause_only` pins the exact set of pause-only jobs and each opt-in job's input in its condition
 **Status:** done
 
+### Story 117.41: A crowded station-tests run gives eight suites one shard fewer
+
+As the operator whose pull request runs every station,
+I want the station tests to start no more jobs than fit beside the other workflows' under the account's 40-job limit,
+So that no shard waits up to a minute and a half for a slot.
+
+**Type:** chore • **Effort:** M • **Deps:** 117.35 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `.github/workflows/pyforge-station-tests.yml` (the `changes` job's filter step and outputs; the ten sharded jobs' matrices and `--splits`), `docs/reference/github-workflows.md` (regenerated), `tests/scripts/test_station_tests_shard_counts.py` (new), `tests/meta/scripts-lib-test.txt`
+**Spec:** `planning-artifacts/specs/spec-117-41-a-crowded-station-tests-run-gives-eight-suites-one-shard-fewer.md`
+**Given** a pull request that runs every station starts 37 station test jobs beside about 11 from the other workflows, the account runs at most 40 at once, and the longest wait for a slot in each of the last 15 such runs was 3 to 109 s
+**When** the `changes` job declares each sharded suite's shard count, normal and crowded, in one table, sums the normal counts of the jobs the run will start, and emits each suite's group list as an output that its job's matrix reads (`fromJSON`), with `--splits` taken from `strategy.job-total`
+**Then** a run that would start more than 29 test jobs starts 29: `doctor-live-test`, `herald-test`, `marshal-live-test`, `steward-test` and `warden-test` run as one job each, and `herald-live-test`, `marshal-test` and `steward-live-test` as three, each estimated at 103 s or less from the runner's step times
+**And** a run of 29 or fewer keeps today's shard counts, every test still runs once, and the local preflight's CI selection still evaluates every job
+**Status:** in-progress
+
+### Story 117.42: The kedro catalog check runs once, on atlas's shorter live shard
+
+As the operator whose pull request waits on `atlas-test`, the longest station job,
+I want `kedro-catalog-check` to run once rather than in each of its three shards,
+So that each shard is 7 s shorter.
+
+**Type:** chore • **Effort:** S • **Deps:** 117.41 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `.github/workflows/pyforge-station-tests.yml` (`atlas-test`, `atlas-live-test`), `docs/reference/github-workflows.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-117-42-the-kedro-catalog-check-runs-once-on-atlas-s-shorter-live-shard.md`
+**Given** `atlas-test` runs 99 to 105 s on each of three shards and 7 s of each is `kedro-catalog-check`, and atlas's live half fires on every path its package half fires on
+**When** the check moves to `atlas-live-test`'s second shard (76 s against 87 s on PR #2446), under `if: matrix.group == '2'`
+**Then** the check runs once per run, on a shard with room for it, and `atlas-test`'s shards end 7 s sooner
+**And** the local preflight still selects the `kedro-catalog-check` lane whenever atlas's package half fires
+**Status:** in-progress
+
+### Story 117.43: Platform CI's test job restores the warden environment from the pixi cache
+
+As the operator whose Platform CI run waits on its test job 2,
+I want the warden environment the golden-path tests run to be installed with the test environment, from the pixi cache,
+So that no worker waits on a fresh `pixi install` in the middle of the suite.
+
+**Type:** chore • **Effort:** S • **Deps:** none • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `.github/actions/platform-test-setup/action.yml` (two inputs, defaults unchanged), `.github/workflows/platform-ci.yml` (`test`), `docs/reference/github-workflows.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-117-43-platform-ci-s-test-job-restores-the-warden-environment-from-the-pixi-cache.md`
+**Given** the shard that runs the golden-path tests installs `pyforge-warden` at test time (the `pyforge_warden_env` fixture, under a lock), and on PR #2446 each of its four workers waited 13 to 25 s on it, so that shard ran 129 s against 109 s
+**When** the test job's setup installs `platform-ci-test` and `pyforge-warden` together, under a cache key of its own, and the `checks` job keeps its own setup unchanged
+**Then** the fixture's `pixi install` finds the environment installed and returns at once
+**And** the fixture stays, so a run without the cached environment still installs it safely
+**Status:** in-progress
+
+### Story 117.44: The docker builds whose images are never pushed keep their layers uncompressed
+
+As the operator waiting for `main` to go green after a merge,
+I want the docker image builds whose images are only run on the runner to store their layers uncompressed,
+So that docker stops spending minutes compressing layers no registry will receive.
+
+**Type:** chore • **Effort:** S • **Deps:** 117.39 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); works with CAP-131; no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `scripts/guild_image_ci.sh` (the docker leg), `.github/workflows/platform-ci.yml` (`container` and `container-dbgpt`, the docker leg of each), `docs/reference/github-workflows.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-117-44-the-docker-builds-whose-images-are-never-pushed-keep-their-layers-uncompressed.md`
+**Given** the runner's docker stores images in containerd and compresses every layer on export: 167 s of the guild image's 345 s build, 45 to 49 s of each platform image build, and a local 400 MB layer exported in 7.9 s compressed against 2.3 s uncompressed
+**When** those builds write the image with `--output type=image,name=<tag>,compression=uncompressed`
+**Then** each image is tagged and run exactly as before, and its export takes a fraction of the time
+**And** podman's legs, the golden-path promotion's builds (whose image IDs it records and may push) and `build-platform-image` are unchanged
+**Status:** in-progress
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

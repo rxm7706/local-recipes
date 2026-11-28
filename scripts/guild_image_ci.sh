@@ -42,7 +42,14 @@ if [ "$ENGINE" = "podman" ]; then
 fi
 
 echo "guild_image_ci: building root Containerfile with ${ENGINE} -> ${TAG}"
-"$ENGINE" build -f Containerfile -t "$TAG" .
+if [ "$ENGINE" = "docker" ]; then
+  # Steward Story 117.44 (spec-pyforge-steward CAP-175): docker's containerd image store compresses every layer on
+  # export, 167 s of this 345 s build on the 2026-11-28 push to main. The image is only run by the gates below, never
+  # pushed, so docker stores it uncompressed under the same name. Podman stores layers uncompressed already.
+  docker build -f Containerfile --output "type=image,name=${TAG},compression=uncompressed" .
+else
+  "$ENGINE" build -f Containerfile -t "$TAG" .
+fi
 
 echo "guild_image_ci: post-build secrets-scan"
 "$ENGINE" run --rm --entrypoint /entrypoint.sh "$TAG" \
