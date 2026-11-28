@@ -8275,10 +8275,10 @@ So that its one 88 to 92 s job becomes two shorter ones.
 
 **Type:** chore • **Effort:** S • **Deps:** 117.35 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); no AD moves
 **Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
-**Surface:** `.github/workflows/pyforge-station-tests.yml` (`warden-test`, `warden-gate`), `tests/durations/pyforge-warden.json`
+**Surface:** `.github/workflows/pyforge-station-tests.yml` (`warden-test`, `warden-gate`), `tests/durations/pyforge-warden.json`, `pixi.toml` (`pyforge-warden-coverage-gate` reads `warden-unit*.json`, as the other sharded suites' gates do)
 **Spec:** `planning-artifacts/specs/spec-117-38-warden-s-package-half-runs-as-two-shards.md`
 **Given** `warden-test` is one job of 88 to 92 s, 55 to 65 s of it the suite, and every other long station suite runs in shards (Story 117.10)
-**When** it runs as two shards by `tests/durations/pyforge-warden.json`, written from the runner's times, each shard uploading its own coverage report and `warden-gate` reading `warden-unit*.json`
+**When** it runs as two shards by `tests/durations/pyforge-warden.json`, written from the runner's times, each shard uploading its own coverage report, and `warden-gate` and its local twin `pyforge-warden-coverage-gate` reading `warden-unit*.json`
 **Then** scored by the runner's times each shard holds about 54 s of the suite's 108 summed seconds, and the gate merges both reports with the live half's
 **And** the local preflight still runs the task unsharded
 **Status:** done

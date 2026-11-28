@@ -12,6 +12,7 @@ declared_low_risk: false
 surface:
   - '.github/workflows/pyforge-station-tests.yml'
   - 'tests/durations/pyforge-warden.json'
+  - 'pixi.toml'
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - docs/dreams/pyforge-steward.md
@@ -29,7 +30,7 @@ deferred: []
 - a `group: [1, 2]` matrix, with `PYTEST_ADDOPTS: --splits 2 --group ${{ matrix.group }} --durations-path tests/durations/pyforge-warden.json`;
 - the file written from the runner's times (Story 117.35);
 - each shard renames and uploads its coverage report as `warden-unit-<group>`;
-- `warden-gate` reads `warden-unit*.json`.
+- `warden-gate` reads `warden-unit*.json`, and so does its local twin, `pixi.toml`'s `pyforge-warden-coverage-gate`. The preflight matches the gate job's command to that task, and a command that no longer matches selects the lane on every branch (the steward and herald preflight-selection tests failed until it matched).
 
 Ledger key: `117-38-warden-s-package-half-runs-as-two-shards`.
 
