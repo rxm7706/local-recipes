@@ -15,6 +15,7 @@ if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
 
 from _ci_surface_gates_render import completeness_findings
+from _ci_surface_gates_render import load_yaml
 from _ci_surface_gates_render import render_all as render_all
 
 REGISTRY_REL = Path("docs/governance/ci-surfaces.yaml")
@@ -40,7 +41,7 @@ class VarUse:
 
 
 def load_registry(path: Path) -> dict[str, Any]:
-    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    data = load_yaml(path)
     if not isinstance(data, dict):
         raise ValueError(f"{path}: registry root must be a mapping")
     return data
@@ -108,7 +109,7 @@ def collect_var_uses(root: Path, workflows_dir: Path | None = None) -> list[VarU
     for path in sorted(wf_dir.glob("*.yml")):
         rel = path.relative_to(root).as_posix()
         try:
-            doc = yaml.safe_load(path.read_text(encoding="utf-8"))
+            doc = load_yaml(path)
         except (OSError, yaml.YAMLError) as exc:
             raise OSError(f"cannot read workflow {rel}: {exc}") from exc
         if not isinstance(doc, dict):
@@ -170,7 +171,7 @@ def _workflow_jobs(root: Path, workflow_rel: str, workflows_dir: Path | None) ->
         path = wf_dir / Path(workflow_rel).name
     if not path.is_file():
         return set()
-    doc = yaml.safe_load(path.read_text(encoding="utf-8"))
+    doc = load_yaml(path)
     jobs = doc.get("jobs") if isinstance(doc, dict) else None
     if not isinstance(jobs, dict):
         return set()
@@ -211,7 +212,7 @@ def _if_text_for_row(
         path = wf_dir / Path(wf).name
     if not path.is_file():
         return ""
-    doc = yaml.safe_load(path.read_text(encoding="utf-8"))
+    doc = load_yaml(path)
     jobs = doc.get("jobs") if isinstance(doc, dict) else None
     if not isinstance(jobs, dict) or not job:
         return ""

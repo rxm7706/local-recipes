@@ -476,8 +476,16 @@ jobs:
       # ("write .../site-packages/...: no space left on device", 2026-09-04).
       # Drop the preinstalled toolchains nobody here uses (~25 GB).
       - name: Free runner disk for the image build
+        # Steward Story 117.39 (spec-pyforge-steward CAP-175): the runner's root disk now has about 87 GB free, and
+        # deleting the toolchains took 136 to 163 s. They are deleted only when less than 50 GB is free, which is
+        # more than this step ever left on the old ~14 GB runners (about 39 to 45 GB after deleting).
         run: |
           df -h / | tail -1
+          available_gb=$(df --output=avail -BG / | tail -1 | tr -dc '0-9')
+          if [ "$available_gb" -ge 50 ]; then
+            echo "${available_gb} GB free: nothing to delete"
+            exit 0
+          fi
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
             /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/lib/jvm \
             /usr/local/.ghcup /usr/share/swift || true

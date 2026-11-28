@@ -1671,6 +1671,15 @@ jobs:
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Story 117.38 (spec-pyforge-steward CAP-175): 2 shards, as steward-test runs (Story 117.10); the one job took 88 to
+    # 92 s, 55 to 65 s of it the suite. Each shard runs its pytest-split group on top of xdist and uploads its own
+    # coverage report, which warden-gate merges with the others'. The local preflight runs the task unsharded.
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [1, 2]
+    env:
+      PYTEST_ADDOPTS: --splits 2 --group ${{ matrix.group }} --durations-path tests/durations/pyforge-warden.json
     steps:
       - uses: actions/checkout@v7
         with:
@@ -1684,10 +1693,12 @@ jobs:
       - run: pixi run --frozen -e pyforge-warden pyforge-warden-test
       # Story 124.2: the package half's report, merged with the live-tree half's by the warden-gate job (Story
       # 117.2's gate, which read this job's report in place, moved there with the split).
+      - name: Name this shard's coverage report
+        run: mv .steward/coverage/warden-unit.json .steward/coverage/warden-unit-${{ matrix.group }}.json
       - uses: actions/upload-artifact@v7
         with:
-          name: coverage-warden-unit
-          path: .steward/coverage/warden-unit.json
+          name: coverage-warden-unit-${{ matrix.group }}
+          path: .steward/coverage/warden-unit-${{ matrix.group }}.json
           if-no-files-found: error
           retention-days: 3
 
@@ -1760,7 +1771,7 @@ jobs:
           else
             BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
           fi
-          python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report .steward/coverage/warden-unit.json --report ".steward/coverage/warden-live*.json"
+          python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report ".steward/coverage/warden-unit*.json" --report ".steward/coverage/warden-live*.json"
 
   # Story 48.10: CAP-5 needs a build time — the root Containerfile was
   # referenced by no workflow until this job. Mirrors platform-ci.yml's
@@ -1792,8 +1803,16 @@ jobs:
           id -u
 
       - name: Free runner disk for the guild image build
+        # Steward Story 117.39 (spec-pyforge-steward CAP-175): the runner's root disk now has about 87 GB free, and
+        # deleting the toolchains took 136 to 163 s. They are deleted only when less than 50 GB is free, which is
+        # more than this step ever left on the old ~14 GB runners (about 39 to 45 GB after deleting).
         run: |
           df -h / | tail -1
+          available_gb=$(df --output=avail -BG / | tail -1 | tr -dc '0-9')
+          if [ "$available_gb" -ge 50 ]; then
+            echo "${available_gb} GB free: nothing to delete"
+            exit 0
+          fi
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
             /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/lib/jvm \
             /usr/local/.ghcup /usr/share/swift || true

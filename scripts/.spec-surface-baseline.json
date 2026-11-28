@@ -4153,7 +4153,7 @@
    "recipes/bmad-suite/recipe.yaml": "cd9224210b991d1ff460ef2b0a5653be2e82a297",
    "recipes/bmad-suite/suite-members.yaml": "449192ac291d8e17eb097e6e9c9e6a257de482ca",
    "recipes/mybmad-dashboard/wrapper/src/mybmad_dashboard/launcher.py": "cf2a4e6c9cb5225d70994430d2677b13d99c62a4",
-   "scripts/_ci_surface_gates_lib.py": "f52436471e8db723a5a05e8f11f7af2b14e5aaf8",
+   "scripts/_ci_surface_gates_lib.py": "48394824e1ad9230dfc54f6936ce781cb5128679",
    "scripts/_protected_refs_ruleset_lib.py": "3fd77b4909aa8a1ccfba4c02f40aa4387459eae2",
    "scripts/build-pixi-mirror.py": "19b7af78744a66e0314975036187265dc750bb1f",
    "scripts/ci_surface_gates.py": "4399015a580697ad0b515e1761b169af627d07c2",
@@ -4542,7 +4542,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "50597f369e0b69009c542bad685362f32b664c2d"
+  "memlog": "53b7e807f950231abd18a94240c10221fbab25d8"
  },
  "pyforge-steward/spec-pyforge-unifying-strategy": {
   "files": {

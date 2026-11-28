@@ -1308,10 +1308,16 @@ def test_a_doctor_that_cannot_be_imported_at_all_is_a_named_unavailable_error_ne
 # --- the live tree ---------------------------------------------------------------------------
 
 
-@pytest.mark.skipif(git is None, reason="git is not installed")
-def test_the_live_tree_builds_eight_reports_and_exits_0(tmp_path: Path):
-    out = tmp_path / "out"
+@pytest.fixture(scope="module")
+def live_run(tmp_path_factory: pytest.TempPathFactory) -> tuple[subprocess.CompletedProcess[str], Path]:
+    """One CLI run over the live tree, and the directory it wrote the eight reports into.
 
+    Steward Story 117.16 built the reports once for the tests that only read them; the CLI test still ran its own,
+    since the run itself is its subject. Story 117.36: that test reads this run, the CLI process it always started,
+    so the live tree is read once a module, not twice (7.7 s a run). The tests share an xdist group, so one worker
+    runs it.
+    """
+    out = tmp_path_factory.mktemp("live-flag-inventory") / "out"
     proc = subprocess.run(
         [sys.executable, str(INVENTORY), "--out-dir", str(out)],
         capture_output=True,
@@ -1319,6 +1325,13 @@ def test_the_live_tree_builds_eight_reports_and_exits_0(tmp_path: Path):
         check=False,
         cwd=REPO_ROOT,
     )
+    return proc, out
+
+
+@pytest.mark.skipif(git is None, reason="git is not installed")
+@pytest.mark.xdist_group("flag-inventory-live-reports")
+def test_the_live_tree_builds_eight_reports_and_exits_0(live_run: tuple[subprocess.CompletedProcess[str], Path]):
+    proc, out = live_run
 
     stations = json.loads((REPO_ROOT / "docs/governance/guild-roster.json").read_text(encoding="utf-8"))["stations"]
     assert proc.returncode == 0, proc.stderr
@@ -1327,12 +1340,10 @@ def test_the_live_tree_builds_eight_reports_and_exits_0(tmp_path: Path):
 
 
 @pytest.fixture(scope="module")
-def live_reports(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    """The eight reports of the live tree, built once for the tests that only read them (steward Story 117.16: two
-    tests each built them, 15 s a time). Those tests share an xdist group, so one worker builds them; the CLI test
-    above builds its own, since the run itself is its subject."""
-    out = tmp_path_factory.mktemp("live-flag-inventory") / "out"
-    assert flag_inventory.main(["--out-dir", str(out)]) == 0
+def live_reports(live_run: tuple[subprocess.CompletedProcess[str], Path]) -> Path:
+    """The eight reports of the live tree, from the one CLI run (`live_run`)."""
+    proc, out = live_run
+    assert proc.returncode == 0, proc.stderr
     return out
 
 
