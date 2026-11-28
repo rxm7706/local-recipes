@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: abe9b68a16948699
-story_count: 559
+source_fingerprint: 30ed0f5f024a9ebe
+story_count: 563
 test_file_count: 176
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 559
+- **Stories parsed:** 563
 - **Epics parsed:** 149
 - **Test files inventoried:** 176 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `abe9b68a16948699`
+- **Source fingerprint:** `30ed0f5f024a9ebe`
 
 ## Risk Assessment
 
@@ -833,6 +833,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 117.38 | Warden's package half runs as two shards | none observed |
 | 117.39 | The image builds delete the runner's toolchains only when the disk is short | none observed |
 | 117.40 | Platform CI's opt-in jobs run on a dispatch only when its inputs ask | none observed |
+| 117.41 | A crowded station-tests run gives eight suites one shard fewer | none observed |
+| 117.42 | The kedro catalog check runs once, on atlas's shorter live shard | none observed |
+| 117.43 | Platform CI's test job restores the warden environment from the pixi cache | none observed |
+| 117.44 | The docker builds whose images are never pushed keep their layers uncompressed | none observed |
 | 118.1 | steward deploy nic brings up and tears down an NKP cluster on local kind | none observed |
 | 118.2 | nebi-pack and the data-science pack reach Healthy on kind and a notebook spawns | none observed |
 | 118.3 | The gitops branch of the monorepo is the GitOps source and a Hetzner cluster ... | none observed |

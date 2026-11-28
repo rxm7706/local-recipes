@@ -8823,3 +8823,26 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   `build-platform-image` are `dispatch: pause-only`, and the four jobs' conditions are re-rendered. **Constraints:** a
   push or pull request evaluates every condition exactly as before; a dispatch still bypasses the pause switches; the
   `jobs` choice input is left as it is. No flag (fix). Owner `spec-pyforge-steward`.
+- **2026-11-28 (what still slows a pull request, a merge and the local preflight) — Found and ruled:** measured on PR
+  #2446's runs, the last 40 station-tests runs on pull requests, and the six full local preflights of 2026-11-28. A
+  pull request that runs every station (15 of those 40) starts 37 test jobs beside about 11 from the other workflows,
+  and the account runs at most 40 jobs at once (40 ran at the peak on PR #2446's last commit). The longest wait for a
+  slot in each of those 15 runs was 3 to 109 s (median 39 s); PR #2446's run took 178 s where its longest job took
+  105 s. That job is `atlas-test` (99 to 105 s), and 7 s of each of its three shards is `kedro-catalog-check`, which
+  needs to run once. Platform CI's test job 2 ran 129 s against 109 s for the other two: each of its four workers
+  waited 13 to 25 s on the one `pixi install -e pyforge-warden` that the golden-path tests' fixture runs on a runner
+  with no warden environment. On a push to `main`, docker spent 167 s of the guild image's 345 s build, and 45 to
+  113 s of each platform image build, compressing layers into the runner's containerd image store; a local benchmark
+  exported a 400 MB layer in 2.3 s uncompressed against 7.9 s compressed. **Ruled** (operator, 2026-11-28: "All
+  five", on the ranked list of what remains). **For steward:** this entry binds `spec-pyforge-steward` CAP-175
+  (realized, no text change) and decomposes as Stories 117.41 to 117.44 on Epic 117: a run whose test jobs would not
+  fit beside the other workflows' (more than 29) runs eight suites one shard fewer, each job estimated at 103 s or
+  less from the runner's step times (117.41); `kedro-catalog-check` runs once, on atlas's shorter live-half shard
+  (117.42); Platform CI's test job installs the warden environment with its own, from the pixi cache (117.43); the
+  docker builds whose images are never pushed or recorded keep their layers uncompressed (117.44). Measured and left:
+  the local preflight's late doctor lanes. The laptop has 8 cores and 16 threads; the lanes held 14.7 of the 16 thread
+  slots on average and used 80 % of what they held, and the same tests took about 40 % more CPU time on the day's
+  slower runs than on its faster ones, so starting doctor earlier only changes which lane ends last. Also left: the
+  golden-path promotion's builds, whose image IDs it records and may push. **Constraints:** every test still runs,
+  once; a run that fits keeps today's shard counts; no image that is pushed or recorded changes form. No flag (chore).
+  Owner `spec-pyforge-steward`.

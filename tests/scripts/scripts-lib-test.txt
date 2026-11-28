@@ -37,6 +37,7 @@ tests/scripts/test_realization_register_check.py
 tests/scripts/test_sbom_laptop_gate.py
 tests/scripts/test_session_denial_forms.py
 tests/scripts/test_skf_provenance_gap_dispatch.py
+tests/scripts/test_station_tests_shard_counts.py
 tests/scripts/test_upstream_todos_check.py
 tests/scripts/test_workflow_push_tag_filters.py
 tests/scripts/test_worktree_sweep.py
