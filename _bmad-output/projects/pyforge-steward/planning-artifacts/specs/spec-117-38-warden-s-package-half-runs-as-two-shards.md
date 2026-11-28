@@ -13,6 +13,7 @@ surface:
   - '.github/workflows/pyforge-station-tests.yml'
   - 'tests/durations/pyforge-warden.json'
   - 'pixi.toml'
+  - 'pixi.lock'
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - docs/dreams/pyforge-steward.md
@@ -30,6 +31,7 @@ deferred: []
 - a `group: [1, 2]` matrix, with `PYTEST_ADDOPTS: --splits 2 --group ${{ matrix.group }} --durations-path tests/durations/pyforge-warden.json`;
 - the file written from the runner's times (Story 117.35);
 - each shard renames and uploads its coverage report as `warden-unit-<group>`;
+- the `pyforge-warden` feature declares `pytest-split = ">=0.11.0"`, as every other sharded suite's feature does; without it the first CI run failed both shards with `unrecognized arguments: --splits --group --durations-path` (exit 4). `pixi lock` at the pinned pixi 0.85.0 adds only `pytest-split` 0.11.0 to the `pyforge-warden` environment, and `environment.yaml` (the `build` environment's export) does not move;
 - `warden-gate` reads `warden-unit*.json`, and so does its local twin, `pixi.toml`'s `pyforge-warden-coverage-gate`. The preflight matches the gate job's command to that task, and a command that no longer matches selects the lane on every branch (the steward and herald preflight-selection tests failed until it matched).
 
 Ledger key: `117-38-warden-s-package-half-runs-as-two-shards`.
@@ -66,4 +68,4 @@ Ledger key: `117-38-warden-s-package-half-runs-as-two-shards`.
 
 ## Result (2026-11-27)
 
-Scored by the runner's times, the two shards hold 55 and 53 s of the suite's 108 summed seconds.
+Scored by the runner's times, the two shards hold 55 and 53 s of the suite's 108 summed seconds. Locally at four workers the two groups pass and hold all 2,544 tests (1,535 and 121, 745 and 143 across the task's two segments).
