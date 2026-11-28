@@ -8344,7 +8344,7 @@ So that each shard is 7 s shorter.
 **Given** `atlas-test` runs 99 to 105 s on each of three shards and 7 s of each is `kedro-catalog-check`, and atlas's live half fires on every path its package half fires on
 **When** the check moves to `atlas-live-test`'s second shard (76 s against 87 s on PR #2446), under `if: matrix.group == '2'`
 **Then** the check runs once per run, on a shard with room for it, and `atlas-test`'s shards end 7 s sooner
-**And** the local preflight still selects the `kedro-catalog-check` lane whenever atlas's package half fires
+**And** the local preflight is unchanged: `kedro-catalog-check` is not one of its lanes
 **Status:** in-progress
 
 ### Story 117.43: Platform CI's test job restores the warden environment from the pixi cache

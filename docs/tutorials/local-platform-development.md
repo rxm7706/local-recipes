@@ -13,7 +13,7 @@ sources:
   - scripts/platform-ci-local.sh
   - pixi.toml
   - pixi.lock
-verified: 2026-11-27
+verified: 2026-11-28
 ---
 
 # Local Platform Development
@@ -69,7 +69,7 @@ You can now access:
 - Station portals under `http://localhost:8000/stations/<name>/`, and the stations index at `http://localhost:8000/stations/` when flag `pyforge.steward.stations_index` is ON (dev has it ON; staging and production stay OFF until rollout)
 
 ## Step 5: Run the Platform Tests
-Platform CI runs two jobs from `src/platform/` in the slim `platform-ci-test` environment (the sole authority for their dependencies). The `checks` job runs `manage.py check`, Ruff, Ruff format, mypy, the policy suite and the sqlmigrate extraction. The `test` job checks that Chromium launches for herald's deck-viewer browser check (the environment carries it, from the `SelfExplainML` channel), then runs the full suite under pytest-xdist. Mirror them locally:
+Platform CI runs two jobs from `src/platform/` in the slim `platform-ci-test` environment (the sole authority for their dependencies). The `checks` job runs `manage.py check`, Ruff, Ruff format, mypy, the policy suite and the sqlmigrate extraction. The `test` job checks that Chromium launches for herald's deck-viewer browser check (the environment carries it, from the `SelfExplainML` channel), then runs the full suite under pytest-xdist. The `test` job also installs `pyforge-warden`, which the golden-path tests run; locally their fixture installs it on first use. Mirror them locally:
 ```bash
 pixi install -e platform-ci-test
 cd src/platform

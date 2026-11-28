@@ -3,7 +3,7 @@ sources:
   - scripts/platform_ci_test_requirements_check.py
   - src/platform/Containerfile
   - .github/workflows/platform-ci.yml
-verified: 2026-11-27
+verified: 2026-11-28
 ---
 
 # Platform Python dependencies — pixi is the sole authority
@@ -14,7 +14,7 @@ platform host's `requirements/` directory were retired by steward Story 16.1 (CA
 
 | Need | Use |
 |------|-----|
-| Platform CI `test` job | `[feature.platform-ci-test]` / env `platform-ci-test` in repo-root `pixi.toml` |
+| Platform CI `test` job | `[feature.platform-ci-test]` / env `platform-ci-test` in repo-root `pixi.toml`; env `pyforge-warden` beside it, which the golden-path tests run (steward Story 117.43) |
 | Local platform host + engines | env `platform-dev` (composes `python-agent-platform` + `platform-dev`) |
 | Container image (same env as host) | `[feature.python-agent-platform.dependencies]` |
 

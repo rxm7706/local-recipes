@@ -515,7 +515,7 @@
    "docs/explanation/mcp-server-architecture.md": "f663daa9adfcf14996f1737e5c5a17e91983e453",
    "docs/explanation/one-chain-lock-and-mop.md": "479ff742b85266baba2561dfc4d84f33deffb013",
    "docs/explanation/platform-deployment-architecture.md": "092a0ee6dcf54be794a6266453029004802d1fc3",
-   "docs/explanation/platform-requirements.md": "6f053d3637f16bbb5765ba862b25ff93aa0af009",
+   "docs/explanation/platform-requirements.md": "412580c56fb34087ae60e24eb5bd6b1a2266cf6a",
    "docs/explanation/pyforge-ecosystem-architecture.md": "378caf4aad355e87334b55517fad596942ede0d2",
    "docs/explanation/pyforge-estate-overview.md": "5ae8a73d95dec0ce101b2361f2df4a397c22b742",
    "docs/explanation/the-detector-framework.md": "09d60793379a867cfd7b591e871e72aa5ea5629a",
@@ -549,7 +549,7 @@
    "docs/how-to/purge-preserved-refs.md": "fe50e52eb55854b53b1bc12f373df2b88d4dcf1f",
    "docs/how-to/reach-a-station-mcp-endpoint.md": "1366daf1c2c9b20c5cc7e1889f8257ba47cf3397",
    "docs/how-to/read-steward-registers.md": "5c5395a8e0db130dfdd9f9260bdd7f0752f1168e",
-   "docs/how-to/recipe-testing-and-builds.md": "05e4efe7f05fbb2ccb6530b73815a9de042a2fe1",
+   "docs/how-to/recipe-testing-and-builds.md": "d563ca6b8c31d217701ee0051ee72ed01cddd807",
    "docs/how-to/reconcile-spec-surface.md": "d1b9d7ef67b3f52a8eecd2dc7345b1d054be27ae",
    "docs/how-to/record-progress-claims-and-notices-with-herald.md": "c1fc8473d51b63e8de75d669db8762bd5e3a777f",
    "docs/how-to/refresh-the-estate.md": "73824b56f7ed6631aebc43f9344c99c12d31a8a4",
@@ -572,7 +572,7 @@
    "docs/map.yaml": "0c77d2dd9caac4a5d87aa6f03744b0d01d53e1d8",
    "docs/tutorials/README.md": "86e06be35f14e42696e998bb9cc113b5a4da47fb",
    "docs/tutorials/getting-started.md": "a4ab92d5ae89343b1b6d24f53da4c2a761569192",
-   "docs/tutorials/local-platform-development.md": "8d948b62b409a4fd09ef47c3fb99815872374b3b",
+   "docs/tutorials/local-platform-development.md": "419365ac3d9c1a5245c78c0a5c83119732dca3db",
    "docs/tutorials/onboard-a-machine.md": "27929cd5c368b6a968e3c5ee8d9ee54345260e16",
    "scripts/chain_currency_sweep_check.py": "876eb907ebd860f0fdef83652f29689b94ab76a6",
    "scripts/deferred_work_check.py": "1e95096d8f1be2aceb37559ee4c5c81049571aae",
@@ -825,7 +825,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "93ff5c2ec119ae7477101d522a5863448a052c78"
+  "memlog": "7d128cefe70e3fb64258fbc877604d7760803eb3"
  },
  "pyforge-herald/spec-pyforge-herald": {
   "files": {

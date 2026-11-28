@@ -25,7 +25,7 @@ deferred: []
 
 **Problem:** `atlas-test` is the longest station job on most pull requests that run atlas (99 to 105 s on PR #2446), and it runs as three shards. Each shard ends with `pixi run -e pyforge-atlas kedro-catalog-check`, 7 s, so the same check runs three times and lengthens every shard.
 
-**Approach:** move the step to `atlas-live-test` and run it on that job's second shard only (`if: matrix.group == '2'`). That shard was the live half's shorter one on PR #2446 (76 s against 87 s). Atlas's live half fires on every path its package half fires on (its paths hold `src/shared/packages` and the shared surface; the package half's hold `src/shared/packages/pyforge-atlas` and the shared surface), so the check runs on every run it ran on before, once. The local preflight's CI selection evaluates a `matrix.<key> == '<value>'` step condition, so the `kedro-catalog-check` lane is still selected.
+**Approach:** move the step to `atlas-live-test` and run it on that job's second shard only (`if: matrix.group == '2'`). That shard was the live half's shorter one on PR #2446 (76 s against 87 s). Atlas's live half fires on every path its package half fires on (its paths hold `src/shared/packages` and the shared surface; the package half's hold `src/shared/packages/pyforge-atlas` and the shared surface), so the check runs on every run it ran on before, once. `kedro-catalog-check` is not a local preflight lane, so the local preflight is unchanged.
 
 Ledger key: `117-42-the-kedro-catalog-check-runs-once-on-atlas-s-shorter-live-shard`.
 
@@ -47,9 +47,9 @@ Ledger key: `117-42-the-kedro-catalog-check-runs-once-on-atlas-s-shorter-live-sh
 **Given** a run that runs atlas
 **When** its shards run
 **Then** `kedro-catalog-check` runs once, on `atlas-live-test (2)`, and no `atlas-test` shard runs it
-**And** the local preflight selects the `kedro-catalog-check` lane for a change to atlas's package
+**And** every run that runs atlas's package half runs the check
 
 - **AC1 — This pull request.** Its run shows the check in `atlas-live-test (2)` alone, passing.
-- **AC2 — The local preflight.** A full preflight runs the `kedro-catalog-check` lane.
+- **AC2 — The rule.** `tests/scripts/test_station_tests_shard_counts.py` holds the check to one step, in `atlas-live-test`, on a shard that both modes start.
 
 </intent-contract>
