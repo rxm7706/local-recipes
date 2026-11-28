@@ -8771,3 +8771,20 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   file is stored again from empty under the lane's own task at four workers, which gives each shard about 59.5 s of
   work. **Constraints:** the same tests run, each once; no test, job or lane changes. No flag (chore). Owner
   `spec-pyforge-steward`.
+- **2026-11-27 (the guild image's secret scan reds `main` on a test key) — Found and ruled:** since PR #2425 (Story
+  118.9) merged, every push to `main` reds both `guild-container` jobs of `pyforge-station-tests`: the image's build
+  gate (`container-gates secrets-scan`, `steward keys audit --secrets` over `/pyforge`) finds six lines of
+  django-pyforge's `assertion/golden.py`, the test RSA keypair, matching 118.9's new `hetzner-api-token` shape. The
+  keypair's base64 is wrapped at 64 characters, as PEM is, so each line is a run of its own, and the six with no `+`
+  or `/` are exactly 64 alphanumerics with both cases. The table's comment says a run inside a base64 string never
+  matches; a wrapped line is the exception. `guild-container` does not run on a pull request, so PR #2425 never saw
+  it. Behind that gate, the job's post-build scan of the run container reads `__pycache__/`, where warden's
+  compiled `hygiene.py` matches the same shape: its 65-character token set is a 64-character run once marshal's type
+  and length bytes precede it. **Ruled** (operator, 2026-11-27: "There are ci failures now"). **For steward:** this entry binds
+  `spec-pyforge-steward` CAP-129 and CAP-178 (realized, no text change) and decomposes as Story 118.10 on Epic 118:
+  the keypair's base64 is held at 76 characters a line and wrapped at 64 when the module loads, so its two PEM
+  strings are unchanged; warden's two token sets are built from `string`, and the keypair's private header is
+  formatted at load, not folded by the compiler; the table's comment names the wrapped-line exception; and a scripts
+  test, which runs on every pull request, scans the package sources the image ships, and their compiled code, with
+  the same table. **Constraints:** the table is
+  not loosened; the PEM strings stay byte-identical. No flag (fix). Owner `spec-pyforge-steward`.

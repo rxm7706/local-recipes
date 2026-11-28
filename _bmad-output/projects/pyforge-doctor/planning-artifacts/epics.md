@@ -4444,6 +4444,28 @@ So that the suite's two live inventory runs, its floor, take half the time.
 **And** tests hold `lexical_tail` to `relative_to` on every edge case, `repo_relative`'s answers, each caller's own mapping, and each refusal on a second read
 **Status:** done
 
+## Epic 71: The live writer-lock proof runs on a dispatched branch run (spec-pyforge-doctor CAP-100)
+
+Minted 2026-11-27 from the station Dream's entry of the same date on the operator ruling of that day ("Looks like the doctor live test failed again").
+**HARD boundaries:**
+- The test and the writer-lock source do not change; the pull request and push paths of the step do not change. No flag (a fix).
+
+### Story 71.1: The live writer-lock proof runs on a dispatched branch run
+
+As the operator who dispatches `PyForge station tests` on a branch to run its push-only jobs before merging,
+I want `doctor-live-test` to find the merge base of `origin/main` and the branch on that run,
+So that a dispatched run is red only for a real failure.
+
+**Type:** fix • **Effort:** S • **Deps:** 57.3 • **FR/AD:** spec-pyforge-doctor CAP-100 (realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: CI wiring)
+**Surface:** `.github/workflows/pyforge-station-tests.yml` (`doctor-live-test`'s step "Name the base tip as origin/main")
+**Spec:** `planning-artifacts/specs/spec-71-1-the-live-writer-lock-proof-runs-on-a-dispatched-branch-run.md`
+**Given** Story 57.3's step names the base tip as `origin/main` only on a pull request, so a run dispatched on a branch, whose two-commit checkout holds only the branch, fails `test_writer_lock_reports_this_checkout_is_the_writer` with "no merge base of origin/main and HEAD" (runs 46072884555 and 46096009355)
+**When** the step also runs on `workflow_dispatch` and, when the ref is missing, fetches `main` and deepens both sides (25, then 100, then 400 commits) until `git merge-base` resolves
+**Then** a simulated dispatched checkout of a branch at `main`'s tip and of a branch forked 11 commits behind it resolve the right merge base, a dispatch on `main` keeps its own ref, and `writer_lock.gather` reads OK where it read the CI failure's message
+**And** a dispatched run's `doctor-live-test` passes, and the pull request and push paths are unchanged
+**Status:** done
+
 ## Currency reconciliation — 2026-11-26 (the tag rule reaches station source)
 
 *Chain-currency cascade (arch -> epics).* 2026-11-26: Epic 64 / Story 64.1 minted under `spec-one-chain-per-station` (its capability 9, realized with no text change); no AD moves. The keys go through the Tier-3 feed and `sprint-ledger-sync`. **Content changed:** the Epic, this section and `updated:`.

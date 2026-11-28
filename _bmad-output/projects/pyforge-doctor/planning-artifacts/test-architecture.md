@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: 10f1881b183e52ac
-story_count: 206
+source_fingerprint: 5159a89e2e927a75
+story_count: 207
 test_file_count: 132
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 206
-- **Epics parsed:** 69
+- **Stories parsed:** 207
+- **Epics parsed:** 70
 - **Test files inventoried:** 132 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `10f1881b183e52ac`
+- **Source fingerprint:** `5159a89e2e927a75`
 
 ## Risk Assessment
 
@@ -105,6 +105,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 64: A tag of another spine is written qualified (spec-one-chain-per-station:CAP-9)
 - Epic 65: Doctor's verbs take both spellings for JSON (spec-pyforge-steward:CAP-185)
 - Epic 66: The detector run measures the doctor sources beside the script detectors (spec-pyforge-steward:CAP-175)
+- Epic 71: The live writer-lock proof runs on a dispatched branch run (spec-pyforge-doctor CAP-100)
 
 ## Test Inventory
 
@@ -453,6 +454,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 68.1 | Capability-effect runs a project's git greps side by side | none observed |
 | 69.1 | The chain-currency sweep scans the fleet once | none observed |
 | 70.1 | The flag scripts read each story spec once and each path without walking its ... | none observed |
+| 71.1 | The live writer-lock proof runs on a dispatched branch run | none observed |
 
 ## Quality Gates
 

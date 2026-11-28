@@ -547,6 +547,9 @@ class PlaintextSecretFinding:
 # and a Hetzner API token: exactly 64 alphanumerics with both cases, so a lowercase-hex sha256
 # digest never matches, not bordered by `+`, `/` or a trailing `=`, so a run inside a base64
 # string never matches, and not after an SRI `sha256-`/`sha384-`/`sha512-` (a sha384 is 64).
+# Base64 wrapped at 64 characters, as PEM is, is the exception: each line is a run of its own,
+# and about one line in eight has no `+` or `/` and matches. A tracked fixture holds its base64
+# at another width (django-pyforge's `assertion/golden.py`, Story 118.10).
 # Flags are inline (`(?i)`), never a `flags=` argument: `scripts/nic_config_secret_scan.py`
 # reads this table from source and refuses any argument beyond the pattern.
 _SECRET_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (

@@ -136,6 +136,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import string
 import zipfile
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -176,7 +177,10 @@ _OSV_ECOSYSTEM_DIR: dict[Ecosystem, str] = {
 
 # NFR-S6 purity guard: a manifest-derived name/version must be exactly this
 # token shape to be written into the synthesized osv input file.
-_SAFE_TOKEN_CHARS = frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-")
+# Built from `string`, never one literal: compiled, the 65-character literal is a 64-character alphanumeric run
+# (its marshal type and length bytes, then the 62 letters and digits), which the guild image's secret scan reads
+# as a Hetzner API token (steward Story 118.10).
+_SAFE_TOKEN_CHARS = frozenset(string.ascii_letters + string.digits + "._-")
 
 _OWNER = "osv-scanner"
 
