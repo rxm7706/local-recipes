@@ -8219,6 +8219,102 @@ So that pytest-split gives the four shards equal work.
 **And** no test, job or lane changes
 **Status:** done
 
+### Story 117.35: The sharded suites split by the runner's own times
+
+As the operator whose PR waits on each suite's slowest shard,
+I want the durations files written from the times the CI runner takes,
+So that pytest-split's groups are equal on the runner, not on a laptop.
+
+**Type:** chore • **Effort:** S • **Deps:** 117.34 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `tests/durations/pyforge-steward.json`, `tests/durations/pyforge-steward-live.json`, `tests/durations/pyforge-atlas.json`, `tests/durations/pyforge-atlas-live.json`, `tests/durations/pyforge-marshal.json`, `tests/durations/pyforge-marshal-live.json`, `tests/durations/platform.json`, `tests/durations/README.md`
+**Spec:** `planning-artifacts/specs/spec-117-35-the-sharded-suites-split-by-the-runner-s-own-times.md`
+**Given** the durations files were written on a laptop, and a CI run that printed every test's time (46102690187, 46102692069) shows the runner at 1.6 times steward's live-half file, 0.46 times its package half's stale one, and marshal's live half split 34 s against 2 s
+**When** each file is written from that run's times (each test's three phases summed, `sort_keys`, `indent=4`)
+**Then** split in collection order as `duration_based_chunks` does, and scored by the runner's times, each suite's heaviest shard is lighter: marshal 75 to 54 s, steward's live half 121 to 106 s, its package half 58 to 52 s, atlas 49 to 43 s, atlas's live half 41 to 33 s, marshal's live half 34 to 21 s
+**And** no test, job or lane changes, and `tests/durations/README.md` says how to write a file from the runner's times
+**Status:** done
+
+### Story 117.36: The CI-surface check parses each workflow once, and the flag inventory's tests share one live run
+
+As the operator whose PRs wait on the Detectors job's library part,
+I want the CI-surface check to stop re-parsing the same workflow files, and the flag inventory's live tests to build the reports once,
+So that the part's longest tests stop repeating work.
+
+**Type:** chore • **Effort:** S • **Deps:** 117.35 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); works with CAP-166; no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `scripts/_ci_surface_gates_render.py`, `scripts/_ci_surface_gates_lib.py`, `tests/scripts/test_flag_inventory.py`
+**Spec:** `planning-artifacts/specs/spec-117-36-the-ci-surface-check-parses-each-workflow-once-and-the-flag-inventory-s-tests-share-one-live-run.md`
+**Given** one `ci_surface_gates.py --check` parses workflow files 109 times with the pure-Python loader (2.7 s a run, six runs in its tests), and the flag inventory's two live tests each build the live reports (7.7 s each)
+**When** `_ci_surface_gates_render.load_yaml` parses each distinct text once, with libyaml where PyYAML has it, and gives each caller its own copy; and one module fixture runs the inventory CLI for both live tests
+**Then** the check runs in 0.17 s and its var uses, offline findings, check output and dry-run render are byte-identical to before; `test_ci_surface_gates.py` runs in 2.3 s and `test_flag_inventory.py` in 10.3 s
+**And** the CLI run stays the inventory test's subject, and every test still runs
+**Status:** done
+
+### Story 117.37: The session hook's tests run it in-process
+
+As the operator whose PRs wait on the Detectors job, and whose local preflight waits on the stdlib scripts lane,
+I want the session hook's tests to run the hook without starting an interpreter for each call,
+So that about 600 calls stop costing 57 ms each.
+
+**Type:** chore • **Effort:** S • **Deps:** 117.36 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); works with CAP-5; no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `tests/scripts/test_pre_shell_hook.py`
+**Spec:** `planning-artifacts/specs/spec-117-37-the-session-hook-s-tests-run-it-in-process.md`
+**Given** `_run` starts `python pre-shell.py` for each of about 600 calls, 57 ms each, against 4 ms for the same compiled script run in-process
+**When** `_run` runs the compiled script in a fresh `__main__` module with the call's cwd, environment, stdin and argv and the script's directory on `sys.path`, takes its exit code from the `__main__` block, and restores the process after; `_run_process` keeps the real interpreter
+**Then** the file runs in 24.1 s serially, where it ran in 62.2 s, and every existing test keeps its result
+**And** `test_in_process_runs_match_the_real_process` holds each kind of result (Claude and Cursor denies, an allow, a Cursor warning, an environment-dependent deny, a worktree commit, a hook copy's roster, the exit-2 failure) to the real process's exit code, stdout and stderr
+**Status:** done
+
+### Story 117.38: Warden's package half runs as two shards
+
+As the operator whose PR waits on warden's package half,
+I want `warden-test` split in two as the other station suites are,
+So that its one 88 to 92 s job becomes two shorter ones.
+
+**Type:** chore • **Effort:** S • **Deps:** 117.35 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `.github/workflows/pyforge-station-tests.yml` (`warden-test`, `warden-gate`), `tests/durations/pyforge-warden.json`, `pixi.toml` (`pyforge-warden-coverage-gate` reads `warden-unit*.json`, as the other sharded suites' gates do; the `pyforge-warden` feature declares `pytest-split`, as every other sharded suite's does), `pixi.lock` (`pytest-split` 0.11.0 joins the `pyforge-warden` environment, nothing else moves)
+**Spec:** `planning-artifacts/specs/spec-117-38-warden-s-package-half-runs-as-two-shards.md`
+**Given** `warden-test` is one job of 88 to 92 s, 55 to 65 s of it the suite, and every other long station suite runs in shards (Story 117.10)
+**When** it runs as two shards by `tests/durations/pyforge-warden.json`, written from the runner's times, each shard uploading its own coverage report, and `warden-gate` and its local twin `pyforge-warden-coverage-gate` reading `warden-unit*.json`
+**Then** scored by the runner's times each shard holds about 54 s of the suite's 108 summed seconds, and the gate merges both reports with the live half's
+**And** the local preflight still runs the task unsharded
+**Status:** done
+
+### Story 117.39: The image builds delete the runner's toolchains only when the disk is short
+
+As the operator waiting for `main` to go green after a merge,
+I want the guild and platform image builds to skip deleting the runner's toolchains when the disk already has room,
+So that each build stops spending 136 to 163 s on space it does not need.
+
+**Type:** chore • **Effort:** S • **Deps:** none • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); works with CAP-131; no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `.github/workflows/pyforge-station-tests.yml` (`guild-container`), `.github/workflows/platform-ci.yml` (`container`)
+**Spec:** `planning-artifacts/specs/spec-117-39-the-image-builds-delete-the-runner-s-toolchains-only-when-the-disk-is-short.md`
+**Given** the runner's root disk now has 87 GB free, the step deletes 31 GB of toolchains in 136 to 163 s, and on the ~14 GB runners it was written for it left about 39 to 45 GB
+**When** the step deletes them only when less than 50 GB is free
+**Then** a runner with room skips the deletion, and a short one deletes as before and never has less space than the step gave
+**And** both builds pass on a dispatched run
+**Status:** done
+
+### Story 117.40: Platform CI's opt-in jobs run on a dispatch only when its inputs ask
+
+As the operator who dispatches Platform CI on a branch to prove a change,
+I want the opt-in portability and air-gap jobs, and the image build they share, to honour their dispatch inputs,
+So that a bare dispatch is red only for a real failure.
+
+**Type:** fix • **Effort:** S • **Deps:** 117.39 • **FR/AD:** spec-pyforge-steward CAP-166 and CAP-175 / FR-49 (realized, no text change); no AD moves
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix: CI wiring)
+**Surface:** `docs/governance/ci-surfaces.yaml` (six rows gain `dispatch: pause-only`), `.github/workflows/platform-ci.yml` (the four jobs' rendered conditions), `tests/scripts/test_ci_surface_gates.py`
+**Spec:** `planning-artifacts/specs/spec-117-40-platform-ci-s-opt-in-jobs-run-on-a-dispatch-only-when-its-inputs-ask.md`
+**Given** a bare dispatch of Platform CI runs `gke-portability-smoke` and `ocp-portability-smoke` (which fail at `helm install` with no image digest), `air-gap-parity` and `build-platform-image`, because the rendered fragment `dispatch || (pause switches && inner)` lets every dispatch past the inner condition that reads their inputs
+**When** their six registry rows are `dispatch: pause-only` (Story 102.3's shape) and `ci_surface_gates.py --render` re-renders the four conditions as `(dispatch || pause switches) && inner`
+**Then** a dispatch runs each job only when its input asks, and a push or pull request evaluates each condition exactly as before
+**And** `ci_surface_gates.py --check` exits 0, and `test_the_live_pages_deploy_row_renders_pause_only` pins the exact set of pause-only jobs and each opt-in job's input in its condition
+**Status:** done
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

@@ -8,12 +8,29 @@ instead: a dispatch bypasses only the pause switches and the job's own condition
 """
 from __future__ import annotations
 
+import copy
+import functools
 import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+# Steward Story 117.36 (spec-pyforge-steward CAP-175): one check read the same workflow files 109 times, each a
+# pure-Python parse (2.7 s a run). Each distinct text is parsed once, by libyaml where PyYAML was built with it,
+# and every caller gets its own copy.
+_YAML_LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+
+
+@functools.lru_cache(maxsize=128)
+def _parse_yaml(text: str) -> Any:
+    return yaml.load(text, Loader=_YAML_LOADER)  # noqa: S506 -- a safe loader, C or pure Python
+
+
+def load_yaml(path: Path) -> Any:
+    """`yaml.safe_load` of the file at `path`: each distinct text is parsed once, and each call returns its own copy."""
+    return copy.deepcopy(_parse_yaml(path.read_text(encoding="utf-8")))
 
 _RENDER_CMD = "python scripts/ci_surface_gates.py --render"
 _RENDER_MARKER = "ci-surfaces:"
@@ -258,7 +275,7 @@ def plan_renders(
         if state in ("retired", "paused-manually"):
             continue
         try:
-            doc = yaml.safe_load(path.read_text(encoding="utf-8"))
+            doc = load_yaml(path)
         except (OSError, yaml.YAMLError):
             continue
         if not isinstance(doc, dict) or not workflow_fires_push_pr_schedule(doc):
@@ -313,7 +330,7 @@ def completeness_findings(
         if state in ("retired", "paused-manually"):
             continue
         try:
-            doc = yaml.safe_load(path.read_text(encoding="utf-8"))
+            doc = load_yaml(path)
         except (OSError, yaml.YAMLError) as exc:
             findings.append(f"cannot read workflow {rel}: {exc}")
             continue

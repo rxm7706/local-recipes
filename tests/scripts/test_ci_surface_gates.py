@@ -791,8 +791,19 @@ def test_the_live_pages_deploy_row_renders_pause_only() -> None:
     deploy = plans[(".github/workflows/pages.yml", "deploy")]
     assert deploy.dispatch_pause_only is True
     assert "needs.build.outputs.changed == 'true'" in deploy.inner
-    assert not any(
-        p.dispatch_pause_only
-        for key, p in plans.items()
-        if key != (".github/workflows/pages.yml", "deploy")
-    )
+    # Steward Story 117.40: Platform CI's three opt-in jobs and the image build they share are pause-only too, so a
+    # dispatch runs each one only when its own input asks for it. No other job is.
+    platform = ".github/workflows/platform-ci.yml"
+    assert {key for key, p in plans.items() if p.dispatch_pause_only} == {
+        (".github/workflows/pages.yml", "deploy"),
+        (platform, "build-platform-image"),
+        (platform, "air-gap-parity"),
+        (platform, "gke-portability-smoke"),
+        (platform, "ocp-portability-smoke"),
+    }
+    for job, wanted in (
+        ("air-gap-parity", "inputs.air_gap_parity"),
+        ("gke-portability-smoke", "inputs.gke_portability_smoke"),
+        ("ocp-portability-smoke", "inputs.ocp_portability_smoke"),
+    ):
+        assert wanted in plans[(platform, job)].inner

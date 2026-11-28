@@ -19,13 +19,16 @@ Two layers:
 """
 from __future__ import annotations
 
+import contextlib
 import importlib.util
+import io
 import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+import types
 from pathlib import Path
 from typing import Any, Optional
 
@@ -194,13 +197,7 @@ def _track_file(repo: Path, rel: str, content: str = "x: 1\n") -> Path:
 # --------------------------------------------------------------------------
 
 
-def _run(
-    payload: dict[str, Any],
-    cwd: Path,
-    env_extra: Optional[dict[str, str]] = None,
-    *,
-    hook_path: Path = HOOK,
-) -> subprocess.CompletedProcess:
+def _hook_env(env_extra: Optional[dict[str, str]]) -> dict[str, str]:
     env = dict(os.environ)
     env.pop("BMAD_ACTIVE_PROJECT", None)
     # The writer lock reads the flag tree these name (Story 121.4); each test says its own.
@@ -208,15 +205,88 @@ def _run(
     env.pop("PYFORGE_ENVIRONMENT", None)
     if env_extra:
         env.update(env_extra)
+    return env
+
+
+def _run(
+    payload: dict[str, Any],
+    cwd: Path,
+    env_extra: Optional[dict[str, str]] = None,
+    *,
+    hook_path: Path = HOOK,
+) -> subprocess.CompletedProcess:
+    """Run the hook on one tool call, in this process, as `python pre-shell.py` would run it.
+
+    Steward Story 117.37 (spec-pyforge-steward CAP-175): a fresh interpreter per case cost about 57 ms, and this
+    file makes about 600 calls; the same compiled script run in-process takes about 4 ms. Each call gets what a
+    fresh process gets: a new `__main__` module (so no cache survives), the tool call's cwd, environment, stdin
+    and argv, the script's directory first on `sys.path`, and its exit code -- the `__main__` block's
+    `sys.exit(main())`, or 2 from its own exception handler. The process state is restored after, and modules
+    the call imported are dropped. `test_in_process_runs_match_the_real_process` holds the two to each other.
+    """
+    return _run_in_process(payload, cwd, _hook_env(env_extra), hook_path)
+
+
+def _run_process(
+    payload: dict[str, Any],
+    cwd: Path,
+    env_extra: Optional[dict[str, str]] = None,
+    *,
+    hook_path: Path = HOOK,
+) -> subprocess.CompletedProcess:
+    """The hook in a real interpreter, as Claude Code and Cursor run it."""
     return subprocess.run(
         [sys.executable, str(hook_path)],
         input=json.dumps(payload),
         cwd=str(cwd),
-        env=env,
+        env=_hook_env(env_extra),
         capture_output=True,
         text=True,
         timeout=15,
     )
+
+
+_HOOK_CODE: dict[Path, Any] = {}
+
+
+def _run_in_process(
+    payload: dict[str, Any], cwd: Path, env: dict[str, str], hook_path: Path
+) -> subprocess.CompletedProcess:
+    code = _HOOK_CODE.get(hook_path)
+    if code is None:
+        code = _HOOK_CODE[hook_path] = compile(hook_path.read_bytes(), str(hook_path), "exec")
+    module = types.ModuleType("__main__")
+    module.__file__ = str(hook_path)
+    stdout, stderr = io.StringIO(), io.StringIO()
+    saved_env, saved_cwd = dict(os.environ), os.getcwd()
+    saved_path, saved_argv, saved_stdin = list(sys.path), list(sys.argv), sys.stdin
+    saved_modules = dict(sys.modules)
+    returncode = 0
+    try:
+        os.environ.clear()
+        os.environ.update(env)
+        os.chdir(cwd)
+        sys.path.insert(0, str(hook_path.parent))
+        sys.argv = [str(hook_path)]
+        sys.stdin = io.StringIO(json.dumps(payload))
+        sys.modules["__main__"] = module
+        with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            try:
+                exec(code, module.__dict__)
+            except SystemExit as exit_:
+                if exit_.code is None or isinstance(exit_.code, int):
+                    returncode = exit_.code or 0
+                else:
+                    print(exit_.code, file=sys.stderr)
+                    returncode = 1
+    finally:
+        sys.modules.clear()
+        sys.modules.update(saved_modules)
+        sys.stdin, sys.argv, sys.path[:] = saved_stdin, saved_argv, saved_path
+        os.chdir(saved_cwd)
+        os.environ.clear()
+        os.environ.update(saved_env)
+    return subprocess.CompletedProcess([sys.executable, str(hook_path)], returncode, stdout.getvalue(), stderr.getvalue())
 
 
 def _install_hook_copy(repo: Path) -> Path:
@@ -1350,6 +1420,36 @@ def _second_repo_with_real_roster(tmp_path: Path) -> Path:
 # --------------------------------------------------------------------------
 # Fail loud, never a silent skip.
 # --------------------------------------------------------------------------
+
+
+def test_in_process_runs_match_the_real_process(fake_repo: Path, fake_worktree: Path, tmp_path: Path) -> None:
+    """Steward Story 117.37: `_run` runs the hook in-process; each kind of result it gives is the one a real
+    interpreter gives for the same call -- a Claude and a Cursor deny, an allow, a Cursor warning (exit 1), an
+    environment-dependent deny, a worktree commit check, a hook copy's own roster, and the exit-2 failure."""
+    spec_md = str(fake_repo / "_bmad-output" / "projects" / "x" / "planning-artifacts" / "specs" / "spec-y" / "SPEC.md")
+    cases: list[tuple[dict[str, Any], Path, Optional[dict[str, str]], Path]] = [
+        (_claude_bash("gh pr merge 1 --squash", fake_repo), fake_repo, None, HOOK),
+        (_claude_bash("ls -la", fake_repo), fake_repo, None, HOOK),
+        (_cursor_bash("pixi update", fake_repo), fake_repo, None, HOOK),
+        (_cursor_after_edit(spec_md, fake_repo), fake_repo, None, HOOK),
+        (_claude_write(spec_md, fake_repo), fake_repo, None, HOOK),
+        (_claude_bash("scripts/bmad-switch pyforge-x", fake_repo), fake_repo, {"BMAD_ACTIVE_PROJECT": "x"}, HOOK),
+        (_claude_bash('git commit -m "x\n\nCo-Authored-By: A <a@b>"', fake_worktree), fake_worktree, None, HOOK),
+    ]
+    hook_copy = _install_hook_copy(fake_repo)
+    other = _second_repo_with_real_roster(tmp_path)
+    cases.append((_claude_bash("ls -la", other), other, None, hook_copy))
+    for payload, cwd, env_extra, hook_path in cases:
+        real = _run_process(payload, cwd, env_extra, hook_path=hook_path)
+        here = _run(payload, cwd, env_extra, hook_path=hook_path)
+        assert (here.returncode, here.stdout) == (real.returncode, real.stdout), payload
+        assert here.stderr == real.stderr, payload
+    (fake_repo / "docs" / "governance" / "guild-roster.json").write_text('{"stations": ["marshal"]}', encoding="utf-8")
+    failing = (_claude_bash("ls -la", other), other, None)
+    real = _run_process(*failing, hook_path=hook_copy)
+    here = _run(*failing, hook_path=hook_copy)
+    assert (here.returncode, here.stdout) == (real.returncode, real.stdout) == (2, "")
+    assert "session_denials" in here.stderr and "session_denials" in real.stderr
 
 
 def test_missing_session_denials_fails_loud(fake_repo: Path, tmp_path: Path) -> None:

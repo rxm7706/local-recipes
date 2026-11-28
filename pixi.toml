@@ -2795,6 +2795,7 @@ python-build = ">=1.6.1"          # PyPA `python -m build` frontend (wheel + sdi
 pytest = ">=9.1.1"                # test runner
 pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP-4, amended by spec-fleet-consistency-standard): coverage JSON for the named-module gate. Declared in only pyforge-marshal and local-recipes until 2026-09-07, so seven station envs could not run a coverage gate at all -- verified live against scribe, which exited 1 with "unrecognized arguments: --cov".
 pytest-xdist = ">=3.8.0"          # Story 71.6 (CAP-159): parallel station suite in pyforge-warden-test
+pytest-split = ">=0.11.0"         # Story 117.38 (spec-pyforge-steward CAP-175): --splits 2 --group K shards warden-test in CI; the local preflight runs the suite unsharded
 py-rattler = ">=0.26.0"           # test-only oracle for extract/lockfiles.py (Story 2.6); NEVER a pyforge-warden runtime dep. 2026-09-20 (steward Story 63.5): floor back to 0.25.0 -- the 0.26.0 bump was a catalog sync (8beb582d30), not an API need (LockFile.from_path / CondaLockedPackage / PypiLockedPackage exist in 0.25), and conda's rattler-solver variant (the only conda that tolerates ruamel.yaml 0.19, which mason's deps need) caps py-rattler <0.26 -- the pyforge-foundry-full union solve surfaced it
 py-rattler-build = ">=0.73.0"     # test-only differential-oracle for extract/recipe_v1.py (Story 2.2, v1 recipe.yaml render); NEVER a pyforge-warden runtime dep
 conda-build = ">=25.3.1"          # test-only differential-oracle for extract/meta_v0.py (Story 2.2, v0 meta.yaml render); NEVER a pyforge-warden runtime dep
@@ -2826,7 +2827,7 @@ env = { PYTHONPATH = "src/shared/packages/pyforge-warden/src:scripts" }
 
 [feature.pyforge-warden.tasks.pyforge-warden-coverage-gate]
 description = "Mirror of pyforge-station-tests.yml's `warden-gate` job (Story 117.2; coverage-gates.yml retired; steward Story 124.2 moved the step out of `warden-test` into its own job): run scripts/coverage_gates_ci.py over the modules THIS branch touches, in warden's own env, against the 80% unit floor, reading both halves' reports. Distinct from pyforge-warden-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
-cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit --report .steward/coverage/warden-unit.json --report \".steward/coverage/warden-live*.json\""
+cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit --report \".steward/coverage/warden-unit*.json\" --report \".steward/coverage/warden-live*.json\""
 env = { COVERAGE_GATES_STATIONS = "warden" }
 # Story 117.2: the gate judges the JSON pyforge-warden-test wrote (--report); when the report is absent it runs the
 # coverage pass itself as before. Story 124.1: it merges the live half's report with the package half's, as

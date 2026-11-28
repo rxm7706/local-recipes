@@ -8788,3 +8788,38 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   test, which runs on every pull request, scans the package sources the image ships, and their compiled code, with
   the same table. **Constraints:** the table is
   not loosened; the PEM strings stay byte-identical. No flag (fix). Owner `spec-pyforge-steward`.
+- **2026-11-27 (the remaining test, CI and preflight levers, measured again) — Found and ruled:** measured on PR
+  #2444's runs (all 54 jobs) and the local full preflight. The sharded suites split by durations files written on a
+  laptop, whose times are not the runner's: a CI run dispatched to print every test's time (46102690187, with
+  46102692069 for Platform CI) showed the runner at 1.6 times the file's seconds for steward's live half, 0.46 times
+  its package half's stale file, and marshal's live half split 34 s against 2 s. Scored by those times, splitting by
+  them cuts each suite's heaviest shard: marshal 75 s to 54 s, steward's live half 121 s to 106 s, its package half 58 s
+  to 52 s, atlas 49 s to 43 s, atlas's live half 41 s to 33 s, marshal's live half 34 s to 21 s. `warden-test` is one
+  unsharded job of 88 to 92 s. The Detectors library part (112 to 128 s, the longest job on most PRs) spends 2.7 s
+  per CI-surface check re-parsing the same workflow files 109 times, six such checks a run, and builds the live flag
+  inventory twice (7.7 s each). The session hook's tests start a fresh interpreter for each of about 600 calls (57 ms
+  each against 4 ms in-process; 62 s of the file's serial time). The two image builds delete 31 GB of toolchains in 136
+  to 163 s, though the runner now has 87 GB free. **Ruled** (operator, 2026-11-27: "Steward shards", then "can we do
+  all of this in one PR"). **For steward:** this entry binds `spec-pyforge-steward` CAP-175 (realized, no text change)
+  and decomposes as Stories 117.35 to 117.39 on Epic 117: the suites split by the runner's own times (117.35); the
+  CI-surface check parses each workflow text once, with libyaml, and the flag inventory's two live tests share one CLI
+  run (117.36); the hook's tests run it in-process, held to the real process by a parity test (117.37); warden's
+  package half runs as two shards (117.38); the image builds delete the toolchains only when less than 50 GB is free
+  (117.39). Measured and left: the local preflight's late start of steward's live half (the scheduler ranks it by a
+  median of runs at other worker counts; a fix needs several full runs that the laptop's throttling skews); folding
+  the small stations' two jobs into one (it moves preflight's CI selection, the trigger map and the pause registry,
+  for PRs over the 40-job cap only); a smaller lint environment (mypy needs the full one, and the job is rarely a PR's
+  longest). **Constraints:** every test still runs, once; no assertion is weakened; outputs stay byte-identical where
+  a script changes. No flag (chore). Owner `spec-pyforge-steward`.
+- **2026-11-27 (a bare dispatch of Platform CI runs its opt-in jobs) — Found and ruled:** dispatching `Platform CI`
+  with no inputs, as the runner-times probe and PR #2446's proof runs did, ran `gke-portability-smoke` and
+  `ocp-portability-smoke`, which failed at `helm install` ("sidecar.image.digest or sidecar.image.tag is required"),
+  and `air-gap-parity` with the image build they share. Each job's own condition reads its dispatch input (default
+  off), but the rendered pause fragment, `dispatch || (pause switches && inner)`, lets every dispatch past it. The
+  registry already has the other shape for this: `dispatch: pause-only` (Story 102.3, `pages.deploy`) renders
+  `(dispatch || pause switches) && inner`. **Ruled** (operator, 2026-11-27: "Yes. Here", on the recommendation to fix
+  it in PR #2446). **For steward:** this entry binds `spec-pyforge-steward` CAP-166 and CAP-175 (realized, no text
+  change) and decomposes as Story 117.40 on Epic 117: the six registry rows of the three opt-in jobs and of
+  `build-platform-image` are `dispatch: pause-only`, and the four jobs' conditions are re-rendered. **Constraints:** a
+  push or pull request evaluates every condition exactly as before; a dispatch still bypasses the pause switches; the
+  `jobs` choice input is left as it is. No flag (fix). Owner `spec-pyforge-steward`.
