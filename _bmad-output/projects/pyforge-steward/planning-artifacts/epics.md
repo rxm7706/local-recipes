@@ -8203,6 +8203,22 @@ So that no shard holds far more of the runner's test time than four workers clea
 **And** the same tests run, each once, and the coverage gate merges every shard's report as before
 **Status:** done
 
+### Story 117.34: Marshal's suite splits by the durations its tests take now
+
+As the operator whose PR waits on marshal's slowest shard,
+I want marshal's durations file to hold the time each test takes now,
+So that pytest-split gives the four shards equal work.
+
+**Type:** chore • **Effort:** S • **Deps:** 136.7 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (realized, no text change); no AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `tests/durations/pyforge-marshal.json`
+**Spec:** `planning-artifacts/specs/spec-117-34-marshal-s-suite-splits-by-the-durations-its-tests-take-now.md`
+**Given** `tests/durations/pyforge-marshal.json` sums to 732 s where the suite now takes 239 s, so its split gives the shards 47, 77, 46 and 68 s of work, and CI's four shards average about 53, 67, 47 and 63 s of tests over nine runs
+**When** the file is stored again from empty under `pyforge-marshal-test` at four workers
+**Then** its split gives each shard about 59.5 s of work, and the four groups hold the 13,791 collected tests, each once
+**And** no test, job or lane changes
+**Status:** done
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
