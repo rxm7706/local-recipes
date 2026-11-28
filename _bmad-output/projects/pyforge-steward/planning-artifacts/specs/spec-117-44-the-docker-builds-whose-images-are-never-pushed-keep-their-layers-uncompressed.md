@@ -2,7 +2,7 @@
 title: '117.44: The docker builds whose images are never pushed keep their layers uncompressed'
 type: 'chore'
 created: '2026-11-28'
-status: 'in-progress'
+status: 'done'
 story: 117-44-the-docker-builds-whose-images-are-never-pushed-keep-their-layers-uncompressed
 spec: spec-pyforge-steward
 difficulty: 'easy'

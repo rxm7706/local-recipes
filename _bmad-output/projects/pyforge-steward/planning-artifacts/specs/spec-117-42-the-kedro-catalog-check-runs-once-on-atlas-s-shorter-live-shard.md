@@ -2,7 +2,7 @@
 title: '117.42: The kedro catalog check runs once, on atlas''s shorter live shard'
 type: 'chore'
 created: '2026-11-28'
-status: 'in-progress'
+status: 'done'
 story: 117-42-the-kedro-catalog-check-runs-once-on-atlas-s-shorter-live-shard
 spec: spec-pyforge-steward
 difficulty: 'easy'

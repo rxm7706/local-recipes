@@ -113,10 +113,10 @@ development_status:
   117-39-the-image-builds-delete-the-runner-s-toolchains-only-when-the-disk-is-short: done
   117-4-each-station-suite-runs-as-its-package-local-and-live-tree-halves: done
   117-40-platform-ci-s-opt-in-jobs-run-on-a-dispatch-only-when-its-inputs-ask: done
-  117-41-a-crowded-station-tests-run-gives-eight-suites-one-shard-fewer: in-progress
-  117-42-the-kedro-catalog-check-runs-once-on-atlas-s-shorter-live-shard: in-progress
-  117-43-platform-ci-s-test-job-restores-the-warden-environment-from-the-pixi-cache: in-progress
-  117-44-the-docker-builds-whose-images-are-never-pushed-keep-their-layers-uncompressed: in-progress
+  117-41-a-crowded-station-tests-run-gives-eight-suites-one-shard-fewer: done
+  117-42-the-kedro-catalog-check-runs-once-on-atlas-s-shorter-live-shard: done
+  117-43-platform-ci-s-test-job-restores-the-warden-environment-from-the-pixi-cache: done
+  117-44-the-docker-builds-whose-images-are-never-pushed-keep-their-layers-uncompressed: done
   117-5-preflight-budget-names-every-lane-over-its-journal-derived-budget: done
   117-6-image-builds-leave-the-pull-request-path-for-main-and-the-nightly-canary: done
   117-7-the-ci-workflows-run-what-the-diff-touches-with-pinned-tools-and-parallel-detectors: done

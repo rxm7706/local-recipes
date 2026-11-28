@@ -2,7 +2,7 @@
 title: '117.41: A crowded station-tests run gives eight suites one shard fewer'
 type: 'chore'
 created: '2026-11-28'
-status: 'in-progress'
+status: 'done'
 story: 117-41-a-crowded-station-tests-run-gives-eight-suites-one-shard-fewer
 spec: spec-pyforge-steward
 difficulty: 'medium'

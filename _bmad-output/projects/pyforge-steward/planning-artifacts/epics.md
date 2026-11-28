@@ -8329,7 +8329,7 @@ So that no shard waits up to a minute and a half for a slot.
 **When** the `changes` job declares each sharded suite's shard count, normal and crowded, in one table, sums the normal counts of the jobs the run will start, and emits each suite's group list as an output that its job's matrix reads (`fromJSON`), with `--splits` taken from `strategy.job-total` and no pytest-split options on a one-shard job
 **Then** a run that would start more than 29 test jobs starts 29: `doctor-live-test`, `herald-test`, `marshal-live-test`, `steward-test` and `warden-test` run as one job each, and `herald-live-test`, `marshal-test` and `steward-live-test` as three, each estimated at 103 s or less from the runner's step times
 **And** a run of 29 or fewer keeps today's shard counts, every test still runs once, and the local preflight's CI selection still evaluates every job
-**Status:** in-progress
+**Status:** done
 
 ### Story 117.42: The kedro catalog check runs once, on atlas's shorter live shard
 
@@ -8345,7 +8345,7 @@ So that each shard is 7 s shorter.
 **When** the check moves to `atlas-live-test`'s second shard (76 s against 87 s on PR #2446), under `if: matrix.group == '2'`
 **Then** the check runs once per run, on a shard with room for it, and `atlas-test`'s shards end 7 s sooner
 **And** the local preflight is unchanged: `kedro-catalog-check` is not one of its lanes
-**Status:** in-progress
+**Status:** done
 
 ### Story 117.43: Platform CI's test job restores the warden environment from the pixi cache
 
@@ -8361,7 +8361,7 @@ So that no worker waits on a fresh `pixi install` in the middle of the suite.
 **When** the test job's setup installs `platform-ci-test` and `pyforge-warden` together, under a cache key of its own, and the `checks` job keeps its own setup unchanged
 **Then** the fixture's `pixi install` finds the environment installed and returns at once
 **And** the fixture stays, so a run without the cached environment still installs it safely
-**Status:** in-progress
+**Status:** done
 
 ### Story 117.44: The docker builds whose images are never pushed keep their layers uncompressed
 
@@ -8377,7 +8377,7 @@ So that docker stops spending minutes compressing layers no registry will receiv
 **When** those builds write the image with `--output type=image,name=<tag>,compression=uncompressed`
 **Then** each image is tagged and run exactly as before, and its export takes a fraction of the time
 **And** podman's legs, the golden-path promotion's builds (whose image IDs it records and may push) and `build-platform-image` are unchanged
-**Status:** in-progress
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

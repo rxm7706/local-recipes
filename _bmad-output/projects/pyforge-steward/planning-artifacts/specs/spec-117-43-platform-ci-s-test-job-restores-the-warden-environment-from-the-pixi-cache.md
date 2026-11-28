@@ -2,7 +2,7 @@
 title: '117.43: Platform CI''s test job restores the warden environment from the pixi cache'
 type: 'chore'
 created: '2026-11-28'
-status: 'in-progress'
+status: 'done'
 story: 117-43-platform-ci-s-test-job-restores-the-warden-environment-from-the-pixi-cache
 spec: spec-pyforge-steward
 difficulty: 'easy'
