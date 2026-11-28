@@ -903,6 +903,17 @@ Folded Dreams: [[bmad-drift-new-artifact-shape]], [[bmad-method-version-drift]],
   not under the root; `flag_rule.lexical_tail` decides `relative_to` with one comparison, and the inventory uses it.
   **Constraints:** every report, judgment, finding and frontmatter read stays exactly as before; no test changes
   what it asserts. No flag (a chore). Owner `spec-pyforge-doctor`.
+- **2026-11-27 (the live writer-lock proof fails on a dispatched run) — Found and ruled:** a `PyForge station
+  tests` run dispatched on a branch (`workflow_dispatch`, how the operator and a session run the push-only jobs, such
+  as `guild-container`, before merging) fails `doctor-live-test`: `test_writer_lock_reports_this_checkout_is_the_writer`
+  finds "no merge base of origin/main and HEAD". Story 57.3's step names the base tip as `origin/main` only on a pull
+  request; a push to `main` has the ref, and a dispatch on a branch has neither, its two-commit checkout holding only
+  the branch. It failed on run 46072884555 and again on run 46096009355. **Ruled** (operator, 2026-11-27: "Looks like
+  the doctor live test failed again"). **For doctor:** this entry binds `spec-pyforge-doctor` CAP-100 (realized, no
+  text change) and decomposes as Epic 71, one story: on a dispatched run the step fetches `main` and deepens both
+  sides until they meet, and a dispatch on `main` keeps the ref its checkout made. **Constraints:** the test and the
+  writer-lock source do not change; the pull request and push paths do not change. No flag (a fix). Owner
+  `spec-pyforge-doctor`.
 
 ## 2026-10-26 — A spike report is not a corrupt file, and the classifier can't yet tell the difference (folded from bmad-drift-new-artifact-shape)
 
