@@ -8608,16 +8608,16 @@ So that the attended Hetzner run waits only on the inputs only I can supply.
 ### Story 118.10: The guild image's secret scan passes on the test keypair
 
 As the operator whose `main` must stay green,
-I want django-pyforge's test keypair to hold no line the secret table's Hetzner shape matches, and a pull request to scan the package sources the guild image ships,
+I want no package source the guild image ships, and no module compiled from one, to hold a line the secret table matches, and a pull request to scan both,
 So that the image's build gate passes, and a shape added to the table reds the pull request that adds it, not `main`.
 
 **Type:** fix • **Effort:** S • **Deps:** 118.9 • **FR/AD:** spec-pyforge-steward CAP-129 (realized, no text change) and CAP-178 / FR-52 (realized, no text change); no AD moves
 **Flag:** none (`spec-feature-flag-governance` Q1, a fix: flagging it keeps `main` red)
-**Surface:** `src/shared/packages/django-pyforge/src/django_pyforge/assertion/golden.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py` (a comment), `tests/scripts/test_guild_image_package_sources_scan_clean.py`, `tests/scripts/scripts-lib-test.txt`
+**Surface:** `src/shared/packages/django-pyforge/src/django_pyforge/assertion/golden.py`, `src/shared/packages/pyforge-warden/src/pyforge/warden/hygiene.py`, `src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py` (a comment), `tests/scripts/test_guild_image_package_sources_scan_clean.py`, `tests/scripts/scripts-lib-test.txt`
 **Spec:** `planning-artifacts/specs/spec-118-10-the-guild-image-s-secret-scan-passes-on-the-test-keypair.md`
-**Given** every push to `main` since PR #2425 reds both `guild-container` jobs, because the image's `container-gates secrets-scan` finds six lines of `assertion/golden.py`'s keypair, wrapped at 64 characters, matching Story 118.9's `hetzner-api-token` shape, and `guild-container` does not run on a pull request
-**When** the keypair's base64 is held at 76 characters a line and wrapped at 64 when the module loads, the table's comment names the wrapped-line exception, and `tests/scripts/test_guild_image_package_sources_scan_clean.py` scans every tracked file under a package's `src/` with the table
-**Then** `GOLDEN_PRIVATE_PEM` and `GOLDEN_PUBLIC_PEM` are byte-identical to before, the module scans clean, the new test passes, and it fails on `main`'s module
+**Given** every push to `main` since PR #2425 reds both `guild-container` jobs, because the image's `container-gates secrets-scan` finds six lines of `assertion/golden.py`'s keypair, wrapped at 64 characters, matching Story 118.9's `hetzner-api-token` shape; behind that gate, the post-build scan of the run container finds warden's compiled `hygiene.py`, whose 65-character token set is a 64-character alphanumeric run once marshal's type and length bytes precede it; and `guild-container` does not run on a pull request
+**When** the keypair's base64 is held at 76 characters a line and wrapped at 64 when the module loads, its private header is formatted at load rather than folded by the compiler, warden's two token sets are built from `string`, the table's comment names the wrapped-line exception, and `tests/scripts/test_guild_image_package_sources_scan_clean.py` scans every tracked file under a package's `src/`, and each module's compiled code, with the table
+**Then** `GOLDEN_PRIVATE_PEM`, `GOLDEN_PUBLIC_PEM` and both token sets are unchanged, the sources and their compiled code scan clean, the new test passes, and it fails on `main`'s `golden.py` and on `main`'s `hygiene.py`
 **And** the pattern table does not change, and the Detectors scripts suite runs the new test on every pull request
 **Status:** done
 

@@ -2699,7 +2699,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/fleet_github_graphql.py": "2da4d1b0aa09bd74a78f53b4c8174d2b540ba0c8",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/fleet_github_rest.py": "abac58b64e235c719205b9c0f956e2c7668346a7",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/hooks.py": "d039f9afa2e92311de637d0c59eb5bf1b02d4711",
-   "src/shared/packages/pyforge-warden/src/pyforge/warden/hygiene.py": "2d5104660048523e993e99ceac7ccddf091e38fe",
+   "src/shared/packages/pyforge-warden/src/pyforge/warden/hygiene.py": "9f5e52021dbc04046bf132fa3f81b168ba757407",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/interfaces.py": "82178ed0c963cee912fcbd5fe0940de5b9eea8e4",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/inventory.py": "169e6e9e9d5e8414f756c43dd51271a6218ac2ac",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/license.py": "4a629dd17361ffeac7fbfc964dbfa180ec72f72e",
@@ -2718,10 +2718,10 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/sources.py": "77ce3ae20439b4a9a03a73ad00230d712e14fe33",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/tea_advisory.py": "75b2a73ea120e0eb5e17883a81c0b985d2fce98b",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/verdict.py": "c05bf72ec24890f3b631c062c605006ad57ce099",
-   "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
+   "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "893fd0a7bc339ddb5960fb2e3faed0660ba9a074",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "657c351e124bd4d5b8678429628e93954837ba22"
+  "memlog": "0ee77c4a6e88e1b60d88e2f2fb2ef14bada2cd22"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -5169,7 +5169,7 @@
    "src/shared/packages/django-pyforge/src/django_pyforge/assertion/client.py": "482ebe440c190a2b839ccc37156b52393dbe2e6f",
    "src/shared/packages/django-pyforge/src/django_pyforge/assertion/crypto.py": "a6bad4505f5c8eb55dd05b6bfbf3f3124ae4a21e",
    "src/shared/packages/django-pyforge/src/django_pyforge/assertion/exceptions.py": "083db083340f9db0b5c4b9bfda07d93bc877f43b",
-   "src/shared/packages/django-pyforge/src/django_pyforge/assertion/golden.py": "30eca9b7bc83c36e74a93737eb666e39e97e15d7",
+   "src/shared/packages/django-pyforge/src/django_pyforge/assertion/golden.py": "7ffddec0cd482c9fcfc1bf793ff6a309ab1b7fa8",
    "src/shared/packages/django-pyforge/src/django_pyforge/assertion/identity.py": "99c94ae8fa1e03cd4ebc4d7b837f220b76f0d2d3",
    "src/shared/packages/django-pyforge/src/django_pyforge/assertion/jwks.py": "302a41b0bf10088799d1ce174b8a93ca08872e0b",
    "src/shared/packages/django-pyforge/src/django_pyforge/assertion/middleware.py": "08fbf2aad773f26a66b9685e20461122da0d023f",
@@ -5864,7 +5864,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "e933715340b5ee4ca7d6bb370b4237fd387e0700"
+  "memlog": "b93ac4777c6ab543ce0c4c332d8a927de7a15258"
  },
  "pyforge-steward/spec-python-foundry-cutover": {
   "files": {},
@@ -5909,7 +5909,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/fleet_github_graphql.py": "2da4d1b0aa09bd74a78f53b4c8174d2b540ba0c8",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/fleet_github_rest.py": "abac58b64e235c719205b9c0f956e2c7668346a7",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/hooks.py": "d039f9afa2e92311de637d0c59eb5bf1b02d4711",
-   "src/shared/packages/pyforge-warden/src/pyforge/warden/hygiene.py": "2d5104660048523e993e99ceac7ccddf091e38fe",
+   "src/shared/packages/pyforge-warden/src/pyforge/warden/hygiene.py": "9f5e52021dbc04046bf132fa3f81b168ba757407",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/interfaces.py": "82178ed0c963cee912fcbd5fe0940de5b9eea8e4",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/inventory.py": "169e6e9e9d5e8414f756c43dd51271a6218ac2ac",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/license.py": "4a629dd17361ffeac7fbfc964dbfa180ec72f72e",
@@ -5928,7 +5928,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/sources.py": "77ce3ae20439b4a9a03a73ad00230d712e14fe33",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/tea_advisory.py": "75b2a73ea120e0eb5e17883a81c0b985d2fce98b",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/verdict.py": "c05bf72ec24890f3b631c062c605006ad57ce099",
-   "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
+   "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "893fd0a7bc339ddb5960fb2e3faed0660ba9a074",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026",
    "src/shared/packages/pyforge-warden/tests/conftest.py": "8d8685be5875fe794bed337a54c30904a7a825e2",
    "src/shared/packages/pyforge-warden/tests/fixtures/adversarial_names.json": "788e8afeac4c0389dbe3380b998d33afd5a69af0",
@@ -8144,6 +8144,6 @@
    "src/shared/packages/pyforge-warden/tests/unit/test_vuln.py": "b538f20c90b16709694b0dd8391c87f6d80ce7d8",
    "src/shared/packages/pyforge-warden/tests/unit/test_waiver.py": "7fe1a886458dd61ba73fb6c41c51b1eb99df09bd"
   },
-  "memlog": "e939536cd068acc7b8977da86fc50f6a5fa95034"
+  "memlog": "bb03c78361d92abfa65cc7abf94df25327bc09b8"
  }
 }

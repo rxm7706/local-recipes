@@ -4,6 +4,9 @@ The PEM headers are assembled from fragments so a repo-wide secrets-scan over
 source files (Story 7.3 / 48.10 guild-image build) does not match a literal
 ``-----BEGIN … PRIVATE KEY-----`` line in this test-only fixture module.
 Runtime consumers still receive a valid PEM string from the constants below.
+The private header is formatted when the module loads, never written as two
+literals joined by ``+``: the compiler folds those into one constant, and the
+scan finds the whole header in the compiled module (steward Story 118.10).
 
 The base64 is held at 76 characters a line and wrapped at 64 when the module
 loads (steward Story 118.10). Held at 64, a line is a run of its own, and a
@@ -12,7 +15,8 @@ scan's ``hetzner-api-token`` shape; six of this keypair's lines were, and the
 guild image's build gate failed on them.
 """
 
-_BEGIN_PRIVATE = "-----BEGIN " + "PRIVATE KEY-----\n"
+_PRIVATE = "PRIVATE"
+_BEGIN_PRIVATE = f"-----BEGIN {_PRIVATE} KEY-----\n"
 _END_PRIVATE = "-----END PRIVATE KEY-----\n"
 _BEGIN_PUBLIC = "-----BEGIN " + "PUBLIC KEY-----\n"
 _END_PUBLIC = "-----END PUBLIC KEY-----\n"

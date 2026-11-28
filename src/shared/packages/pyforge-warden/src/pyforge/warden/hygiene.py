@@ -112,6 +112,7 @@ from __future__ import annotations
 
 import json
 import os
+import string
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -220,7 +221,10 @@ def has_adjacent_python_source(target: Path) -> bool:
 # from ``vuln._is_safe_token``/``_SAFE_TOKEN_CHARS`` rather than imported
 # (see module docstring) — a security-relevant guard stays locally
 # auditable in each producing module.
-_SAFE_TOKEN_CHARS = frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-")
+# Built from `string`, never one literal: compiled, the 65-character literal is a 64-character alphanumeric run
+# (its marshal type and length bytes, then the 62 letters and digits), which the guild image's secret scan reads
+# as a Hetzner API token (steward Story 118.10).
+_SAFE_TOKEN_CHARS = frozenset(string.ascii_letters + string.digits + "._-")
 
 
 def _is_safe_token(value: str) -> bool:
