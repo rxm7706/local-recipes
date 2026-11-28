@@ -2645,7 +2645,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/glass.py": "45d8c443ea9e8905ec572319172ad92b7c765965",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/guards.py": "22d31b6cff28d09c06a63e2c6e9eb53866fd7fdf",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/interfaces.py": "4cd13a7b02d49b29a7e148d9243d0ceed74661c3",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py": "f92f710bda94507e7870ceb1c8d7dc192a9d75ef",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py": "63314a72a74ab6249c6d62fd25279bfd41bf00fc",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/machine.py": "4741068c24a4b917d3336c3ef93a48ccf0abf706",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py": "60f1ced28be80ec481a3f7f8a84fe850aa9e823e",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/measures.py": "872e2dda98929c9401b2160d8a4f23a53ccd98ff",
@@ -2721,7 +2721,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "0a4d32f1cac186f7e48759aed82bb6c9fb3e1558"
+  "memlog": "657c351e124bd4d5b8678429628e93954837ba22"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -4317,7 +4317,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/glass.py": "45d8c443ea9e8905ec572319172ad92b7c765965",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/guards.py": "22d31b6cff28d09c06a63e2c6e9eb53866fd7fdf",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/interfaces.py": "4cd13a7b02d49b29a7e148d9243d0ceed74661c3",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py": "f92f710bda94507e7870ceb1c8d7dc192a9d75ef",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py": "63314a72a74ab6249c6d62fd25279bfd41bf00fc",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/machine.py": "4741068c24a4b917d3336c3ef93a48ccf0abf706",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py": "60f1ced28be80ec481a3f7f8a84fe850aa9e823e",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/measures.py": "872e2dda98929c9401b2160d8a4f23a53ccd98ff",
@@ -4542,7 +4542,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "6e792c065068b29a89f20c8c1785a0233dca816c"
+  "memlog": "50597f369e0b69009c542bad685362f32b664c2d"
  },
  "pyforge-steward/spec-pyforge-unifying-strategy": {
   "files": {
@@ -5169,7 +5169,7 @@
    "src/shared/packages/django-pyforge/src/django_pyforge/assertion/client.py": "482ebe440c190a2b839ccc37156b52393dbe2e6f",
    "src/shared/packages/django-pyforge/src/django_pyforge/assertion/crypto.py": "a6bad4505f5c8eb55dd05b6bfbf3f3124ae4a21e",
    "src/shared/packages/django-pyforge/src/django_pyforge/assertion/exceptions.py": "083db083340f9db0b5c4b9bfda07d93bc877f43b",
-   "src/shared/packages/django-pyforge/src/django_pyforge/assertion/golden.py": "e6fa4f53de836ecb1ac8d2f130eb7bd86b523412",
+   "src/shared/packages/django-pyforge/src/django_pyforge/assertion/golden.py": "30eca9b7bc83c36e74a93737eb666e39e97e15d7",
    "src/shared/packages/django-pyforge/src/django_pyforge/assertion/identity.py": "99c94ae8fa1e03cd4ebc4d7b837f220b76f0d2d3",
    "src/shared/packages/django-pyforge/src/django_pyforge/assertion/jwks.py": "302a41b0bf10088799d1ce174b8a93ca08872e0b",
    "src/shared/packages/django-pyforge/src/django_pyforge/assertion/middleware.py": "08fbf2aad773f26a66b9685e20461122da0d023f",
@@ -5864,7 +5864,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "470af44aacd96dc878a1e220fd5eb5be13d56626"
+  "memlog": "e933715340b5ee4ca7d6bb370b4237fd387e0700"
  },
  "pyforge-steward/spec-python-foundry-cutover": {
   "files": {},

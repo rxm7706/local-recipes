@@ -25,6 +25,7 @@ tests/scripts/test_flag_rule.py
 tests/scripts/test_fleet_picture_baseline_drift_attention.py
 tests/scripts/test_fleet_picture_ci_pauses.py
 tests/scripts/test_fleet_picture_pages_liveness.py
+tests/scripts/test_guild_image_package_sources_scan_clean.py
 tests/scripts/test_json_output_spellings.py
 tests/scripts/test_lint_types_gate.py
 tests/scripts/test_nic_config_secret_scan.py
