@@ -8760,3 +8760,14 @@ with its ledger key and tracked story spec; Story 29.5 amended in place (Surface
   By the runner times, each of the four shards holds at most about 150 s of tests, and no xdist group more than 40 s.
   **Constraints:** the same tests run, each once; the coverage gate merges every shard's report as before. No flag
   (chore). Owner `spec-pyforge-steward`.
+- **2026-11-27 (marshal's durations file no longer matches its tests) — Found and ruled:** across nine CI runs,
+  marshal-test's four shards average about 53, 67, 47 and 63 s of tests, and the slowest set the job (up to 84 s of
+  tests, 106 s). The same split shows locally (20, 28, 18 and 24 s at four workers), so the cause is the file, not the
+  runner: `tests/durations/pyforge-marshal.json`, stored 2026-11-25, sums to 732 s where the suite now takes 239 s,
+  and tests made faster since (the seed-engine copier tests, 5 s to 1 s; the real-git landing tests, 2 s to 0.3 s)
+  still weigh their old times. Scored by fresh times, its split gives the shards 47, 77, 46 and 68 s of work.
+  **Ruled** (operator, 2026-11-27: "Marshal shards", on the ranked list of what remains). **For steward:** this entry
+  binds `spec-pyforge-steward` CAP-175 (realized, no text change) and decomposes as Story 117.34 on Epic 117: the
+  file is stored again from empty under the lane's own task at four workers, which gives each shard about 59.5 s of
+  work. **Constraints:** the same tests run, each once; no test, job or lane changes. No flag (chore). Owner
+  `spec-pyforge-steward`.
